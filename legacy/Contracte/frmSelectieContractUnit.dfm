@@ -1,0 +1,620 @@
+object frmSelectieContract: TfrmSelectieContract
+  Left = 427
+  Top = 389
+  Caption = 'Selectie contract'
+  ClientHeight = 372
+  ClientWidth = 1050
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poMainFormCenter
+  OnClose = FormClose
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignSize = (
+    1050
+    372)
+  PixelsPerInch = 96
+  TextHeight = 13
+  object PageContract: TcxPageControl
+    Left = 0
+    Top = 0
+    Width = 1050
+    Height = 288
+    Align = alClient
+    TabOrder = 0
+    Properties.ActivePage = tabSelContract
+    Properties.CustomButtons.Buttons = <>
+    Properties.Style = 9
+    Properties.TabPosition = tpBottom
+    Properties.TabSlants.Kind = skCutCorner
+    Properties.TabSlants.Positions = [spLeft, spRight]
+    LookAndFeel.Kind = lfOffice11
+    OnChange = PageContractChange
+    ClientRectBottom = 268
+    ClientRectRight = 1050
+    ClientRectTop = 0
+    object tabSelContract: TcxTabSheet
+      Caption = 'Selectie contract'
+      ImageIndex = 0
+      object gridContracte: TcxGrid
+        Left = 0
+        Top = 0
+        Width = 1050
+        Height = 268
+        Align = alClient
+        TabOrder = 0
+        object viewContract: TcxGridDBBandedTableView
+          OnDblClick = viewContractDblClick
+          Navigator.Buttons.CustomButtons = <>
+          ScrollbarAnnotations.CustomAnnotations = <>
+          OnEditKeyUp = viewContractEditKeyUp
+          OnFocusedRecordChanged = viewProgrameOneFocusedRecordChanged
+          DataController.DataSource = DTContracte
+          DataController.KeyFieldNames = 'ID_CONTRACT'
+          DataController.Summary.DefaultGroupSummaryItems = <>
+          DataController.Summary.FooterSummaryItems = <>
+          DataController.Summary.SummaryGroups = <>
+          OptionsBehavior.IncSearch = True
+          OptionsBehavior.IncSearchItem = viewContractNR_CONTRACT
+          OptionsData.CancelOnExit = False
+          OptionsData.Deleting = False
+          OptionsData.DeletingConfirmation = False
+          OptionsData.Editing = False
+          OptionsData.Inserting = False
+          OptionsView.ColumnAutoWidth = True
+          OptionsView.GroupByBox = False
+          OptionsView.BandHeaders = False
+          Bands = <
+            item
+            end>
+          object viewContractdenTipProgram: TcxGridDBBandedColumn
+            DataBinding.FieldName = 'denTipProgram'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+            Width = 145
+            Position.BandIndex = 0
+            Position.ColIndex = 5
+            Position.RowIndex = 0
+          end
+          object viewContractrefTipProgram: TcxGridDBBandedColumn
+            DataBinding.FieldName = 'refTipProgram'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+            Position.BandIndex = 0
+            Position.ColIndex = 0
+            Position.RowIndex = 0
+          end
+          object viewContractID_CONTRACT: TcxGridDBBandedColumn
+            DataBinding.FieldName = 'ID_CONTRACT'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+            Position.BandIndex = 0
+            Position.ColIndex = 1
+            Position.RowIndex = 0
+          end
+          object viewContractcod_siruta: TcxGridDBBandedColumn
+            Caption = 'Cod Siruta'
+            DataBinding.FieldName = 'cod_siruta'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+            Position.BandIndex = 0
+            Position.ColIndex = 2
+            Position.RowIndex = 0
+          end
+          object viewContractcodFiscal: TcxGridDBBandedColumn
+            Caption = 'Cod Fiscal'
+            DataBinding.FieldName = 'codFiscal'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+            Width = 80
+            Position.BandIndex = 0
+            Position.ColIndex = 3
+            Position.RowIndex = 0
+          end
+          object viewContractID_PARINTE: TcxGridDBBandedColumn
+            DataBinding.FieldName = 'ID_PARINTE'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+            Position.BandIndex = 0
+            Position.ColIndex = 4
+            Position.RowIndex = 0
+          end
+          object viewContractNR_CONTRACT: TcxGridDBBandedColumn
+            Caption = 'Numar'
+            DataBinding.FieldName = 'NR_CONTRACT'
+            HeaderAlignmentHorz = taCenter
+            Width = 245
+            Position.BandIndex = 0
+            Position.ColIndex = 6
+            Position.RowIndex = 0
+          end
+          object viewContractDATA_CONTRACT: TcxGridDBBandedColumn
+            Caption = 'Data'
+            DataBinding.FieldName = 'DATA_CONTRACT'
+            HeaderAlignmentHorz = taCenter
+            Width = 69
+            Position.BandIndex = 0
+            Position.ColIndex = 7
+            Position.RowIndex = 0
+          end
+          object viewContractDESCRIERE: TcxGridDBBandedColumn
+            Caption = 'Descriere'
+            DataBinding.FieldName = 'DESCRIERE'
+            HeaderAlignmentHorz = taCenter
+            Width = 144
+            Position.BandIndex = 0
+            Position.ColIndex = 8
+            Position.RowIndex = 0
+          end
+          object viewContractVALOARE: TcxGridDBBandedColumn
+            Caption = 'Valoare'
+            DataBinding.FieldName = 'VALOARE'
+            PropertiesClassName = 'TcxCurrencyEditProperties'
+            HeaderAlignmentHorz = taCenter
+            Width = 109
+            Position.BandIndex = 0
+            Position.ColIndex = 9
+            Position.RowIndex = 0
+          end
+          object viewContractrest: TcxGridDBBandedColumn
+            Caption = 'Rest'
+            DataBinding.FieldName = 'rest'
+            HeaderAlignmentHorz = taCenter
+            Width = 71
+            Position.BandIndex = 0
+            Position.ColIndex = 10
+            Position.RowIndex = 0
+          end
+          object viewContractid_beneficiar: TcxGridDBBandedColumn
+            Caption = 'Id Beneficiar'
+            DataBinding.FieldName = 'id_beneficiar'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+            Position.BandIndex = 0
+            Position.ColIndex = 11
+            Position.RowIndex = 0
+          end
+          object viewContractBENEFICIAR: TcxGridDBBandedColumn
+            Caption = 'Beneficiar'
+            DataBinding.FieldName = 'BENEFICIAR'
+            HeaderAlignmentHorz = taCenter
+            Width = 190
+            Position.BandIndex = 0
+            Position.ColIndex = 12
+            Position.RowIndex = 0
+          end
+          object viewContractid_prestator: TcxGridDBBandedColumn
+            DataBinding.FieldName = 'id_prestator'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+            Position.BandIndex = 0
+            Position.ColIndex = 13
+            Position.RowIndex = 0
+          end
+          object viewContractPRESTATOR: TcxGridDBBandedColumn
+            Caption = 'Prestator'
+            DataBinding.FieldName = 'PRESTATOR'
+            HeaderAlignmentHorz = taCenter
+            Width = 132
+            Position.BandIndex = 0
+            Position.ColIndex = 14
+            Position.RowIndex = 0
+          end
+          object viewContractPROIECT: TcxGridDBBandedColumn
+            Caption = 'Proiect'
+            DataBinding.FieldName = 'PROIECT'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+            Position.BandIndex = 0
+            Position.ColIndex = 15
+            Position.RowIndex = 0
+          end
+        end
+        object nivelContract: TcxGridLevel
+          GridView = viewContract
+        end
+      end
+    end
+    object tabDefContract: TcxTabSheet
+      Caption = 'Definire contract'
+      ImageIndex = 1
+      DesignSize = (
+        1050
+        268)
+      object Label5: TLabel
+        Left = 12
+        Top = 11
+        Width = 71
+        Height = 13
+        Caption = 'Detalii contract'
+      end
+      object Label6: TLabel
+        Left = 20
+        Top = 39
+        Width = 53
+        Height = 13
+        Caption = 'Nr contract'
+      end
+      object lbDataContract: TLabel
+        Left = 821
+        Top = 39
+        Width = 68
+        Height = 13
+        Anchors = [akTop, akRight]
+        Caption = 'Data contract:'
+      end
+      object edDataContract: TcxDateEdit
+        Left = 893
+        Top = 34
+        Hint = 'Data contract'
+        Anchors = [akTop, akRight]
+        Properties.DateOnError = deNull
+        Properties.ImmediatePost = True
+        Properties.InputKind = ikMask
+        Properties.SaveTime = False
+        Properties.ShowTime = False
+        Properties.OnValidate = edDataContractPropertiesValidate
+        Style.Color = clCream
+        Style.LookAndFeel.Kind = lfOffice11
+        StyleDisabled.Color = clWindow
+        StyleDisabled.LookAndFeel.Kind = lfOffice11
+        StyleDisabled.TextColor = clBlack
+        StyleFocused.LookAndFeel.Kind = lfOffice11
+        StyleHot.LookAndFeel.Kind = lfOffice11
+        TabOrder = 0
+        Width = 89
+      end
+      object edNrContract: TcxTextEdit
+        Left = 76
+        Top = 34
+        Hint = 'Numar contract'
+        Anchors = [akLeft, akTop, akRight]
+        Style.Color = clCream
+        Style.LookAndFeel.Kind = lfOffice11
+        StyleDisabled.LookAndFeel.Kind = lfOffice11
+        StyleFocused.LookAndFeel.Kind = lfOffice11
+        StyleHot.LookAndFeel.Kind = lfOffice11
+        TabOrder = 1
+        Width = 742
+      end
+    end
+    object tabIntegrareOne: TcxTabSheet
+      Caption = 'Integrare Programe'
+      ImageIndex = 2
+      object gridProgrameOne: TcxGrid
+        Left = 0
+        Top = 0
+        Width = 1050
+        Height = 268
+        Align = alClient
+        TabOrder = 0
+        object viewProgrameOne: TcxGridDBTableView
+          Navigator.Buttons.CustomButtons = <>
+          ScrollbarAnnotations.CustomAnnotations = <>
+          OnFocusedRecordChanged = viewProgrameOneFocusedRecordChanged
+          DataController.DataSource = dtProgrameOne
+          DataController.KeyFieldNames = 'refContract'
+          DataController.Summary.DefaultGroupSummaryItems = <>
+          DataController.Summary.FooterSummaryItems = <>
+          DataController.Summary.SummaryGroups = <>
+          OptionsBehavior.IncSearch = True
+          OptionsCustomize.ColumnsQuickCustomization = True
+          OptionsData.CancelOnExit = False
+          OptionsData.Deleting = False
+          OptionsData.DeletingConfirmation = False
+          OptionsData.Editing = False
+          OptionsData.Inserting = False
+          OptionsView.ColumnAutoWidth = True
+          object viewProgrameOnerefContract: TcxGridDBColumn
+            DataBinding.FieldName = 'refContract'
+            Visible = False
+          end
+          object viewProgrameOnedenProgram: TcxGridDBColumn
+            Caption = 'Program'
+            DataBinding.FieldName = 'denProgram'
+            Visible = False
+            GroupIndex = 0
+            HeaderAlignmentHorz = taCenter
+            Width = 612
+          end
+          object viewProgrameOneidProgram: TcxGridDBColumn
+            DataBinding.FieldName = 'idProgram'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+          end
+          object viewProgrameOneid_contract: TcxGridDBColumn
+            DataBinding.FieldName = 'id_contract'
+            Visible = False
+            HeaderAlignmentHorz = taCenter
+          end
+          object viewProgrameOnetert: TcxGridDBColumn
+            Caption = 'Tert'
+            DataBinding.FieldName = 'tert'
+            HeaderAlignmentHorz = taCenter
+            Width = 191
+          end
+          object viewProgrameOnecod_fiscal: TcxGridDBColumn
+            Caption = 'Cod Fiscal'
+            DataBinding.FieldName = 'cod_fiscal'
+            HeaderAlignmentHorz = taCenter
+            Width = 53
+          end
+          object viewProgrameOnenumar: TcxGridDBColumn
+            Caption = 'Numar'
+            DataBinding.FieldName = 'numar'
+            HeaderAlignmentHorz = taCenter
+            Width = 347
+          end
+          object viewProgrameOnedata: TcxGridDBColumn
+            Caption = 'Data'
+            DataBinding.FieldName = 'data'
+            HeaderAlignmentHorz = taCenter
+            Width = 105
+          end
+          object viewProgrameOnevaloare: TcxGridDBColumn
+            Caption = 'Valoare'
+            DataBinding.FieldName = 'valoare'
+            HeaderAlignmentHorz = taCenter
+          end
+          object viewProgrameOnerest: TcxGridDBColumn
+            Caption = 'Rest'
+            DataBinding.FieldName = 'rest'
+            HeaderAlignmentHorz = taCenter
+          end
+          object viewProgrameOnecod_siruta: TcxGridDBColumn
+            Caption = 'Cod Siruta'
+            DataBinding.FieldName = 'cod_siruta'
+            HeaderAlignmentHorz = taCenter
+          end
+        end
+        object nivelProgrameOne: TcxGridLevel
+          GridView = viewProgrameOne
+        end
+      end
+    end
+  end
+  object pnlBottom: TPanel
+    Left = 0
+    Top = 288
+    Width = 1050
+    Height = 84
+    Align = alBottom
+    BevelOuter = bvNone
+    TabOrder = 1
+    DesignSize = (
+      1050
+      84)
+    object BtnOk: TcxButton
+      Left = 841
+      Top = 26
+      Width = 65
+      Height = 24
+      Anchors = [akRight, akBottom]
+      Caption = 'Ok'
+      LookAndFeel.Kind = lfOffice11
+      OptionsImage.Glyph.SourceDPI = 96
+      OptionsImage.Glyph.Data = {
+        424D360900000000000036000000280000001800000018000000010020000000
+        000000000000C40E0000C40E0000000000000000000000000000000000000000
+        000000000000000000000000000000000000000000010000000E000000270001
+        004400010053000100550000004B000000300000001600000005000000000000
+        0000000000000000000000000000000000000000000000000000000000000000
+        0000000000000000000000000001000000120105015806300BB70D6015E80F77
+        19FA107C1CFD107C1CFD0F7119F70B5012E1052208B7000200740000002B0000
+        0004000000000000000000000000000000000000000000000000000000000000
+        000000000000000000030104014009420FC3107D1BFD21932CFF25A732FF28B3
+        35FF23B630FF26B634FF2CB038FF29A235FF1C8A27FF0F7719FA07320BC90000
+        0064000000110000000000000000000000000000000000000000000000000000
+        000000000004010B025B0D6A17EC269331FF3DB949FF36C344FF2AC038FF20BF
+        2FFF1DBE2DFF22BF32FF2BC03AFF38C245FF46C552FF42B14DFF1D8A28FF0C5B
+        15E90005017F0000001600000000000000000000000000000000000000000000
+        0002020C0358117C1CFB42AB4CFF51C65CFF42C34EFF34C242FF24A62FFF418B
+        47FF1DBF2DFF20BF30FF2AC039FF36C244FF43C450FF52C55DFF60C66AFF3298
+        3CFF0F7219F60005017E0000000F000000000000000000000000000000000105
+        01360E7319F24DAE57FF5FC76AFF51C55DFF43C44FFF2FA73AFF7C927EFFB9B9
+        B8FF2FA539FF26BF35FF2DC03CFF38C246FF44C450FF51C65CFF5FC76AFF6ECA
+        77FF37993FFF0D5C14E900010060000000030000000000000000000000030A47
+        10BD389A41FF6FCA79FF61C76BFF54C65FFF3DA947FF7C927EFFD7D6D6FFF4F5
+        F5FF95AC97FF2AB237FF34C242FF3DC34AFF47C453FF53C65EFF5FC769FF6BC8
+        74FF77C97FFF238B2DFF07330CC60000002600000000000000000108023F1985
+        24FF7CCA83FF71C97AFF64C86EFF46984DFF8D978EFFDADADAFFFFFFFFFFFFFF
+        FFFFE8E8E9FF799C7BFF3CC049FF44C450FF4CC558FF57C661FF61C76BFF6BC8
+        74FF76CA7EFF62B76AFF0F781AFB0003016D000000030000000109420FB149A3
+        52FF7DCC86FF6BBE75FF558258FFA5A8A5FFE2E2E2FFFFFFFFFFE8ECE9FFDCE9
+        DDFFFFFFFFFFDCDCDCFF5F9564FF4CC458FF52C55DFF59C664FF62C76CFF6BC8
+        74FF74CA7DFF7FCC86FF288E32FF062709B7000000130001000B0E7419F16EBB
+        75FF71B277FF7F8C7FFFCDCECEFFEEEEEEFFFFFFFFFFFDFDFEFF96C99AFF78C4
+        7FFFFEFDFEFFFDFDFDFFCCCDCCFF5B9C61FF59C764FF5DC668FF63C76DFF6BC8
+        74FF73CA7BFF7ACA82FF4FAA59FF0C5814E40000002C020F033D10801CFF81CB
+        89FF79CB81FF7DBF84FFD5DBD6FFFDFDFDFFFFFFFFFFDBE1DBFF57C461FF55C5
+        61FFD1DFD2FFFFFFFFFFFDFDFDFFC4C5C4FF5C9560FF62C86EFF66C870FF6AC8
+        74FF71C97AFF76CA7FFF65BB6DFF0F781AFB0001004803170557148220FF7CCC
+        85FF73CA7BFF6AC873FF65C66EFF90C696FFE8E7E8FF8FC795FF61C76BFF64C7
+        6EFF81C488FFFCFAFCFFFFFFFFFFF9F9F9FFC3C4C3FF619165FF67C671FF6AC8
+        74FF6EC977FF71CA7AFF6EC577FF0F7F1AFF0104015803170559158220FF75CB
+        7EFF6CC876FF68C871FF64C76DFF62C76CFF6EC476FF6AC773FF6CC875FF71C9
+        79FF74C97CFFB9D2BBFFFFFFFFFFFFFFFFFFFAFAFAFFCACACAFF729374FF5AAB
+        63FF6AC874FF6CC876FF6CC575FF0F7F1AFF010401580313044C13811EFF6FCA
+        78FF68C871FF65C76EFF63C76EFF67C870FF6CC975FF74CA7CFF7CCA83FF82CB
+        88FF86CC8CFF87C88DFFE6E7E5FFFFFFFFFFFFFFFFFFFEFEFEFFDADBDAFFA8AC
+        A8FF65B86DFF6AC874FF66C26FFF0E7E1AFE000301450108021B0F7C1BFB62C0
+        6BFF64C76EFF62C76CFF65C76FFF6CC975FF76CA7EFF82CB88FF8ACC91FF92CE
+        98FF96CE9CFF97CE9DFF9DC8A1FFF4F3F4FFFFFFFFFFFFFFFFFFFFFFFFFFE0E4
+        E0FF68C771FF68C871FF56B460FF0E6D18F000000020000000010D6115D049AB
+        52FF61C76BFF62C76CFF69C872FF73CA7CFF81CB87FF8DCD94FF99CE9FFFA1CF
+        A6FFA6D0AAFFA6D0ABFFA3D0A8FFB4CCB7FFFAF9F9FFFFFFFFFFFFFFFFFFCDDD
+        CFFF6BC974FF6AC873FF3FA149FF083E0EC00000000B0000000005260867258D
+        30FF68CA72FF63C76DFF6DC876FF7BCA82FF8BCD91FF9BCEA0FFA8D0ACFFB2D2
+        B5FFB6D2B8FFB5D2B8FFB1D2B4FFA8D1ACFFB3C9B6FFFBFAFBFFFFFFFFFFCCDD
+        CDFF6DC976FF6BC675FF14811EFF020C03610000000100000000000301090E70
+        18E44CAD55FF65C86EFF71C979FF81CB88FF93CE99FFA5D0A9FFB4D2B7FFBFD3
+        C1FFC3D4C4FFC1D4C2FFBBD2BDFFB1D2B4FFA5D0A9FFACC9AEFFF2F1F1FFD9E3
+        DAFF6DC877FF3EA148FF0C5713D50000000F0000000000000000000000000526
+        0962168321FF63C06CFF73C97BFF84CC8BFF98CE9DFFABD1AFFFBBD3BEFFC9D4
+        C9FFCED5CEFFC9D4CAFFC0D3C2FFB5D2B8FFA8D0ACFF99CF9FFF99C79EFFC5D1
+        C6FF5AB864FF11791BF7010A024D000000010000000000000000000000000000
+        000109430F94168221FF62C16CFF7FCB87FF99CE9FFFADD1B0FFBED3C0FFCCD5
+        CCFFD2D6D3FFCBD5CCFFC1D4C2FFB4D2B7FFA7D0ABFF99CE9FFF7DCB85FF5EBD
+        68FF13801EFF041C067900000003000000000000000000000000000000000000
+        00000001000409440F9A178321FF4CAF55FF78CB80FF97CE9CFFB9D2BDFFC6D4
+        C7FFC9D4CAFFC5D4C7FFBDD3BFFFADD1B1FF8CCD93FF73CB7CFF46AA50FF1381
+        1EFE0420077C0000000300000000000000000000000000000000000000000000
+        00000000000000010002062D0A700F7619EF299132FF4CB056FF69C771FF7DCD
+        85FF86CD8DFF84CD8CFF79CC82FF64C46EFF49AE53FF248E2FFF0D6A17E00212
+        0455000000010000000000000000000000000000000000000000000000000000
+        000000000000000000000000000001080213083D0D880F7119E9107E1CFF1B86
+        25FF208B2BFF208B2BFF198624FF107E1BFD0E6716DA052709700000000A0000
+        0000000000000000000000000000000000000000000000000000000000000000
+        0000000000000000000000000000000000000000000000030108041D07470839
+        0D9209410EA009420EA00526097B020C022D0000000100000000000000000000
+        00000000000000000000000000000000000000000000}
+      TabOrder = 0
+      OnClick = BtnOkClick
+    end
+    object BtnCancel: TcxButton
+      Left = 912
+      Top = 26
+      Width = 83
+      Height = 24
+      Anchors = [akRight, akBottom]
+      Caption = 'Abandon'
+      LookAndFeel.Kind = lfOffice11
+      OptionsImage.Glyph.SourceDPI = 96
+      OptionsImage.Glyph.Data = {
+        424D360900000000000036000000280000001800000018000000010020000000
+        000000000000C40E0000C40E0000000000000000000000000000000000000000
+        000000000000000000000000000000000000000000000707193610103D821717
+        56B91E1E6EEC1E1E71F21B1B64D61313489A0C0C2E620101050A000000000000
+        0000000000000000000000000000000000000000000000000000000000000000
+        000000000000000000000202070F0D0D316819195ECA1F1F7AFE18188DFF1212
+        A4FF0F0FADFF0E0EB0FF1010A8FF141499FF1C1C82FF1E1E70F01212428D0505
+        1125000000000000000000000000000000000000000000000000000000000000
+        000000000000070719361B1B66DB1F1F79FF1212A0FF0303D2FF0000E4FF0000
+        EAFF0000EDFF0000EDFF0000ECFF0000E8FF0000E0FF0B0BB7FF1B1B86FF2020
+        76FC11113F880101020400000000000000000000000000000000000000000000
+        0000090922491F1F72F513139AFF0202D2FF0000E3FF0000EEFF0000F5FF0000
+        F8FF0000FAFF0000FAFF0000F9FF0000F7FF0000F2FF0000E9FF0000DAFF0B0B
+        B1FF1D1D7DFF161654B301010205000000000000000000000000000000000707
+        1A371E1E71F31010A1FF0000DAFF0000E7FF0000F0FF0000F7FF0000FBFF0000
+        FDFF0000FDFF0000FDFF0000FDFF0000FCFF0000F9FF0000F3FF0000EAFF0000
+        DFFF0404C6FF1C1C7FFF15154DA4000000000000000000000000000000001818
+        5AC0191989FF0000D0FF0000E3FF0000EDFF0000F4FF0000F9FF0000FDFF0000
+        FEFF0000FFFF0000FFFF0000FEFF0000FEFF0000FBFF0000F7FF0000EFFF0000
+        E8FF0000DAFF0909B2FF202077FF07071A37000000000000000008081D3E2020
+        77FE0505B8FF0000DAFF0000E8FF0000F0FF0000F5FF0000FAFF0000FDFF0000
+        FEFF0000FFFF0000FFFF0000FFFF0000FEFF0000FCFF0000F8FF0000F2FF0000
+        EBFF0000E2FF0000CFFF17178CFF171756B9000000000000000018185AC01313
+        93FF0000CBFF0000DEFF0000E9FF0000F0FF0000F6FF0000FAFF0000FDFF0000
+        FFFF0000FFFF0000FFFF0000FFFF0000FEFF0000FCFF0000F8FF0000F2FF0000
+        ECFF0000E4FF0000D6FF0505B6FF202078FF07071B3904041022202076FD0606
+        AEFF0000CFFF0000DEFF0000E8FF0000EFFF0000F5FF0000F9FF0000FDFF0000
+        FEFF0000FFFF0000FFFF0000FFFF0000FEFF0000FBFF0000F7FF0000F1FF0000
+        EBFF0000E4FF0000D8FF0000C4FF181887FF1111408A10103A7D1E1E7AFF0000
+        BAFF0000D0FF4040C1FF5858BBFF5757BDFF5757C0FF5757C2FF5757C4FF5757
+        C5FF5757C5FF5757C5FF5757C5FF5757C4FF5757C3FF5757C1FF5757BEFF5757
+        BCFF5555B8FF0000CFFF0000C5FF0F0F96FF19195CC61A1A61CF191983FF0000
+        BAFF0000CDFFA7A7DCFFEFEFEFFFEDEDEDFFEDEDEDFFEDEDEDFFEDEDEDFFEDED
+        EDFFEDEDEDFFEDEDEDFFEDEDEDFFEDEDEDFFEDEDEDFFEDEDEDFFEDEDEDFFECEC
+        ECFFCECECEFF0101C2FF0000C4FF0A0A9FFF1E1E6EEC1E1E70F0171785FF0000
+        B9FF0000CAFFAAAADEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDFD
+        FDFFD7D7D7FF0101BFFF0000C2FF0707A2FF1F1F74F91E1E6EEC171784FF0000
+        B4FF0000C5FFAAAADDFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDFD
+        FDFFD7D7D7FF0101BAFF0000BDFF07079FFF1F1F74F8171756B81A1A80FF0000
+        AFFF0000BFFFAAAADBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        FFFFE6E6E6FF0101B4FF0000B7FF0B0B96FF1C1C69E20D0D2F641F1F78FF0101
+        A7FF0000B8FF3E3EC1FF6363CCFF5E5ECEFF5959D0FF5858D3FF5858D6FF5858
+        D7FF5858D8FF5858D8FF5858D8FF5858D7FF5858D4FF5959D1FF5C5CCFFF6262
+        CDFF6060CAFF0101B8FF0000B1FF12128BFF171755B70202070E1F1F73F60A0A
+        96FF0000B0FF0C0CBDFF2525CAFF1818CBFF0909CCFF0202CFFF0000D3FF0000
+        D6FF0000D7FF0000D8FF0000D7FF0000D4FF0101D1FF0505CEFF1313CBFF2323
+        CBFF1B1BC4FF0000B6FF0000A8FF1B1B7DFF0F0F3775000000001414499C1919
+        80FF0000A7FF0B0BB5FF3B3BC9FF3737CBFF1F1FC8FF0C0CC7FF0303C9FF0101
+        CBFF0000CCFF0000CCFF0000CBFF0101CAFF0707C8FF1616C8FF3030CBFF3F3F
+        CCFF2020BFFF0000ADFF090996FF1F1F75FA04040E1D000000000606152C2020
+        77FF080896FF0303ACFF4242C7FF5858D0FF4141CCFF2323C7FF1010C4FF0606
+        C3FF0303C4FF0202C4FF0404C4FF0B0BC4FF1919C5FF3535CAFF5353D0FF5151
+        CDFF1515B6FF0000A5FF191980FF15154DA40000000000000000000000001515
+        50AB1A1A7DFF0202A0FF2121B7FF6B6BD2FF7575D7FF5C5CD1FF3F3FCBFF2A2A
+        C6FF2020C4FF2020C4FF2525C5FF3535C8FF4F4FCEFF6D6DD5FF7171D5FF3939
+        C0FF0202A8FF0D0D8EFF1F1F74F9050513280000000000000000000000000303
+        09141A1A62D2171781FF03039FFF2A2AB6FF7F7FD6FF9F9FE2FF9999E0FF8989
+        DCFF7F7FD9FF7E7ED9FF8484DAFF9292DFFF9F9FE2FF9595DDFF4545C1FF0505
+        A5FF0B0B91FF1F1F77FD0C0C2E62000000000000000000000000000000000000
+        000004040D1C1A1A62D11B1B7DFF0A0A91FF1C1CABFF7777CFFFB6B6E7FFCCCC
+        EFFFD2D2F1FFD2D2F1FFCFCFF0FFC2C2EBFF9898DCFF3E3EBAFF080899FF1515
+        84FF1F1F75FB0E0E326C00000000000000000000000000000000000000000000
+        0000000000000202060C14144A9E202077FE1B1B7CFF0F0F8EFF2626A8FF5757
+        BFFF7777CDFF7C7CCEFF6767C6FF3A3AB3FF111199FF151583FF202077FF1B1B
+        63D408081E400000000000000000000000000000000000000000000000000000
+        000000000000000000000000000003030D1B10103A7C1C1C6AE3202077FF1B1B
+        7CFF18187EFF18187FFF19197DFF1E1E79FF202076FC161652AF08081D3F0000
+        0001000000000000000000000000000000000000000000000000000000000000
+        00000000000000000000000000000000000000000000010104080A0A254F1414
+        4BA01D1D6BE61E1E6FED19195ECA0E0E36730505112400000000000000000000
+        00000000000000000000000000000000000000000000}
+      TabOrder = 1
+      OnClick = BtnCancelClick
+    end
+  end
+  object chkFiltruDepartament: TcxCheckBox
+    Left = 825
+    Top = 294
+    Anchors = [akRight, akBottom]
+    Caption = 'Filtrat pe departament'
+    Properties.OnChange = chkFiltruDepartamentPropertiesChange
+    TabOrder = 2
+  end
+  object chkFiltruPrestator: TcxCheckBox
+    Tag = 1
+    Left = 695
+    Top = 294
+    Anchors = [akRight, akBottom]
+    Caption = 'Filtrat pe prestator'
+    Properties.OnChange = chkFiltruDepartamentPropertiesChange
+    TabOrder = 3
+  end
+  object DTContracte: TDataSource
+    DataSet = QryContracte
+    Left = 40
+    Top = 100
+  end
+  object QryContracte: TZQuery
+    SQL.Strings = (
+      'EXEC SP_GET_LISTA_CONTRACTE')
+    Params = <>
+    Left = 120
+    Top = 36
+  end
+  object popupGrid: TcxGridPopupMenu
+    Grid = gridContracte
+    PopupMenus = <>
+    Left = 104
+    Top = 104
+  end
+  object qryProgrameOne: TZReadOnlyQuery
+    SQL.Strings = (
+      'select * from dbo.CONTRACTE')
+    Params = <>
+    Left = 312
+    Top = 136
+  end
+  object dtProgrameOne: TDataSource
+    DataSet = qryProgrameOne
+    Left = 160
+    Top = 152
+  end
+  object popupIntegrareOne: TcxGridPopupMenu
+    Grid = gridProgrameOne
+    PopupMenus = <>
+    Left = 240
+    Top = 80
+  end
+end

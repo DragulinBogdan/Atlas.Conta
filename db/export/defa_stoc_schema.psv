@@ -1,0 +1,10 @@
+name|tip
+----|---
+ID_GEST_DEFA_STOC|int
+ID_GEST_TIP_STOC|int
+ID_GEST_TIP_DOCUM|int
+PREDATOR|int
+ID_GEST_TIP_MATERIAL|int
+SEMN|int
+SEMN_ITEMS|int
+TIPURI_PRODUSE|varchar

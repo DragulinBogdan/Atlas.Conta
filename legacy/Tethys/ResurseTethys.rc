@@ -1,0 +1,6 @@
+GetNoteDocument RCDATA ".\GetNoteDocument.xtr"
+GetRegistru RCDATA ".\GetRegistru.xtr"
+GetRegistruTipDocument RCDATA ".\GetRegistruTipDocument.xtr"
+GetStariDocument RCDATA ".\GetStariDocument.xtr"
+GetTipuriDocumente RCDATA ".\GetTipuriDocumente.xtr"
+GetUtilizatori RCDATA ".\GetUtilizatori.xtr"

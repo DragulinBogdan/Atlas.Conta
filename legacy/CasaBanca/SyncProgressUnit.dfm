@@ -1,0 +1,40 @@
+object frmProgress: TfrmProgress
+  Left = 487
+  Top = 304
+  BorderIcons = []
+  BorderStyle = bsDialog
+  Caption = 'frmProgress'
+  ClientHeight = 38
+  ClientWidth = 320
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  FormStyle = fsStayOnTop
+  OldCreateOrder = False
+  Position = poMainFormCenter
+  PixelsPerInch = 96
+  TextHeight = 13
+  object GlobalLoadProgress: TdxfProgressBar
+    Left = 8
+    Top = 7
+    Width = 305
+    Height = 25
+    BarBevelOuter = bvNone
+    BeginColor = clNavy
+    BevelOuter = bvLowered
+    EndColor = clWhite
+    Max = 100
+    Min = 0
+    Orientation = orHorizontal
+    Position = 0
+    ShowText = True
+    ShowTextStyle = stsPercent
+    Step = 10
+    Style = sExSolid
+    TabOrder = 0
+    TransparentGlyph = True
+  end
+end

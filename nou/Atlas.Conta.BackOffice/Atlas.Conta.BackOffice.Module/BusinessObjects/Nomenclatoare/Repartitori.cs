@@ -1,0 +1,42 @@
+using DevExpress.ExpressApp.DC;
+using DevExpress.Persistent.Base;
+using DevExpress.Persistent.BaseImpl.EF;
+
+namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
+
+// Decizia 16: TPT — moștenire doar unde schema diferă și identitatea e exclusivă;
+// calitățile transversale sunt flags, nu clase.
+[NavigationItem("Nomenclatoare")]
+[XafDefaultProperty(nameof(Denumire))]
+public abstract class Repartitor : BaseObject {
+    public virtual string Cod { get; set; }
+    public virtual string Denumire { get; set; }
+    public virtual CalitateRepartitor Calitati { get; set; }
+    public virtual bool Activ { get; set; } = true;
+}
+
+// Furnizor/client = rol contextual dat de poziția pe document (decizia 16).
+public class Partener : Repartitor {
+    public virtual string CodFiscal { get; set; }
+    public virtual string RegistruComert { get; set; }
+    // Tranșarea (d) din testul bazei: contul partenerului (401/404/411) = politică;
+    // instanța poate particulariza (ex. 404 pentru furnizorii de imobilizări).
+    public virtual Guid? ContImplicitId { get; set; }
+    public virtual Cont ContImplicit { get; set; }
+}
+
+public class Angajat : Repartitor {
+    public virtual string Marca { get; set; }
+}
+
+public class Gestiune : Repartitor {
+}
+
+public class UnitateInterna : Repartitor {
+}
+
+// Casele și conturile proprii (legacy `casierie`) — decizia din 09 §3.
+public class ContPropriu : Repartitor {
+    public virtual string Iban { get; set; }
+    public virtual bool EsteBanca { get; set; }
+}

@@ -1,0 +1,36 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{A123A20A-CB4A-44B1-9EE2-1566B5236CEB}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="Contabilitate.dproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Default.Personality/>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="Contabilitate">
+			<MSBuild Projects="Contabilitate.dproj"/>
+		</Target>
+		<Target Name="Contabilitate:Clean">
+			<MSBuild Targets="Clean" Projects="Contabilitate.dproj"/>
+		</Target>
+		<Target Name="Contabilitate:Make">
+			<MSBuild Targets="Make" Projects="Contabilitate.dproj"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="Contabilitate"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="Contabilitate:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="Contabilitate:Make"/>
+		</Target>
+		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
+	</Project>

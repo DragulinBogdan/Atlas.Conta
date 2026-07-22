@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899.12.30 00:00:00.000.467,D:\Develop\Conta\03.Surse\04.Client\16.Conta-MDRap-XE2\Surse\Wrappers\formsUtilsUnit.pas=D:\Develop\Conta\03.Surse\04.Client\16.Conta-MDRap-XE2\Surse\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.704,D:\Out\DLL\WebView2Loader.dll=</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.220,D:\Develop\ContaV2\DelphiXE2\Surse\Integrare\RepartitorAnafUnit.pas=D:\Develop\ContaV2\DelphiXE2\Surse\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.782,D:\Develop\Conta\03.Surse\04.Client\16.Conta-MDRap-XE2\Surse\Formulare\contaFormUnit.pas=D:\Develop\Conta\03.Surse\04.Client\16.Conta-MDRap-XE2\Surse\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.445,=D:\Develop\Conta\03.Surse\04.Client\16.Conta-MDRap-XE2\Surse\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.044,=D:\Develop\Conta\03.Surse\04.Client\16.Conta-MDRap-XE2\Surse\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.060,=D:\Develop\ContaV2\DelphiXE2\Surse\Unit1.pas</Transaction>
+  </Transactions>
+</BorlandProject>

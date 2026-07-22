@@ -1,0 +1,14 @@
+unit svnInfo;
+
+interface
+const
+  svnRevision : String = '$WCREV$';
+  svnModified : String = '$WCMODS?Modificata:Nemodificata$';
+  svnDate     : String = '$WCDATE$';
+  svnRevRange : String = '$WCRANGE$';
+  svnMixed    : String = '$WCMIXED?Versiune Locala:Versiune Oficiala$';
+  svnURL      : String = '$WCURL$';
+
+implementation
+
+end.

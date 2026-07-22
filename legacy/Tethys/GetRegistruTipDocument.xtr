@@ -1,0 +1,158 @@
+<XmlTransformation Version="1.0"><Transform Direction="ToCds" DataEncoding="utf-8"><SelectEach dest="DATAPACKET\ROWDATA\ROW" from="\Envelope\Body\GetRegistruTipDocumentResponse\GetRegistruTipDocumentResult\diffgram\NewDataSet\Table"><Select dest="@registruID" from="\registruID"/><Select dest="@nrInreg" from="\nrInreg"/><Select dest="@dataInreg" from="\dataInreg"/><Select dest="@provenienta" from="\provenienta"/><Select dest="@adresa" from="\adresa"/><Select dest="@tipDocumentID" from="\tipDocumentID"/><Select dest="@descriere" from="\descriere"/><Select dest="@stareDocument" from="\stareDocument"/><Select dest="@nivelCurent" from="\nivelCurent"/><Select dest="@utilizatorVizaCFPID" from="\utilizatorVizaCFPID"/><Select dest="@dataVizaCFP" from="\dataVizaCFP"/></SelectEach></Transform><XmlSchema RootName="Envelope"><![CDATA[<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Envelope" type="EnvelopeType"/>
+  <xs:complexType name="EnvelopeType">
+    <xs:sequence>
+      <xs:element name="soap:Body" type="soap:BodyType"/>
+    </xs:sequence>
+    <xs:attribute name="xmlns:soap" type="xs:string"/>
+    <xs:attribute name="xmlns:xsi" type="xs:string"/>
+    <xs:attribute name="xmlns:xsd" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="Body" type="BodyType"/>
+  <xs:complexType name="BodyType">
+    <xs:sequence>
+      <xs:element name="GetRegistruTipDocumentResponse" type="GetRegistruTipDocumentResponseType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="GetRegistruTipDocumentResponse" type="GetRegistruTipDocumentResponseType"/>
+  <xs:complexType name="GetRegistruTipDocumentResponseType">
+    <xs:sequence>
+      <xs:element name="GetRegistruTipDocumentResult" type="GetRegistruTipDocumentResultType"/>
+    </xs:sequence>
+    <xs:attribute name="xmlns" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="GetRegistruTipDocumentResult" type="GetRegistruTipDocumentResultType"/>
+  <xs:complexType name="GetRegistruTipDocumentResultType">
+    <xs:sequence>
+      <xs:element name="xs:schema" type="xs:schemaType"/>
+      <xs:element name="diffgr:diffgram" type="diffgr:diffgramType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="schema" type="schemaType"/>
+  <xs:complexType name="schemaType">
+    <xs:sequence>
+      <xs:element name="xs:element" type="xs:elementType"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string"/>
+    <xs:attribute name="xmlns" type="xs:string"/>
+    <xs:attribute name="xmlns:xs" type="xs:string"/>
+    <xs:attribute name="xmlns:msdata" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="element" type="elementType"/>
+  <xs:complexType name="elementType">
+    <xs:sequence>
+      <xs:element name="xs:complexType" type="xs:complexTypeType"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="complexType" type="complexTypeType"/>
+  <xs:complexType name="complexTypeType">
+    <xs:sequence>
+      <xs:element name="xs:choice" type="xs:choiceType"/>
+      <xs:element name="xs:sequence" type="xs:sequenceType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="choice" type="choiceType"/>
+  <xs:complexType name="choiceType">
+    <xs:sequence>
+      <xs:element name="xs:element" type="xs:elementType"/>
+    </xs:sequence>
+    <xs:attribute name="maxOccurs" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="element" type="elementType"/>
+  <xs:complexType name="elementType">
+    <xs:sequence>
+      <xs:element name="xs:complexType" type="xs:complexTypeType"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="sequence" type="sequenceType"/>
+  <xs:complexType name="sequenceType">
+    <xs:sequence>
+      <xs:element name="xs:element" type="xs:elementType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="element" type="elementType"/>
+  <xs:complexType name="elementType">
+    <xs:sequence/>
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="type" type="xs:string"/>
+    <xs:attribute name="minOccurs" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="diffgram" type="diffgramType"/>
+  <xs:complexType name="diffgramType">
+    <xs:sequence>
+      <xs:element name="NewDataSet" type="NewDataSetType"/>
+    </xs:sequence>
+    <xs:attribute name="xmlns:msdata" type="xs:string"/>
+    <xs:attribute name="xmlns:diffgr" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="NewDataSet" type="NewDataSetType"/>
+  <xs:complexType name="NewDataSetType">
+    <xs:sequence>
+      <xs:element name="Table" type="TableType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="xmlns" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="Table" type="TableType"/>
+  <xs:complexType name="TableType">
+    <xs:sequence>
+      <xs:element name="registruID" type="registruIDType"/>
+      <xs:element name="nrInreg" type="nrInregType"/>
+      <xs:element name="dataInreg" type="dataInregType"/>
+      <xs:element name="provenienta" type="provenientaType"/>
+      <xs:element name="adresa" type="adresaType"/>
+      <xs:element name="tipDocumentID" type="tipDocumentIDType"/>
+      <xs:element name="descriere" type="descriereType"/>
+      <xs:element name="stareDocument" type="stareDocumentType"/>
+      <xs:element name="nivelCurent" type="nivelCurentType"/>
+      <xs:element name="utilizatorVizaCFPID" type="utilizatorVizaCFPIDType"/>
+      <xs:element name="dataVizaCFP" type="dataVizaCFPType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="registruID" type="registruIDType"/>
+  <xs:simpleType name="registruIDType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="nrInreg" type="nrInregType"/>
+  <xs:simpleType name="nrInregType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="dataInreg" type="dataInregType"/>
+  <xs:simpleType name="dataInregType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="provenienta" type="provenientaType"/>
+  <xs:simpleType name="provenientaType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="adresa" type="adresaType"/>
+  <xs:simpleType name="adresaType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="tipDocumentID" type="tipDocumentIDType"/>
+  <xs:simpleType name="tipDocumentIDType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="descriere" type="descriereType"/>
+  <xs:simpleType name="descriereType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="stareDocument" type="stareDocumentType"/>
+  <xs:simpleType name="stareDocumentType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="nivelCurent" type="nivelCurentType"/>
+  <xs:simpleType name="nivelCurentType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="utilizatorVizaCFPID" type="utilizatorVizaCFPIDType"/>
+  <xs:simpleType name="utilizatorVizaCFPIDType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:element name="dataVizaCFP" type="dataVizaCFPType"/>
+  <xs:simpleType name="dataVizaCFPType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+</xs:schema>]]></XmlSchema><CdsSkeleton/><XslTransform/><Skeleton><![CDATA[<?xml version="1.0"?><DATAPACKET Version="2.0"><METADATA><FIELDS><FIELD attrname="registruID" fieldtype="string" WIDTH="254"/><FIELD attrname="nrInreg" fieldtype="string" WIDTH="20"/><FIELD attrname="dataInreg" fieldtype="string" WIDTH="33"/><FIELD attrname="provenienta" fieldtype="string" WIDTH="127"/><FIELD attrname="adresa" fieldtype="string" WIDTH="254"/><FIELD attrname="tipDocumentID" fieldtype="string" WIDTH="254"/><FIELD attrname="descriere" fieldtype="string" WIDTH="800"/><FIELD attrname="stareDocument" fieldtype="string" WIDTH="1"/><FIELD attrname="nivelCurent" fieldtype="string" WIDTH="127"/><FIELD attrname="utilizatorVizaCFPID" fieldtype="string" WIDTH="254"/><FIELD attrname="dataVizaCFP" fieldtype="string" WIDTH="33"/></FIELDS><PARAMS/></METADATA><ROWDATA/><METADATA><FIELDS><FIELD attrname="registruID" fieldtype="string" WIDTH="36"/><FIELD attrname="nrInreg" fieldtype="string" WIDTH="5"/><FIELD attrname="dataInreg" fieldtype="string" WIDTH="33"/><FIELD attrname="provenienta" fieldtype="string" WIDTH="127"/><FIELD attrname="adresa" fieldtype="string" WIDTH="127"/><FIELD attrname="tipDocumentID" fieldtype="string" WIDTH="36"/><FIELD attrname="descriere" fieldtype="string" WIDTH="304"/><FIELD attrname="stareDocument" fieldtype="string" WIDTH="1"/><FIELD attrname="nivelCurent" fieldtype="string" WIDTH="127"/><FIELD attrname="utilizatorVizaCFPID" fieldtype="string" WIDTH="36"/><FIELD attrname="dataVizaCFP" fieldtype="string" WIDTH="33"/></FIELDS><PARAMS/></METADATA><ROWDATA/></DATAPACKET>
+]]></Skeleton></XmlTransformation>

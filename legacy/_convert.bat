@@ -1,0 +1,1 @@
+call "c:\Program Files (x86)\Borland\Delphi7\Bin\convert.exe" -i -t -s *.dfm

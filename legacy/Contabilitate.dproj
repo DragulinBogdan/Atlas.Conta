@@ -1,0 +1,723 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{BCC689CB-C1D3-40CF-A02B-90C37A1636ED}</ProjectGuid>
+			<MainSource>Contabilitate.dpr</MainSource>
+			<Base>True</Base>
+			<Config Condition="'$(Config)'==''">Debug</Config>
+			<TargetedPlatforms>1</TargetedPlatforms>
+			<AppType>Application</AppType>
+			<FrameworkType>VCL</FrameworkType>
+			<ProjectVersion>13.4</ProjectVersion>
+			<Platform Condition="'$(Platform)'==''">Win32</Platform>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+			<Base_Win32>true</Base_Win32>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_1)'!=''">
+			<Cfg_1>true</Cfg_1>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+			<Cfg_1_Win32>true</Cfg_1_Win32>
+			<CfgParent>Cfg_1</CfgParent>
+			<Cfg_1>true</Cfg_1>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
+			<Cfg_2>true</Cfg_2>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
+			<Cfg_2_Win32>true</Cfg_2_Win32>
+			<CfgParent>Cfg_2</CfgParent>
+			<Cfg_2>true</Cfg_2>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;Data.Win;VclTee;$(DCC_Namespace)</DCC_Namespace>
+			<DCC_DcuOutput>..\DCU</DCC_DcuOutput>
+			<DCC_UsePackage>rtl;$(DCC_UsePackage)</DCC_UsePackage>
+			<DCC_Define>MSWINDOWS;RELEASE;$(DCC_Define)</DCC_Define>
+			<Manifest_File>None</Manifest_File>
+			<Icon_MainIcon>Contabilitate_Icon1.ico</Icon_MainIcon>
+			<DCC_UnitSearchPath>..\Comps\AutoUpdate;..\Comps\Common;..\Comps\DBSum;..\Comps\dxCustom;..\Comps\FlexCel;..\Comps\frxComps;..\Comps\GraphicEx;..\Comps\HtmlParse;..\Comps\MSSqlParams;..\Comps\zLibEx;..\Comps\FlexCel\Source;..\Comps\RapExplorerD7;.\Wrappers;..\DCU;D:\Dev\Pas\Taxe\Comp\cxCustom;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<VerInfo_AutoGenVersion>true</VerInfo_AutoGenVersion>
+			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+			<VerInfo_MinorVer>1</VerInfo_MinorVer>
+			<VerInfo_MajorVer>3</VerInfo_MajorVer>
+			<VerInfo_Release>1</VerInfo_Release>
+			<VerInfo_Build>379</VerInfo_Build>
+			<VerInfo_Keys>CompanyName=Advanced Technology Systems;FileDescription=Contabilitate;FileVersion=3.1.1.379;InternalName=Contabilitate;LegalCopyright=(c) by ATS Targoviste, Romania;ProductName=Contabilitate;ProductVersion=3.1.1.378;Comments=Aplicatie integrata de contabilitate</VerInfo_Keys>
+			<VerInfo_Locale>1048</VerInfo_Locale>
+			<DCC_ExeOutput>..\EXE</DCC_ExeOutput>
+			<DCC_S>false</DCC_S>
+			<DCC_WriteableConstants>true</DCC_WriteableConstants>
+			<DCC_K>false</DCC_K>
+			<DCC_F>false</DCC_F>
+			<DCC_ImageBase>00400000</DCC_ImageBase>
+			<DCC_E>false</DCC_E>
+			<DCC_N>false</DCC_N>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base_Win32)'!=''">
+			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
+			<VerInfo_Locale>1033</VerInfo_Locale>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+			<Debugger_RunParams>/serverName:192.168.19.74 /dataBaseName:contabilitate_2024 /toConsole /logSQL /userName:admin /userPwd:admin</Debugger_RunParams>
+			<DCC_DebugInformation>false</DCC_DebugInformation>
+			<DCC_ImportedDataReferences>false</DCC_ImportedDataReferences>
+			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+			<DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<VerInfo_Build>379</VerInfo_Build>
+			<VerInfo_Keys>CompanyName=Advanced Technology Systems;FileDescription=Contabilitate;FileVersion=3.1.1.379;InternalName=Contabilitate;LegalCopyright=(c) by ATS Targoviste, Romania;ProductName=Contabilitate;ProductVersion=3.1.1.378;Comments=Aplicatie integrata de contabilitate</VerInfo_Keys>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+			<DCC_UnitSearchPath>D:\Dev\Pas\Conta\Comps\WebView2\source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<Debugger_RunParams>/serverName:192.168.18.208 /databaseName:timisoara_jur /userName:admin /userPwd /toConsole /logSQL</Debugger_RunParams>
+			<Debugger_DebugSourcePath>C:\Program Files (x86)\Embarcadero\RAD Studio\9.0\source\data\dbx\;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
+			<VerInfo_Locale>1033</VerInfo_Locale>
+			<DCC_DebugDCUs>true</DCC_DebugDCUs>
+			<DCC_Define>DEBUG;AUTOSETPARENT;$(DCC_Define)</DCC_Define>
+			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
+			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+			<DCC_WriteableConstants>true</DCC_WriteableConstants>
+		</PropertyGroup>
+		<ItemGroup>
+			<DelphiCompile Include="$(MainSource)">
+				<MainSource>MainSource</MainSource>
+			</DelphiCompile>
+			<DCCReference Include="Web\WebNavUtils.pas"/>
+			<DCCReference Include="Conta\IstoricNota.pas"/>
+			<DCCReference Include="ImportCurs.pas"/>
+			<DCCReference Include="svnInfo.pas"/>
+			<DCCReference Include="StartUp\LogUnit.pas"/>
+			<DCCReference Include="CommonDBVar.pas"/>
+			<DCCReference Include="FrRapoarte\frxPatchReport.pas"/>
+			<DCCReference Include="FrRapoarte\frxFunction.pas"/>
+			<DCCReference Include="FrRapoarte\frxFuncDate.pas"/>
+			<DCCReference Include="FrRapoarte\frxFuncNum.pas"/>
+			<DCCReference Include="FrRapoarte\frxFuncSQL.pas"/>
+			<DCCReference Include="FrRapoarte\frxFuncStr.pas"/>
+			<DCCReference Include="FrRapoarte\frxrcAddFunction.pas"/>
+			<DCCReference Include="Conta\NoteUnitNew.pas">
+				<Form>FrmListaNoteNew</Form>
+			</DCCReference>
+			<DCCReference Include="ATSZDBUtils.pas"/>
+			<DCCReference Include="Conta\CulegereNoteUnit.pas">
+				<Form>FmCulegereNote</Form>
+			</DCCReference>
+			<DCCReference Include="DateUnit.pas">
+				<Form>frmData</Form>
+				<DesignClass>TDataModule</DesignClass>
+			</DCCReference>
+			<DCCReference Include="Conta\PlanConturiUnit.pas">
+				<Form>FrmPlanConturi</Form>
+			</DCCReference>
+			<DCCReference Include="MainUnit.pas">
+				<Form>mainForm</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\BalantaUnit.pas">
+				<Form>FrmBalanta</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\FisaContUnit.pas">
+				<Form>frmFisaCont</Form>
+			</DCCReference>
+			<DCCReference Include="SaveTemplateUnit.pas">
+				<Form>frmSaveTemplate</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\ContUnit.pas">
+				<Form>fmContProp</Form>
+			</DCCReference>
+			<DCCReference Include="ConcurentUsersUnit.pas">
+				<Form>FrmConcurentUsers</Form>
+			</DCCReference>
+			<DCCReference Include="Nomenclatoare\IntretinNmclUnit.pas">
+				<Form>fmIntretinereNmcl</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\JurnaleUnit.pas">
+				<Form>fmJurnale</Form>
+			</DCCReference>
+			<DCCReference Include="UtilizatoriUnit.pas">
+				<Form>fmUtilizatori</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\StockUnit.pas">
+				<Form>fmStock</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\SelStockUnit.pas">
+				<Form>fmSelStock</Form>
+			</DCCReference>
+			<DCCReference Include="ActulUnit.pas">
+				<Form>fmActual</Form>
+			</DCCReference>
+			<DCCReference Include="FunctionUnit.pas">
+				<Form>fmFunctii</Form>
+			</DCCReference>
+			<DCCReference Include="AlegUtilizatoriUnit.pas">
+				<Form>fmAlegeUtilizator</Form>
+			</DCCReference>
+			<DCCReference Include="AdaugareColoanaUnit.pas">
+				<Form>fmAdaugareColoana</Form>
+			</DCCReference>
+			<DCCReference Include="Decontari\DecontariUnit.pas">
+				<Form>fmDecontari</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\TCVUnit.pas">
+				<Form>frmTCV</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\cxTCVUnit.pas">
+				<Form>frmcxTcv</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\TCVUnitateUnit.pas">
+				<Form>fmSituatieUnitate</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\FiltruUnit.pas">
+				<Form>FrmFiltru</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\IntretinereCaseUnit.pas">
+				<Form>frmIntretinCasa</Form>
+			</DCCReference>
+			<DCCReference Include="AutoNoteContUnit.pas">
+				<Form>fmAutoNoteCont</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\AcceptTransferUnit.pas">
+				<Form>frmAcceptTransfer</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\ConflictUnit.pas">
+				<Form>frmConflict</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\MaintenanceUnit.pas">
+				<Form>FrmSettings</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\RegistruUnit.pas">
+				<Form>FrmRegistru</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\RegistruUnitEx.pas">
+				<Form>FrmRegistruEx</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\SyncProgressUnit.pas">
+				<Form>frmProgress</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\CasaUnit.pas">
+				<Form>frmCasa</Form>
+			</DCCReference>
+			<DCCReference Include="Decontari\DefalcareDecontareUnit.pas">
+				<Form>fmDefalcareDecontare</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\DocumenteUnit.pas">
+				<Form>fmDocumente</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\DetaliiDocumUnit.pas">
+				<Form>FmDetaliiDocum</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\fmPlataDocumUnit.pas">
+				<Form>fmPlataDocum</Form>
+			</DCCReference>
+			<DCCReference Include="ChangePassUnit.pas">
+				<Form>fmChangePass</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\CommonCasa.pas"/>
+			<DCCReference Include="CasaBanca\VizualizareUnit.pas">
+				<Form>FrmListaCasa</Form>
+			</DCCReference>
+			<DCCReference Include="ReconciliereDocumUnit.pas">
+				<Form>fmReconciliere</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\ContainerUnit.pas">
+				<Form>frmCasaContainer</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\Proiecte\FunctieRepUnit.pas">
+				<Form>frmFunctieRep</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\Proiecte\OrganigramaUnit.pas">
+				<Form>FrmOrganigrama</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\fmSelectieDeAngajatUnit.pas">
+				<Form>fmSelectieDeAngajat</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\fmSelectieCFUnit.pas">
+				<Form>fmSelectieCF</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\fmSelectieCEUnit.pas">
+				<Form>fmSelectieCE</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\fmSelectieRepartitorUnit.pas">
+				<Form>fmSelectieRepartitor</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\UrmarireExecutieUnit.pas">
+				<Form>fmUrmarireExecutie</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AngajamenteGlobaleUnit.pas">
+				<Form>fmAngajamenteGlobale</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\NoteEronateUnit.pas">
+				<Form>fmNoteEronate</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\Filtru\UnitFormule.pas">
+				<Form>FrmFormula</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\Filtru\UnitParametrii.pas">
+				<Form>FrmParametrii</Form>
+			</DCCReference>
+			<DCCReference Include="ReunireRepUnit.pas">
+				<Form>fmReunireRep</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\Decontari\SituatieDeconturiUnit.pas">
+				<Form>FrmSituatieDeconturi</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\Errors\ErrorUnit.pas">
+				<Form>frmSearchErrors</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\AsocUtilizUnit.pas">
+				<Form>frmAsocUtilizatori</Form>
+			</DCCReference>
+			<DCCReference Include="ReconciliereDecontariUnit.pas">
+				<Form>FrmReconcilereDecontari</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\PreluareExcelUnit.pas">
+				<Form>fmPreluareExcel</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\Decontari\DetaliiDecontUnit.pas">
+				<Form>frmDetaliiDecont</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\ImportCasaUnit.pas">
+				<Form>frmImportCasa</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\Decontari\DecontPickUnit.pas">
+				<Form>frmDecontPick</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\MessagesUnit.pas"/>
+			<DCCReference Include="Raportare\ChouseReportUnit.pas">
+				<Form>FrmChouseReport</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\TransferUnit.pas">
+				<Form>frmTransfer</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\Filtru\UnitPerioade.pas">
+				<Form>frmSelectPeriod</Form>
+			</DCCReference>
+			<DCCReference Include="GenerareOPUnit.pas">
+				<Form>fmGenerareOP</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\UpdStructure.pas"/>
+			<DCCReference Include="CasaBanca\Decontari\AlegDecontUnit.pas">
+				<Form>frmSample</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\DirectiiUnit.pas">
+				<Form>fmBugetDirectii</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\ProiectUnit.pas">
+				<Form>fmBugetProiect</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\BugetContainer.pas">
+				<Form>fmBugetContainer</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlegAngUnit.pas">
+				<Form>fmBugetAlegAng</Form>
+			</DCCReference>
+			<DCCReference Include="AntetUnit.pas">
+				<Form>fmIntretinereAntet</Form>
+			</DCCReference>
+			<DCCReference Include="DelegatiUnit.pas">
+				<Form>frmDelegati</Form>
+			</DCCReference>
+			<DCCReference Include="MijloaceTransportUnit.pas">
+				<Form>frmMijTransport</Form>
+			</DCCReference>
+			<DCCReference Include="Anexe\fmAnexeBilantUnit.pas">
+				<Form>fmAnexeBilant</Form>
+			</DCCReference>
+			<DCCReference Include="NormalizareNomUnit.pas">
+				<Form>frmNormalizareNom</Form>
+			</DCCReference>
+			<DCCReference Include="DetaliiMaterialUnit.pas">
+				<Form>frmSetareDetaliiNomenclator</Form>
+			</DCCReference>
+			<DCCReference Include="Persistenta\PersistSetariUnit.pas"/>
+			<DCCReference Include="Persistenta\PersistGridSettings.pas"/>
+			<DCCReference Include="MInvest\ListaContracteParinte.pas">
+				<Form>frmListaContracteP</Form>
+			</DCCReference>
+			<DCCReference Include="MInvest\ModificaContract.pas">
+				<Form>frmModificareContract</Form>
+			</DCCReference>
+			<DCCReference Include="MInvest\MInvestCommon.pas"/>
+			<DCCReference Include="CasaBanca\ImperechereFact.pas">
+				<Form>frmSelectieFCT</Form>
+			</DCCReference>
+			<DCCReference Include="Nomenclatoare\IntretinereTipProduse.pas">
+				<Form>frmIntretinereTipProd</Form>
+			</DCCReference>
+			<DCCReference Include="Nomenclatoare\IntretinTipMateriale.pas">
+				<Form>frmIntretinereTipMat</Form>
+			</DCCReference>
+			<DCCReference Include="Nomenclatoare\IntretinTipuriStocProdus.pas">
+				<Form>frmIntertinTipStocProdus</Form>
+			</DCCReference>
+			<DCCReference Include="Nomenclatoare\IntretinTipStoc.pas">
+				<Form>frmIntretinTipStoc</Form>
+			</DCCReference>
+			<DCCReference Include="Nomenclatoare\InflProduseUnit.pas">
+				<Form>frmInflTipProduse</Form>
+			</DCCReference>
+			<DCCReference Include="AboutUnit.pas">
+				<Form>frmAbout</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\UnitInchiderePer.pas">
+				<Form>frmInchiderePerioada</Form>
+			</DCCReference>
+			<DCCReference Include="UnitSelectCurs.pas">
+				<Form>frmSelectCursValutar</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\UnitStocPerioada.pas">
+				<Form>fmCopyStock</Form>
+			</DCCReference>
+			<DCCReference Include="TipRepartitori.pas">
+				<Form>frmTipuriRepartitori</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\BugetCompareUnit.pas">
+				<Form>frmBugetComparare</Form>
+			</DCCReference>
+			<DCCReference Include="Organizare_Interna\OI_UnitatiTipuri.pas">
+				<Form>frmOIUnitatiTipuri</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\BxPlanificare.pas">
+				<Form>frmBxPlanificare</Form>
+			</DCCReference>
+			<DCCReference Include="Organizare_Interna\OI_Proiecte.pas">
+				<Form>frmOIProiecte</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\BgPlanUnit.pas">
+				<Form>frmBGPlan</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\CTipuriDocumente.pas">
+				<Form>frmCTipuriDocumente</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\BxPlanContainer.pas">
+				<Form>frmBxPlanContainer</Form>
+			</DCCReference>
+			<DCCReference Include="Organizare_Interna\OI_Unitati.pas">
+				<Form>frmOIUnitatiNew</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\Gest_StockProd.pas">
+				<Form>frmGestStockProd</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\Gest_ModifyDocum.pas">
+				<Form>frmGEST_ModifyDocum</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopAngajamente.pas">
+				<Form>frmAlopAngajamente</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopAngVizualizare.pas">
+				<Form>frmAlopAngajamenteVizualizare</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopLichidare.pas">
+				<Form>frmAlopLichidare</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopObligatii.pas">
+				<Form>frmAlopObligatii</Form>
+			</DCCReference>
+			<DCCReference Include="OERepartitoriUnit.pas">
+				<Form>FrmOERepartitori</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopOrdList.pas">
+				<Form>frmALOPListaOrd</Form>
+			</DCCReference>
+			<DCCReference Include="RepartitorContBanca.pas">
+				<Form>frmRepartitorContBanca</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopDisponibil.pas">
+				<Form>frmAlopDisponibil</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\NoteInchidereUnit.pas">
+				<Form>frmNoteInchidere</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\BugetImpEXCEL.pas">
+				<Form>frmBxImportEXCEL</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopOrdVizualizare.pas">
+				<Form>frmAlopOrdVizualizare</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopIntretinereConturi.pas">
+				<Form>frmAlopIntretinereCont</Form>
+			</DCCReference>
+			<DCCReference Include="ImperechereUnit.pas">
+				<Form>frmImperecheri</Form>
+			</DCCReference>
+			<DCCReference Include="GenerarePlataUnit.pas">
+				<Form>frmGenerarePlata</Form>
+			</DCCReference>
+			<DCCReference Include="Anexe\AnexeCentralizare.pas">
+				<Form>frmAnexeCentralizare</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\DefalcareNoteImperecheate.pas">
+				<Form>frmDefalcareNote</Form>
+			</DCCReference>
+			<DCCReference Include="Conta\ImperechereNote.pas">
+				<Form>frmImperechereNote</Form>
+			</DCCReference>
+			<DCCReference Include="Anexe\AnexeCulegere.pas">
+				<Form>frmAnexeCulegere</Form>
+			</DCCReference>
+			<DCCReference Include="CasaBanca\CBPozitie.pas">
+				<Form>frmCBPozitie</Form>
+			</DCCReference>
+			<DCCReference Include="Raportare\RapImplicit.pas">
+				<Form>frmRapImplicit</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\BugetFisaUnit.pas">
+				<Form>frmFisaBugetara</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\fmContareBugetaraUnit.pas">
+				<Form>fmContareBugetara</Form>
+			</DCCReference>
+			<DCCReference Include="Anexe\BugetImpAnexe.pas">
+				<Form>frmImportAnexeXLS</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopInfo.pas">
+				<Form>frmALOPInfo</Form>
+			</DCCReference>
+			<DCCReference Include="Tethys\TethysAtlasWS.pas"/>
+			<DCCReference Include="Tethys\ImportTethys.pas">
+				<Form>frmSelectDM</Form>
+			</DCCReference>
+			<DCCReference Include="frmProgressUnit.pas">
+				<Form>frmProgressRap</Form>
+			</DCCReference>
+			<DCCReference Include="ATLASSIUtils.pas"/>
+			<DCCReference Include="FrRapoarte\frAtlasFunctions.pas"/>
+			<DCCReference Include="RapInclude.pas"/>
+			<DCCReference Include="imperechereTert.pas">
+				<Form>frmImperechereTert</Form>
+			</DCCReference>
+			<DCCReference Include="VIEScheckVatPort.pas"/>
+			<DCCReference Include="Organizare_Interna\OI_ProiecteTipuri.pas">
+				<Form>frmOITipuriProiecte</Form>
+			</DCCReference>
+			<DCCReference Include="Anexe\AnexeParametrii.pas">
+				<Form>frmIntretinAnexeParametrii</Form>
+			</DCCReference>
+			<DCCReference Include="Anexe\AnexeParametriiCul.pas">
+				<Form>frmAnexeParametriiCul</Form>
+			</DCCReference>
+			<DCCReference Include="Anexe\AnexeParametriiLista.pas"/>
+			<DCCReference Include="frmPreviewAnexaUnit.pas">
+				<Form>frmAnexePreview</Form>
+			</DCCReference>
+			<DCCReference Include="Anexe\AnexeParametriiAlocare.pas">
+				<Form>frmAsocParam</Form>
+			</DCCReference>
+			<DCCReference Include="Anexe\AnexeCopy.pas">
+				<Form>frmAnexaCopy</Form>
+			</DCCReference>
+			<DCCReference Include="BarCode\DataMatrixBarcode.pas"/>
+			<DCCReference Include="BarCode\dmtx.pas"/>
+			<DCCReference Include="BarCode\configBarCode.pas">
+				<Form>frmConfigBarCode</Form>
+			</DCCReference>
+			<DCCReference Include="BarCode\GenCoduriBara.pas">
+				<Form>frmGenCoduriBara</Form>
+			</DCCReference>
+			<DCCReference Include="BarCode\gestLabels.pas">
+				<Form>frmGestLabels</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\Gest_ModelNota.pas">
+				<Form>frmGestModelNota</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\NewModificareDocUnit.pas">
+				<Form>frmModificDocument</Form>
+			</DCCReference>
+			<DCCReference Include="Nomenclatoare\IntretinTipuriStocCategorii.pas">
+				<Form>frmIntertinStocCategorii</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\InflStocCategorie.pas">
+				<Form>frmCategoriipeStoc</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\InflProduseFields.pas">
+				<Form>frmInflProdusFields</Form>
+			</DCCReference>
+			<DCCReference Include="Gestiune\UnitAddSerii.pas">
+				<Form>frmAddSerii</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\SelBugetUnit.pas">
+				<Form>frmSelBuget</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopDispozitie.pas">
+				<Form>frmAlopDispozitie</Form>
+			</DCCReference>
+			<DCCReference Include="Buget\AlopDispVizualizare.pas">
+				<Form>frmAlopDispVizualizare</Form>
+			</DCCReference>
+			<DCCReference Include="Raportare\OpenProgressUnit.pas">
+				<Form>FrmOpenProgress</Form>
+			</DCCReference>
+			<DCCReference Include="Contracte\uContracte.pas">
+				<Form>frmContracte</Form>
+			</DCCReference>
+			<DCCReference Include="Contracte\uContracteEdit.pas">
+				<Form>frmContractEdit</Form>
+			</DCCReference>
+			<DCCReference Include="CommonRepository.pas">
+				<Form>frmRepo</Form>
+			</DCCReference>
+			<DCCReference Include="frmOERepartioriEditUnit.pas">
+				<Form>frmOERepartitoriEdit</Form>
+			</DCCReference>
+			<DCCReference Include="Repartitori\fmGrupaProiecteUnit.pas">
+				<Form>fmGrupaProiecte</Form>
+			</DCCReference>
+			<DCCReference Include="Repartitori\uMFinante.pas"/>
+			<DCCReference Include="Repartitori\frmMFinanteQuestionUnit.pas">
+				<Form>frmMFinanteQuestion</Form>
+			</DCCReference>
+			<DCCReference Include="Repartitori\uVies.pas"/>
+			<DCCReference Include="Repartitori\frmRepartitoriSelectUnit.pas">
+				<Form>frmRepartitoriSelect</Form>
+			</DCCReference>
+			<DCCReference Include="Repartitori\frmMutareRepUnit.pas">
+				<Form>frmMutareRep</Form>
+			</DCCReference>
+			<DCCReference Include="Contracte\frmSelectieContractUnit.pas">
+				<Form>frmSelectieContract</Form>
+			</DCCReference>
+			<DCCReference Include="Contracte\frmSelectieDosarUnit.pas">
+				<Form>frmSelectieDosar</Form>
+			</DCCReference>
+			<DCCReference Include="Common\PatchExcel.pas"/>
+			<DCCReference Include="conta\frmContaSolduriInitialeUnit.pas">
+				<Form>frmContaSolduriInitiale</Form>
+			</DCCReference>
+			<DCCReference Include="conta\frmContaTranspunereAnUnit.pas">
+				<Form>frmContaTranspunereAn</Form>
+			</DCCReference>
+			<DCCReference Include="MInvest\InvestOI_Proiecte.pas">
+				<Form>frmOIProiecteInvest</Form>
+			</DCCReference>
+			<DCCReference Include="MInvest\ListaContracte.pas">
+				<Form>frmListaContracte</Form>
+			</DCCReference>
+			<DCCReference Include="Decontari\DecontariCompensareUnit.pas">
+				<Form>fmCompensari</Form>
+			</DCCReference>
+			<DCCReference Include="FisaDetaliu\frmFisaDetaliuUnit.pas">
+				<Form>frmFisaDetaliu</Form>
+			</DCCReference>
+			<DCCReference Include="FisaDetaliu\FisaDetaliuUnit.pas"/>
+			<DCCReference Include="Common\regionalSettingsUnit.pas"/>
+			<DCCReference Include="Gestiune\unitProiecteTCV.pas">
+				<Form>fmProiecteTCV</Form>
+			</DCCReference>
+			<DCCReference Include="Extrase\importExtraseUnit.pas"/>
+			<DCCReference Include="Extrase\frmPreluareExtraseUnit.pas">
+				<Form>frmPreluareExtrase</Form>
+			</DCCReference>
+			<DCCReference Include="Wrappers\formsUtilsUnit.pas"/>
+			<DCCReference Include="Integrare\RepartitorAnafUnit.pas"/>
+			<DCCReference Include="frmIntretinereJudete.pas">
+				<Form>TfrmIntretinereJudete</Form>
+			</DCCReference>
+			<DCCReference Include="Integrare\TFormFacturi.pas"/>
+			<DCCReference Include="Unit2.pas">
+				<Form>FormAlop</Form>
+			</DCCReference>
+			<DCCReference Include="AlopAngDisponibil.pas"/>
+			<DCCReference Include="Unit11.pas"/>
+			<RcItem Include="D:\Out\DLL\libeay32.dll">
+				<ContainerId>ResourceItem</ContainerId>
+				<ResourceType>DLL</ResourceType>
+				<ResourceId>libeay32</ResourceId>
+			</RcItem>
+			<RcItem Include="D:\Out\DLL\WebView2Loader.dll">
+				<ContainerId>ResourceItem</ContainerId>
+				<ResourceType>DLL</ResourceType>
+				<ResourceId>WebView2Loader</ResourceId>
+			</RcItem>
+			<RcItem Include="D:\Out\DLL\ssleay32.dll">
+				<ContainerId>ResourceItem</ContainerId>
+				<ResourceType>DLL</ResourceType>
+				<ResourceId>ssleay32</ResourceId>
+			</RcItem>
+			<RcItem Include="D:\Out\DLL\ntwdblib.dll">
+				<ContainerId>ResourceItem</ContainerId>
+				<ResourceType>DLL</ResourceType>
+				<ResourceId>ntwdblib</ResourceId>
+			</RcItem>
+			<RcItem Include="D:\Out\DLL\msvcr71.dll">
+				<ContainerId>ResourceItem</ContainerId>
+				<ResourceType>DLL</ResourceType>
+				<ResourceId>msvcr71</ResourceId>
+			</RcItem>
+			<BuildConfiguration Include="Debug">
+				<Key>Cfg_2</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Delphi.Personality>
+					<Source>
+						<Source Name="MainSource">Contabilitate.dpr</Source>
+					</Source>
+					<VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
+						<VersionInfo Name="AutoIncBuild">True</VersionInfo>
+						<VersionInfo Name="MajorVer">3</VersionInfo>
+						<VersionInfo Name="MinorVer">1</VersionInfo>
+						<VersionInfo Name="Release">1</VersionInfo>
+						<VersionInfo Name="Build">500</VersionInfo>
+						<VersionInfo Name="Debug">False</VersionInfo>
+						<VersionInfo Name="PreRelease">False</VersionInfo>
+						<VersionInfo Name="Special">False</VersionInfo>
+						<VersionInfo Name="Private">False</VersionInfo>
+						<VersionInfo Name="DLL">False</VersionInfo>
+						<VersionInfo Name="Locale">1048</VersionInfo>
+						<VersionInfo Name="CodePage">1250</VersionInfo>
+					</VersionInfo>
+					<VersionInfoKeys>
+						<VersionInfoKeys Name="CompanyName">Advanced Technology Systems</VersionInfoKeys>
+						<VersionInfoKeys Name="FileDescription">Contabilitate</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">3.1.1.500</VersionInfoKeys>
+						<VersionInfoKeys Name="InternalName">Contabilitate</VersionInfoKeys>
+						<VersionInfoKeys Name="LegalCopyright">(c) by ATS Targoviste, Romania</VersionInfoKeys>
+						<VersionInfoKeys Name="LegalTrademarks"/>
+						<VersionInfoKeys Name="OriginalFilename"/>
+						<VersionInfoKeys Name="ProductName">Contabilitate</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductVersion">3.1.1.352</VersionInfoKeys>
+						<VersionInfoKeys Name="Comments">Aplicatie integrata de contabilitate</VersionInfoKeys>
+					</VersionInfoKeys>
+					<Excluded_Packages>
+						<Excluded_Packages Name="D:\Out\CompXE2\Win32\Release\BPL\FlexCelXE2_DESIGN.bpl">FlexCel Studio for VCL - Design Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dclofficexp160.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dclIndyCore160.bpl">Indy 10 Core Design Time</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dclIndyProtocols160.bpl">Indy 10 Protocols Design Time</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dcloffice2k160.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dclIPIndyImpl160.bpl">IP Abstraction Indy Implementation Design Time</Excluded_Packages>
+					</Excluded_Packages>
+				</Delphi.Personality>
+				<Platforms>
+					<Platform value="Win64">False</Platform>
+					<Platform value="Win32">True</Platform>
+				</Platforms>
+			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
+		</ProjectExtensions>
+		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')" Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
+		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+	</Project>

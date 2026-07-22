@@ -1,0 +1,68 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
+using DevExpress.ExpressApp.DC;
+using DevExpress.Persistent.Base;
+using DevExpress.Persistent.BaseImpl.EF;
+
+namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
+
+// Nucleul generic (deciziile 1, 2, 22). Motoarele de stoc și contare consumă
+// DOAR această clasă și DocumentDetaliu — orice câmp de aici e justificat de o
+// formulă de stoc, o regulă contabilă sau un motor transversal (testul bazei).
+[NavigationItem("Documente")]
+public abstract class Document : BaseObject {
+    public virtual string Numar { get; set; }
+    public virtual DateOnly Data { get; set; }
+
+    public virtual Guid PredatorId { get; set; }
+    public virtual Repartitor Predator { get; set; }
+    public virtual Guid PrimitorId { get; set; }
+    public virtual Repartitor Primitor { get; set; }
+
+    // Decizia 14: Draft → Operat → (Stornat); la operare motorul scrie registrele.
+    public virtual StareDocument Stare { get; set; }
+    public virtual DateTime? DataOperare { get; set; }
+
+    // Decizia 17: legătura conex sursă→generat (ex. FacturaIntrare → NIR);
+    // anularea operează pe tot grupul (00 §8).
+    public virtual Guid? DocumentSursaId { get; set; }
+    public virtual Document DocumentSursa { get; set; }
+    public virtual bool Autogenerat { get; set; }
+
+    [DevExpress.ExpressApp.DC.Aggregated]
+    public virtual ObservableCollection<DocumentDetaliu> Detalii { get; set; } = new();
+
+    [NotMapped]
+    public decimal Total => Detalii.Sum(d => d.Valoare);
+}
+
+// Bază concretă: NIR/BonConsum/NotaTransfer o folosesc direct (testul bazei §6);
+// derivate de detaliu există doar unde schema diferă.
+public class DocumentDetaliu : BaseObject {
+    [Browsable(false)]
+    public virtual Guid DocumentId { get; set; }
+    public virtual Document Document { get; set; }
+
+    // Cheia contării; Clasa (cheia regulilor de stoc) = TipMaterial.Clasa.
+    public virtual Guid TipMaterialId { get; set; }
+    public virtual TipMaterial TipMaterial { get; set; }
+
+    // Cheia stocului (decizia 13); null pe tipurile fără stoc.
+    public virtual Guid? LotId { get; set; }
+    public virtual Lot Lot { get; set; }
+
+    // SEMNATĂ — limbajul motorului e semn × cantitate; LDI poartă direcția în semn.
+    public virtual decimal Cantitate { get; set; }
+
+    // Valoarea de postare în registre (stoc valoric + note) — capătul lanțului
+    // de valori; derivatele o calculează (testul bazei §3).
+    public virtual decimal Valoare { get; set; }
+
+    // Ancoră spre execuția bugetară (modul separat) — testul bazei §7.1.
+    public virtual Guid? AngajamentId { get; set; }
+    public virtual Angajament Angajament { get; set; }
+
+    // Set parțial; rezolvarea completă se face la generarea registrelor (decizia 15).
+    public virtual Dimensiuni Dimensiuni { get; set; } = new();
+}

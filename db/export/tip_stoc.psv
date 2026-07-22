@@ -1,0 +1,12 @@
+ID_GEST_TIP_STOC|DENUMIRE|DESCRIERE|TIP_DESCARCARE|DATA_CALCUL|ID_PARINTE|id_gest_nivel_stoc|id_gest_grupa_stoc
+----------------|--------|---------|--------------|-----------|----------|------------------|------------------
+1|Stoc magazie||1|NULL|NULL|3|1
+2|Stoc consum|Stocul contine marfa aflata in custodie la client|1|NULL|NULL|NULL|NULL
+3|Stoc furnizor|Stocul contine marfa in custodie de la furnizor|1|NULL|NULL|NULL|NULL
+4|Stoc marfa facturata|Stocul contine marfa facturata catre client|1|NULL|NULL|NULL|NULL
+7|Stoc marfa neterminata|Stocul contine neterminata in procesul de productie|1|NULL|NULL|NULL|NULL
+8|Stoc folosinta|Stocul contine obiectele de inventar date in folosinta|1|NULL|NULL|NULL|1
+10|Stoc Casari|Stoc obiecte casate|NULL|NULL|NULL|NULL|NULL
+30|Stoc Marfuri|Stoc Marfuri|NULL|NULL|NULL|1|4
+31|Stoc Custodie|Stoc Custodie|1|NULL|NULL|1|4
+32|Stoc Gratuit|Stoc Gratuit|NULL|NULL|NULL|-1|-1

@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="EasyTest" />
+    <BuildType Name="Release" />
+  </Configurations>
+  <Project Path="Atlas.Conta.BackOffice.Blazor.Server/Atlas.Conta.BackOffice.Blazor.Server.csproj" />
+  <Project Path="Atlas.Conta.BackOffice.Module/Atlas.Conta.BackOffice.Module.csproj" />
+</Solution>
