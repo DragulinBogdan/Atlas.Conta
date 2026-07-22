@@ -576,6 +576,36 @@ Raport de producție.
     aditiv), JUDETE/LOCALITATI/valute, importul FCT (Tethys) și extrasele de
     trezorerie (la pasul 5, ca API).
 
+35. **Pivot privat-first: privatul devine sursa principală de cerințe;
+    legacy-ul pierde statutul canonic.** Pasul 4 a încasat valoarea ancorei
+    legacy (reconcilierea a validat modelul pe date reale); direcția se ia de
+    acum din produsul privat — decizia 29 promovată din „direcție" în mod de
+    lucru. Tranșări:
+    (a) **Importul din legacy = proiect separat, viitor**, tratat ca import
+    din orice sursă; unealta Migrare îngheață ca prim prototip de conector;
+    profilul bugetar rămâne pachet de seed funcțional (dovada agnosticismului
+    motorului); modulele bugetare (ALOP/angajamente/execuție) se reiau după ce
+    aplicația privată e rotundă — structura documentelor se așteaptă să ducă
+    greul și acolo.
+    (b) **1C primește statutul deciziei 21** (evidență/direcție, niciodată
+    canonic): MD-uri + view-uri peste structura generică
+    (_DocumentXXX/_CatalogXXX) + bază istorică consistentă (ideal un an fiscal
+    complet, cu închiderile de TVA) = ținta de reconciliere a profilului
+    privat și primul conector al proiectului de import.
+    (c) **SAF-T (D406) + e-Factura (UBL) + D394 = checklist orizontal de
+    completitudine** a modelului (atribute parteneri/conturi/tipuri de TVA),
+    NU modele de date; librăria e-Factura (API+UBL) și exportul SAF-T din 1C
+    există ca proiecte izolate ale utilizatorului — se integrează la momentul
+    lor.
+    (d) **Tenancy: bază-per-client** (profil contabil per bază) — rezolvă
+    scalarea produsului și limitarea 25f fără schemă nouă. Disciplina de hot
+    path rămâne: raportarea trăiește pe registre; nicio interogare polimorfă
+    pe `Document` în fluxuri calde.
+    (e) Ordinea fazei private: **P1** = profil privat + TVA structural
+    (nomenclator TipTva mapat pe codurile SAF-T/D394, defalcare 4426/4427);
+    **P2** = FacturaIesire completă cu descărcare de gestiune; apoi polish XAF
+    pe modelul stabilizat; pasul 5 (API+React) neschimbat.
+
 ```
 /legacy   → surse Delphi (.pas, .dfm) + scripturi SQL vechi
 /db       → se poate export schemă (CREATE) + CONȚINUTUL tabelelor de configurare
@@ -632,6 +662,18 @@ Raport de producție.
 - **3d. Validare transversală** (EXECUTAT, decizia 33 — pasul 3 ÎNCHIS, mai
   puțin BPR rezervat): dimensiuni obligatorii per cont, obligativități per tip
   (PoliticaValidare), invariantele imperecherii (erau în 31d).
+
+### Faza privat — P-felii (decizia 35; fără ancoră legacy)
+
+- **P1. Profil privat + TVA structural** (zonă sensibilă → design în
+  `docs/privat/p1-tva-design.md`): nomenclator `TipTva` (cotă × regim,
+  conturile de TVA ca date, mapări SAF-T/D394), `TipTvaId` + `ValoareTva` pe
+  baza `DocumentDetaliu`, `PoliticaTva` per tip de document, profilul contabil
+  ca selecție de seed per bază + plan OMFP 1802; ModelCheck pe profilul privat.
+- **P2. FacturaIesire completă la privat**: descărcare de gestiune (candidat:
+  document conex de descărcare — simetricul FCT→NIR), linii de
+  servicii/mărfuri/produse finite/imobilizări.
+- Apoi: polish XAF pe modelul stabilizat; pasul 5 (API+React) neschimbat.
 
 ## Reguli de lucru pentru Claude Code
 
