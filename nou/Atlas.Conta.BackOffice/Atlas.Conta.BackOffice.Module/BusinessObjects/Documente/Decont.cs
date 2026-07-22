@@ -30,14 +30,11 @@ public class Decont : Document, IDocumentCuPV {
             erori.Add("Predatorul decontului este titularul — un angajat.");
         if (os.GetObjectByKey<Repartitor>(PrimitorId) is not (UnitateInterna or Gestiune))
             erori.Add("Primitorul decontului este unitatea internă care primește justificarea.");
-        foreach (var d in Detalii) {
+        // Clasificația bugetară per linie a migrat în PoliticaValidare (32d →
+        // 3d): regulă de profil, aplicată de motor înaintea acestui hook.
+        foreach (var d in Detalii)
             if (d.Valoare <= 0)
                 erori.Add("Fiecare linie de decont poartă o valoare pozitivă (cheltuiala justificată).");
-            // Ca la FCT (29b): clasificația bugetară pe linie rămâne hardcodată
-            // până la validarea declarativă (3d).
-            if (d.AngajamentId == null && d.Dimensiuni.CodEconomicId == null)
-                erori.Add("Fiecare linie cere clasificație bugetară: angajament sau cod economic.");
-        }
     }
 }
 

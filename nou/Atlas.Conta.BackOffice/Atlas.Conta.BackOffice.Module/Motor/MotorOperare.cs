@@ -24,14 +24,7 @@ public static class MotorOperare {
         GardianPerioada.VerificaDeschisa(os, doc.Data);
 
         doc.PregatesteOperare(os);
-        var erori = new List<string>();
-        doc.ValideazaOperare(os, erori);
-        if (erori.Count > 0)
-            throw new OperareException(string.Join("\n", erori));
-
         var tipDoc = GasesteTipDocument(os, doc);
-        AsignaNumar(os, doc, tipDoc);
-        AplicaScadenta(os, doc, tipDoc);
 
         // Clasa/natura/contul fiecărui Tip de pe linii, preîncărcate — motorul nu
         // se bazează pe navigații (contextul apelant nu garantează lazy loading).
@@ -40,6 +33,17 @@ public static class MotorOperare {
             .Where(t => idsTip.Contains(t.ID))
             .Select(t => new { t.ID, t.ClasaId, t.Clasa.Natura, t.Denumire, t.ContImplicitId })
             .ToDictionary(t => t.ID, t => (t.ClasaId, t.Natura, t.Denumire, t.ContImplicitId));
+
+        // Obligativitățile per tip (PoliticaValidare — profil de validare, 3d)
+        // rulează generic, alături de invariantele proprii tipului din hook.
+        var erori = new List<string>();
+        ValideazaDeclarativ(os, doc, tipDoc, claseTip, erori);
+        doc.ValideazaOperare(os, erori);
+        if (erori.Count > 0)
+            throw new OperareException(string.Join("\n", erori));
+
+        AsignaNumar(os, doc, tipDoc);
+        AplicaScadenta(os, doc, tipDoc);
 
         // 1. Mișcările de stoc se CALCULEAZĂ întâi (delta), gardianul de sold
         //    le verifică, abia apoi se materializează rândurile. Per latură,
@@ -65,44 +69,28 @@ public static class MotorOperare {
         }
         StocService.VerificaSoldIntermediar(os, miscari.Select(m => m.Miscare).ToList());
 
-        foreach (var (detaliu, regula, miscare) in miscari) {
-            var rand = os.CreateObject<RegistruStoc>();
-            rand.Data = doc.Data;
-            rand.TipStoc = miscare.Cheie.TipStoc;
-            rand.LotId = miscare.Cheie.LotId;
-            rand.RepartitorId = miscare.Cheie.RepartitorId;
-            rand.Cantitate = miscare.Cantitate;
-            rand.Valoare = regula.Semn * detaliu.Valoare;
-            rand.Document = doc;
-            rand.Detaliu = detaliu;
-        }
-
-        // 2. Finalizarea loturilor născute de liniile documentului (NIR manual,
-        //    FacturaIntrare pentru lanțul conex, plus de inventar, producție):
-        //    lotul e creat la culegere de linia de intrare (baza nu poartă
-        //    ProdusId — testul bazei §2); motorul îi fixează prețul
-        //    (= Valoare/Cantitate, decizia 13), data și atributele culese.
-        var idsDetalii = doc.Detalii.Select(d => d.ID).ToList();
-        foreach (var lot in os.GetObjectsQuery<Lot>().Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
-            var linie = doc.Detalii.First(d => d.ID == lot.LinieIntrareId);
-            if (linie.Cantitate <= 0)
-                throw new OperareException("O linie care creează lot trebuie să aibă cantitate pozitivă.");
-            lot.PretUnitar = linie.Valoare / linie.Cantitate;
-            lot.Data = doc.Data;
-            if (linie is ILinieCuAtributeLot atribute) {
-                lot.DataExpirare = atribute.DataExpirare;
-                lot.LotFabricatie = atribute.LotFabricatie;
-            }
-        }
-
-        // 3. Rândurile contabile: potrivirea regulii pe linie = TipMaterial exact
-        //    → NaturaFiltru → regula generică; fără regulă = linia nu contează pe
+        // 2. Rândurile contabile se CALCULEAZĂ și se validează tot înainte de
+        //    materializare: potrivirea regulii pe linie = TipMaterial exact →
+        //    NaturaFiltru → regula generică; fără regulă = linia nu contează pe
         //    acest tip de document (NotaTransfer — 23c; liniile de stoc pe FCT —
         //    recepția contează pe NIR). Conturile se rezolvă din sursa declarată
-        //    (TipMaterial / partenerul unei laturi), cu contul explicit fallback.
+        //    (TipMaterial / repartitorul unei laturi), cu contul explicit
+        //    fallback. Toți gardienii (sold, cont nerezolvabil, dimensiuni
+        //    obligatorii) refuză ÎNAINTE de primul rând creat — un refuz nu
+        //    lasă nimic în ObjectSpace-ul apelantului.
         var reguliContare = os.GetObjectsQuery<RegulaContare>().Where(r => r.TipDocumentId == tipDoc.ID).ToList();
         var repartitorPredator = os.GetObjectByKey<Repartitor>(doc.PredatorId);
         var repartitorPrimitor = os.GetObjectByKey<Repartitor>(doc.PrimitorId);
+        // Dimensiunea Material = Produsul lotului liniei (analitic de stoc) —
+        // default de motor pe ambele laturi, ca repartitorul implicit al
+        // header-ului; liniile fără lot rămân pe ce s-a cules.
+        var idsLoturi = doc.Detalii.Where(d => d.LotId != null).Select(d => d.LotId.Value).Distinct().ToList();
+        var produsPerLot = os.GetObjectsQuery<Lot>()
+            .Where(l => idsLoturi.Contains(l.ID))
+            .Select(l => new { l.ID, l.ProdusId })
+            .ToDictionary(l => l.ID, l => l.ProdusId);
+        var note = new List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
+            decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)>();
         foreach (var d in doc.Detalii) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
             // Filtrul de semn (LDI): regula se aplică doar liniilor cu semnul
@@ -130,27 +118,72 @@ public static class MotorOperare {
                     info.ContImplicitId, repartitorPredator, repartitorPrimitor)
                 ?? throw new OperareException(
                     $"Contul creditor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.SursaContCredit}).");
-            var rand = os.CreateObject<RegistruContabil>();
-            rand.Data = doc.Data;
-            rand.ContDebitId = contDebit;
-            rand.ContCreditId = contCredit;
+            // Repartitorul explicit al liniei (aceeași trăsătură) intră ca
+            // nivel maxim; default-ul de capăt e polimorf (00 §5 pe bază,
+            // Decont mută creditul pe titular) + Materialul din lot.
+            var materialImplicit = d.LotId != null && produsPerLot.TryGetValue(d.LotId.Value, out var produsId)
+                ? produsId : (Guid?)null;
+            var dimensiuniDebit = DimensiuniResolver.Rezolva(
+                new Dimensiuni { RepartitorId = explicita?.RepartitorDebitId },
+                d.Dimensiuni, regula.DimensiuniOverrideDebit, regula.DimensiuniComun,
+                new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit(), MaterialId = materialImplicit });
+            var dimensiuniCredit = DimensiuniResolver.Rezolva(
+                new Dimensiuni { RepartitorId = explicita?.RepartitorCreditId },
+                d.Dimensiuni, regula.DimensiuniOverrideCredit, regula.DimensiuniComun,
+                new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit(), MaterialId = materialImplicit });
             // Normalizarea cu semnul filtrului: valoarea liniei poartă semnul
             // cantității (LDI minus = negativă), dar conturile regulii deja
             // codifică direcția — nota se postează pozitivă.
-            rand.Valoare = (regula.SemnFiltru ?? +1) * d.Valoare;
-            // Repartitorul explicit al liniei (aceeași trăsătură) intră ca
-            // nivel maxim; default-ul de capăt e polimorf (00 §5 pe bază,
-            // Decont mută creditul pe titular).
-            rand.DimensiuniDebit = DimensiuniResolver.Rezolva(
-                new Dimensiuni { RepartitorId = explicita?.RepartitorDebitId },
-                d.Dimensiuni, regula.DimensiuniOverrideDebit, regula.DimensiuniComun,
-                new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit() });
-            rand.DimensiuniCredit = DimensiuniResolver.Rezolva(
-                new Dimensiuni { RepartitorId = explicita?.RepartitorCreditId },
-                d.Dimensiuni, regula.DimensiuniOverrideCredit, regula.DimensiuniComun,
-                new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit() });
+            note.Add((d, contDebit, contCredit, (regula.SemnFiltru ?? +1) * d.Valoare,
+                dimensiuniDebit, dimensiuniCredit));
+        }
+
+        // Dimensiunile obligatorii per cont (decizia 15: flag-urile de defalcare
+        // din plan = date de validare) se verifică pe seturile REZOLVATE, per
+        // latură — abia aici se știe și contul, și rezultatul coalesce-ului.
+        VerificaDimensiuniObligatorii(os, note, claseTip);
+
+        // 3. Materializarea — toți gardienii au trecut. Întâi finalizarea
+        //    loturilor născute de liniile documentului (NIR manual, FacturaIntrare
+        //    pentru lanțul conex, plus de inventar, producție): lotul e creat la
+        //    culegere de linia de intrare (baza nu poartă ProdusId — testul bazei
+        //    §2); motorul îi fixează prețul (= Valoare/Cantitate, decizia 13),
+        //    data și atributele culese.
+        var idsDetalii = doc.Detalii.Select(d => d.ID).ToList();
+        foreach (var lot in os.GetObjectsQuery<Lot>().Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
+            var linie = doc.Detalii.First(d => d.ID == lot.LinieIntrareId);
+            if (linie.Cantitate <= 0)
+                throw new OperareException("O linie care creează lot trebuie să aibă cantitate pozitivă.");
+            lot.PretUnitar = linie.Valoare / linie.Cantitate;
+            lot.Data = doc.Data;
+            if (linie is ILinieCuAtributeLot atribute) {
+                lot.DataExpirare = atribute.DataExpirare;
+                lot.LotFabricatie = atribute.LotFabricatie;
+            }
+        }
+
+        foreach (var (detaliu, regula, miscare) in miscari) {
+            var rand = os.CreateObject<RegistruStoc>();
+            rand.Data = doc.Data;
+            rand.TipStoc = miscare.Cheie.TipStoc;
+            rand.LotId = miscare.Cheie.LotId;
+            rand.RepartitorId = miscare.Cheie.RepartitorId;
+            rand.Cantitate = miscare.Cantitate;
+            rand.Valoare = regula.Semn * detaliu.Valoare;
             rand.Document = doc;
-            rand.Detaliu = d;
+            rand.Detaliu = detaliu;
+        }
+
+        foreach (var n in note) {
+            var rand = os.CreateObject<RegistruContabil>();
+            rand.Data = doc.Data;
+            rand.ContDebitId = n.ContDebit;
+            rand.ContCreditId = n.ContCredit;
+            rand.Valoare = n.Valoare;
+            rand.DimensiuniDebit = n.DimensiuniDebit;
+            rand.DimensiuniCredit = n.DimensiuniCredit;
+            rand.Document = doc;
+            rand.Detaliu = n.Detaliu;
         }
 
         // 4. Documentul conex (decizia 17, 00 §6): draft autogenerat în aceeași
@@ -189,6 +222,78 @@ public static class MotorOperare {
 
         os.CommitChanges();
         return conex ?? secundar;
+    }
+
+    // Obligativitățile per tip din PoliticaValidare (3d): reguli de PROFIL, nu
+    // de structură (decizia 29) — la privat rândurile lipsesc și nimic nu se
+    // cere. Angajamentul SAU codul economic satisface clasificația bugetară
+    // (aceeași alternativă ca în validarea hardcodată pe care o înlocuiește).
+    static void ValideazaDeclarativ(IObjectSpace os, Document doc, TipDocument tipDoc,
+        Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
+        ICollection<string> erori) {
+        var politica = os.FirstOrDefault<PoliticaValidare>(p => p.TipDocumentId == tipDoc.ID);
+        if (politica == null)
+            return;
+        foreach (var d in doc.Detalii) {
+            var info = claseTip.GetValueOrDefault(d.TipMaterialId);
+            if (politica.CereClasificatieBugetara && d.AngajamentId == null && d.Dimensiuni.CodEconomicId == null)
+                erori.Add($"Linia cu {info.Denumire} cere clasificație bugetară: angajament sau cod economic.");
+            if (politica.NaturaInterzisa != null && info.Natura == politica.NaturaInterzisa)
+                erori.Add($"Liniile cu natura {politica.NaturaInterzisa} nu sunt permise pe {tipDoc.Cod} (linia cu {info.Denumire}).");
+        }
+    }
+
+    // Decizia 15: flag-urile de defalcare din plan (R/M/E/B/F/P) = dimensiuni
+    // obligatorii per cont, verificate pe rândul de registru rezolvat (per
+    // latură). Punte până la modulul de angajamente: angajamentul liniei ține
+    // loc de cod economic (clasificația trăiește în angajament; când modulul
+    // apare, rezolvarea va materializa CodEconomic din angajament și puntea moare).
+    static void VerificaDimensiuniObligatorii(IObjectSpace os,
+        List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
+            decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)> note,
+        Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip) {
+        if (note.Count == 0)
+            return;
+        var idsConturi = note.SelectMany(n => new[] { n.ContDebit, n.ContCredit }).Distinct().ToList();
+        var conturi = os.GetObjectsQuery<Cont>()
+            .Where(c => idsConturi.Contains(c.ID))
+            .Select(c => new { c.ID, c.Simbol, c.DimensiuniObligatorii })
+            .ToDictionary(c => c.ID, c => (c.Simbol, c.DimensiuniObligatorii));
+        var lipsuri = new List<string>();
+        foreach (var n in note) {
+            var denumire = claseTip.GetValueOrDefault(n.Detaliu.TipMaterialId).Denumire;
+            var (simbolDebit, flagsDebit) = conturi[n.ContDebit];
+            VerificaLatura(simbolDebit, flagsDebit, n.DimensiuniDebit, n.Detaliu.AngajamentId, "debit", denumire, lipsuri);
+            var (simbolCredit, flagsCredit) = conturi[n.ContCredit];
+            VerificaLatura(simbolCredit, flagsCredit, n.DimensiuniCredit, n.Detaliu.AngajamentId, "credit", denumire, lipsuri);
+        }
+        if (lipsuri.Count > 0)
+            throw new OperareException(string.Join("\n", lipsuri));
+    }
+
+    static void VerificaLatura(string simbol, DimensiuneFlags flags, Dimensiuni dims,
+        Guid? angajamentId, string latura, string denumireLinie, ICollection<string> lipsuri) {
+        if (flags == DimensiuneFlags.Niciuna)
+            return;
+        var lipsa = new List<string>();
+        if (flags.HasFlag(DimensiuneFlags.Repartitor) && dims.RepartitorId == null)
+            lipsa.Add("Repartitor");
+        if (flags.HasFlag(DimensiuneFlags.Material) && dims.MaterialId == null)
+            lipsa.Add("Material");
+        if (flags.HasFlag(DimensiuneFlags.CodFunctional) && dims.CodFunctionalId == null)
+            lipsa.Add("Cod funcțional");
+        if (flags.HasFlag(DimensiuneFlags.CodEconomic) && dims.CodEconomicId == null && angajamentId == null)
+            lipsa.Add("Cod economic");
+        if (flags.HasFlag(DimensiuneFlags.SursaFinantare) && dims.SursaFinantareId == null)
+            lipsa.Add("Sursă de finanțare");
+        if (flags.HasFlag(DimensiuneFlags.Unitate) && dims.UnitateId == null)
+            lipsa.Add("Unitate");
+        if (flags.HasFlag(DimensiuneFlags.Proiect) && dims.ProiectId == null)
+            lipsa.Add("Proiect");
+        if (flags.HasFlag(DimensiuneFlags.CentruCost) && dims.CentruCostId == null)
+            lipsa.Add("Centru de cost");
+        if (lipsa.Count > 0)
+            lipsuri.Add($"Contul {simbol} ({latura}, linia cu {denumireLinie}) cere: {string.Join(", ", lipsa)}.");
     }
 
     // Sursa declarativă a contului unei laturi (testul bazei §7.2); contul

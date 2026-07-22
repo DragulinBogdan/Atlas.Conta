@@ -28,7 +28,29 @@ public static class ContaSeeder {
         SeedPoliticiFacturaIesire(os);
         SeedPoliticiTrezorerie(os);
         SeedPoliticiDecont(os);
+        SeedPoliticiValidare(os);
         os.CommitChanges();
+    }
+
+    // Obligativitățile per tip (3d) — parte din PROFILUL de validare bugetar
+    // (decizia 29): clasificația bugetară per linie pe documentele de angajare
+    // și plată (fostele validări hardcodate FCT/DEC — 29b/32d — plus PLT — 31f;
+    // INC nu: veniturile n-au angajamente, iar defalcarea E a conturilor de
+    // trezorerie cere oricum codul economic la nivel de cont). FCL: în acest
+    // profil facturarea nu descarcă gestiune — natura Stoc e interzisă (30a).
+    // Upsert: valorile definesc politica, se impun și pe rândurile existente.
+    static void SeedPoliticiValidare(IObjectSpace os) {
+        PoliticaValidare Politica(string cod) {
+            var p = os.FirstOrDefault<PoliticaValidare>(x => x.TipDocument.Cod == cod);
+            if (p == null) {
+                p = os.CreateObject<PoliticaValidare>();
+                p.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == cod);
+            }
+            return p;
+        }
+        foreach (var cod in new[] { "FCT", "DEC", "PLT" })
+            Politica(cod).CereClasificatieBugetara = true;
+        Politica("FCL").NaturaInterzisa = NaturaClasa.Stoc;
     }
 
     // Decizia 20: nomenclatorul de tipuri oglindește clasele 1:1 — doar ancoră FK + UI.

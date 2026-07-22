@@ -264,6 +264,10 @@ void CurataFct(IObjectSpace os) {
     os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajFct).ToList());
     os.Delete(os.GetObjectsQuery<Partener>().Where(p => p.Cod.StartsWith("E2E-FURN")).ToList());
     os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == "E2E-CE").ToList());
+    os.Delete(os.GetObjectsQuery<SursaFinantare>().Where(c => c.Cod == "E2E-SF").ToList());
+    os.Delete(os.GetObjectsQuery<CodFunctional>().Where(c => c.Cod == "E2E-CF").ToList());
+    os.Delete(os.GetObjectsQuery<Proiect>().Where(c => c.Cod == "E2E-PR").ToList());
+    os.Delete(os.GetObjectsQuery<Angajament>().Where(c => c.Cod == "E2E-ANG").ToList());
     os.CommitChanges();
 }
 
@@ -283,6 +287,14 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Seed: Tip 628.00.00 → cont 628.* (tăierea segmentelor)",
         tipServicii.ContImplicitId != null
         && os.GetObjectByKey<Cont>(tipServicii.ContImplicitId.Value).Simbol.StartsWith("628"));
+
+    // Politicile de validare per tip (3d): profilul bugetar cere clasificație
+    // pe documentele de angajare/plată; INC rămâne fără rând (venituri —
+    // defalcarea E a conturilor de trezorerie acoperă nivelul de cont).
+    bool CereClasificatie(string cod) =>
+        os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == cod)?.CereClasificatieBugetara == true;
+    Check("Seed 3d: FCT/DEC/PLT cer clasificație bugetară; INC nu",
+        CereClasificatie("FCT") && CereClasificatie("DEC") && CereClasificatie("PLT") && !CereClasificatie("INC"));
 
     var furnizor = os.CreateObject<Partener>();
     furnizor.Cod = "E2E-FURN";
@@ -363,6 +375,9 @@ using (var os = provider.CreateObjectSpace()) {
     Check("NIR contează recepția: 302.01.00 = 401, 59,5",
         noteNir.Count == 1 && noteNir[0].ContDebitId == tipMateriale.ContImplicitId
         && noteNir[0].ContCreditId == cont401.ID && noteNir[0].Valoare == 59.5m);
+    Check("Nota NIR: Materialul implicit din lot (produsul) pe ambele laturi (3d)",
+        noteNir[0].DimensiuniDebit.MaterialId == produs.ID
+        && noteNir[0].DimensiuniCredit.MaterialId == produs.ID);
     Check("Sold lot după recepție: 5 pe MAG1",
         StocService.Sold(os, new CheieStoc(lot.ID, mag1.ID, TipStoc.Magazie)) == 5m);
 
@@ -405,11 +420,41 @@ using (var os = provider.CreateObjectSpace()) {
     linie2.TipMaterial = tipServicii;
     linie2.Cantitate = 1m;
     linie2.PretUnitar = 200m;
-    linie2.Dimensiuni.CodEconomicId = codEc.ID;
+    // Clasificația prin ANGAJAMENT (nu cod economic): satisface și politica de
+    // tip, și — prin puntea din 3d — defalcarea E a contului 404.
+    var angajament = os.CreateObject<Angajament>();
+    angajament.Cod = "E2E-ANG";
+    angajament.Denumire = "Angajament probă e2e";
+    linie2.Angajament = angajament;
+    os.CommitChanges();
+
+    // 404 poartă defalcarea BFEPR — fără Sursă de finanțare / Cod funcțional /
+    // Proiect pe dimensiunile REZOLVATE, operarea se refuză (3d).
+    CheckRefuza("404 (BFEPR): Sursă de finanțare/Cod funcțional/Proiect lipsă → refuz",
+        () => MotorOperare.Opereaza(os, fct2));
+    var sursaFin = os.CreateObject<SursaFinantare>();
+    sursaFin.Cod = "E2E-SF";
+    sursaFin.Denumire = "Sursă de finanțare probă e2e";
+    var codFn = os.CreateObject<CodFunctional>();
+    codFn.Cod = "E2E-CF";
+    codFn.Denumire = "Cod funcțional probă e2e";
+    var proiect = os.CreateObject<Proiect>();
+    proiect.Cod = "E2E-PR";
+    proiect.Denumire = "Proiect probă e2e";
+    os.CommitChanges();
+    linie2.Dimensiuni.SursaFinantareId = sursaFin.ID;
+    linie2.Dimensiuni.CodFunctionalId = codFn.ID;
+    linie2.Dimensiuni.ProiectId = proiect.ID;
     os.CommitChanges();
     Check("FCT doar cu servicii NU generează NIR", MotorOperare.Opereaza(os, fct2) == null);
+    var nota404 = os.GetObjectsQuery<RegistruContabil>().Single(r => r.DocumentId == fct2.ID);
     Check("Creditul vine din ContImplicit al partenerului (404, nu fallback 401)",
-        os.GetObjectsQuery<RegistruContabil>().Single(r => r.DocumentId == fct2.ID).ContCreditId == cont404.ID);
+        nota404.ContCreditId == cont404.ID);
+    Check("Puntea angajamentului: E pe 404 satisfăcut fără cod economic; B/F/P rezolvate pe notă",
+        nota404.DimensiuniCredit.CodEconomicId == null
+        && nota404.DimensiuniCredit.SursaFinantareId == sursaFin.ID
+        && nota404.DimensiuniCredit.CodFunctionalId == codFn.ID
+        && nota404.DimensiuniCredit.ProiectId == proiect.ID);
     MotorOperare.Storneaza(os, fct2, new DateOnly(2026, 7, 22));
 
     CurataFct(os);
@@ -574,6 +619,7 @@ void CurataLdi(IObjectSpace os) {
     os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajLdi).ToList());
     os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajLdi).ToList());
     os.Delete(os.GetObjectsQuery<UnitateInterna>().Where(u => u.Cod == MarcajComisie).ToList());
+    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajLdi + "-CE").ToList());
     os.CommitChanges();
 }
 
@@ -600,6 +646,9 @@ using (var os = provider.CreateObjectSpace()) {
     comisie.Cod = MarcajComisie;
     comisie.Denumire = "Comisie probă e2e";
     comisie.Calitati = CalitateRepartitor.Comisie;
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = MarcajLdi + "-CE";
+    codEc.Denumire = "Cod economic probă LDI";
     var produs = os.CreateObject<Produs>();
     produs.Cod = MarcajLdi;
     produs.Denumire = "Produs probă LDI";
@@ -646,6 +695,12 @@ using (var os = provider.CreateObjectSpace()) {
     ldi.Primitor = mag1; // gestiune fără calitatea Comisie
     CheckRefuza("Primitor fără calitatea Comisie → refuz", () => MotorOperare.Opereaza(os, ldi));
     ldi.Primitor = comisie;
+    os.CommitChanges();
+
+    // Venitul plusului (791) poartă defalcarea E — cerută pe nota rezolvată (3d);
+    // minusul (602 = 302, ambele S) nu cere nimic.
+    CheckRefuza("Plus fără cod economic (791 cere E) → refuz", () => MotorOperare.Opereaza(os, ldi));
+    liniePlus.Dimensiuni.CodEconomicId = codEc.ID;
     os.CommitChanges();
 
     // --- Operare: direcția materializată în semn, două rânduri ± pe predator ---
@@ -731,6 +786,7 @@ void CurataFcl(IObjectSpace os) {
         os.Delete(doc);
     }
     os.Delete(os.GetObjectsQuery<Partener>().Where(p => p.Cod.StartsWith(MarcajFcl)).ToList());
+    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajFcl + "-CE").ToList());
     os.CommitChanges();
 }
 
@@ -756,10 +812,15 @@ using (var os = provider.CreateObjectSpace()) {
         !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocument.Cod == "FCL"));
     var politicaScadenta = os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocument.Cod == "FCL");
     Check("Seed FCL: politică de scadență +30", politicaScadenta?.ZileDefault == 30);
+    Check("Seed 3d: FCL interzice natura Stoc (PoliticaValidare, fostul hardcode 30a)",
+        os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCL")?.NaturaInterzisa == NaturaClasa.Stoc);
 
     var client = os.CreateObject<Partener>();
     client.Cod = MarcajFcl + "-CL1";
     client.Denumire = "Client probă e2e";
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = MarcajFcl + "-CE";
+    codEc.Denumire = "Clasificație de venit probă e2e";
     os.CommitChanges();
 
     FacturaIesireDetaliu Linie(FacturaIesire doc, TipMaterial tip, decimal cantitate, decimal pret, decimal cota) {
@@ -792,6 +853,14 @@ using (var os = provider.CreateObjectSpace()) {
     Linie(fcl, tipChirii, 1m, 50m, 0m).Descriere = "Chirie spațiu";
     os.CommitChanges();
 
+    // Conturile de venit (751/750) poartă defalcarea E — clasificația de venit
+    // e cerută la nivel de CONT (3d), nu de tip (FCL nu are rând de politică).
+    CheckRefuza("Venituri fără cod economic (751/750 cer E) → refuz",
+        () => MotorOperare.Opereaza(os, fcl));
+    foreach (var d in fcl.Detalii)
+        d.Dimensiuni.CodEconomicId = codEc.ID;
+    os.CommitChanges();
+
     // --- Operare: serie fiscală + scadență default + o notă per linie ---
     Check("FCL nu generează conex", MotorOperare.Opereaza(os, fcl) == null);
     Check("Operare → stare Operat + număr din seria fiscală",
@@ -822,7 +891,7 @@ using (var os = provider.CreateObjectSpace()) {
     fcl2.Predator = sediu;
     fcl2.Primitor = clientDebitor;
     fcl2.DataScadenta = new DateOnly(2026, 12, 31); // culeasă manual
-    Linie(fcl2, tipServiciiVenit, 1m, 100m, 19m);
+    Linie(fcl2, tipServiciiVenit, 1m, 100m, 19m).Dimensiuni.CodEconomicId = codEc.ID;
     os.CommitChanges();
     MotorOperare.Opereaza(os, fcl2);
     Check("Debitul din ContImplicit al clientului (461, nu fallback 411)",
@@ -1014,6 +1083,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieVenit.TipMaterial = tipVenit;
     linieVenit.Cantitate = 1m;
     linieVenit.PretUnitar = 119m;
+    linieVenit.Dimensiuni.CodEconomicId = codEc.ID; // 751 cere E (3d)
     os.CommitChanges();
     MotorOperare.Opereaza(os, fcl);
 
@@ -1028,6 +1098,11 @@ using (var os = provider.CreateObjectSpace()) {
     CheckRefuza("Laturi greșite + linie fără valoare → refuz", () => MotorOperare.Opereaza(os, inc));
     inc.Predator = client;
     linieInc.Valoare = 119m;
+    os.CommitChanges();
+    // Casa (531) poartă defalcarea E — INC nu are politică de tip, dar contul
+    // cere codul economic pe nota rezolvată (3d).
+    CheckRefuza("Încasare fără cod economic (531 cere E) → refuz", () => MotorOperare.Opereaza(os, inc));
+    linieInc.Dimensiuni.CodEconomicId = codEc.ID;
     os.CommitChanges();
     Check("Încasarea nu generează conex", MotorOperare.Opereaza(os, inc) == null);
     Check("Încasare operată cu număr din politică", inc.Numar?.StartsWith("INC-") == true);
@@ -1063,6 +1138,11 @@ using (var os = provider.CreateObjectSpace()) {
     linieAvans.Document = avans;
     linieAvans.TipMaterial = tipTrz;
     linieAvans.Valoare = 50m;
+    os.CommitChanges();
+    // 31f închis: obligativitatea clasificației pe liniile de plată = politică.
+    CheckRefuza("Plată fără clasificație bugetară (politica PLT) → refuz",
+        () => MotorOperare.Opereaza(os, avans));
+    linieAvans.Dimensiuni.CodEconomicId = codEc.ID;
     os.CommitChanges();
     MotorOperare.Opereaza(os, avans);
     var noteAvans = Note(avans);
@@ -1160,6 +1240,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieAvans.Document = avans;
     linieAvans.TipMaterial = tipTrz;
     linieAvans.Valoare = 100m;
+    linieAvans.Dimensiuni.CodEconomicId = codEc.ID; // politica PLT + defalcarea E (531/542)
     os.CommitChanges();
     MotorOperare.Opereaza(os, avans);
     Check("Avansul operat (100, casa → angajat)", avans.Stare == StareDocument.Operat);
@@ -1248,6 +1329,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieReg.Document = regularizare;
     linieReg.TipMaterial = tipTrz;
     linieReg.Valoare = 46.2m;
+    linieReg.Dimensiuni.CodEconomicId = codEc.ID; // casa (531) cere E
     os.CommitChanges();
     MotorOperare.Opereaza(os, regularizare);
     ImperechereService.Imperecheaza(os, regularizare, avans, 46.2m);

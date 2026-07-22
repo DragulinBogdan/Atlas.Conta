@@ -88,6 +88,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaConex> PoliticiConex { get; set; }
         public DbSet<PoliticaNumerotare> PoliticiNumerotare { get; set; }
         public DbSet<PoliticaScadenta> PoliticiScadenta { get; set; }
+        public DbSet<PoliticaValidare> PoliticiValidare { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             base.OnModelCreating(modelBuilder);

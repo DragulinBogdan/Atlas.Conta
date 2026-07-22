@@ -80,13 +80,12 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
             .Where(t => idsTip.Contains(t.ID))
             .Select(t => new { t.ID, t.Clasa.Natura })
             .ToDictionary(t => t.ID, t => t.Natura);
+        // Clasificația bugetară per linie a migrat în PoliticaValidare (29b →
+        // 3d): regulă de profil, aplicată de motor înaintea acestui hook.
         foreach (var d in Detalii) {
             // Regula hardcodată legacy (00 §10), păstrată: fără cantități negative.
             if (d.Cantitate <= 0)
                 erori.Add("Cantitatea fiecărei linii de factură trebuie să fie pozitivă.");
-            // Clasificația bugetară obligatorie (01): angajament SAU cod economic.
-            if (d.AngajamentId == null && d.Dimensiuni.CodEconomicId == null)
-                erori.Add("Fiecare linie cere clasificație bugetară: angajament sau cod economic.");
             // Liniile purtătoare de stoc și-au creat lotul la culegere (25c) —
             // el pleacă pe NIR-ul conex, care face singurul +1 în registru.
             if (naturi.GetValueOrDefault(d.TipMaterialId) == NaturaClasa.Stoc && d.LotId == null)

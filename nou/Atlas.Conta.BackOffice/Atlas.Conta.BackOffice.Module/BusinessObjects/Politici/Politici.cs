@@ -90,6 +90,22 @@ public class PoliticaScadenta : BaseObject {
     public virtual int ZileDefault { get; set; }
 }
 
+// Obligativitățile per tip (felia 3d) — profil de VALIDARE, nu structură
+// (decizia 29: regula bugetară „angajament SAU cod economic" e a profilului,
+// nu a clasei de document; la privat rândurile pur și simplu lipsesc).
+// Motorul o aplică generic înaintea hook-urilor proprii tipului.
+[NavigationItem("Politici")]
+public class PoliticaValidare : BaseObject {
+    public virtual Guid TipDocumentId { get; set; }
+    public virtual TipDocument TipDocument { get; set; }
+    // Fiecare linie cere clasificație bugetară: angajament SAU cod economic
+    // (fosta validare hardcodată pe FCT/DEC, extinsă pe PLT — 29b/31f/32d).
+    public virtual bool CereClasificatieBugetara { get; set; }
+    // Liniile cu această natură se refuză (FCL: în acest profil facturarea nu
+    // descarcă gestiune — 30a; vânzarea din stoc = document propriu la nevoie).
+    public virtual NaturaClasa? NaturaInterzisa { get; set; }
+}
+
 [NavigationItem("Politici")]
 public class PoliticaNumerotare : BaseObject {
     public virtual Guid TipDocumentId { get; set; }

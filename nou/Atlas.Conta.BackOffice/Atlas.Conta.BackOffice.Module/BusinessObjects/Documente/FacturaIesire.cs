@@ -21,22 +21,14 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
         if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Partener)
             erori.Add("Primitorul facturii de ieșire trebuie să fie un partener (client).");
 
-        var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
-        var naturi = os.GetObjectsQuery<TipMaterial>()
-            .Where(t => idsTip.Contains(t.ID))
-            .Select(t => new { t.ID, t.Clasa.Natura })
-            .ToDictionary(t => t.ID, t => t.Natura);
-        foreach (var d in Detalii) {
+        // Refuzul liniilor de stoc (07: în acest profil facturarea nu descarcă
+        // gestiune) a migrat în PoliticaValidare.NaturaInterzisa (30a → 3d).
+        // Fără cerință de clasificație bugetară: veniturile sunt exceptate de la
+        // obligativitatea angajamentului (regula hardcodată legacy, 00 §10) —
+        // FCL pur și simplu nu are rând de politică cu CereClasificatieBugetara.
+        foreach (var d in Detalii)
             if (d.Cantitate <= 0)
                 erori.Add("Cantitatea fiecărei linii de factură trebuie să fie pozitivă.");
-            // Inventar 07: în acest profil facturarea nu descarcă gestiune —
-            // vânzarea de bunuri din stoc ar fi document/reguli proprii, de
-            // decis la seed când apare nevoia (validarea declarativă la 3d).
-            if (naturi.GetValueOrDefault(d.TipMaterialId) == NaturaClasa.Stoc)
-                erori.Add("Factura de ieșire nu descarcă gestiune — liniile de stoc nu sunt permise (folosiți tipuri de venit).");
-        }
-        // Fără cerință de clasificație bugetară: veniturile sunt exceptate de la
-        // obligativitatea angajamentului (regula hardcodată legacy, 00 §10).
     }
 }
 
