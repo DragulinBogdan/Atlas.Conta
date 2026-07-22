@@ -230,6 +230,12 @@ public static class ContaSeeder {
     // Repartitor), nu în note 3xx=3xx (zgomotul legacy nu se preia).
     static void SeedPoliticiNotaTransfer(IObjectSpace os) {
         var btr = os.FirstOrDefault<TipDocument>(x => x.Cod == "BTR");
+        if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == "BTR") == null) {
+            var numerotare = os.CreateObject<PoliticaNumerotare>();
+            numerotare.TipDocument = btr;
+            numerotare.Serie = "BTR-";
+            numerotare.UrmatorulNumar = 1;
+        }
         if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "BTR") != null)
             return;
         var iesire = os.CreateObject<RegulaStoc>();

@@ -143,7 +143,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // un rând complet null s-ar materializa ca Dimensiuni=null (nu obiect gol)
             // și ar sparge coalesce-ul motorului cu NRE.
             modelBuilder.Entity<DocumentDetaliu>().OwnsOneRequired(d => d.Dimensiuni, ConfigureDimensiuni);
-            modelBuilder.Entity<RegistruContabil>().OwnsOneRequired(r => r.Dimensiuni, ConfigureDimensiuni);
+            modelBuilder.Entity<RegistruContabil>().OwnsOneRequired(r => r.DimensiuniDebit, ConfigureDimensiuni);
+            modelBuilder.Entity<RegistruContabil>().OwnsOneRequired(r => r.DimensiuniCredit, ConfigureDimensiuni);
             modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniComun, ConfigureDimensiuni);
             modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniOverrideDebit, ConfigureDimensiuni);
             modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniOverrideCredit, ConfigureDimensiuni);

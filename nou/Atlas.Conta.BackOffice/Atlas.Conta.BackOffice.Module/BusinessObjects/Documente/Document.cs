@@ -35,6 +35,24 @@ public abstract class Document : BaseObject {
 
     [NotMapped]
     public decimal Total => Detalii.Sum(d => d.Valoare);
+
+    // Hooks polimorfe consumate DOAR de motorul de operare (decizia 14).
+    // Primesc IObjectSpace și lucrează pe FK-uri, nu pe navigații — contextul
+    // apelant (UI, harness, viitorul Web API) nu garantează lazy loading.
+    // Lanțul de valori aparține derivatei (testul bazei §3): aici derivata
+    // materializează `Valoare` pe linii înainte de scrierea registrelor
+    // (ex. NotaTransfer/BonConsum: preț lot × cantitate).
+    public virtual void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) { }
+
+    // Invariantele proprii tipului, verificate de motor înainte de operare.
+    // Baza impune doar ce cere orice document; obligativitățile per tip se
+    // adaugă în override (validarea declarativă completă vine la 3c/3d).
+    public virtual void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
+        if (Detalii.Count == 0)
+            erori.Add("Documentul nu are nicio linie.");
+        if (PredatorId == Guid.Empty || PrimitorId == Guid.Empty)
+            erori.Add("Predatorul și primitorul sunt obligatorii.");
+    }
 }
 
 // Bază concretă: NIR/BonConsum/NotaTransfer o folosesc direct (testul bazei §6);

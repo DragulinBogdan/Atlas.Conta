@@ -18,7 +18,10 @@ public class RegistruStoc : BaseObject {
     // Semnul e inclus (semn × cantitate / semn × valoare) — sold prin SUM.
     public virtual decimal Cantitate { get; set; }
     public virtual decimal Valoare { get; set; }
-    public virtual Guid DocumentId { get; set; }
+    // Rând de stornare (inversul unui rând de operare, la data stornării).
+    public virtual bool Storno { get; set; }
+    // Null = rând de deschidere scris de migrare (decizia 12), fără document sursă.
+    public virtual Guid? DocumentId { get; set; }
     public virtual Document Document { get; set; }
     public virtual Guid? DetaliuId { get; set; }
     public virtual DocumentDetaliu Detaliu { get; set; }
@@ -32,15 +35,18 @@ public class RegistruContabil : BaseObject {
     public virtual Cont ContDebit { get; set; }
     public virtual Guid ContCreditId { get; set; }
     public virtual Cont ContCredit { get; set; }
-    public virtual Guid? RepartitorDebitId { get; set; }
-    public virtual Repartitor RepartitorDebit { get; set; }
-    public virtual Guid? RepartitorCreditId { get; set; }
-    public virtual Repartitor RepartitorCredit { get; set; }
     public virtual decimal Valoare { get; set; }
-    // Set complet rezolvat (decizia 15). Dacă motorul cere seturi diferite pe
-    // debit/credit (tripletele dim_d/dim_c din CNOTE), se tranșează la motor.
-    public virtual Dimensiuni Dimensiuni { get; set; } = new();
-    public virtual Guid DocumentId { get; set; }
+    // Seturi complet rezolvate PER LATURĂ (decizia 15 + tripletele dim_d/dim_c
+    // din CNOTE): regula poartă Comun/OverrideDebit/OverrideCredit, deci
+    // rezultatul coalesce-ului diferă pe debit față de credit. Repartitorul
+    // laturii (implicit Predator→debit, Primitor→credit — 00 §5) e componenta
+    // Repartitor a fiecărui set.
+    public virtual Dimensiuni DimensiuniDebit { get; set; } = new();
+    public virtual Dimensiuni DimensiuniCredit { get; set; } = new();
+    // Rând de stornare (inversul unui rând de operare, la data stornării).
+    public virtual bool Storno { get; set; }
+    // Null = rând de deschidere scris de migrare (decizia 12), fără document sursă.
+    public virtual Guid? DocumentId { get; set; }
     public virtual Document Document { get; set; }
     public virtual Guid? DetaliuId { get; set; }
     public virtual DocumentDetaliu Detaliu { get; set; }
