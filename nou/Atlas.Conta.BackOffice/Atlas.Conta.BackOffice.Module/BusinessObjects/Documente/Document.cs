@@ -83,4 +83,17 @@ public class DocumentDetaliu : BaseObject {
 
     // Set parțial; rezolvarea completă se face la generarea registrelor (decizia 15).
     public virtual Dimensiuni Dimensiuni { get; set; } = new();
+
+    // Decizia 25c: lotul se naște LA CULEGERE pe linia de intrare (NIR manual,
+    // FacturaIntrare pentru lanțul conex, plus de inventar, producție) — baza nu
+    // poartă ProdusId, deci produsul ales intră direct pe Lot. Motorul îl
+    // finalizează la operare (PretUnitar = Valoare/Cantitate, Data, atribute).
+    public Lot CreeazaLot(DevExpress.ExpressApp.IObjectSpace os, Produs produs, Gestiune gestiune) {
+        var lot = os.CreateObject<Lot>();
+        lot.Produs = produs;
+        lot.Gestiune = gestiune;
+        lot.LinieIntrareId = ID;
+        Lot = lot;
+        return lot;
+    }
 }

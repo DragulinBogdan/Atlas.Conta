@@ -18,7 +18,17 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
         opereaza = new SimpleAction(this, "Document.Opereaza", PredefinedCategory.RecordEdit) {
             Caption = "Operează", ConfirmationMessage = "Operați documentul? Se vor scrie registrele.",
         };
-        opereaza.Execute += (s, e) => Executa(MotorOperare.Opereaza);
+        opereaza.Execute += (s, e) => {
+            Document conex = null;
+            Executa((os, doc) => conex = MotorOperare.Opereaza(os, doc));
+            // Fluxul legacy (00 §6): documentul conex generat se deschide imediat
+            // în editare — utilizatorul îl verifică și îl operează separat.
+            if (conex != null) {
+                var os = Application.CreateObjectSpace(conex.GetType());
+                e.ShowViewParameters.CreatedView = Application.CreateDetailView(os, os.GetObject(conex));
+                e.ShowViewParameters.TargetWindow = TargetWindow.Default;
+            }
+        };
 
         anuleaza = new SimpleAction(this, "Document.AnuleazaOperarea", PredefinedCategory.RecordEdit) {
             Caption = "Anulează operarea",

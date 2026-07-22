@@ -15,7 +15,9 @@ public static class ContaSeeder {
         SeedPlanConturi(os);
         SeedRepartitori(os);
         SeedPerioadeFiscale(os);
+        SeedContImplicitTipMaterial(os);
         SeedPoliticiNotaTransfer(os);
+        SeedPoliticiFacturaIntrareNir(os);
         os.CommitChanges();
     }
 
@@ -223,6 +225,21 @@ public static class ContaSeeder {
         }
     }
 
+    // Maparea Clasă/Tip → cont e date (decizia 4); Cod-ul Tipului E un simbol de
+    // cont (10 §2), deci seed-ul o derivă: potrivire exactă pe simbol, apoi cu
+    // segmentele terminale tăiate (ex. 302.02.00.2 → 302.02.00 — detalierea
+    // sub nivelul sintetic aparține Tipului, nu planului — decizia 10).
+    static void SeedContImplicitTipMaterial(IObjectSpace os) {
+        var conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
+        foreach (var tip in os.GetObjectsQuery<TipMaterial>().Where(t => t.ContImplicitId == null).ToList()) {
+            var simbol = tip.Cod;
+            while (simbol.Length > 0 && !conturi.ContainsKey(simbol))
+                simbol = simbol.Contains('.') ? simbol[..simbol.LastIndexOf('.')] : "";
+            if (simbol.Length > 0)
+                tip.ContImplicitId = conturi[simbol];
+        }
+    }
+
     // Inventar 04: −1 predator / +1 primitor, ACELAȘI tip stoc (magazie);
     // Clasa=null ⇒ regula acoperă toate clasele cu Natura=Stoc.
     // Contare: NICIUN rând — la plan sintetic transferul nu mișcă conturi;
@@ -248,5 +265,98 @@ public static class ContaSeeder {
         intrare.Latura = LaturaDocument.Primitor;
         intrare.TipStoc = TipStoc.Magazie;
         intrare.Semn = +1;
+    }
+
+    // Politicile lanțului de cumpărare (inventar 01/02, curățate pe decizia 21).
+    // Tranșarea întrebării 00 §13.1 (cine postează): recepția contează pe NIR
+    // (3xx = furnizor), FacturaIntrare postează DOAR liniile care nu trec pe
+    // NIR (servicii/cheltuieli/imobilizări) — fără dublă postare, granița e
+    // Natura clasei (aceeași care alimentează filtrul conexului).
+    static void SeedPoliticiFacturaIntrareNir(IObjectSpace os) {
+        var fct = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCT");
+        var nir = os.FirstOrDefault<TipDocument>(x => x.Cod == "NIR");
+        var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00");
+        var cont404 = os.FirstOrDefault<Cont>(c => c.Simbol == "404.01.00");
+
+        // Igienă (self-healing): o regulă cu sursă Explicit și fără cont debitor
+        // nu poate rezolva niciodată — reziduu al evoluțiilor de schemă (coloane
+        // noi apărute după crearea rândului). Se șterge și se recreează mai jos.
+        var stricate = os.GetObjectsQuery<RegulaContare>()
+            .Where(r => r.SursaContDebit == SursaCont.Explicit && r.ContDebitId == null).ToList();
+        if (stricate.Count > 0) {
+            os.Delete(stricate);
+            os.CommitChanges();
+        }
+
+        // FCT nu are numerotare (poartă numărul furnizorului); NIR-ul primește
+        // număr propriu la operare.
+        if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == "NIR") == null) {
+            var numerotare = os.CreateObject<PoliticaNumerotare>();
+            numerotare.TipDocument = nir;
+            numerotare.Serie = "NIR-";
+            numerotare.UrmatorulNumar = 1;
+        }
+
+        // Conexul FCT→NIR (00 §6): fără swap de laturi (TIP_DESCARCARE=0),
+        // trec doar liniile purtătoare de stoc. Upsert: valorile definesc
+        // politica, deci se impun și pe rândul existent.
+        var conex = os.FirstOrDefault<PoliticaConex>(x => x.TipDocumentSursa.Cod == "FCT");
+        if (conex == null) {
+            conex = os.CreateObject<PoliticaConex>();
+            conex.TipDocumentSursa = fct;
+            conex.TipDocumentTinta = nir;
+        }
+        conex.InverseazaLaturi = false;
+        conex.NaturaFiltru = NaturaClasa.Stoc;
+
+        // Reguli stoc NIR (inventar 02): +1 pe primitor; generic → Magazie,
+        // clasele cu registru propriu (gratuități/folosință/mărfuri/custodie)
+        // au rând specific — regula specifică bate genericul în motor.
+        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "NIR") == null) {
+            (string Clasa, TipStoc TipStoc)[] reguli = [
+                (null, TipStoc.Magazie),
+                ("G", TipStoc.Gratuit),
+                ("OF", TipStoc.Folosinta),
+                ("MF", TipStoc.Marfuri),
+                ("MC", TipStoc.Custodie),
+            ];
+            foreach (var r in reguli) {
+                var regula = os.CreateObject<RegulaStoc>();
+                regula.TipDocument = nir;
+                regula.Latura = LaturaDocument.Primitor;
+                regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
+                regula.TipStoc = r.TipStoc;
+                regula.Semn = +1;
+            }
+        }
+
+        // Contare NIR: 3xx (contul Tipului) = furnizor (ContImplicit al
+        // partenerului predator, fallback 401), valoarea cu TVA capitalizat.
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "NIR") == null) {
+            var receptie = os.CreateObject<RegulaContare>();
+            receptie.TipDocument = nir;
+            receptie.NaturaFiltru = NaturaClasa.Stoc;
+            receptie.SursaContDebit = SursaCont.TipMaterial;
+            receptie.SursaContCredit = SursaCont.PartenerPredator;
+            receptie.ContCredit = cont401;
+        }
+
+        // Contare FCT: doar naturile care NU trec pe NIR; debit = contul
+        // Tipului (6xx/47x/2xx), credit = furnizorul (404 la imobilizări).
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "FCT") == null) {
+            (NaturaClasa Natura, Cont Fallback)[] reguli = [
+                (NaturaClasa.Serviciu, cont401),
+                (NaturaClasa.Cheltuiala, cont401),
+                (NaturaClasa.Imobilizare, cont404),
+            ];
+            foreach (var r in reguli) {
+                var regula = os.CreateObject<RegulaContare>();
+                regula.TipDocument = fct;
+                regula.NaturaFiltru = r.Natura;
+                regula.SursaContDebit = SursaCont.TipMaterial;
+                regula.SursaContCredit = SursaCont.PartenerPredator;
+                regula.ContCredit = r.Fallback;
+            }
+        }
     }
 }

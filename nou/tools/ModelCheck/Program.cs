@@ -4,9 +4,10 @@ using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
 
-// Validare model EF + (dacă baza există) verificare migrații/seed + scenariul
-// end-to-end al motorului de operare (felia 3b) pe un IObjectSpace real —
-// aceeași infrastructură XAF pe care o folosește și UI-ul (docs 113709).
+// Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
+// end-to-end ale motorului de operare (felia 3b: NotaTransfer; felia 3c:
+// FacturaIntrare→NIR conex) pe un IObjectSpace real — aceeași infrastructură
+// XAF pe care o folosește și UI-ul (docs 113709).
 // Aceeași țintă ca appsettings.json: Postgres localhost:5444.
 const string ConnectionString =
     "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=Atlas.Conta.BackOffice";
@@ -236,6 +237,185 @@ using (var os = provider.CreateObjectSpace()) {
     Curata(os);
     Check("Curățenie finală (fără reziduuri e2e)",
         !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajProdus));
+}
+
+// ========================= Scenariul e2e 3c: FCT → NIR =========================
+// Lanțul de cumpărare: factura cu linie de stoc (lot creat la culegere) + linie
+// de serviciu → operare (postează DOAR serviciul, finalizează lotul, generează
+// NIR conex cu liniile de stoc) → operare NIR (+1 stoc, contează recepția) →
+// gardienii grupului conex (anulare/storno pe părinte) → surse de cont
+// (TipMaterial / ContImplicit partener, fallback 401/404).
+const string MarcajFct = "E2E-FCT-PRB";
+
+void CurataFct(IObjectSpace os) {
+    var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajFct).Select(l => l.ID).ToList();
+    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
+    foreach (var fct in os.GetObjectsQuery<FacturaIntrare>().Where(d => d.Numar.StartsWith("E2E-FF")).ToList()) {
+        foreach (var copil in os.GetObjectsQuery<Document>().Where(x => x.DocumentSursaId == fct.ID).ToList()) {
+            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == copil.ID).ToList());
+            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == copil.ID).ToList());
+            os.Delete(copil);
+        }
+        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fct.ID).ToList());
+        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == fct.ID).ToList());
+        os.Delete(fct);
+    }
+    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajFct).ToList());
+    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajFct).ToList());
+    os.Delete(os.GetObjectsQuery<Partener>().Where(p => p.Cod.StartsWith("E2E-FURN")).ToList());
+    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == "E2E-CE").ToList());
+    os.CommitChanges();
+}
+
+using (var os = provider.CreateObjectSpace()) {
+    CurataFct(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipMateriale = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302.01.00");
+    var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628.00.00");
+    var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00");
+    var cont404 = os.FirstOrDefault<Cont>(c => c.Simbol == "404.01.00");
+
+    // Maparea Clasă/Tip → cont derivată de seed din simboluri (decizia 4).
+    Check("Seed: Tip 302.01.00 → cont 302.01.00 (potrivire exactă)",
+        tipMateriale.ContImplicitId != null
+        && os.GetObjectByKey<Cont>(tipMateriale.ContImplicitId.Value).Simbol == "302.01.00");
+    Check("Seed: Tip 628.00.00 → cont 628.* (tăierea segmentelor)",
+        tipServicii.ContImplicitId != null
+        && os.GetObjectByKey<Cont>(tipServicii.ContImplicitId.Value).Simbol.StartsWith("628"));
+
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = "E2E-FURN";
+    furnizor.Denumire = "Furnizor probă e2e";
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = "E2E-CE";
+    codEc.Denumire = "Cod economic probă e2e";
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = MarcajFct;
+    produs.Denumire = "Produs probă FCT";
+    produs.UM = "BUC";
+    produs.TipMaterial = tipMateriale;
+    os.CommitChanges();
+
+    var fct = os.CreateObject<FacturaIntrare>();
+    fct.Data = new DateOnly(2026, 3, 3);
+    fct.Predator = furnizor;
+    fct.Primitor = mag1;
+    var linieStoc = os.CreateObject<FacturaIntrareDetaliu>();
+    linieStoc.Document = fct;
+    linieStoc.TipMaterial = tipMateriale;
+    linieStoc.Cantitate = 5m;
+    linieStoc.PretUnitar = 10m;
+    linieStoc.CotaTva = 19m;
+    linieStoc.LotFabricatie = "LOT-A";
+    linieStoc.DataExpirare = new DateOnly(2027, 1, 1);
+    var linieServiciu = os.CreateObject<FacturaIntrareDetaliu>();
+    linieServiciu.Document = fct;
+    linieServiciu.TipMaterial = tipServicii;
+    linieServiciu.Cantitate = 1m;
+    linieServiciu.PretUnitar = 100m;
+    linieServiciu.CotaTva = 0m;
+
+    // Validările proprii FCT: număr furnizor, clasificație bugetară, lot pe stoc.
+    CheckRefuza("FCT fără număr/clasificație/lot → refuz", () => MotorOperare.Opereaza(os, fct));
+    fct.Numar = "E2E-FF1";
+    linieStoc.Dimensiuni.CodEconomicId = codEc.ID;
+    linieServiciu.Dimensiuni.CodEconomicId = codEc.ID;
+    var lot = linieStoc.CreeazaLot(os, produs, mag1);
+    os.CommitChanges();
+
+    // --- Operare FCT: postează serviciul, finalizează lotul, generează NIR ---
+    var conex = MotorOperare.Opereaza(os, fct);
+    Check("FCT operată; lanțul de valori materializat (59,5 / 100)",
+        fct.Stare == StareDocument.Operat && linieStoc.Valoare == 59.5m && linieServiciu.Valoare == 100m);
+    Check("Lot finalizat: preț 11,9 (cu TVA capitalizat) + atribute copiate",
+        lot.PretUnitar == 11.9m && lot.Data == fct.Data
+        && lot.LotFabricatie == "LOT-A" && lot.DataExpirare == new DateOnly(2027, 1, 1));
+    Check("FCT nu mișcă stoc (intrarea o face NIR-ul)",
+        !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == fct.ID));
+    var noteFct = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fct.ID).ToList();
+    Check("FCT contează DOAR linia de serviciu: 628 = 401, 100",
+        noteFct.Count == 1 && noteFct[0].ContDebitId == tipServicii.ContImplicitId
+        && noteFct[0].ContCreditId == cont401.ID && noteFct[0].Valoare == 100m);
+    Check("Nota FCT: dimensiuni rezolvate (cod economic + repartitori laturi)",
+        noteFct[0].DimensiuniDebit.CodEconomicId == codEc.ID
+        && noteFct[0].DimensiuniDebit.RepartitorId == furnizor.ID
+        && noteFct[0].DimensiuniCredit.RepartitorId == mag1.ID);
+
+    Check("Conex generat: NIR draft autogenerat, aceleași laturi",
+        conex is NIR { Stare: StareDocument.Draft, Autogenerat: true }
+        && conex.DocumentSursaId == fct.ID
+        && conex.PredatorId == furnizor.ID && conex.PrimitorId == mag1.ID);
+    Check("NIR-ul preia DOAR linia de stoc, cu lot, cantitate, valoare, dimensiuni",
+        conex.Detalii.Count == 1 && conex.Detalii[0].TipMaterialId == tipMateriale.ID
+        && conex.Detalii[0].LotId == lot.ID && conex.Detalii[0].Cantitate == 5m
+        && conex.Detalii[0].Valoare == 59.5m && conex.Detalii[0].Dimensiuni.CodEconomicId == codEc.ID);
+
+    // --- Operare NIR: singurul +1 al lanțului + contarea recepției ---
+    var nir = (NIR)conex;
+    Check("NIR-ul nu generează alt conex", MotorOperare.Opereaza(os, nir) == null);
+    Check("NIR operat cu număr din politică", nir.Stare == StareDocument.Operat && nir.Numar?.StartsWith("NIR-") == true);
+    var stocNir = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == nir.ID).ToList();
+    Check("NIR → +5/+59,5 Magazie pe gestiunea primitoare",
+        stocNir.Count == 1 && stocNir[0].TipStoc == TipStoc.Magazie && stocNir[0].RepartitorId == mag1.ID
+        && stocNir[0].Cantitate == 5m && stocNir[0].Valoare == 59.5m && stocNir[0].LotId == lot.ID);
+    var noteNir = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == nir.ID).ToList();
+    Check("NIR contează recepția: 302.01.00 = 401, 59,5",
+        noteNir.Count == 1 && noteNir[0].ContDebitId == tipMateriale.ContImplicitId
+        && noteNir[0].ContCreditId == cont401.ID && noteNir[0].Valoare == 59.5m);
+    Check("Sold lot după recepție: 5 pe MAG1",
+        StocService.Sold(os, new CheieStoc(lot.ID, mag1.ID, TipStoc.Magazie)) == 5m);
+
+    // --- Grupul conex la anulare/storno ---
+    CheckRefuza("Anularea FCT cu NIR operat → refuzată", () => MotorOperare.AnuleazaOperarea(os, fct));
+    MotorOperare.AnuleazaOperarea(os, nir);
+    Check("NIR anulat (corecție directă): Draft, fără rânduri",
+        nir.Stare == StareDocument.Draft && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == nir.ID));
+    MotorOperare.AnuleazaOperarea(os, fct);
+    Check("Anularea FCT șterge NIR-ul draft autogenerat",
+        fct.Stare == StareDocument.Draft && !os.GetObjectsQuery<NIR>().Any(x => x.DocumentSursaId == fct.ID));
+
+    // --- Re-operare + storno pe tot lanțul ---
+    var conex2 = MotorOperare.Opereaza(os, fct);
+    Check("Re-operarea FCT generează un NIR draft proaspăt", conex2 is NIR { Stare: StareDocument.Draft });
+    MotorOperare.Opereaza(os, conex2);
+    CheckRefuza("Stornarea FCT cu NIR operat → refuzată", () =>
+        MotorOperare.Storneaza(os, fct, new DateOnly(2026, 7, 22)));
+    MotorOperare.Storneaza(os, conex2, new DateOnly(2026, 7, 22));
+    Check("Storno NIR → sold lot 0",
+        StocService.Sold(os, new CheieStoc(lot.ID, mag1.ID, TipStoc.Magazie)) == 0m);
+    MotorOperare.Storneaza(os, fct, new DateOnly(2026, 7, 22));
+    var noteFinale = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fct.ID).ToList();
+    Check("Storno FCT → nota serviciului inversată, append-only",
+        fct.Stare == StareDocument.Stornat && noteFinale.Count == 2
+        && noteFinale.Single(r => r.Storno).Valoare == -100m);
+
+    // --- Sursa de cont PartenerPredator: ContImplicit bate fallback-ul 401 ---
+    var furnizorImobilizari = os.CreateObject<Partener>();
+    furnizorImobilizari.Cod = "E2E-FURN2";
+    furnizorImobilizari.Denumire = "Furnizor cu cont propriu";
+    furnizorImobilizari.ContImplicit = cont404;
+    var fct2 = os.CreateObject<FacturaIntrare>();
+    fct2.Numar = "E2E-FF2";
+    fct2.Data = new DateOnly(2026, 3, 4);
+    fct2.Predator = furnizorImobilizari;
+    fct2.Primitor = mag1;
+    var linie2 = os.CreateObject<FacturaIntrareDetaliu>();
+    linie2.Document = fct2;
+    linie2.TipMaterial = tipServicii;
+    linie2.Cantitate = 1m;
+    linie2.PretUnitar = 200m;
+    linie2.Dimensiuni.CodEconomicId = codEc.ID;
+    os.CommitChanges();
+    Check("FCT doar cu servicii NU generează NIR", MotorOperare.Opereaza(os, fct2) == null);
+    Check("Creditul vine din ContImplicit al partenerului (404, nu fallback 401)",
+        os.GetObjectsQuery<RegistruContabil>().Single(r => r.DocumentId == fct2.ID).ContCreditId == cont404.ID);
+    MotorOperare.Storneaza(os, fct2, new DateOnly(2026, 7, 22));
+
+    CurataFct(os);
+    Check("Curățenie finală FCT/NIR (fără reziduuri e2e)",
+        !os.GetObjectsQuery<FacturaIntrare>().Any(d => d.Numar.StartsWith("E2E-FF"))
+        && !os.GetObjectsQuery<Partener>().Any(p => p.Cod.StartsWith("E2E-FURN")));
 }
 
 Console.WriteLine(esecuri == 0 ? "\nToate verificările au trecut." : $"\n{esecuri} verificări EȘUATE.");

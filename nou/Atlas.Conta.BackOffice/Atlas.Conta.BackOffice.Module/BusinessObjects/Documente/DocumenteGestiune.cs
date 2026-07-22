@@ -2,9 +2,38 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // Detaliul acestor trei tipuri = baza pură + validare (testul bazei §6).
 
-// NIR (02): singura intrare în stoc a lanțului de cumpărare (+1 primitor);
-// liniile lui creează Loturile. De regulă autogenerat din FacturaIntrare (conex).
+// NIR (02): singura intrare în stoc a lanțului de cumpărare (+1 primitor).
+// De regulă autogenerat din FacturaIntrare (conex) — liniile clonate referă
+// loturile născute la culegerea facturii; NIR-ul cules manual își creează
+// loturile pe propriile linii (CreeazaLot). Recepția CONTEAZĂ aici (3xx = 401,
+// închiderea întrebării 00 §13.1) — factura postează doar liniile non-stoc.
 public class NIR : Document {
+    // Liniile care referă un lot străin (născut pe altă linie — cazul conex) își
+    // iau valoarea din prețul finalizat al lotului; liniile care și-au creat
+    // propriul lot au Valoare culeasă (prețul lotului se derivă abia la operare).
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
+        foreach (var d in Detalii.Where(d => d.LotId != null)) {
+            var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
+            if (lot.LinieIntrareId != d.ID)
+                d.Valoare = d.Cantitate * lot.PretUnitar;
+        }
+    }
+
+    public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
+        base.ValideazaOperare(os, erori);
+        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Partener)
+            erori.Add("Predatorul NIR-ului trebuie să fie un partener (furnizor).");
+        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)
+            erori.Add("Primitorul NIR-ului trebuie să fie o gestiune.");
+        foreach (var d in Detalii) {
+            if (d.LotId == null)
+                erori.Add("Fiecare linie de NIR referă un lot (recepția e pe lot — decizia 13).");
+            else if (os.GetObjectByKey<Lot>(d.LotId.Value).GestiuneId != PrimitorId)
+                erori.Add("Lotul fiecărei linii aparține gestiunii primitoare.");
+            if (d.Cantitate <= 0)
+                erori.Add("Cantitatea recepționată trebuie să fie pozitivă.");
+        }
+    }
 }
 
 // BCS (03): −magazie (predator) / +consum (primitor); valoarea vine din lot.

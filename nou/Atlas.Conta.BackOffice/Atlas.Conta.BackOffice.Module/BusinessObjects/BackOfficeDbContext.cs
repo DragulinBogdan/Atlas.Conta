@@ -130,12 +130,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasForeignKey(d => d.DocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Două relații distincte linie↔lot (altfel convenția le împerechează 1:1):
-            // linia de ieșire REFERĂ un lot; lotul e CREAT de o linie de intrare.
+            // Linia REFERĂ un lot prin FK real; sensul invers (lotul e CREAT de o
+            // linie de intrare) e doar coloana Lot.LinieIntrareId, fără FK — vezi
+            // comentariul din Lot (ciclu de inserție altfel).
             modelBuilder.Entity<DocumentDetaliu>()
                 .HasOne(d => d.Lot).WithMany().HasForeignKey(d => d.LotId);
-            modelBuilder.Entity<Lot>()
-                .HasOne(l => l.LinieIntrare).WithMany().HasForeignKey(l => l.LinieIntrareId);
 
             // Owned type Dimensiuni (decizia 15) — pe linia de document, pe rândul
             // de registru contabil și pe cele trei seturi ale regulii de contare.

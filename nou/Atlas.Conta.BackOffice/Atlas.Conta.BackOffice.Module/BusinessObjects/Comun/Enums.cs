@@ -29,6 +29,16 @@ public enum NaturaClasa {
 
 public enum TipInstrumentPlata { OrdinPlata = 1, Cec = 2, DispozitieCasa = 3, Chitanta = 4 }
 
+// De unde își ia o latură a regulii de contare contul (testul bazei §7.2:
+// „contul se rezolvă prin POLITICĂ — per tip partener și/sau per Clasă-Tip").
+// Contul explicit al regulii rămâne fallback când sursa nu rezolvă.
+public enum SursaCont {
+    Explicit = 0,
+    TipMaterial = 1,       // TipMaterial.ContImplicit al liniei (302x/303x/6xx…)
+    PartenerPredator = 2,  // Partener.ContImplicit de pe latura predator (401/404…)
+    PartenerPrimitor = 3,  // idem, latura primitor (411… — FacturaIesire)
+}
+
 // Calități transversale pe repartitori (decizia 16) — roluri, nu clase derivate.
 [Flags]
 public enum CalitateRepartitor {

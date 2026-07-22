@@ -29,6 +29,9 @@ public class Lot : BaseObject {
     public virtual DateOnly? DataExpirare { get; set; }
     public virtual string LotFabricatie { get; set; }
     // Linia care a creat lotul (NIR / plus de inventar / raport de producție).
+    // Coloană FĂRĂ constrângere FK (intenționat): linia își referă lotul prin
+    // LotId, iar lotul linia-mamă — un FK real pe ambele sensuri ar face ciclu
+    // de inserție (EF nu sparge cicluri, iar ObjectSpace-ul XAF comite totul
+    // într-un singur SaveChanges). Provenința e întreținută de CreeazaLot/motor.
     public virtual Guid? LinieIntrareId { get; set; }
-    public virtual DocumentDetaliu LinieIntrare { get; set; }
 }

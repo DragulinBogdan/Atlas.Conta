@@ -11,3 +11,11 @@ public interface IDocumentCuPV {
     string NumarPV { get; set; }
     DateOnly? DataPV { get; set; }
 }
+
+// Linia de intrare care culege atribute de lot (testul bazei §2: DATA_EXPIRARE
+// și LOT_FABRICATIE aparțin Lotului); motorul le copiază pe Lot la finalizarea
+// lui (operare) — contract de bază, ca să nu cunoască derivatele.
+public interface ILinieCuAtributeLot {
+    DateOnly? DataExpirare { get; set; }
+    string LotFabricatie { get; set; }
+}

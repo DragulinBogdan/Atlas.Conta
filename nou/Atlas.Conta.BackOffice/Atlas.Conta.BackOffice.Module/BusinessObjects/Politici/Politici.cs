@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
@@ -33,12 +32,23 @@ public class RegulaStoc : BaseObject {
 
 // Maparea contabilă: tip document × Clasă/Tip → cont D/C + dimensiuni
 // (decizia 15: Comun / OverrideDebit / OverrideCredit).
+// Potrivirea pe linie (motor): TipMaterial exact → NaturaFiltru → regula
+// generică (ambele null). Fără regulă potrivită = linia nu contează pe acest
+// tip de document (așa se împarte lanțul FCT/NIR fără dublă postare).
 [NavigationItem("Politici")]
 public class RegulaContare : BaseObject {
     public virtual Guid TipDocumentId { get; set; }
     public virtual TipDocument TipDocument { get; set; }
     public virtual Guid? TipMaterialId { get; set; }
     public virtual TipMaterial TipMaterial { get; set; }
+    // Filtru pe natura Clasei liniei (ex. FCT contează DOAR non-stoc — recepția
+    // o postează NIR-ul); mai slab decât potrivirea exactă pe TipMaterial.
+    public virtual NaturaClasa? NaturaFiltru { get; set; }
+    // Conturile se rezolvă declarativ per latură (testul bazei §7.2): sursa
+    // indică nomenclatorul purtător (Tip material / partenerul unei laturi),
+    // iar contul explicit de mai jos rămâne valoare directă sau fallback.
+    public virtual SursaCont SursaContDebit { get; set; }
+    public virtual SursaCont SursaContCredit { get; set; }
     public virtual Guid? ContDebitId { get; set; }
     public virtual Cont ContDebit { get; set; }
     public virtual Guid? ContCreditId { get; set; }
@@ -49,7 +59,10 @@ public class RegulaContare : BaseObject {
 }
 
 // Documentul conex (decizia 17, 00 §6): sursă → țintă + filtrul de conținut
-// (ce tipuri de material trec pe documentul generat).
+// (ce linii trec pe documentul generat). Filtrul legacy enumera tipuri de
+// material per defa (GEST_ITEMSI_TIP_MATERIAL); funcțional criteriul e natura
+// liniei (pe NIR trec exact liniile purtătoare de stoc) — decizia 21: politica
+// se definește pe funcționalitate, nu prin transcrierea listelor legacy.
 [NavigationItem("Politici")]
 public class PoliticaConex : BaseObject {
     public virtual Guid TipDocumentSursaId { get; set; }
@@ -58,7 +71,8 @@ public class PoliticaConex : BaseObject {
     public virtual TipDocument TipDocumentTinta { get; set; }
     // TIP_DESCARCARE legacy: ținta inversează laturile (predator ↔ primitor).
     public virtual bool InverseazaLaturi { get; set; }
-    public virtual ObservableCollection<TipMaterial> TipuriMaterialPermise { get; set; } = new();
+    // Null = trec toate liniile; altfel doar cele cu Clasa.Natura potrivită.
+    public virtual NaturaClasa? NaturaFiltru { get; set; }
 }
 
 [NavigationItem("Politici")]

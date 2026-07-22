@@ -26,4 +26,9 @@ public class TipMaterial : BaseObject {
     // un singur FK (TipMaterial) iar Clasa se derivă.
     public virtual Guid ClasaId { get; set; }
     public virtual ClasaProdus Clasa { get; set; }
+    // Maparea Clasă/Tip → cont e DATE (decizia 4). Seed-ul o derivă din simbol
+    // (Cod-ul Tipului E un simbol de cont — 10 §2); editabilă fără release.
+    // Consumată de RegulaContare prin SursaCont.TipMaterial.
+    public virtual Guid? ContImplicitId { get; set; }
+    public virtual Cont ContImplicit { get; set; }
 }
