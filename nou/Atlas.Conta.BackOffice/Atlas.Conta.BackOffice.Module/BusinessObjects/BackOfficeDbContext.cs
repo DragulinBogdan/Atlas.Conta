@@ -90,6 +90,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaScadenta> PoliticiScadenta { get; set; }
         public DbSet<PoliticaValidare> PoliticiValidare { get; set; }
 
+        // Infrastructura migrării (pasul 4): corelare legacy → nou.
+        public DbSet<MigrareLegatura> MigrareLegaturi { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             base.OnModelCreating(modelBuilder);
             modelBuilder.UseDeferredDeletion(this);
@@ -149,6 +152,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniComun, ConfigureDimensiuni);
             modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniOverrideDebit, ConfigureDimensiuni);
             modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniOverrideCredit, ConfigureDimensiuni);
+
+            modelBuilder.Entity<MigrareLegatura>()
+                .HasIndex(m => new { m.Tabela, m.CheieLegacy }).IsUnique();
         }
 
         private static void ConfigureDimensiuni<T>(Microsoft.EntityFrameworkCore.Metadata.Builders.OwnedNavigationBuilder<T, Dimensiuni> b) where T : class {
