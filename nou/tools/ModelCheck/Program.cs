@@ -29,3 +29,9 @@ Console.WriteLine($"Repartitori:     {await ctx.Repartitori.CountAsync()}");
 Console.WriteLine($"PerioadeFiscale: {await ctx.PerioadeFiscale.CountAsync()}");
 Console.WriteLine($"ReguliStoc:      {await ctx.ReguliStoc.CountAsync()}");
 Console.WriteLine($"ReguliContare:   {await ctx.ReguliContare.CountAsync()}");
+
+// Garda pentru limitarea owned + table sharing: cu navigația REQUIRED, un rând
+// cu toate dimensiunile null trebuie să materializeze obiect gol, nu null.
+var regula = await ctx.ReguliContare.FirstOrDefaultAsync();
+if (regula != null)
+    Console.WriteLine($"Owned all-null → DimensiuniComun {(regula.DimensiuniComun == null ? "NULL (BUG!)" : "instanță OK")}");

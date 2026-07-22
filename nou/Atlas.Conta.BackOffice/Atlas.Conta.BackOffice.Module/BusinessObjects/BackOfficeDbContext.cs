@@ -138,11 +138,19 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
             // Owned type Dimensiuni (decizia 15) — pe linia de document, pe rândul
             // de registru contabil și pe cele trei seturi ale regulii de contare.
-            modelBuilder.Entity<DocumentDetaliu>().OwnsOne(d => d.Dimensiuni, ConfigureDimensiuni);
-            modelBuilder.Entity<RegistruContabil>().OwnsOne(r => r.Dimensiuni, ConfigureDimensiuni);
-            modelBuilder.Entity<RegulaContare>().OwnsOne(r => r.DimensiuniComun, ConfigureDimensiuni);
-            modelBuilder.Entity<RegulaContare>().OwnsOne(r => r.DimensiuniOverrideDebit, ConfigureDimensiuni);
-            modelBuilder.Entity<RegulaContare>().OwnsOne(r => r.DimensiuniOverrideCredit, ConfigureDimensiuni);
+            // Navigația e REQUIRED: altfel, la table sharing cu toate coloanele
+            // nullable, un rând complet null s-ar materializa ca Dimensiuni=null
+            // (nu obiect gol) și ar sparge coalesce-ul motorului cu NRE.
+            modelBuilder.Entity<DocumentDetaliu>().OwnsOne(d => d.Dimensiuni, ConfigureDimensiuni)
+                .Navigation(d => d.Dimensiuni).IsRequired();
+            modelBuilder.Entity<RegistruContabil>().OwnsOne(r => r.Dimensiuni, ConfigureDimensiuni)
+                .Navigation(r => r.Dimensiuni).IsRequired();
+            modelBuilder.Entity<RegulaContare>().OwnsOne(r => r.DimensiuniComun, ConfigureDimensiuni)
+                .Navigation(r => r.DimensiuniComun).IsRequired();
+            modelBuilder.Entity<RegulaContare>().OwnsOne(r => r.DimensiuniOverrideDebit, ConfigureDimensiuni)
+                .Navigation(r => r.DimensiuniOverrideDebit).IsRequired();
+            modelBuilder.Entity<RegulaContare>().OwnsOne(r => r.DimensiuniOverrideCredit, ConfigureDimensiuni)
+                .Navigation(r => r.DimensiuniOverrideCredit).IsRequired();
         }
 
         private static void ConfigureDimensiuni<T>(Microsoft.EntityFrameworkCore.Metadata.Builders.OwnedNavigationBuilder<T, Dimensiuni> b) where T : class {
