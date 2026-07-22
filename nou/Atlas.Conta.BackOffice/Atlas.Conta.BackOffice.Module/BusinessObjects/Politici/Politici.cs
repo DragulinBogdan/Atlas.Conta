@@ -80,6 +80,16 @@ public class PoliticaConex : BaseObject {
     public virtual NaturaClasa? NaturaFiltru { get; set; }
 }
 
+// Scadența default per tip (inventar 07: `DATA_SCADENTA = data_docum + 30` era
+// formulă de header în legacy — politică de scadență, nu structură). Motorul o
+// aplică la operare pe IDocumentCuScadenta DOAR dacă scadența nu a fost culeasă.
+[NavigationItem("Politici")]
+public class PoliticaScadenta : BaseObject {
+    public virtual Guid TipDocumentId { get; set; }
+    public virtual TipDocument TipDocument { get; set; }
+    public virtual int ZileDefault { get; set; }
+}
+
 [NavigationItem("Politici")]
 public class PoliticaNumerotare : BaseObject {
     public virtual Guid TipDocumentId { get; set; }

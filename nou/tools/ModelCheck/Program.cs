@@ -714,5 +714,143 @@ using (var os = provider.CreateObjectSpace()) {
         && !os.GetObjectsQuery<UnitateInterna>().Any(u => u.Cod == MarcajComisie));
 }
 
+// ===================== Scenariul e2e 3c: FacturaIesire =====================
+// Facturarea: pur creanță (411 = 7xx), fără registru de stoc → numerotare
+// proprie din politică (serie fiscală) → scadență default +30 din politică
+// (fără să suprascrie scadența culeasă) → contare per linie cu creditul din
+// contul de venit al Tipului și debitul particularizat prin ContImplicit al
+// clientului (461) → validări laturi + refuz linii de stoc → anulare directă
+// → storno.
+const string MarcajFcl = "E2E-FCL";
+
+void CurataFcl(IObjectSpace os) {
+    foreach (var doc in os.GetObjectsQuery<FacturaIesire>()
+        .Where(d => d.Primitor.Cod.StartsWith(MarcajFcl) || d.Predator.Cod.StartsWith(MarcajFcl)).ToList()) {
+        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList());
+        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).ToList());
+        os.Delete(doc);
+    }
+    os.Delete(os.GetObjectsQuery<Partener>().Where(p => p.Cod.StartsWith(MarcajFcl)).ToList());
+    os.CommitChanges();
+}
+
+using (var os = provider.CreateObjectSpace()) {
+    CurataFcl(os);
+
+    var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+    var tipServiciiVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == "751.01.00");
+    var tipChirii = os.FirstOrDefault<TipMaterial>(t => t.Cod == "750.02.00");
+    var tipStocMat = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302.01.00");
+    var cont411 = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
+    var cont461 = os.FirstOrDefault<Cont>(c => c.Simbol == "461.01.01");
+
+    // Politica derivată la seed: tipurile de venit cu contul din simbol.
+    Check("Seed: Tip 751.01.00 (clasa VEN) → cont 751.01.00",
+        tipServiciiVenit?.ContImplicitId != null
+        && os.GetObjectByKey<Cont>(tipServiciiVenit.ContImplicitId.Value).Simbol == "751.01.00");
+    var regulaFcl = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "FCL");
+    Check("Seed FCL: debit PartenerPrimitor (fallback 411.01.01), credit TipMaterial",
+        regulaFcl != null && regulaFcl.SursaContDebit == SursaCont.PartenerPrimitor
+        && regulaFcl.ContDebitId == cont411.ID && regulaFcl.SursaContCredit == SursaCont.TipMaterial);
+    Check("Seed FCL: fără reguli de stoc (pur creanță)",
+        !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocument.Cod == "FCL"));
+    var politicaScadenta = os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocument.Cod == "FCL");
+    Check("Seed FCL: politică de scadență +30", politicaScadenta?.ZileDefault == 30);
+
+    var client = os.CreateObject<Partener>();
+    client.Cod = MarcajFcl + "-CL1";
+    client.Denumire = "Client probă e2e";
+    os.CommitChanges();
+
+    FacturaIesireDetaliu Linie(FacturaIesire doc, TipMaterial tip, decimal cantitate, decimal pret, decimal cota) {
+        var d = os.CreateObject<FacturaIesireDetaliu>();
+        d.Document = doc;
+        d.TipMaterial = tip;
+        d.Cantitate = cantitate;
+        d.PretUnitar = pret;
+        d.CotaTva = cota;
+        return d;
+    }
+    List<RegistruContabil> Note(Document doc) =>
+        os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList();
+
+    // --- Validările laturilor + refuzul liniilor de stoc ---
+    var fcl = os.CreateObject<FacturaIesire>();
+    fcl.Data = new DateOnly(2026, 3, 5);
+    fcl.Predator = client; // inversat intenționat
+    fcl.Primitor = sediu;
+    Linie(fcl, tipServiciiVenit, 2m, 100m, 0m).Descriere = "Servicii refacturate";
+    CheckRefuza("Laturi inversate (predator partener / primitor intern) → refuz",
+        () => MotorOperare.Opereaza(os, fcl));
+    fcl.Predator = sediu;
+    fcl.Primitor = client;
+
+    var linieStoc = Linie(fcl, tipStocMat, 1m, 5m, 0m);
+    CheckRefuza("Linie de stoc pe factura de ieșire → refuz (nu descarcă gestiune)",
+        () => MotorOperare.Opereaza(os, fcl));
+    os.Delete(linieStoc);
+    Linie(fcl, tipChirii, 1m, 50m, 0m).Descriere = "Chirie spațiu";
+    os.CommitChanges();
+
+    // --- Operare: serie fiscală + scadență default + o notă per linie ---
+    Check("FCL nu generează conex", MotorOperare.Opereaza(os, fcl) == null);
+    Check("Operare → stare Operat + număr din seria fiscală",
+        fcl.Stare == StareDocument.Operat && fcl.Numar?.StartsWith("FCL-") == true);
+    Check("Scadența default din politică: data + 30",
+        fcl.DataScadenta == fcl.Data.AddDays(30));
+    Check("FCL nu mișcă stoc",
+        !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == fcl.ID));
+    var note = Note(fcl);
+    Check("Contare servicii: 411.01.01 = 751.01.00, 200",
+        note.Any(n => n.ContDebitId == cont411.ID
+            && n.ContCreditId == tipServiciiVenit.ContImplicitId && n.Valoare == 200m));
+    Check("Contare chirie: 411.01.01 = 750.02.00, 50",
+        note.Any(n => n.ContDebitId == cont411.ID
+            && n.ContCreditId == tipChirii.ContImplicitId && n.Valoare == 50m));
+    Check("Exact 2 note (una per linie)", note.Count == 2);
+    Check("Nota FCL: repartitori din laturi (debit←emitent, credit←client — 00 §5)",
+        note.All(n => n.DimensiuniDebit.RepartitorId == sediu.ID
+            && n.DimensiuniCredit.RepartitorId == client.ID));
+
+    // --- Debit particularizat (461) + scadență culeasă + TVA în valoare ---
+    var clientDebitor = os.CreateObject<Partener>();
+    clientDebitor.Cod = MarcajFcl + "-CL2";
+    clientDebitor.Denumire = "Debitor cu cont propriu";
+    clientDebitor.ContImplicit = cont461;
+    var fcl2 = os.CreateObject<FacturaIesire>();
+    fcl2.Data = new DateOnly(2026, 3, 6);
+    fcl2.Predator = sediu;
+    fcl2.Primitor = clientDebitor;
+    fcl2.DataScadenta = new DateOnly(2026, 12, 31); // culeasă manual
+    Linie(fcl2, tipServiciiVenit, 1m, 100m, 19m);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fcl2);
+    Check("Debitul din ContImplicit al clientului (461, nu fallback 411)",
+        Note(fcl2).Single().ContDebitId == cont461.ID);
+    Check("Valoarea postată include TVA (o singură Valoare pe linie: 119)",
+        Note(fcl2).Single().Valoare == 119m);
+    Check("Scadența culeasă manual nu se suprascrie",
+        fcl2.DataScadenta == new DateOnly(2026, 12, 31));
+    MotorOperare.Storneaza(os, fcl2, new DateOnly(2026, 7, 22));
+
+    // --- Fără stoc = fără dependenți: anulare directă mereu permisă → storno ---
+    MotorOperare.AnuleazaOperarea(os, fcl);
+    Check("Anulare FCL → Draft + notele șterse",
+        fcl.Stare == StareDocument.Draft && Note(fcl).Count == 0);
+    MotorOperare.Opereaza(os, fcl);
+    Check("Re-operare după corecție (numărul asignat rămâne)",
+        fcl.Stare == StareDocument.Operat && fcl.Numar?.StartsWith("FCL-") == true);
+    MotorOperare.Storneaza(os, fcl, new DateOnly(2026, 7, 22));
+    var noteFinale = Note(fcl);
+    Check("Storno FCL → note inverse append-only (−200, −50) la data stornării",
+        fcl.Stare == StareDocument.Stornat && noteFinale.Count == 4
+        && noteFinale.Count(r => r.Storno && (r.Valoare == -200m || r.Valoare == -50m)
+            && r.Data == new DateOnly(2026, 7, 22)) == 2);
+
+    CurataFcl(os);
+    Check("Curățenie finală FCL (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Partener>().Any(p => p.Cod.StartsWith(MarcajFcl)));
+}
+
 Console.WriteLine(esecuri == 0 ? "\nToate verificările au trecut." : $"\n{esecuri} verificări EȘUATE.");
 Environment.ExitCode = esecuri == 0 ? 0 : 1;

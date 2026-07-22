@@ -15,11 +15,17 @@ public static class ContaSeeder {
         SeedPlanConturi(os);
         SeedRepartitori(os);
         SeedPerioadeFiscale(os);
+        // Derivările de mai jos interoghează BAZA (GetObjectsQuery) — rândurile
+        // de nomenclator create mai sus trebuie comise întâi, altfel tipurile
+        // noi nu primesc cont la primul updater (vizibil doar la fresh install
+        // sau la adăugarea de tipuri).
+        os.CommitChanges();
         SeedContImplicitTipMaterial(os);
         SeedPoliticiNotaTransfer(os);
         SeedPoliticiFacturaIntrareNir(os);
         SeedPoliticiBonConsum(os);
         SeedPoliticiListaDiferente(os);
+        SeedPoliticiFacturaIesire(os);
         os.CommitChanges();
     }
 
@@ -74,6 +80,7 @@ public static class ContaSeeder {
             ("DEZ", "Dezinfectanți", NaturaClasa.Stoc),
             ("PS", "Piese de schimb", NaturaClasa.Stoc),
             ("L", "Lubrifianți", NaturaClasa.Stoc),
+            ("VEN", "Venituri", NaturaClasa.Serviciu),
         ];
         var claseMap = new Dictionary<string, ClasaProdus>();
         foreach (var c in clase) {
@@ -132,6 +139,12 @@ public static class ContaSeeder {
             ("DEZ", "302.09.00.4", "Dezinfectanți"),
             ("PS", "302.04.00", "Piese de schimb"),
             ("L", "302.02.00.3", "Lubrifianți"),
+            // Nivelul de contare al facturării (inventar 07: contul de venit
+            // ales pe linie devine politică per Clasă/Tip — testul bazei §7.2);
+            // simboluri din planul bugetar (751/750, nu 704/706 ca la privat).
+            ("VEN", "751.01.00", "Venituri din prestări de servicii și alte activități"),
+            ("VEN", "750.02.00", "Alte venituri din proprietate (chirii)"),
+            ("VEN", "751.04.00", "Diverse venituri"),
         ];
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipMaterial>(x => x.Cod == t.Cod) == null) {
@@ -451,6 +464,35 @@ public static class ContaSeeder {
         }
         // Minusul: cheltuială per Tip, doar pe liniile negative.
         SeedContare6xxDin3xx(os, ldi, -1);
+    }
+
+    // Politicile facturării (inventar 07): pur creanță — NICIO regulă de stoc.
+    // Numerotare proprie (serie fiscală — spre deosebire de FCT, care poartă
+    // numărul furnizorului); formula de header legacy `DATA_SCADENTA = data+30`
+    // devine politică de scadență. Contare: un singur rând generic 411 = 7xx —
+    // debitul se particularizează prin ContImplicit al clientului (ex. 461
+    // debitori), fallback 411.01.01; creditul vine din contul Tipului liniei
+    // (clasa VEN) — fără fallback: un Tip fără cont e eroare semnalată la operare.
+    static void SeedPoliticiFacturaIesire(IObjectSpace os) {
+        var fcl = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCL");
+        if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == "FCL") == null) {
+            var numerotare = os.CreateObject<PoliticaNumerotare>();
+            numerotare.TipDocument = fcl;
+            numerotare.Serie = "FCL-";
+            numerotare.UrmatorulNumar = 1;
+        }
+        if (os.FirstOrDefault<PoliticaScadenta>(x => x.TipDocument.Cod == "FCL") == null) {
+            var scadenta = os.CreateObject<PoliticaScadenta>();
+            scadenta.TipDocument = fcl;
+            scadenta.ZileDefault = 30;
+        }
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "FCL") == null) {
+            var facturare = os.CreateObject<RegulaContare>();
+            facturare.TipDocument = fcl;
+            facturare.SursaContDebit = SursaCont.PartenerPrimitor;
+            facturare.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
+            facturare.SursaContCredit = SursaCont.TipMaterial;
+        }
     }
 
     // Contarea 6xx = 3xx per Clasă/Tip (echivalentul curat al celor 18 modele

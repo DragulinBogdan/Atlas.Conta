@@ -31,6 +31,7 @@ public static class MotorOperare {
 
         var tipDoc = GasesteTipDocument(os, doc);
         AsignaNumar(os, doc, tipDoc);
+        AplicaScadenta(os, doc, tipDoc);
 
         // Clasa/natura/contul fiecărui Tip de pe linii, preîncărcate — motorul nu
         // se bazează pe navigații (contextul apelant nu garantează lazy loading).
@@ -329,5 +330,16 @@ public static class MotorOperare {
         doc.Numar = string.IsNullOrWhiteSpace(politica.Format)
             ? $"{politica.Serie}{n}"
             : string.Format(politica.Format, n, politica.Serie);
+    }
+
+    // Scadența cu default de politică (inventar 07): se aplică doar când nu a
+    // fost culeasă — politica e default, nu constrângere. Tipurile fără rând de
+    // politică (ex. FCT — scadența furnizorului se culege) rămân neatinse.
+    static void AplicaScadenta(IObjectSpace os, Document doc, TipDocument tipDoc) {
+        if (doc is not IDocumentCuScadenta scadenta || scadenta.DataScadenta != null)
+            return;
+        var politica = os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tipDoc.ID);
+        if (politica != null)
+            scadenta.DataScadenta = doc.Data.AddDays(politica.ZileDefault);
     }
 }
