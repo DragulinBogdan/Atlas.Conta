@@ -35,12 +35,41 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
             d.RecalculeazaValoare();
     }
 
+    // Plata automată (00 §7, decizia 31): grupul DECONT_* cules → draft Plata
+    // autogenerat. Header din câmpurile culese; liniile clonează DEFALCAREA
+    // fiecărei linii de factură (valoare + dimensiuni + angajament — echivalentul
+    // BREG_P/GEST_DEFALCARE_DECONTARI), cu Tipul sursă păstrat ca informație.
+    // La operarea plății, motorul creează imperecherea automată pe total.
+    // GenereazaChitanta (încasarea-dovadă a BF) rămâne neactivat — nu are cont
+    // propriu cules; se tratează la fluxul BF, aditiv.
+    public override Document GenereazaSecundar(DevExpress.ExpressApp.IObjectSpace os) {
+        if (!GenereazaPlata)
+            return null;
+        var plata = os.CreateObject<Plata>();
+        plata.Data = PlataData ?? Data;
+        plata.Numar = PlataNumar;
+        plata.TipInstrument = PlataTipInstrument ?? TipInstrumentPlata.OrdinPlata;
+        plata.PredatorId = PlataContPropriuId ?? Guid.Empty;
+        plata.PrimitorId = PredatorId;
+        foreach (var s in Detalii) {
+            var d = os.CreateObject<DocumentDetaliu>();
+            d.Document = plata;
+            d.TipMaterialId = s.TipMaterialId;
+            d.Valoare = s.Valoare;
+            d.AngajamentId = s.AngajamentId;
+            d.Dimensiuni = Motor.DimensiuniResolver.Rezolva(s.Dimensiuni);
+        }
+        return plata;
+    }
+
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
         // Numărul facturii e al furnizorului — se culege, nu se generează
         // (FCT nu are politică de numerotare).
         if (string.IsNullOrWhiteSpace(Numar))
             erori.Add("Factura de intrare poartă numărul furnizorului — se completează la culegere.");
+        if (GenereazaPlata && PlataContPropriuId == null)
+            erori.Add("Generarea plății cere contul propriu (casă/bancă) din care se plătește.");
         if (os.GetObjectByKey<Repartitor>(PredatorId) is not Partener)
             erori.Add("Predatorul facturii de intrare trebuie să fie un partener (furnizor).");
         if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)

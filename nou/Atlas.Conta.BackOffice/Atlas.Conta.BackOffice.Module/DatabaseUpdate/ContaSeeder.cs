@@ -26,6 +26,7 @@ public static class ContaSeeder {
         SeedPoliticiBonConsum(os);
         SeedPoliticiListaDiferente(os);
         SeedPoliticiFacturaIesire(os);
+        SeedPoliticiTrezorerie(os);
         os.CommitChanges();
     }
 
@@ -81,6 +82,7 @@ public static class ContaSeeder {
             ("PS", "Piese de schimb", NaturaClasa.Stoc),
             ("L", "Lubrifianți", NaturaClasa.Stoc),
             ("VEN", "Venituri", NaturaClasa.Serviciu),
+            ("TRZ", "Trezorerie", NaturaClasa.Tehnica),
         ];
         var claseMap = new Dictionary<string, ClasaProdus>();
         foreach (var c in clase) {
@@ -145,6 +147,11 @@ public static class ContaSeeder {
             ("VEN", "751.01.00", "Venituri din prestări de servicii și alte activități"),
             ("VEN", "750.02.00", "Alte venituri din proprietate (chirii)"),
             ("VEN", "751.04.00", "Diverse venituri"),
+            // Tipul convențional al liniilor de plată/încasare culese manual
+            // (decizia 31c): linia e defalcarea sumei, nu un material — conturile
+            // vin din laturile documentului, nu din Tip (regula PLT/INC e
+            // generică). Codul nu e simbol de cont — rămâne fără ContImplicit.
+            ("TRZ", "TRZ", "Operațiune de trezorerie"),
         ];
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipMaterial>(x => x.Cod == t.Cod) == null) {
@@ -366,7 +373,7 @@ public static class ContaSeeder {
             receptie.TipDocument = nir;
             receptie.NaturaFiltru = NaturaClasa.Stoc;
             receptie.SursaContDebit = SursaCont.TipMaterial;
-            receptie.SursaContCredit = SursaCont.PartenerPredator;
+            receptie.SursaContCredit = SursaCont.RepartitorPredator;
             receptie.ContCredit = cont401;
         }
 
@@ -383,7 +390,7 @@ public static class ContaSeeder {
                 regula.TipDocument = fct;
                 regula.NaturaFiltru = r.Natura;
                 regula.SursaContDebit = SursaCont.TipMaterial;
-                regula.SursaContCredit = SursaCont.PartenerPredator;
+                regula.SursaContCredit = SursaCont.RepartitorPredator;
                 regula.ContCredit = r.Fallback;
             }
         }
@@ -489,9 +496,60 @@ public static class ContaSeeder {
         if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "FCL") == null) {
             var facturare = os.CreateObject<RegulaContare>();
             facturare.TipDocument = fcl;
-            facturare.SursaContDebit = SursaCont.PartenerPrimitor;
+            facturare.SursaContDebit = SursaCont.RepartitorPrimitor;
             facturare.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
             facturare.SursaContCredit = SursaCont.TipMaterial;
+        }
+    }
+
+    // Politicile trezoreriei (inventar 09, decizia 31): plățile/încasările sunt
+    // documente pur contabile — fără reguli de stoc; registrul de casă/bancă e
+    // registrul contabil al lor. Un rând generic de contare per tip, cu ambele
+    // conturi din laturi (ContImplicit pe Repartitor): PLT — beneficiarul
+    // (401/404/542, fallback 401) = contul propriu (5xx/770, FĂRĂ fallback: un
+    // cont propriu fără cont e eroare clară la operare); INC — oglindit, cu
+    // fallback 411 pe plătitor. Conturile proprii (legacy `casierie`) primesc
+    // rânduri minime: casa în lei + finanțarea de la buget (trezoreria).
+    static void SeedPoliticiTrezorerie(IObjectSpace os) {
+        var casa = os.FirstOrDefault<ContPropriu>(x => x.Cod == "CASA");
+        if (casa == null) {
+            casa = os.CreateObject<ContPropriu>();
+            casa.Cod = "CASA";
+            casa.Denumire = "Casa în lei";
+            casa.EsteBanca = false;
+            casa.ContImplicit = os.FirstOrDefault<Cont>(c => c.Simbol == "531.01.01");
+        }
+        var trez = os.FirstOrDefault<ContPropriu>(x => x.Cod == "TREZ");
+        if (trez == null) {
+            trez = os.CreateObject<ContPropriu>();
+            trez.Cod = "TREZ";
+            trez.Denumire = "Trezorerie — finanțare de la buget";
+            trez.EsteBanca = true;
+            trez.ContImplicit = os.FirstOrDefault<Cont>(c => c.Simbol == "770.00.00");
+        }
+
+        foreach (var cod in new[] { "PLT", "INC" }) {
+            if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == cod) == null) {
+                var numerotare = os.CreateObject<PoliticaNumerotare>();
+                numerotare.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == cod);
+                numerotare.Serie = cod + "-";
+                numerotare.UrmatorulNumar = 1;
+            }
+        }
+
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "PLT") == null) {
+            var plata = os.CreateObject<RegulaContare>();
+            plata.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == "PLT");
+            plata.SursaContDebit = SursaCont.RepartitorPrimitor;
+            plata.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00");
+            plata.SursaContCredit = SursaCont.RepartitorPredator;
+        }
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "INC") == null) {
+            var incasare = os.CreateObject<RegulaContare>();
+            incasare.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == "INC");
+            incasare.SursaContDebit = SursaCont.RepartitorPrimitor;
+            incasare.SursaContCredit = SursaCont.RepartitorPredator;
+            incasare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
         }
     }
 

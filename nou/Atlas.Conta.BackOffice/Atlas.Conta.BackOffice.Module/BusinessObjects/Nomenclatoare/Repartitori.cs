@@ -13,16 +13,18 @@ public abstract class Repartitor : BaseObject {
     public virtual string Denumire { get; set; }
     public virtual CalitateRepartitor Calitati { get; set; }
     public virtual bool Activ { get; set; } = true;
+    // Tranșarea (d) din testul bazei, lărgită la decizia 31: contul purtat de
+    // repartitor intră în rezolvarea declarativă a regulilor de contare
+    // (SursaCont.Repartitor*) pentru ORICE latură — partener 401/404/411,
+    // cont propriu 5xx/770, angajat 542 (avansuri) — deci stă pe bază.
+    public virtual Guid? ContImplicitId { get; set; }
+    public virtual Cont ContImplicit { get; set; }
 }
 
 // Furnizor/client = rol contextual dat de poziția pe document (decizia 16).
 public class Partener : Repartitor {
     public virtual string CodFiscal { get; set; }
     public virtual string RegistruComert { get; set; }
-    // Tranșarea (d) din testul bazei: contul partenerului (401/404/411) = politică;
-    // instanța poate particulariza (ex. 404 pentru furnizorii de imobilizări).
-    public virtual Guid? ContImplicitId { get; set; }
-    public virtual Cont ContImplicit { get; set; }
 }
 
 public class Angajat : Repartitor {

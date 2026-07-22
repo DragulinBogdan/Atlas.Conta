@@ -34,9 +34,9 @@ public enum TipInstrumentPlata { OrdinPlata = 1, Cec = 2, DispozitieCasa = 3, Ch
 // Contul explicit al regulii rămâne fallback când sursa nu rezolvă.
 public enum SursaCont {
     Explicit = 0,
-    TipMaterial = 1,       // TipMaterial.ContImplicit al liniei (302x/303x/6xx…)
-    PartenerPredator = 2,  // Partener.ContImplicit de pe latura predator (401/404…)
-    PartenerPrimitor = 3,  // idem, latura primitor (411… — FacturaIesire)
+    TipMaterial = 1,         // TipMaterial.ContImplicit al liniei (302x/303x/6xx…)
+    RepartitorPredator = 2,  // Repartitor.ContImplicit de pe latura predator (401/404, 5xx/770…)
+    RepartitorPrimitor = 3,  // idem, latura primitor (411 — FacturaIesire; 401/542 — Plata)
 }
 
 // Calități transversale pe repartitori (decizia 16) — roluri, nu clase derivate.

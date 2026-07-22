@@ -101,8 +101,8 @@ public static class MotorOperare {
         //    recepția contează pe NIR). Conturile se rezolvă din sursa declarată
         //    (TipMaterial / partenerul unei laturi), cu contul explicit fallback.
         var reguliContare = os.GetObjectsQuery<RegulaContare>().Where(r => r.TipDocumentId == tipDoc.ID).ToList();
-        var partenerPredator = os.GetObjectByKey<Repartitor>(doc.PredatorId) as Partener;
-        var partenerPrimitor = os.GetObjectByKey<Repartitor>(doc.PrimitorId) as Partener;
+        var repartitorPredator = os.GetObjectByKey<Repartitor>(doc.PredatorId);
+        var repartitorPrimitor = os.GetObjectByKey<Repartitor>(doc.PrimitorId);
         foreach (var d in doc.Detalii) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
             // Filtrul de semn (LDI): regula se aplică doar liniilor cu semnul
@@ -117,11 +117,11 @@ public static class MotorOperare {
             if (regula == null)
                 continue;
             var contDebit = RezolvaCont(regula.SursaContDebit, regula.ContDebitId,
-                    info.ContImplicitId, partenerPredator, partenerPrimitor)
+                    info.ContImplicitId, repartitorPredator, repartitorPrimitor)
                 ?? throw new OperareException(
                     $"Contul debitor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.SursaContDebit}).");
             var contCredit = RezolvaCont(regula.SursaContCredit, regula.ContCreditId,
-                    info.ContImplicitId, partenerPredator, partenerPrimitor)
+                    info.ContImplicitId, repartitorPredator, repartitorPrimitor)
                 ?? throw new OperareException(
                     $"Contul creditor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.SursaContCredit}).");
             var rand = os.CreateObject<RegistruContabil>();
@@ -149,19 +149,44 @@ public static class MotorOperare {
             conex = GenereazaConex(os, doc, politicaConex,
                 doc.Detalii.ToDictionary(d => d.ID, d => claseTip.GetValueOrDefault(d.TipMaterialId).Natura));
 
+        // 5. Documentul secundar (decizia 31 — plata automată din 00 §7):
+        //    construit de derivată din datele culese (hook), tratat ca orice
+        //    copil autogenerat al grupului conex.
+        var secundar = doc.GenereazaSecundar(os);
+        if (secundar != null) {
+            secundar.DocumentSursa = doc;
+            secundar.Autogenerat = true;
+        }
+
         doc.Stare = StareDocument.Operat;
         doc.DataOperare = DateTime.UtcNow;
+
+        // 6. Plata autogenerată își creează imperecherea cu sursa la PROPRIA
+        //    operare (ambele părți au registre abia acum) — echivalentul
+        //    GEST_DECONTARI.AUTOGENERAT din plata automată legacy. Suma =
+        //    restul stingibil (documentul poate fi deja parțial imperecheat).
+        if (doc is DocumentTrezorerie trezorerie && trezorerie.Autogenerat && trezorerie.DocumentSursaId != null) {
+            var sursa = os.GetObjectByKey<Document>(trezorerie.DocumentSursaId.Value);
+            var suma = Math.Min(
+                doc.Detalii.Sum(d => d.Valoare) - ImperechereService.Asignat(os, doc.ID),
+                ImperechereService.Ramas(os, sursa.ID));
+            if (suma > 0)
+                ImperechereService.Creeaza(os, trezorerie, sursa, suma, autogenerat: true);
+        }
+
         os.CommitChanges();
-        return conex;
+        return conex ?? secundar;
     }
 
     // Sursa declarativă a contului unei laturi (testul bazei §7.2); contul
     // explicit al regulii e valoare directă sau fallback când sursa nu rezolvă.
+    // ContImplicit stă pe baza Repartitor (decizia 31): partener 401/404/411,
+    // cont propriu 5xx/770, angajat 542.
     static Guid? RezolvaCont(SursaCont sursa, Guid? contExplicit, Guid? contTipMaterial,
-        Partener partenerPredator, Partener partenerPrimitor) => sursa switch {
+        Repartitor repartitorPredator, Repartitor repartitorPrimitor) => sursa switch {
         SursaCont.TipMaterial => contTipMaterial ?? contExplicit,
-        SursaCont.PartenerPredator => partenerPredator?.ContImplicitId ?? contExplicit,
-        SursaCont.PartenerPrimitor => partenerPrimitor?.ContImplicitId ?? contExplicit,
+        SursaCont.RepartitorPredator => repartitorPredator?.ContImplicitId ?? contExplicit,
+        SursaCont.RepartitorPrimitor => repartitorPrimitor?.ContImplicitId ?? contExplicit,
         _ => contExplicit,
     };
 
@@ -208,6 +233,7 @@ public static class MotorOperare {
             throw new OperareException("Doar un document Operat poate fi anulat.");
         GardianPerioada.VerificaDeschisa(os, doc.Data);
         VerificaFaraConexeOperate(os, doc);
+        VerificaFaraImperecheri(os, doc);
         StergeConexeDraftAutogenerate(os, doc);
 
         var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();
@@ -250,6 +276,7 @@ public static class MotorOperare {
             throw new OperareException("Data stornării nu poate preceda data documentului.");
         GardianPerioada.VerificaDeschisa(os, dataStorno);
         VerificaFaraConexeOperate(os, doc);
+        VerificaFaraImperecheri(os, doc);
         StergeConexeDraftAutogenerate(os, doc);
 
         var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();
@@ -298,6 +325,16 @@ public static class MotorOperare {
         if (os.GetObjectsQuery<Document>().Any(x => x.DocumentSursaId == doc.ID && x.Stare == StareDocument.Operat))
             throw new OperareException(
                 "Documentul are documente generate (conexe) încă operate — anulați/stornați întâi acele documente.");
+    }
+
+    // Stingerea leagă REGISTRELE celor două documente (decizia 17); anularea
+    // sau stornarea uneia dintre părți ar lăsa imperecherea fără acoperire —
+    // refuz conservator: utilizatorul șterge întâi imperecherile (link simplu,
+    // fără registre proprii), apoi corectează documentul.
+    static void VerificaFaraImperecheri(IObjectSpace os, Document doc) {
+        if (os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentTrezorerieId == doc.ID || i.DocumentId == doc.ID))
+            throw new OperareException(
+                "Documentul are imperecheri (stingeri) — ștergeți-le întâi, apoi anulați/stornați.");
     }
 
     static void StergeConexeDraftAutogenerate(IObjectSpace os, Document doc) {

@@ -44,6 +44,14 @@ public abstract class Document : BaseObject {
     // (ex. NotaTransfer/BonConsum: preț lot × cantitate).
     public virtual void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) { }
 
+    // Documentul SECUNDAR (00 §7 — plata automată legacy, decizia 31): spre
+    // deosebire de conexul din PoliticaConex (clonă filtrată pe natură, trăiește
+    // în motor), secundarul se construiește din date CULESE pe derivată
+    // (grupul DECONT_* al facturii), deci generarea e hook de tip. Motorul îl
+    // marchează Autogenerat + DocumentSursa și îl tratează ca pe orice copil
+    // al grupului conex (ștergere la anulare, refuz cât e operat).
+    public virtual Document GenereazaSecundar(DevExpress.ExpressApp.IObjectSpace os) => null;
+
     // Invariantele proprii tipului, verificate de motor înainte de operare.
     // Baza impune doar ce cere orice document; obligativitățile per tip se
     // adaugă în override (validarea declarativă completă vine la 3c/3d).

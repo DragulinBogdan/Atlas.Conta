@@ -390,7 +390,7 @@ using (var os = provider.CreateObjectSpace()) {
         fct.Stare == StareDocument.Stornat && noteFinale.Count == 2
         && noteFinale.Single(r => r.Storno).Valoare == -100m);
 
-    // --- Sursa de cont PartenerPredator: ContImplicit bate fallback-ul 401 ---
+    // --- Sursa de cont RepartitorPredator: ContImplicit bate fallback-ul 401 ---
     var furnizorImobilizari = os.CreateObject<Partener>();
     furnizorImobilizari.Cod = "E2E-FURN2";
     furnizorImobilizari.Denumire = "Furnizor cu cont propriu";
@@ -749,8 +749,8 @@ using (var os = provider.CreateObjectSpace()) {
         tipServiciiVenit?.ContImplicitId != null
         && os.GetObjectByKey<Cont>(tipServiciiVenit.ContImplicitId.Value).Simbol == "751.01.00");
     var regulaFcl = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "FCL");
-    Check("Seed FCL: debit PartenerPrimitor (fallback 411.01.01), credit TipMaterial",
-        regulaFcl != null && regulaFcl.SursaContDebit == SursaCont.PartenerPrimitor
+    Check("Seed FCL: debit RepartitorPrimitor (fallback 411.01.01), credit TipMaterial",
+        regulaFcl != null && regulaFcl.SursaContDebit == SursaCont.RepartitorPrimitor
         && regulaFcl.ContDebitId == cont411.ID && regulaFcl.SursaContCredit == SursaCont.TipMaterial);
     Check("Seed FCL: fără reguli de stoc (pur creanță)",
         !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocument.Cod == "FCL"));
@@ -850,6 +850,245 @@ using (var os = provider.CreateObjectSpace()) {
     CurataFcl(os);
     Check("Curățenie finală FCL (fără reziduuri e2e)",
         !os.GetObjectsQuery<Partener>().Any(p => p.Cod.StartsWith(MarcajFcl)));
+}
+
+// ============== Scenariul e2e 3c: Plata/Incasare + Imperechere ==============
+// Trezoreria (decizia 31): FCT cu grupul DECONT_* → draft Plata autogenerat cu
+// liniile-defalcare → operare (contare per latură din ContImplicit pe
+// Repartitor: 401 = 770) + imperecherea automată → gardianul de imperecheri la
+// anulare/storno → încasare manuală (411 fallback → casă) + imperechere
+// manuală cu invarianții (stare, contrapartidă, rest) → avans către angajat
+// (542 din ContImplicit) → storno după ștergerea stingerii.
+const string MarcajTrz = "E2E-TRZ";
+
+void CurataTrz(IObjectSpace os) {
+    var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajTrz)).Select(r => r.ID).ToList();
+    var docs = os.GetObjectsQuery<Document>()
+        .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+    var docIds = docs.Select(d => d.ID).ToList();
+    os.Delete(os.GetObjectsQuery<Imperechere>()
+        .Where(i => docIds.Contains(i.DocumentTrezorerieId) || docIds.Contains(i.DocumentId)).ToList());
+    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+        os.Delete(doc);
+    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajTrz).ToList());
+    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajTrz).ToList());
+    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajTrz)).ToList());
+    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajTrz + "-CE").ToList());
+    os.CommitChanges();
+}
+
+using (var os = provider.CreateObjectSpace()) {
+    CurataTrz(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+    var tipMateriale = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302.01.00");
+    var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628.00.00");
+    var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+    var tipVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == "751.01.00");
+    var casa = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
+    var trezoreria = os.FirstOrDefault<ContPropriu>(c => c.Cod == "TREZ");
+    var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00");
+    var cont411 = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
+    var cont531 = os.FirstOrDefault<Cont>(c => c.Simbol == "531.01.01");
+    var cont542 = os.FirstOrDefault<Cont>(c => c.Simbol == "542.01.00");
+    var cont770 = os.FirstOrDefault<Cont>(c => c.Simbol == "770.00.00");
+
+    // Politicile trezoreriei din seed (decizia 31).
+    Check("Seed: conturi proprii CASA→531.01.01, TREZ→770.00.00 (bancă)",
+        casa?.ContImplicitId == cont531.ID && trezoreria?.ContImplicitId == cont770.ID && trezoreria.EsteBanca);
+    Check("Seed: Tipul tehnic TRZ (defalcare) fără cont implicit",
+        tipTrz != null && tipTrz.ContImplicitId == null && tipTrz.Clasa.Natura == NaturaClasa.Tehnica);
+    var regulaPlt = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "PLT");
+    Check("Seed PLT: debit RepartitorPrimitor (fallback 401), credit RepartitorPredator fără fallback",
+        regulaPlt != null && regulaPlt.SursaContDebit == SursaCont.RepartitorPrimitor
+        && regulaPlt.ContDebitId == cont401.ID
+        && regulaPlt.SursaContCredit == SursaCont.RepartitorPredator && regulaPlt.ContCreditId == null);
+    var regulaInc = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "INC");
+    Check("Seed INC: debit RepartitorPrimitor fără fallback, credit RepartitorPredator (fallback 411)",
+        regulaInc != null && regulaInc.SursaContDebit == SursaCont.RepartitorPrimitor
+        && regulaInc.ContDebitId == null && regulaInc.ContCreditId == cont411.ID);
+    Check("Seed: fără reguli de stoc pe PLT/INC (pur contabile)",
+        !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocument.Cod == "PLT" || r.TipDocument.Cod == "INC"));
+
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = MarcajTrz + "-FURN";
+    furnizor.Denumire = "Furnizor probă trezorerie";
+    var client = os.CreateObject<Partener>();
+    client.Cod = MarcajTrz + "-CL";
+    client.Denumire = "Client probă trezorerie";
+    var angajat = os.CreateObject<Angajat>();
+    angajat.Cod = MarcajTrz + "-ANG";
+    angajat.Denumire = "Angajat probă trezorerie";
+    angajat.ContImplicit = cont542; // avansurile de trezorerie ale titularului
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = MarcajTrz + "-CE";
+    codEc.Denumire = "Cod economic probă trezorerie";
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = MarcajTrz;
+    produs.Denumire = "Produs probă trezorerie";
+    produs.UM = "BUC";
+    produs.TipMaterial = tipMateriale;
+    os.CommitChanges();
+
+    List<RegistruContabil> Note(Document doc) =>
+        os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID && !r.Storno).ToList();
+
+    // --- FCT cu plata automată (00 §7): DECONT_* → draft Plata + defalcare ---
+    var fct = os.CreateObject<FacturaIntrare>();
+    fct.Numar = "E2E-TF1";
+    fct.Data = new DateOnly(2026, 3, 3);
+    fct.Predator = furnizor;
+    fct.Primitor = mag1;
+    fct.GenereazaPlata = true;
+    var linieStoc = os.CreateObject<FacturaIntrareDetaliu>();
+    linieStoc.Document = fct;
+    linieStoc.TipMaterial = tipMateriale;
+    linieStoc.Cantitate = 5m;
+    linieStoc.PretUnitar = 10m;
+    linieStoc.CotaTva = 19m;
+    linieStoc.Dimensiuni.CodEconomicId = codEc.ID;
+    linieStoc.CreeazaLot(os, produs, mag1);
+    var linieServiciu = os.CreateObject<FacturaIntrareDetaliu>();
+    linieServiciu.Document = fct;
+    linieServiciu.TipMaterial = tipServicii;
+    linieServiciu.Cantitate = 1m;
+    linieServiciu.PretUnitar = 100m;
+    linieServiciu.Dimensiuni.CodEconomicId = codEc.ID;
+    os.CommitChanges();
+
+    CheckRefuza("GenereazaPlata fără cont propriu cules → refuz", () => MotorOperare.Opereaza(os, fct));
+    fct.PlataContPropriu = trezoreria;
+    fct.PlataNumar = "OP-77";
+    fct.PlataData = new DateOnly(2026, 3, 4);
+    fct.PlataTipInstrument = TipInstrumentPlata.Cec;
+    os.CommitChanges();
+
+    var conex = MotorOperare.Opereaza(os, fct);
+    Check("Operarea FCT întoarce conexul NIR; plata e al doilea copil autogenerat", conex is NIR);
+    var plataAuto = os.GetObjectsQuery<Plata>().Single(p => p.DocumentSursaId == fct.ID);
+    Check("Plata draft: header din grupul DECONT_* (TREZ → furnizor, OP-77, CEC, data plății)",
+        plataAuto.Stare == StareDocument.Draft && plataAuto.Autogenerat
+        && plataAuto.PredatorId == trezoreria.ID && plataAuto.PrimitorId == furnizor.ID
+        && plataAuto.Numar == "OP-77" && plataAuto.TipInstrument == TipInstrumentPlata.Cec
+        && plataAuto.Data == new DateOnly(2026, 3, 4));
+    Check("Plata draft: liniile clonează defalcarea facturii (2 linii, 159,5, dimensiuni, fără lot)",
+        plataAuto.Detalii.Count == 2 && plataAuto.Detalii.Sum(d => d.Valoare) == 159.5m
+        && plataAuto.Detalii.All(d => d.Dimensiuni.CodEconomicId == codEc.ID && d.LotId == null));
+
+    // --- Operarea plății: contare din laturi + imperecherea automată ---
+    Check("Plata autogenerată nu generează alt conex", MotorOperare.Opereaza(os, plataAuto) == null);
+    var notePlata = Note(plataAuto);
+    Check("Plata contează per linie de defalcare: 401 = 770 (59,5 + 100)",
+        notePlata.Count == 2 && notePlata.All(n => n.ContDebitId == cont401.ID && n.ContCreditId == cont770.ID)
+        && notePlata.Sum(n => n.Valoare) == 159.5m);
+    Check("Plata nu mișcă stoc", !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == plataAuto.ID));
+    var impAuto = os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentTrezorerieId == plataAuto.ID);
+    Check("Imperecherea automată: FCT stinsă integral (159,5, Autogenerat)",
+        impAuto.DocumentId == fct.ID && impAuto.Suma == 159.5m && impAuto.Autogenerat
+        && ImperechereService.Ramas(os, fct.ID) == 0m && ImperechereService.Ramas(os, plataAuto.ID) == 0m);
+
+    // --- Gardianul de imperecheri: corecția cere întâi ștergerea stingerii ---
+    CheckRefuza("Anularea plății cu imperechere → refuz", () => MotorOperare.AnuleazaOperarea(os, plataAuto));
+    CheckRefuza("Stornarea FCT cu plata operată → refuz", () =>
+        MotorOperare.Storneaza(os, fct, new DateOnly(2026, 7, 22)));
+    os.Delete(impAuto);
+    os.CommitChanges();
+    MotorOperare.AnuleazaOperarea(os, plataAuto);
+    Check("După ștergerea imperecherii, anularea plății merge (Draft, notele șterse)",
+        plataAuto.Stare == StareDocument.Draft && Note(plataAuto).Count == 0);
+    MotorOperare.Opereaza(os, plataAuto);
+    Check("Re-operarea plății re-creează imperecherea automată",
+        os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentTrezorerieId == plataAuto.ID).Suma == 159.5m);
+
+    // --- Încasare manuală + imperechere manuală cu FCL (invarianții stingerii) ---
+    var fcl = os.CreateObject<FacturaIesire>();
+    fcl.Data = new DateOnly(2026, 3, 6);
+    fcl.Predator = sediu;
+    fcl.Primitor = client;
+    var linieVenit = os.CreateObject<FacturaIesireDetaliu>();
+    linieVenit.Document = fcl;
+    linieVenit.TipMaterial = tipVenit;
+    linieVenit.Cantitate = 1m;
+    linieVenit.PretUnitar = 119m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fcl);
+
+    var inc = os.CreateObject<Incasare>();
+    inc.Data = new DateOnly(2026, 3, 10);
+    inc.Predator = casa; // intenționat greșit — plătitorul nu poate fi cont propriu
+    inc.Primitor = casa;
+    inc.TipInstrument = TipInstrumentPlata.Chitanta;
+    var linieInc = os.CreateObject<DocumentDetaliu>();
+    linieInc.Document = inc;
+    linieInc.TipMaterial = tipTrz;
+    CheckRefuza("Laturi greșite + linie fără valoare → refuz", () => MotorOperare.Opereaza(os, inc));
+    inc.Predator = client;
+    linieInc.Valoare = 119m;
+    os.CommitChanges();
+    Check("Încasarea nu generează conex", MotorOperare.Opereaza(os, inc) == null);
+    Check("Încasare operată cu număr din politică", inc.Numar?.StartsWith("INC-") == true);
+    var noteInc = Note(inc);
+    Check("Contare încasare: 531.01.01 (casa) = 411.01.01 (fallback client), 119",
+        noteInc.Count == 1 && noteInc[0].ContDebitId == cont531.ID
+        && noteInc[0].ContCreditId == cont411.ID && noteInc[0].Valoare == 119m);
+
+    var fclDraft = os.CreateObject<FacturaIesire>();
+    fclDraft.Data = new DateOnly(2026, 3, 11);
+    fclDraft.Predator = sediu;
+    fclDraft.Primitor = client;
+    CheckRefuza("Imperechere cu document neoperat → refuz", () =>
+        ImperechereService.Imperecheaza(os, inc, fclDraft, 1m));
+    CheckRefuza("Imperechere fără contrapartidă comună (încasarea clientului × factura furnizorului) → refuz",
+        () => ImperechereService.Imperecheaza(os, inc, fct, 1m));
+    CheckRefuza("Imperechere peste restul neasignat → refuz", () =>
+        ImperechereService.Imperecheaza(os, inc, fcl, 200m));
+    var impManual = ImperechereService.Imperecheaza(os, inc, fcl, 119m);
+    Check("Imperechere manuală: FCL stinsă integral, resturile 0",
+        !impManual.Autogenerat && ImperechereService.Ramas(os, fcl.ID) == 0m
+        && ImperechereService.Ramas(os, inc.ID) == 0m);
+    CheckRefuza("A doua stingere pe aceeași încasare (rest 0) → refuz", () =>
+        ImperechereService.Imperecheaza(os, inc, fcl, 1m));
+
+    // --- Avansul către angajat: 542 din ContImplicit bate fallback-ul 401 ---
+    var avans = os.CreateObject<Plata>();
+    avans.Data = new DateOnly(2026, 3, 12);
+    avans.Predator = casa;
+    avans.Primitor = angajat;
+    avans.TipInstrument = TipInstrumentPlata.DispozitieCasa;
+    var linieAvans = os.CreateObject<DocumentDetaliu>();
+    linieAvans.Document = avans;
+    linieAvans.TipMaterial = tipTrz;
+    linieAvans.Valoare = 50m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, avans);
+    var noteAvans = Note(avans);
+    Check("Avans operat cu număr din politică", avans.Numar?.StartsWith("PLT-") == true);
+    Check("Contare avans: 542.01.00 (ContImplicit angajat) = 531.01.01 (casa), 50",
+        noteAvans.Count == 1 && noteAvans[0].ContDebitId == cont542.ID
+        && noteAvans[0].ContCreditId == cont531.ID && noteAvans[0].Valoare == 50m);
+    Check("Nota avansului: repartitori din laturi (debit←casă, credit←angajat — 00 §5)",
+        noteAvans[0].DimensiuniDebit.RepartitorId == casa.ID
+        && noteAvans[0].DimensiuniCredit.RepartitorId == angajat.ID);
+
+    // --- Storno: refuzat cât există stingerea, curat după ștergerea ei ---
+    CheckRefuza("Stornarea încasării cu imperechere → refuz", () =>
+        MotorOperare.Storneaza(os, inc, new DateOnly(2026, 7, 22)));
+    os.Delete(impManual);
+    os.CommitChanges();
+    MotorOperare.Storneaza(os, inc, new DateOnly(2026, 7, 22));
+    var toateNoteInc = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == inc.ID).ToList();
+    Check("Storno încasare → nota inversată append-only (−119) la data stornării",
+        inc.Stare == StareDocument.Stornat && toateNoteInc.Count == 2
+        && toateNoteInc.Single(r => r.Storno).Valoare == -119m);
+
+    CurataTrz(os);
+    Check("Curățenie finală trezorerie (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajTrz))
+        && !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajTrz));
 }
 
 Console.WriteLine(esecuri == 0 ? "\nToate verificările au trecut." : $"\n{esecuri} verificări EȘUATE.");
