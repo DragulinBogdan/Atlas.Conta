@@ -21,13 +21,16 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
             base.OnSetupStarted();
 
 #if DEBUG
-            if(System.Diagnostics.Debugger.IsAttached && CheckCompatibilityType == CheckCompatibilityType.DatabaseSchema) {
+            // Fără condiția Debugger.IsAttached: și `dotnet run` (Debug) trebuie
+            // să ruleze ModuleUpdater-ele (seed-ul politicilor/nomenclatoarelor).
+            // Schema NU e atinsă — DisableUpdateSchema e setat în Startup.
+            if(CheckCompatibilityType == CheckCompatibilityType.DatabaseSchema) {
                 DatabaseUpdateMode = DatabaseUpdateMode.UpdateDatabaseAlways;
             }
 #endif
         }
         void BackOfficeBlazorApplication_DatabaseVersionMismatch(object sender, DatabaseVersionMismatchEventArgs e) {
-#if EASYTEST
+#if EASYTEST || DEBUG
             e.Updater.Update();
             e.Handled = true;
 #else

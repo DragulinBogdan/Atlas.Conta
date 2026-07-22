@@ -19,12 +19,8 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
         }
         public override void UpdateDatabaseAfterUpdateSchema() {
             base.UpdateDatabaseAfterUpdateSchema();
-            //string name = "MyName";
-            //EntityObject1 theObject = ObjectSpace.FirstOrDefault<EntityObject1>(u => u.Name == name);
-            //if(theObject == null) {
-            //    theObject = ObjectSpace.CreateObject<EntityObject1>();
-            //    theObject.Name = name;
-            //}
+
+            ContaSeeder.Seed(ObjectSpace);
 
             // The code below creates users and roles for testing purposes only.
             // In production code, you can create users and assign roles to them automatically, as described in the following help topic:

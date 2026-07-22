@@ -1,0 +1,1680 @@
+Cont|Denumire|Parinte|Functie|Sumator|Defalcare
+1|CONTURI DE CAPITALURI||B|1|S
+2|CONTURI DE ACTIVE FIXE||B|1|S
+3|CONTURI DE STOCURI SI PRODUCTIE ÎN CURS DE EXECUTIE||B|1|S
+4|CONTURI DE TERTI||B|1|S
+5|CONTURI LA TREZORERII SI INSTITUTII DE CREDIT||B|1|S
+6|CONTURI DE CHELTUIELI||B|0|S
+7|CONTURI DE VENITURI SI FINANTARI||B|0|S
+8|CONTURI SPECIALE||B|0|S
+10|CAPITAL, REZERVE, FONDURI|1|B|1|S
+11|REZULTATULREPORTAT|1|B|1|S
+12|REZULTATULPATRIMONIAL|1|B|1|S
+13|FONDURI CU DESTINATIE SPECIALA|1|B|1|S
+15|PROVIZIOANE|1|B|1|S
+16|ÎMPRUMUTURI SI DATORII ASIMILATE -pe termen mediu si lung -|1|B|1|S
+20|ACTIVE FIXE NECORPORALE|2|B|1|S
+21|ACTIVE FIXE CORPORALE|2|B|1|S
+23|ACTIVE FIXE ÎN CURS SI AVANSURI PENTRU ACTIVE FIXE|2|B|1|S
+26|ACTIVE FINANCIARE (peste 1 an)|2|B|1|S
+28|AMORTIZARI PRIVIND ACTIVELE FIXE|2|B|1|S
+29|AJUSTARI PENTRU DEPRECIEREA SAU PIERDEREA DE VALOARE A ACTIVELOR FIXE|2|B|1|S
+30|STOCURI DE MATERII SI MATERIALE|3|B|1|S
+33|PRODUCTIA ÎN CURS DE EXECUTIE|3|B|1|S
+34|PRODUSE|3|B|1|S
+35|STOCURI AFLATE LA TERTI|3|B|1|S
+36|ANIMALE|3|B|1|S
+37|MARFURI|3|B|1|S
+38|AMBALAJE|3|B|1|S
+39|AJUSTARI PENTRU DEPRECIEREA STOCURILOR SIPRODUCTIEI ÎN CURS DE EXECUTIE|3|B|1|S
+40|FURNIZORI SI CONTURI ASIMILATE|4|B|1|S
+41|CLIENTI SI CONTURI ASIMILATE|4|B|1|S
+42|PERSONAL SI CONTURI ASIMILATE|4|B|1|S
+43|ASIGURARI SOCIALE, PROTECTIA SOCIALA SI CONTURI ASIMILATE|4|C|1|S
+44|BUGETUL STATULUI, BUGETUL LOCAL, BUGETUL ASIGURARILOR SOCIALE DE STAT SI CONTURI ASIMILATE|4|B|1|S
+45|DECONTARI CU COMISIA EUROPEANA PRIVIND FONDURILE NERAMBURSABILE (PHARE, SAPARD, ISPA, INSTRUMENTE STRUCTURALE, FONDURI PENTRU AGRICULTURA, FONDURI DE LA BUGET SI ALTE FONDURI)|4|B|1|S
+46|DEBITORI SI CREDITORI DIVERSI, DEBITORI SI CREDITORI AI BUGETELOR|4|B|1|S
+47|CONTURI DE REGULARIZARE SIASIMILATE|4|B|1|S
+48|DECONTARI|4|B|1|S
+49|AJUSTARI PENTRU DEPRECIEREA CREANTELOR|4|C|1|S
+50|INVESTITII PE TERMEN SCURT|5|B|1|S
+51|CONTURI LA TREZORERII SI INSTITUTII DE CREDIT|5|B|1|S
+52|DISPONIBIL AL BUGETELOR|5|B|1|S
+53|CASA SI ALTE VALORI|5|B|1|S
+54|ACREDITIVE|5|B|1|S
+55|DISPONIBIL DIN FONDURI CU DESTINATIE SPECIALA|5|B|1|S
+56|DISPONIBIL AL INSTITUTIILOR PUBLICE SI ACTIVITATILOR FINANTATE INTEGRAL SAU PARTIAL DIN VENITURI PROPRII|5|B|1|S
+57|DISPONIBIL DIN VENITURILE FONDURILOR SPECIALE|5|B|1|S
+58|VIRAMENTE INTERNE|5|B|1|S
+59|AJUSTARI PENTRU PIERDEREA DE VALOARE A CONTURILOR DE TREZORERIE|5|B|1|S
+60|CHELTUIELI PRIVIND STOCURILE|6|B|1|S
+61|CHELTUIELI CU LUCRARILE SI SERVICIILE EXECUTATE DE TERTI|6|B|1|S
+62|CHELTUIELI CU ALTE SERVICII EXECUTATE DE TERTI|6|B|1|S
+63|CHELTUIELI CU ALTE IMPOZITE, TAXE SI VARSAMINTE ASIMILATE|6|B|1|S
+64|CHELTUIELI CU PERSONALUL|6|B|1|S
+65|ALTE CHELTUIELI OPERATIONALE|6|B|1|S
+66|CHELTUIELIFINANCIARE|6|B|1|S
+67|ALTE CHELTUIELI FINANTATE DIN BUGET|6|B|1|S
+68|CHELTUIELI CU AMORTIZARILE, PROVIZIOANELE SI AJUSTARILE PENTRU DEPRECIERE SAU PIERDERILE DE VALOARE|6|D|1|S
+69|CHELTUIELIEXTRAORDINARE|6|B|1|S
+70|VENITURI DIN ACTIVITATI ECONOMICE|7|B|1|S
+71|ALTE VENITURI OPERATIONALE|7|B|1|S
+72|VENITURI DIN PRODUCTIA DE ACTIVE FIXE|7|B|1|S
+73|VENITURI FISCALE|7|B|1|S
+74|VENITURI DIN CONTRIBUTII DEASIGURARI|7|B|1|S
+75|VENITURI NEFISCALE|7|B|1|S
+76|VENITURI FINANCIARE|7|B|1|S
+77|FINANTARI,SUBVENTII, TRANSFERURI, ALOCATII BUGETARECU DESTINATIE SPECIALA, FONDURI CU DESTINATIE SPECIALA|7|B|1|S
+78|VENITURI DIN PROVIZIOANE SIAJUSTARI PENTRU DEPRECIERE SAU PIERDERILE DE VALOARE|7|B|1|S
+79|VENITURIEXTRAORDINARE|7|B|1|S
+80|CONTURI ÎN AFARA BILANTULUI|8|B|1|S
+89|Bilant|8|B|1|S
+100|Fondul activelor fixe necorporale|10|B|0|S
+101|Fondul bunurilor care alcatuiesc domeniul public al statului|10|C|0|S
+102|Fondul bunurilor care alcatuiesc domeniul privat al statului|10|B|0|S
+103|Fondul bunurilor care alcatuiesc domeniul public al unitatilor administrativ - teritoriale|10|B|0|S
+104|Fondul bunurilor care alcatuiesc domeniul privat al unitatilor administrativ - teritoriale|10|B|0|S
+105|Rezerve din reevaluare|10|B|0|S
+106|Diferente din reevaluare si diferente de curs aferente dobânzilor încasate (SAPARD)|10|B|0|S
+117|Rezultatul reportat|11|B|0|S
+121|Rezultatul patrimonial|12|B|0|S
+132|Fondul de rezerva al bugetului asigurarilor sociale de stat|13|B|0|S
+133|Fondul de rezerva constituit conform Legii nr. 95/2006|13|B|0|S
+151|Provizioane|15|B|0|S
+161|Împrumuturi din emisiunea de obligatiuni|16|C|0|S
+162|Împrumuturi interne si externe contractate de autoritatile administratiei publice locale|16|B|0|S
+163|Împrumuturi interne si externe garantate de autoritatile administratiei publice locale|16|B|0|S
+164|Împrumuturi interne si externe contractate de stat|16|B|0|S
+165|Împrumuturi interne si externe garantate de stat|16|B|0|S
+166|Sume primite pentru acoperirea deficitelor bugetare|16|B|0|S
+167|Alte împrumuturi si datorii asimilate|16|B|0|S
+168|Dobânzi aferente împrumuturilor sidatoriilor asimilate|16|B|0|S
+169|Prime privind rambursarea obligatiunilor|16|B|0|S
+203|Cheltuieli de dezvoltare|20|B|0|S
+205|Concesiuni, brevete, licente, marci comerciale, drepturi si active similare|20|B|0|S
+206|Înregistrari ale evenimentelor cultural-sportive|20|B|0|S
+208|Alte active fixe necorporale|20|B|0|S
+211|Terenuri si amenajari la terenuri|21|B|0|S
+212|Constructii|21|B|0|S
+213|Instalatii tehnice, mijloace de transport, animale si plantatii|21|B|0|S
+214|Mobilier, aparatura birotica, echipamente de protectie a valorilor umane si materiale si alte active fixe corporale|21|B|0|S
+215|Alte active ale statului|21|B|0|S
+231|Active fixe corporale în curs de executie|23|B|0|S
+232|Avansuri acordate pentru active fixe corporale|23|B|0|S
+233|Active fixe necorporale în curs de executie|23|B|0|S
+234|Avansuri acordate pentru active fixe necorporale|23|B|0|S
+260|Titluri de participare|26|B|0|S
+265|Alte titluri imobilizate|26|B|0|S
+267|Creante imobilizate|26|B|0|S
+269|Varsaminte de efectuat pentru active financiare|26|B|0|S
+280|Amortizari privind activele fixe necorporale|28|B|0|S
+281|Amortizari privind activele fixe corporale|28|B|0|S
+290|Ajustari pentru deprecierea activelor fixe necorporale|29|B|0|S
+291|Ajustari pentru deprecierea activelor fixe corporale|29|B|0|S
+293|Ajustari pentru deprecierea activelor fixe în curs de executie|29|B|0|S
+296|Ajustari pentru pierderea de valoare a activelor financiare|29|B|0|S
+301|Materii prime|30|B|0|S
+302|Materiale consumabile|30|B|0|S
+303|Materiale de natura obiectelor de inventar|30|B|0|S
+304|Materiale rezerva de stat si de mobilizare|30|B|0|S
+305|Ambalaje rezerva de stat si de mobilizare|30|B|0|S
+307|Materiale date în prelucrare în institutie|30|B|0|S
+309|Alte stocuri|30|B|0|S
+331|Produse în curs de executie|33|B|0|S
+332|Lucrari si servicii în curs de executie|33|B|0|S
+341|Semifabricate|34|B|0|S
+345|Produse finite|34|B|0|S
+346|Produse reziduale|34|B|0|S
+347|Bunuri confiscate sau intrate, potrivit legii, în proprietatea privata a statului|34|B|0|S
+348|Diferente de pret la produse|34|B|0|S
+349|Bunuri confiscate sau intrate potrivit legii, în proprietatea privata a unitatilor administrativ -teritoriale|34|B|0|S
+351|Materii si materiale aflate la terti|35|B|0|S
+354|Produse aflate la terti|35|B|0|S
+356|Animale aflate la terti|35|B|0|S
+357|Marfuri aflate la terti|35|B|0|S
+358|Ambalaje aflate la terti|35|B|0|S
+359|Bunuri în custodie sau în consignatie la terti|35|B|0|S
+361|Animale si pasari|36|B|0|S
+371|Marfuri|37|B|0|S
+378|Diferente de pret la marfuri (adaos comercial)|37|B|0|S
+381|Ambalaje|38|B|0|S
+391|Ajustari pentru deprecierea materiilor prime|39|B|0|S
+392|Ajustari pentru deprecierea materialelor|39|B|0|S
+393|Ajustari pentru deprecierea productiei în curs de executie|39|B|0|S
+394|Ajustari pentru deprecierea produselor|39|B|0|S
+395|Ajustari pentru deprecierea stocurilor aflate la terti|39|B|0|S
+396|Ajustari pentru deprecierea animalelor|39|B|0|S
+397|Ajustari pentru deprecierea marfurilor|39|B|0|S
+398|Ajustari pentru deprecierea ambalajelor|39|B|0|S
+401|Furnizori|40|B|0|S
+403|Efecte de platit|40|B|0|S
+404|Furnizori de active fixe|40|B|0|S
+405|Efecte de platit pentru active fixe|40|B|0|S
+408|Furnizori - facturi nesosite|40|B|0|S
+409|Furnizori - debitori|40|B|0|S
+411|Clienti|41|B|0|S
+413|Efecte de primit de la clienti|41|B|0|S
+418|Clienti - facturi de întocmit|41|B|0|S
+419|Clienti - creditori|41|B|0|S
+420|Personal - drepturi de natura salariala suplimentare|42|B|1|S
+421|Personal - salarii datorate|42|B|1|S
+422|Pensionari - pensii datorate|42|B|1|S
+423|Personal - ajutoare si indemnizatii datorate|42|B|1|S
+424|Someri - indemnizatii datorate|42|B|1|S
+425|Avansuri acordate personalului|42|B|1|S
+426|Drepturi de personal neridicate|42|B|1|S
+427|Retineri din salarii si din alte drepturi datorate tertilor|42|B|1|S
+428|Alte datorii si creante în legatura cu personalul|42|B|1|S
+429|Bursieri si doctoranzi|42|B|1|S
+431|Asigurari sociale|43|C|0|E
+437|Asigurari pentru somaj|43|B|0|S
+438|Alte datorii sociale|43|B|0|S
+440|Cote defalcate din impozitul pe venit pentru echilibrarea bugetelor locale|44|B|0|S
+441|Sume încasate pentru bugetul capitalei|44|B|0|S
+442|Taxa pe valoarea adaugata|44|B|0|S
+444|Impozit pe venitul din salarii si din alte drepturi|44|C|0|E
+446|Alte impozite, taxe si varsaminte asimilate|44|B|0|S
+448|Alte datorii si creante cu bugetul|44|B|0|S
+450|Sume de primit si de restituit ComisieiEuropene/ altor donatori- PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE|45|B|0|S
+451|Sume de primit si de restituit Autoritatilor de Certificare/Ministerul Agriculturii- PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|45|B|0|S
+452|Sume datorate Agentiilor de Implementare/ Autoritatilor de Management/Agentiilor de Plati - PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|45|C|0|S
+453|Sume de primit si de restituit Autoritatilor de Implementare - PHARE, SAPARD, ISPA -|45|B|0|S
+454|Decontari cu beneficiarii debitori/creditori -PHARE, FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|45|B|0|S
+455|Sume de primit si de restituit bugetului (prefinantare, cofinantare, indisponibilitati temporare de fonduri de la Comisia Europeana/alti donatori -PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET)|45|B|0|S
+456|Sume de primit si de restituit bugetului de stat pentru alte cheltuieli decât cele eligibile - PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET )|45|B|0|S
+457|Sume avansate si de recuperat de la Agentiile de Implementare/Autoritatile de Management/ Agentiile de Plati - PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|45|D|0|S
+458|Sume de primit/de restituitAgentiilor/Autoritatilor de Implementare /Autoritatilor de Certificare/ Autoritatilor de Management/Agentiilor de Plati - PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|45|B|0|S
+459|Sume datorate bugetului Uniunii Europene|45|C|0|S
+461|Debitori|46|D|0|S
+462|Creditori|46|C|0|S
+463|Creante ale bugetului de stat|46|D|0|S
+464|Creante ale bugetului local|46|D|0|S
+465|Creante ale bugetului asigurarilor sociale de stat|46|D|0|S
+466|Creante ale bugetelor fondurilor speciale si ale bugetului trezoreriei statului|46|D|0|S
+467|Creditori ai bugetelor|46|C|0|S
+468|Împrumuturi pe termen scurt acordate potrivit legii|46|D|0|S
+469|Dobânzi aferente împrumuturilor acordate pe termen scurt|46|D|0|S
+471|Cheltuieli înregistrate în avans|47|D|0|S
+472|Venituri înregistrate în avans|47|C|0|S
+473|Decontari din operatii în curs de clarificare|47|B|0|S
+474|Sume în curs de certificare/declarare Comisiei Europene/alti donatori - FONDURI EXTERNENERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGETI|47|D|0|S
+476|Sume în curs de declarare Autoritatilor de Certificare - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|47|D|0|S
+481|Decontari între institutia superioara si institutiile subordonate|48|B|0|S
+483|Decontari din operatii înparticipatie|48|B|0|S
+484|Decontari privind titlurile de stat destinate populatiei emise prin intermediul unitatilor operative ale Trezoreriei Statului|48|B|0|S
+489|Decontari privind încheierea executiei bugetului de stat din anul curent|48|B|0|S
+491|Ajustari pentru deprecierea creantelor - clienti|49|C|0|S
+496|Ajustari pentru deprecierea creantelor - debitori|49|C|0|S
+497|Ajustari pentru deprecierea creantelor bugetare|49|C|0|S
+505|Obligatiuni emise si rascumparate|50|D|0|S
+509|Varsaminte de efectuat pentru investitiile pe termen scurt|50|C|0|S
+510|Disponibil din împrumuturi din disponibilitatile contului curent general al trezoreriei statului|51|D|0|S
+511|Valori de încasat|51|D|0|S
+512|Conturi la trezorerii si institutii de credit|51|B|0|S
+513|Disponibil din împrumuturi interne si externe contractate de stat|51|D|0|S
+514|Disponibil din împrumuturi interne si externe garantate de stat|51|D|0|S
+515|Disponibil din fonduri externe nerambursabile|51|D|0|S
+516|Disponibil din împrumuturi interne si externe contractate de autoritatile administratiei publice locale|51|D|0|S
+517|Disponibil din împrumuturi interne siexterne garantate de autoritatile administratiei publice locale|51|D|0|S
+518|Dobânzi|51|C|0|S
+519|Împrumuturi pe termen scurt|51|C|0|S
+520|Disponibil al bugetului de stat|52|D|0|S
+521|Disponibil al bugetului local|52|D|0|S
+523|Disponibil din cote defalcate din impozitul pe venit pentruechilibrarea bugetelor locale|52|D|0|S
+524|Disponibil al bugetului trezoreriei statului|52|D|0|S
+525|Disponibil al bugetului asigurarilor sociale de stat|52|D|0|S
+526|Disponibil din fondul de rezerva al bugetului asigurarilor sociale de stat|52|D|0|S
+527|Disponibil din fondul de rezerva constituit conform Legii nr.95/2006|52|D|0|S
+528|Disponibil din sume încasate în cursul procedurii de executare silita|52|D|0|S
+529|Disponibil din sumele colectate pentru unele bugete|52|D|0|S
+531|Casa|53|D|0|S
+532|Alte valori|53|D|0|S
+541|Acreditive|54|D|0|S
+542|Avansuri de trezorerie|54|D|0|S
+550|Disponibil din fonduri cu destinatie speciala|55|D|0|S
+552|Disponibil pentru sume de mandat si sume în depozit|55|D|0|S
+555|Disponibil al fondului de risc|55|D|0|S
+557|Disponibil din valorificarea bunurilor intrate în proprietatea privata a statului|55|D|0|S
+558|Disponibil din contributia nationala aferenta programelor/proiectelor finantate din fonduri externe nerambursabile|55|D|0|S
+559|Disponibil de la buget reprezentând prefinantari si fonduri în cazul indisponibilitatilor temporare aferente programelor/proiectelor finantate din fonduri externe nerambursabile|55|D|0|S
+560|Disponibil al institutiilor publice finantate integral din venituri proprii|56|D|0|S
+561|Disponibil al institutiilor publice finantate din venituri proprii si subventii|56|D|0|S
+562|Disponibil al activitatilor finantate din venituri proprii|56|D|0|S
+571|Disponibil din veniturile Fondului national unic de asigurari sociale de sanatate|57|D|0|S
+574|Disponibil din veniturile bugetului asigurarilor pentru somaj|57|D|0|S
+575|Disponibil din veniturile Fondului pentru mediu|57|D|0|S
+581|Viramente interne|58|B|0|S
+595|Ajustari pentru pierderea de valoare a obligatiunilor emise si rascumparate|59|C|0|S
+601|Cheltuieli cu materiile prime|60|D|0|S
+602|Cheltuieli cu materialele consumabile|60|D|0|S
+603|Cheltuieli privind materialele de natura obiectelor de inventar|60|D|0|S
+606|Cheltuieli privind animalele si pasarile|60|D|0|S
+607|Cheltuieli privind marfurile|60|D|0|S
+608|Cheltuieli privind ambalajele|60|D|0|S
+609|Cheltuieli cu alte stocuri|60|D|0|S
+610|Cheltuieli privind energia si apa|61|D|0|S
+611|Cheltuieli cu întretinerea si reparatiile|61|D|0|S
+612|Cheltuieli cu chiriile|61|D|0|S
+613|Cheltuieli cu primele de asigurare|61|D|0|S
+614|Cheltuieli cu deplasari, detasari, transferari|61|D|0|S
+622|Cheltuieli privind comisioanele si onorariile|62|D|0|S
+623|Cheltuieli de protocol, reclama si publicitate|62|D|0|S
+624|Cheltuieli cu transportul de bunuri si personal|62|D|0|S
+626|Cheltuieli postale si taxe de telecomunicatii|62|D|0|S
+627|Cheltuieli cu serviciile bancare si asimilate|62|D|0|S
+628|Alte cheltuieli cu serviciile executate de terti|62|D|0|S
+629|Alte cheltuieli autorizate prin dispozitii legale|62|D|0|S
+635|Cheltuieli cu alte impozite, taxe si varsaminte asimilate|63|D|0|S
+641|Cheltuieli cu salariile personalului|64|D|0|S
+642|Cheltuieli salariale în natura|64|D|0|S
+645|Cheltuieli privind asigurarile sociale|64|D|0|S
+646|Cheltuieli cu indemnizatiile dedelegare, detasare si alte drepturi salariale|64|D|0|S
+647|Cheltuieli din fondul destinat stimularii personalului|64|D|0|S
+654|Pierderi din creante si debitori diversi|65|D|0|S
+658|Alte cheltuieli operationale|65|D|0|S
+661|Cheltuieli din diferente nefavorabile de reevaluare rezultate din operatiuni de preschimbare a obligatiunilor/titlurilor de stat|66|B|0|S
+663|Pierderi din creante imobilizate|66|D|0|S
+664|Cheltuieli din investitii financiare cedate|66|D|0|S
+665|Cheltuieli din diferente de curs valutar|66|D|0|S
+666|Cheltuieli privind dobânzile|66|D|0|S
+667|Sume de transferat bugetului de stat reprezentând câstiguri din schimb valutar - PHARE, SAPARD, ISPA -|66|D|0|S
+668|Dobânzi de transferat Comisiei Europene/altordonatori sau de alocat programului - PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE|66|D|0|S
+669|Alte pierderi (cheltuieli neeligibile - costuri bancare) - PHARE, SAPARD, ISPA -|66|D|0|S
+670|Subventii|67|D|0|S
+671|Transferuri curente între unitati ale administratiei publice|67|D|0|S
+672|Transferuri de capital între unitati ale administratiei publice|67|D|0|S
+673|Transferuri interne|67|D|0|S
+674|Transferuri în strainatate|67|D|0|S
+675|Contributia României la bugetul UniuniiEuropene|67|D|0|S
+676|Asigurari sociale|67|D|0|S
+677|Ajutoare sociale|67|D|0|S
+678|Transferuri pentru proiecte finantate din fonduri externe nerambursabile postaderare, din componenta de imprumut a PNRR si fonduri de la bugetul de stat|67|B|0|S
+679|Alte cheltuieli|67|D|0|S
+681|Cheltuieli operationale privind amortizarile, provizioanele si ajustarile pentru depreciere|68|D|0|S
+682|Cheltuieli cu activele fixe neamortizabile|68|D|0|S
+686|Cheltuieli financiare privind amortizarile, provizioanele si ajustarile pentru pierderea de valoare|68|D|0|S
+689|Cheltuieli privind rezerva de stat si de mobilizare|68|D|0|S
+690|Cheltuieli cu pierderi din calamitati|69|D|0|S
+691|Cheltuieli extraordinare din operatiuni cu active fixe|69|D|0|S
+709|Variatia stocurilor|70|B|0|S
+714|Venituri din creante reactivate si debitori diversi|71|C|0|S
+718|Alte venituri ale trezoreriei statului|71|C|0|S
+721|Venituri din productia de active fixe necorporale|72|C|0|S
+722|Venituri din productia de active fixe corporale|72|C|0|S
+730|Impozit pe venit, profit si câstiguri din capital de la persoane juridice|73|C|0|S
+731|Impozit pe venit, profit si câstiguri din capital de la persoane fizice|73|C|0|S
+732|Alte impozite pe venit, profit si câstiguri din capital|73|C|0|S
+733|Impozit pe salarii|73|C|0|S
+734|Impozite si taxe pe proprietate|73|C|0|S
+735|Impozite si taxe pe bunuri si servicii|73|C|0|S
+736|Impozit pe comertul exterior si tranzactii internationale|73|C|0|S
+739|Alte impozite si taxe fiscale|73|C|0|S
+745|Contributiile angajatorilor|74|C|0|S
+746|Contributiile asiguratilor|74|C|0|S
+750|Venituri din proprietate|75|C|0|S
+751|Venituri din vânzari de bunuri si servicii|75|C|0|S
+761|Venituri din diferente favorabile de reevaluare rezultate din operatiuni de preschimbare a obligatiunilor/titlurilor de stat|76|B|0|S
+763|Venituri din creante imobilizate|76|C|0|S
+764|Venituri din investitii financiare cedate|76|C|0|S
+765|Venituri din diferente de curs valutar|76|C|0|S
+766|Venituri din dobânzi|76|C|0|S
+767|Sume de primit de la bugetul de stat pentru acoperirea pierderilor din schimb valutar - PHARE, SAPARD,ISPA -|76|C|0|S
+768|Alte venituri financiare - PHARE, SAPARD, ISPA -|76|C|0|S
+769|Sume de primit de la bugetul de stat pentru acoperirea altor pierderi (cheltuieli neeligibile - costuri bancare - PHARE, SAPARD, ISPA)|76|C|0|S
+770|Finantarea de la buget|77|C|0|S
+771|Finantarea în baza unor acte normative speciale|77|C|0|S
+772|Venituri din subventii|77|C|0|S
+774|Finantarea din fonduri externe nerambursabile preaderare|77|C|0|FER
+775|Finantarea din fonduri externe nerambursabile postaderare|77|C|0|S
+776|Fonduri cu destinatie speciala|77|C|0|S
+777|Veniturile fondului de risc|77|C|0|S
+778|Venituri din contributia nationala aferenta programelor/proiectelorfinantate din fonduri externe nerambursabile|77|C|0|S
+779|Venituri, bunuri si servicii primite cu titlu gratuit|77|C|0|S
+781|Venituri din provizioane si ajustari pentru depreciere privind activitatea operationala|78|C|0|S
+786|Venituri financiare din ajustari pentru pierdere de valoare|78|C|0|S
+791|Venituri din valorificarea unor bunuri ale statului|79|C|0|S
+803.00.01|Active fixe si obiecte de inventar primite in folosinta|80|B|0|R
+803.00.02|Alte active fixe primite in concesiune|80|D|0|S
+803.10.00|Active fixe corporale luate cu chirie|80|B|0|S
+803.20.00|Valori materiale primite spre prelucrare sau reparare|80|B|0|S
+803.40.00|Debitori scosi din activ, urmariti în continuare|80|B|0|S
+803.50.00|Sume solicitate la restituire|80|B|0|S
+803.60.00|Chirii si alte datorii asimilate|80|B|0|S
+803.80.00|Ambalaje de restituit|80|B|0|S
+803.90.01|Alte valori rezultate din operatiunile privind veniturile bugetului general consolidat|80|B|0|S
+803.90.02|Alte valori in afara bilantului|80|B|0|S
+804.00.00|Pagube produse din cauze de forta majora si fortuite|80|B|0|S
+804.10.00|Publicatii primite gratuit în vederea schimbului international|80|B|0|S
+804.20.00|Abonamente la publicatii care se urmaresc pâna la primire|80|B|0|S
+804.30.00|Imprimate de valoare cu decontare ulterioara|80|B|0|S
+804.40.00|Documente respinse la viza de control financiar preventiv|80|B|0|S
+804.60.00|Ipoteci imobiliare|80|B|0|E
+804.70.00|Valori materiale supuse sechestrului|80|B|0|E
+804.80.00|Garantie bancara pentru oferta depusa|80|B|0|S
+804.90.00|Garantie bancara pentru buna executie|80|B|0|R
+805.00.00|Disponibil din garantia constituita pentru buna executie|80|B|0|BFEPR
+805.10.00|Garantii constituite de concesionar|80|B|0|S
+805.20.00|Garantii depuse pentru sume contestate|80|B|0|S
+805.30.00|Garantii depuse pentru înlesniri acordate|80|B|0|S
+805.40.00|Înlesniri la plata creantelor bugetare|80|B|0|S
+805.50.00|Cautiuni depuse pentru contestatie la executarea silita|80|B|0|S
+805.60.00|Garantii legale constituite în cadrulprocedurii de suspendare a executarii silite prin decontare bancara|80|B|0|S
+805.70.00|Garantie bancara pentru avansul acordat (ISPA)|80|B|0|S
+805.80.00|Creante fiscale pentru care s-a declarat starea de insolvabilitate a debitorului|80|B|0|S
+805.90.00|Garantii acordate de autoritatile administratiei publice locale|80|B|0|S
+806.00.00|Credite bugetare aprobate|80|B|0|E
+806.10.00|Credite deschise de repartizat|80|B|0|S
+806.20.00|Credite deschise pentru cheltuieli proprii|80|B|0|T
+806.30.00|Fonduri de primit de la bugetul de stat|80|B|0|S
+806.60.00|Angajamente bugetare|80|B|0|BFE
+806.70.00|Angajamente legale|80|B|0|BFE
+807.00.00|Garantii de returnare a avansului acordat|80|B|0|S
+807.10.00|Credite de angajament aprobate|80|B|0|BE
+807.20.01|Credite de angajament rezervate|80|B|0|BE
+807.20.02|Credite de angajament angajate|80|B|0|BE
+807.30.00|Împrumuturi interne si externe garantate de stat|80|B|0|S
+807.40.00|Dobânzi si alte costuri aferente împrumuturilor interne si externe garantate de stat|80|B|0|S
+807.50.00|Rezultatul bugetului local stabilit potrivit art. 2 din Legea privind finantele publice locale nr. 273/2006, cu modificarile si completarile ulterioare|80|B|0|S
+807.60.00|Bunuri imobile care alcatuiesc domeniul privat al statului identificate pe raza unitatii administrativ-teritoriale|80|B|0|S
+807.70.00|Sume solicitate la rambursare aferente fondurilor externe nerambursabile postaderare în curs de virare la buget|80|B|0|S
+807.80.00|Declaratia de cheltuieli transmisa autoritatilor de certificare aferente proiectelor finantate din fonduri externe nerambursabile postaderare si buget de stat|80|B|0|S
+807.90.00|Sume aflate în curs de certificare/declarare la Comisia Europeana aferente Fondului European de pescuit|80|B|0|S
+808.00.00|Sume în curs de certificare reprezentând cofinantare publica si cofinantare privata aferenta Fondurilor europene structurale si de investitii|80|B|0|S
+808.10.00|Active contingente|80|B|0|S
+808.20.00|Datorii contingente|80|B|0|S
+808.30.00|Sume în curs de certificare reprezentând cofinantare publica si cofinantare privata aferenta Fondului de ajutor european destinat celor mai defavorizate persoane|80|B|0|S
+808.40.00|Sume aferente situatiei conturilor anuale potrivit Anexei VII a Regulamentului (UE) nr. 1.011/2014|80|B|0|S
+808.50.00|Sume aferente situatiei conturilor anuale potrivit Anexei V a Regulamentului (UE) nr. 341/2015|80|B|0|S
+808.60.00|Sume în curs de declarare reprezentând cofinantare publica si cofinantare privata aferenta Fondurilor europene structurale si de investitii|80|B|0|S
+808.70.00|Sume în curs de declarare reprezentând cofinantare publica si cofinantare privata aferenta Fondului de ajutor european destinat celor mai defavorizate persoane|80|B|0|S
+809.00.00|Prevederi venituri bugetare aprobate|80|B|0|BF
+891|Bilant de deschidere|89|B|0|S
+892|Bilant de închidere|89|B|0|S
+100.01|Fondul activelor fixe necorporale care alcatuiesc domeniul public al statului|100|C|0|S
+100.02|Fondul activelor fixe necorporale care alcatuiesc domeniul privat al statului|100|C|0|S
+100.03|Fondul activelor fixe necorporale care alcatuiesc domeniul public al unitatii administrativ-teritoriale|100|C|0|S
+100.04|Fondul activelor fixe necorporale care alcatuiesc domeniul privat al unitatii administrativ-teritoriale|100|C|0|S
+101.00|Fondul bunurilor care alcatuiesc domeniul public al statului|101|C|0|S
+102.01|Fondul bunurilor care alcatuiesc domeniul privat al statului|102|B|0|S
+103.00|Fondul bunurilor care alcatuiesc domeniul public al unitatilor administrativ - teritoriale|103|B|0|S
+104.01|Fondul bunurilor care alcatuiesc domeniul privat al unitatilor administrativ-teritoriale|104|B|0|S
+105.01|Rezerve din reevaluarea terenurilor si amenajarilor la terenuri|105|B|0|S
+105.02|Rezerve din reevaluarea constructiilor|105|B|0|S
+105.03|Rezerve din reevaluarea instalatiilor tehnice, mijloacelor de transport, animalelor si plantatiilor|105|B|0|S
+105.04|Rezerve din reevaluarea mobilierului, aparaturii birotice, echipamentelor de protectie a valorilor umane si materiale si a altor active fixe corporale|105|B|0|S
+105.05|Rezerve din reevaluarea altor active ale statului|105|B|0|S
+106.00|Diferente din reevaluare si diferente de curs aferente dobânzilor încasate (SAPARD)|106|B|0|S
+117.00|Rezultatul reportat|117|B|0|S
+121.00|Rezultatul patrimonial|121|B|0|S
+132.00|Fondul de rezerva al bugetului asigurarilor sociale de stat|132|B|0|S
+133.00|Fondul de rezerva constituit conform Legii nr. 95/2006|133|B|0|S
+151.01|Provizioane sub 1 an|151|B|0|S
+151.02|Provizioane peste 1 an|151|B|0|S
+161.01|Împrumuturi din emisiunea de obligatiuni cu termen de rascumparare în exercitiul curent|161|B|0|S
+161.02|Împrumuturi din emisiunea de obligatiunicu termen de rascumparare în exercitiile viitoare|161|B|0|S
+162.01|Împrumuturi interne si externe contractate de autoritatile administratiei publice locale cu termen de rambursare în exercitiul curent|162|B|0|S
+162.02|Împrumuturi interne si externe contractate de autoritatile administratiei publice locale cu termen de rambursare în exercitiile viitoare|162|B|0|S
+163.01|Împrumuturi interne si externe garantate de autoritatile administratiei publice locale cu termen de rambursare în exercitiul curent|163|B|0|S
+163.02|Împrumuturi interne si externe garantate de autoritatile administratiei publice locale cu termen de rambursare în exercitiile viitoare|163|B|0|S
+164.01|Împrumuturi interne si externe contractate de stat cu termen de rambursare în exercitiul curent|164|B|0|S
+164.02|Împrumuturi interne si externe contractate de stat cu termen de rambursare în exercitiile viitoare|164|B|0|S
+165.01|Împrumuturi interne si externe garantate de stat cu termen de rambursare în exercitiul curent|165|B|0|S
+165.02|Împrumuturi interne si externe garantate de stat cu termen de rambursare în exercitiile viitoare|165|C|0|S
+166.01|Sume primite pentru acoperirea deficitelor bugetare (pentru sumele ce urmeaza a fi platite în cursul exercitiului curent)|166|B|0|S
+166.02|Sume primite pentru acoperirea deficitelor bugetare (pentru sumele ce urmeaza a fi platite în cursul exercitiilor viitoare)|166|B|0|S
+167.01|Alte împrumuturi si datorii asimilate cu termen de rambursare în exercitiul curent|167|B|0|S
+167.02|Alte împrumuturi si datorii asimilate cu termen de rambursare în exercitiile viitoare|167|B|0|S
+168.01|Dobânzi aferente împrumuturilor din emisiuni de obligatiuni|168|B|0|S
+168.02|Dobânzi aferente împrumuturilor interne si externe contractate de autoritatile administratiei publice locale|168|B|0|S
+168.03|Dobânzi aferente împrumuturilor interne si externe garantate de autoritatile administratiei publice locale|168|B|0|S
+168.04|Dobânzi aferente împrumuturilor interne si externe contractate de stat|168|B|0|S
+168.05|Dobânzi aferente împrumuturilor interne si externe garantate de stat|168|B|0|S
+168.07|Dobânzi aferente altor împrumuturi si datorii asimilate|168|B|0|S
+169.01|Prime privind rambursarea obligatiunilor (pentru sumele ce urmeaza a fi platite în cursul exercitiului curent)|169|B|0|S
+169.02|Prime privind rambursarea obligatiunilor (pentru sumele ce urmeaza a fi platite în cursul exercitiilor viitoare)|169|B|0|S
+203.00|Cheltuieli de dezvoltare|203|B|0|S
+205.00|Concesiuni, brevete, licente, marci comerciale, drepturi si active similare|205|B|0|S
+206.00|Înregistrari ale evenimentelor cultural-sportive|206|B|0|S
+208.01|Programe informatice|208|B|0|S
+208.02|Alte active fixe necorporale|208|B|0|S
+211.01|Terenuri|211|B|0|S
+211.02|Amenajari la terenuri|211|B|0|S
+212.01|Constructii - infrastructura drumuri|212|B|0|S
+212.02|Constructii - infrastructura pentru transport feroviar|212|B|0|S
+212.03|Constructii - poduri, podete, pasarele si viaducte pentru transporturi feroviare si rutiere; viaducte|212|B|0|S
+212.04|Constructii - tunele|212|B|0|S
+212.05|Constructii - piste pentru aeroporturi si platforme de stationare pentru avioane si autovehicule; constructii aeroportuare|212|B|0|S
+212.06|Constructii - canale pentru navigatie|212|B|0|S
+212.09|Constructii - alte active fixe încadrate în grupa constructii|212|B|0|S
+213.01|Echipamentetehnologice (masini, utilaje si instalatii de lucru)|213|B|0|S
+213.02|Aparate si instalatii de masurare, control si reglare|213|B|0|S
+213.03|Mijloace de transport|213|B|0|S
+213.04|Animale si plantatii|213|B|0|S
+214.00|Mobilier, aparatura birotica, echipamente de protectie a valorilor umane si materiale si alte active fixe corporale|214|B|0|S
+215.00|Alte active ale statului|215|B|0|S
+231.00|Active fixe corporale în curs de executie|231|B|0|S
+232.00|Avansuri acordate pentru active fixe corporale|232|B|0|S
+233.00|Active fixe necorporale în curs de executie|233|B|0|S
+234.00|Avansuri acordate pentru active fixe necorporale|234|B|0|S
+260.01|Titluri de participare cotate|260|B|0|S
+260.02|Titluri de participare necotate|260|B|0|S
+260.03|Alte participatii|260|B|0|S
+265.00|Alte titluri imobilizate|265|B|0|S
+267.01|Creante imobilizate (pentru sumele ce urmeaza a fi încasate în cursul exercitiului curent)|267|B|0|S
+267.02|Creante imobilizate (pentru sumele ce urmeaza a fi încasate în cursul exercitiilor viitoare)|267|B|0|S
+267.06|Dobânzi aferente împrumuturilor acordate pe termen lung|267|B|0|S
+269.01|Varsaminte de efectuat pentru active financiare - curente|269|B|0|S
+269.02|Varsaminte de efectuat pentru active financiare - necurente|269|B|0|S
+280.03|Amortizarea cheltuielilor de dezvoltare|280|B|0|S
+280.05|Amortizarea concesiunilor, brevetelor, licentelor, marcilor comerciale, drepturilor si activelor similare|280|B|0|S
+280.08|Amortizarea altor active fixe necorporale|280|B|0|S
+281.01|Amortizarea amenajarilor la terenuri|281|B|0|S
+281.02|Amortizarea constructiilor|281|B|0|S
+281.03|Amortizarea instalatiilor tehnice, mijloacelor de transport, animalelor si plantatiilor|281|B|0|S
+281.04|Amortizarea mobilierului,aparaturii birotice, echipamentelor de protectie a valorilor umane si materiale si a altor active fixe corporale|281|B|0|S
+290.04|Ajustari pentru deprecierea cheltuielilor de dezvoltare|290|B|0|S
+290.05|Ajustari pentru deprecierea concesiunilor, brevetelor, licentelor, marcilor comerciale, drepturilor si activelor similare|290|B|0|S
+290.08|Ajustari pentru deprecierea altor active fixe necorporale|290|B|0|S
+291.01|Ajustari pentru deprecierea terenurilor si amenajarilor la terenuri|291|B|0|S
+291.02|Ajustari pentru deprecierea constructiilor|291|B|0|S
+291.03|Ajustari pentru deprecierea instalatiilor tehnice, mijloacelor de transport, animalelor si plantatiilor|291|B|0|S
+291.04|Ajustari pentru deprecierea mobilierului, aparaturii birotice, echipamentului de protectie a valorilor umane si materiale si a altor active fixe corporale|291|B|0|S
+293.01|Ajustari pentru deprecierea activelor fixe necorporale în curs de executie|293|B|0|S
+293.02|Ajustari pentru deprecierea activelor fixe corporale în curs deexecutie|293|B|0|S
+296.01|Ajustari pentru pierderea de valoare a activelor financiare|296|B|0|S
+296.02|Ajustari pentru pierderea de valoare a altor active financiare|296|B|0|S
+301.00|Materii prime|301|B|0|S
+302.01|Materiale auxiliare|302|B|0|S
+302.02|Combustibili|302|B|0|S
+302.03|Materiale pentru ambalat|302|B|0|S
+302.04|Piese de schimb|302|B|0|S
+302.05|Seminte si materiale de plantat|302|B|0|S
+302.06|Furaje|302|B|0|S
+302.07|Hrana|302|B|0|S
+302.08|Alte materiale consumabile|302|B|0|S
+302.09|Medicamente si materiale sanitare|302|B|0|S
+303.01|Materiale de natura obiectelor de inventar în magazie|303|B|0|S
+303.02|Materiale de natura obiectelor de inventar în folosinta|303|B|0|S
+304.01|Materiale rezerva de stat|304|B|0|S
+304.02|Materiale rezerva de mobilizare|304|B|0|S
+305.01|Ambalaje rezerva de stat|305|B|0|S
+305.02|Ambalaje rezerva de mobilizare|305|B|0|S
+307.00|Materiale date în prelucrare în institutie|307|B|0|S
+309.00|Alte stocuri|309|B|0|S
+331.00|Produse în curs de executie|331|B|0|S
+332.00|Lucrari si servicii în curs de executie|332|B|0|S
+341.00|Semifabricate|341|B|0|S
+345.00|Produse finite|345|B|0|S
+346.00|Produse reziduale|346|B|0|S
+347.00|Bunuri confiscate sau intrate, potrivit legii, în proprietatea privata astatului|347|B|0|S
+348.00|Diferente de pret la produse|348|B|0|S
+349.00|Bunuri confiscate sau intrate potrivit legii, în proprietatea privata a unitatilor administrativ -teritoriale|349|B|0|S
+351.01|Materii si materiale aflate la terti|351|B|0|S
+351.02|Materiale de natura obiectelor de inventar aflate la terti|351|B|0|S
+354.01|Semifabricate aflate la terti|354|B|0|S
+354.05|Produse finite aflate la terti|354|B|0|S
+354.06|Produse reziduale aflate la terti|354|B|0|S
+356.00|Animale aflate la terti|356|B|0|S
+357.00|Marfuri aflate la terti|357|B|0|S
+358.00|Ambalaje aflate la terti|358|B|0|S
+359.00|Bunuri în custodie sau în consignatie la terti|359|B|0|S
+361.00|Animale si pasari|361|B|0|S
+371.00|Marfuri|371|B|0|S
+378.00|Diferente de pret la marfuri (adaos comercial)|378|B|0|S
+381.00|Ambalaje|381|B|0|S
+391.00|Ajustari pentru deprecierea materiilor prime|391|B|0|S
+392.01|Ajustari pentru deprecierea materialelor consumabile|392|B|0|S
+392.02|Ajustari pentru deprecierea materialelor de natura obiectelor de inventar|392|B|0|S
+392.03|Ajustari pentru deprecierea materialelor rezerva de stat si de mobilizare|392|B|0|S
+393.00|Ajustari pentru deprecierea productiei în curs de executie|393|B|0|S
+394.01|Ajustari pentru deprecierea semifabricatelor|394|B|0|S
+394.05|Ajustari pentru deprecierea produselor finite|394|B|0|S
+394.06|Ajustari pentru deprecierea produselor reziduale|394|B|0|S
+395.01|Ajustari pentru deprecierea materiilor si materialelor aflate la terti|395|B|0|S
+395.02|Ajustari pentru deprecierea semifabricatelor aflate la terti|395|B|0|S
+395.03|Ajustari pentru deprecierea produselor finite aflate la terti|395|B|0|S
+395.04|Ajustari pentru deprecierea produselor reziduale aflate la terti|395|B|0|S
+395.06|Ajustari pentru deprecierea animalelor aflate la terti|395|B|0|S
+395.07|Ajustari pentru deprecierea marfurilor aflate la terti|395|B|0|S
+395.08|Ajustari pentru deprecierea ambalajelor aflate la terti|395|B|0|S
+396.00|Ajustari pentru deprecierea animalelor|396|B|0|S
+397.01|Ajustari pentru deprecierea marfurilor|397|B|0|S
+397.02|Ajustari pentru bunuri confiscate sau intrate, potrivit legii, în proprietatea privata a statului|397|B|0|S
+397.03|Ajustari pentru bunuri confiscate sau intrate, potrivit legii, în proprietatea privata a unitatilor administrativ- teritoriale|397|B|0|S
+398.00|Ajustari pentru deprecierea ambalajelor|398|B|0|S
+401.01|Furnizori sub 1 an|401|B|0|S
+401.02|Furnizori peste 1 an|401|B|0|S
+403.01|Efecte de platit sub 1 an|403|B|0|S
+403.02|Efecte de platit peste 1 an|403|B|0|S
+404.01|Furnizori de active fixe sub 1 an|404|B|0|S
+404.02|Furnizori de active fixe peste 1 an|404|B|0|S
+405.01|Efecte de platit pentru active fixe sub 1 an|405|B|0|S
+405.02|Efecte de platit pentru active fixe peste 1 an|405|B|0|S
+408.00|Furnizori - facturi nesosite|408|B|0|S
+409.01|Furnizori - debitori pentru cumparari de bunuri de natura stocurilor si pentru prestari de servicii si executari de lucrari|409|B|0|S
+411.01|Clienti cu termen sub 1 an|411|B|0|S
+411.02|Clienti cu termen peste 1 an|411|B|0|S
+413.01|Efecte de primit de la clienti sub 1 an|413|B|0|S
+413.02|Efecte de primit de la clienti peste 1 an|413|B|0|S
+418.00|Clienti - facturi de întocmit|418|B|0|S
+419.00|Clienti - creditori|419|B|0|S
+420.01|Personal - drepturi de natura salariala suplimentare sub 1 an|420|B|0|S
+420.02|Personal - drepturi de natura salariala suplimentare peste 1 an|420|B|0|S
+421.00|Personal - salarii datorate|421|B|0|S
+422.01|Pensionari civili - pensii datorate|422|B|0|S
+422.02|Pensionari militari - pensii datorate|422|B|0|S
+423.00|Personal - ajutoare si indemnizatii datorate|423|B|0|S
+424.00|Someri - indemnizatii datorate|424|B|0|S
+425.00|Avansuri acordate personalului|425|B|0|S
+426.01|Drepturi de personal neridicate - salarii|426|B|0|S
+426.02|Drepturi de personal neridicate - alte drepturi|426|B|0|S
+427.01|Retineri din salarii datorate tertilor|427|B|0|S
+427.02|Retineri din pensii datorate tertilor|427|B|0|S
+427.03|Retineri din alte drepturi datorate tertilor|427|B|0|S
+428.01|Alte datorii si creante în legatura cu personalul sub 1 an|428|B|0|S
+428.02|Alte datorii si creante în legatura cu personalul peste 1 an|428|B|0|S
+429.00|Bursieri si doctoranzi|429|B|0|S
+431.01|Contributiileangajatorilor pentru asigurari sociale|431|B|0|E
+431.02|Contributiile asiguratilor pentru asigurari sociale|431|B|0|E
+431.03|Contributiileangajatorilor pentru asigurari sociale de sanatate|431|B|0|E
+431.04|Contributiile asiguratilor pentru asigurari sociale de sanatate|431|B|0|E
+431.05|Contributiileangajatorilor pentru accidente de munca si boli profesionale|431|B|0|E
+431.06|Contributia pentru CAM|431|C|0|E
+431.07|Contributiileangajatorilor pentru concedii si indemnizatii|431|C|0|E
+437.01|Contributiileangajatorilor pentru asigurari de somaj|437|B|0|S
+437.02|Contributiile asiguratilor pentru asigurari de somaj|437|B|0|S
+437.03|Contributiileangajatorilor la fondul de garantare pentru plata creantelor salariale|437|B|0|S
+438.00|Alte datorii sociale|438|B|0|S
+440.00|Cote defalcate din impozitul pe venit pentru echilibrarea bugetelor locale|440|B|0|S
+441.00|Sume încasate pentru bugetul capitalei|441|B|0|S
+442.03|Taxa pe valoarea adaugata de plata|442|B|0|S
+442.04|Taxa pe valoarea adaugata de recuperat|442|B|0|S
+442.06|Taxa pe valoarea adaugata deductibila|442|B|0|S
+442.07|Taxa pe valoarea adaugata colectata|442|B|0|S
+442.08|Taxa pe valoarea adaugata neexigibila|442|B|0|R
+444.00|Impozit pe venitul din salarii si din alte drepturi|444|C|0|E
+446.01|Alte impozite, taxe si varsaminte asimilate|446|B|0|S
+446.02|Impozitul pe profit|446|B|0|S
+448.01|Alte datorii fata de buget|448|B|0|S
+448.02|Alte creante privind bugetul|448|B|0|S
+450.01|Sume de primit de la Comisia Europeana -PHARE, SAPARD, ISPA -|450|D|0|S
+450.02|Sume de restituit Comisiei Europene -PHARE, SAPARD, ISPA|450|C|0|S
+450.03|Sume declarate si solicitate ComisieiEuropene/ altor donatori- FONDURI EXTERNE NERAMBURSABILE POSTADERARE|450|D|0|S
+450.04|Sume de restituit/datorateComisiei Europene/ altor donatori -FONDURI EXTERNE NERAMBURSABILE POSTADERAREI|450|C|0|S
+450.05|Sume de primit de la Comisia Europeana/alti donatori reprezentând venituri ale bugetului general consolidat - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|450|D|0|S
+450.06|Sume avansate de Comisia Europeana/alti donatori - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|450|C|0|S
+450.07|Sume de primit de la Comisia Europeana/alti donatori datorate altor beneficiari-ONG-uri, societati comerciale, etc. - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|450|D|0|S
+451.01|Sume de primit de la Autoritatile de Certificare - PHARE, SAPARD, ISPA|451|D|0|S
+451.02|Sume de restituit Autoritatilor deCertificare - PHARE, SAPARD, ISPA|451|C|0|S
+451.03|Sume de primit de la Autoritatile de Certificare/ Ministerul Agriculturii - FONDURIEXTERNENERAMBURSABILEPOSTADERARE SI FONDURI DE LA BUGET|451|D|0|S
+451.04|Sume de restituit Autoritatilor deCertificare/ Ministerului Agriculturii - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451|C|0|S
+451.05|Sume de primit de la Agentia de Plati pentru Dezvoltare Rurala si Pescuit - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451|D|0|S
+451.06|Sume avansate de Autoritatile deCertificare - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451|C|0|S
+452.01|Sume datorate Agentiilor deImplementare - PHARE, SAPARD, ISPA|452|C|0|S
+452.02|Sume datorate Autoritatilor de Management/ Agentiilor de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|452|C|0|S
+453.01|Sume de primit de la Autoritatile de Implementare -PHARE, SAPARD, ISPA -|453|D|0|S
+453.02|Sume de restituit Autoritatilor de Implementare - PHARE, SAPARD, ISPA -|453|C|0|S
+454.01|Sume de primit de la beneficiari - PHARE-|454|D|0|S
+454.02|Sume de restituit beneficiarilor - PHARE-|454|C|0|S
+454.03|Sume de recuperat de la beneficiari - FONDURI EXTERNENERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|454|D|0|S
+454.04|Sume datorate beneficiarilor- ONG-uri, societati comerciale, etc., - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|454|C|0|S
+454.05|Avansuri acordate beneficiarilor - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|454|D|0|S
+454.06|Sume datorate beneficiarilor - institutii publice FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|454|C|0|S
+455.01|Sume de primit de la buget (cofinantare, indisponibilitati temporare de fonduri de la Comisia Europeana - PHARE, SAPARD, ISPA)|455|D|0|S
+455.02|Sume de restituit bugetului (cofinantare,indisponibilitati temporare de fonduri de la Comisia Europeana - PHARE, SAPARD, ISPA)|455|C|0|S
+455.03|Sume de primit de la buget (prefinantare, cofinantare, indisponibilitati temporare de fonduri de la Comisia Europeana/alti donatori) - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|455|D|0|S
+455.04|Sume de restituit bugetului (prefinantare, cofinantare, indisponibilitati temporare de fonduri de la Comisia Europeana/alti donatori, top-up) - FONDURI EXTERNENERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|455|C|0|S
+455.05|Sume de restituit bugetului din sume primite de la Comisia Europeana/ alti donatori în contul platilor efectuate - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|455|D|0|S
+456.01|Sume de primit de la bugetul de stat pentru cheltuieli neeligibile - PHARE, SAPARD, ISPA|456|D|0|S
+456.03|Sume de primit de la bugetul de stat pentru alte cheltuieli decât cele eligibile - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|456|D|0|S
+456.04|Sume de restituit bugetului de stat pentru alte cheltuieli decât celeeligibile - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|456|C|0|S
+457.01|Sume de recuperat de la Agentiile de Implementare - PHARE, SAPARD, ISPA|457|D|0|S
+457.02|Sume avansate Autoritatilor de Management/ Agentiilor de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|457|D|0|S
+457.03|Sume de recuperat de la Autoritatile de Management/ Agentiile de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|457|D|0|S
+458.01|Sume de primit de la Agentiile/Autoritatile de Implementare - PHARE, ISPA, SAPARD (la beneficiarii finali)|458|D|0|S
+458.03|Sume de primit de la Autoritatile de Certificare/ Autoritatile de Management/Agentiile de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|458|D|0|S
+458.04|Sume de restituit Autoritatilor de Certificare/ Autoritatilor de Management/Agentiilor de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|458|C|0|S
+458.05|Avansuri primite de la Autoritatile de Certificare/ Autoritatile de Management/Agentiile de Plati - FONDURI EXTERNE NERAMBURSABILEPOSTADERARE SI FONDURI DE LA BUGET|458|C|0|S
+459.00|Sume datorate bugetului Uniunii Europene|459|C|0|S
+461.01|Debitori sub 1 an|461|B|0|S
+461.02|Debitori peste 1 an|461|B|0|S
+462.01|Creditori sub 1 an|462|C|0|S
+462.02|Creditori peste 1 an|462|C|0|S
+463.00|Creante ale bugetului de stat|463|D|0|S
+464.00|Creante ale bugetului local|464|D|0|S
+465.01|Creante ale sistemului de asigurare de munca si boli profesionale|465|D|0|S
+465.02|Creante ale bugetului asigurarilor sociale de stat|465|D|0|S
+466.04|Creante ale bugetului asigurarilor pentru somaj|466|D|0|S
+466.05|Creante ale bugetului Fondului national unic de asigurari sociale de sanatate|466|D|0|S
+466.09|Creante ale bugetului trezoreriei statului|466|D|0|S
+467.01|Creditori ai bugetului de stat|467|C|0|S
+467.02|Creditori ai bugetului local|467|C|0|S
+467.03|Creditori ai bugetului asigurarilor sociale de stat|467|C|0|S
+467.04|Creditori ai bugetului asigurarilor pentru somaj|467|C|0|S
+467.05|Creditori ai bugetului Fondului national unic de asigurari sociale de sanatate|467|C|0|S
+467.09|Creditori ai bugetului trezoreriei statului|467|C|0|S
+468.01|Împrumuturi pe termen scurt acordate potrivit legii|468|D|0|S
+469.01|Dobânzi aferente împrumuturilor acordate pe termen scurt|469|D|0|S
+471.00|Cheltuieli înregistrate în avans|471|D|0|S
+472.00|Venituri înregistrate în avans|472|C|0|S
+473.01|Decontari din operatii în curs de clarificare|473|B|0|S
+474.00|Sume în curs de certificare/declarare Comisiei Europene/alti donatori - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|474|D|0|S
+476.00|Sume în curs de declarare Autoritatilor de Certificare - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|476|D|0|S
+481.01|Decontari privind operatiuni financiare|481|B|0|S
+481.09|Alte decontari|481|B|0|S
+483.00|Decontari din operatii în participatie|483|B|0|S
+484.00|Decontari privind titlurile de stat destinate populatiei emise prin intermediul unitatilor operative ale Trezoreriei Statului|484|B|0|S
+489.01|Decontari privind încheierea executiei bugetului de stat din anul curent - venituri|489|B|0|S
+489.02|Decontari privind încheierea executiei bugetului de stat din anul curent - cheltuieli|489|B|0|S
+489.03|Decontari privind încheierea executiei bugetului de stat din anul curent - excedent/deficit preluat de la unitatile trezoreriei statului|489|B|0|S
+491.01|Ajustari pentru deprecierea creantelor - clienti sub 1 an|491|C|0|S
+491.02|Ajustari pentru deprecierea creantelor - clienti peste 1 an|491|C|0|S
+496.01|Ajustari pentru deprecierea creantelor - debitori sub 1 an|496|C|0|S
+496.02|Ajustari pentru deprecierea creantelor - debitori peste 1 an|496|C|0|S
+497.00|Ajustari pentru deprecierea creantelor bugetare|497|C|0|S
+505.00|Obligatiuni emise si rascumparate|505|D|0|S
+509.00|Varsaminte de efectuat pentru investitiile pe termen scurt|509|C|0|S
+510.00|Disponibil din împrumuturi din disponibilitatile contului curent general al trezoreriei statului|510|D|0|S
+511.01|Valori de încasat|511|D|0|S
+512.01|Conturi la trezorerii si institutii de credit în lei|512|B|0|S
+512.04|Conturi în valuta|512|B|0|S
+512.05|Sume în curs de decontare|512|B|0|S
+512.06|Disponibil în lei al trezoreriei centrale|512|B|0|S
+512.07|Disponibil în valuta al trezoreriei centrale|512|B|0|S
+512.08|Conturi de clearing, barter si cooperare economica|512|B|0|S
+512.09|Disponibil al operatorilor economici la trezorerie|512|D|0|S
+512.10|Disponibil aferent certificatelor de trezorerie ale populatiei|512|D|0|S
+513.01|Disponibil în lei din împrumuturi interne si externe contractate de stat|513|D|0|S
+513.02|Disponibil în valuta din împrumuturi interne si externe contractate de stat|513|D|0|S
+513.03|Disponibil al bugetelor creditelor interne și externe din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi contractate de stat|513|D|0|S
+514.01|Disponibil în lei din împrumuturi interne si externe garantate de stat|514|D|0|S
+514.02|Disponibil în valuta din împrumuturi interne si externe garantate de stat|514|D|0|S
+514.03|Disponibil al bugetelor creditelor interne și externe din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi garantate de stat|514|D|0|S
+515.01|Disponibil în lei din fonduri externe nerambursabile|515|D|0|S
+515.02|Disponibil în valuta din fonduri externe nerambursabile|515|D|0|S
+515.03|Depozite bancare|515|D|0|S
+515.04|Rezultatul executiei bugetare din anul curent|515|D|0|S
+515.05|Rezultatul executiei bugetare din anii precedenti|515|D|0|S
+515.06|Disponibil al bugetului fondurilor externe nerambursabile din sume neutilizate în anul curent și reportate în anul următor|515|D|0|S
+516.01|Disponibil în lei din împrumuturi interne si externe contractate de autoritatile administratiei publice locale|516|D|0|S
+516.02|Disponibil în valuta din împrumuturi interne si externe contractate de autoritatile administratiei publice locale|516|D|0|S
+516.03|Disponibil al bugetelor creditelor interne și externe din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi contractate de autoritătile administratiei publice locale|516|D|0|S
+517.01|Disponibil în lei din împrumuturi interne si externe garantate de autoritatile administratiei publice locale|517|D|0|S
+517.02|Disponibil în valuta din împrumuturi interne si externe garantate de autoritatile administratiei publice locale|517|D|0|S
+517.03|Disponibil al bugetelor creditelor interne și externe din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi garantate de autoritătile administratiei publice locale|517|D|0|S
+518.06|Dobânzi de platit|518|C|0|S
+518.07|Dobânzi de încasat|518|D|0|S
+518.08|Dobânzi de platit aferente creditelor pe termen scurt provenite din reclasificarea creditelor comerciale în împrumuturi|518|C|0|S
+519.01|Împrumuturi pe termen scurt|519|C|0|S
+520.01|Disponibil al bugetului de stat|520|D|0|S
+520.02|Rezultatul executiei bugetului de stat din anul curent|520|B|0|S
+521.01|Disponibil al bugetului local|521|D|0|S
+521.02|Rezultatul executiei bugetare din anul curent|521|D|0|S
+521.03|Rezultatul executiei bugetare din anii precedenti|521|D|0|S
+523.00|Disponibil din cote defalcate din impozitul pe venit pentru echilibrarea bugetelor locale|523|D|0|S
+524.01|Disponibil al bugetului trezoreriei statului|524|D|0|S
+524.02|Rezultatul executiei bugetului trezoreriei statului din anul curent|524|B|0|S
+524.03|Rezultatul executiei bugetului trezoreriei statului din anii precedenti|524|D|0|S
+525.01|Disponibil al bugetului asigurarilor sociale de stat|525|D|0|S
+525.02|Rezultatul executiei bugetare din anul curent|525|B|0|S
+525.03|Rezultatul executiei bugetare din anii precedenti|525|D|0|S
+525.04|Depozite din excedentul bugetului asigurarilor sociale de stat|525|D|0|S
+526.00|Disponibil din fondul de rezerva al bugetului asigurarilor sociale de stat|526|D|0|S
+527.00|Disponibil din fondul de rezerva constituit conform Legii nr.95/2006|527|D|0|S
+528.00|Disponibil din sume încasate în cursul procedurii de executare silita|528|D|0|S
+529.01|Disponibil din sumele colectate pentru bugetul de stat|529|D|0|S
+529.02|Disponibil din sumele colectate pentru bugetul local|529|D|0|S
+529.03|Disponibil din sume colectate pentru alte bugete|529|D|0|S
+529.04|Disponibil din venituri încasate pentru bugetul capitalei|529|D|0|S
+529.09|Disponibil din sume colectate prin intermediul cardurilor|529|D|0|S
+531.01|Casa în lei|531|D|0|S
+531.04|Casa în valuta|531|D|0|S
+532.01|Timbre fiscale si postale|532|D|0|S
+532.02|Bilete de tratament si odihna|532|D|0|S
+532.03|Tichete si bilete de calatorie|532|D|0|S
+532.04|Bonuri valorice pentru carburanti auto|532|D|0|S
+532.05|Bilete cu valoare nominala|532|D|0|S
+532.06|Tichete de masa|532|D|0|S
+532.08|Alte valori|532|D|0|S
+541.01|Acreditive în lei|541|D|0|S
+541.02|Acreditive în valuta|541|D|0|S
+542.01|Avansuri de trezorerie în lei|542|D|0|S
+542.02|Avansuri de trezorerie în valuta|542|D|0|S
+550.01|Disponibil din fonduri cu destinatie speciala|550|D|0|S
+552.00|Disponibil pentru sume de mandat si sume în depozit|552|D|0|S
+555.01|Disponibil al fondului de risc în lei|555|D|0|S
+555.02|Disponibil al fondului de risc în valuta|555|D|0|S
+555.03|Rezultatul executiei bugetare din anul curent|555|D|0|S
+555.04|Rezultatul executiei bugetare din anii precedenti|555|D|0|S
+557.01|Disponibil în lei din valorificarea bunurilor intrate în proprietatea privata a statului|557|D|0|S
+557.02|Disponibil în valuta din valorificarea bunurilor intrate în proprietatea privata a statului|557|D|0|S
+558.01|Disponibil în lei din contributia nationala reprezentând cofinantarea de la buget aferenta programelor/proiectelor finantate din fonduri externe nerambursabile|558|D|0|S
+558.02|Disponibil în lei din contributia nationala reprezentând alte cheltuieli decât cele eligibile de la buget aferente programelor/proiectelor finantate din fonduri externe nerambursabile|558|D|0|S
+558.03|Disponibil în valută din contributia natională aferentă programelor/proiectelor finantate din fonduri externe nerambursabile|558|D|0|S
+559.01|Disponibil în lei de la buget reprezentând prefinantari si fonduri în cazul indisponibilitatilor temporare aferente programelor/proiectelor finantate din fonduri externe nerambursabile|559|D|0|S
+559.02|Disponibil în valuta de la buget reprezentând prefinantari si fonduri în cazul indisponibilitatilor temporare aferente programelor/proiectelor finantate din fonduri externe nerambursabile|559|D|0|S
+560.01|Disponibil curent al institutiilor publice finantate integral din venituri proprii|560|D|0|S
+560.02|Rezultatul executiei bugetare din anul curent|560|D|0|S
+560.03|Rezultatul executiei bugetare din anii precedenti|560|D|0|S
+560.04|Depozite ale institutiilor publice finantate integral din venituri proprii|560|D|0|S
+561.01|Disponibil al institutiilor publice finantate din venituri proprii sisubventii|561|D|0|S
+561.02|Rezultatul executiei bugetare din anul curent|561|D|0|S
+561.03|Rezultatul executiei bugetare din anii precedenti|561|D|0|S
+562.01|Disponibil al activitatilor finantate din venituri proprii|562|D|0|S
+562.02|Rezultatul executiei bugetare din anul curent|562|D|0|S
+562.03|Rezultatul executiei bugetare din anii precedenti|562|D|0|S
+562.04|Depozite ale activitătilor finantate integral din venituri proprii|562|D|0|S
+571.01|Disponibil din veniturile Fondului national unic de asigurari sociale desanatate|571|D|0|S
+571.02|Rezultatul executiei bugetare din anul curent|571|B|0|S
+571.03|Rezultatul executiei bugetare din anii precedenti|571|D|0|S
+571.04|Depozite din veniturile Fondului national unic de asigurari sociale de sanatate|571|D|0|S
+574.01|Disponibil din veniturile bugetului asigurarilor pentru somaj|574|D|0|S
+574.02|Rezultatul executiei bugetare din anul curent|574|B|0|S
+574.03|Rezultatul executiei bugetare din aniiprecedenti|574|D|0|S
+574.04|Depozite din veniturile bugetului asigurarilor pentru somaj|574|D|0|S
+575.01|Disponibil din veniturile Fondului pentru mediu|575|D|0|S
+575.02|Rezultatul executiei bugetare din anul curent|575|B|0|S
+575.03|Rezultatul executiei bugetare din anii precedenti|575|D|0|S
+575.04|Depozite din veniturile Fondului pentru mediu|575|D|0|S
+581.01|Viramente interne|581|B|0|S
+595.00|Ajustari pentru pierderea de valoare a obligatiunilor emise si rascumparate|595|C|0|S
+601.00|Cheltuieli cu materiile prime|601|D|0|S
+602.01|Cheltuieli cu materialele auxiliare|602|D|0|S
+602.02|Cheltuieli privind combustibilul|602|D|0|S
+602.03|Cheltuieli privind materialele pentru ambalat|602|D|0|S
+602.04|Cheltuieli privind piesele de schimb|602|D|0|S
+602.05|Cheltuieli privind semintele si materialele de plantat|602|D|0|S
+602.06|Cheltuieli privind furajele|602|D|0|S
+602.07|Cheltuieli privind hrana|602|D|0|S
+602.08|Cheltuieli privind alte materiale consumabile|602|D|0|S
+602.09|Cheltuieli privind medicamentele si materialele sanitare|602|D|0|S
+603.00|Cheltuieli privind materialele de natura obiectelor de inventar|603|D|0|S
+606.00|Cheltuieli privind animalele si pasarile|606|D|0|S
+607.00|Cheltuieli privind marfurile|607|D|0|S
+608.00|Cheltuieli privind ambalajele|608|D|0|S
+609.00|Cheltuieli cu alte stocuri|609|D|0|S
+610.00|Cheltuieli privind energia si apa|610|D|0|S
+611.00|Cheltuieli cu întretinerea si reparatiile|611|D|0|S
+612.00|Cheltuieli cu chiriile|612|D|0|S
+613.00|Cheltuieli cu primele de asigurare|613|D|0|S
+614.00|Cheltuieli cu deplasari, detasari, transferari|614|D|0|S
+622.00|Cheltuieli privind comisioanele si onorariile|622|D|0|S
+623.00|Cheltuieli de protocol, reclama si publicitate|623|D|0|S
+624.01|Cheltuieli cu transportul de bunuri|624|D|0|S
+624.02|Cheltuieli cu transportul de personal|624|D|0|S
+626.00|Cheltuieli postale si taxe de telecomunicatii|626|D|0|S
+627.00|Cheltuieli cu serviciile bancare si asimilate|627|D|0|S
+628.00|Alte cheltuieli cu serviciile executate de terti|628|D|0|S
+629.01|Alte cheltuieli autorizate prin dispozitii legale - cheltuieli curente|629|D|0|S
+635.01|Cheltuieli cu alte impozite, taxe si varsaminte asimilate|635|D|0|S
+635.02|Cheltuieli cu impozitul pe profit|635|D|0|S
+641.00|Cheltuieli cu salariile personalului|641|D|0|S
+642.00|Cheltuieli salariale în natura|642|D|0|S
+645.01|Contributiileangajatorilor pentru asigurari sociale|645|D|0|S
+645.02|Contributiileangajatorilor pentruasigurari de somaj|645|D|0|S
+645.03|Contributiileangajatorilor pentru asigurari sociale de sanatate|645|D|0|S
+645.04|Contributiileangajatorilor pentru accidente de munca si boli profesionale|645|D|0|S
+645.05|Contributiileangajatorilor pentru concedii si indemnizatii|645|D|0|S
+645.06|Contributiileangajatorilor la fondul de garantare pentru plata creantelor salariale|645|B|0|S
+645.07|Cheltuieli privind asigurarile sociale|645|D|0|S
+645.08|Alte cheltuieli privind asigurarile si protectia sociala|645|D|0|S
+646.00|Cheltuieli cu indemnizatiile de delegare, detasare si alte drepturi salariale|646|D|0|S
+647.00|Cheltuieli din fondul destinat stimularii personalului|647|D|0|S
+654.00|Pierderi din creante si debitori diversi|654|D|0|S
+658.01|Alte cheltuieli operationale|658|D|0|S
+661.00|Cheltuieli din diferente nefavorabile de reevaluare rezultate din operatiuni de preschimbare a obligatiunilor/titlurilor de stat|661|B|0|S
+663.00|Pierderi din creante imobilizate|663|D|0|S
+664.00|Cheltuieli din investitii financiare cedate|664|D|0|S
+665.01|Cheltuieli din diferente de curs valutar - diferente de curs din reevaluarea creantelor si datoriilor|665|D|0|S
+665.02|Cheltuieli din diferente de curs valutar - diferente de curs din reevaluarea disponibilitatilor|665|D|0|S
+666.00|Cheltuieli privind dobânzile|666|D|0|S
+667.00|Sume de transferat bugetului de stat reprezentând câstiguri din schimb valutar - PHARE, SAPARD, ISPA|667|D|0|S
+668.00|Dobânzi de transferat Comisiei Europene/altor donatori sau de alocat programului - PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE|668|D|0|S
+669.00|Alte pierderi (cheltuieli neeligibile - costuri bancare) - PHARE, SAPARD, ISPA -|669|D|0|S
+670.00|Subventii|670|D|0|S
+671.00|Transferuri curente între unitati ale administratiei publice|671|D|0|S
+672.00|Transferuri de capital între unitati ale administratiei publice|672|D|0|S
+673.00|Transferuri interne|673|D|0|S
+674.00|Transferuri în strainatate|674|D|0|S
+675.00|Contributia României la bugetul UniuniiEuropene|675|D|0|S
+676.00|Asigurari sociale|676|D|0|S
+677.00|Ajutoare sociale|677|D|0|S
+678.01|Transferuri pentru proiecte finantate din fonduri externe nerambursabile postaderare si fonduri de la bugetul de stat|678|B|0|S
+678.02|Transferuri pentru proiecte din componenta de imprumut a PNRR si fonduri de la buget|678|B|0|S
+679.00|Alte cheltuieli|679|D|0|S
+681.01|Cheltuieli operationale privind amortizarea activelor fixe|681|D|0|S
+681.02|Cheltuieli operationale privind provizioanele|681|D|0|S
+681.03|Cheltuieli operationale privind ajustarile pentru deprecierea activelor fixe|681|D|0|S
+681.04|Cheltuieli operationale privind ajustarile pentru deprecierea activelor circulante|681|D|0|S
+682.01|Cheltuieli cu activele fixe corporale neamortizabile|682|D|0|S
+682.02|Cheltuieli cu activele fixe necorporale neamortizabile|682|B|0|S
+686.03|Cheltuieli financiare privind ajustarile pentru pierderea de valoare a activelor financiare|686|D|0|S
+686.04|Cheltuieli financiare privind ajustarile pentru pierderea de valoare a activelor circulante|686|D|0|S
+686.08|Cheltuieli financiare privind amortizarea primelor de rambursare a obligatiunilor|686|D|0|S
+689.01|Cheltuieli privind rezerva de stat|689|D|0|S
+689.02|Cheltuieli privind rezerva de mobilizare|689|D|0|S
+690.00|Cheltuieli cu pierderi din calamitati|690|D|0|S
+691.00|Cheltuieli extraordinare din operatiuni cu active fixe|691|D|0|S
+709.01|Variatia productiei stocate|709|B|0|S
+709.02|Variatia productiei stocate scazuta din gestiune|709|B|0|S
+714.00|Venituri din creante reactivate si debitori diversi|714|C|0|S
+718.00|Alte venituri ale trezoreriei statului|718|C|0|S
+721.00|Venituri din productia de active fixe necorporale|721|C|0|S
+722.00|Venituri din productia de active fixe corporale|722|C|0|S
+730.01|Impozit pe profit|730|C|0|S
+730.02|Alte impozite pe venit, profit si câstiguri din capital de la persoanejuridice|730|C|0|S
+731.01|Impozit pe venit|731|C|0|S
+731.02|Cote si sume defalcate din impozitul pe venit|731|C|0|S
+732.01|Alte impozite pe venit, profit si câstiguri din capital|732|C|0|S
+733.00|Impozit pe salarii|733|C|0|S
+734.00|Impozite si taxe pe proprietate|734|C|0|S
+735.01|Taxa pe valoarea adaugata|735|C|0|S
+735.02|Sume defalcate din TVA|735|C|0|S
+735.03|Alte impozite si taxe generale pe bunuri si servicii|735|C|0|S
+735.04|Accize|735|C|0|S
+735.05|Taxe pe servicii specifice|735|C|0|S
+735.06|Taxe pe utilizarea bunurilor, autorizarea utilizarii bunurilor sau pe desfasurarea de activitati|735|C|0|S
+736.01|Venituri încadrate în resursele proprii ale bugetului Uniunii Europene|736|C|0|S
+739.00|Alte impozite si taxe fiscale|739|C|0|S
+745.01|Contributiileangajatorilor pentru asigurari sociale|745|C|0|S
+745.02|Contributiileangajatorilor pentru asigurari de somaj|745|C|0|S
+745.03|Contributiileangajatorilor pentru asigurari sociale de sanatate|745|C|0|S
+745.04|Contributtileangajatorilor pentru accidente de munca si boli profesionale|745|C|0|S
+745.05|Varsaminte de la persoane juridice, pentru persoane cu handicap neîncadrate|745|C|0|S
+745.07|Venituri din contributia asiguratorie pentru munca|745|C|0|S
+745.09|Alte contributii pentru asigurari sociale datorate de angajatori|745|C|0|S
+746.01|Contributiile asiguratilor pentru asigurari sociale|746|C|0|S
+746.02|Contributiile asiguratilor pentru asigurari de somaj|746|C|0|S
+746.03|Contributiile asiguratilor pentru asigurari sociale de sanatate|746|C|0|S
+746.09|Alte contributii ale altor persoane pentru asigurari sociale|746|C|0|S
+750.01|Venituri din proprietate-dividende|750|D|0|S
+750.02|Alte venituri din proprietate|750|C|0|S
+751.01|Venituri din prestari de servicii si alte activitati|751|C|0|S
+751.02|Venituri din taxe administrative, eliberari permise|751|C|0|S
+751.03|Amenzi, penalitati si confiscari|751|C|0|S
+751.04|Diverse venituri|751|C|0|S
+751.05|Transferuri voluntare, altele decât subventiile (donatii, sponsorizari)|751|C|0|S
+761.00|Venituri din diferente favorabile de reevaluare rezultate din operatiuni de preschimbare a obligatiunilor/titlurilor de stat|761|B|0|S
+763.00|Venituri din creante imobilizate|763|C|0|S
+764.00|Venituri din investitii financiare cedate|764|C|0|S
+765.01|Venituri din diferente de curs valutar - diferente de curs din reevaluarea creantelor si datoriilor|765|C|0|S
+765.02|Venituri din diferente de curs valutar - diferente de curs din reevaluarea disponibilitatilor|765|C|0|S
+766.00|Venituri din dobânzi|766|C|0|S
+767.00|Sume de primit de la bugetul de stat pentru acoperirea pierderilor din schimb valutar - PHARE, SAPARD, ISPA -|767|C|0|S
+768.00|Alte venituri financiare - PHARE, SAPARD, ISPA -|768|C|0|S
+769.00|Sume de primit de la bugetul de stat pentru acoperirea altor pierderi (cheltuieli neeligibile - costuri bancare - PHARE, SAPARD, ISPA)|769|C|0|S
+770.00|Finantarea de la buget|770|C|0|S
+771.00|Finantarea în baza unor acte normative speciale|771|C|0|S
+772.01|Subventii de la bugetul de stat|772|C|0|S
+772.02|Subventii de la alte bugete|772|C|0|S
+774.01|Finantarea din fonduri externe nerambursabile preaderare în bani|774|C|0|S
+774.02|Finantarea din fonduri externe nerambursabile preaderare în natura|774|C|0|S
+775.00|Finantarea din fonduri externe nerambursabile postaderare|775|C|0|S
+776.00|Fonduri cu destinatie speciala|776|C|0|S
+777.00|Veniturile fondului de risc|777|C|0|S
+778.00|Venituri din contributia nationala aferenta programelor/proiectelor finantate din fonduri externe nerambursabile|778|C|0|S
+779.01|Venituri, bunuri si servicii primite cu titlu gratuit|779|C|0|S
+781.02|Venituri din provizioane|781|C|0|S
+781.03|Venituri din ajustari privind deprecierea activelor fixe|781|C|0|S
+781.04|Venituri din ajustari pentru deprecierea activelor circulante|781|C|0|S
+786.03|Venituri din ajustari pentru pierderea de valoare a activelor financiare|786|C|0|S
+786.04|Venituri din ajustari pentru pierderea de valoare a activelor circulante|786|C|0|S
+791.00|Venituri din valorificarea unor bunuri ale statului|791|C|0|S
+891.01|Bilant de deschidere (pentru solduri)|891|B|0|S
+891.02|Bilant de deschidere (pentru total sume)|891|B|0|S
+892.01|Bilant de închidere (pentru solduri)|892|B|0|S
+892.02|Bilant de închidere (pentru total sume)|892|B|0|S
+100.01.01|Fondul activelor fixe necorporale care alcatuiesc domeniul public al statului|100.01|C|0|S
+100.02.01|Fondul activelor fixe necorporale care alcatuiesc domeniul privat al statului|100.02|C|0|S
+100.02.02|Fondul activelor fixe necorporale care alcatuiesc proprietatea privata a institutiei publice|100.02|C|0|S
+100.03.01|Fondul activelor fixe necorporale care alcatuiesc domeniul public al unitatii administrativ-teritoriale|100.03|C|0|S
+100.04.01|Fondul activelor fixe necorporale care alcatuiesc domeniul privat al unitatii administrativ-teritoriale|100.04|C|0|S
+100.04.02|Fondul activelor fixe necorporale care alcatuiesc proprietatea privata a institutiei publice din administratia locala|100.04|C|0|S
+101.00.00|Fondul bunurilor care alcatuiesc domeniul public al statului|101.00|C|0|S
+102.01.01|Fondul bunurilor care alcatuiesc domeniul privat al statului|102.01|C|0|S
+102.01.02|Fondul bunurilor care alcatuiesc proprietatea privata a institutiei publice|102.01|C|0|S
+103.00.00|Fondul bunurilor care alcatuiesc domeniul public al unitatilor administrativ - teritoriale|103.00|C|0|S
+104.01.01|Fondul bunurilor care alcatuiesc domeniul privat al unitatilor administrativ-teritoriale|104.01|C|0|S
+104.01.02|Fondul bunurilor care alcatuiesc proprietatea privata a institutiei publice din administratia locala|104.01|C|0|S
+105.01.00|Rezerve din reevaluarea terenurilor si amenajarilor la terenuri|105.01|C|0|S
+105.02.00|Rezerve din reevaluarea constructiilor|105.02|C|0|S
+105.03.00|Rezerve din reevaluarea instalatiilor tehnice, mijloacelor de transport, animalelor si plantatiilor|105.03|C|0|S
+105.04.00|Rezerve din reevaluarea mobilierului, aparaturii birotice, echipamentelorde protectie a valorilorumane si materiale si a altor active fixe corporale|105.04|C|0|S
+105.05.00|Rezerve din reevaluarea altor active ale statului|105.05|C|0|S
+106.00.00|Diferente din reevaluare si diferente de curs aferente dobânzilor încasate (SAPARD)|106.00|C|0|S
+117.00.00|Rezultatul reportat|117.00|B|0|S
+121.00.00|Rezultatul patrimonial|121.00|B|0|S
+132.00.00|Fondul de rezerva al bugetului asigurarilor sociale de stat|132.00|C|0|S
+133.00.00|Fondul de rezerva constituit conform Legii nr. 95/2006|133.00|C|0|S
+151.01.01|Provizioane pentru litigii, amenzi, penalitati, despagubiri, daune sialte datorii incerte sub 1 an|151.01|C|0|S
+151.01.02|Provizioane pentru garantii acordate clientilor sub 1 an|151.01|C|0|S
+151.01.03|Provizioane pentru litigii din drepturi salariale câstigate în instanta sub 1 an|151.01|C|0|S
+151.01.04|Provizioane pentru garantii ce vor fi executate aferente împrumuturilor garantate sub 1 an|151.01|C|0|S
+151.01.08|Alte provizioane sub 1 an|151.01|C|0|S
+151.02.01|Provizioane pentru litigii, amenzi, penalitati, despagubiri, daune si alte datorii incerte peste 1 an|151.02|C|0|S
+151.02.02|Provizioane pentru garantii acordate clientilor peste 1 an|151.02|C|0|S
+151.02.03|Provizioane pentru litigii din drepturi salariale câstigate în instanta peste 1 an|151.02|C|0|S
+151.02.04|Provizioane pentru garantii ce vor fi executate aferente împrumuturilor garantate peste 1 an|151.02|C|0|S
+151.02.08|Alte provizioane peste 1 an|151.02|C|0|S
+161.01.00|Împrumuturi din emisiunea de obligatiuni cu termen de rascumparare în exercitiul curent|161.01|C|0|S
+161.02.00|Împrumuturi din emisiunea de obligatiuni cu termen de rascumparare în exercitiile viitoare|161.02|C|0|S
+162.01.00|Împrumuturi interne si externe contractate de autoritatile administratiei publice locale cu termen de rambursare în exercitiul curent|162.01|C|0|S
+162.02.00|Împrumuturi interne si externe contractate de autoritatile administratiei publice locale cu termende rambursare înexercitiile viitoare|162.02|C|0|B
+163.01.00|Împrumuturi interne si externe garantate de autoritatile administratiei publice locale cu termen de rambursare în exercitiul curent|163.01|C|0|S
+163.02.00|Împrumuturi interne si externe garantate de autoritatile administratiei publice locale cu termen de rambursare în exercitiile viitoare|163.02|C|0|S
+164.01.00|Împrumuturi interne si externe contractate de stat cu termen derambursare în exercitiul curent|164.01|C|0|S
+164.02.00|Împrumuturi interne si externe contractate de stat cu termen derambursare în exercitiile viitoare|164.02|C|0|S
+165.01.00|Împrumuturi interne si externe garantate de stat cu termen de rambursare în exercitiul curent|165.01|C|0|S
+165.02.00|Împrumuturi interne si externe garantate de stat cu termen de rambursare în exercitiile viitoare|165.02|C|0|S
+166.01.01|Sume primite pentru acoperirea deficitului bugetului asigurarilor sociale de stat din contul curent general al trezoreriei statului (pentru sumele ce urmeaza a fi platite în cursul exercitiului curent)|166.01|C|0|S
+166.01.02|Sume primite pentru acoperirea deficitului bugetului de stat din contul curent general al trezoreriei statului (pentru sumele ce urmeaza a fi platite în cursul exercitiului curent)|166.01|C|0|S
+166.01.03|Sume primite pentru acoperirea deficitului bugetului asigurarilor pentru somaj din contul curent general al trezoreriei statului (pentru sumele ce urmeaza a fi platite în cursul exercitiului curent)|166.01|C|0|S
+166.01.04|Sume primite pentru acoperirea deficitului bugetului Fonduluinational unic de asigurari sociale desanatate din contul curent general al trezoreriei statului (pentru sumele ce urmeaza a fi platite în cursul exercitiului curent)|166.01|C|0|S
+166.02.01|Sume primite pentru acoperirea deficitului bugetului asigurarilor sociale de stat din contul curent general al trezoreriei statului (pentru sumele ce urmeaza a fi platite în cursul exercitiilor viitoare)|166.02|C|0|S
+166.02.02|Sume primite pentru acoperirea deficitului bugetului de stat din contul curent general al trezoreriei statului (pentru sumele ce urmeaza a fi platite în cursul exercitiilor viitoare)|166.02|C|0|S
+166.02.03|Sume primite pentru acoperirea deficitului bugetului asigurarilor pentru somaj din contul curent general al trezoreriei statului (pentru sumele ce urmeaza a fi platite în cursul exercitiilor viitoare)|166.02|C|0|S
+166.02.04|Sume primite pentru acoperirea deficitului bugetului Fondului national unic de asigurari sociale de sanatate din contul curent general al trezoreriei statului (pentru sumele ce urmeaza a fi platite în cursul exercitiilor viitoare)|166.02|C|0|S
+167.01.01|Alte împrumuturi si datorii asimilate - primite din Fondul special de dezvoltare la dispozitia Guvernului (cu termen de rambursare în exercitiul curent)|167.01|C|0|S
+167.01.02|Alte împrumuturi si datorii asimilate - primite din contul curent general al trezoreriei statului (cu termen de rambursare în exercitiul curent)|167.01|C|0|S
+167.01.03|Alte împrumuturi si datorii asimilate - primite din venituri din privatizare (cu termen de rambursare în exercitiul curent)|167.01|C|0|S
+167.01.08|Împrumuturi pe termen lung primite rezultate din reclasificarea creditelor comerciale în împrumuturi (cu termen de rambursare în exercitiul curent)|167.01|C|0|S
+167.01.09|Alte împrumuturi si datorii asimilate (cu termen de rambursare în exercitiul curent)|167.01|C|0|S
+167.02.01|Alte împrumuturi si datorii asimilate - primite din Fondul special de dezvoltare la dispozitia Guvernului (cu termen de rambursare în exercitiile viitoare)|167.02|C|0|S
+167.02.02|Alte împrumuturi si datorii asimilate - primite din contul curent general al trezoreriei statului (cu termen de rambursare în exercitiile viitoare)|167.02|C|0|S
+167.02.03|Alte împrumuturi si datorii asimilate - primite din venituri din privatizare (cu termen de rambursare în exercitiile viitoare)|167.02|C|0|S
+167.02.08|Împrumuturi pe termen lung primite rezultate din reclasificarea creditelor comerciale înîmprumuturi (cu termen de rambursare în exercitiile viitoare)|167.02|C|0|S
+167.02.09|Alte împrumuturi si datorii asimilate (cu termen de rambursare în exercitiile viitoare)|167.02|C|0|S
+168.01.00|Dobânzi aferente împrumuturilor din emisiuni de obligatiuni|168.01|C|0|S
+168.02.00|Dobânzi aferente împrumuturilor interne si externe contractate de autoritatile administratiei publice locale|168.02|C|0|S
+168.03.00|Dobânzi aferente împrumuturilor interne si externe garantate de autoritatile administratiei publice locale|168.03|C|0|S
+168.04.00|Dobânzi aferente împrumuturilor interne si externe contractate de stat|168.04|C|0|S
+168.05.00|Dobânzi aferente împrumuturilor interne si externe garantate de stat|168.05|C|0|S
+168.07.01|Dobânzi aferente altor împrumuturi si datorii asimilate - primite din Fondul special de dezvoltare la dispozitia Guvernului|168.07|C|0|S
+168.07.02|Dobânzi aferente altor împrumuturi si datorii asimilate - primite din contul curent general al trezoreriei statului|168.07|C|0|S
+168.07.03|Dobânzi aferente altor împrumuturi si datorii asimilate - primite din venituri din privatizare|168.07|C|0|S
+168.07.08|Dobânzi aferente creditelor pe termen lung provenite din reclasificarea creditelor comerciale în împrumuturi|168.07|C|0|S
+168.07.09|Dobânzi aferente altor împrumuturi si datorii asimilate - altele|168.07|C|0|S
+169.01.00|Prime privind rambursarea obligatiunilor (pentru sumele ce urmeaza a fi platite în cursul exercitiului curent)|169.01|C|0|S
+169.02.00|Prime privind rambursarea obligatiunilor (pentru sumele ce urmeaza a fi platite în cursul exercitiilor viitoare)|169.02|C|0|S
+203.00.00|Cheltuieli de dezvoltare|203.00|D|0|S
+205.00.00|Concesiuni, brevete, licente, marci comerciale, drepturi si active similare|205.00|D|0|S
+206.00.00|Înregistrari ale evenimentelor cultural-sportive|206.00|D|0|S
+208.01.00|Programe informatice|208.01|D|0|S
+208.02.00|Alte active fixe necorporale|208.02|D|0|S
+211.01.00|Terenuri|211.01|D|0|S
+211.02.00|Amenajari la terenuri|211.02|D|0|S
+212.01.01|Constructii - drumuri publice|212.01|D|0|S
+212.01.02|Constructii - drumuri industriale si agricole|212.01|D|0|S
+212.02.01|Constructii - infrastructura pentru transport feroviar|212.02|D|0|S
+212.03.01|Constructii - poduri, podete, pasarele si viaducte pentru transporturi feroviare si rutiere; viaducte|212.03|D|0|S
+212.04.01|Constructii - tunele|212.04|D|0|S
+212.05.01|Constructii - piste pentru aeroporturi si platforme de stationare pentru avioane si autovehicule; constructii aeroportuare|212.05|D|0|S
+212.06.01|Constructii - canale pentru navigatie|212.06|D|0|S
+212.09.01|Constructii - alte active fixe încadrate în grupa constructii|212.09|D|0|S
+213.01.00|Echipamentetehnologice (masini, utilaje si instalatii de lucru)|213.01|D|0|S
+213.02.00|Aparate si instalatii de masurare, control si reglare|213.02|D|0|S
+213.03.00|Mijloace de transport|213.03|D|0|S
+213.04.00|Animale si plantatii|213.04|D|0|S
+214.00.00|Mobilier, aparatura birotica, echipamente de protectie a valorilorumane si materiale si alte active fixe corporale|214.00|D|0|S
+215.00.00|Alte active ale statului|215.00|D|0|S
+231.00.00|Active fixe corporale în curs de executie|231.00|D|0|BFE
+232.00.00|Avansuri acordate pentru active fixe corporale|232.00|D|0|S
+233.00.00|Active fixe necorporale în curs de executie|233.00|D|0|S
+234.00.00|Avansuri acordate pentru active fixe necorporale|234.00|D|0|S
+260.01.00|Titluri de participare cotate|260.01|D|0|S
+260.02.00|Titluri de participare necotate|260.02|D|0|S
+260.03.00|Alte participatii|260.03|D|0|S
+265.00.00|Alte titluri imobilizate|265.00|D|0|S
+267.01.01|Împrumuturi pe termen lung acordate din Fondul special de dezvoltareaflat la dispozitia Guvernului (pentru sumele ce urmeaza a fi încasate în cursul exercitiului curent)|267.01|D|0|S
+267.01.02|Împrumuturi pe termen lung acordate din disponibilitatile contului curent general al trezoreriei statului (pentru sumele ce urmeaza a fi încasate în cursul exercitiului curent)|267.01|D|0|S
+267.01.03|Împrumuturi pe termen lung acordate din venituri din privatizare (pentru sumele ce urmeaza a fi încasate în cursul exercitiului curent)|267.01|D|0|S
+267.01.04|Împrumuturi pe termen lung acordate din buget (pentru sumele ce urmeaza a fi încasate în cursul exercitiului curent)|267.01|D|0|S
+267.01.05|Împrumuturi acordate pe termen lung (pentru sumele ce urmeaza a fi încasate în cursul exercitiului curent) - altele|267.01|D|0|S
+267.01.08|Alte creante imobilizate (pentru sumele ce urmeaza a fi încasate în cursul exercitiului curent)|267.01|D|0|S
+267.02.01|Împrumuturi pe termen lung acordate din Fondul special de dezvoltare aflat la dispozitia Guvernului (pentru sumele ce urmeaza a fi încasate în cursul exercitiilor viitoare)|267.02|D|0|S
+267.02.02|Împrumuturi pe termen lung acordate din disponibilitatile contului curent general al trezoreriei statului (pentru sumele ce urmeaza a fi încasate în cursul exercitiilor viitoare)|267.02|D|0|S
+267.02.03|Împrumuturi pe termen lung acordate din venituri din privatizare (pentru sumele ce urmeaza a fi încasate în cursul exercitiilor viitoare)|267.02|D|0|S
+267.02.04|Împrumuturi pe termen lung acordate din buget (pentru sumele ce urmeaza a fi încasate în cursul exercitiilor viitoare)|267.02|D|0|S
+267.02.05|Împrumuturi acordate pe termen lung (pentru sumele ce urmeaza a fi încasate în cursul exercitiilor viitoare) - altele|267.02|D|0|S
+267.02.08|Alte creante imobilizate (pentru sumele ce urmeaza a fi încasate în cursul exercitiilor viitoare)|267.02|D|0|S
+267.06.01|Dobânzi aferente împrumuturilor acordate pe termen lung din Fondul de dezvoltare la dispozitia Guvernului|267.06|D|0|S
+267.06.02|Dobânzi aferente împrumuturilor acordate pe termen lung din contul curent general al trezoreriei statului|267.06|D|0|S
+267.06.03|Dobânzi aferente împrumuturilor acordate pe termen lung din venituri din privatizare|267.06|D|0|S
+267.06.04|Dobânzi aferente împrumuturilor acordate pe termen lung din buget|267.06|D|0|S
+267.06.05|Dobânzi aferente împrumuturilor acordate pe termen lung - altele|267.06|D|0|S
+267.06.09|Dobânzi aferente altor creante imobilizate|267.06|D|0|S
+269.01.00|Varsaminte de efectuat pentru active financiare - curente|269.01|C|0|S
+269.02.00|Varsaminte de efectuat pentru active financiare - necurente|269.02|C|0|S
+280.03.00|Amortizarea cheltuielilor de dezvoltare|280.03|C|0|S
+280.05.00|Amortizareaconcesiunilor, brevetelor, licentelor, marcilor comerciale, drepturilor si activelor similare|280.05|C|0|S
+280.08.01|Amortizarea programelor informatice|280.08|B|0|S
+280.08.09|Amortizarea altor active fixe necorporale|280.08|B|0|S
+281.01.00|Amortizarea amenajarilor la terenuri|281.01|C|0|S
+281.02.01|Amortizarea constructiilor - drumuri publice|281.02|C|0|S
+281.02.02|Amortizarea constructiilor - drumuri industriale si agricole|281.02|C|0|S
+281.02.03|Amortizarea constructiilor - infrastructura pentru transport feroviar|281.02|C|0|S
+281.02.04|Amortizarea constructiilor - poduri, podete, pasarele si viaducte pentru transporturi feroviare si viaducte; viaducte|281.02|C|0|S
+281.02.05|Amortizarea constructiilor - tunele|281.02|C|0|S
+281.02.06|Amortizarea constructiilor - piste pentru aeroporturi si platforme de stationare pentru avioane si autovehicule; constructii aeroportuare|281.02|C|0|S
+281.02.07|Amortizarea constructiilor - canale pentru navigatie|281.02|C|0|S
+281.02.08|Amortizarea constructiilor -alte active fixe incadrate in grupa constructii|281.02|C|0|S
+281.03.01|Amortizarea echipamentelor tehnologice(masini,utilaje si instalatii de lucru)|281.03|C|0|S
+281.03.02|Amortizarea aparatelor si instalatiilor de masurare,control si reglare|281.03|C|0|S
+281.03.03|Amortizarea mijloacelor de transport|281.03|C|0|S
+281.03.04|Amortizarea animalelor si plantatiilor|281.03|C|0|S
+281.04.00|Amortizarea mobilierului, aparaturii birotice, echipamentelor de protectie a valorilor umane si materiale si a altor active fixe corporale|281.04|C|0|S
+290.04.00|Ajustari pentru deprecierea cheltuielilor de dezvoltare|290.04|C|0|S
+290.05.00|Ajustari pentru deprecierea concesiunilor, brevetelor, licentelor, marcilor comerciale, drepturilor si activelor similare|290.05|C|0|S
+290.08.01|Ajustari pentru deprecierea programelor informatice|290.08|B|0|S
+290.08.09|Ajustari pentru deprecierea altor active fixe necorporale|290.08|B|0|S
+291.01.00|Ajustari pentru deprecierea terenurilor si amenajarilor la terenuri|291.01|C|0|S
+291.02.01|Ajustari pentru deprecierea constructiilor - drumuri publice|291.02|C|0|S
+291.02.02|Ajustari pentru deprecierea constructiilor - drumuri industriale si agricole|291.02|C|0|S
+291.02.03|Ajustari pentru deprecierea constructiilor - infrastructura pentru transport feroviar|291.02|C|0|S
+291.02.04|Ajustari pentru deprecierea constructiilor - poduri, podete, pasarele si viaducte pentru transporturi feroviare si viaducte; viaducte|291.02|C|0|S
+291.02.05|Ajustari pentru deprecierea constructiilor - tunele|291.02|C|0|S
+291.02.06|Ajustari pentru deprecierea constructiilor - piste pentru aeroporturi si platforme de stationare pentru avioane si autovehicule; constructii aeroportuare|291.02|C|0|S
+291.02.07|Ajustari pentru deprecierea constructiilor - canale pentru navigatie|291.02|C|0|S
+291.02.08|Ajustari pentru deprecierea constructiilor - alte active fixe încadrate în grupa constructii|291.02|C|0|S
+291.03.01|Ajustari pentru deprecierea echipamentelor tehnologice (masini, utilaje si instalatii de lucru)|291.03|C|0|S
+291.03.02|Ajustari pentru deprecierea aparatelor si instalatiilor de masurare, control si reglare|291.03|C|0|S
+291.03.03|Ajustari pentru deprecierea mijloacelor de transport|291.03|C|0|S
+291.03.04|Ajustari pentru deprecierea animalelor si plantatiilor|291.03|C|0|S
+291.04.00|Ajustari pentru deprecierea mobilierului, aparaturii birotice, echipamentului de protectie a valorilor umane si materiale si a altor active fixe corporale|291.04|C|0|S
+293.01.00|Ajustari pentru deprecierea activelor fixe necorporale în curs de executie|293.01|C|0|S
+293.02.00|Ajustari pentru deprecierea activelor fixe corporale în curs de executie|293.02|C|0|S
+296.01.01|Ajustari pentru pierderea de valoare a actiunilor cotate|296.01|C|0|S
+296.01.02|Ajustari pentru pierderea de valoare a actiunilor necotate|296.01|C|0|S
+296.01.03|Ajustari pentru pierderea de valoare a altor participatii|296.01|C|0|S
+296.02.00|Ajustari pentru pierderea de valoare a altor active financiare|296.02|C|0|S
+301.00.00|Materii prime|301.00|D|0|S
+302.01.00|Materiale auxiliare|302.01|D|0|S
+302.02.00|Combustibili|302.02|D|0|S
+302.03.00|Materiale pentru ambalat|302.03|D|0|S
+302.04.00|Piese de schimb|302.04|D|0|S
+302.05.00|Seminte si materiale de plantat|302.05|D|0|S
+302.06.00|Furaje|302.06|D|0|S
+302.07.00|Hrana|302.07|D|0|FE
+302.08.00|Alte materiale consumabile|302.08|D|0|S
+302.09.00|Medicamente si materiale sanitare|302.09|D|0|E
+303.01.00|Materiale de natura obiectelor de inventar în magazie|303.01|D|0|S
+303.02.00|Materiale de natura obiectelor de inventar în folosinta|303.02|D|0|S
+304.01.00|Materiale rezerva de stat|304.01|D|0|S
+304.02.00|Materiale rezerva de mobilizare|304.02|D|0|S
+305.01.00|Ambalaje rezerva de stat|305.01|D|0|S
+305.02.00|Ambalaje rezerva de mobilizare|305.02|D|0|S
+307.00.00|Materiale date în prelucrare în institutie|307.00|D|0|S
+309.00.00|Alte stocuri|309.00|D|0|S
+331.00.00|Produse în curs de executie|331.00|D|0|S
+332.00.00|Lucrari si servicii în curs de executie|332.00|D|0|S
+341.00.00|Semifabricate|341.00|D|0|S
+345.00.00|Produse finite|345.00|D|0|S
+346.00.00|Produse reziduale|346.00|D|0|S
+347.00.00|Bunuri confiscate sau intrate, potrivit legii, în proprietatea privata a statului|347.00|D|0|S
+348.00.00|Diferente de pret la produse|348.00|B|0|S
+349.00.00|Bunuri confiscate sau intrate potrivit legii, în proprietatea privata a unitatilor administrativ -teritoriale|349.00|D|0|S
+351.01.00|Materii si materiale aflate la terti|351.01|D|0|S
+351.02.00|Materiale de natura obiectelor de inventar aflate la terti|351.02|D|0|S
+354.01.00|Semifabricate aflate la terti|354.01|D|0|S
+354.05.00|Produse finite aflate la terti|354.05|D|0|S
+354.06.00|Produse reziduale aflate la terti|354.06|D|0|S
+356.00.00|Animale aflate la terti|356.00|D|0|S
+357.00.00|Marfuri aflate la terti|357.00|D|0|S
+358.00.00|Ambalaje aflate la terti|358.00|D|0|S
+359.00.00|Bunuri în custodie sau în consignatie la terti|359.00|D|0|S
+361.00.00|Animale si pasari|361.00|D|0|S
+371.00.00|Marfuri|371.00|D|0|S
+378.00.00|Diferente de pret la marfuri (adaos comercial)|378.00|C|0|S
+381.00.00|Ambalaje|381.00|D|0|S
+391.00.00|Ajustari pentru deprecierea materiilor prime|391.00|C|0|S
+392.01.00|Ajustari pentru deprecierea materialelor consumabile|392.01|C|0|S
+392.02.00|Ajustari pentru deprecierea materialelor de natura obiectelor de inventar|392.02|C|0|S
+392.03.00|Ajustari pentru deprecierea materialelor rezerva de stat si de mobilizare|392.03|C|0|S
+393.00.00|Ajustari pentru deprecierea productiei în curs de executie|393.00|C|0|S
+394.01.00|Ajustari pentru deprecierea semifabricatelor|394.01|C|0|S
+394.05.00|Ajustari pentru deprecierea produselor finite|394.05|C|0|S
+394.06.00|Ajustari pentru deprecierea produselor reziduale|394.06|C|0|S
+395.01.00|Ajustari pentru deprecierea materiilor si materialelor aflate la terti|395.01|C|0|S
+395.02.00|Ajustari pentru deprecierea semifabricatelor aflate la terti|395.02|C|0|S
+395.03.00|Ajustari pentru deprecierea produselor finite aflate la terti|395.03|C|0|S
+395.04.00|Ajustari pentru deprecierea produselor reziduale aflate la terti|395.04|C|0|S
+395.06.00|Ajustari pentru deprecierea animalelor aflate la terti|395.06|C|0|S
+395.07.00|Ajustari pentru deprecierea marfurilor aflate la terti|395.07|C|0|S
+395.08.00|Ajustari pentru deprecierea ambalajelor aflate la terti|395.08|C|0|S
+396.00.00|Ajustari pentru deprecierea animalelor|396.00|C|0|S
+397.01.00|Ajustari pentru deprecierea marfurilor|397.01|C|0|S
+397.02.00|Ajustari pentru bunuri confiscate sau intrate, potrivit legii, în proprietatea privata a statului|397.02|C|0|S
+397.03.00|Ajustari pentru bunuri confiscate sau intrate, potrivit legii, în proprietatea privata a unitatilor administrativ- teritoriale|397.03|C|0|S
+398.00.00|Ajustari pentru deprecierea ambalajelor|398.00|C|0|S
+401.01.00|Furnizori sub 1 an|401.01|C|0|ER
+401.02.00|Furnizori peste 1 an|401.02|C|0|R
+403.01.00|Efecte de platit sub 1 an|403.01|C|0|S
+403.02.00|Efecte de platit peste 1 an|403.02|C|0|S
+404.01.00|Furnizori de active fixe sub 1 an|404.01|C|0|BFEPR
+404.02.00|Furnizori de active fixe peste 1 an|404.02|C|0|S
+405.01.00|Efecte de platit pentru active fixe sub 1 an|405.01|C|0|S
+405.02.00|Efecte de platit pentru active fixe peste 1 an|405.02|C|0|S
+408.00.00|Furnizori - facturi nesosite|408.00|C|0|FE
+409.01.01|Furnizori - debitori pentru cumparari de bunuri de natura stocurilor|409.01|D|0|S
+409.01.02|Furnizori - debitori pentru prestari de servicii si executari de lucrari|409.01|D|0|S
+411.01.01|Clienti cu termen sub 1 an|411.01|D|0|R
+411.01.08|Clienti incerti sau în litigiu sub 1 an|411.01|D|0|F
+411.02.01|Clienti cu termen peste 1 an|411.02|D|0|S
+411.02.08|Clienti incerti sau în litigiu peste 1 an|411.02|D|0|R
+413.01.00|Efecte de primit de la clienti sub 1 an|413.01|D|0|S
+413.02.00|Efecte de primit de la clienti peste 1 an|413.02|D|0|S
+418.00.00|Clienti - facturi de întocmit|418.00|D|0|S
+419.00.00|Clienti - creditori|419.00|C|0|S
+420.01.01|Personal - drepturi de natura salariala reprezentând sume prevazute prin hotarâri judecatoresti devenite executorii, sub 1 an|420.01|B|0|S
+420.01.02|Personal - drepturi de natura salariala stabilite prin acte administrative emise de conducatorii institutiilor publice, suplimentare fata de cele stabilite prin legislatia specifica, sub 1 an|420.01|B|0|S
+420.02.01|Personal - drepturi de natura salariala reprezentând sume prevazute prin hotarâri judecatoresti devenite executorii, peste 1 an|420.02|B|0|S
+420.02.02|Personal - drepturi de natura salariala stabilite prin acte administrative emise de conducatorii institutiilor publice, suplimentare fata de cele stabilite prin legislatia specifica, peste 1 an|420.02|B|0|S
+421.00.00|Personal - salarii datorate|421.00|B|0|E
+422.01.00|Pensionari civili - pensii datorate|422.01|B|0|S
+422.02.00|Pensionari militari - pensii datorate|422.02|B|0|S
+423.00.00|Personal - ajutoare si indemnizatii datorate|423.00|B|0|E
+424.00.00|Someri - indemnizatii datorate|424.00|B|0|S
+425.00.00|Avansuri acordate personalului|425.00|B|0|S
+426.01.00|Drepturi de personal neridicate - salarii|426.01|B|0|S
+426.02.00|Drepturi de personal neridicate - alte drepturi|426.02|B|0|S
+427.01.00|Retineri din salarii datorate tertilor|427.01|B|0|E
+427.02.00|Retineri din pensii datorate tertilor|427.02|B|0|S
+427.03.01|Retineri din alte drepturi datorate tertilor - de catre salariati|427.03|B|0|S
+427.03.02|Retineri din alte drepturi datorate tertilor - de catre alte categorii de persoane|427.03|B|0|S
+428.01.01|Alte datorii în legatura cu personalul sub 1 an|428.01|B|0|S
+428.01.02|Alte creante în legatura cu personalul sub 1 an|428.01|B|0|BFE
+428.02.01|Alte datorii în legatura cu personalul peste 1 an|428.02|B|0|S
+428.02.02|Alte creante în legatura cu personalul peste 1 an|428.02|B|0|S
+429.00.00|Bursieri si doctoranzi|429.00|B|0|S
+431.01.00|Contributiileangajatorilor pentru asigurari sociale|431.01|C|0|E
+431.02.00|Contributiile asiguratilor pentru asigurari sociale|431.02|C|0|E
+431.03.00|Contributiileangajatorilor pentru asigurari sociale de sanatate|431.03|C|0|E
+431.04.00|Contributiile asiguratilor pentru asigurari sociale de sanatate|431.04|C|0|E
+431.05.00|Contributiileangajatorilor pentru accidente de munca si boli profesionale|431.05|C|0|E
+431.06.00|Contributia pentru CAM|431.06|C|0|E
+431.07.00|Contributiileangajatorilor pentru concedii si indemnizatii|431.07|C|0|E
+437.01.00|Contributiileangajatorilor pentru asigurari de somaj|437.01|C|0|FER
+437.02.00|Contributiile asiguratilor pentru asigurari de somaj|437.02|C|0|FER
+437.03.00|Contributiileangajatorilor la fondul de garantare pentru plata creantelor salariale|437.03|C|0|S
+438.00.00|Alte datorii sociale|438.00|C|0|FE
+440.00.00|Cote defalcate din impozitul pe venit pentru echilibrarea bugetelor locale|440.00|C|0|S
+441.00.00|Sume încasate pentru bugetul capitalei|441.00|C|0|S
+442.03.00|Taxa pe valoarea adaugata de plata|442.03|C|0|S
+442.04.00|Taxa pe valoarea adaugata de recuperat|442.04|D|0|S
+442.06.00|Taxa pe valoarea adaugata deductibila|442.06|D|0|S
+442.07.00|Taxa pe valoarea adaugata colectata|442.07|C|0|S
+442.08.01|Taxa pe valoarea adaugata neexigibila-aferenta vanzarilor cu plata in rate|442.08|B|0|R
+442.08.02|Taxa pe valoarea adaugata neexigibila-aferenta cumparaturilor cu plata in rate;|442.08|B|0|S
+442.08.03|Taxa pe valoarea adaugata neexigibila-aferenta stocurilor de marfuri|442.08|B|0|S
+444.00.00|Impozit pe venitul din salarii si din alte drepturi|444.00|C|0|E
+446.01.00|Alte impozite, taxe si varsaminte asimilate|446.01|C|0|E
+446.02.00|Impozitul pe profit|446.02|C|0|BFE
+448.01.00|Alte datorii fata de buget|448.01|B|0|S
+448.02.00|Alte creante privind bugetul|448.02|B|0|S
+450.01.00|Sume de primit de la Comisia Europeana -PHARE, SAPARD, ISPA -|450.01|D|0|S
+450.02.00|Sume de restituit Comisiei Europene -PHARE, SAPARD, ISPA|450.02|C|0|S
+450.03.00|Sume declarate si solicitate ComisieiEuropene/ altor donatori- FONDURI EXTERNE NERAMBURSABILEPOSTADERARE|450.03|D|0|S
+450.04.00|Sume de restituit/datorateComisiei Europene/ altor donatori -FONDURI EXTERNE NERAMBURSABILE POSTADERAREI|450.04|C|0|S
+450.05.01|Sume de primit de la Comisia Europeana/alti donatori reprezentând venituri ale bugetului general consolidat - buget de stat - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|450.05|D|0|S
+450.05.02|Sume de primit de la Comisia Europeana/alti donatori reprezentând venituri ale bugetului general consolidat -bugetul asigurarilor sociale de stat -FONDURI EXTERNE NERAMBURSABILEPOSTADERARE|450.05|D|0|S
+450.05.03|Sume de primit de la Comisia Europeana/alti donatori reprezentând venituri ale bugetului general consolidat - bugetele fondurilor speciale - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|450.05|D|0|S
+450.05.04|Sume de primit de la Comisia Europeana/alti donatori reprezentând venituri ale bugetului general consolidat - buget local - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|450.05|D|0|S
+450.05.05|Sume de primit de la Comisia Europeana/alti donatori reprezentând venituri ale bugetului general consolidat - institutii publice finantate din venituri proprii/venituri proprii si subventii - FONDURI EXTERNE NERAMBURSABILEPOSTADERARE|450.05|D|0|S
+450.06.00|Sume avansate de Comisia Europeana/alti donatori - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|450.06|C|0|S
+450.07.00|Sume de primit de la Comisia Europeana/alti donatori datorate altor beneficiari -ONG-uri, societati comerciale,etc. - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|450.07|D|0|S
+451.01.00|Sume de primit de la Autoritatile de Certificare - PHARE, SAPARD, ISPA|451.01|D|0|S
+451.02.00|Sume de restituit Autoritatilor deCertificare - PHARE, SAPARD, ISPA|451.02|C|0|S
+451.03.00|Sume de primit de la Autoritatile de Certificare/ Ministerul Agriculturii - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451.03|D|0|S
+451.04.01|Sume de restituit Autoritatilor deCertificare - decertificare definitiva -FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451.04|C|0|S
+451.04.02|Sume de restituit Autoritatilor deCertificare - deduceri procentuale definitive - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451.04|C|0|S
+451.04.09|Alte sume de restituit Autoritatilor de Certificare/ Ministerului Agriculturii - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451.04|C|0|S
+451.05.00|Sume de primit de la Agentia de Plati pentru Dezvoltare Rurala si Pescuit - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451.05|D|0|S
+451.06.01|Sume avansate de Autoritatile deCertificare - prefinantare - FONDURI EXTERNE NERAMBURSABILEPOSTADERARE SI FONDURI DE LA BUGET|451.06|C|0|S
+451.06.02|Sume avansate de Autoritatile de Certificare pentru plati intermediare - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451.06|C|0|S
+451.06.03|Sume avansate de Autoritatile deCertificare din varsaminte din privatizare în cazul indisponibilitatilor temporare de fonduri externe nerambursabile postaderare|451.06|C|0|S
+451.06.05|Sume de justificat Autoritatii de Certificare- decertificare definitiva - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451.06|C|0|S
+451.06.06|Sume de justificat Autoritatii de Certificare- deducere procentuala definitiva - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|451.06|C|0|S
+451.06.09|Alte sume avansate de Autoritatile de Certificare - FONDURI EXTERNE NERAMBURSABILEPOSTADERARE SI FONDURI DE LA BUGET|451.06|C|0|S
+452.01.00|Sume datorate Agentiilor deImplementare - PHARE, SAPARD, ISPA|452.01|C|0|S
+452.02.00|Sume datorate Autoritatilor de Management/ Agentiilor de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|452.02|C|0|S
+453.01.00|Sume de primit de la Autoritatile de Implementare - PHARE, SAPARD, ISPA -|453.01|D|0|S
+453.02.00|Sume de restituit Autoritatilor de Implementare - PHARE, SAPARD, ISPA -|453.02|C|0|S
+454.01.00|Sume de primit de la beneficiari - PHARE-|454.01|D|0|S
+454.02.00|Sume de restituit beneficiarilor - PHARE-|454.02|C|0|S
+454.03.01|Sume de recuperat de la beneficiari - institutii publice - FONDURIEXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|454.03|D|0|S
+454.03.02|Sume de recuperat de la beneficiari - ONG -uri, societati comerciale, etc. FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|454.03|D|0|S
+454.04.01|Sume datorate beneficiarilor- ONG-uri,societati comerciale, etc. - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|454.04|C|0|S
+454.04.02|Sume datorate beneficiarilor- ONG-uri,societati comerciale, etc. - FONDURI DE LA BUGET|454.04|C|0|S
+454.05.01|Avansuri acordate beneficiarilor din fonduri externe nerambursabile postaderare si fonduride la buget - institutii publice finantate din bugetul local|454.05|D|0|S
+454.05.02|Avansuri acordate beneficiarilor din fonduri externe nerambursabile postaderare si fonduri de la buget - institutii publice finantate din venituri proprii/venituri proprii si subventii|454.05|D|0|S
+454.05.03|Avansuri acordate beneficiarilor din fonduri externe nerambursabilepostaderare si fonduri de la buget - ONG-uri, societati comerciale, etc.|454.05|D|0|S
+454.05.04|Avansuri acordate beneficiarilor din fonduri externe nerambursabile postaderare si fonduri de la buget - institutiipublice finantate integral din buget|454.05|D|0|S
+454.06.01|Sume datorate beneficiarilor - institutii finantate din bugetul local FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|454.06|C|0|S
+454.06.02|Sume datorate beneficiarilor - institutii finantate din venituri proprii/venituri proprii si subventii - FONDURIEXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|454.06|C|0|S
+454.06.03|Sume datorate beneficiarilor - institutii finantate din buget de stat, asigurari sociale de stat si fonduri speciale - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|454.06|C|0|S
+455.01.00|Sume de primit de la buget (cofinantare, indisponibilitati temporare de fonduri de la Comisia Europeana - PHARE, SAPARD, ISPA)|455.01|D|0|S
+455.02.00|Sume de restituit bugetului (cofinantare, indisponibilitati temporare de fonduri de la Comisia Europeana - PHARE, SAPARD, ISPA)|455.02|C|0|S
+455.03.01|Sume de primit de la buget - prefinantare|455.03|D|0|S
+455.03.02|Sume de primit de la buget - cofinantare|455.03|D|0|S
+455.03.03|Sume de primit de la buget - indisponibilitati temporare de fonduri de la Comisia Europeana/alti donatori|455.03|D|0|S
+455.04.01|Sume de restituit bugetului - prefinantare|455.04|C|0|S
+455.04.02|Sume de restituit bugetului - cofinantare|455.04|C|0|S
+455.04.03|Sume de restituit bugetului - indisponibilitati temporare de fonduri de la Comisia Europeana/alti donatori|455.04|C|0|S
+455.04.04|Sume de restituit bugetului - top- up|455.04|C|0|S
+455.04.09|Alte sume de restituit bugetului (dobânzi acumulate etc.)|455.04|C|0|S
+455.05.01|Sume de restituit bugetului de stat din sume primite de la Comisia Europeana/alti donatori în contul platilor efectuate - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|455.05|D|0|S
+455.05.02|Sume de restituit bugetului asigurarilor sociale de stat din sume primite de la Comisia Europeana/alti donatori în contul platilor efectuate - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|455.05|D|0|S
+455.05.03|Sume de restituit bugetelor fondurilor speciale din sume primite de la Comisia Europeana/alti donatori în contul platilor efectuate - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|455.05|D|0|S
+456.01.00|Sume de primit de la bugetul de stat pentru cheltuieli neeligibile - PHARE, SAPARD, ISPA|456.01|D|0|S
+456.03.03|Sume de primit de la bugetul de stat pentru alte cheltuieli decât cele eligibile - corectii financiare definitive - FONDURI EXTERNE NERAMBURSABILEPOSTADERARE SI FONDURI DE LA BUGET|456.03|D|0|S
+456.03.09|Alte sume de primit de la bugetul de stat pentru alte cheltuieli decât cele eligibile - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|456.03|D|0|S
+456.04.00|Sume de restituit bugetului de stat pentru alte cheltuieli decât cele eligibile - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|456.04|C|0|S
+457.01.00|Sume de recuperat de la Agentiile de Implementare - PHARE, SAPARD, ISPA|457.01|D|0|S
+457.02.01|Sume avansate Autoritatilor de Management/ Agentiilor de Plati - prefinantare - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|457.02|D|0|S
+457.02.02|Sume avansate Autoritatilor de Management/ Agentiilor de Plati pentru plati intermediare - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|457.02|D|0|S
+457.02.03|Sume avansate Autoritatilor de Management/ Agentiilor de Plati din varsaminte din privatizare în cazul indisponibilitatilor temporare de fonduri externe nerambursabilepostaderare|457.02|D|0|S
+457.02.05|Sume de justificat de Autoritatile de Management - decertificare definitiva - FONDURI EXTERNE NERAMBURSABILEPOSTADERARE SI FONDURI DE LA BUGET|457.02|D|0|S
+457.02.06|Sume de justificat de Autoritatile de Management - deduceri procentuale definitive - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|457.02|D|0|S
+457.02.09|Alte sume de justificat Autoritatilor de Management/ Agentiilor de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|457.02|D|0|S
+457.03.01|Sume de recuperat de la Autoritatile de Management - decertificare definitiva - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|457.03|D|0|S
+457.03.02|Sume de recuperat de la Autoritatile de Management - deduceri procentuale definitive - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|457.03|D|0|S
+457.03.09|Alte sume de recuperat de la Autoritatile de Management/ Agentiile de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|457.03|D|0|S
+458.01.00|Sume de primit de la Agentiile/Autoritatile de Implementare - PHARE, ISPA, SAPARD (la beneficiarii finali)|458.01|D|0|RFE
+458.03.01|Sume de primit de la Autoritatile de Certificare/ Autoritatile de Management/Agentiile de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|458.03|D|0|S
+458.03.02|Sume de primit de la Autoritatile de Certificare/ Autoritatile de Management/Agentiile de Plati - FONDURI DE LA BUGET|458.03|D|0|S
+458.04.01|Sume de restituit Autoritatilor de Certificare/ Autoritatilor de Management/Agentiilor de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|458.04|C|0|S
+458.04.02|Sume de restituit Autoritatilor de Certificare/ Autoritatilor de Management/Agentiilor de Plati - FONDURI DE LA BUGET|458.04|C|0|S
+458.05.01|Avansuri primite de la Autoritatile de Certificare/ Autoritatile de Management/Agentiile de Plati - FONDURI EXTERNE NERAMBURSABILE POSTADERARE|458.05|C|0|RFE
+458.05.02|Avansuri primite de la Autoritatile de Certificare/ Autoritatile deManagement/Agentiilede Plati - FONDURI DE LA BUGET|458.05|C|0|RFE
+459.00.00|Sume datorate bugetului Uniunii Europene|459.00|C|0|S
+461.01.01|Debitori sub 1 an - creante comerciale|461.01|D|0|S
+461.01.02|Debitori sub 1 an - creante buget general consolidat|461.01|D|0|S
+461.01.03|Debitori sub 1 an - creante din operatiuni cu FEN|461.01|D|0|S
+461.01.04|Debitori sub 1 an - institutii de credit, din tranzactii cu carduri bancare|461.01|D|0|S
+461.01.09|Debitori sub 1 an - alte creante|461.01|D|0|R
+461.02.01|Debitori peste 1 an - creante comerciale|461.02|D|0|S
+461.02.09|Debitori peste 1 an - alte creante necurente|461.02|D|0|S
+462.01.01|Creditori sub 1 an - datorii comerciale|462.01|C|0|FER
+462.01.03|Creditori sub 1 an - datorii din operatiuni cu FEN|462.01|C|0|S
+462.01.09|Creditori sub 1 an - alte datorii curente|462.01|C|0|R
+462.02.01|Creditori peste 1 an - datorii comerciale|462.02|C|0|BFE
+462.02.09|Creditori peste 1 an - alte datorii necurente|462.02|C|0|S
+463.00.00|Creante ale bugetului de stat|463.00|D|0|S
+464.00.00|Creante ale bugetului local|464.00|D|0|FE
+465.01.00|Creante ale sistemului de asigurare de munca si boli profesionale|465.01|D|0|S
+465.02.00|Creante ale bugetului asigurarilor sociale de stat|465.02|D|0|S
+466.04.01|Creante ale bugetului asigurarilor pentru somaj (Fondul de garantare pentru plata creantelor salariale)|466.04|D|0|S
+466.04.02|Creante ale bugetului asigurarilor pentru somaj|466.04|D|0|S
+466.05.00|Creante ale bugetului Fondului national unic de asigurari sociale de sanatate|466.05|D|0|S
+466.09.00|Creante ale bugetului trezoreriei statului|466.09|D|0|S
+467.01.00|Creditori ai bugetului de stat|467.01|C|0|S
+467.02.00|Creditori ai bugetului local|467.02|C|0|FE
+467.03.00|Creditori ai bugetului asigurarilor sociale de stat|467.03|C|0|S
+467.04.00|Creditori ai bugetului asigurarilor pentru somaj|467.04|C|0|S
+467.05.00|Creditori ai bugetului Fondului national unic de asigurari sociale de sanatate|467.05|C|0|S
+467.09.00|Creditori ai bugetului trezoreriei statului|467.09|C|0|S
+468.01.01|Împrumuturi acordate potrivit legii din bugetul de stat|468.01|D|0|S
+468.01.02|Împrumuturi acordate potrivit legii din bugetul local|468.01|D|0|BFE
+468.01.03|Plasamente financiare pe termen scurt efectuate din contul curent general al trezoreriei statului|468.01|D|0|S
+468.01.04|Împrumuturi acordate din bugetul asigurarilor pentru somaj|468.01|D|0|S
+468.01.05|Împrumuturi pe termen scurt acordate din contul curent general al trezoreriei statului|468.01|D|0|S
+468.01.06|Împrumuturi pe termen scurt acordate din venituri din privatizare|468.01|D|0|S
+468.01.07|Sume acordate din excedentul anului precedent pentru acoperirea golurilor temporare de casa si pentru finantareacheltuielilor sectiunii de dezvoltare|468.01|D|0|S
+468.01.08|Împrumuturi pe termen scurt acordate din Fondul special de dezvoltare aflat la dispozitia Guvernului|468.01|D|0|S
+468.01.09|Alte împrumuturi acordate pe termen scurt|468.01|D|0|S
+469.01.03|Dobânzi aferente împrumuturilor acordate pe termen scurt - plasamente financiare efectuate din contul curent general al trezoreriei statului|469.01|D|0|S
+469.01.05|Dobânzi aferente împrumuturilor acordate pe termen scurt din contul curent general al trezoreriei statului|469.01|D|0|S
+469.01.06|Dobânzi aferente împrumuturilor acordate pe termen scurt dinvenituri din privatizare|469.01|D|0|S
+469.01.08|Dobânzi aferente împrumuturilor acordate pe termen scurt din Fondul special de dezvoltare aflat la dispozitia Guvernului|469.01|D|0|S
+469.01.09|Dobânzi aferente altor împrumuturi acordate pe termen scurt|469.01|D|0|S
+471.00.00|Cheltuieli înregistrate în avans|471.00|D|0|S
+472.00.00|Venituri înregistrate în avans|472.00|D|0|S
+473.01.03|Decontari din operatii în curs de clarificare - datorii/creante din operatiuni cu FEN|473.01|B|0|S
+473.01.09|Decontari din operatii în curs de clarificare - alte datorii/creante curente|473.01|B|0|S
+474.00.00|Sume în curs de certificare/declarare Comisiei Europene /alti donatori - FONDURI EXTERNE NERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|474.00|D|0|S
+476.00.00|Sume în curs de declarare Autoritatilor de Certificare - FONDURI EXTERNENERAMBURSABILE POSTADERARE SI FONDURI DE LA BUGET|476.00|D|0|S
+481.01.01|Decontari privind operatiuni financiare - activitatea operationala|481.01|B|0|S
+481.01.02|Decontari privind operatiuni financiare - activitatea de investitii|481.01|B|0|S
+481.01.03|Decontari privind operatiuni financiare - activitatea de finantare|481.01|B|0|S
+481.09.00|Alte decontari|481.09|B|0|S
+483.00.00|Decontari din operatii în participatie|483.00|B|0|S
+484.00.00|Decontari privind titlurile de stat destinate populatiei emise prin intermediul unitatilor operative ale Trezoreriei Statului|484.00|B|0|S
+489.01.01|Decontari privind încheierea executiei bugetului de stat din anul curent - venituri|489.01|B|0|S
+489.02.01|Decontari privind încheierea executiei bugetului de stat din anul curent - cheltuieli|489.02|B|0|S
+489.03.01|Decontari privind încheierea executiei bugetului de stat din anul curent - excedent/deficit preluat de la unitatile trezoreriei statului|489.03|B|0|S
+491.01.00|Ajustari pentru deprecierea creantelor - clienti sub 1 an|491.01|C|0|S
+491.02.00|Ajustari pentru deprecierea creantelor - clienti peste 1 an|491.02|C|0|S
+496.01.00|Ajustari pentru deprecierea creantelor - debitori sub 1 an|496.01|C|0|S
+496.02.00|Ajustari pentru deprecierea creantelor - debitori peste 1 an|496.02|C|0|S
+497.00.00|Ajustari pentru deprecierea creantelor bugetare|497.00|C|0|S
+505.00.00|Obligatiuni emise si rascumparate|505.00|D|0|S
+509.00.00|Varsaminte de efectuat pentru investitiile pe termen scurt|509.00|C|0|S
+510.00.00|Disponibil din împrumuturi dindisponibilitatile contului curent general al trezoreriei statului|510.00|D|0|S
+511.01.01|Valori de încasat|511.01|D|0|S
+511.01.02|Cecuri de încasat la institutii de credit|511.01|D|0|S
+512.01.01|Conturi la trezorerii în lei|512.01|B|0|E
+512.01.02|Conturi la institutii de credit în lei|512.01|B|0|S
+512.04.02|Conturi la institutii de credit în valuta|512.04|B|0|S
+512.05.01|Sume în curs de decontare la trezorerii|512.05|B|0|S
+512.05.02|Sume în curs de decontare la institutii de credit|512.05|B|0|S
+512.06.01|Disponibil în lei al trezoreriei centrale la trezorerii|512.06|B|0|S
+512.06.02|Disponibil în lei al trezoreriei centrale la institutii de credit|512.06|B|0|S
+512.07.00|Disponibil în valuta al trezoreriei centrale|512.07|B|0|S
+512.08.00|Conturi de clearing, barter si cooperare economica|512.08|B|0|S
+512.09.01|Disponibil al operatorilor economici la trezorerie|512.09|D|0|S
+512.09.02|Depozite ale operatorilor economici la trezorerie|512.09|D|0|S
+512.10.00|Disponibil aferent certificatelor de trezorerie ale populatiei|512.10|D|0|S
+512.11.00|Disponibil aferent titlurilor de stat destinate populației emise prin intermediul unităților operative ale Trezoreriei Statului|512.10|D|0|S
+513.01.01|Disponibil în lei din împrumuturi interne si externe contractate de stat la trezorerie|513.01|D|0|S
+513.01.02|Disponibil în lei din împrumuturi interne si externe contractate de stat la institutii de credit|513.01|D|0|S
+513.02.02|Disponibil în valuta din împrumuturi interne si externe contractate de stat la institutii de credit|513.02|D|0|S
+513.03.01|Disponibil în lei al bugetului creditelor interne din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi contractate de stat|513.03|D|0|S
+513.03.02|Disponibil în lei al bugetului creditelor externe din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi contractate de stat|513.03|D|0|S
+514.01.01|Disponibil în lei din împrumuturi interne si externe garantate de stat la trezorerie|514.01|D|0|S
+514.01.02|Disponibil în lei din împrumuturi interne si externe garantate de stat la institutii de credit|514.01|D|0|S
+514.02.02|Disponibil în valuta din împrumuturi interne si externe garantate de stat la institutii de credit|514.02|D|0|S
+514.03.01|Disponibil în lei al bugetului creditelor interne din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi garantate de stat|514.03|D|0|S
+514.03.02|Disponibil în lei al bugetului creditelor externe din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi garantate de stat|514.03|D|0|S
+515.01.01|Disponibil în lei din fonduri externe nerambursabile la trezorerie|515.01|D|0|S
+515.01.02|Disponibil în lei din fonduri externe nerambursabile la institutii de credit|515.01|D|0|S
+515.01.03|Disponibil în lei din fonduri externe nerambursabile la trezorerie - venituri ale bugetului fondurilor externe nerambursabile (sursa D)|515.01|D|0|S
+515.02.02|Disponibil în valuta din fonduri externe nerambursabile la institutii de credit|515.02|D|0|S
+515.03.01|Depozite bancare la trezorerie|515.03|D|0|S
+515.03.02|Depozite bancare la institutii de credit|515.03|D|0|S
+515.04.00|Rezultatul executiei bugetare din anul curent|515.04|D|0|S
+515.05.00|Rezultatul executiei bugetare din anii precedenti|515.05|D|0|S
+515.06.00|Disponibil al bugetului fondurilor externe nerambursabile din sume neutilizate în anul curent și reportate în anul următor|515.06|D|0|S
+516.01.01|Disponibil în lei din împrumuturi interne si externe contractate de autoritatile administratiei publice locale la trezorerie|516.01|D|0|S
+516.01.02|Disponibil în lei din împrumuturi interne si externe contractate de autoritatile administratiei publice locale la institutii de credit|516.01|D|0|S
+516.02.02|Disponibil în valuta din împrumuturi interne si externe contractate de autoritatile administratiei publice locale la institutii de credit|516.02|D|0|S
+516.03.01|Disponibil în lei al bugetului creditelor interne din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi contractate de autoritătile administratiei publice locale|516.03|D|0|S
+516.03.02|Disponibil în lei al bugetului creditelor externe din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi contractate de autoritătile administratiei publice locale|516.03|D|0|S
+517.01.01|Disponibil în lei din împrumuturi interne si externe garantate de autoritatile administratiei publice locale la trezorerie|517.01|D|0|S
+517.01.02|Disponibil în lei din împrumuturi interne si externe garantate de autoritatile administratiei publice locale la institutii de credit|517.01|D|0|S
+517.02.02|Disponibil în valuta din împrumuturi interne si externe garantate de autoritatile administratiei publice locale la institutii de credit|517.02|D|0|S
+517.03.01|Disponibil în lei al bugetului creditelor interne din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi garantate de autoritătile administratiei publice locale|517.03|D|0|S
+517.03.02|Disponibil în lei al bugetului creditelor externe din sume neutilizate în anul curent și reportate în anul următor - din împrumuturi garantate de autoritătile administratiei publice locale|517.03|D|0|S
+518.06.01|Dobânzi de platit - aferente disponibilului|518.06|C|0|S
+518.06.03|Dobânzi de platit - aferente depozitelor|518.06|C|0|S
+518.06.04|Dobânzi de platit - aferente titlurilor de natura datoriei|518.06|C|0|S
+518.06.05|Dobânzi de platit - aferente împrumuturilor primite din contul curent general al trezoreriei statului|518.06|C|0|S
+518.06.06|Dobânzi de platit - aferente împrumuturilor primite din venituri din privatizare|518.06|C|0|S
+518.06.08|Dobânzi de platit - aferente împrumuturilor primite din Fondul special de dezvoltare la dispozitia Guvernului|518.06|C|0|S
+518.06.09|Dobânzi de platit - aferente altor împrumuturi|518.06|C|0|S
+518.07.01|Dobânzi de încasat - conturi la trezorerie|518.07|D|0|S
+518.07.02|Dobânzi de încasat - conturi la institutii de credit|518.07|D|0|S
+518.08.00|Dobânzi de platit aferente creditelor pe termen scurt provenite din reclasificarea creditelor comerciale în împrumuturi|518.08|C|0|S
+519.01.01|Împrumuturi pe termen scurt primite din venituri din Fondul special de dezvoltare la dispozitiaGuvernului|519.01|C|0|S
+519.01.02|Împrumuturi pe termen scurt primite din venituri din privatizare|519.01|C|0|S
+519.01.03|Depozite atrase|519.01|C|0|S
+519.01.04|Împrumuturi primite din bugetul de stat pentru înfiintarea unor institutii sau a unor activitati finantate integral din venituri proprii|519.01|C|0|S
+519.01.05|Împrumuturi primite din bugetul local pentru înfiintarea unor institutii si servicii publice sau activitati finantate integral din venituri proprii|519.01|C|0|S
+519.01.06|Împrumuturi interne si externe contractate de autoritatile administratiei publice locale|519.01|C|0|S
+519.01.07|Sume primite din excedentul anului precedent pentru acoperirea golurilor temporare de casa si pentru finantarea cheltuielilor sectiunii de dezvoltare|519.01|C|0|S
+519.01.08|Împrumuturi primite din disponibilitatile contului curent general al trezoreriei statului|519.01|C|0|S
+519.01.09|Titluri de stat|519.01|C|0|S
+519.01.10|Credite pe termen scurt primite, rezultate din reclasificarea creditelor comerciale în împrumuturi|519.01|C|0|S
+519.01.80|Împrumuturi pe termen scurt nerambursate la scadenta|519.01|C|0|S
+519.01.90|Alte împrumuturi pe termen scurt|519.01|C|0|S
+520.01.00|Disponibil al bugetului de stat|520.01|D|0|S
+520.02.00|Rezultatul executiei bugetului de stat din anul curent|520.02|B|0|S
+521.01.00|Disponibil al bugetului local|521.01|D|0|E
+521.02.00|Rezultatul executiei bugetare din anul curent|521.02|B|0|S
+521.03.00|Rezultatul executiei bugetare din anii precedenti|521.03|D|0|E
+523.00.00|Disponibil din cote defalcate din impozitul pe venit pentruechilibrarea bugetelor locale|523.00|D|0|S
+524.01.00|Disponibil al bugetului trezoreriei statului|524.01|D|0|S
+524.02.00|Rezultatul executiei bugetului trezoreriei statului din anul curent|524.02|B|0|S
+524.03.00|Rezultatul executiei bugetului trezoreriei statului din anii precedenti|524.03|D|0|S
+525.01.01|Disponibil al sistemului de asigurare pentru accidente de munca si boli profesionale|525.01|D|0|S
+525.01.02|Disponibil al bugetului asigurarilor sociale de stat|525.01|D|0|S
+525.02.01|Rezultatul executiei bugetare din anul curent a sistemului de asigurare pentru accidente de munca si boli profesionale|525.02|B|0|S
+525.02.02|Rezultatul executiei bugetare din anul curent al bugetului asigurarilor sociale de stat|525.02|B|0|S
+525.03.01|Rezultatul executiei bugetare din anii precedenti- a sistemului de asigurare pentru accidente de munca si boli profesionale|525.03|D|0|S
+525.03.02|Rezultatul executiei bugetare din anii precedenti - al bugetului asigurarilor sociale de stat|525.03|D|0|S
+525.04.00|Depozite din excedentul bugetului asigurarilor sociale de stat|525.04|D|0|S
+526.00.00|Disponibil din fondul de rezerva al bugetului asigurarilor sociale de stat|526.00|D|0|S
+527.00.00|Disponibil din fondul de rezerva constituitconform Legii nr.95/2006|527.00|D|0|S
+528.00.00|Disponibil din sume încasate în cursul procedurii de executare silita|528.00|D|0|S
+529.01.01|Disponibil din sumele colectate pentru bugetul de stat la trezorerie|529.01|D|0|S
+529.01.02|Disponibil din sumele colectate pentru bugetul de stat la institutii de credit|529.01|D|0|S
+529.02.01|Disponibil din sumele colectate pentru bugetul local la trezorerie|529.02|D|0|S
+529.02.02|Disponibil din sumele colectate pentru bugetul local la institutii de credit|529.02|D|0|S
+529.03.01|Disponibil din sume colectate pentru alte bugete la trezorerie|529.03|D|0|S
+529.03.02|Disponibil din sume colectate pentru alte bugete la institutii de credit|529.03|D|0|S
+529.04.00|Disponibil din venituri încasate pentru bugetul capitalei|529.04|D|0|S
+529.09.01|Disponibil din sume colectate prin intermediul cardurilor la trezorerie|529.09|D|0|S
+529.09.02|Disponibil din sume colectate prin intermediul cardurilor la institutii de credit|529.09|D|0|S
+531.01.01|Casa în lei|531.01|D|0|E
+531.04.02|Casa în valuta|531.04|D|0|S
+532.01.00|Timbre fiscale si postale|532.01|D|0|S
+532.02.00|Bilete de tratament si odihna|532.02|D|0|S
+532.03.00|Tichete si bilete de calatorie|532.03|D|0|S
+532.04.00|Bonuri valorice pentru carburanti auto|532.04|D|0|S
+532.05.00|Bilete cu valoare nominala|532.05|D|0|S
+532.06.00|Tichete de masa|532.06|D|0|S
+532.08.00|Alte valori|532.08|D|0|S
+541.01.01|Acreditive în lei la trezorerie|541.01|D|0|S
+541.01.02|Acreditive în lei la institutii de credit|541.01|D|0|S
+541.02.02|Acreditive în valuta la institutii de credit|541.02|D|0|S
+542.01.00|Avansuri de trezorerie în lei|542.01|D|0|E
+542.02.00|Avansuri de trezorerie în valuta|542.02|D|0|S
+550.01.01|Disponibil din fonduri cu destinatie speciala la trezorerie|550.01|D|0|S
+550.01.02|Disponibil din fonduri cu destinatie speciala la institutii de credit|550.01|D|0|S
+552.00.00|Disponibil pentru sume de mandat si sume în depozit|552.00|D|0|R
+555.01.01|Disponibil al fondului de risc în lei la trezorerie|555.01|D|0|S
+555.01.02|Disponibil al fondului de risc în lei la institutii de credit|555.01|D|0|S
+555.01.03|Disponibil al fondului de risc în lei la trezorerie în curs de clarificare|555.01|D|0|S
+555.02.02|Disponibil al fondului de risc în valuta la institutii de credit|555.02|D|0|S
+555.03.00|Rezultatul executiei bugetare din anul curent|555.03|D|0|S
+555.04.00|Rezultatul executiei bugetare din anii precedenti|555.04|D|0|S
+557.01.01|Disponibil în lei din valorificarea bunurilor intrate în proprietatea privata a statului la trezorerie|557.01|D|0|S
+557.02.02|Disponibil în valuta din valorificarea bunurilor intrate în proprietatea privata a statului la institutii de credit|557.02|D|0|S
+558.01.01|Disponibil în lei din contributia nationala reprezentând cofinantarea de la buget aferentaprogramelor/proiectelorfinantate din fonduri externe nerambursabile la Trezorerie|558.01|D|0|S
+558.01.02|Disponibil în lei din contributia nationala reprezentând cofinantarea de la buget aferenta programelor/proiectelor finantate din fonduri externe nerambursabile la institutii de credit|558.01|D|0|S
+558.02.01|Disponibil în lei din contributia nationala reprezentând alte cheltuieli decât cele eligibile de la buget aferente programelor/proiectelor finantate din fonduri externe nerambursabile la trezorerie|558.02|D|0|S
+558.02.02|Disponibil în lei din contributia natională reprezentând alte cheltuieli decât cele eligibile de la buget aferente programelor/proiectelor finantate din fonduri externe nerambursabile la institutii de credit|558.02|D|0|S
+558.03.02|Disponibil în valuta din contributia nationala reprezentândcofinantarea de la buget aferenta programelor/proiectelor finantate din fonduri externe nerambursabile la institutii de credit|558.03|D|0|S
+558.03.03|Disponibil în valută din contributia natională reprezentând alte cheltuieli decât cele eligibile de la buget aferentă programelor/proiectelor finantate din fonduri externe nerambursabile la institutii de credit|558.03|D|0|S
+559.01.01|Disponibil în lei de la buget reprezentând prefinantari si fonduri în cazul indisponibilitatilor temporare aferente programelor/proiectelor finantate din fonduri externe nerambursabile la Trezorerie|559.01|D|0|S
+559.01.02|Disponibil în lei de la buget reprezentând prefinantari si fonduri în cazul indisponibilitatilor temporare aferente programelor/proiectelor finantate din fonduri externe nerambursabilela institutii de credit|559.01|D|0|S
+559.02.02|Disponibil în valuta de la buget reprezentând prefinantari si fonduri în cazul indisponibilitatilor temporare aferente programelor/proiectelor finantate din fonduri externe nerambursabile la institutii de credit|559.02|D|0|S
+560.01.01|Disponibil în lei al institutiilor publice finantate integral din venituri proprii - Disponibil curent la trezorerie|560.01|D|0|S
+560.01.02|Disponibil în lei al institutiilor publice finantate integral din venituri proprii - Disponibil curent la institutii de credit|560.01|D|0|S
+560.01.03|Disponibil în valută al institutiilor publice finantate integral din venituri proprii - Disponibil curent la institutii de credit|560.01|D|0|S
+560.02.00|Rezultatul executiei bugetare din anul curent|560.02|D|0|S
+560.03.00|Rezultatul executiei bugetare din anii precedenti|560.03|D|0|S
+560.04.01|Depozite ale institutiilor publice finantate integral din venituri proprii la trezorerie|560.04|D|0|S
+560.04.02|Depozite ale institutiilor publice finantate integral din venituri proprii la institutii de credit|560.04|D|0|S
+561.01.01|Disponibil în lei al institutiilor publice finantate din venituri proprii si subventii - Disponibil curent la trezorerie|561.01|D|0|S
+561.01.02|Disponibil în lei al institutiilor publice finantate din venituri proprii si subventii - Disponibil curent la institutii de credit|561.01|D|0|S
+561.01.03|Disponibil în valuta al institutiilor publice finantate din venituri proprii si subventii - Disponibil curent la institutii de credit|561.01|D|0|S
+561.02.00|Rezultatul executiei bugetare din anul curent|561.02|D|0|S
+561.03.00|Rezultatul executiei bugetare din anii precedenti|561.03|D|0|S
+562.01.01|Disponibil in lei al activitatilor finantate integral din venituri proprii – Disponibil curent la trezorerie|562.01|D|0|S
+562.01.02|Disponibil in lei al activitatilor finantate integral din venituri proprii – Disponibil curent la institutii de credit|562.01|D|0|S
+562.01.03|Disponibil in valuta al activitatilor finantate integral din venituri proprii – Disponibil curent la institutii de credit|562.01|D|0|S
+562.02.00|Rezultatul executiei bugetare din anul curent|562.02|D|0|S
+562.03.00|Rezultatul executiei bugetare din anii precedenti|562.03|D|0|S
+562.04.01|Depozite ale activitătilor finantate integral din venituri proprii la trezorerie|562.04|D|0|S
+562.04.02|Depozite ale activitătilor finantate integral din venituri proprii la institutii de credit|562.04|D|0|S
+571.01.00|Disponibil din veniturile Fondului national unic de asigurari sociale de sanatate|571.01|D|0|S
+571.02.00|Rezultatul executiei bugetare din anul curent|571.02|B|0|S
+571.03.00|Rezultatul executiei bugetare din anii precedenti|571.03|D|0|S
+571.04.00|Depozite din veniturile Fondului national unic de asigurari sociale de sanatate|571.04|D|0|S
+574.01.01|Disponibil al Fondului de garantare pentru plata creantelor salariale|574.01|D|0|S
+574.01.02|Disponibil al bugetului asigurarilor pentru somaj|574.01|D|0|S
+574.02.01|Rezultatul executiei bugetare din anul curent al Fondului de garantare pentru plata creantelor salariale|574.02|B|0|S
+574.02.02|Rezultatul executiei bugetare din anul curent al bugetului asigurarilor pentru somaj|574.02|B|0|S
+574.03.01|Rezultatul executiei bugetare din anii precedenti al Fondului de garantare pentru plata creantelor salariale|574.03|D|0|S
+574.03.02|Rezultatul executiei bugetare din anii precedenti al bugetului asigurarilor pentru somaj|574.03|D|0|S
+574.04.00|Depozite din veniturile bugetului asigurarilor pentru somaj|574.04|D|0|S
+575.01.00|Disponibil din veniturile Fondului pentru mediu|575.01|D|0|S
+575.02.00|Rezultatul executiei bugetare din anul curent|575.02|B|0|S
+575.03.00|Rezultatul executiei bugetare din anii precedenti|575.03|D|0|S
+575.04.00|Depozite din veniturile Fondului pentru mediu|575.04|D|0|S
+581.01.01|Viramente interne - activitatea operationala|581.01|B|0|S
+581.01.02|Viramente interne - activitatea de investitii|581.01|B|0|S
+581.01.03|Viramente interne - activitatea de finantare|581.01|B|0|S
+581.01.04|Viramente interne - alte activitati|581.01|B|0|S
+595.00.00|Ajustari pentru pierderea de valoare a obligatiunilor emise si rascumparate|595.00|C|0|S
+601.00.00|Cheltuieli cu materiile prime|601.00|D|0|S
+602.01.00|Cheltuieli cu materialele auxiliare|602.01|D|0|S
+602.02.00|Cheltuieli privind combustibilul|602.02|D|0|E
+602.03.00|Cheltuieli privind materialele pentru ambalat|602.03|D|0|S
+602.04.00|Cheltuieli privind piesele de schimb|602.04|D|0|S
+602.05.00|Cheltuieli privind semintele si materialele de plantat|602.05|D|0|S
+602.06.00|Cheltuieli privind furajele|602.06|D|0|S
+602.07.00|Cheltuieli privind hrana|602.07|D|0|S
+602.08.00|Cheltuieli privind alte materiale consumabile|602.08|D|0|E
+602.09.00|Cheltuieli privind medicamentele si materialele sanitare|602.09|D|0|E
+603.00.00|Cheltuieli privind materialele de natura obiectelor de inventar|603.00|D|0|E
+606.00.00|Cheltuieli privind animalele si pasarile|606.00|D|0|S
+607.00.00|Cheltuieli privind marfurile|607.00|D|0|S
+608.00.00|Cheltuieli privind ambalajele|608.00|D|0|S
+609.00.00|Cheltuieli cu alte stocuri|609.00|D|0|S
+610.00.00|Cheltuieli privind energia si apa|610.00|D|0|E
+611.00.00|Cheltuieli cu întretinerea si reparatiile|611.00|D|0|E
+612.00.00|Cheltuieli cu chiriile|612.00|D|0|E
+613.00.00|Cheltuieli cu primele de asigurare|613.00|D|0|E
+614.00.00|Cheltuieli cu deplasari, detasari, transferari|614.00|D|0|S
+622.00.00|Cheltuieli privind comisioanele si onorariile|622.00|D|0|S
+623.00.00|Cheltuieli de protocol, reclama si publicitate|623.00|D|0|S
+624.01.00|Cheltuieli cu transportul de bunuri|624.01|D|0|S
+624.02.00|Cheltuieli cu transportul de personal|624.02|D|0|S
+626.00.00|Cheltuieli postale si taxe de telecomunicatii|626.00|D|0|E
+627.00.00|Cheltuieli cu serviciile bancare si asimilate|627.00|D|0|S
+628.00.00|Alte cheltuieli cu serviciile executate de terti|628.00|D|0|E
+629.01.00|Alte cheltuieli autorizate prin dispozitii legale - cheltuieli curente|629.01|D|0|E
+635.01.00|Cheltuieli cu alte impozite, taxe si varsaminte asimilate|635.01|D|0|E
+635.02.00|Cheltuieli cu impozitul pe profit|635.02|D|0|S
+641.00.00|Cheltuieli cu salariile personalului|641.00|D|0|E
+642.00.00|Cheltuieli salariale în natura|642.00|D|0|S
+645.01.00|Contributiileangajatorilor pentru asigurari sociale|645.01|D|0|E
+645.02.00|Contributiileangajatorilor pentru asigurari de somaj|645.02|D|0|S
+645.03.00|Contributiileangajatorilor pentru asigurari sociale de sanatate|645.03|D|0|S
+645.04.00|Contributiileangajatorilor pentru accidente de munca si boli profesionale|645.04|D|0|S
+645.05.00|Contributiileangajatorilor pentru concedii si indemnizatii|645.05|D|0|S
+645.06.00|Contributiileangajatorilor la fondul de garantare pentru plata creantelor salariale|645.06|D|0|S
+645.07.00|Cheltuieli privind asigurarile sociale|645.07|D|0|E
+645.08.00|Alte cheltuieli privind asigurarile si protectia sociala|645.08|D|0|S
+646.00.00|Cheltuieli cu indemnizatiile de delegare, detasare si alte drepturi salariale|646.00|D|0|S
+647.00.00|Cheltuieli din fondul destinat stimularii personalului|647.00|D|0|S
+654.00.00|Pierderi din creante si debitori diversi|654.00|D|0|S
+658.01.01|Alte cheltuieli operationale – transfer active fixe și stocuri între institutii publice|658.01|D|0|S
+658.01.09|Alte cheltuieli operationale – alte operatiuni|658.01|D|0|E
+661.00.00|Cheltuieli din diferente nefavorabile de reevaluare rezultate din operatiuni de preschimbare a obligatiunilor/titlurilor de stat|661.00|B|0|S
+663.00.00|Pierderi din creante imobilizate|663.00|D|0|S
+664.00.00|Cheltuieli din investitii financiare cedate|664.00|D|0|S
+665.01.00|Cheltuieli din diferente de curs valutar - diferente de curs din reevaluarea creantelor si datoriilor|665.01|D|0|S
+665.02.00|Cheltuieli din diferente de curs valutar - diferente de curs din reevaluarea disponibilitatilor|665.02|D|0|S
+666.00.00|Cheltuieli privind dobânzile|666.00|D|0|E
+667.00.00|Sume de transferat bugetului de stat reprezentând câstiguri din schimb valutar - PHARE, SAPARD, ISPA|667.00|D|0|S
+668.00.00|Dobânzi de transferat Comisiei Europene/altor donatori sau de alocat programului - PHARE, SAPARD, ISPA, FONDURI EXTERNE NERAMBURSABILE POSTADERARE|668.00|D|0|S
+669.00.00|Alte pierderi (cheltuieli neeligibile - costuri bancare) - PHARE, SAPARD, ISPA -|669.00|D|0|S
+670.00.00|Subventii|670.00|D|0|S
+671.00.00|Transferuri curente între unitati ale administratiei publice|671.00|D|0|S
+672.00.00|Transferuri de capital între unitati ale administratiei publice|672.00|D|0|S
+673.00.00|Transferuri interne|673.00|D|0|S
+674.00.00|Transferuri în strainatate|674.00|D|0|S
+675.00.00|Contributia României la bugetul UniuniiEuropene|675.00|D|0|S
+676.00.00|Asigurari sociale|676.00|D|0|S
+677.00.00|Ajutoare sociale|677.00|D|0|E
+678.01.00|Transferuri pentru proiecte finantate din fonduri externe nerambursabile postaderare si fonduri de la bugetul de stat|678.01|D|0|S
+678.02.00|Transferuri pentru proiecte din componenta de imprumut a PNRR si fonduri de la buget|678.02|B|0|S
+679.00.00|Alte cheltuieli|679.00|D|0|S
+681.01.00|Cheltuieli operationale privind amortizarea activelor fixe|681.01|D|0|E
+681.01.00.3|Cheltuieli operationale privind amortizarea activelor fixe - donatie|681.01|D|0|E
+681.02.00|Cheltuieli operationale privind provizioanele|681.02|D|0|S
+681.03.00|Cheltuieli operationale privind ajustarile pentru deprecierea activelor fixe|681.03|D|0|S
+681.04.01|Cheltuieli operationale privind ajustarile pentru deprecierea activelor circulante - stocuri|681.04|D|0|S
+681.04.02|Cheltuieli operationale privind ajustarile pentru deprecierea activelorcirculante - creante|681.04|D|0|S
+682.01.01|Cheltuieli cu activele fixecorporale neamortizabile - active militare|682.01|D|0|S
+682.01.09|Cheltuieli cu activele fixe corporale neamortizabile - altele|682.01|D|0|S
+682.02.00|Cheltuieli cu activele fixe necorporale neamortizabile|682.02|D|0|S
+686.03.00|Cheltuieli financiare privind ajustarile pentru pierderea de valoare a activelor financiare|686.03|D|0|S
+686.04.00|Cheltuieli financiare privind ajustarile pentru pierderea de valoare a activelor circulante|686.04|D|0|S
+686.08.00|Cheltuieli financiare privind amortizarea primelor de rambursare a obligatiunilor|686.08|D|0|S
+689.01.00|Cheltuieli privind rezerva de stat|689.01|D|0|S
+689.02.00|Cheltuieli privind rezerva de mobilizare|689.02|D|0|S
+690.00.00|Cheltuieli cu pierderi din calamitati|690.00|D|0|S
+691.00.00|Cheltuieli extraordinare din operatiuni cu active fixe|691.00|D|0|S
+709.01.00|Variatia stocurilor|709.01|B|0|S
+709.02.00|Variatia productiei stocate scazuta din gestiune|709.02|B|0|S
+714.00.00|Venituri din creante reactivate si debitori diversi|714.00|C|0|S
+718.00.00|Alte venituri ale trezoreriei statului|718.00|C|0|S
+721.00.00|Venituri din productia de active fixe necorporale|721.00|C|0|S
+722.00.00|Venituri din productia de active fixe corporale|722.00|C|0|S
+730.01.00|Impozit pe profit|730.01|C|0|S
+730.02.01|Alte impozite pe profit|730.02|C|0|S
+730.02.02|Alte impozite pe venituri|730.02|C|0|S
+730.02.03|Alte impozite pe câstiguri din capital|730.02|C|0|S
+731.01.00|Impozit pe venit|731.01|C|0|S
+731.02.00|Cote si sume defalcate din impozitul pe venit|731.02|C|0|E
+732.01.00|Alte impozite pe venit, profit si câstiguri din capital|732.01|C|0|S
+733.00.00|Impozit pe salarii|733.00|C|0|S
+734.00.00|Impozite si taxe pe proprietate|734.00|C|0|E
+735.01.00|Taxa pe valoarea adaugata|735.01|C|0|S
+735.02.00|Sume defalcate din TVA|735.02|C|0|E
+735.03.00|Alte impozite si taxe generale pe bunuri si servicii|735.03|C|0|S
+735.04.00|Accize|735.04|C|0|S
+735.05.00|Taxe pe servicii specifice|735.05|C|0|S
+735.06.01|Taxe pentru mediu|735.06|C|0|S
+735.06.02|Alte taxe pe utilizarea bunurilor, autorizarea utilizarii bunurilor sau pe desfasurarea de activitati|735.06|C|0|E
+736.01.00|Venituri încadrate în resursele proprii ale bugetului UniuniiEuropene|736.01|C|0|S
+739.00.00|Alte impozite si taxe fiscale|739.00|C|0|E
+745.01.00|Contributiileangajatorilor pentru asigurari sociale|745.01|C|0|S
+745.02.00|Contributiileangajatorilor pentru asigurari de somaj|745.02|C|0|S
+745.03.00|Contributiileangajatorilor pentru asigurari sociale de sanatate|745.03|C|0|S
+745.04.00|Contributtileangajatorilor pentru accidente de munca si boli profesionale|745.04|C|0|S
+745.05.00|Varsaminte de la persoane juridice, pentru persoane cu handicap neîncadrate|745.05|C|0|S
+745.07.00|Venituri din contributia asiguratorie pentru munca|745.07|C|0|S
+745.09.00|Alte contributii pentru asigurari sociale datorate de angajatori|745.09|C|0|S
+746.01.00|Contributiile asiguratilor pentru asigurari sociale|746.01|C|0|S
+746.02.00|Contributiile asiguratilor pentru asigurari de somaj|746.02|C|0|S
+746.03.00|Contributiile asiguratilor pentru asigurari sociale de sanatate|746.03|C|0|S
+746.09.00|Alte contributii ale altor persoane pentru asigurari sociale|746.09|C|0|S
+750.01.00|Venituri din proprietate-dividende|750.01|C|0|S
+750.02.00|Alte venituri din proprietate|750.02|C|0|E
+751.01.00|Venituri din prestari de servicii si alte activitati|751.01|C|0|E
+751.02.00|Venituri din taxe administrative, eliberari permise|751.02|C|0|E
+751.03.00|Amenzi, penalitati si confiscari|751.03|C|0|E
+751.04.00|Diverse venituri|751.04|C|0|E
+751.05.00|Transferuri voluntare, altele decât subventiile (donatii, sponsorizari)|751.05|C|0|S
+761.00.00|Venituri din diferente favorabile de reevaluare rezultate din operatiuni de preschimbare a obligatiunilor/titlurilor de stat|761.00|B|0|S
+763.00.00|Venituri din creante imobilizate|763.00|C|0|S
+764.00.00|Venituri din investitii financiare cedate|764.00|C|0|S
+765.01.00|Venituri din diferente de curs valutar - diferente de curs din reevaluarea creantelor si datoriilor|765.01|C|0|S
+765.02.00|Venituri din diferente de curs valutar - diferente de curs din reevaluarea disponibilitatilor|765.02|C|0|S
+766.00.00|Venituri din dobânzi|766.00|C|0|S
+767.00.00|Sume de primit de la bugetul de stat pentru acoperirea pierderilor din schimb valutar - PHARE, SAPARD, ISPA -|767.00|C|0|S
+768.00.00|Alte venituri financiare - PHARE, SAPARD, ISPA -|768.00|C|0|S
+769.00.00|Sume de primit de la bugetul de stat pentru acoperirea altor pierderi (cheltuieli neeligibile - costuri bancare - PHARE, SAPARD, ISPA)|769.00|C|0|S
+770.00.00|Finantarea de la buget|770.00|C|0|E
+771.00.00|Finantarea în baza unor acte normative speciale|771.00|C|0|S
+772.01.00|Subventii de la bugetul de stat|772.01|C|0|E
+772.02.00|Subventii de la alte bugete|772.02|C|0|E
+774.01.00|Finantarea din fonduri externe nerambursabilepreaderare în bani|774.01|C|0|S
+774.02.00|Finantarea din fonduri externe nerambursabile preaderare în natura|774.02|C|0|S
+775.00.00|Finantarea din fonduri externe nerambursabile postaderare|775.00|C|0|E
+776.00.00|Fonduri cu destinatie speciala|776.00|C|0|S
+777.00.00|Veniturile fondului de risc|777.00|C|0|S
+778.00.00|Venituri din contributia nationala aferenta programelor/proiectelor finantate din fonduri externe nerambursabile|778.00|C|0|S
+779.01.01|Venituri, bunuri si servicii primite cu titlu gratuit - transfer active fixe si stocuri intre institutii publice|779.01|C|0|E
+779.01.09|Venituri, bunuri si servicii primite cu titlu gratuit – alte operatiuni|779.01|C|0|FE
+781.02.00|Venituri din provizioane|781.02|C|0|S
+781.03.00|Venituri din ajustari privind deprecierea activelor fixe|781.03|C|0|S
+781.04.01|Venituri din ajustari pentru deprecierea activelor circulante - stocuri|781.04|C|0|S
+781.04.02|Venituri din ajustari pentru deprecierea activelor circulante - creante|781.04|C|0|S
+786.03.00|Venituri din ajustari pentru pierderea de valoare a activelor financiare|786.03|C|0|S
+786.04.00|Venituri din ajustari pentru pierderea de valoare a activelor circulante|786.04|C|0|S
+791.00.00|Venituri din valorificarea unor bunuri ale statului|791.00|C|0|E
+891.01.00|Bilant de deschidere (pentru solduri)|891.01|B|0|S
+891.02.00|Bilant de deschidere (pentru total sume)|891.02|B|0|S
+892.01.00|Bilant de închidere (pentru solduri)|892.01|B|0|S
+892.02.00|Bilant de închidere (pentru total sume)|892.02|B|0|S
+302.02.00.1|Combustibili|302.02.00|D|0|S
+302.02.00.2|Motorina|302.02.00|D|0|S
+302.02.00.3|Lubrifianti|302.02.00|D|0|S
+302.09.00.1|Medicamente|302.09.00|D|0|E
+302.09.00.2|Materiale sanitare|302.09.00|D|0|E
+302.09.00.4|Dezinfectanti|302.09.00|D|0|E

@@ -104,6 +104,10 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
                 builder.ObjectSpaceProviders
                     .AddSecuredEFCore(options => {
                         options.PreFetchReferenceProperties();
+                        // Schema e gestionată prin migrații EF Core (vezi
+                        // BackOfficeDesignTimeDbContextFactory); update-ul automat
+                        // ar intra în conflict cu ele.
+                        options.SchemaUpdateOptions.DisableUpdateSchema = true;
                     })
                     .WithAuditedDbContext(contexts => {
                         contexts.Configure<Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeEFCoreDbContext, Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeAuditingDbContext>(

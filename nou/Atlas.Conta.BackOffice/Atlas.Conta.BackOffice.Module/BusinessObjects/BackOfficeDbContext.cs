@@ -9,6 +9,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
+    // Factory pentru design-time (dotnet ef migrations/database) — schema e
+    // gestionată exclusiv prin migrații EF (update-ul automat XAF e dezactivat
+    // în Startup). Connection string-ul oglindește appsettings.json.
+    public class BackOfficeDesignTimeDbContextFactory : DesignTimeDbContextFactory<BackOfficeEFCoreDbContext> {
+        protected override string ConnectionString =>
+            "EFCoreProvider=Postgres;Host=localhost;Port=5444;Username=postgres;Password=postgres;Persist Security Info=True;Database=Atlas.Conta.BackOffice";
+    }
+
     [TypesInfoInitializer(typeof(DbContextTypesInfoInitializer<BackOfficeEFCoreDbContext>))]
     public class BackOfficeEFCoreDbContext : DbContext {
         public BackOfficeEFCoreDbContext(DbContextOptions<BackOfficeEFCoreDbContext> options) : base(options) {

@@ -12,6 +12,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 public class ClasaProdus : BaseObject {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
+    // Doar clasele cu Natura=Stoc intră în regulile de stoc; cele tehnice
+    // (TVA, diferențe) participă numai la contare.
+    public virtual NaturaClasa Natura { get; set; }
 }
 
 [NavigationItem("Nomenclatoare")]

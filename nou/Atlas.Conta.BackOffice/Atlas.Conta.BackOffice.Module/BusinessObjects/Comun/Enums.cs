@@ -17,6 +17,16 @@ public enum TipStoc {
 
 public enum DirectieDiferenta { Plus = 1, Minus = 2 }
 
+// Curățarea Clasă/Tip la seed (inventar 10 §2): separă clasele purtătoare de
+// stoc de cele tehnice (TVA/Diferențe) și de naturile fără stoc.
+public enum NaturaClasa {
+    Stoc = 1,
+    Serviciu = 2,
+    Cheltuiala = 3,
+    Imobilizare = 4,
+    Tehnica = 5,
+}
+
 public enum TipInstrumentPlata { OrdinPlata = 1, Cec = 2, DispozitieCasa = 3, Chitanta = 4 }
 
 // Calități transversale pe repartitori (decizia 16) — roluri, nu clase derivate.
