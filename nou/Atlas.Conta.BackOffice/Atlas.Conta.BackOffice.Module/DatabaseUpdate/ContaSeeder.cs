@@ -18,6 +18,7 @@ public static class ContaSeeder {
         SeedContImplicitTipMaterial(os);
         SeedPoliticiNotaTransfer(os);
         SeedPoliticiFacturaIntrareNir(os);
+        SeedPoliticiBonConsum(os);
         os.CommitChanges();
     }
 
@@ -206,11 +207,15 @@ public static class ContaSeeder {
             g.Cod = "MAG2";
             g.Denumire = "Magazia secundară";
         }
-        if (os.FirstOrDefault<UnitateInterna>(x => x.Cod == "SEDIU") == null) {
-            var u = os.CreateObject<UnitateInterna>();
-            u.Cod = "SEDIU";
-            u.Denumire = "Sediul central";
+        var sediu = os.FirstOrDefault<UnitateInterna>(x => x.Cod == "SEDIU");
+        if (sediu == null) {
+            sediu = os.CreateObject<UnitateInterna>();
+            sediu.Cod = "SEDIU";
+            sediu.Denumire = "Sediul central";
         }
+        // Locul de consum e calitate transversală (decizia 16); sediul e primul
+        // consumator — |= ca să nu strice calitățile adăugate din UI.
+        sediu.Calitati |= CalitateRepartitor.LocConsum;
     }
 
     // Pivotul gardienilor din decizia 14; anul curent de lucru, deschis.
@@ -357,6 +362,64 @@ public static class ContaSeeder {
                 regula.SursaContCredit = SursaCont.PartenerPredator;
                 regula.ContCredit = r.Fallback;
             }
+        }
+    }
+
+    // Politicile consumului (inventar 03, defa 65). Stoc: consumul nu „dispare" —
+    // alimentează DOUĂ registre simultan: −1 Magazie pe predator (gestiunea),
+    // +1 Consum pe primitor (locul de consum, util la obiecte date în folosință
+    // / responsabilități).
+    static void SeedPoliticiBonConsum(IObjectSpace os) {
+        var bcs = os.FirstOrDefault<TipDocument>(x => x.Cod == "BCS");
+        if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == "BCS") == null) {
+            var numerotare = os.CreateObject<PoliticaNumerotare>();
+            numerotare.TipDocument = bcs;
+            numerotare.Serie = "BCS-";
+            numerotare.UrmatorulNumar = 1;
+        }
+        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "BCS") == null) {
+            var iesire = os.CreateObject<RegulaStoc>();
+            iesire.TipDocument = bcs;
+            iesire.Latura = LaturaDocument.Predator;
+            iesire.TipStoc = TipStoc.Magazie;
+            iesire.Semn = -1;
+            var consum = os.CreateObject<RegulaStoc>();
+            consum.TipDocument = bcs;
+            consum.Latura = LaturaDocument.Primitor;
+            consum.TipStoc = TipStoc.Consum;
+            consum.Semn = +1;
+        }
+
+        // Contarea consumului: 6xx = 3xx per Clasă/Tip (echivalentul curat al
+        // celor 18 modele legacy) — rând per TipMaterial (debitul diferă per
+        // Tip, deci NaturaFiltru nu ajunge). Debitul se DERIVĂ din simbolul
+        // contului de stoc: prima cifră 3→6 (301→601, 302.01→602.01,
+        // 303.01→603), cu aceeași tăiere de segmente ca la ContImplicit;
+        // creditul = contul Tipului (3xx). Incremental: tipurile fără rând
+        // (inclusiv cele adăugate ulterior) primesc regulă la updater; cele cu
+        // simbol non-3xx (bonuri valorice 532/409) nu contează pe BCS — rând
+        // manual dacă apare nevoia reală (decizia 21).
+        var conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c);
+        var acoperite = os.GetObjectsQuery<RegulaContare>()
+            .Where(r => r.TipDocumentId == bcs.ID && r.TipMaterialId != null)
+            .Select(r => r.TipMaterialId.Value).ToList();
+        var tipuriStoc = os.GetObjectsQuery<TipMaterial>()
+            .Where(t => t.Clasa.Natura == NaturaClasa.Stoc)
+            .Select(t => new { t.ID, t.Cod }).ToList();
+        foreach (var tip in tipuriStoc) {
+            if (acoperite.Contains(tip.ID) || !tip.Cod.StartsWith('3'))
+                continue;
+            var simbol = '6' + tip.Cod[1..];
+            while (simbol.Length > 0 && !conturi.ContainsKey(simbol))
+                simbol = simbol.Contains('.') ? simbol[..simbol.LastIndexOf('.')] : "";
+            if (simbol.Length == 0)
+                continue;
+            var regula = os.CreateObject<RegulaContare>();
+            regula.TipDocument = bcs;
+            regula.TipMaterialId = tip.ID;
+            regula.SursaContDebit = SursaCont.Explicit;
+            regula.ContDebit = conturi[simbol];
+            regula.SursaContCredit = SursaCont.TipMaterial;
         }
     }
 }

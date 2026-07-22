@@ -36,8 +36,35 @@ public class NIR : Document {
     }
 }
 
-// BCS (03): −magazie (predator) / +consum (primitor); valoarea vine din lot.
+// BCS (03): −magazie (predator) / +consum (primitor) — consumul nu „dispare",
+// alimentează DOUĂ registre simultan (rămâne pe responsabilul locului de
+// consum). Valoarea vine din lot (prețul nu se culege). Lotul NU e legat de
+// gestiunea predatoare prin schemă — locația curentă e soldul din registru,
+// iar gardianul de sold intermediar refuză consumul de unde lotul nu există.
 public class BonConsum : Document {
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
+        foreach (var d in Detalii.Where(d => d.LotId != null)) {
+            var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
+            d.Valoare = d.Cantitate * lot.PretUnitar;
+        }
+    }
+
+    public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
+        base.ValideazaOperare(os, erori);
+        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Gestiune)
+            erori.Add("Predatorul bonului de consum trebuie să fie o gestiune.");
+        // Locul de consum e calitate transversală, nu clasă (decizia 16) —
+        // orice repartitor intern o poate purta (unitate, gestiune, angajat).
+        var primitor = os.GetObjectByKey<Repartitor>(PrimitorId);
+        if (primitor is Partener || !primitor.Calitati.HasFlag(CalitateRepartitor.LocConsum))
+            erori.Add("Primitorul trebuie să fie un loc de consum intern (calitatea LocConsum).");
+        foreach (var d in Detalii) {
+            if (d.LotId == null)
+                erori.Add("Fiecare linie de consum referă un lot (descărcarea e pe lot — decizia 13).");
+            if (d.Cantitate <= 0)
+                erori.Add("Cantitatea consumată trebuie să fie pozitivă.");
+        }
+    }
 }
 
 // BTR (04): −predator/+primitor pe același tip de stoc; lotul își schimbă

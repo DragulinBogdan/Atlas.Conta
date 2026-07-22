@@ -418,5 +418,140 @@ using (var os = provider.CreateObjectSpace()) {
         && !os.GetObjectsQuery<Partener>().Any(p => p.Cod.StartsWith("E2E-FURN")));
 }
 
+// ======================== Scenariul e2e 3c: BonConsum ========================
+// Consumul: sold de deschidere → operare (−Magazie pe gestiune, +Consum pe
+// locul de consum — DOUĂ registre simultan) → contarea 6xx = 3xx din politica
+// derivată la seed → gardieni (laturi, sold) → frunză în graful de dependențe:
+// anulare directă permisă → storno.
+const string MarcajBcs = "E2E-BCS-PRB";
+const string MarcajLoc = "E2E-BCS-LOC";
+
+void CurataBcs(IObjectSpace os) {
+    var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajBcs).Select(l => l.ID).ToList();
+    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
+    foreach (var doc in os.GetObjectsQuery<BonConsum>()
+        .Where(d => d.Predator.Cod == MarcajLoc || d.Primitor.Cod == MarcajLoc).ToList()) {
+        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList());
+        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).ToList());
+        os.Delete(doc);
+    }
+    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajBcs).ToList());
+    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajBcs).ToList());
+    os.Delete(os.GetObjectsQuery<UnitateInterna>().Where(u => u.Cod == MarcajLoc).ToList());
+    os.CommitChanges();
+}
+
+using (var os = provider.CreateObjectSpace()) {
+    CurataBcs(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302.01.00");
+    var tipOI = os.FirstOrDefault<TipMaterial>(t => t.Cod == "303.01.00");
+
+    // Politica de contare derivată la seed: 3→6 pe simbol + tăierea segmentelor.
+    var regulaMat = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "BCS" && r.TipMaterialId == tipMaterial.ID);
+    Check("Seed BCS: 302.01.00 → debit 602.01.00 (potrivire exactă)",
+        regulaMat != null && regulaMat.ContDebit?.Simbol == "602.01.00"
+        && regulaMat.SursaContCredit == SursaCont.TipMaterial);
+    var regulaOI = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "BCS" && r.TipMaterialId == tipOI.ID);
+    Check("Seed BCS: 303.01.00 → debit 603 (tăierea segmentelor spre sintetic)",
+        regulaOI != null && regulaOI.ContDebit?.Simbol == "603");
+
+    var loc = os.CreateObject<UnitateInterna>();
+    loc.Cod = MarcajLoc;
+    loc.Denumire = "Loc de consum probă e2e";
+    loc.Calitati = CalitateRepartitor.LocConsum;
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = MarcajBcs;
+    produs.Denumire = "Produs probă BCS";
+    produs.UM = "BUC";
+    produs.TipMaterial = tipMaterial;
+    var lot = os.CreateObject<Lot>();
+    lot.Produs = produs;
+    lot.PretUnitar = 10m;
+    lot.Gestiune = mag1;
+    lot.Data = new DateOnly(2026, 1, 10);
+    var deschidere = os.CreateObject<RegistruStoc>();
+    deschidere.Data = lot.Data;
+    deschidere.TipStoc = TipStoc.Magazie;
+    deschidere.Lot = lot;
+    deschidere.Repartitor = mag1;
+    deschidere.Cantitate = 10m;
+    deschidere.Valoare = 100m;
+    os.CommitChanges();
+
+    BonConsum Consum(Repartitor dinspre, Repartitor spre, decimal cantitate, DateOnly data) {
+        var doc = os.CreateObject<BonConsum>();
+        doc.Data = data;
+        doc.Predator = dinspre;
+        doc.Primitor = spre;
+        var d = os.CreateObject<DocumentDetaliu>();
+        d.Document = doc;
+        d.TipMaterial = tipMaterial;
+        d.Lot = lot;
+        d.Cantitate = cantitate;
+        return doc;
+    }
+    decimal Sold(Repartitor r, TipStoc tipStoc) => StocService.Sold(os, new CheieStoc(lot.ID, r.ID, tipStoc));
+
+    // --- Validările laturilor: predator gestiune, primitor cu calitatea LocConsum ---
+    var gresit = Consum(loc, mag1, 1m, new DateOnly(2026, 3, 5));
+    CheckRefuza("Laturi greșite (predator non-gestiune, primitor fără LocConsum) → refuz",
+        () => MotorOperare.Opereaza(os, gresit));
+    os.Delete(gresit.Detalii.ToList());
+    os.Delete(gresit);
+
+    // --- Operare: două registre simultan + contarea 602 = 302 ---
+    var bcs1 = Consum(mag1, loc, 4m, new DateOnly(2026, 3, 5));
+    Check("BCS nu generează conex", MotorOperare.Opereaza(os, bcs1) == null);
+    Check("Operare → stare Operat + număr din politică",
+        bcs1.Stare == StareDocument.Operat && bcs1.Numar?.StartsWith("BCS-") == true);
+    Check("Operare → valoarea liniei = preț lot × cantitate", bcs1.Detalii.Single().Valoare == 40m);
+    var randuri = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == bcs1.ID).ToList();
+    Check("Operare → exact 2 rânduri de stoc (două registre simultan)", randuri.Count == 2);
+    Check("Operare → −4/−40 Magazie pe MAG1", randuri.Any(r =>
+        r.TipStoc == TipStoc.Magazie && r.RepartitorId == mag1.ID && r.Cantitate == -4m && r.Valoare == -40m));
+    Check("Operare → +4/+40 Consum pe locul de consum", randuri.Any(r =>
+        r.TipStoc == TipStoc.Consum && r.RepartitorId == loc.ID && r.Cantitate == 4m && r.Valoare == 40m));
+    Check("Solduri: Magazie MAG1=6, Consum loc=4",
+        Sold(mag1, TipStoc.Magazie) == 6m && Sold(loc, TipStoc.Consum) == 4m);
+    var note = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == bcs1.ID).ToList();
+    Check("Contare: 602.01.00 = 302.01.00 (creditul din contul Tipului), 40",
+        note.Count == 1 && note[0].ContDebitId == regulaMat.ContDebitId
+        && note[0].ContCreditId == tipMaterial.ContImplicitId && note[0].Valoare == 40m);
+    Check("Nota BCS: repartitori din laturi (debit←predator, credit←primitor — 00 §5)",
+        note[0].DimensiuniDebit.RepartitorId == mag1.ID && note[0].DimensiuniCredit.RepartitorId == loc.ID);
+
+    // --- Gardianul de sold: consum peste disponibil ---
+    var pesteDisponibil = Consum(mag1, loc, 100m, new DateOnly(2026, 3, 10));
+    CheckRefuza("Consum peste disponibil → refuz", () => MotorOperare.Opereaza(os, pesteDisponibil));
+    os.Delete(pesteDisponibil.Detalii.ToList());
+    os.Delete(pesteDisponibil);
+    os.CommitChanges();
+
+    // --- Frunză în graful de dependențe (03): corecția directă merge oricând ---
+    MotorOperare.AnuleazaOperarea(os, bcs1);
+    Check("Anulare BCS → Draft + solduri revenite (Magazie 10, Consum 0)",
+        bcs1.Stare == StareDocument.Draft
+        && Sold(mag1, TipStoc.Magazie) == 10m && Sold(loc, TipStoc.Consum) == 0m);
+    MotorOperare.Opereaza(os, bcs1);
+
+    // --- Storno: inverse pe AMBELE registre la data stornării ---
+    MotorOperare.Storneaza(os, bcs1, new DateOnly(2026, 7, 22));
+    var toate = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == bcs1.ID).ToList();
+    Check("Storno BCS → 4 rânduri stoc (2 + 2 inverse) și nota inversată",
+        bcs1.Stare == StareDocument.Stornat
+        && toate.Count == 4 && toate.Count(r => r.Storno) == 2
+        && os.GetObjectsQuery<RegistruContabil>()
+            .Single(r => r.DocumentId == bcs1.ID && r.Storno).Valoare == -40m);
+    Check("Storno → solduri nete: Magazie 10, Consum 0",
+        Sold(mag1, TipStoc.Magazie) == 10m && Sold(loc, TipStoc.Consum) == 0m);
+
+    CurataBcs(os);
+    Check("Curățenie finală BCS (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajBcs)
+        && !os.GetObjectsQuery<UnitateInterna>().Any(u => u.Cod == MarcajLoc));
+}
+
 Console.WriteLine(esecuri == 0 ? "\nToate verificările au trecut." : $"\n{esecuri} verificări EȘUATE.");
 Environment.ExitCode = esecuri == 0 ? 0 : 1;
