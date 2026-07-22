@@ -19,3 +19,15 @@ public interface ILinieCuAtributeLot {
     DateOnly? DataExpirare { get; set; }
     string LotFabricatie { get; set; }
 }
+
+// Trăsătura PROPRIE a Decontului (inventar 06, nuanța deciziei 15): linia
+// poartă postarea explicită — cont și repartitor, per latură — ca date de
+// primă clasă. Motorul o consultă înaintea rezolvării declarative (SursaCont)
+// și a default-urilor de dimensiuni; NU e mecanism generic de override —
+// doar tipurile care declară interfața o au.
+public interface ILinieCuPostareExplicita {
+    Guid? ContDebitId { get; }
+    Guid? ContCreditId { get; }
+    Guid? RepartitorDebitId { get; }
+    Guid? RepartitorCreditId { get; }
+}

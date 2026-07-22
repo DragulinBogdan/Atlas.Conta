@@ -44,6 +44,13 @@ public abstract class Document : BaseObject {
     // (ex. NotaTransfer/BonConsum: preț lot × cantitate).
     public virtual void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) { }
 
+    // Convenția 00 §5 (dimensiunea Repartitor default pe notă: debit←Predator,
+    // credit←Primitor) devine default POLIMORF — ultimul nivel al coalesce-ului
+    // din motor. Decont o ajustează: creditul (contul de avans 542) urmărește
+    // titularul, nu primitorul justificării.
+    public virtual Guid RepartitorImplicitDebit() => PredatorId;
+    public virtual Guid RepartitorImplicitCredit() => PrimitorId;
+
     // Documentul SECUNDAR (00 §7 — plata automată legacy, decizia 31): spre
     // deosebire de conexul din PoliticaConex (clonă filtrată pe natură, trăiește
     // în motor), secundarul se construiește din date CULESE pe derivată

@@ -116,11 +116,17 @@ public static class MotorOperare {
                 ?? candidati.FirstOrDefault(r => r.TipMaterialId == null && r.NaturaFiltru == null);
             if (regula == null)
                 continue;
-            var contDebit = RezolvaCont(regula.SursaContDebit, regula.ContDebitId,
+            // Postarea explicită pe linie (Decont — inventar 06): contul setat
+            // pe linie bate rezolvarea declarativă; contract de interfață, nu
+            // mecanism generic — doar tipurile care o declară o au.
+            var explicita = d as ILinieCuPostareExplicita;
+            var contDebit = explicita?.ContDebitId
+                ?? RezolvaCont(regula.SursaContDebit, regula.ContDebitId,
                     info.ContImplicitId, repartitorPredator, repartitorPrimitor)
                 ?? throw new OperareException(
                     $"Contul debitor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.SursaContDebit}).");
-            var contCredit = RezolvaCont(regula.SursaContCredit, regula.ContCreditId,
+            var contCredit = explicita?.ContCreditId
+                ?? RezolvaCont(regula.SursaContCredit, regula.ContCreditId,
                     info.ContImplicitId, repartitorPredator, repartitorPrimitor)
                 ?? throw new OperareException(
                     $"Contul creditor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.SursaContCredit}).");
@@ -132,10 +138,17 @@ public static class MotorOperare {
             // cantității (LDI minus = negativă), dar conturile regulii deja
             // codifică direcția — nota se postează pozitivă.
             rand.Valoare = (regula.SemnFiltru ?? +1) * d.Valoare;
-            rand.DimensiuniDebit = DimensiuniResolver.Rezolva(d.Dimensiuni, regula.DimensiuniOverrideDebit,
-                regula.DimensiuniComun, new Dimensiuni { RepartitorId = doc.PredatorId });
-            rand.DimensiuniCredit = DimensiuniResolver.Rezolva(d.Dimensiuni, regula.DimensiuniOverrideCredit,
-                regula.DimensiuniComun, new Dimensiuni { RepartitorId = doc.PrimitorId });
+            // Repartitorul explicit al liniei (aceeași trăsătură) intră ca
+            // nivel maxim; default-ul de capăt e polimorf (00 §5 pe bază,
+            // Decont mută creditul pe titular).
+            rand.DimensiuniDebit = DimensiuniResolver.Rezolva(
+                new Dimensiuni { RepartitorId = explicita?.RepartitorDebitId },
+                d.Dimensiuni, regula.DimensiuniOverrideDebit, regula.DimensiuniComun,
+                new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit() });
+            rand.DimensiuniCredit = DimensiuniResolver.Rezolva(
+                new Dimensiuni { RepartitorId = explicita?.RepartitorCreditId },
+                d.Dimensiuni, regula.DimensiuniOverrideCredit, regula.DimensiuniComun,
+                new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit() });
             rand.Document = doc;
             rand.Detaliu = d;
         }

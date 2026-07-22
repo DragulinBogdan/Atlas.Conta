@@ -1091,5 +1091,190 @@ using (var os = provider.CreateObjectSpace()) {
         && !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajTrz));
 }
 
+// ===================== Scenariul e2e 3c: Decont =====================
+// Justificarea avansurilor (inventar 06): avans (Plata către angajat) → decont
+// cu debit din contul Tipului + postare explicită pe linie (cont 623 +
+// repartitor de cost) → creditul 542 dimensionat pe TITULAR (default polimorf,
+// nu convenția credit←Primitor) → imperecherea lanțului avans↔decont↔
+// regularizare → Tip fără cont și fără explicit = refuz clar → fallback 542
+// la angajatul fără ContImplicit → gardianul de imperecheri → anulare → storno.
+const string MarcajDec = "E2E-DEC";
+
+void CurataDec(IObjectSpace os) {
+    var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajDec)).Select(r => r.ID).ToList();
+    var docs = os.GetObjectsQuery<Document>()
+        .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+    var docIds = docs.Select(d => d.ID).ToList();
+    os.Delete(os.GetObjectsQuery<Imperechere>()
+        .Where(i => docIds.Contains(i.DocumentTrezorerieId) || docIds.Contains(i.DocumentId)).ToList());
+    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    os.Delete(docs);
+    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajDec)).ToList());
+    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajDec + "-CE").ToList());
+    os.CommitChanges();
+}
+
+using (var os = provider.CreateObjectSpace()) {
+    CurataDec(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+    var casa = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
+    var tipDeplasari = os.FirstOrDefault<TipMaterial>(t => t.Cod == "614.00.00");
+    var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628.00.00");
+    var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+    var cont542 = os.FirstOrDefault<Cont>(c => c.Simbol == "542.01.00");
+    var cont623 = os.FirstOrDefault<Cont>(c => c.Simbol == "623.00.00");
+
+    // Politicile din seed (inventar 06).
+    var regulaDec = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "DEC");
+    Check("Seed DEC: debit TipMaterial fără fallback, credit RepartitorPredator (fallback 542.01.00)",
+        regulaDec != null && regulaDec.SursaContDebit == SursaCont.TipMaterial && regulaDec.ContDebitId == null
+        && regulaDec.SursaContCredit == SursaCont.RepartitorPredator && regulaDec.ContCreditId == cont542.ID);
+    Check("Seed DEC: fără reguli de stoc (doar registru contabil)",
+        !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocument.Cod == "DEC"));
+
+    var angajat = os.CreateObject<Angajat>();
+    angajat.Cod = MarcajDec + "-ANG";
+    angajat.Denumire = "Titular probă decont";
+    angajat.ContImplicit = cont542;
+    var angajat2 = os.CreateObject<Angajat>();
+    angajat2.Cod = MarcajDec + "-ANG2";
+    angajat2.Denumire = "Titular fără cont implicit";
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = MarcajDec + "-CE";
+    codEc.Denumire = "Cod economic probă decont";
+    os.CommitChanges();
+
+    List<RegistruContabil> Note(Document doc) =>
+        os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID && !r.Storno).ToList();
+
+    // --- Avansul: Plata casa → angajat (542 = 531, din 3c-5) ---
+    var avans = os.CreateObject<Plata>();
+    avans.Data = new DateOnly(2026, 3, 3);
+    avans.Predator = casa;
+    avans.Primitor = angajat;
+    avans.TipInstrument = TipInstrumentPlata.DispozitieCasa;
+    var linieAvans = os.CreateObject<DocumentDetaliu>();
+    linieAvans.Document = avans;
+    linieAvans.TipMaterial = tipTrz;
+    linieAvans.Valoare = 100m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, avans);
+    Check("Avansul operat (100, casa → angajat)", avans.Stare == StareDocument.Operat);
+
+    // --- Decontul: validările proprii, apoi operarea ---
+    var dec = os.CreateObject<Decont>();
+    dec.Data = new DateOnly(2026, 3, 8);
+    dec.Predator = sediu; // intenționat greșit — titularul e angajat
+    dec.Primitor = angajat;
+    var linieDeplasare = os.CreateObject<DecontDetaliu>();
+    linieDeplasare.Document = dec;
+    linieDeplasare.TipMaterial = tipDeplasari;
+    linieDeplasare.Descriere = "Transport delegație";
+    CheckRefuza("Laturi greșite + valoare 0 + fără clasificație → refuz",
+        () => MotorOperare.Opereaza(os, dec));
+    dec.Predator = angajat;
+    dec.Primitor = sediu;
+    linieDeplasare.PretUnitar = 30m; // cantitatea rămâne 0 — pro-forma → 1
+    linieDeplasare.Dimensiuni.CodEconomicId = codEc.ID;
+    // Postarea explicită pe linie (trăsătura DEC): cont + repartitor de cost.
+    var linieProtocol = os.CreateObject<DecontDetaliu>();
+    linieProtocol.Document = dec;
+    linieProtocol.TipMaterial = tipServicii;
+    linieProtocol.Descriere = "Protocol contractare";
+    linieProtocol.ContDebit = cont623;
+    linieProtocol.RepartitorDebit = mag1;
+    linieProtocol.PretUnitar = 10m;
+    linieProtocol.Cantitate = 2m;
+    linieProtocol.CotaTva = 19m;
+    linieProtocol.Dimensiuni.CodEconomicId = codEc.ID;
+    os.CommitChanges();
+
+    Check("Decontul nu generează conex", MotorOperare.Opereaza(os, dec) == null);
+    Check("Operare → stare Operat + număr din politică",
+        dec.Stare == StareDocument.Operat && dec.Numar?.StartsWith("DEC-") == true);
+    Check("Cantitatea pro-forma (0 → 1) și lanțul de valori (30 / 23,8)",
+        linieDeplasare.Cantitate == 1m && linieDeplasare.Valoare == 30m
+        && linieProtocol.Valoare == 23.8m);
+    Check("Decontul nu mișcă stoc", !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == dec.ID));
+    var note = Note(dec);
+    Check("Contare deplasare: debit din contul Tipului (614) = 542, 30",
+        note.Any(n => n.ContDebitId == tipDeplasari.ContImplicitId
+            && n.ContCreditId == cont542.ID && n.Valoare == 30m));
+    Check("Contare protocol: debitul EXPLICIT al liniei (623 bate Tipul 628) = 542, 23,8",
+        note.Any(n => n.ContDebitId == cont623.ID && n.ContCreditId == cont542.ID && n.Valoare == 23.8m));
+    Check("Exact 2 note (una per linie)", note.Count == 2);
+    var notaDeplasare = note.Single(n => n.Valoare == 30m);
+    var notaProtocol = note.Single(n => n.Valoare == 23.8m);
+    Check("Dimensiuni debit: default←titular la deplasare, repartitorul EXPLICIT (MAG1) la protocol",
+        notaDeplasare.DimensiuniDebit.RepartitorId == angajat.ID
+        && notaDeplasare.DimensiuniDebit.CodEconomicId == codEc.ID
+        && notaProtocol.DimensiuniDebit.RepartitorId == mag1.ID);
+    Check("Dimensiuni credit: 542 pe TITULAR (default polimorf, nu primitorul SEDIU)",
+        note.All(n => n.DimensiuniCredit.RepartitorId == angajat.ID));
+
+    // --- Tip fără cont și fără postare explicită = refuz clar; fallback 542 ---
+    var dec2 = os.CreateObject<Decont>();
+    dec2.Data = new DateOnly(2026, 3, 9);
+    dec2.Predator = angajat2; // fără ContImplicit — exersează fallback-ul regulii
+    dec2.Primitor = sediu;
+    var linieTehnica = os.CreateObject<DecontDetaliu>();
+    linieTehnica.Document = dec2;
+    linieTehnica.TipMaterial = tipTrz; // TRZ nu are ContImplicit
+    linieTehnica.PretUnitar = 20m;
+    linieTehnica.Dimensiuni.CodEconomicId = codEc.ID;
+    os.CommitChanges();
+    CheckRefuza("Tip fără cont implicit și linie fără cont explicit → refuz",
+        () => MotorOperare.Opereaza(os, dec2));
+    linieTehnica.ContDebit = cont623;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, dec2);
+    Check("Angajat fără ContImplicit → creditul cade pe fallback-ul 542.01.00",
+        Note(dec2).Single().ContCreditId == cont542.ID
+        && Note(dec2).Single().DimensiuniCredit.RepartitorId == angajat2.ID);
+
+    // --- Lanțul avans ↔ decont ↔ regularizare prin imperechere (31d) ---
+    var impDecont = ImperechereService.Imperecheaza(os, avans, dec, 53.8m);
+    Check("Imperechere avans↔decont: decontul stins integral, avansul cu rest 46,2",
+        ImperechereService.Ramas(os, dec.ID) == 0m && ImperechereService.Ramas(os, avans.ID) == 46.2m);
+    var regularizare = os.CreateObject<Incasare>();
+    regularizare.Data = new DateOnly(2026, 3, 15);
+    regularizare.Predator = angajat;
+    regularizare.Primitor = casa;
+    regularizare.TipInstrument = TipInstrumentPlata.DispozitieCasa;
+    var linieReg = os.CreateObject<DocumentDetaliu>();
+    linieReg.Document = regularizare;
+    linieReg.TipMaterial = tipTrz;
+    linieReg.Valoare = 46.2m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, regularizare);
+    ImperechereService.Imperecheaza(os, regularizare, avans, 46.2m);
+    Check("Regularizarea stinge restul: avansul asignat pe AMBELE roluri, rest 0",
+        ImperechereService.Ramas(os, avans.ID) == 0m && ImperechereService.Ramas(os, regularizare.ID) == 0m);
+
+    // --- Gardianul de imperecheri + corecția directă + storno ---
+    CheckRefuza("Anularea decontului cu imperechere → refuz", () => MotorOperare.AnuleazaOperarea(os, dec));
+    os.Delete(impDecont);
+    os.CommitChanges();
+    MotorOperare.AnuleazaOperarea(os, dec);
+    Check("Anulare decont → Draft + notele șterse", dec.Stare == StareDocument.Draft && Note(dec).Count == 0);
+    MotorOperare.Opereaza(os, dec);
+    Check("Re-operare idempotentă (cantitatea pro-forma rămâne 1, numărul rămâne)",
+        dec.Stare == StareDocument.Operat && linieDeplasare.Cantitate == 1m
+        && dec.Numar?.StartsWith("DEC-") == true);
+    MotorOperare.Storneaza(os, dec, new DateOnly(2026, 7, 22));
+    var toateNoteDec = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == dec.ID).ToList();
+    Check("Storno decont → note inverse append-only (−30, −23,8) la data stornării",
+        dec.Stare == StareDocument.Stornat && toateNoteDec.Count == 4
+        && toateNoteDec.Count(r => r.Storno && (r.Valoare == -30m || r.Valoare == -23.8m)
+            && r.Data == new DateOnly(2026, 7, 22)) == 2);
+
+    CurataDec(os);
+    Check("Curățenie finală decont (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajDec)));
+}
+
 Console.WriteLine(esecuri == 0 ? "\nToate verificările au trecut." : $"\n{esecuri} verificări EȘUATE.");
 Environment.ExitCode = esecuri == 0 ? 0 : 1;

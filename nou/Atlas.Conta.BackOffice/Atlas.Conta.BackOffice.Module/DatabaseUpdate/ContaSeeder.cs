@@ -27,6 +27,7 @@ public static class ContaSeeder {
         SeedPoliticiListaDiferente(os);
         SeedPoliticiFacturaIesire(os);
         SeedPoliticiTrezorerie(os);
+        SeedPoliticiDecont(os);
         os.CommitChanges();
     }
 
@@ -550,6 +551,30 @@ public static class ContaSeeder {
             incasare.SursaContDebit = SursaCont.RepartitorPrimitor;
             incasare.SursaContCredit = SursaCont.RepartitorPredator;
             incasare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
+        }
+    }
+
+    // Politicile decontului (inventar 06): justificarea avansurilor — fără
+    // stoc, numerotare proprie. Contare: un rând generic — debit din contul
+    // Tipului liniei (cheltuiala aleasă), FĂRĂ fallback (Tip fără cont și
+    // linie fără cont explicit = eroare clară la operare); credit = contul de
+    // avans al titularului (ContImplicit al angajatului predator, fallback
+    // 542.01.00). Postarea explicită pe linie (trăsătura proprie DEC) bate
+    // ambele în motor.
+    static void SeedPoliticiDecont(IObjectSpace os) {
+        var dec = os.FirstOrDefault<TipDocument>(x => x.Cod == "DEC");
+        if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == "DEC") == null) {
+            var numerotare = os.CreateObject<PoliticaNumerotare>();
+            numerotare.TipDocument = dec;
+            numerotare.Serie = "DEC-";
+            numerotare.UrmatorulNumar = 1;
+        }
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "DEC") == null) {
+            var justificare = os.CreateObject<RegulaContare>();
+            justificare.TipDocument = dec;
+            justificare.SursaContDebit = SursaCont.TipMaterial;
+            justificare.SursaContCredit = SursaCont.RepartitorPredator;
+            justificare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "542.01.00");
         }
     }
 
