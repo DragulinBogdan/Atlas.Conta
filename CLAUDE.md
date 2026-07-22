@@ -199,6 +199,31 @@ Raport de producție.
     (e) Utilitar `nou/tools/ModelCheck` (consolă): validare model + verificare
     migrații/seed contra bazei.
 
+24. **Owned `Dimensiuni` sub XAF/EF Core — limitarea e gestionabilă, rămânem
+    pe EF Core (nu XPO).** Docs XAF declară owned types „nesuportate", dar
+    verificat empiric (26.1.3, UI Blazor + surse DevExpress): TypesInfo,
+    startup, securitate, ListView/DetailView funcționează; singura rupere
+    reală era la creare — DbContext-ul XAF cere notificări complete
+    (`ChangingAndChangedNotificationsWithOriginalValues` + proxies), iar
+    instanța `new Dimensiuni()` e POCO fără `INotifyPropertyChanging`.
+    Fix (promovat în Atlas.DXF.EfCore 26.1.3.2, pachet referit din Module):
+    `Dimensiuni : OwnedObjectBase` (baza implementează
+    `INotifyPropertyChanging/Changed` + helper `SetPropertyValue`; aici rămân
+    doar perechile backing-field + proprietate virtuală), iar maparea folosește
+    `OwnsOneRequired` (OwnsOne + navigație required). Owner-ii noi creați în
+    cod trebuie să fie proxy (`CreateProxy`, cum face XAF/ObjectSpace implicit).
+    Rețeta completă: xaf-kb `recipes/atlas-dxf/efcore-owned-types.md`.
+    NuGet: `nou/nuget.config` mapează Atlas.DXF.* → feed Atlas; EF Core /
+    Npgsql / System.Security.Cryptography.Xml au trecut pe versiuni flotante
+    `10.0.*` (cerință de compatibilitate cu pachetul).
+    Round-trip insert/update/materializare all-null verificat în ModelCheck;
+    fără drift de migrații. Proprietățile Dimensiuni apar în UI XAF ca
+    read-only ToString (inofensiv); editarea lor în back-office (când va fi
+    nevoie, la 3c/3d — RegulaContare) se rezolvă aditiv: wrappers delegați
+    `[NotMapped]` sau ecran React. Tierul Web API pentru React (pasul 5)
+    rămâne de validat pe owned la momentul lui — DTO-urile plate (decizia
+    6/7) fac oricum flattening explicit.
+
 ## Structura workspace
 
 ```
@@ -236,6 +261,16 @@ Raport de producție.
   loturi, picking auto-FIFO, rezolvare dimensiuni (coalesce), gardieni
   (perioadă, dependență pe loturi, sold intermediar ≥ 0). Vertical slice de
   validare: **NotaTransfer end-to-end** (un registru, două rânduri ±).
+  Context la pornire (fixat pre-3b, vezi decizia 24): owned `Dimensiuni` e
+  funcțional sub XAF — coalesce-ul poate conta pe instanțe non-null
+  (`OwnsOneRequired`); orice owner instanțiat în cod în afara ObjectSpace
+  (motor, teste) se creează cu `ctx.CreateProxy<T>()`, NU cu `new` (altfel EF
+  aruncă la atașare). Modulul referă `Atlas.DXF.EfCore` (≥26.1.3.2): folosește
+  `EnsureObject`/`CreateObject(id, initializer)` din ObjectSpaceExtensions
+  pentru seed/upsert în loc de boilerplate propriu. `tools/ModelCheck` conține
+  round-trip-ul owned (insert/update/all-null) — rămâne verde după orice
+  schimbare de model; rețeta completă: xaf-kb
+  `recipes/atlas-dxf/efcore-owned-types.md`.
 - **3c. Tipurile de document, în ordinea dependențelor**: NIR + FacturaIntrare
   (conex + creare loturi) → BonConsum → ListaDiferenteInventar (bidirecțional)
   → FacturaIesire → Plata/Incasare + Imperechere → Decont. Per tip: politici

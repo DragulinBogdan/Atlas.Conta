@@ -35,3 +35,29 @@ Console.WriteLine($"ReguliContare:   {await ctx.ReguliContare.CountAsync()}");
 var regula = await ctx.ReguliContare.FirstOrDefaultAsync();
 if (regula != null)
     Console.WriteLine($"Owned all-null → DimensiuniComun {(regula.DimensiuniComun == null ? "NULL (BUG!)" : "instanță OK")}");
+
+// Round-trip owned sub strategia de notificări (INotify* implementat manual pe
+// Dimensiuni — instanța `new()` nu e proxy EF): insert cu FK pe dimensiune,
+// update pe instanța materializată (proxy), apoi cleanup.
+var tipDoc = await ctx.TipuriDocument.FirstAsync();
+var repartitor = await ctx.Repartitori.FirstAsync();
+var proba = ctx.CreateProxy<RegulaContare>(); // owner-ul TREBUIE proxy (ca în XAF)
+proba.TipDocumentId = tipDoc.ID;
+proba.DimensiuniComun = new Dimensiuni { RepartitorId = repartitor.ID };
+ctx.ReguliContare.Add(proba);
+await ctx.SaveChangesAsync();
+ctx.ChangeTracker.Clear();
+
+var recitita = await ctx.ReguliContare.SingleAsync(r => r.ID == proba.ID);
+Console.WriteLine($"Owned insert → RepartitorId {(recitita.DimensiuniComun.RepartitorId == repartitor.ID ? "persistat OK" : "PIERDUT (BUG!)")}");
+
+recitita.DimensiuniComun.RepartitorId = null;
+recitita.DimensiuniComun.UnitateId = null; // no-op: null → null, nu trebuie să strice detectarea
+await ctx.SaveChangesAsync();
+ctx.ChangeTracker.Clear();
+
+recitita = await ctx.ReguliContare.SingleAsync(r => r.ID == proba.ID);
+Console.WriteLine($"Owned update → RepartitorId {(recitita.DimensiuniComun.RepartitorId == null ? "curățat OK" : "NEDETECTAT (BUG!)")}");
+
+ctx.ReguliContare.Remove(recitita);
+await ctx.SaveChangesAsync();
