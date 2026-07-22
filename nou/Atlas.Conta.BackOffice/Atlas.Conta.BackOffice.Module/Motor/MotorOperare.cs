@@ -104,9 +104,15 @@ public static class MotorOperare {
         var partenerPrimitor = os.GetObjectByKey<Repartitor>(doc.PrimitorId) as Partener;
         foreach (var d in doc.Detalii) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
-            var regula = reguliContare.FirstOrDefault(r => r.TipMaterialId == d.TipMaterialId)
-                ?? reguliContare.FirstOrDefault(r => r.TipMaterialId == null && r.NaturaFiltru == info.Natura)
-                ?? reguliContare.FirstOrDefault(r => r.TipMaterialId == null && r.NaturaFiltru == null);
+            // Filtrul de semn (LDI): regula se aplică doar liniilor cu semnul
+            // cerut; nepotrivirea scoate regula din joc la TOATE nivelurile de
+            // specificitate (o linie de plus sare peste regula exactă de minus
+            // și cade pe regula generică de plus).
+            var semn = Math.Sign(d.Cantitate);
+            var candidati = reguliContare.Where(r => r.SemnFiltru == null || r.SemnFiltru == semn).ToList();
+            var regula = candidati.FirstOrDefault(r => r.TipMaterialId == d.TipMaterialId)
+                ?? candidati.FirstOrDefault(r => r.TipMaterialId == null && r.NaturaFiltru == info.Natura)
+                ?? candidati.FirstOrDefault(r => r.TipMaterialId == null && r.NaturaFiltru == null);
             if (regula == null)
                 continue;
             var contDebit = RezolvaCont(regula.SursaContDebit, regula.ContDebitId,
@@ -121,7 +127,10 @@ public static class MotorOperare {
             rand.Data = doc.Data;
             rand.ContDebitId = contDebit;
             rand.ContCreditId = contCredit;
-            rand.Valoare = d.Valoare;
+            // Normalizarea cu semnul filtrului: valoarea liniei poartă semnul
+            // cantității (LDI minus = negativă), dar conturile regulii deja
+            // codifică direcția — nota se postează pozitivă.
+            rand.Valoare = (regula.SemnFiltru ?? +1) * d.Valoare;
             rand.DimensiuniDebit = DimensiuniResolver.Rezolva(d.Dimensiuni, regula.DimensiuniOverrideDebit,
                 regula.DimensiuniComun, new Dimensiuni { RepartitorId = doc.PredatorId });
             rand.DimensiuniCredit = DimensiuniResolver.Rezolva(d.Dimensiuni, regula.DimensiuniOverrideCredit,

@@ -44,6 +44,11 @@ public class RegulaContare : BaseObject {
     // Filtru pe natura Clasei liniei (ex. FCT contează DOAR non-stoc — recepția
     // o postează NIR-ul); mai slab decât potrivirea exactă pe TipMaterial.
     public virtual NaturaClasa? NaturaFiltru { get; set; }
+    // Filtru pe semnul cantității liniei (inventar 05: LDI e singurul tip unde
+    // semnul chiar diferențiază — plusul contează venit, minusul cheltuială).
+    // Null = orice semn; valoarea postată se normalizează cu semnul filtrului
+    // (linia de minus poartă valoare negativă, nota ei rămâne pozitivă).
+    public virtual int? SemnFiltru { get; set; }
     // Conturile se rezolvă declarativ per latură (testul bazei §7.2): sursa
     // indică nomenclatorul purtător (Tip material / partenerul unei laturi),
     // iar contul explicit de mai jos rămâne valoare directă sau fallback.

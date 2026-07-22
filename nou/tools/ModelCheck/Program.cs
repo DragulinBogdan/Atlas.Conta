@@ -553,5 +553,166 @@ using (var os = provider.CreateObjectSpace()) {
         && !os.GetObjectsQuery<UnitateInterna>().Any(u => u.Cod == MarcajLoc));
 }
 
+// ================= Scenariul e2e 3c: ListaDiferenteInventar =================
+// Inventarierea: sold de deschidere → LDI cu minus (descarcă lotul existent)
+// și plus (creează lot nou cu preț de evaluare) pe ACEEAȘI listă → un singur
+// set de reguli de stoc (+1 predator, cantitatea semnată dă direcția) →
+// contare pe direcție prin SemnFiltru (minus 6xx = 3xx pozitiv, plus
+// 3xx = 791) → gardieni (laturi, direcție, sold) → anulare directă → storno.
+const string MarcajLdi = "E2E-LDI-PRB";
+const string MarcajComisie = "E2E-LDI-COM";
+
+void CurataLdi(IObjectSpace os) {
+    var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajLdi).Select(l => l.ID).ToList();
+    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
+    foreach (var doc in os.GetObjectsQuery<ListaDiferenteInventar>()
+        .Where(d => d.Primitor.Cod == MarcajComisie).ToList()) {
+        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList());
+        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).ToList());
+        os.Delete(doc);
+    }
+    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajLdi).ToList());
+    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajLdi).ToList());
+    os.Delete(os.GetObjectsQuery<UnitateInterna>().Where(u => u.Cod == MarcajComisie).ToList());
+    os.CommitChanges();
+}
+
+using (var os = provider.CreateObjectSpace()) {
+    CurataLdi(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302.01.00");
+    var cont791 = os.FirstOrDefault<Cont>(c => c.Simbol == "791.00.00");
+
+    // Politica derivată la seed: minusul per Tip cu filtru de semn, plusul generic.
+    var regulaMinus = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "LDI" && r.TipMaterialId == tipMaterial.ID);
+    Check("Seed LDI: minus 302.01.00 → debit 602.01.00, SemnFiltru=-1",
+        regulaMinus != null && regulaMinus.ContDebit?.Simbol == "602.01.00"
+        && regulaMinus.SemnFiltru == -1 && regulaMinus.SursaContCredit == SursaCont.TipMaterial);
+    var regulaPlus = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "LDI" && r.TipMaterialId == null);
+    Check("Seed LDI: plus generic → credit 791.00.00, SemnFiltru=+1",
+        regulaPlus != null && regulaPlus.SemnFiltru == 1
+        && regulaPlus.SursaContDebit == SursaCont.TipMaterial && regulaPlus.ContCreditId == cont791.ID);
+    Check("Seed: comisia de inventariere poartă calitatea Comisie",
+        os.FirstOrDefault<UnitateInterna>(u => u.Cod == "COMISIE")?.Calitati.HasFlag(CalitateRepartitor.Comisie) == true);
+
+    var comisie = os.CreateObject<UnitateInterna>();
+    comisie.Cod = MarcajComisie;
+    comisie.Denumire = "Comisie probă e2e";
+    comisie.Calitati = CalitateRepartitor.Comisie;
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = MarcajLdi;
+    produs.Denumire = "Produs probă LDI";
+    produs.UM = "BUC";
+    produs.TipMaterial = tipMaterial;
+    var lotVechi = os.CreateObject<Lot>();
+    lotVechi.Produs = produs;
+    lotVechi.PretUnitar = 10m;
+    lotVechi.Gestiune = mag1;
+    lotVechi.Data = new DateOnly(2026, 1, 10);
+    var deschidere = os.CreateObject<RegistruStoc>();
+    deschidere.Data = lotVechi.Data;
+    deschidere.TipStoc = TipStoc.Magazie;
+    deschidere.Lot = lotVechi;
+    deschidere.Repartitor = mag1;
+    deschidere.Cantitate = 10m;
+    deschidere.Valoare = 100m;
+    os.CommitChanges();
+
+    decimal Sold(Lot lot) => StocService.Sold(os, new CheieStoc(lot.ID, mag1.ID, TipStoc.Magazie));
+
+    // --- LDI bidirecțional: minus pe lotul existent + plus cu lot nou ---
+    var ldi = os.CreateObject<ListaDiferenteInventar>();
+    ldi.Data = new DateOnly(2026, 3, 5);
+    ldi.Predator = mag1;
+    ldi.Primitor = comisie;
+    var linieMinus = os.CreateObject<ListaDiferenteInventarDetaliu>();
+    linieMinus.Document = ldi;
+    linieMinus.TipMaterial = tipMaterial;
+    linieMinus.Directie = DirectieDiferenta.Minus;
+    linieMinus.Lot = lotVechi;
+    linieMinus.Cantitate = 2m; // UI-ul culege pozitiv; semnul îl pune operarea
+    var liniePlus = os.CreateObject<ListaDiferenteInventarDetaliu>();
+    liniePlus.Document = ldi;
+    liniePlus.TipMaterial = tipMaterial;
+    liniePlus.Directie = DirectieDiferenta.Plus;
+    liniePlus.Cantitate = 3m;
+    liniePlus.LotFabricatie = "LOT-P";
+
+    // Validările proprii: lot pe plus + preț de evaluare + laturile.
+    CheckRefuza("Plus fără lot creat / fără preț de evaluare → refuz", () => MotorOperare.Opereaza(os, ldi));
+    var lotNou = liniePlus.CreeazaLot(os, produs, mag1);
+    liniePlus.PretEvaluare = 7m;
+    ldi.Primitor = mag1; // gestiune fără calitatea Comisie
+    CheckRefuza("Primitor fără calitatea Comisie → refuz", () => MotorOperare.Opereaza(os, ldi));
+    ldi.Primitor = comisie;
+    os.CommitChanges();
+
+    // --- Operare: direcția materializată în semn, două rânduri ± pe predator ---
+    Check("LDI nu generează conex", MotorOperare.Opereaza(os, ldi) == null);
+    Check("Operare → stare Operat + număr din politică",
+        ldi.Stare == StareDocument.Operat && ldi.Numar?.StartsWith("LDI-") == true);
+    Check("Minus: direcția materializată în semn (−2 / −20)",
+        linieMinus.Cantitate == -2m && linieMinus.Valoare == -20m);
+    Check("Plus: cantitate pozitivă, valoarea din prețul de evaluare (+3 / +21)",
+        liniePlus.Cantitate == 3m && liniePlus.Valoare == 21m);
+    Check("Lot nou finalizat: preț 7, data documentului, atribute copiate",
+        lotNou.PretUnitar == 7m && lotNou.Data == ldi.Data && lotNou.LotFabricatie == "LOT-P");
+    var randuri = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == ldi.ID).ToList();
+    Check("Operare → 2 rânduri de stoc, ambele Magazie pe gestiunea inventariată",
+        randuri.Count == 2 && randuri.All(r => r.TipStoc == TipStoc.Magazie && r.RepartitorId == mag1.ID));
+    Check("Minus → −2/−20 pe lotul vechi", randuri.Any(r =>
+        r.LotId == lotVechi.ID && r.Cantitate == -2m && r.Valoare == -20m));
+    Check("Plus → +3/+21 pe lotul nou", randuri.Any(r =>
+        r.LotId == lotNou.ID && r.Cantitate == 3m && r.Valoare == 21m));
+    Check("Solduri: lot vechi 8, lot nou 3", Sold(lotVechi) == 8m && Sold(lotNou) == 3m);
+    var note = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == ldi.ID).ToList();
+    Check("Contare minus: 602.01.00 = 302.01.00, POZITIVĂ (normalizată cu semnul filtrului)",
+        note.Any(n => n.ContDebitId == regulaMinus.ContDebitId
+            && n.ContCreditId == tipMaterial.ContImplicitId && n.Valoare == 20m));
+    Check("Contare plus: 302.01.00 = 791.00.00, 21",
+        note.Any(n => n.ContDebitId == tipMaterial.ContImplicitId
+            && n.ContCreditId == cont791.ID && n.Valoare == 21m));
+    Check("Exact 2 note (una per direcție)", note.Count == 2);
+
+    // --- Gardianul de sold: minus peste disponibil ---
+    var pesteDisponibil = os.CreateObject<ListaDiferenteInventar>();
+    pesteDisponibil.Data = new DateOnly(2026, 3, 10);
+    pesteDisponibil.Predator = mag1;
+    pesteDisponibil.Primitor = comisie;
+    var lipsaMare = os.CreateObject<ListaDiferenteInventarDetaliu>();
+    lipsaMare.Document = pesteDisponibil;
+    lipsaMare.TipMaterial = tipMaterial;
+    lipsaMare.Directie = DirectieDiferenta.Minus;
+    lipsaMare.Lot = lotVechi;
+    lipsaMare.Cantitate = 100m;
+    CheckRefuza("Minus peste disponibil → refuz", () => MotorOperare.Opereaza(os, pesteDisponibil));
+    os.Delete(pesteDisponibil.Detalii.ToList());
+    os.Delete(pesteDisponibil);
+    os.CommitChanges();
+
+    // --- Anulare directă (lotul nou neatins de alții) + re-operare ---
+    MotorOperare.AnuleazaOperarea(os, ldi);
+    Check("Anulare LDI → Draft + solduri revenite (vechi 10, nou 0)",
+        ldi.Stare == StareDocument.Draft && Sold(lotVechi) == 10m && Sold(lotNou) == 0m);
+    MotorOperare.Opereaza(os, ldi);
+    Check("Re-operare după corecție (semnul rămâne idempotent)",
+        ldi.Stare == StareDocument.Operat && linieMinus.Cantitate == -2m && liniePlus.Cantitate == 3m);
+
+    // --- Storno: inverse pe ambele direcții și pe note ---
+    MotorOperare.Storneaza(os, ldi, new DateOnly(2026, 7, 22));
+    var toate = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == ldi.ID).ToList();
+    Check("Storno LDI → 4 rânduri stoc (2 + 2 inverse) și notele inversate (−20, −21)",
+        ldi.Stare == StareDocument.Stornat && toate.Count == 4 && toate.Count(r => r.Storno) == 2
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == ldi.ID && r.Storno
+            && (r.Valoare == -20m || r.Valoare == -21m)) == 2);
+    Check("Storno → solduri nete: vechi 10, nou 0", Sold(lotVechi) == 10m && Sold(lotNou) == 0m);
+
+    CurataLdi(os);
+    Check("Curățenie finală LDI (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajLdi)
+        && !os.GetObjectsQuery<UnitateInterna>().Any(u => u.Cod == MarcajComisie));
+}
+
 Console.WriteLine(esecuri == 0 ? "\nToate verificările au trecut." : $"\n{esecuri} verificări EȘUATE.");
 Environment.ExitCode = esecuri == 0 ? 0 : 1;

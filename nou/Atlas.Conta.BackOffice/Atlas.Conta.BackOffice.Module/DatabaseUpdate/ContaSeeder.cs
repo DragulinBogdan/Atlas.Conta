@@ -19,6 +19,7 @@ public static class ContaSeeder {
         SeedPoliticiNotaTransfer(os);
         SeedPoliticiFacturaIntrareNir(os);
         SeedPoliticiBonConsum(os);
+        SeedPoliticiListaDiferente(os);
         os.CommitChanges();
     }
 
@@ -216,6 +217,16 @@ public static class ContaSeeder {
         // Locul de consum e calitate transversală (decizia 16); sediul e primul
         // consumator — |= ca să nu strice calitățile adăugate din UI.
         sediu.Calitati |= CalitateRepartitor.LocConsum;
+
+        // Comisia de inventariere — primitorul LDI-ului; tot calitate
+        // transversală, purtată aici de un repartitor intern dedicat.
+        var comisie = os.FirstOrDefault<UnitateInterna>(x => x.Cod == "COMISIE");
+        if (comisie == null) {
+            comisie = os.CreateObject<UnitateInterna>();
+            comisie.Cod = "COMISIE";
+            comisie.Denumire = "Comisia de inventariere";
+        }
+        comisie.Calitati |= CalitateRepartitor.Comisie;
     }
 
     // Pivotul gardienilor din decizia 14; anul curent de lucru, deschis.
@@ -390,18 +401,71 @@ public static class ContaSeeder {
             consum.Semn = +1;
         }
 
-        // Contarea consumului: 6xx = 3xx per Clasă/Tip (echivalentul curat al
-        // celor 18 modele legacy) — rând per TipMaterial (debitul diferă per
-        // Tip, deci NaturaFiltru nu ajunge). Debitul se DERIVĂ din simbolul
-        // contului de stoc: prima cifră 3→6 (301→601, 302.01→602.01,
-        // 303.01→603), cu aceeași tăiere de segmente ca la ContImplicit;
-        // creditul = contul Tipului (3xx). Incremental: tipurile fără rând
-        // (inclusiv cele adăugate ulterior) primesc regulă la updater; cele cu
-        // simbol non-3xx (bonuri valorice 532/409) nu contează pe BCS — rând
-        // manual dacă apare nevoia reală (decizia 21).
+        // Contarea consumului: 6xx = 3xx per Clasă/Tip, derivată din simbol
+        // (helper comun cu minusul de inventar); fără filtru de semn — liniile
+        // de consum sunt întotdeauna pozitive.
+        SeedContare6xxDin3xx(os, bcs, null);
+    }
+
+    // Politicile inventarierii (inventar 05, defa 270). Stoc: +1 pe predator
+    // (gestiunea inventariată) — direcția vine din semnul cantității, LDI e
+    // singurul tip din setul țintă unde semnul chiar diferențiază; tip stoc per
+    // clasă ca la NIR (magazie generic / folosință / custodie). Contarea se
+    // desparte pe direcție prin SemnFiltru: minusul = cheltuială (6xx = 3xx,
+    // aceeași derivare ca la consum), plusul = venit (3xx = 791 — CPLAN nu are
+    // 758; 791 „Venituri din valorificarea unor bunuri ale statului" e
+    // echivalentul din planul instituțiilor publice).
+    static void SeedPoliticiListaDiferente(IObjectSpace os) {
+        var ldi = os.FirstOrDefault<TipDocument>(x => x.Cod == "LDI");
+        if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == "LDI") == null) {
+            var numerotare = os.CreateObject<PoliticaNumerotare>();
+            numerotare.TipDocument = ldi;
+            numerotare.Serie = "LDI-";
+            numerotare.UrmatorulNumar = 1;
+        }
+        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "LDI") == null) {
+            (string Clasa, TipStoc TipStoc)[] reguli = [
+                (null, TipStoc.Magazie),
+                ("OF", TipStoc.Folosinta),
+                ("MC", TipStoc.Custodie),
+            ];
+            foreach (var r in reguli) {
+                var regula = os.CreateObject<RegulaStoc>();
+                regula.TipDocument = ldi;
+                regula.Latura = LaturaDocument.Predator;
+                regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
+                regula.TipStoc = r.TipStoc;
+                regula.Semn = +1;
+            }
+        }
+        // Plusul: un singur rând generic — debitul se rezolvă din contul
+        // Tipului liniei (3xx), creditul e venitul explicit.
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "LDI" && x.TipMaterialId == null) == null) {
+            var plus = os.CreateObject<RegulaContare>();
+            plus.TipDocument = ldi;
+            plus.NaturaFiltru = NaturaClasa.Stoc;
+            plus.SemnFiltru = +1;
+            plus.SursaContDebit = SursaCont.TipMaterial;
+            plus.SursaContCredit = SursaCont.Explicit;
+            plus.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "791.00.00");
+        }
+        // Minusul: cheltuială per Tip, doar pe liniile negative.
+        SeedContare6xxDin3xx(os, ldi, -1);
+    }
+
+    // Contarea 6xx = 3xx per Clasă/Tip (echivalentul curat al celor 18 modele
+    // legacy) — rând per TipMaterial (debitul diferă per Tip, deci NaturaFiltru
+    // nu ajunge). Debitul se DERIVĂ din simbolul contului de stoc: prima cifră
+    // 3→6 (301→601, 302.01→602.01, 303.01→603), cu aceeași tăiere de segmente
+    // ca la ContImplicit; creditul = contul Tipului (3xx). Incremental:
+    // tipurile fără rând (inclusiv cele adăugate ulterior) primesc regulă la
+    // updater; cele cu simbol non-3xx (bonuri valorice 532/409) nu primesc —
+    // rând manual dacă apare nevoia reală (decizia 21). Folosită de BCS
+    // (consum, fără filtru de semn) și LDI (minus de inventar, SemnFiltru=-1).
+    static void SeedContare6xxDin3xx(IObjectSpace os, TipDocument tipDoc, int? semnFiltru) {
         var conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c);
         var acoperite = os.GetObjectsQuery<RegulaContare>()
-            .Where(r => r.TipDocumentId == bcs.ID && r.TipMaterialId != null)
+            .Where(r => r.TipDocumentId == tipDoc.ID && r.TipMaterialId != null)
             .Select(r => r.TipMaterialId.Value).ToList();
         var tipuriStoc = os.GetObjectsQuery<TipMaterial>()
             .Where(t => t.Clasa.Natura == NaturaClasa.Stoc)
@@ -415,8 +479,9 @@ public static class ContaSeeder {
             if (simbol.Length == 0)
                 continue;
             var regula = os.CreateObject<RegulaContare>();
-            regula.TipDocument = bcs;
+            regula.TipDocument = tipDoc;
             regula.TipMaterialId = tip.ID;
+            regula.SemnFiltru = semnFiltru;
             regula.SursaContDebit = SursaCont.Explicit;
             regula.ContDebit = conturi[simbol];
             regula.SursaContCredit = SursaCont.TipMaterial;
