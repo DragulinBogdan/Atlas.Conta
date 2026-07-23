@@ -520,14 +520,18 @@ public static class MotorOperare {
         }
     }
 
+    // Ancora TipDocument după numele CLR al clasei — reutilizabilă (motor,
+    // DescarcareService, TvaService): totul se cheiază pe TipDocument.ID.
+    internal static TipDocument GasesteTipDocument(IObjectSpace os, string clrType) =>
+        os.FirstOrDefault<TipDocument>(t => t.ClrType == clrType)
+            ?? throw new OperareException($"Lipsește ancora TipDocument pentru clasa {clrType} (seed).");
+
     // EF Core dă proxy-uri de change-tracking — numele CLR real e pe tipul de bază.
-    static TipDocument GasesteTipDocument(IObjectSpace os, Document doc) {
+    internal static TipDocument GasesteTipDocument(IObjectSpace os, Document doc) {
         var tip = doc.GetType();
         while (tip.Assembly.IsDynamic || tip.Name.EndsWith("Proxy"))
             tip = tip.BaseType;
-        var nume = tip.Name;
-        return os.FirstOrDefault<TipDocument>(t => t.ClrType == nume)
-            ?? throw new OperareException($"Lipsește ancora TipDocument pentru clasa {nume} (seed).");
+        return GasesteTipDocument(os, tip.Name);
     }
 
     static void AsignaNumar(IObjectSpace os, Document doc, TipDocument tipDoc) {

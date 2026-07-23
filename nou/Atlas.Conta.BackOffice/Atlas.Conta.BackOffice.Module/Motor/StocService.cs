@@ -54,12 +54,16 @@ public static class StocService {
             throw new OperareException(string.Join("\n", erori));
     }
 
-    // Picking auto-FIFO (decizia 13): sparge o cerere (produs × gestiune ×
-    // cantitate) pe loturile disponibile la dată, în ordinea vechimii lotului.
-    // Consumat de UI/derivate la culegere; gardianul de sold re-verifică oricum
-    // la operare. Override-ul manual = utilizatorul alege alt lot pe linie.
-    public static IReadOnlyList<(Lot Lot, decimal Cantitate)> AlocaFifo(IObjectSpace os,
-        Guid produsId, Guid gestiuneId, TipStoc tipStoc, DateOnly data, decimal cantitate) {
+    // Picking auto-FIFO TOLERANT (decizia 13, extins la P2 §5): sparge o cerere
+    // (produs × gestiune × TipStoc × dată × cantitate) pe loturile disponibile în
+    // ordinea vechimii lotului și întoarce alocările + restul neacoperit (spre
+    // deosebire de `AlocaFifo`, NU aruncă la insuficient — descărcarea de gestiune
+    // lasă restul ca backorder). `dejaAlocat` = alocări per lot deja făcute în
+    // aceeași generare, încă necomise (`Sold` nu le vede) — se SCADE din soldul
+    // fiecărui lot ca a doua trecere să nu re-aloce ce a prins prima.
+    public static (IReadOnlyList<(Guid LotId, decimal Cantitate)> Alocari, decimal Ramas) AlocaFifoTolerant(
+        IObjectSpace os, Guid produsId, Guid gestiuneId, TipStoc tipStoc, DateOnly data, decimal cantitate,
+        IReadOnlyDictionary<Guid, decimal> dejaAlocat = null) {
         var solduri = os.GetObjectsQuery<RegistruStoc>()
             .Where(r => r.Lot.ProdusId == produsId && r.RepartitorId == gestiuneId
                 && r.TipStoc == tipStoc && r.Data <= data)
@@ -68,20 +72,34 @@ public static class StocService {
             .Where(x => x.Sold > 0)
             .ToList();
 
-        var alocari = new List<(Lot, decimal)>();
+        var alocari = new List<(Guid, decimal)>();
         var ramas = cantitate;
         foreach (var s in solduri
             .Select(x => (Lot: os.GetObjectByKey<Lot>(x.LotId), x.Sold))
             .OrderBy(x => x.Lot.Data).ThenBy(x => x.Lot.ID)) {
             if (ramas <= 0)
                 break;
-            var alocat = Math.Min(ramas, s.Sold);
-            alocari.Add((s.Lot, alocat));
+            var disponibil = s.Sold - (dejaAlocat?.GetValueOrDefault(s.Lot.ID) ?? 0m);
+            if (disponibil <= 0)
+                continue;
+            var alocat = Math.Min(ramas, disponibil);
+            alocari.Add((s.Lot.ID, alocat));
             ramas -= alocat;
         }
+        return (alocari, ramas);
+    }
+
+    // Picking auto-FIFO (decizia 13): sparge o cerere (produs × gestiune ×
+    // cantitate) pe loturile disponibile la dată, în ordinea vechimii lotului.
+    // Consumat de UI/derivate la culegere; gardianul de sold re-verifică oricum
+    // la operare. Override-ul manual = utilizatorul alege alt lot pe linie.
+    // Wrapper strict peste `AlocaFifoTolerant`: aruncă dacă rămâne rest.
+    public static IReadOnlyList<(Lot Lot, decimal Cantitate)> AlocaFifo(IObjectSpace os,
+        Guid produsId, Guid gestiuneId, TipStoc tipStoc, DateOnly data, decimal cantitate) {
+        var (alocari, ramas) = AlocaFifoTolerant(os, produsId, gestiuneId, tipStoc, data, cantitate);
         if (ramas > 0)
             throw new OperareException(
                 $"Stoc insuficient: lipsesc {ramas:0.####} din {cantitate:0.####} cerute la {data:yyyy-MM-dd}.");
-        return alocari;
+        return alocari.Select(a => (os.GetObjectByKey<Lot>(a.LotId), a.Cantitate)).ToList();
     }
 }

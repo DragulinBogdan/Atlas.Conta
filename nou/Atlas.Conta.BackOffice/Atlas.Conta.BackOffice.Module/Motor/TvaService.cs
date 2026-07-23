@@ -44,4 +44,16 @@ public static class TvaService {
                 break;
         }
     }
+
+    // Datoria P1 (design §8): default TipTva per tip de document, aplicat la
+    // CULEGERE (nu în motor) — TipDocument.TipTvaImplicit. No-op dacă linia are
+    // deja un TipTva cules (culegerea explicită bate default-ul). Apelantul:
+    // controllerul XAF de creare a liniei (pasul 5); ModelCheck o exersează direct.
+    public static void AplicaTipTvaImplicit(IObjectSpace os, Document doc, DocumentDetaliu linie) {
+        if (linie.TipTvaId != null)
+            return;
+        var tip = MotorOperare.GasesteTipDocument(os, doc);
+        if (tip.TipTvaImplicitId != null)
+            linie.TipTvaId = tip.TipTvaImplicitId;
+    }
 }
