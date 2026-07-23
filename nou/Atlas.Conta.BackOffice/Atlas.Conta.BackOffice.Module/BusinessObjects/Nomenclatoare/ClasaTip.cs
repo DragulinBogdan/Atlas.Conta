@@ -1,3 +1,4 @@
+using Atlas.DXF.Core.Editors;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
@@ -30,5 +31,7 @@ public class TipMaterial : BaseObject {
     // (Cod-ul Tipului E un simbol de cont — 10 §2); editabilă fără release.
     // Consumată de RegulaContare prin SursaCont.TipMaterial.
     public virtual Guid? ContImplicitId { get; set; }
+    // Plan de conturi mare (1.679 rânduri la bugetar): match exact pe Simbol.
+    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
     public virtual Cont ContImplicit { get; set; }
 }

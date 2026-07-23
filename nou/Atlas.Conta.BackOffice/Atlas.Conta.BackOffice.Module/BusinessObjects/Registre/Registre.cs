@@ -1,3 +1,4 @@
+using Atlas.DXF.Core.Appearance.Attributes;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -5,8 +6,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // Decizia 14: registre persistate, append-only, scrise tranzacțional la operare.
 // Schema = COD; regulile de alimentare = DATE (Politici/RegulaStoc, RegulaContare).
+// Append-only: DOAR motorul și migrarea scriu rândurile; corecția = anulare/storno
+// pe document, niciodată editarea rândului. ForbidCRUD închide gaura de integritate
+// din UI (New/Save/Delete/Cancel dezactivate pe ListView + DetailView).
 
 [NavigationItem("Registre")]
+[ForbidCRUD("ListView", "DetailView")]
 public class RegistruStoc : BaseObject {
     public virtual DateOnly Data { get; set; }
     public virtual TipStoc TipStoc { get; set; }
@@ -28,6 +33,7 @@ public class RegistruStoc : BaseObject {
 }
 
 [NavigationItem("Registre")]
+[ForbidCRUD("ListView", "DetailView")]
 public class RegistruContabil : BaseObject {
     public virtual DateOnly Data { get; set; }
     public virtual string NumarNota { get; set; }

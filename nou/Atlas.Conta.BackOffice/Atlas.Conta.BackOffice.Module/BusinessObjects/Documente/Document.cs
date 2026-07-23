@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
+using Atlas.DXF.Core.Editors;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
@@ -22,11 +23,14 @@ public abstract class Document : BaseObject {
     // FK invalid să ajungă în Postgres. Motorul/seed-ul/migrarea folosesc
     // EFCoreObjectSpaceProvider standalone (fără PersistenceValidationController),
     // deci regula nu-i atinge — se aplică doar în back-office-ul XAF.
+    // Repartitori (sute la migrare): match exact pe Denumire în locul lookup-ului standard.
     public virtual Guid PredatorId { get; set; }
+    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
     [RuleRequiredField("Document_Predator_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Predatorul (de la cine) este obligatoriu.")]
     public virtual Repartitor Predator { get; set; }
     public virtual Guid PrimitorId { get; set; }
+    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
     [RuleRequiredField("Document_Primitor_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Primitorul (către cine) este obligatoriu.")]
     public virtual Repartitor Primitor { get; set; }
@@ -96,6 +100,8 @@ public class DocumentDetaliu : BaseObject {
     // TipMaterialId e NOT NULL, iar o linie culeasă fără tip ar produce un
     // INSERT cu FK invalid. Doar pipeline-ul UI XAF (context Save).
     public virtual Guid TipMaterialId { get; set; }
+    // Nomenclator mare de tipuri: match exact pe Denumire în locul lookup-ului standard.
+    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
     [RuleRequiredField("DocumentDetaliu_TipMaterial_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Tipul (contul/clasa) liniei este obligatoriu.")]
     public virtual TipMaterial TipMaterial { get; set; }
