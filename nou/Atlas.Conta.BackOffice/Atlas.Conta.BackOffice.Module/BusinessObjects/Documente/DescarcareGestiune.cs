@@ -1,3 +1,5 @@
+using Atlas.Conta.BackOffice.Module.UI;
+
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // DSC (design P2 §3): descărcarea de gestiune — marfa IESE din patrimoniu
@@ -6,6 +8,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // primitor = clientul (partenerul de pe FCL) — marfa pleacă fizic la client.
 // De regulă autogenerat din FacturaIesire (conex, DescarcareService), dar DSC-ul
 // cules MANUAL rămâne legal (document normal de ieșire din gestiune).
+[TipDetaliu(typeof(DescarcareGestiuneDetaliu))]
 public class DescarcareGestiune : Document {
     // Ambele dimensiuni rămân pe gestiune (predatorul) — precedentul Decont 32c:
     // soldul 371/345 se ține per gestiune; clientul trăiește pe rândurile FCL și

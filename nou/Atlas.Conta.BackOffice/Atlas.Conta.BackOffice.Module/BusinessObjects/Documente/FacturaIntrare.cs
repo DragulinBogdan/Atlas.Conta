@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using Atlas.Conta.BackOffice.Module.UI;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -6,6 +7,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // FCT (01): predator = Partener (furnizor), primitor = Gestiune; nu mișcă stoc —
 // intrarea o face NIR-ul conex. Import extern (Tethys) = cale de primă clasă.
+[TipDetaliu(typeof(FacturaIntrareDetaliu))]
 public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
     public virtual DateOnly? DataScadenta { get; set; }
     public virtual string NumarPV { get; set; }

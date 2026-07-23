@@ -1,3 +1,5 @@
+using Atlas.Conta.BackOffice.Module.UI;
+
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // DEC (06): justificarea avansurilor / cheltuielilor unui titular — predator =
@@ -5,6 +7,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Fără reguli de stoc; contarea per linie: debit din contul Tipului (cheltuiala
 // aleasă) sau explicit pe linie, credit = contul de avans al titularului (542).
 // Lanțul avans → decont → regularizare se leagă prin imperechere (decizia 31d).
+[TipDetaliu(typeof(DecontDetaliu))]
 public class Decont : Document, IDocumentCuPV {
     public virtual string NumarPV { get; set; }
     public virtual DateOnly? DataPV { get; set; }

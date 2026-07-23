@@ -1,3 +1,5 @@
+using Atlas.Conta.BackOffice.Module.UI;
+
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // LDI (05): plusuri și minusuri pe aceeași listă; singurul tip bidirecțional pe
@@ -5,6 +7,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // nou (ca un NIR manual) cu preț de evaluare cules. Predator = gestiunea
 // inventariată (singura latură care mișcă stoc: +1 cu cantitate semnată);
 // primitor = comisia de inventariere (calitatea Comisie — decizia 16).
+[TipDetaliu(typeof(ListaDiferenteInventarDetaliu))]
 public class ListaDiferenteInventar : Document {
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.OfType<ListaDiferenteInventarDetaliu>()) {

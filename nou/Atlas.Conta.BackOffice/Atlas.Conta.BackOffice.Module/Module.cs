@@ -12,6 +12,9 @@ using DevExpress.ExpressApp.Updating;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF.StateMachine;
 using System.ComponentModel;
+using Atlas.Conta.BackOffice.Module.UI;
+using Atlas.DXF.Core.Views.Discovery;
+using Atlas.DXF.Core.Views.Updaters;
 
 namespace Atlas.Conta.BackOffice.Module {
     // For more typical usage scenarios, be sure to check out https://docs.devexpress.com/eXpressAppFramework/DevExpress.ExpressApp.ModuleBase.
@@ -60,6 +63,18 @@ namespace Atlas.Conta.BackOffice.Module {
             base.Setup(moduleManager);
             StateMachineModule stateMachineModule = moduleManager.Modules.FindModule<StateMachineModule>();
             stateMachineModule.StateMachineStorageType = typeof(StateMachine);
+        }
+        public override void AddGeneratorUpdaters(ModelNodesGeneratorUpdaters updaters) {
+            base.AddGeneratorUpdaters(updaters);
+            // Baseline declarativ de coloane (EntityFluent) — fără auto-discovery,
+            // se înregistrează manual (ghid Atlas.DXF entity-fluent).
+            var registry = new UiBaselineRegistry();
+            foreach (var provider in UiBaselineDiscovery.Discover(GetType().Assembly))
+                provider.Register(registry);
+            updaters.Add(new UiBaselineUpdater(registry));
+            // Comutarea ListView-ului colecției nested `Detalii` pe tipul de detaliu
+            // derivat declarat cu [TipDetaliu].
+            updaters.Add(new TipDetaliuViewUpdater());
         }
     }
 }

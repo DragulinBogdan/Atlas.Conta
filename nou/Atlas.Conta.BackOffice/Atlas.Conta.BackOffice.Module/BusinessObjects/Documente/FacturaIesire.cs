@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using Atlas.Conta.BackOffice.Module.UI;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // FCT IESIRE (07): pur creanță (411 = 7xx), fără registru de stoc; numerotare
 // proprie (serie fiscală) prin politică; scadența are default de politică (+30).
+[TipDetaliu(typeof(FacturaIesireDetaliu))]
 public class FacturaIesire : Document, IDocumentCuScadenta {
     public virtual DateOnly? DataScadenta { get; set; }
 
