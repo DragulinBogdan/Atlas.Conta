@@ -15,6 +15,14 @@ public class TipDocument : BaseObject {
     public virtual string Denumire { get; set; }
     // Numele CLR al clasei derivate corespunzătoare (ex. "FacturaIntrare").
     public virtual string ClrType { get; set; }
+
+    // Datoria P1 (design §8): default TipTva per tip de document, aplicat la
+    // CULEGERE (nu în motor) — pe ancoră, NU pe PoliticaTva (bugetarul n-are
+    // rânduri PoliticaTva dar are nevoie de default CAP21, iar un rând
+    // PoliticaTva doar-pentru-default ar activa pasul TVA din motor). Folosirea
+    // vine în pașii următori.
+    public virtual Guid? TipTvaImplicitId { get; set; }
+    public virtual TipTva TipTvaImplicit { get; set; }
 }
 
 // Regula de alimentare a registrului de stoc: tip document × latură × filtru

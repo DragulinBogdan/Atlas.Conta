@@ -78,6 +78,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<Plata> Plati { get; set; }
         public DbSet<Incasare> Incasari { get; set; }
         public DbSet<RaportProductie> RapoarteProductie { get; set; }
+        public DbSet<DescarcareGestiune> DescarcariGestiune { get; set; }
+        public DbSet<DescarcareGestiuneDetaliu> DescarcariGestiuneDetalii { get; set; }
         public DbSet<Imperechere> Imperecheri { get; set; }
 
         // Registre + politici
@@ -142,6 +144,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // comentariul din Lot (ciclu de inserție altfel).
             modelBuilder.Entity<DocumentDetaliu>()
                 .HasOne(d => d.Lot).WithMany().HasForeignKey(d => d.LotId);
+
+            // Trasabilitatea acoperirii per linie FCL (design P2 §3): linia DSC
+            // referă linia FCL sursă printr-un FK real cross-document. Restrict —
+            // linia sursă nu se șterge cât e referită de o descărcare (ca sensul
+            // linie→lot de mai sus, care nu cascadează pe ștergerea lotului).
+            modelBuilder.Entity<DescarcareGestiuneDetaliu>()
+                .HasOne(d => d.LinieSursa).WithMany().HasForeignKey(d => d.LinieSursaId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Owned type Dimensiuni (decizia 15) — pe linia de document, pe rândul
             // de registru contabil și pe cele trei seturi ale regulii de contare.
