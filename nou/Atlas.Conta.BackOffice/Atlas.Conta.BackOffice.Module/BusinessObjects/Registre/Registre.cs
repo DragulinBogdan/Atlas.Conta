@@ -8,9 +8,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Schema = COD; regulile de alimentare = DATE (Politici/RegulaStoc, RegulaContare).
 // Append-only: DOAR motorul și migrarea scriu rândurile; corecția = anulare/storno
 // pe document, niciodată editarea rândului. ForbidCRUD ascunde acțiunile
-// (New/Save/Delete/Cancel pe ListView + DetailView); gardianul de FOND e
-// RegistruReadOnlyController (AllowEdit/New/Delete pe view — appearance-ul nu
-// acoperă lista goală și nici Save-ul prin dialogul de modificări nesalvate).
+// (New/Save/Delete/Cancel pe ListView + DetailView) ȘI — din Atlas.DXF 26.1.3.6 —
+// taie de FOND capabilitățile view-ului (AllowEdit/New/Delete, cheia "ForbidCRUD")
+// prin ForbidCrudCapabilitiesController: acoperă lista goală și Save-ul din
+// dialogul de modificări nesalvate. (Fostul RegistruReadOnlyController local a fost
+// eliminat — enforcement-ul e acum în bibliotecă.)
 
 [NavigationItem("Registre")]
 [ForbidCRUD("ListView", "DetailView")]
@@ -49,7 +51,12 @@ public class RegistruContabil : BaseObject {
     // rezultatul coalesce-ului diferă pe debit față de credit. Repartitorul
     // laturii (implicit Predator→debit, Primitor→credit — 00 §5) e componenta
     // Repartitor a fiecărui set.
+    // ExpandObjectMembers (experiment, Sarcina 4): expandă membrii owned-ului
+    // direct în DetailView-ul rândului (fără popup), DOAR pe aceste două
+    // proprietăți și DOAR InDetailView. La orice problemă cauzată de el se scoate.
+    [ExpandObjectMembers(DevExpress.Persistent.Base.ExpandObjectMembers.InDetailView)]
     public virtual Dimensiuni DimensiuniDebit { get; set; } = new();
+    [ExpandObjectMembers(DevExpress.Persistent.Base.ExpandObjectMembers.InDetailView)]
     public virtual Dimensiuni DimensiuniCredit { get; set; } = new();
     // Rând de stornare (inversul unui rând de operare, la data stornării).
     public virtual bool Storno { get; set; }

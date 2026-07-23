@@ -39,6 +39,27 @@ public static class ImperechereService {
     // Fără commit — motorul o cheamă din tranzacția operării plății autogenerate.
     internal static Imperechere Creeaza(IObjectSpace os,
         DocumentTrezorerie trezorerie, Document document, decimal suma, bool autogenerat) {
+        // Validarea rulează ÎNAINTE de CreateObject — comportamentul existent
+        // (motorul nu lasă rând-fantomă pe eșec) rămâne exact.
+        ValideazaCreare(os, trezorerie, document, suma);
+        var imperechere = os.CreateObject<Imperechere>();
+        imperechere.DocumentTrezorerie = trezorerie;
+        imperechere.Document = document;
+        imperechere.Suma = suma;
+        imperechere.Autogenerat = autogenerat;
+        return imperechere;
+    }
+
+    // Invarianții stingerii, extrași ca să fie refolosibili de gardianul UI
+    // (ImperechereController: New generic e permis, dar validat la commit —
+    // decizia 31d). Aruncă UserFriendlyException (OperareException) cu mesaj de
+    // business. Aceleași verificări ca înainte; în plus null-guard pe navigații
+    // (culegerea prin UI le poate lăsa goale — motorul le trimite mereu setate).
+    internal static void ValideazaCreare(IObjectSpace os,
+        DocumentTrezorerie trezorerie, Document document, decimal suma) {
+        if (trezorerie == null || document == null)
+            throw new OperareException(
+                "Imperecherea leagă o plată/încasare de un document — ambele sunt obligatorii.");
         if (trezorerie.Stare != StareDocument.Operat || document.Stare != StareDocument.Operat)
             throw new OperareException("Imperecherea leagă două documente operate (registrele lor există).");
         if (document.ID == trezorerie.ID)
@@ -60,12 +81,5 @@ public static class ImperechereService {
         if (suma > ramasDocument)
             throw new OperareException(
                 $"Suma imperecheată ({suma:0.##}) depășește restul nestins al documentului ({ramasDocument:0.##}).");
-
-        var imperechere = os.CreateObject<Imperechere>();
-        imperechere.DocumentTrezorerie = trezorerie;
-        imperechere.Document = document;
-        imperechere.Suma = suma;
-        imperechere.Autogenerat = autogenerat;
-        return imperechere;
     }
 }

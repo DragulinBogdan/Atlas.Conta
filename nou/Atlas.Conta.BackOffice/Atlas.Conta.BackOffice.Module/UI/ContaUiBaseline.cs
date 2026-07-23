@@ -15,11 +15,38 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     const string ListView = "_ListView";
 
     public void Register(UiBaselineRegistry registry) {
+        AscundeFkuriBrute(registry);
         FacturaIntrare(registry);
         FacturaIesire(registry);
         ListaDiferenteInventar(registry);
         Decont(registry);
         DescarcareGestiune(registry);
+    }
+
+    // Ascunderea generică a scalarilor `{Nav}Id` care au navigație pereche
+    // (convenția HideForeignKeys, Atlas.DXF 26.1.3.6) — înlocuiește listele
+    // manuale de HideMembers pe FK-uri (rămân, dedupe-ul le face inofensive).
+    // Pe ierarhii se aplică prin asignabilitate: o declarație pe bază acoperă
+    // toate derivatele; FK-urile PROPRII derivatelor cer declarație pe tip.
+    static void AscundeFkuriBrute(UiBaselineRegistry registry) {
+        // Bazele documentelor: Predator/Primitor/DocumentSursa (Document);
+        // Document/TipMaterial/Lot/TipTva/Angajament (DocumentDetaliu). Owned-ul
+        // Dimensiuni n-are scalar pereche → nu e atins.
+        registry.ForHierarchy<Document>().HideForeignKeys();
+        registry.ForHierarchy<DocumentDetaliu>().HideForeignKeys();
+
+        // FK-uri proprii, nevăzute pe baza ierarhiei:
+        registry.For<FacturaIntrare>().HideForeignKeys();           // PlataContPropriuId
+        registry.For<FacturaIesire>().HideForeignKeys();            // GestiuneDescarcareId
+        registry.For<FacturaIesireDetaliu>().HideForeignKeys();     // ProdusId
+        registry.For<DecontDetaliu>().HideForeignKeys();            // ContDebitId/ContCreditId/RepartitorDebitId/RepartitorCreditId
+        registry.For<DescarcareGestiuneDetaliu>().HideForeignKeys();// LinieSursaId
+
+        // Tipuri în afara ierarhiei de documente:
+        registry.For<RegistruStoc>().HideForeignKeys();             // LotId/RepartitorId/DocumentId/DetaliuId
+        registry.For<RegistruContabil>().HideForeignKeys();         // ContDebitId/ContCreditId/DocumentId/DetaliuId
+        registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
+        registry.For<Imperechere>().HideForeignKeys();              // DocumentTrezorerieId/DocumentId
     }
 
     static void FacturaIntrare(UiBaselineRegistry registry) {

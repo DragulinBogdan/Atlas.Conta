@@ -1,3 +1,4 @@
+using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -66,5 +67,8 @@ public class Imperechere : BaseObject {
     public virtual Guid DocumentId { get; set; }
     public virtual Document Document { get; set; }
     public virtual decimal Suma { get; set; }
+    // Marcaj de proveniență (creată de motor la plata autogenerată) — nu se culege
+    // de operator, deci read-only în UI.
+    [ModelDefault("AllowEdit", "False")]
     public virtual bool Autogenerat { get; set; }
 }

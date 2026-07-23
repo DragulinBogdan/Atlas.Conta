@@ -53,4 +53,32 @@ public class Dimensiuni : OwnedObjectBase {
     public virtual Guid? CentruCostId { get => centruCostId; set => SetPropertyValue(ref centruCostId, value); }
     private Repartitor centruCost;
     public virtual Repartitor CentruCost { get => centruCost; set => SetPropertyValue(ref centruCost, value); }
+
+    // Enumerarea compactă a dimensiunilor SETATE, pentru celulele de grid și
+    // lookup-uri (înlocuiește ToString-ul de tip din OwnedObjectBase). CRUCIAL:
+    // navigația se citește DOAR când FK-ul scalar e non-null — altfel accesul la
+    // proprietatea virtuală ar declanșa un lazy-load inutil pe dimensiunea goală
+    // (owned-ul materializat e proxy). Toate null → string gol.
+    public override string ToString() {
+        var parti = new List<string>(8);
+        if (repartitorId != null) parti.Add("R:" + Eticheta(Repartitor));
+        if (materialId != null) parti.Add("M:" + Eticheta(Material));
+        if (codFunctionalId != null) parti.Add("CF:" + Eticheta(CodFunctional));
+        if (codEconomicId != null) parti.Add("CE:" + Eticheta(CodEconomic));
+        if (sursaFinantareId != null) parti.Add("F:" + Eticheta(SursaFinantare));
+        if (unitateId != null) parti.Add("U:" + Eticheta(Unitate));
+        if (proiectId != null) parti.Add("P:" + Eticheta(Proiect));
+        if (centruCostId != null) parti.Add("CC:" + Eticheta(CentruCost));
+        return string.Join("; ", parti);
+    }
+
+    // Toate țintele au un `Cod` scurt natural; cădem pe ToString() dacă lipsește
+    // (nav nerezolvat sau cod gol).
+    static string Eticheta(Repartitor r) => !string.IsNullOrWhiteSpace(r?.Cod) ? r.Cod : r?.ToString() ?? "";
+    static string Eticheta(Produs p) => !string.IsNullOrWhiteSpace(p?.Cod) ? p.Cod : p?.ToString() ?? "";
+    static string Eticheta(CodFunctional c) => !string.IsNullOrWhiteSpace(c?.Cod) ? c.Cod : c?.ToString() ?? "";
+    static string Eticheta(CodEconomic c) => !string.IsNullOrWhiteSpace(c?.Cod) ? c.Cod : c?.ToString() ?? "";
+    static string Eticheta(SursaFinantare s) => !string.IsNullOrWhiteSpace(s?.Cod) ? s.Cod : s?.ToString() ?? "";
+    static string Eticheta(Unitate u) => !string.IsNullOrWhiteSpace(u?.Cod) ? u.Cod : u?.ToString() ?? "";
+    static string Eticheta(Proiect p) => !string.IsNullOrWhiteSpace(p?.Cod) ? p.Cod : p?.ToString() ?? "";
 }
