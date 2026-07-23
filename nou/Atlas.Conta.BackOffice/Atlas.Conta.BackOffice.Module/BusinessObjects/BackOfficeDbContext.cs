@@ -159,8 +159,15 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // un rând complet null s-ar materializa ca Dimensiuni=null (nu obiect gol)
             // și ar sparge coalesce-ul motorului cu NRE.
             modelBuilder.Entity<DocumentDetaliu>().OwnsOneRequired(d => d.Dimensiuni, ConfigureDimensiuni);
-            modelBuilder.Entity<RegistruContabil>().OwnsOneRequired(r => r.DimensiuniDebit, ConfigureDimensiuni);
-            modelBuilder.Entity<RegistruContabil>().OwnsOneRequired(r => r.DimensiuniCredit, ConfigureDimensiuni);
+            // Pe registru navigațiile interne se încarcă EAGER (AutoInclude):
+            // grid-urile și Dimensiuni.ToString le citesc pe fiecare rând — lazy
+            // ar însemna N+1 per instanță de owned (identity map-ul nu ajută,
+            // fiecare rând are instanța lui) plus lazy-load pe OS disposed la
+            // render târziu. Doar aici — liniile de document și regulile de
+            // contare rămân lazy (motorul le interoghează în hot-path fără să
+            // afișeze etichete).
+            modelBuilder.Entity<RegistruContabil>().OwnsOneRequired(r => r.DimensiuniDebit, ConfigureDimensiuniEager);
+            modelBuilder.Entity<RegistruContabil>().OwnsOneRequired(r => r.DimensiuniCredit, ConfigureDimensiuniEager);
             modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniComun, ConfigureDimensiuni);
             modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniOverrideDebit, ConfigureDimensiuni);
             modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniOverrideCredit, ConfigureDimensiuni);
@@ -178,6 +185,18 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             b.HasOne(d => d.Unitate).WithMany().HasForeignKey(d => d.UnitateId);
             b.HasOne(d => d.Proiect).WithMany().HasForeignKey(d => d.ProiectId);
             b.HasOne(d => d.CentruCost).WithMany().HasForeignKey(d => d.CentruCostId);
+        }
+
+        private static void ConfigureDimensiuniEager<T>(Microsoft.EntityFrameworkCore.Metadata.Builders.OwnedNavigationBuilder<T, Dimensiuni> b) where T : class {
+            ConfigureDimensiuni(b);
+            b.Navigation(d => d.Repartitor).AutoInclude();
+            b.Navigation(d => d.Material).AutoInclude();
+            b.Navigation(d => d.CodFunctional).AutoInclude();
+            b.Navigation(d => d.CodEconomic).AutoInclude();
+            b.Navigation(d => d.SursaFinantare).AutoInclude();
+            b.Navigation(d => d.Unitate).AutoInclude();
+            b.Navigation(d => d.Proiect).AutoInclude();
+            b.Navigation(d => d.CentruCost).AutoInclude();
         }
     }
 

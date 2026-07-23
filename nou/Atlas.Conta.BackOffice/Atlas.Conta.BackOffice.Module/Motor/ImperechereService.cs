@@ -64,6 +64,14 @@ public static class ImperechereService {
             throw new OperareException("Imperecherea leagă două documente operate (registrele lor există).");
         if (document.ID == trezorerie.ID)
             throw new OperareException("Un document nu se poate stinge pe el însuși.");
+        // Două documente de trezorerie de ACELAȘI sens nu se sting reciproc
+        // (Plata↔Plata ar consuma restul stingibil al ambelor fără să stingă
+        // nimic real — review advers); Plata↔Incasare rămâne permisă (lanțul
+        // avans↔regularizare, decizia 31d).
+        if ((trezorerie is Plata && document is Plata)
+            || (trezorerie is Incasare && document is Incasare))
+            throw new OperareException(
+                "Două documente de trezorerie de același sens nu se imperechează — imperecherea stinge un document de sens opus.");
         if (suma <= 0)
             throw new OperareException("Suma imperecheată trebuie să fie pozitivă.");
         // Contrapartida plății (furnizor/client/angajat) trebuie să apară pe

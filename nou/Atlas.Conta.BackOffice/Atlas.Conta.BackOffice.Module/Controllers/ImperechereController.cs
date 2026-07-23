@@ -23,15 +23,22 @@ public sealed class ImperechereController : ViewController {
         AplicaCapabilitati();
         View.CurrentObjectChanged += OnCurrentObjectChanged;
         View.ObjectSpace.Committing += OnCommitting;
+        // După Save-ul unui obiect NOU, CurrentObjectChanged nu se declanșează —
+        // fără re-evaluare pe Committed view-ul ar rămâne editabil (backstop-ul
+        // din OnCommitting refuza abia la commit); pattern-ul 40c.
+        View.ObjectSpace.Committed += OnCommitted;
     }
 
     protected override void OnDeactivated() {
         View.CurrentObjectChanged -= OnCurrentObjectChanged;
         View.ObjectSpace.Committing -= OnCommitting;
+        View.ObjectSpace.Committed -= OnCommitted;
         base.OnDeactivated();
     }
 
     void OnCurrentObjectChanged(object sender, EventArgs e) => AplicaCapabilitati();
+
+    void OnCommitted(object sender, EventArgs e) => AplicaCapabilitati();
 
     // ListView: editarea inline a link-urilor e interzisă (invarianții nu se pot
     // reverifica pe editare parțială) — New/Delete rămân. DetailView: editabil
