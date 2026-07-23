@@ -400,6 +400,308 @@ if (profil == ProfilContabil.Privat) {
             && !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajPrv));
     }
 
+    // ================= Scenariul e2e P2: descărcarea de gestiune (DSC) =================
+    // Magazinul online (design §2): FCL dictată de site (preț decuplat de cost,
+    // poziții fără stoc la facturare), identificare cu prioritate pe lot. Loturile
+    // vin din NIR-uri manuale la DATE DIFERITE — FIFO determinist pe Lot.Data (nu
+    // tie-break pe Lot.ID/Guid). FCL cu FIFO + pin (contenția pe același produs) +
+    // serviciu + poziție indisponibilă → DSC conex spart pe loturi la GENERARE
+    // (pin întâi) → operare DSC (cost 6xx=3xx ≠ vânzarea 7xx) → backorder
+    // (Genereaza direct = acțiunea manuală) → gardieni de grup + storno care
+    // redeschide restul → anularea cu draft îl șterge → default TipTva de culegere.
+    const string MarcajDsc = "E2E-DSC";
+
+    void CurataDsc(IObjectSpace os) {
+        var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajDsc)).Select(r => r.ID).ToList();
+        var docs = os.GetObjectsQuery<Document>()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        os.Delete(os.GetObjectsQuery<Imperechere>()
+            .Where(i => docIds.Contains(i.DocumentTrezorerieId) || docIds.Contains(i.DocumentId)).ToList());
+        os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+        // Copiii autogenerați (DSC conex, fără Numar) întâi — DocumentSursa spre FCL.
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            os.Delete(doc);
+        os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajDsc)).ToList());
+        os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajDsc)).ToList());
+        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajDsc)).ToList());
+        os.CommitChanges();
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDsc(os);
+
+        var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+        var mag2 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG2");
+        var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+        var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371"); // marfă
+        var tip345 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "345"); // produs finit
+        var tip704 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704"); // serviciu (VEN)
+        var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        var sdd = os.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
+        Cont ContSimbol(string simbol) => os.FirstOrDefault<Cont>(c => c.Simbol == simbol);
+        var cont4111 = ContSimbol("4111");
+        var cont4427 = ContSimbol("4427");
+        var cont607 = ContSimbol("607");
+        var cont711 = ContSimbol("711");
+        var cont707 = ContSimbol("707");
+        var cont701 = ContSimbol("701");
+
+        // --- Seed P2 privat ---
+        var reguliStocDsc = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocument.Cod == "DSC").ToList();
+        Check("Seed DSC: −1 pe predator; generic→Magazie, MF→Marfuri (oglindește NIR/LDI privat)",
+            reguliStocDsc.Count == 2 && reguliStocDsc.All(r => r.Latura == LaturaDocument.Predator && r.Semn == -1)
+            && reguliStocDsc.Any(r => r.ClasaId == null && r.TipStoc == TipStoc.Magazie)
+            && reguliStocDsc.Any(r => r.TipStoc == TipStoc.Marfuri));
+        RegulaContare CostDsc(TipMaterial tip) => os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "DSC" && r.TipMaterialId == tip.ID);
+        Check("Seed DSC cost: 371→607=371, 345→711=345 (excepțiile profilului; credit = contul de stoc al Tipului)",
+            CostDsc(tip371)?.ContDebit?.Simbol == "607" && CostDsc(tip371).SursaContCredit == SursaCont.TipMaterial
+            && CostDsc(tip345)?.ContDebit?.Simbol == "711" && CostDsc(tip345).SursaContCredit == SursaCont.TipMaterial);
+        RegulaContare VanzareFcl(TipMaterial tip) => os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "FCL" && r.TipMaterialId == tip.ID);
+        Check("Seed FCL vânzare: 371→707, 345→701 (debit RepartitorPrimitor/4111, credit VENITUL — nu contul de stoc)",
+            VanzareFcl(tip371)?.ContCredit?.Simbol == "707" && VanzareFcl(tip371).SursaContDebit == SursaCont.RepartitorPrimitor
+            && VanzareFcl(tip371).ContDebit?.Simbol == "4111"
+            && VanzareFcl(tip345)?.ContCredit?.Simbol == "701");
+        Check("Seed FCL: rândul NaturaInterzisa=Stoc șters la privat (descărcarea preia vânzarea din stoc — 37e)",
+            os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCL") == null);
+        Check("Seed DSC: numerotare DSC-; ancora fără TipTvaImplicit; N21 default pe FCT/FCL/DEC, NIR/DSC null (37f)",
+            os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "DSC")?.Serie == "DSC-"
+            && os.FirstOrDefault<TipDocument>(t => t.Cod == "DSC")?.TipTvaImplicitId == null
+            && os.FirstOrDefault<TipDocument>(t => t.Cod == "FCT")?.TipTvaImplicitId == n21.ID
+            && os.FirstOrDefault<TipDocument>(t => t.Cod == "FCL")?.TipTvaImplicitId == n21.ID
+            && os.FirstOrDefault<TipDocument>(t => t.Cod == "DEC")?.TipTvaImplicitId == n21.ID
+            && os.FirstOrDefault<TipDocument>(t => t.Cod == "NIR")?.TipTvaImplicitId == null);
+
+        // --- Setup: furnizor, client, produse A/B (marfă 371), C (produs finit 345) ---
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = MarcajDsc + "-FURN";
+        furnizor.Denumire = "Furnizor probă DSC";
+        var client = os.CreateObject<Partener>();
+        client.Cod = MarcajDsc + "-CL";
+        client.Denumire = "Client probă DSC"; // fără ContImplicit → creanța pe fallback 4111
+        Produs CreeazaProdus(string sufix, TipMaterial tip) {
+            var p = os.CreateObject<Produs>();
+            p.Cod = MarcajDsc + sufix;
+            p.Denumire = "Produs probă DSC" + sufix;
+            p.UM = "BUC";
+            p.TipMaterial = tip;
+            return p;
+        }
+        var produsA = CreeazaProdus("-A", tip371); // marfă
+        var produsB = CreeazaProdus("-B", tip371); // marfă fără stoc inițial
+        var produsC = CreeazaProdus("-C", tip345); // produs finit
+        os.CommitChanges();
+
+        List<RegistruContabil> Note(Document doc) =>
+            os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID && !r.Storno).ToList();
+
+        // --- NIR-uri manuale la DATE diferite (FIFO determinist pe Lot.Data) ---
+        var d1 = new DateOnly(2026, 4, 1);
+        var d2 = new DateOnly(2026, 4, 5);
+        var nir1 = os.CreateObject<NIR>();
+        nir1.Data = d1; nir1.Predator = furnizor; nir1.Primitor = mag1;
+        var linA1 = os.CreateObject<DocumentDetaliu>();
+        linA1.Document = nir1; linA1.TipMaterial = tip371; linA1.Cantitate = 10m; linA1.Valoare = 50m;
+        var lotA1 = linA1.CreeazaLot(os, produsA, mag1); // 5 lei/buc
+        var linC1 = os.CreateObject<DocumentDetaliu>();
+        linC1.Document = nir1; linC1.TipMaterial = tip345; linC1.Cantitate = 5m; linC1.Valoare = 40m;
+        var lotC1 = linC1.CreeazaLot(os, produsC, mag1); // 8 lei/buc
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nir1);
+
+        var nir2 = os.CreateObject<NIR>();
+        nir2.Data = d2; nir2.Predator = furnizor; nir2.Primitor = mag1;
+        var linA2 = os.CreateObject<DocumentDetaliu>();
+        linA2.Document = nir2; linA2.TipMaterial = tip371; linA2.Cantitate = 10m; linA2.Valoare = 60m;
+        var lotA2 = linA2.CreeazaLot(os, produsA, mag1); // 6 lei/buc (mai scump, mai nou)
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nir2);
+        Check("Loturi de marfă finalizate la NET (A1=5, A2=6/buc, în Marfuri) + C1=8 (Magazie)",
+            lotA1.PretUnitar == 5m && lotA2.PretUnitar == 6m && lotC1.PretUnitar == 8m
+            && StocService.Sold(os, new CheieStoc(lotA1.ID, mag1.ID, TipStoc.Marfuri)) == 10m
+            && StocService.Sold(os, new CheieStoc(lotA2.ID, mag1.ID, TipStoc.Marfuri)) == 10m
+            && StocService.Sold(os, new CheieStoc(lotC1.ID, mag1.ID, TipStoc.Magazie)) == 5m);
+
+        // --- Refuzuri prealabile ale culegerii FCL (General!+Specific?, §4) ---
+        void RefuzFcl(string nume, Gestiune gest, Produs prod, Lot pin) {
+            var f = os.CreateObject<FacturaIesire>();
+            f.Data = new DateOnly(2026, 4, 8); f.Predator = sediu; f.Primitor = client;
+            f.GestiuneDescarcare = gest;
+            var d = os.CreateObject<FacturaIesireDetaliu>();
+            d.Document = f; d.TipMaterial = tip371; d.Cantitate = 1m; d.PretUnitar = 10m; d.TipTva = n21;
+            d.Produs = prod;
+            if (pin != null) d.Lot = pin;
+            os.CommitChanges();
+            CheckRefuza(nume, () => MotorOperare.Opereaza(os, f));
+            os.Delete(f.Detalii.ToList());
+            os.Delete(f);
+            os.CommitChanges();
+        }
+        RefuzFcl("Linie de stoc fără ProdusId → refuz (identitatea liniei = produsul)", mag1, null, null);
+        RefuzFcl("FCL cu linii de stoc fără GestiuneDescarcare → refuz", null, produsA, null);
+        RefuzFcl("Pin pe lot care NU aparține produsului liniei → refuz", mag1, produsA, lotC1);
+        RefuzFcl("Pin pe lot fără sold în gestiunea de descărcare (MAG2 goală) → refuz «întâi transfer (BTR)»", mag2, produsA, lotA1);
+
+        // --- FCL: L1 FIFO(A,12), L2 pin(A,A2,5), L3 serviciu, L4 indisponibil(B,7), L5(C,3) ---
+        var d3 = new DateOnly(2026, 4, 10);
+        var fcl = os.CreateObject<FacturaIesire>();
+        fcl.Data = d3; fcl.Predator = sediu; fcl.Primitor = client;
+        fcl.GestiuneDescarcare = mag1;
+        FacturaIesireDetaliu LinieFcl(TipMaterial tip, Produs prod, decimal cant, decimal pret, Lot pin = null) {
+            var d = os.CreateObject<FacturaIesireDetaliu>();
+            d.Document = fcl; d.TipMaterial = tip; d.Produs = prod; d.Cantitate = cant; d.PretUnitar = pret; d.TipTva = n21;
+            if (pin != null) d.Lot = pin;
+            return d;
+        }
+        var lFclA = LinieFcl(tip371, produsA, 12m, 10m);           // L1 FIFO → net 120
+        var lFclApin = LinieFcl(tip371, produsA, 5m, 10m, lotA2);  // L2 pin A2 → net 50
+        var lFclServ = LinieFcl(tip704, null, 1m, 100m);           // L3 serviciu → net 100
+        var lFclB = LinieFcl(tip371, produsB, 7m, 9m);             // L4 indisponibil → net 63
+        var lFclC = LinieFcl(tip345, produsC, 3m, 20m);            // L5 produs finit → net 60
+        os.CommitChanges();
+
+        var dscDraft = MotorOperare.Opereaza(os, fcl);
+
+        // Notele FCL: venitul se postează ACUM (preț de vânzare), inclusiv pentru
+        // poziția indisponibilă B; costul vine separat pe DSC.
+        var noteFcl = Note(fcl);
+        RegistruContabil Venit(FacturaIesireDetaliu l) => noteFcl.Single(n => n.DetaliuId == l.ID && n.ContCreditId != cont4427.ID);
+        Check("FCL note: 4111=707 net pe marfă L1/L2/L4 (venitul se postează ACUM, inclusiv fără stoc)",
+            Venit(lFclA).ContDebitId == cont4111.ID && Venit(lFclA).ContCreditId == cont707.ID && Venit(lFclA).Valoare == 120m
+            && Venit(lFclApin).ContCreditId == cont707.ID && Venit(lFclApin).Valoare == 50m
+            && Venit(lFclB).ContCreditId == cont707.ID && Venit(lFclB).Valoare == 63m);
+        Check("FCL note: 4111=701 pe produsul finit L5 (60), 4111=704 pe serviciul L3 (100)",
+            Venit(lFclC).ContCreditId == cont701.ID && Venit(lFclC).Valoare == 60m
+            && Venit(lFclServ).ContCreditId == tip704.ContImplicitId && Venit(lFclServ).Valoare == 100m);
+        Check("FCL: 4427 colectat per linie (N21); 10 note total (5 venit + 5 TVA)",
+            noteFcl.Count == 10 && noteFcl.Count(n => n.ContDebitId == cont4111.ID && n.ContCreditId == cont4427.ID) == 5);
+
+        // Opereaza întoarce DSC-ul draft (secundar); spargerea pe loturi la GENERARE.
+        var dsc = (DescarcareGestiune)dscDraft;
+        var dd = dsc.Detalii.OfType<DescarcareGestiuneDetaliu>().ToList();
+        Check("Conex DSC: draft autogenerat, DocumentSursa=FCL, predator=gestiune, primitor=client",
+            dsc.Stare == StareDocument.Draft && dsc.Autogenerat && dsc.DocumentSursaId == fcl.ID
+            && dsc.PredatorId == mag1.ID && dsc.PrimitorId == client.ID);
+        var linL2 = dd.Where(x => x.LinieSursaId == lFclApin.ID).ToList();
+        Check("Spargere PIN ÎNTÂI: L2 → 1 rând lot A2, 5 buc, cost 30",
+            linL2.Count == 1 && linL2[0].LotId == lotA2.ID && linL2[0].Cantitate == 5m && linL2[0].Valoare == 30m);
+        Check("Spargere FIFO: L1 → A1 10 buc (50) + A2 2 buc (12, din 10−5 rămase după pin)",
+            dd.Count(x => x.LinieSursaId == lFclA.ID) == 2
+            && dd.Any(x => x.LinieSursaId == lFclA.ID && x.LotId == lotA1.ID && x.Cantitate == 10m && x.Valoare == 50m)
+            && dd.Any(x => x.LinieSursaId == lFclA.ID && x.LotId == lotA2.ID && x.Cantitate == 2m && x.Valoare == 12m));
+        var linL5 = dd.Where(x => x.LinieSursaId == lFclC.ID).ToList();
+        Check("Spargere: L5 → C1 3 buc (24); L4 indisponibil → nicio linie; total 4 rânduri, cost 116",
+            linL5.Count == 1 && linL5[0].LotId == lotC1.ID && linL5[0].Cantitate == 3m && linL5[0].Valoare == 24m
+            && !dd.Any(x => x.LinieSursaId == lFclB.ID) && dd.Count == 4 && dd.Sum(x => x.Valoare) == 116m);
+
+        var resturi = DescarcareService.RestNedescarcat(os, fcl);
+        Check("RestNedescarcat (cusătura §2.2): L4 rest 7, celelalte 0",
+            resturi.Single(x => x.LinieId == lFclB.ID).RestNeacoperit == 7m
+            && resturi.Where(x => x.LinieId != lFclB.ID).All(x => x.RestNeacoperit == 0m));
+
+        // --- Operare DSC: cost 6xx=3xx (≠ vânzarea), −stoc pe gestiune, dim ambele laturi pe gestiune ---
+        Check("DSC nu generează conex", MotorOperare.Opereaza(os, dsc) == null);
+        Check("DSC operat cu număr din politică", dsc.Stare == StareDocument.Operat && dsc.Numar?.StartsWith("DSC-") == true);
+        var noteDsc = Note(dsc);
+        Check("Cost marfă: 607 = 371 la COST 92 (30+50+12) — decuplat de vânzarea 707 (233)",
+            noteDsc.Where(n => n.ContDebitId == cont607.ID).Sum(n => n.Valoare) == 92m
+            && noteDsc.Where(n => n.ContDebitId == cont607.ID).All(n => n.ContCreditId == tip371.ContImplicitId)
+            && noteFcl.Where(n => n.ContCreditId == cont707.ID).Sum(n => n.Valoare) == 233m);
+        var notaPf = noteDsc.Single(n => n.ContDebitId == cont711.ID);
+        Check("Cost produs finit: 711 = 345, 24; exact 4 note pe DSC",
+            notaPf.ContCreditId == tip345.ContImplicitId && notaPf.Valoare == 24m && noteDsc.Count == 4);
+        Check("DSC dimensiuni: AMBELE laturi Repartitor=gestiunea (override polimorf), Material din lot",
+            noteDsc.All(n => n.DimensiuniDebit.RepartitorId == mag1.ID && n.DimensiuniCredit.RepartitorId == mag1.ID)
+            && noteDsc.Where(n => n.ContDebitId == cont607.ID).All(n => n.DimensiuniDebit.MaterialId == produsA.ID)
+            && notaPf.DimensiuniDebit.MaterialId == produsC.ID);
+        var stocDsc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == dsc.ID).ToList();
+        Check("DSC stoc: −10 A1, −7 A2 (Marfuri), −3 C1 (Magazie), toate pe gestiune",
+            stocDsc.Where(r => r.LotId == lotA1.ID).Sum(r => r.Cantitate) == -10m
+            && stocDsc.Where(r => r.LotId == lotA2.ID).Sum(r => r.Cantitate) == -7m
+            && stocDsc.Where(r => r.LotId == lotC1.ID).Sum(r => r.Cantitate) == -3m
+            && stocDsc.Where(r => r.LotId == lotA1.ID || r.LotId == lotA2.ID).All(r => r.TipStoc == TipStoc.Marfuri)
+            && stocDsc.Single(r => r.LotId == lotC1.ID).TipStoc == TipStoc.Magazie
+            && stocDsc.All(r => r.RepartitorId == mag1.ID));
+
+        // --- Backorder (§5): recepția produsului B, apoi Genereaza direct (acțiunea manuală) ---
+        var d4 = new DateOnly(2026, 4, 15);
+        var nir3 = os.CreateObject<NIR>();
+        nir3.Data = d4; nir3.Predator = furnizor; nir3.Primitor = mag1;
+        var linB1 = os.CreateObject<DocumentDetaliu>();
+        linB1.Document = nir3; linB1.TipMaterial = tip371; linB1.Cantitate = 7m; linB1.Valoare = 28m;
+        var lotB1 = linB1.CreeazaLot(os, produsB, mag1); // 4 lei/buc
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nir3);
+
+        var dsc2 = DescarcareService.Genereaza(os, fcl, d4);
+        os.CommitChanges();
+        var db2 = dsc2?.Detalii.OfType<DescarcareGestiuneDetaliu>().SingleOrDefault();
+        Check("Backorder: DSC₂ autogenerat DOAR pe linia B (7 buc, cost 28), DocumentSursa=FCL",
+            dsc2 != null && dsc2.Autogenerat && dsc2.DocumentSursaId == fcl.ID && dsc2.Detalii.Count == 1
+            && db2 != null && db2.LinieSursaId == lFclB.ID && db2.LotId == lotB1.ID && db2.Cantitate == 7m && db2.Valoare == 28m);
+        Check("A doua apelare Genereaza → null (acoperirea completă; draftul contează)",
+            DescarcareService.Genereaza(os, fcl, d4) == null);
+        MotorOperare.Opereaza(os, dsc2);
+        var n2 = Note(dsc2).Single();
+        Check("DSC₂ operat: 607 = 371 la costul B (28)",
+            n2.ContDebitId == cont607.ID && n2.ContCreditId == tip371.ContImplicitId && n2.Valoare == 28m);
+
+        // --- Gardieni de grup + storno care redeschide restul ---
+        var d5 = new DateOnly(2026, 4, 20);
+        CheckRefuza("Anularea FCL cu DSC operat → refuz", () => MotorOperare.AnuleazaOperarea(os, fcl));
+        CheckRefuza("Stornarea FCL cu DSC operat → refuz", () => MotorOperare.Storneaza(os, fcl, d5));
+        MotorOperare.Storneaza(os, dsc2, d5);
+        Check("Storno DSC₂ → Stornat, B1 revenit în stoc",
+            dsc2.Stare == StareDocument.Stornat
+            && StocService.Sold(os, new CheieStoc(lotB1.ID, mag1.ID, TipStoc.Marfuri), d5) == 7m);
+        var dsc3 = DescarcareService.Genereaza(os, fcl, d5);
+        var db3 = dsc3?.Detalii.OfType<DescarcareGestiuneDetaliu>().SingleOrDefault();
+        Check("Stornat NU acoperă: Genereaza redeschide restul L4 (DSC₃, B1 7 buc)",
+            dsc3 != null && dsc3.Detalii.Count == 1 && db3 != null
+            && db3.LinieSursaId == lFclB.ID && db3.LotId == lotB1.ID && db3.Cantitate == 7m);
+        os.Delete(dsc3.Detalii.ToList());
+        os.Delete(dsc3);
+        os.CommitChanges();
+
+        // --- Anularea cu draft: operarea unei FCL noi generează un DSC draft; anularea îl șterge ---
+        var d6 = new DateOnly(2026, 4, 25);
+        var fclMini = os.CreateObject<FacturaIesire>();
+        fclMini.Data = d6; fclMini.Predator = sediu; fclMini.Primitor = client;
+        fclMini.GestiuneDescarcare = mag1;
+        var lMini = os.CreateObject<FacturaIesireDetaliu>();
+        lMini.Document = fclMini; lMini.TipMaterial = tip371; lMini.Produs = produsA;
+        lMini.Cantitate = 2m; lMini.PretUnitar = 10m; lMini.TipTva = n21;
+        os.CommitChanges();
+        var dscMini = MotorOperare.Opereaza(os, fclMini);
+        Check("FCL₂ operată generează un DSC draft autogenerat",
+            dscMini is DescarcareGestiune { Stare: StareDocument.Draft, Autogenerat: true }
+            && os.GetObjectsQuery<DescarcareGestiune>().Any(x => x.DocumentSursaId == fclMini.ID));
+        MotorOperare.AnuleazaOperarea(os, fclMini);
+        Check("Anularea FCL₂ ȘTERGE DSC-ul draft autogenerat (gardianul existent); FCL₂ pe Draft",
+            fclMini.Stare == StareDocument.Draft
+            && !os.GetObjectsQuery<DescarcareGestiune>().Any(x => x.DocumentSursaId == fclMini.ID));
+
+        // --- Datoria P1: default TipTva de CULEGERE (N21); culegerea explicită bate ---
+        var fclTva = os.CreateObject<FacturaIesire>();
+        fclTva.Data = d6; fclTva.Predator = sediu; fclTva.Primitor = client;
+        var lNoTva = os.CreateObject<FacturaIesireDetaliu>();
+        lNoTva.Document = fclTva; lNoTva.TipMaterial = tip704; lNoTva.Cantitate = 1m; lNoTva.PretUnitar = 10m;
+        var lExplicit = os.CreateObject<FacturaIesireDetaliu>();
+        lExplicit.Document = fclTva; lExplicit.TipMaterial = tip704; lExplicit.Cantitate = 1m; lExplicit.PretUnitar = 10m; lExplicit.TipTva = sdd;
+        TvaService.AplicaTipTvaImplicit(os, fclTva, lNoTva);
+        TvaService.AplicaTipTvaImplicit(os, fclTva, lExplicit);
+        Check("Default TipTva: linia fără TipTva primește N21; linia cu SDD explicit rămâne neatinsă",
+            lNoTva.TipTvaId == n21.ID && lExplicit.TipTvaId == sdd.ID);
+        os.CommitChanges();
+
+        CurataDsc(os);
+        Check("Curățenie finală DSC (fără reziduuri e2e)",
+            !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajDsc))
+            && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajDsc)));
+    }
+
     Rezumat();
     return;
 }
@@ -616,6 +918,21 @@ using (var os = provider.CreateObjectSpace()) {
         os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == cod)?.CereClasificatieBugetara == true;
     Check("Seed 3d: FCT/DEC/PLT cer clasificație bugetară; INC nu",
         CereClasificatie("FCT") && CereClasificatie("DEC") && CereClasificatie("PLT") && !CereClasificatie("INC"));
+
+    // P2 (design §7): la bugetar ancora DSC există (nucleu, ca BPR) dar e INERTĂ —
+    // fără politici, deci hook-ul GenereazaSecundar nu descarcă nimic; FCL rămâne
+    // pur creanță cu natura Stoc interzisă. Datoria P1 (37f): default CAP21.
+    Check("Seed bugetar: ancora DSC există și e inertă (0 RegulaStoc, 0 RegulaContare pe DSC)",
+        os.FirstOrDefault<TipDocument>(t => t.Cod == "DSC") != null
+        && !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocument.Cod == "DSC")
+        && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocument.Cod == "DSC"));
+    var cap21 = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP21");
+    Check("Seed bugetar: TipTvaImplicit CAP21 pe FCT/FCL/DEC; NIR/DSC null",
+        os.FirstOrDefault<TipDocument>(t => t.Cod == "FCT")?.TipTvaImplicitId == cap21.ID
+        && os.FirstOrDefault<TipDocument>(t => t.Cod == "FCL")?.TipTvaImplicitId == cap21.ID
+        && os.FirstOrDefault<TipDocument>(t => t.Cod == "DEC")?.TipTvaImplicitId == cap21.ID
+        && os.FirstOrDefault<TipDocument>(t => t.Cod == "NIR")?.TipTvaImplicitId == null
+        && os.FirstOrDefault<TipDocument>(t => t.Cod == "DSC")?.TipTvaImplicitId == null);
 
     var furnizor = os.CreateObject<Partener>();
     furnizor.Cod = "E2E-FURN";

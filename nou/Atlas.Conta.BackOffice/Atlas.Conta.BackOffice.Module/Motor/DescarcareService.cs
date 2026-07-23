@@ -28,7 +28,7 @@ public static class DescarcareService {
     // documente Draft SAU Operat (Stornat nu acoperă; draftul contează — altfel a
     // doua generare ar dubla alocarea). Liniile manuale DSC (LinieSursa null) nu
     // intră. Totul pe proiecții server-side (25b).
-    internal static IReadOnlyList<(Guid LinieId, Guid? ProdusId, Guid? LotId, decimal Cantitate, decimal Acoperit, decimal RestNeacoperit)>
+    public static IReadOnlyList<(Guid LinieId, Guid? ProdusId, Guid? LotId, decimal Cantitate, decimal Acoperit, decimal RestNeacoperit)>
         RestNedescarcat(IObjectSpace os, FacturaIesire fcl) {
         var idsTip = fcl.Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
         var natura = os.GetObjectsQuery<TipMaterial>()
@@ -61,7 +61,7 @@ public static class DescarcareService {
     // operarea FCL și din acțiunea manuală „Generează descărcarea" (backorder).
     // Întoarce un draft DSC (marcat Autogenerat + DocumentSursa) sau null; NU
     // comite (commit-ul aparține apelantului — în hook e tranzacția operării).
-    internal static DescarcareGestiune Genereaza(IObjectSpace os, FacturaIesire fcl, DateOnly data) {
+    public static DescarcareGestiune Genereaza(IObjectSpace os, FacturaIesire fcl, DateOnly data) {
         if (fcl.GestiuneDescarcareId == null)
             return null;
         var gestiuneId = fcl.GestiuneDescarcareId.Value;
