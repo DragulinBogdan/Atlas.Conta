@@ -29,10 +29,13 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
     public virtual DateOnly? ChitantaData { get; set; }
 
     // Lanțul de valori trăiește pe derivată (testul bazei §3): capătul lui
-    // (Valoare = VALOARE_RECEPTIE_TVA) se materializează la operare.
+    // (Valoare + ValoareTva, după regimul TipTva — P1) se materializează la
+    // operare. TVA-ul cules manual pe linie se păstrează (factura furnizorului
+    // bate rotunjirea noastră — design §3).
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
+        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         foreach (var d in Detalii.OfType<FacturaIntrareDetaliu>())
-            d.RecalculeazaValoare();
+            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, pastreazaTvaCules: true);
     }
 
     // Plata automată (00 §7, decizia 31): grupul DECONT_* cules → draft Plata
@@ -55,7 +58,10 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
             var d = os.CreateObject<DocumentDetaliu>();
             d.Document = plata;
             d.TipMaterialId = s.TipMaterialId;
-            d.Valoare = s.Valoare;
+            // Plata stinge BRUTUL (design §3): defalcarea clonată per linie e
+            // Valoare + ValoareTva; linia de plată nu are semantică proprie de
+            // TVA (TipTva rămâne null).
+            d.Valoare = s.Valoare + s.ValoareTva;
             d.AngajamentId = s.AngajamentId;
             d.Dimensiuni = Motor.DimensiuniResolver.Rezolva(s.Dimensiuni);
         }
@@ -95,21 +101,16 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
 }
 
 public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot {
-    // Lanțul de valori trăiește pe derivată (testul bazei §3); doar capătul
-    // (Valoare din bază) intră în registre.
+    // Lanțul de valori trăiește pe derivată (testul bazei §3); capetele lui
+    // (Valoare + ValoareTva din bază) intră în registre. Cota și regimul vin
+    // din TipTva (bază, P1) — fosta CotaTva de pe derivată era redundantă.
     public virtual decimal PretUnitar { get; set; }
-    public virtual decimal CotaTva { get; set; }
 
-    [NotMapped] public decimal PretReceptie => PretUnitar;
-    [NotMapped] public decimal PretReceptieTva => PretReceptie * (1 + CotaTva / 100m);
-    [NotMapped] public decimal ValoareReceptie => PretReceptie * Cantitate;
-    [NotMapped] public decimal TvaReceptie => ValoareReceptie * CotaTva / 100m;
+    [NotMapped] public decimal ValoareReceptie => PretUnitar * Cantitate;
 
     public virtual string CodCpv { get; set; }
 
     // Atribute de lot culese la intrare; motorul le copiază pe Lot la operare.
     public virtual DateOnly? DataExpirare { get; set; }
     public virtual string LotFabricatie { get; set; }
-
-    public void RecalculeazaValoare() => Valoare = ValoareReceptie + TvaReceptie;
 }

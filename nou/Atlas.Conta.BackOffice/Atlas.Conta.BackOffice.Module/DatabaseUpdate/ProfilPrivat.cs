@@ -1,0 +1,431 @@
+using System.Reflection;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using DevExpress.ExpressApp;
+
+namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate;
+
+// Pachetul de profil PRIVAT (P1, deciziile 29/35): plan OMFP 1802 (sintetice
+// grad 1–3), Clasă/Tip minimal pe simboluri OMFP, TVA structural (TipTva cu
+// conturile 4426/4427 ca date + PoliticaTva per tip de document) și politicile
+// de contare cu derivările PROPRII profilului (371→607, 345→711, 381→608;
+// plus de inventar 3xx = 7588, nu 791). Diferă de bugetar prin CONȚINUT, nu
+// prin mecanisme (decizia 29c) — mecanismele stau în ContaSeeder.
+internal static class ProfilPrivat {
+    // Mapările 3xx→6xx/7xx care nu urmează schimbarea primei cifre (29c):
+    // mărfuri 371→607, produse finite 345→711 (descărcarea inversează venitul
+    // aferent costurilor), ambalaje 381→608.
+    static readonly Dictionary<string, string> Derivari6xxExceptii = new() {
+        ["371"] = "607",
+        ["345"] = "711",
+        ["381"] = "608",
+    };
+
+    internal static void Seed(IObjectSpace os) {
+        SeedClasaTip(os);
+        SeedPlanConturi(os);
+        ContaSeeder.SeedRepartitoriMinimali(os);
+        // Derivările interoghează BAZA — nomenclatoarele se comit întâi (30e).
+        os.CommitChanges();
+        ContaSeeder.SeedContImplicitTipMaterial(os);
+        SeedTipTva(os);
+        SeedPoliticiNotaTransfer(os);
+        SeedPoliticiFacturaIntrareNir(os);
+        SeedPoliticiBonConsum(os);
+        SeedPoliticiListaDiferente(os);
+        SeedPoliticiFacturaIesire(os);
+        SeedPoliticiTrezorerie(os);
+        SeedPoliticiDecont(os);
+        SeedPoliticiValidare(os);
+        os.CommitChanges();
+        // PoliticaTva referă TipTva comise mai sus.
+        SeedPoliticiTva(os);
+        os.CommitChanges();
+    }
+
+    // Clasă/Tip minimal privat: Cod tip = simbol OMFP (același mecanism de
+    // derivare a contului implicit ca la bugetar — 10 §2 / decizia 26b).
+    static void SeedClasaTip(IObjectSpace os) {
+        (string Cod, string Denumire, NaturaClasa Natura)[] clase = [
+            ("MP", "Materii prime", NaturaClasa.Stoc),
+            ("M", "Materiale consumabile", NaturaClasa.Stoc),
+            ("OI", "Obiecte de inventar", NaturaClasa.Stoc),
+            ("PF", "Produse finite", NaturaClasa.Stoc),
+            ("MF", "Mărfuri", NaturaClasa.Stoc),
+            ("AMB", "Ambalaje", NaturaClasa.Stoc),
+            ("S", "Servicii și utilități", NaturaClasa.Serviciu),
+            ("C", "Alte cheltuieli", NaturaClasa.Cheltuiala),
+            ("F", "Imobilizări", NaturaClasa.Imobilizare),
+            ("VEN", "Venituri", NaturaClasa.Serviciu),
+            ("T", "TVA", NaturaClasa.Tehnica),
+            ("TRZ", "Trezorerie", NaturaClasa.Tehnica),
+        ];
+        var claseMap = new Dictionary<string, ClasaProdus>();
+        foreach (var c in clase) {
+            var clasa = os.FirstOrDefault<ClasaProdus>(x => x.Cod == c.Cod);
+            if (clasa == null) {
+                clasa = os.CreateObject<ClasaProdus>();
+                clasa.Cod = c.Cod;
+                clasa.Denumire = c.Denumire;
+                clasa.Natura = c.Natura;
+            }
+            claseMap[c.Cod] = clasa;
+        }
+
+        (string Clasa, string Cod, string Denumire)[] tipuri = [
+            ("MP", "301", "Materii prime"),
+            ("M", "302", "Materiale consumabile"),
+            ("OI", "303", "Materiale de natura obiectelor de inventar"),
+            ("PF", "345", "Produse finite"),
+            ("MF", "371", "Mărfuri"),
+            ("AMB", "381", "Ambalaje"),
+            ("S", "605", "Energie și apă"),
+            ("S", "611", "Întreținere și reparații"),
+            ("S", "612", "Redevențe, locații de gestiune și chirii"),
+            ("S", "613", "Prime de asigurare"),
+            ("S", "614", "Studii și cercetări"),
+            ("S", "622", "Comisioane și onorarii"),
+            ("S", "623", "Protocol, reclamă și publicitate"),
+            ("S", "625", "Deplasări, detașări și transferări"),
+            ("S", "626", "Poștale și telecomunicații"),
+            ("S", "628", "Alte servicii executate de terți"),
+            ("C", "635", "Alte impozite, taxe și vărsăminte asimilate"),
+            ("F", "208", "Alte imobilizări necorporale"),
+            ("F", "214", "Mobilier, aparatură birotică, alte active corporale"),
+            // Nivelul de contare al facturării (30b): contul de venit = alegerea
+            // Tipului; simboluri OMFP (704/706/707/708 — nu 751/750 ca la bugetar).
+            ("VEN", "704", "Venituri din servicii prestate"),
+            ("VEN", "706", "Venituri din redevențe, locații de gestiune și chirii"),
+            ("VEN", "707", "Venituri din vânzarea mărfurilor"),
+            ("VEN", "708", "Venituri din activități diverse"),
+            // Tipul convențional al liniilor de trezorerie culese manual (31c):
+            // codul nu e simbol de cont — rămâne fără ContImplicit.
+            ("TRZ", "TRZ", "Operațiune de trezorerie"),
+        ];
+        foreach (var t in tipuri) {
+            if (os.FirstOrDefault<TipMaterial>(x => x.Cod == t.Cod) == null) {
+                var tip = os.CreateObject<TipMaterial>();
+                tip.Cod = t.Cod;
+                tip.Denumire = t.Denumire;
+                tip.Clasa = claseMap[t.Clasa];
+            }
+        }
+    }
+
+    // Planul OMFP 1802 (sursa: nomenclatorul ANAF PlanConturiBalSocCom, format
+    // Account,ParentAccount,Denumire — numele poate conține virgule, deci
+    // split cu limită). OMFP nu poartă funcție/defalcare: DimensiuniObligatorii
+    // pornesc goale (design §5 — editabile ca date când apare nevoia);
+    // Sumator = are copii.
+    static void SeedPlanConturi(IObjectSpace os) {
+        if (os.GetObjectsCount(typeof(Cont), null) > 0)
+            return;
+
+        using var stream = Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream("Atlas.Conta.BackOffice.Module.DatabaseUpdate.SeedData.plan-conturi-omfp.csv")
+            ?? throw new InvalidOperationException("Resursa plan-conturi-omfp.csv lipsește.");
+        using var reader = new StreamReader(stream);
+
+        var conturi = new Dictionary<string, Cont>();
+        reader.ReadLine(); // header
+        string line;
+        while ((line = reader.ReadLine()) != null) {
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+            var f = line.Split(',', 3);
+            var cont = os.CreateObject<Cont>();
+            cont.Simbol = f[0];
+            cont.Denumire = f[2];
+            // CSV-ul e ordonat pe nivel (părinții înaintea copiilor).
+            if (f[1].Length > 0 && conturi.TryGetValue(f[1], out var parinte)) {
+                cont.Parinte = parinte;
+                parinte.Sumator = true;
+            }
+            conturi[f[0]] = cont;
+        }
+    }
+
+    // Nomenclatorul TipTva (design §2): cotele Legii 141/2025 (21 standard,
+    // 11 redusă, 9 tranzitoriu locuințe până la 31.07.2026) + regimurile.
+    // Conturile de TVA sunt DATE per profil; codurile SAF-T (D406) vin din
+    // nomenclatorul ANAF (RO_SAFT_SchemaDefCod 16.02.2026), direcționale:
+    // livrare (seria 310xxx) / achiziție deductibilă integral (301xxx) /
+    // nedeductibilă (351xxx). Categoriile D394 sunt direcționale la nivel de
+    // operațiune — se fixează la proiecția D394 (checklist 35c), rămân date.
+    static void SeedTipTva(IObjectSpace os) {
+        var conturi = os.GetObjectsQuery<Cont>()
+            .Where(c => c.Simbol == "4426" || c.Simbol == "4427" || c.Simbol == "4428")
+            .ToDictionary(c => c.Simbol, c => c);
+        var tva4426 = conturi["4426"];
+        var tva4427 = conturi["4427"];
+        var tva4428 = conturi["4428"];
+
+        (string Cod, string Denumire, decimal Cota, RegimTva Regim,
+            bool Conturi, string SafTLivrare, string SafTAchizitie)[] tipuri = [
+            ("N21", "TVA 21% (standard)", 21m, RegimTva.Normal, true, "310344", "301104"),
+            ("N11", "TVA 11% (redusă)", 11m, RegimTva.Normal, true, "310351", "301105"),
+            ("N9", "TVA 9% (tranzitoriu locuințe, până la 31.07.2026)", 9m, RegimTva.Normal, true, "310310", "301102"),
+            ("TI21", "Taxare inversă 21%", 21m, RegimTva.TaxareInversa, true, "310312", "300906"),
+            ("NED21", "Achiziție fără drept de deducere 21% (TVA capitalizat)", 21m, RegimTva.Capitalizat, false, null, "351104"),
+            ("SDD", "Scutit cu drept de deducere", 0m, RegimTva.Scutit, false, "310314", null),
+            ("SFD", "Scutit fără drept de deducere", 0m, RegimTva.Scutit, false, "310326", null),
+            ("NIM", "Neimpozabil (în afara sferei TVA)", 0m, RegimTva.Neimpozabil, false, "310324", null),
+        ];
+        foreach (var t in tipuri) {
+            if (os.FirstOrDefault<TipTva>(x => x.Cod == t.Cod) != null)
+                continue;
+            var tip = os.CreateObject<TipTva>();
+            tip.Cod = t.Cod;
+            tip.Denumire = t.Denumire;
+            tip.Cota = t.Cota;
+            tip.Regim = t.Regim;
+            tip.CodSafTLivrare = t.SafTLivrare;
+            tip.CodSafTAchizitie = t.SafTAchizitie;
+            if (t.Conturi) {
+                tip.ContTvaDeductibil = tva4426;
+                tip.ContTvaColectat = tva4427;
+                // REZERVAT (design §8): TVA la încasare / facturi nesosite.
+                tip.ContTvaNeexigibil = tva4428;
+            }
+        }
+    }
+
+    // Postarea TVA per tip (design §4): FCT/DEC deduc contra pasivului laturii
+    // predator (furnizor 401 / titular 542), FCL colectează contra creanței
+    // laturii primitor (client 4111). Tipurile fără rând (NIR, BTR, BCS, LDI,
+    // PLT, INC) nu postează TVA.
+    static void SeedPoliticiTva(IObjectSpace os) {
+        void Politica(string codTip, DirectieTva directie, SursaCont sursa, string fallback) {
+            if (os.FirstOrDefault<PoliticaTva>(p => p.TipDocument.Cod == codTip) != null)
+                return;
+            var p = os.CreateObject<PoliticaTva>();
+            p.TipDocument = os.FirstOrDefault<TipDocument>(t => t.Cod == codTip);
+            p.Directie = directie;
+            p.SursaContrapartida = sursa;
+            p.ContrapartidaFallback = os.FirstOrDefault<Cont>(c => c.Simbol == fallback);
+        }
+        Politica("FCT", DirectieTva.Deductibil, SursaCont.RepartitorPredator, "401");
+        Politica("DEC", DirectieTva.Deductibil, SursaCont.RepartitorPredator, "542");
+        Politica("FCL", DirectieTva.Colectat, SursaCont.RepartitorPrimitor, "4111");
+    }
+
+    // Profilul de validare privat (33c): FĂRĂ clasificație bugetară; FCL
+    // interzice natura Stoc până la P2 (descărcarea de gestiune — 35e).
+    static void SeedPoliticiValidare(IObjectSpace os) {
+        var p = os.FirstOrDefault<PoliticaValidare>(x => x.TipDocument.Cod == "FCL");
+        if (p == null) {
+            p = os.CreateObject<PoliticaValidare>();
+            p.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCL");
+        }
+        p.NaturaInterzisa = NaturaClasa.Stoc;
+    }
+
+    // Transferul (23c): două rânduri ±Magazie, fără contare la plan sintetic.
+    static void SeedPoliticiNotaTransfer(IObjectSpace os) {
+        var btr = os.FirstOrDefault<TipDocument>(x => x.Cod == "BTR");
+        ContaSeeder.SeedNumerotare(os, "BTR", "BTR-");
+        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "BTR") != null)
+            return;
+        var iesire = os.CreateObject<RegulaStoc>();
+        iesire.TipDocument = btr;
+        iesire.Latura = LaturaDocument.Predator;
+        iesire.TipStoc = TipStoc.Magazie;
+        iesire.Semn = -1;
+        var intrare = os.CreateObject<RegulaStoc>();
+        intrare.TipDocument = btr;
+        intrare.Latura = LaturaDocument.Primitor;
+        intrare.TipStoc = TipStoc.Magazie;
+        intrare.Semn = +1;
+    }
+
+    // Lanțul de cumpărare (26a, sub TVA structural — design §6): recepția
+    // contează pe NIR la NET (3xx = 401), factura postează liniile non-stoc
+    // net + rândurile 4426 per linie (inclusiv ale liniilor de stoc).
+    static void SeedPoliticiFacturaIntrareNir(IObjectSpace os) {
+        var fct = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCT");
+        var nir = os.FirstOrDefault<TipDocument>(x => x.Cod == "NIR");
+        var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
+        var cont404 = os.FirstOrDefault<Cont>(c => c.Simbol == "404");
+
+        ContaSeeder.StergeReguliContareStricate(os);
+        ContaSeeder.SeedNumerotare(os, "NIR", "NIR-");
+
+        var conex = os.FirstOrDefault<PoliticaConex>(x => x.TipDocumentSursa.Cod == "FCT");
+        if (conex == null) {
+            conex = os.CreateObject<PoliticaConex>();
+            conex.TipDocumentSursa = fct;
+            conex.TipDocumentTinta = nir;
+        }
+        conex.InverseazaLaturi = false;
+        conex.NaturaFiltru = NaturaClasa.Stoc;
+
+        // Stoc NIR: +1 pe primitor; generic → Magazie, mărfurile pe registrul
+        // propriu (restul claselor speciale bugetare nu există la privat).
+        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "NIR") == null) {
+            (string Clasa, TipStoc TipStoc)[] reguli = [
+                (null, TipStoc.Magazie),
+                ("MF", TipStoc.Marfuri),
+            ];
+            foreach (var r in reguli) {
+                var regula = os.CreateObject<RegulaStoc>();
+                regula.TipDocument = nir;
+                regula.Latura = LaturaDocument.Primitor;
+                regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
+                regula.TipStoc = r.TipStoc;
+                regula.Semn = +1;
+            }
+        }
+
+        // Contare NIR: 3xx (contul Tipului) = furnizor, la NET.
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "NIR") == null) {
+            var receptie = os.CreateObject<RegulaContare>();
+            receptie.TipDocument = nir;
+            receptie.NaturaFiltru = NaturaClasa.Stoc;
+            receptie.SursaContDebit = SursaCont.TipMaterial;
+            receptie.SursaContCredit = SursaCont.RepartitorPredator;
+            receptie.ContCredit = cont401;
+        }
+
+        // Contare FCT: doar naturile care NU trec pe NIR, la net; 404 la imobilizări.
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "FCT") == null) {
+            (NaturaClasa Natura, Cont Fallback)[] reguli = [
+                (NaturaClasa.Serviciu, cont401),
+                (NaturaClasa.Cheltuiala, cont401),
+                (NaturaClasa.Imobilizare, cont404),
+            ];
+            foreach (var r in reguli) {
+                var regula = os.CreateObject<RegulaContare>();
+                regula.TipDocument = fct;
+                regula.NaturaFiltru = r.Natura;
+                regula.SursaContDebit = SursaCont.TipMaterial;
+                regula.SursaContCredit = SursaCont.RepartitorPredator;
+                regula.ContCredit = r.Fallback;
+            }
+        }
+    }
+
+    // Consumul (27): −Magazie / +Consum; contarea 6xx = 3xx derivată din simbol,
+    // cu excepțiile profilului (607/711/608).
+    static void SeedPoliticiBonConsum(IObjectSpace os) {
+        var bcs = os.FirstOrDefault<TipDocument>(x => x.Cod == "BCS");
+        ContaSeeder.SeedNumerotare(os, "BCS", "BCS-");
+        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "BCS") == null) {
+            var iesire = os.CreateObject<RegulaStoc>();
+            iesire.TipDocument = bcs;
+            iesire.Latura = LaturaDocument.Predator;
+            iesire.TipStoc = TipStoc.Magazie;
+            iesire.Semn = -1;
+            var consum = os.CreateObject<RegulaStoc>();
+            consum.TipDocument = bcs;
+            consum.Latura = LaturaDocument.Primitor;
+            consum.TipStoc = TipStoc.Consum;
+            consum.Semn = +1;
+        }
+        ContaSeeder.SeedContare6xxDin3xx(os, bcs, null, Derivari6xxExceptii);
+    }
+
+    // Inventarierea (28): +1 pe predator, direcția în semn. Minus = 6xx = 3xx
+    // (cu excepțiile profilului), plus = 3xx = 7588 „Alte venituri din
+    // exploatare" (decizia 29c — la privat NU 791).
+    static void SeedPoliticiListaDiferente(IObjectSpace os) {
+        var ldi = os.FirstOrDefault<TipDocument>(x => x.Cod == "LDI");
+        ContaSeeder.SeedNumerotare(os, "LDI", "LDI-");
+        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "LDI") == null) {
+            (string Clasa, TipStoc TipStoc)[] reguli = [
+                (null, TipStoc.Magazie),
+                ("MF", TipStoc.Marfuri),
+            ];
+            foreach (var r in reguli) {
+                var regula = os.CreateObject<RegulaStoc>();
+                regula.TipDocument = ldi;
+                regula.Latura = LaturaDocument.Predator;
+                regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
+                regula.TipStoc = r.TipStoc;
+                regula.Semn = +1;
+            }
+        }
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "LDI" && x.TipMaterialId == null) == null) {
+            var plus = os.CreateObject<RegulaContare>();
+            plus.TipDocument = ldi;
+            plus.NaturaFiltru = NaturaClasa.Stoc;
+            plus.SemnFiltru = +1;
+            plus.SursaContDebit = SursaCont.TipMaterial;
+            plus.SursaContCredit = SursaCont.Explicit;
+            plus.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "7588");
+        }
+        ContaSeeder.SeedContare6xxDin3xx(os, ldi, -1, Derivari6xxExceptii);
+    }
+
+    // Facturarea (30): pur creanță până la P2; 4111 = 7xx net + 4111 = 4427
+    // per linie (prin PoliticaTva). Scadență default +30.
+    static void SeedPoliticiFacturaIesire(IObjectSpace os) {
+        var fcl = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCL");
+        ContaSeeder.SeedNumerotare(os, "FCL", "FCL-");
+        if (os.FirstOrDefault<PoliticaScadenta>(x => x.TipDocument.Cod == "FCL") == null) {
+            var scadenta = os.CreateObject<PoliticaScadenta>();
+            scadenta.TipDocument = fcl;
+            scadenta.ZileDefault = 30;
+        }
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "FCL") == null) {
+            var facturare = os.CreateObject<RegulaContare>();
+            facturare.TipDocument = fcl;
+            facturare.SursaContDebit = SursaCont.RepartitorPrimitor;
+            facturare.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
+            facturare.SursaContCredit = SursaCont.TipMaterial;
+        }
+    }
+
+    // Trezoreria (31): conturi proprii OMFP (casa 5311, banca 5121); contare
+    // din laturi — PLT: beneficiar (fallback 401) = cont propriu (fără
+    // fallback); INC: oglindit (fallback 4111 pe plătitor).
+    static void SeedPoliticiTrezorerie(IObjectSpace os) {
+        var casa = os.FirstOrDefault<ContPropriu>(x => x.Cod == "CASA");
+        if (casa == null) {
+            casa = os.CreateObject<ContPropriu>();
+            casa.Cod = "CASA";
+            casa.Denumire = "Casa în lei";
+            casa.EsteBanca = false;
+            casa.ContImplicit = os.FirstOrDefault<Cont>(c => c.Simbol == "5311");
+        }
+        var banca = os.FirstOrDefault<ContPropriu>(x => x.Cod == "BANCA");
+        if (banca == null) {
+            banca = os.CreateObject<ContPropriu>();
+            banca.Cod = "BANCA";
+            banca.Denumire = "Cont curent la bancă în lei";
+            banca.EsteBanca = true;
+            banca.ContImplicit = os.FirstOrDefault<Cont>(c => c.Simbol == "5121");
+        }
+
+        ContaSeeder.SeedNumerotare(os, "PLT", "PLT-");
+        ContaSeeder.SeedNumerotare(os, "INC", "INC-");
+
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "PLT") == null) {
+            var plata = os.CreateObject<RegulaContare>();
+            plata.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == "PLT");
+            plata.SursaContDebit = SursaCont.RepartitorPrimitor;
+            plata.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
+            plata.SursaContCredit = SursaCont.RepartitorPredator;
+        }
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "INC") == null) {
+            var incasare = os.CreateObject<RegulaContare>();
+            incasare.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == "INC");
+            incasare.SursaContDebit = SursaCont.RepartitorPrimitor;
+            incasare.SursaContCredit = SursaCont.RepartitorPredator;
+            incasare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
+        }
+    }
+
+    // Decontul (32): debit din contul Tipului (fără fallback), credit = avansul
+    // titularului (542 OMFP ca fallback); TVA-ul justificat postează 4426 = 542
+    // prin PoliticaTva.
+    static void SeedPoliticiDecont(IObjectSpace os) {
+        var dec = os.FirstOrDefault<TipDocument>(x => x.Cod == "DEC");
+        ContaSeeder.SeedNumerotare(os, "DEC", "DEC-");
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "DEC") == null) {
+            var justificare = os.CreateObject<RegulaContare>();
+            justificare.TipDocument = dec;
+            justificare.SursaContDebit = SursaCont.TipMaterial;
+            justificare.SursaContCredit = SursaCont.RepartitorPredator;
+            justificare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "542");
+        }
+    }
+}

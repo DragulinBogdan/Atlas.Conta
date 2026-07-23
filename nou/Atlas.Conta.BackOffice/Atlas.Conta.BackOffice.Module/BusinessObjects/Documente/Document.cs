@@ -33,8 +33,11 @@ public abstract class Document : BaseObject {
     [DevExpress.ExpressApp.DC.Aggregated]
     public virtual ObservableCollection<DocumentDetaliu> Detalii { get; set; } = new();
 
+    // Explicit BRUT (P1, design §3): imperecherea și plata autogenerată sting
+    // brutul. La regimurile capitalizate ValoareTva e 0, deci rămâne exact
+    // vechiul Σ Valoare — invarianții ImperechereService nu se schimbă.
     [NotMapped]
-    public decimal Total => Detalii.Sum(d => d.Valoare);
+    public decimal Total => Detalii.Sum(d => d.Valoare + d.ValoareTva);
 
     // Hooks polimorfe consumate DOAR de motorul de operare (decizia 14).
     // Primesc IObjectSpace și lucrează pe FK-uri, nu pe navigații — contextul
@@ -89,8 +92,19 @@ public class DocumentDetaliu : BaseObject {
     public virtual decimal Cantitate { get; set; }
 
     // Valoarea de postare în registre (stoc valoric + note) — capătul lanțului
-    // de valori; derivatele o calculează (testul bazei §3).
+    // de valori; derivatele o calculează (testul bazei §3). Cu TVA structural
+    // (P1): net la regim deductibil, brut la Capitalizat — semantica „o singură
+    // valoare de postare a rândului principal" (22a) nu se schimbă.
     public virtual decimal Valoare { get; set; }
+
+    // P1 (design §3): postarea 4426/4427 e regulă contabilă generică → testul
+    // apartenenței (decizia 2) pune TVA-ul pe BAZĂ, nu pe interfață. Null =
+    // linie fără semantică de TVA (BTR/BCS/LDI/NIR/PLT/INC — neschimbate).
+    public virtual Guid? TipTvaId { get; set; }
+    public virtual TipTva TipTva { get; set; }
+    // A doua valoare de postare, cu destinație fixă (conturile de TVA din
+    // TipTva + PoliticaTva); 0 la regimurile care nu postează separat.
+    public virtual decimal ValoareTva { get; set; }
 
     // Ancoră spre execuția bugetară (modul separat) — testul bazei §7.1.
     public virtual Guid? AngajamentId { get; set; }

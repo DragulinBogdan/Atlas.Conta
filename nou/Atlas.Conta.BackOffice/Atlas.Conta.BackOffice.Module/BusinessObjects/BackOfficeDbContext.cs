@@ -59,6 +59,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<Unitate> Unitati { get; set; }
         public DbSet<Angajament> Angajamente { get; set; }
         public DbSet<PerioadaFiscala> PerioadeFiscale { get; set; }
+        public DbSet<TipTva> TipuriTva { get; set; }
 
         // Documente (TPT)
         public DbSet<Document> Documente { get; set; }
@@ -89,6 +90,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaNumerotare> PoliticiNumerotare { get; set; }
         public DbSet<PoliticaScadenta> PoliticiScadenta { get; set; }
         public DbSet<PoliticaValidare> PoliticiValidare { get; set; }
+        public DbSet<PoliticaTva> PoliticiTva { get; set; }
 
         // Infrastructura migrării (pasul 4): corelare legacy → nou.
         public DbSet<MigrareLegatura> MigrareLegaturi { get; set; }

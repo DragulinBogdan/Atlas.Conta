@@ -23,6 +23,8 @@ bld/
 [Ll]og/
 [Ll]ogs/
 .vs/
+anaf/
+1C/
 
 # .NET Core
 project.lock.json

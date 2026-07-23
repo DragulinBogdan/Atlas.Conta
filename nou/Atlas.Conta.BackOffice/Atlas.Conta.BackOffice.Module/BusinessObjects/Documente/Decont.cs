@@ -15,12 +15,15 @@ public class Decont : Document, IDocumentCuPV {
     public override Guid RepartitorImplicitCredit() => PredatorId;
 
     // Cantitatea e pro-formă (legacy: defaults 'BUC'/'1'); lanțul de valori
-    // trăiește pe derivată (testul bazei §3) — capătul se materializează aici.
+    // trăiește pe derivată (testul bazei §3) — capătul se materializează aici,
+    // cu TVA-ul din TipTva (P1): bonul cu TVA deductibil justificat pe decont
+    // postează 4426 = 542 prin PoliticaTva.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
+        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         foreach (var d in Detalii.OfType<DecontDetaliu>()) {
             if (d.Cantitate == 0)
                 d.Cantitate = 1;
-            d.RecalculeazaValoare();
+            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri);
         }
     }
 
@@ -45,8 +48,8 @@ public class Decont : Document, IDocumentCuPV {
 // rămâne pe seama regulii (debit din Tip, credit din titular).
 public class DecontDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
     public virtual string Descriere { get; set; }
+    // Cota și regimul vin din TipTva (bază, P1).
     public virtual decimal PretUnitar { get; set; }
-    public virtual decimal CotaTva { get; set; }
 
     public virtual Guid? ContDebitId { get; set; }
     public virtual Cont ContDebit { get; set; }
@@ -56,6 +59,4 @@ public class DecontDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
     public virtual Repartitor RepartitorDebit { get; set; }
     public virtual Guid? RepartitorCreditId { get; set; }
     public virtual Repartitor RepartitorCredit { get; set; }
-
-    public void RecalculeazaValoare() => Valoare = PretUnitar * Cantitate * (1 + CotaTva / 100m);
 }

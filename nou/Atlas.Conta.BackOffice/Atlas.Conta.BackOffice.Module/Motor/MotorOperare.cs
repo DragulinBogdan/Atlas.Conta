@@ -138,6 +138,59 @@ public static class MotorOperare {
                 dimensiuniDebit, dimensiuniCredit));
         }
 
+        // Pasul TVA (P1, design §4): postarea 4426/4427 e INDEPENDENTĂ de
+        // potrivirea regulii principale — liniile de stoc ale FCT nu au regulă
+        // de contare (netul postează pe NIR-ul conex), dar TVA-ul lor deductibil
+        // se postează pe factură. Fără rând PoliticaTva pe tip = niciun rând TVA
+        // (profilul bugetar rămâne neschimbat). Rândul e per linie (DetaliuId ca
+        // tot restul); dimensiunile folosesc același coalesce, fără override-uri
+        // de regulă: linie → default polimorf header (+ Materialul din lot).
+        var politicaTva = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipDoc.ID);
+        if (politicaTva != null) {
+            var idsTipTva = doc.Detalii.Where(d => d.TipTvaId != null && d.ValoareTva != 0m)
+                .Select(d => d.TipTvaId.Value).Distinct().ToList();
+            var tipuriTva = os.GetObjectsQuery<TipTva>()
+                .Where(t => idsTipTva.Contains(t.ID))
+                .Select(t => new { t.ID, t.Cod, t.Regim, t.ContTvaDeductibilId, t.ContTvaColectatId })
+                .ToDictionary(t => t.ID, t => (t.Cod, t.Regim, t.ContTvaDeductibilId, t.ContTvaColectatId));
+            foreach (var d in doc.Detalii) {
+                if (d.TipTvaId == null || d.ValoareTva == 0m)
+                    continue;
+                var tva = tipuriTva[d.TipTvaId.Value];
+                if (tva.Regim is not (RegimTva.Normal or RegimTva.TaxareInversa))
+                    continue;
+                Guid ContTva(Guid? id, string rol) => id ?? throw new OperareException(
+                    $"Tipul de TVA {tva.Cod} nu are contul de TVA {rol} configurat.");
+                Guid contDebit, contCredit;
+                if (tva.Regim == RegimTva.TaxareInversa) {
+                    // Autolichidare: 4426 = 4427 indiferent de direcție, sold zero.
+                    contDebit = ContTva(tva.ContTvaDeductibilId, "deductibilă");
+                    contCredit = ContTva(tva.ContTvaColectatId, "colectată");
+                }
+                else {
+                    var contrapartida = RezolvaCont(politicaTva.SursaContrapartida,
+                            politicaTva.ContrapartidaFallbackId, null, repartitorPredator, repartitorPrimitor)
+                        ?? throw new OperareException(
+                            $"Contrapartida rândului de TVA nu se poate rezolva ({tipDoc.Cod}, sursă {politicaTva.SursaContrapartida}).");
+                    if (politicaTva.Directie == DirectieTva.Deductibil) {
+                        contDebit = ContTva(tva.ContTvaDeductibilId, "deductibilă");
+                        contCredit = contrapartida;
+                    }
+                    else {
+                        contDebit = contrapartida;
+                        contCredit = ContTva(tva.ContTvaColectatId, "colectată");
+                    }
+                }
+                var materialTva = d.LotId != null && produsPerLot.TryGetValue(d.LotId.Value, out var produsTva)
+                    ? produsTva : (Guid?)null;
+                note.Add((d, contDebit, contCredit, d.ValoareTva,
+                    DimensiuniResolver.Rezolva(d.Dimensiuni,
+                        new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit(), MaterialId = materialTva }),
+                    DimensiuniResolver.Rezolva(d.Dimensiuni,
+                        new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit(), MaterialId = materialTva })));
+            }
+        }
+
         // Dimensiunile obligatorii per cont (decizia 15: flag-urile de defalcare
         // din plan = date de validare) se verifică pe seturile REZOLVATE, per
         // latură — abia aici se știe și contul, și rezultatul coalesce-ului.
@@ -214,7 +267,7 @@ public static class MotorOperare {
         if (doc is DocumentTrezorerie trezorerie && trezorerie.Autogenerat && trezorerie.DocumentSursaId != null) {
             var sursa = os.GetObjectByKey<Document>(trezorerie.DocumentSursaId.Value);
             var suma = Math.Min(
-                doc.Detalii.Sum(d => d.Valoare) - ImperechereService.Asignat(os, doc.ID),
+                doc.Detalii.Sum(d => d.Valoare + d.ValoareTva) - ImperechereService.Asignat(os, doc.ID),
                 ImperechereService.Ramas(os, sursa.ID));
             if (suma > 0)
                 ImperechereService.Creeaza(os, trezorerie, sursa, suma, autogenerat: true);
@@ -337,6 +390,10 @@ public static class MotorOperare {
             d.LotId = s.LotId;
             d.Cantitate = s.Cantitate;
             d.Valoare = s.Valoare;
+            // TipTva se clonează ca informație; ValoareTva NU — TVA-ul liniei
+            // se postează pe documentul sursă (P1, design §4/§6: NIR-ul duce
+            // netul, factura duce rândurile 4426).
+            d.TipTvaId = s.TipTvaId;
             d.AngajamentId = s.AngajamentId;
             d.Dimensiuni = DimensiuniResolver.Rezolva(s.Dimensiuni);
         }

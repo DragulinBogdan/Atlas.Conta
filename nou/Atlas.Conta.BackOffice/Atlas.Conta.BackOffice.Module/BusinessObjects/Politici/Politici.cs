@@ -106,6 +106,23 @@ public class PoliticaValidare : BaseObject {
     public virtual NaturaClasa? NaturaInterzisa { get; set; }
 }
 
+// Postarea TVA per tip de document (P1, design §4) — independentă de potrivirea
+// regulii principale de contare: pe FCT liniile de stoc NU au regulă (netul
+// postează pe NIR-ul conex), dar TVA-ul lor deductibil se postează pe FACTURĂ.
+// Simetrică cu PoliticaScadenta/PoliticaValidare; fără rând = niciun rând TVA
+// (profilul bugetar nu primește rânduri — zero schimbare de comportament).
+[NavigationItem("Politici")]
+public class PoliticaTva : BaseObject {
+    public virtual Guid TipDocumentId { get; set; }
+    public virtual TipDocument TipDocument { get; set; }
+    public virtual DirectieTva Directie { get; set; }
+    // Contrapartida rândului de TVA (401/542/411…): sursa declarativă
+    // (repartitorul unei laturi) + fallback explicit, ca la RegulaContare.
+    public virtual SursaCont SursaContrapartida { get; set; }
+    public virtual Guid? ContrapartidaFallbackId { get; set; }
+    public virtual Cont ContrapartidaFallback { get; set; }
+}
+
 [NavigationItem("Politici")]
 public class PoliticaNumerotare : BaseObject {
     public virtual Guid TipDocumentId { get; set; }

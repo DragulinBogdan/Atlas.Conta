@@ -29,6 +29,25 @@ public enum NaturaClasa {
 
 public enum TipInstrumentPlata { OrdinPlata = 1, Cec = 2, DispozitieCasa = 3, Chitanta = 4 }
 
+// Regimul fiscal al unui TipTva (P1, design §2). `NeexigibilLaIncasare` NU
+// intră la P1 — se adaugă aditiv odată cu mecanismul (4428 + transfer la
+// imperechere); nomenclatorul rezervă doar contul.
+public enum RegimTva {
+    // Deductibil/colectat după direcția documentului (PoliticaTva).
+    Normal = 1,
+    // TVA intră în `Valoare`, nu se postează separat — comportamentul
+    // profilului bugetar neplătitor și al achizițiilor fără drept de deducere.
+    Capitalizat = 2,
+    // Autolichidare: un rând 4426 = 4427 pe valoarea TVA, sold zero.
+    TaxareInversa = 3,
+    Scutit = 4,
+    Neimpozabil = 5,
+}
+
+// Direcția postării TVA per tip de document (PoliticaTva): FCT/DEC deduc,
+// FCL colectează. TaxareInversa ignoră direcția (4426 = 4427).
+public enum DirectieTva { Deductibil = 1, Colectat = 2 }
+
 // De unde își ia o latură a regulii de contare contul (testul bazei §7.2:
 // „contul se rezolvă prin POLITICĂ — per tip partener și/sau per Clasă-Tip").
 // Contul explicit al regulii rămâne fallback când sursa nu rezolvă.

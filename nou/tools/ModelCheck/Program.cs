@@ -1,16 +1,22 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
 
 // Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
-// end-to-end ale motorului de operare (felia 3b: NotaTransfer; felia 3c:
-// FacturaIntrare→NIR conex) pe un IObjectSpace real — aceeași infrastructură
-// XAF pe care o folosește și UI-ul (docs 113709).
-// Aceeași țintă ca appsettings.json: Postgres localhost:5444.
-const string ConnectionString =
-    "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=Atlas.Conta.BackOffice";
+// end-to-end ale motorului de operare pe un IObjectSpace real — aceeași
+// infrastructură XAF pe care o folosește și UI-ul (docs 113709).
+//
+// Parametrizat pe PROFIL (P1, design §7): implicit rulează suita bugetară pe
+// baza aplicației (aceeași țintă ca appsettings.json); `ModelCheck privat`
+// rulează blocul e2e privat pe o bază DEDICATĂ (profil-per-bază — 35d), pe
+// care unealta o migrează și o seed-uiește singură (ContaSeeder, Privat).
+var profil = args.Any(a => a.Contains("privat", StringComparison.OrdinalIgnoreCase))
+    ? ProfilContabil.Privat : ProfilContabil.Bugetar;
+var connectionString = "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database="
+    + (profil == ProfilContabil.Privat ? "Atlas.Conta.ModelCheck.Privat" : "Atlas.Conta.BackOffice");
 
 var esecuri = 0;
 void Check(string nume, bool ok) {
@@ -27,35 +33,61 @@ void CheckRefuza(string nume, Action actiune) {
         Console.WriteLine($"OK   {nume} — „{e.Message.Split('\n')[0]}”");
     }
 }
+void Rezumat() {
+    Console.WriteLine(esecuri == 0 ? "\nToate verificările au trecut." : $"\n{esecuri} verificări EȘUATE.");
+    Environment.ExitCode = esecuri == 0 ? 0 : 1;
+}
 
 var opts = new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
-    .UseNpgsql(ConnectionString)
+    .UseNpgsql(connectionString)
     .UseChangeTrackingProxies()
     .Options;
 
 using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
-    Console.WriteLine($"Model OK: {ctx.Model.GetEntityTypes().Count()} entity types");
+    Console.WriteLine($"Model OK: {ctx.Model.GetEntityTypes().Count()} entity types; profil: {profil}");
 
-    if (!await ctx.Database.CanConnectAsync()) {
-        Console.WriteLine("Baza nu există încă — doar validare de model.");
-        return;
+    if (profil == ProfilContabil.Privat) {
+        // Baza privată aparține uneltei: se creează/migrează aici.
+        await ctx.Database.MigrateAsync();
     }
-
-    var pending = (await ctx.Database.GetPendingMigrationsAsync()).ToList();
-    var applied = (await ctx.Database.GetAppliedMigrationsAsync()).ToList();
-    Console.WriteLine($"Migrații aplicate: {applied.Count}; în așteptare: {pending.Count}"
-        + (pending.Count > 0 ? $" ({string.Join(", ", pending)})" : ""));
-    if (pending.Count > 0) {
-        Console.WriteLine("Aplicați migrațiile înainte de scenariul e2e (dotnet ef database update).");
-        return;
+    else {
+        if (!await ctx.Database.CanConnectAsync()) {
+            Console.WriteLine("Baza nu există încă — doar validare de model.");
+            return;
+        }
+        var pending = (await ctx.Database.GetPendingMigrationsAsync()).ToList();
+        var applied = (await ctx.Database.GetAppliedMigrationsAsync()).ToList();
+        Console.WriteLine($"Migrații aplicate: {applied.Count}; în așteptare: {pending.Count}"
+            + (pending.Count > 0 ? $" ({string.Join(", ", pending)})" : ""));
+        if (pending.Count > 0) {
+            Console.WriteLine("Aplicați migrațiile înainte de scenariul e2e (dotnet ef database update).");
+            return;
+        }
     }
+}
 
+using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
+    (builder, _) => builder
+        .UseNpgsql(connectionString)
+        .UseChangeTrackingProxies()
+        .UseObjectSpaceLinkProxies()
+        .UseLazyLoadingProxies());
+
+// Seed-ul profilului privat: exact calea updater-ului (ContaSeeder), pe
+// ObjectSpace standalone; idempotent la rulări repetate.
+if (profil == ProfilContabil.Privat) {
+    using var osSeed = provider.CreateObjectSpace();
+    ContaSeeder.Seed(osSeed, ProfilContabil.Privat);
+}
+
+using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     Console.WriteLine($"TipuriDocument:  {await ctx.TipuriDocument.CountAsync()}");
     Console.WriteLine($"ClaseProduse:    {await ctx.ClaseProduse.CountAsync()}");
     Console.WriteLine($"TipuriMaterial:  {await ctx.TipuriMaterial.CountAsync()}");
     Console.WriteLine($"Conturi:         {await ctx.Conturi.CountAsync()} (din care cu defalcare: {await ctx.Conturi.CountAsync(c => c.DimensiuniObligatorii != DimensiuneFlags.Niciuna)})");
     Console.WriteLine($"Repartitori:     {await ctx.Repartitori.CountAsync()}");
     Console.WriteLine($"PerioadeFiscale: {await ctx.PerioadeFiscale.CountAsync()}");
+    Console.WriteLine($"TipuriTva:       {await ctx.TipuriTva.CountAsync()}");
     Console.WriteLine($"ReguliStoc:      {await ctx.ReguliStoc.CountAsync()}");
     Console.WriteLine($"ReguliContare:   {await ctx.ReguliContare.CountAsync()}");
 
@@ -84,19 +116,300 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     await ctx.SaveChangesAsync();
 }
 
+// ========================= Scenariul e2e P1: profil privat =========================
+// TVA structural pe baza privată (OMFP 1802): FCT cu linie stoc + linie serviciu
+// (NIR net, 4426 pe factură — inclusiv pentru linia de stoc fără regulă
+// principală, 401 brut, imperecherea plății automate pe brut) → FCL cu 4427 →
+// DEC cu 4426 = 542 → taxare inversă (4426 = 4427) → capitalizat (nedeductibil)
+// → ValoareTva culeasă manual păstrată → storno cu rânduri TVA inverse.
+if (profil == ProfilContabil.Privat) {
+    const string MarcajPrv = "E2E-PRV";
+
+    void CurataPrv(IObjectSpace os) {
+        var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajPrv)).Select(r => r.ID).ToList();
+        var docs = os.GetObjectsQuery<Document>()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        os.Delete(os.GetObjectsQuery<Imperechere>()
+            .Where(i => docIds.Contains(i.DocumentTrezorerieId) || docIds.Contains(i.DocumentId)).ToList());
+        os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            os.Delete(doc);
+        os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajPrv).ToList());
+        os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajPrv).ToList());
+        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajPrv)).ToList());
+        os.CommitChanges();
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        CurataPrv(os);
+
+        var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+        var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+        var banca = os.FirstOrDefault<ContPropriu>(c => c.Cod == "BANCA");
+        var tip302 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302");
+        var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371");
+        var tip345 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "345");
+        var tip381 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "381");
+        var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+        var tip704 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704");
+        var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        var ti21 = os.FirstOrDefault<TipTva>(t => t.Cod == "TI21");
+        var ned21 = os.FirstOrDefault<TipTva>(t => t.Cod == "NED21");
+        Cont ContSimbol(string simbol) => os.FirstOrDefault<Cont>(c => c.Simbol == simbol);
+        var cont401 = ContSimbol("401");
+        var cont4111 = ContSimbol("4111");
+        var cont4426 = ContSimbol("4426");
+        var cont4427 = ContSimbol("4427");
+        var cont542 = ContSimbol("542");
+        var cont5121 = ContSimbol("5121");
+
+        // --- Seed-ul profilului privat ---
+        Check("Seed: N21 = Normal 21%, conturile 4426/4427 (+4428 rezervat) și codurile SAF-T ca date",
+            n21 != null && n21.Regim == RegimTva.Normal && n21.Cota == 21m
+            && n21.ContTvaDeductibilId == cont4426.ID && n21.ContTvaColectatId == cont4427.ID
+            && n21.ContTvaNeexigibilId != null
+            && n21.CodSafTLivrare == "310344" && n21.CodSafTAchizitie == "301104");
+        Check("Seed: derivarea contului implicit pe simboluri OMFP (302 → 302, exact)",
+            tip302?.ContImplicitId != null
+            && os.GetObjectByKey<Cont>(tip302.ContImplicitId.Value).Simbol == "302");
+        Cont DebitBcs(TipMaterial tip) {
+            var r = os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "BCS" && x.TipMaterialId == tip.ID);
+            return r?.ContDebitId == null ? null : os.GetObjectByKey<Cont>(r.ContDebitId.Value);
+        }
+        Check("Seed BCS: 302→602 (mecanic) + excepțiile profilului 371→607, 345→711, 381→608",
+            DebitBcs(tip302)?.Simbol == "602" && DebitBcs(tip371)?.Simbol == "607"
+            && DebitBcs(tip345)?.Simbol == "711" && DebitBcs(tip381)?.Simbol == "608");
+        var plusLdi = os.FirstOrDefault<RegulaContare>(r => r.TipDocument.Cod == "LDI" && r.TipMaterialId == null);
+        Check("Seed LDI: plusul de inventar → credit 7588 (nu 791 — decizia 29c)",
+            plusLdi != null && plusLdi.SemnFiltru == +1
+            && plusLdi.ContCredit?.Simbol == "7588");
+        PoliticaTva Tva(string cod) => os.FirstOrDefault<PoliticaTva>(p => p.TipDocument.Cod == cod);
+        Check("Seed: PoliticaTva — FCT/DEC deduc (401/542), FCL colectează (4111); NIR/PLT/INC fără rând",
+            Tva("FCT")?.Directie == DirectieTva.Deductibil && Tva("FCT").SursaContrapartida == SursaCont.RepartitorPredator
+            && Tva("FCT").ContrapartidaFallback?.Simbol == "401"
+            && Tva("DEC")?.Directie == DirectieTva.Deductibil && Tva("DEC").ContrapartidaFallback?.Simbol == "542"
+            && Tva("FCL")?.Directie == DirectieTva.Colectat && Tva("FCL").SursaContrapartida == SursaCont.RepartitorPrimitor
+            && Tva("FCL").ContrapartidaFallback?.Simbol == "4111"
+            && Tva("NIR") == null && Tva("PLT") == null && Tva("INC") == null);
+        Check("Seed: profilul de validare privat — fără clasificație bugetară; FCL interzice stocul",
+            os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCT") == null
+            && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCL")?.NaturaInterzisa == NaturaClasa.Stoc);
+        Check("Seed: plan OMFP fără defalcări obligatorii (pornesc goale — design §5)",
+            !os.GetObjectsQuery<Cont>().Any(c => c.DimensiuniObligatorii != DimensiuneFlags.Niciuna));
+
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = MarcajPrv + "-FURN";
+        furnizor.Denumire = "Furnizor probă privat";
+        var client = os.CreateObject<Partener>();
+        client.Cod = MarcajPrv + "-CL";
+        client.Denumire = "Client probă privat";
+        var angajat = os.CreateObject<Angajat>();
+        angajat.Cod = MarcajPrv + "-ANG";
+        angajat.Denumire = "Titular probă privat"; // fără ContImplicit — fallback 542
+        var produs = os.CreateObject<Produs>();
+        produs.Cod = MarcajPrv;
+        produs.Denumire = "Produs probă privat";
+        produs.UM = "BUC";
+        produs.TipMaterial = tip302;
+        os.CommitChanges();
+
+        List<RegistruContabil> Note(Document doc) =>
+            os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID && !r.Storno).ToList();
+
+        // --- FCT: linie stoc + linie serviciu, N21, plata automată pe brut ---
+        var fct = os.CreateObject<FacturaIntrare>();
+        fct.Numar = "E2E-PRV-FF1";
+        fct.Data = new DateOnly(2026, 3, 3);
+        fct.Predator = furnizor;
+        fct.Primitor = mag1;
+        fct.GenereazaPlata = true;
+        fct.PlataContPropriu = banca;
+        fct.PlataNumar = "OP-P1";
+        fct.PlataData = new DateOnly(2026, 3, 4);
+        var linieStoc = os.CreateObject<FacturaIntrareDetaliu>();
+        linieStoc.Document = fct;
+        linieStoc.TipMaterial = tip302;
+        linieStoc.Cantitate = 5m;
+        linieStoc.PretUnitar = 10m;
+        linieStoc.TipTva = n21;
+        var lot = linieStoc.CreeazaLot(os, produs, mag1);
+        var linieServiciu = os.CreateObject<FacturaIntrareDetaliu>();
+        linieServiciu.Document = fct;
+        linieServiciu.TipMaterial = tip628;
+        linieServiciu.Cantitate = 1m;
+        linieServiciu.PretUnitar = 100m;
+        linieServiciu.TipTva = n21;
+        os.CommitChanges();
+
+        var conex = MotorOperare.Opereaza(os, fct);
+        Check("FCT privat: lanțul de valori NET + TVA separat (50/10,5 și 100/21)",
+            linieStoc.Valoare == 50m && linieStoc.ValoareTva == 10.5m
+            && linieServiciu.Valoare == 100m && linieServiciu.ValoareTva == 21m);
+        Check("Lot finalizat la NET: preț 10 (fără TVA capitalizat)",
+            lot.PretUnitar == 10m);
+        Check("Total factură = BRUT (181,5) — imperecherea stinge brutul",
+            fct.Total == 181.5m);
+        var noteFct = Note(fct);
+        Check("FCT: 3 note — serviciul net (628 = 401, 100) + câte un rând 4426 per linie",
+            noteFct.Count == 3
+            && noteFct.Any(n => n.ContDebitId == tip628.ContImplicitId && n.ContCreditId == cont401.ID && n.Valoare == 100m)
+            && noteFct.Count(n => n.ContDebitId == cont4426.ID && n.ContCreditId == cont401.ID) == 2);
+        Check("Rândul 4426 al liniei de STOC există deși linia nu are regulă principală (netul e pe NIR)",
+            noteFct.Any(n => n.DetaliuId == linieStoc.ID && n.ContDebitId == cont4426.ID && n.Valoare == 10.5m));
+        Check("Rândul 4426 al serviciului: 21; dimensiunile din default-ul polimorf al header-ului",
+            noteFct.Any(n => n.DetaliuId == linieServiciu.ID && n.ContDebitId == cont4426.ID && n.Valoare == 21m
+                && n.DimensiuniDebit.RepartitorId == furnizor.ID && n.DimensiuniCredit.RepartitorId == mag1.ID));
+
+        // --- NIR conex: netul, fără TVA ---
+        Check("Conex: NIR draft cu linia de stoc la NET, TipTva clonat ca informație, ValoareTva 0",
+            conex is NIR { Stare: StareDocument.Draft } && conex.Detalii.Count == 1
+            && conex.Detalii[0].Valoare == 50m && conex.Detalii[0].ValoareTva == 0m
+            && conex.Detalii[0].TipTvaId == n21.ID);
+        MotorOperare.Opereaza(os, conex);
+        var noteNir = Note(conex);
+        var stocNir = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == conex.ID).ToList();
+        Check("NIR: +5/50 în stoc (evaluare la net) și o singură notă 302 = 401, 50 — fără rânduri TVA",
+            stocNir.Count == 1 && stocNir[0].Cantitate == 5m && stocNir[0].Valoare == 50m
+            && noteNir.Count == 1 && noteNir[0].ContDebitId == tip302.ContImplicitId
+            && noteNir[0].ContCreditId == cont401.ID && noteNir[0].Valoare == 50m);
+
+        // --- Plata automată: defalcarea pe BRUT + imperecherea integrală ---
+        var plataAuto = os.GetObjectsQuery<Plata>().Single(p => p.DocumentSursaId == fct.ID);
+        Check("Plata autogenerată: liniile clonează defalcarea BRUTĂ (60,5 + 121 = 181,5), fără TipTva",
+            plataAuto.Detalii.Count == 2 && plataAuto.Detalii.Sum(d => d.Valoare) == 181.5m
+            && plataAuto.Detalii.All(d => d.TipTvaId == null && d.ValoareTva == 0m));
+        MotorOperare.Opereaza(os, plataAuto);
+        var notePlata = Note(plataAuto);
+        Check("Plata contează 401 = 5121 (banca) pe brut",
+            notePlata.Count == 2 && notePlata.All(n => n.ContDebitId == cont401.ID && n.ContCreditId == cont5121.ID)
+            && notePlata.Sum(n => n.Valoare) == 181.5m);
+        Check("Imperecherea automată stinge BRUTUL facturii (181,5; rest 0)",
+            os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentTrezorerieId == plataAuto.ID).Suma == 181.5m
+            && ImperechereService.Ramas(os, fct.ID) == 0m);
+
+        // --- FCL: 4427 colectat ---
+        var fcl = os.CreateObject<FacturaIesire>();
+        fcl.Data = new DateOnly(2026, 3, 6);
+        fcl.Predator = sediu;
+        fcl.Primitor = client;
+        var linieVenit = os.CreateObject<FacturaIesireDetaliu>();
+        linieVenit.Document = fcl;
+        linieVenit.TipMaterial = tip704;
+        linieVenit.Cantitate = 1m;
+        linieVenit.PretUnitar = 200m;
+        linieVenit.TipTva = n21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fcl);
+        var noteFcl = Note(fcl);
+        Check("FCL: 4111 = 704 net (200) + 4111 = 4427 (42); scadența default +30; total brut 242",
+            noteFcl.Count == 2
+            && noteFcl.Any(n => n.ContDebitId == cont4111.ID && n.ContCreditId == tip704.ContImplicitId && n.Valoare == 200m)
+            && noteFcl.Any(n => n.ContDebitId == cont4111.ID && n.ContCreditId == cont4427.ID && n.Valoare == 42m)
+            && fcl.DataScadenta == fcl.Data.AddDays(30) && fcl.Total == 242m);
+
+        // --- DEC: 4426 = 542 pe titular ---
+        var dec = os.CreateObject<Decont>();
+        dec.Data = new DateOnly(2026, 3, 8);
+        dec.Predator = angajat;
+        dec.Primitor = sediu;
+        var linieDec = os.CreateObject<DecontDetaliu>();
+        linieDec.Document = dec;
+        linieDec.TipMaterial = tip628;
+        linieDec.PretUnitar = 30m; // cantitatea pro-formă 0 → 1
+        linieDec.TipTva = n21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, dec);
+        var noteDec = Note(dec);
+        Check("DEC: cheltuiala net (628 = 542, 30) + TVA justificat (4426 = 542, 6,3), creditul pe TITULAR",
+            noteDec.Count == 2
+            && noteDec.Any(n => n.ContDebitId == tip628.ContImplicitId && n.ContCreditId == cont542.ID && n.Valoare == 30m)
+            && noteDec.Any(n => n.ContDebitId == cont4426.ID && n.ContCreditId == cont542.ID && n.Valoare == 6.3m)
+            && noteDec.All(n => n.DimensiuniCredit.RepartitorId == angajat.ID));
+
+        // --- Taxare inversă: 4426 = 4427, apoi storno cu rândurile TVA inverse ---
+        var fctTi = os.CreateObject<FacturaIntrare>();
+        fctTi.Numar = "E2E-PRV-FF2";
+        fctTi.Data = new DateOnly(2026, 3, 9);
+        fctTi.Predator = furnizor;
+        fctTi.Primitor = mag1;
+        var linieTi = os.CreateObject<FacturaIntrareDetaliu>();
+        linieTi.Document = fctTi;
+        linieTi.TipMaterial = tip628;
+        linieTi.Cantitate = 1m;
+        linieTi.PretUnitar = 100m;
+        linieTi.TipTva = ti21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fctTi);
+        var noteTi = Note(fctTi);
+        Check("Taxare inversă: serviciul net (628 = 401, 100) + autolichidare 4426 = 4427 (21), total facturii NET",
+            noteTi.Count == 2
+            && noteTi.Any(n => n.ContDebitId == tip628.ContImplicitId && n.ContCreditId == cont401.ID && n.Valoare == 100m)
+            && noteTi.Any(n => n.ContDebitId == cont4426.ID && n.ContCreditId == cont4427.ID && n.Valoare == 21m)
+            && fctTi.Total == 121m);
+        MotorOperare.Storneaza(os, fctTi, new DateOnly(2026, 7, 23));
+        var stornoTi = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId == fctTi.ID && r.Storno).ToList();
+        Check("Storno cu TVA: rândurile inverse includ și rândul 4426 = 4427 (−100, −21)",
+            stornoTi.Count == 2 && stornoTi.Any(r => r.Valoare == -100m)
+            && stornoTi.Any(r => r.Valoare == -21m && r.ContDebitId == cont4426.ID));
+
+        // --- Capitalizat (nedeductibil): comportamentul bugetar, ca date ---
+        var fctNed = os.CreateObject<FacturaIntrare>();
+        fctNed.Numar = "E2E-PRV-FF3";
+        fctNed.Data = new DateOnly(2026, 3, 10);
+        fctNed.Predator = furnizor;
+        fctNed.Primitor = mag1;
+        var linieNed = os.CreateObject<FacturaIntrareDetaliu>();
+        linieNed.Document = fctNed;
+        linieNed.TipMaterial = tip628;
+        linieNed.Cantitate = 1m;
+        linieNed.PretUnitar = 100m;
+        linieNed.TipTva = ned21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fctNed);
+        Check("Capitalizat (NED21): Valoare = brut 121, ValoareTva 0, o singură notă 628 = 401 — fără rând 4426",
+            linieNed.Valoare == 121m && linieNed.ValoareTva == 0m
+            && Note(fctNed).Count == 1 && Note(fctNed).Single().Valoare == 121m
+            && !Note(fctNed).Any(n => n.ContDebitId == cont4426.ID));
+
+        // --- ValoareTva culeasă pe FCT bate rotunjirea noastră (design §3) ---
+        var fctManual = os.CreateObject<FacturaIntrare>();
+        fctManual.Numar = "E2E-PRV-FF4";
+        fctManual.Data = new DateOnly(2026, 3, 11);
+        fctManual.Predator = furnizor;
+        fctManual.Primitor = mag1;
+        var linieManual = os.CreateObject<FacturaIntrareDetaliu>();
+        linieManual.Document = fctManual;
+        linieManual.TipMaterial = tip628;
+        linieManual.Cantitate = 1m;
+        linieManual.PretUnitar = 100m;
+        linieManual.TipTva = n21;
+        linieManual.ValoareTva = 20.9m; // TVA-ul de pe factura furnizorului
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fctManual);
+        Check("ValoareTva culeasă manual (20,9) nu se suprascrie la operare; rândul 4426 o postează",
+            linieManual.ValoareTva == 20.9m
+            && Note(fctManual).Any(n => n.ContDebitId == cont4426.ID && n.Valoare == 20.9m));
+
+        CurataPrv(os);
+        Check("Curățenie finală privat (fără reziduuri e2e)",
+            !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajPrv))
+            && !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajPrv));
+    }
+
+    Rezumat();
+    return;
+}
+
 // ============================ Scenariul e2e 3b ============================
 // NotaTransfer end-to-end: sold de deschidere → operare (2 rânduri ±) →
 // gardieni (sold intermediar, retroactiv, perioadă, dependență) → FIFO →
 // anulare (corecție directă) → storno. Obiectele de test poartă marcajul E2E
 // și se curăță la început (run eșuat anterior) și la sfârșit.
 const string MarcajProdus = "E2E-PRB";
-
-using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
-    (builder, _) => builder
-        .UseNpgsql(ConnectionString)
-        .UseChangeTrackingProxies()
-        .UseObjectSpaceLinkProxies()
-        .UseLazyLoadingProxies());
 
 void Curata(IObjectSpace os) {
     var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajProdus).Select(l => l.ID).ToList();
@@ -279,6 +592,14 @@ using (var os = provider.CreateObjectSpace()) {
     var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628.00.00");
     var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00");
     var cont404 = os.FirstOrDefault<Cont>(c => c.Simbol == "404.01.00");
+    // P1: cota nu se mai culege pe linie — regimul Capitalizat (neplătitor)
+    // vine din nomenclatorul TipTva al profilului; 19% e rândul istoric.
+    var cap19 = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP19");
+
+    Check("Seed P1 (bugetar): TipTva Capitalizat ca date, fără conturi de TVA și fără PoliticaTva",
+        cap19 != null && cap19.Regim == RegimTva.Capitalizat && cap19.Cota == 19m
+        && cap19.ContTvaDeductibilId == null
+        && !os.GetObjectsQuery<PoliticaTva>().Any());
 
     // Maparea Clasă/Tip → cont derivată de seed din simboluri (decizia 4).
     Check("Seed: Tip 302.01.00 → cont 302.01.00 (potrivire exactă)",
@@ -318,7 +639,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieStoc.TipMaterial = tipMateriale;
     linieStoc.Cantitate = 5m;
     linieStoc.PretUnitar = 10m;
-    linieStoc.CotaTva = 19m;
+    linieStoc.TipTva = cap19;
     linieStoc.LotFabricatie = "LOT-A";
     linieStoc.DataExpirare = new DateOnly(2027, 1, 1);
     var linieServiciu = os.CreateObject<FacturaIntrareDetaliu>();
@@ -326,7 +647,6 @@ using (var os = provider.CreateObjectSpace()) {
     linieServiciu.TipMaterial = tipServicii;
     linieServiciu.Cantitate = 1m;
     linieServiciu.PretUnitar = 100m;
-    linieServiciu.CotaTva = 0m;
 
     // Validările proprii FCT: număr furnizor, clasificație bugetară, lot pe stoc.
     CheckRefuza("FCT fără număr/clasificație/lot → refuz", () => MotorOperare.Opereaza(os, fct));
@@ -799,6 +1119,7 @@ using (var os = provider.CreateObjectSpace()) {
     var tipStocMat = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302.01.00");
     var cont411 = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
     var cont461 = os.FirstOrDefault<Cont>(c => c.Simbol == "461.01.01");
+    var cap19Fcl = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP19");
 
     // Politica derivată la seed: tipurile de venit cu contul din simbol.
     Check("Seed: Tip 751.01.00 (clasa VEN) → cont 751.01.00",
@@ -823,13 +1144,13 @@ using (var os = provider.CreateObjectSpace()) {
     codEc.Denumire = "Clasificație de venit probă e2e";
     os.CommitChanges();
 
-    FacturaIesireDetaliu Linie(FacturaIesire doc, TipMaterial tip, decimal cantitate, decimal pret, decimal cota) {
+    FacturaIesireDetaliu Linie(FacturaIesire doc, TipMaterial tip, decimal cantitate, decimal pret, TipTva tipTva = null) {
         var d = os.CreateObject<FacturaIesireDetaliu>();
         d.Document = doc;
         d.TipMaterial = tip;
         d.Cantitate = cantitate;
         d.PretUnitar = pret;
-        d.CotaTva = cota;
+        d.TipTva = tipTva;
         return d;
     }
     List<RegistruContabil> Note(Document doc) =>
@@ -840,17 +1161,17 @@ using (var os = provider.CreateObjectSpace()) {
     fcl.Data = new DateOnly(2026, 3, 5);
     fcl.Predator = client; // inversat intenționat
     fcl.Primitor = sediu;
-    Linie(fcl, tipServiciiVenit, 2m, 100m, 0m).Descriere = "Servicii refacturate";
+    Linie(fcl, tipServiciiVenit, 2m, 100m).Descriere = "Servicii refacturate";
     CheckRefuza("Laturi inversate (predator partener / primitor intern) → refuz",
         () => MotorOperare.Opereaza(os, fcl));
     fcl.Predator = sediu;
     fcl.Primitor = client;
 
-    var linieStoc = Linie(fcl, tipStocMat, 1m, 5m, 0m);
+    var linieStoc = Linie(fcl, tipStocMat, 1m, 5m);
     CheckRefuza("Linie de stoc pe factura de ieșire → refuz (nu descarcă gestiune)",
         () => MotorOperare.Opereaza(os, fcl));
     os.Delete(linieStoc);
-    Linie(fcl, tipChirii, 1m, 50m, 0m).Descriere = "Chirie spațiu";
+    Linie(fcl, tipChirii, 1m, 50m).Descriere = "Chirie spațiu";
     os.CommitChanges();
 
     // Conturile de venit (751/750) poartă defalcarea E — clasificația de venit
@@ -891,7 +1212,7 @@ using (var os = provider.CreateObjectSpace()) {
     fcl2.Predator = sediu;
     fcl2.Primitor = clientDebitor;
     fcl2.DataScadenta = new DateOnly(2026, 12, 31); // culeasă manual
-    Linie(fcl2, tipServiciiVenit, 1m, 100m, 19m).Dimensiuni.CodEconomicId = codEc.ID;
+    Linie(fcl2, tipServiciiVenit, 1m, 100m, cap19Fcl).Dimensiuni.CodEconomicId = codEc.ID;
     os.CommitChanges();
     MotorOperare.Opereaza(os, fcl2);
     Check("Debitul din ContImplicit al clientului (461, nu fallback 411)",
@@ -1018,7 +1339,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieStoc.TipMaterial = tipMateriale;
     linieStoc.Cantitate = 5m;
     linieStoc.PretUnitar = 10m;
-    linieStoc.CotaTva = 19m;
+    linieStoc.TipTva = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP19");
     linieStoc.Dimensiuni.CodEconomicId = codEc.ID;
     linieStoc.CreeazaLot(os, produs, mag1);
     var linieServiciu = os.CreateObject<FacturaIntrareDetaliu>();
@@ -1269,7 +1590,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieProtocol.RepartitorDebit = mag1;
     linieProtocol.PretUnitar = 10m;
     linieProtocol.Cantitate = 2m;
-    linieProtocol.CotaTva = 19m;
+    linieProtocol.TipTva = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP19");
     linieProtocol.Dimensiuni.CodEconomicId = codEc.ID;
     os.CommitChanges();
 
@@ -1358,5 +1679,4 @@ using (var os = provider.CreateObjectSpace()) {
         !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajDec)));
 }
 
-Console.WriteLine(esecuri == 0 ? "\nToate verificările au trecut." : $"\n{esecuri} verificări EȘUATE.");
-Environment.ExitCode = esecuri == 0 ? 0 : 1;
+Rezumat();

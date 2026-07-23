@@ -20,7 +20,12 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
         public override void UpdateDatabaseAfterUpdateSchema() {
             base.UpdateDatabaseAfterUpdateSchema();
 
-            ContaSeeder.Seed(ObjectSpace);
+            // Profilul contabil e setare per bază (appsettings `ProfilContabil`,
+            // decizia 35d) — selectează pachetul de seed, nu schema.
+            var config = ObjectSpace.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
+            var profil = Enum.TryParse<ProfilContabil>(config?["ProfilContabil"], true, out var p)
+                ? p : ProfilContabil.Bugetar;
+            ContaSeeder.Seed(ObjectSpace, profil);
 
             // The code below creates users and roles for testing purposes only.
             // In production code, you can create users and assign roles to them automatically, as described in the following help topic:

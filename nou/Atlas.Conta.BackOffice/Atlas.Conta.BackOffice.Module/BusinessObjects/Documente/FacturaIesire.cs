@@ -7,9 +7,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 public class FacturaIesire : Document, IDocumentCuScadenta {
     public virtual DateOnly? DataScadenta { get; set; }
 
+    // Pe FCL TVA-ul se CALCULEAZĂ (spre deosebire de FCT, unde valoarea culeasă
+    // de pe factura furnizorului bate rotunjirea) — design §3.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
+        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         foreach (var d in Detalii.OfType<FacturaIesireDetaliu>())
-            d.RecalculeazaValoare();
+            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri);
     }
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
@@ -35,12 +38,8 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
 public class FacturaIesireDetaliu : DocumentDetaliu {
     public virtual string Descriere { get; set; }
     // Familia LIVRARE, un singur set de valori (07) — fără dubla familie legacy.
+    // Cota și regimul vin din TipTva (bază, P1).
     public virtual decimal PretUnitar { get; set; }
-    public virtual decimal CotaTva { get; set; }
 
-    [NotMapped] public decimal PretLivrare => PretUnitar;
-    [NotMapped] public decimal ValoareLivrare => PretLivrare * Cantitate;
-    [NotMapped] public decimal TvaLivrare => ValoareLivrare * CotaTva / 100m;
-
-    public void RecalculeazaValoare() => Valoare = ValoareLivrare + TvaLivrare;
+    [NotMapped] public decimal ValoareLivrare => PretUnitar * Cantitate;
 }

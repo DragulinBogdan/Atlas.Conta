@@ -1,8 +1,8 @@
 # P1 — Profil privat + TVA structural (design)
 
-Stare: **FIXAT — toate cele 5 tranșări din §9 confirmate (22.07.2026);
-document de intrare pentru sesiunea de implementare P1.** Contextul: decizia
-35 (pivot privat-first). Zonă sensibilă
+Stare: **IMPLEMENTAT (23.07.2026) — decizia 36 în CLAUDE.md consemnează
+tranșările de implementare; toate cele 5 tranșări din §9 confirmate
+(22.07.2026).** Contextul: decizia 35 (pivot privat-first). Zonă sensibilă
 (atinge baza `DocumentDetaliu` și motorul) → design înainte de schemă, conform
 regulii de cercetare.
 

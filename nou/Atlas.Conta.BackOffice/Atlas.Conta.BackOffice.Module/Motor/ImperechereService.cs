@@ -13,11 +13,12 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 public static class ImperechereService {
     // Totalul documentului, din liniile PERSISTATE (nu navigația Detalii —
     // apelanții nu garantează lazy loading, iar imperecherea se face pe
-    // documente deja operate, deci comise).
+    // documente deja operate, deci comise). BRUT (P1, design §3): plata stinge
+    // Valoare + ValoareTva; la regimurile capitalizate ValoareTva e 0.
     public static decimal Total(IObjectSpace os, Guid documentId) =>
         os.GetObjectsQuery<DocumentDetaliu>()
             .Where(d => d.DocumentId == documentId)
-            .Select(d => (decimal?)d.Valoare).Sum() ?? 0m;
+            .Select(d => (decimal?)(d.Valoare + d.ValoareTva)).Sum() ?? 0m;
 
     public static decimal Asignat(IObjectSpace os, Guid documentId) =>
         os.GetObjectsQuery<Imperechere>()
