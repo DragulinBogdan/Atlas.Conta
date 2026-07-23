@@ -17,6 +17,7 @@
     <EmbeddedResource Include="DatabaseUpdate\SeedData\plan-conturi-omfp.csv" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Atlas.DXF.Core" />
     <PackageReference Include="Atlas.DXF.EfCore" />
     <PackageReference Include="DevExpress.ExpressApp" />
     <PackageReference Include="DevExpress.ExpressApp.AI" />
