@@ -47,6 +47,22 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<RegistruContabil>().HideForeignKeys();         // ContDebitId/ContCreditId/DocumentId/DetaliuId
         registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
         registry.For<Imperechere>().HideForeignKeys();              // DocumentTrezorerieId/DocumentId
+
+        // Expansiunea InDetailView a owned-urilor (Registre.cs) generează item-uri
+        // și pentru scalarii FK INTERNI ai owned-ului, cu path nested
+        // (DimensiuniDebit.RepartitorId) — HideForeignKeys pe owner nu-i vede
+        // (descoperirea e pe membrii direcți), deci se ascund explicit.
+        string[] fkDimensiuni = [
+            nameof(Dimensiuni.RepartitorId), nameof(Dimensiuni.MaterialId),
+            nameof(Dimensiuni.CodFunctionalId), nameof(Dimensiuni.CodEconomicId),
+            nameof(Dimensiuni.SursaFinantareId), nameof(Dimensiuni.UnitateId),
+            nameof(Dimensiuni.ProiectId), nameof(Dimensiuni.CentruCostId),
+        ];
+        foreach (var latura in new[] {
+                     nameof(RegistruContabil.DimensiuniDebit),
+                     nameof(RegistruContabil.DimensiuniCredit) })
+            registry.For<RegistruContabil>()
+                .HideMembers(fkDimensiuni.Select(fk => $"{latura}.{fk}").ToArray());
     }
 
     static void FacturaIntrare(UiBaselineRegistry registry) {
