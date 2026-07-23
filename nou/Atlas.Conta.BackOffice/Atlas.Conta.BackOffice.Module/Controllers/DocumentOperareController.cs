@@ -57,7 +57,13 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
     }
 
     void Executa(Action<IObjectSpace, Document> operatie) {
-        // Modificările din editor intră în aceeași tranzacție cu registrele.
+        // Culegerea se comite (și se VALIDEAZĂ — contextul Save) ÎNAINTE de motor.
+        // Validarea Save rulează în Committing, adică DUPĂ ce motorul ar fi
+        // materializat registrele/numărul/Stare=Operat în același ObjectSpace —
+        // o regulă picată atunci ar lăsa o „operare-fantomă" în OS-ul viu, pe
+        // care un Save ulterior ar comite-o fără re-rularea motorului.
+        if (ObjectSpace.IsModified)
+            ObjectSpace.CommitChanges();
         operatie(ObjectSpace, ViewCurrentObject);
         ActualizeazaDisponibilitatea();
     }

@@ -20,9 +20,13 @@ public abstract class Document : BaseObject {
     // Validare de CULEGERE (context Save al pipeline-ului UI XAF): FK-urile
     // Predator/PrimitorId sunt NOT NULL în schemă, dar Guid.Empty NU e null —
     // regula stă pe NAVIGAȚIE, ca să blocheze commit-ul înainte ca INSERT-ul cu
-    // FK invalid să ajungă în Postgres. Motorul/seed-ul/migrarea folosesc
-    // EFCoreObjectSpaceProvider standalone (fără PersistenceValidationController),
-    // deci regula nu-i atinge — se aplică doar în back-office-ul XAF.
+    // FK invalid să ajungă în Postgres. ATENȚIE: pe calea Operează motorul
+    // rulează în ObjectSpace-ul View-ului, deci commit-ul operării trece TOT
+    // prin aceste reguli (obiectele create de motor — conex/plată/registre — au
+    // FK-urile setate, iar navigația se rezolvă prin fixup/lazy-load); culegerea
+    // se comite separat, ÎNAINTE de motor (DocumentOperareController.Executa).
+    // Doar căile standalone (ModelCheck/Migrare/seed — EFCoreObjectSpaceProvider
+    // fără controllere) sunt în afara regulilor.
     // Repartitori (sute la migrare): match exact pe Denumire în locul lookup-ului standard.
     public virtual Guid PredatorId { get; set; }
     [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
@@ -85,6 +89,11 @@ public abstract class Document : BaseObject {
             erori.Add("Documentul nu are nicio linie.");
         if (PredatorId == Guid.Empty || PrimitorId == Guid.Empty)
             erori.Add("Predatorul și primitorul sunt obligatorii.");
+        // Oglinda NOT NULL-ului din schemă, în motor (nu doar în regula UI de
+        // Save): un refuz aici vine ÎNAINTE de materializare (33d) — doar FK-ul
+        // scalar, fără navigații lazy în enumerare (25b).
+        if (Detalii.Any(d => d.TipMaterialId == Guid.Empty))
+            erori.Add("Toate liniile trebuie să aibă Tipul (contul/clasa) completat.");
     }
 }
 
@@ -96,9 +105,9 @@ public class DocumentDetaliu : BaseObject {
     public virtual Document Document { get; set; }
 
     // Cheia contării; Clasa (cheia regulilor de stoc) = TipMaterial.Clasa.
-    // Validare de culegere pe NAVIGAȚIE (ca Predator/Primitor pe header):
-    // TipMaterialId e NOT NULL, iar o linie culeasă fără tip ar produce un
-    // INSERT cu FK invalid. Doar pipeline-ul UI XAF (context Save).
+    // Validare de culegere pe NAVIGAȚIE (ca Predator/Primitor pe header —
+    // vezi nota de acolo despre calea Operează): TipMaterialId e NOT NULL,
+    // iar o linie culeasă fără tip ar produce un INSERT cu FK invalid.
     public virtual Guid TipMaterialId { get; set; }
     // Nomenclator mare de tipuri: match exact pe Denumire în locul lookup-ului standard.
     [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]

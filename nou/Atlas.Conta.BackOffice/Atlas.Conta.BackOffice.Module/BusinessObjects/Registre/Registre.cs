@@ -7,8 +7,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Decizia 14: registre persistate, append-only, scrise tranzacțional la operare.
 // Schema = COD; regulile de alimentare = DATE (Politici/RegulaStoc, RegulaContare).
 // Append-only: DOAR motorul și migrarea scriu rândurile; corecția = anulare/storno
-// pe document, niciodată editarea rândului. ForbidCRUD închide gaura de integritate
-// din UI (New/Save/Delete/Cancel dezactivate pe ListView + DetailView).
+// pe document, niciodată editarea rândului. ForbidCRUD ascunde acțiunile
+// (New/Save/Delete/Cancel pe ListView + DetailView); gardianul de FOND e
+// RegistruReadOnlyController (AllowEdit/New/Delete pe view — appearance-ul nu
+// acoperă lista goală și nici Save-ul prin dialogul de modificări nesalvate).
 
 [NavigationItem("Registre")]
 [ForbidCRUD("ListView", "DetailView")]
