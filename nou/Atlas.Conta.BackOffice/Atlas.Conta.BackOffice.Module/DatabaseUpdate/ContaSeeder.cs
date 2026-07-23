@@ -51,6 +51,9 @@ public static class ContaSeeder {
             ("DEC", "Decont", nameof(Decont)),
             ("PLT", "Plată", nameof(Plata)),
             ("INC", "Încasare", nameof(Incasare)),
+            // Al 11-lea derivat (P2, decizia 37a): ancora e în nucleu pentru
+            // AMBELE profiluri; la bugetar rămâne tip inert (fără politici), ca BPR.
+            ("DSC", "Descărcare de gestiune", nameof(DescarcareGestiune)),
         ];
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipDocument>(x => x.Cod == t.Cod) == null) {
@@ -156,6 +159,42 @@ public static class ContaSeeder {
             regula.SursaContDebit = SursaCont.Explicit;
             regula.ContDebitId = contDebit;
             regula.SursaContCredit = SursaCont.TipMaterial;
+        }
+    }
+
+    // Derivarea de VÂNZARE pe FacturaIesire (P2, design §6) — mecanism în nucleu
+    // (decizia 29c). Pe o linie de stoc regula generică FCL ar posta creditul pe
+    // contul de STOC al Tipului (371); corecția: rând RegulaContare per TipMaterial
+    // cu Natura=Stoc — debit `RepartitorPrimitor` (contul clientului, fallback
+    // `fallbackDebit`, ca genericul), credit Explicit = contul de VENIT derivat din
+    // `mapaVenit` (371→707, 345→701, 381→708…), altfel `fallbackVenit`. Potrivirea
+    // exactă pe TipMaterial bate genericul în motor (26c), deci genericul rămâne
+    // pentru servicii. Incremental, ca 6xx=3xx: tipurile deja acoperite se sar, iar
+    // cele fără cont de venit rezolvabil se sar (același tratament ca `contDebit`
+    // negăsit acolo). Costul descărcării (607/711 = 371/345) trăiește separat pe DSC.
+    internal static void SeedContareVanzare(IObjectSpace os, TipDocument tipDoc, string fallbackDebit,
+        IReadOnlyDictionary<string, string> mapaVenit, string fallbackVenit) {
+        var conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
+        var acoperite = os.GetObjectsQuery<RegulaContare>()
+            .Where(r => r.TipDocumentId == tipDoc.ID && r.TipMaterialId != null)
+            .Select(r => r.TipMaterialId.Value).ToList();
+        var tipuriStoc = os.GetObjectsQuery<TipMaterial>()
+            .Where(t => t.Clasa.Natura == NaturaClasa.Stoc)
+            .Select(t => new { t.ID, t.Cod }).ToList();
+        foreach (var tip in tipuriStoc) {
+            if (acoperite.Contains(tip.ID))
+                continue;
+            var simbolVenit = mapaVenit.GetValueOrDefault(tip.Cod) ?? fallbackVenit;
+            var contVenit = ContDinSimbol(conturi, simbolVenit);
+            if (contVenit == null)
+                continue;
+            var regula = os.CreateObject<RegulaContare>();
+            regula.TipDocument = tipDoc;
+            regula.TipMaterialId = tip.ID;
+            regula.SursaContDebit = SursaCont.RepartitorPrimitor;
+            regula.ContDebitId = ContDinSimbol(conturi, fallbackDebit);
+            regula.SursaContCredit = SursaCont.Explicit;
+            regula.ContCreditId = contVenit;
         }
     }
 

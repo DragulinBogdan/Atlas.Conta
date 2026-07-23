@@ -194,9 +194,9 @@ if (profil == ProfilContabil.Privat) {
             && Tva("FCL")?.Directie == DirectieTva.Colectat && Tva("FCL").SursaContrapartida == SursaCont.RepartitorPrimitor
             && Tva("FCL").ContrapartidaFallback?.Simbol == "4111"
             && Tva("NIR") == null && Tva("PLT") == null && Tva("INC") == null);
-        Check("Seed: profilul de validare privat — fără clasificație bugetară; FCL interzice stocul",
+        Check("Seed: profilul de validare privat — fără clasificație bugetară; FCL NU mai interzice stocul (P2, descărcarea de gestiune preia vânzarea din stoc)",
             os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCT") == null
-            && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCL")?.NaturaInterzisa == NaturaClasa.Stoc);
+            && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCL")?.NaturaInterzisa != NaturaClasa.Stoc);
         Check("Seed: plan OMFP fără defalcări obligatorii (pornesc goale — design §5)",
             !os.GetObjectsQuery<Cont>().Any(c => c.DimensiuniObligatorii != DimensiuneFlags.Niciuna));
 

@@ -35,10 +35,15 @@ internal static class ProfilPrivat {
         SeedPoliticiFacturaIesire(os);
         SeedPoliticiTrezorerie(os);
         SeedPoliticiDecont(os);
-        SeedPoliticiValidare(os);
+        // După FCL: derivarea de vânzare presupune genericul FCL deja creat
+        // (altfel guard-ul „fără regulă FCL" din SeedPoliticiFacturaIesire ar
+        // vedea rândurile de vânzare și n-ar mai crea genericul de servicii).
+        SeedPoliticiDescarcare(os);
         os.CommitChanges();
         // PoliticaTva referă TipTva comise mai sus.
         SeedPoliticiTva(os);
+        // Default TipTva de CULEGERE: N21 referit — după commit-ul TipTva.
+        SeedTipTvaImplicit(os);
         os.CommitChanges();
     }
 
@@ -208,15 +213,24 @@ internal static class ProfilPrivat {
         Politica("FCL", DirectieTva.Colectat, SursaCont.RepartitorPrimitor, "4111");
     }
 
-    // Profilul de validare privat (33c): FĂRĂ clasificație bugetară; FCL
-    // interzice natura Stoc până la P2 (descărcarea de gestiune — 35e).
-    static void SeedPoliticiValidare(IObjectSpace os) {
-        var p = os.FirstOrDefault<PoliticaValidare>(x => x.TipDocument.Cod == "FCL");
-        if (p == null) {
-            p = os.CreateObject<PoliticaValidare>();
-            p.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCL");
+    // Profilul de validare privat: la P2 nu mai are NICIUN rând — clasificația
+    // bugetară nu se aplică (33c), iar interdicția FCL⊘Stoc a fost preluată de
+    // descărcarea de gestiune (37e); curățarea rândului P1 stă în
+    // SeedPoliticiDescarcare, ca pas explicit de updater.
+
+    // Datoria P1 (design §8): default TipTva per tip de document, aplicat la
+    // CULEGERE (nu în motor — un rând PoliticaTva doar-pentru-default ar activa
+    // pasul TVA). FCT/FCL/DEC → N21; setat DOAR unde null (editările manuale nu
+    // se ating). Rulează după commit-ul TipTva (N21 referit prin FK).
+    static void SeedTipTvaImplicit(IObjectSpace os) {
+        var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        if (n21 == null)
+            return;
+        foreach (var cod in new[] { "FCT", "FCL", "DEC" }) {
+            var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == cod);
+            if (tip != null && tip.TipTvaImplicitId == null)
+                tip.TipTvaImplicitId = n21.ID;
         }
-        p.NaturaInterzisa = NaturaClasa.Stoc;
     }
 
     // Transferul (23c): două rânduri ±Magazie, fără contare la plan sintetic.
@@ -371,6 +385,57 @@ internal static class ProfilPrivat {
             facturare.SursaContDebit = SursaCont.RepartitorPrimitor;
             facturare.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
             facturare.SursaContCredit = SursaCont.TipMaterial;
+        }
+    }
+
+    // Descărcarea de gestiune (P2, design §3/§6): tip nou DSC generat pe loturi
+    // din FCL (DescarcareService). Stoc: −1 pe predator (gestiunea de
+    // descărcare), aceeași mapare de registre ca NIR/LDI privat (generic →
+    // Magazie, MF → Marfuri). Cost: 6xx = 3xx per Tip cu excepțiile profilului
+    // (607=371, 711=345, 608=381). Pe FCL: derivarea de VÂNZARE — pe liniile de
+    // stoc creditul e venitul (371→707, 345→701, 381→708), nu contul de stoc;
+    // genericul FCL rămâne pentru servicii. Plus curățarea rândului P1 care
+    // interzicea natura Stoc pe FCL (37e — descărcarea o preia acum).
+    static void SeedPoliticiDescarcare(IObjectSpace os) {
+        var dsc = os.FirstOrDefault<TipDocument>(x => x.Cod == "DSC");
+        var fcl = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCL");
+
+        ContaSeeder.SeedNumerotare(os, "DSC", "DSC-");
+
+        // Stoc DSC: −1 pe predator; generic → Magazie, mărfurile pe registrul
+        // propriu (oglindește EXACT rândurile NIR/LDI privat).
+        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "DSC") == null) {
+            (string Clasa, TipStoc TipStoc)[] reguli = [
+                (null, TipStoc.Magazie),
+                ("MF", TipStoc.Marfuri),
+            ];
+            foreach (var r in reguli) {
+                var regula = os.CreateObject<RegulaStoc>();
+                regula.TipDocument = dsc;
+                regula.Latura = LaturaDocument.Predator;
+                regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
+                regula.TipStoc = r.TipStoc;
+                regula.Semn = -1;
+            }
+        }
+
+        // Costul descărcării: 6xx = 3xx per Tip, excepțiile profilului (60x=30x).
+        ContaSeeder.SeedContare6xxDin3xx(os, dsc, null, Derivari6xxExceptii);
+
+        // Vânzarea pe FCL: creditul = venitul (nu contul de stoc); fallback 708.
+        ContaSeeder.SeedContareVanzare(os, fcl, "4111",
+            new Dictionary<string, string> { ["371"] = "707", ["345"] = "701", ["381"] = "708" }, "708");
+
+        // Pas explicit de updater: FCL nu mai interzice natura Stoc (rândul P1
+        // există în bazele seed-uite atunci). CereClasificatieBugetara nu se
+        // setează la privat, deci rândul se șterge întreg; idempotent.
+        var validareFcl = os.FirstOrDefault<PoliticaValidare>(
+            x => x.TipDocument.Cod == "FCL" && x.NaturaInterzisa == NaturaClasa.Stoc);
+        if (validareFcl != null) {
+            if (validareFcl.CereClasificatieBugetara)
+                validareFcl.NaturaInterzisa = null;
+            else
+                os.Delete(validareFcl);
         }
     }
 

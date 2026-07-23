@@ -29,7 +29,23 @@ internal static class ProfilBugetar {
         SeedPoliticiTrezorerie(os);
         SeedPoliticiDecont(os);
         SeedPoliticiValidare(os);
+        SeedTipTvaImplicit(os);
         os.CommitChanges();
+    }
+
+    // Datoria P1 (design §8): default TipTva de CULEGERE per tip de document.
+    // Bugetarul e neplătitor (fără PoliticaTva, fără postare de TVA în motor),
+    // dar culegerea are nevoie de un default — CAP21 (capitalizat 21%) pe
+    // FCT/FCL/DEC, setat DOAR unde null. CAP21 e comis în SeedTipTva mai sus.
+    static void SeedTipTvaImplicit(IObjectSpace os) {
+        var cap21 = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP21");
+        if (cap21 == null)
+            return;
+        foreach (var cod in new[] { "FCT", "FCL", "DEC" }) {
+            var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == cod);
+            if (tip != null && tip.TipTvaImplicitId == null)
+                tip.TipTvaImplicitId = cap21.ID;
+        }
     }
 
     // Neplătitor: cota furnizorului se capitalizează în Valoare. Rândurile
