@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
+using DevExpress.Persistent.Validation;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -15,9 +16,19 @@ public abstract class Document : BaseObject {
     public virtual string Numar { get; set; }
     public virtual DateOnly Data { get; set; }
 
+    // Validare de CULEGERE (context Save al pipeline-ului UI XAF): FK-urile
+    // Predator/PrimitorId sunt NOT NULL în schemă, dar Guid.Empty NU e null —
+    // regula stă pe NAVIGAȚIE, ca să blocheze commit-ul înainte ca INSERT-ul cu
+    // FK invalid să ajungă în Postgres. Motorul/seed-ul/migrarea folosesc
+    // EFCoreObjectSpaceProvider standalone (fără PersistenceValidationController),
+    // deci regula nu-i atinge — se aplică doar în back-office-ul XAF.
     public virtual Guid PredatorId { get; set; }
+    [RuleRequiredField("Document_Predator_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Predatorul (de la cine) este obligatoriu.")]
     public virtual Repartitor Predator { get; set; }
     public virtual Guid PrimitorId { get; set; }
+    [RuleRequiredField("Document_Primitor_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Primitorul (către cine) este obligatoriu.")]
     public virtual Repartitor Primitor { get; set; }
 
     // Decizia 14: Draft → Operat → (Stornat); la operare motorul scrie registrele.
@@ -81,7 +92,12 @@ public class DocumentDetaliu : BaseObject {
     public virtual Document Document { get; set; }
 
     // Cheia contării; Clasa (cheia regulilor de stoc) = TipMaterial.Clasa.
+    // Validare de culegere pe NAVIGAȚIE (ca Predator/Primitor pe header):
+    // TipMaterialId e NOT NULL, iar o linie culeasă fără tip ar produce un
+    // INSERT cu FK invalid. Doar pipeline-ul UI XAF (context Save).
     public virtual Guid TipMaterialId { get; set; }
+    [RuleRequiredField("DocumentDetaliu_TipMaterial_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Tipul (contul/clasa) liniei este obligatoriu.")]
     public virtual TipMaterial TipMaterial { get; set; }
 
     // Cheia stocului (decizia 13); null pe tipurile fără stoc.
