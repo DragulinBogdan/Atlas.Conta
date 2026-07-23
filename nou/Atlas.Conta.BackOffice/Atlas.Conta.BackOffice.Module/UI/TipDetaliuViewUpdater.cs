@@ -36,10 +36,15 @@ public sealed class TipDetaliuViewUpdater : ModelNodesGeneratorUpdater<ModelDeta
         var itemDetalii = items
             .OfType<IModelMemberViewItem>()
             .FirstOrDefault(i => i.PropertyName == nameof(Document.Detalii));
-        // Set doar dacă nu e deja fixat (SetIfEmpty): la stadiul de generare View e
-        // null, iar diff-urile utilizatorului din Model Editor se aplică oricum
-        // PESTE stratul generatoarelor și rămân prioritare.
-        if (itemDetalii != null && itemDetalii.View == null)
+        if (itemDetalii == null)
+            return;
+        // La generare View NU e null: XAF îl leagă implicit de ListView-ul nested
+        // al tipului de bază (Document_Detalii_ListView). Suprascriem DOAR acel
+        // default (View absent sau tipat pe baza DocumentDetaliu) — o alegere
+        // explicită către alt view (Model Editor, diff aplicat peste generatoare)
+        // rămâne prioritară.
+        var tipCurent = (itemDetalii.View as IModelObjectView)?.ModelClass?.TypeInfo?.Type;
+        if (tipCurent == null || tipCurent == typeof(DocumentDetaliu))
             itemDetalii.View = listViewDetaliu;
     }
 }
