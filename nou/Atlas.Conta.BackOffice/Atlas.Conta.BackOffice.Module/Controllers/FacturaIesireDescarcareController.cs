@@ -70,7 +70,9 @@ public class FacturaIesireDescarcareController : ObjectViewController<DetailView
     }
 
     // Rezumat produs × cantitate al resturilor (proiecție server-side, 25b).
-    static string RezumaResturi(IObjectSpace os,
+    // Reutilizat de DocumentOperareController la operarea FCL (design §5:
+    // restul se raportează și pe „mesajul operării").
+    internal static string RezumaResturi(IObjectSpace os,
         IReadOnlyList<(Guid LinieId, Guid? ProdusId, Guid? LotId, decimal Cantitate, decimal Acoperit, decimal RestNeacoperit)> resturi) {
         if (resturi.Count == 0)
             return string.Empty;

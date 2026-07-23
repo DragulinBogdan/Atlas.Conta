@@ -426,6 +426,8 @@ if (profil == ProfilContabil.Privat) {
             os.Delete(doc);
         os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajDsc)).ToList());
         os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajDsc)).ToList());
+        // Tipul creat în testul de defect 1 (nu e curățat prin markerul de doc).
+        os.Delete(os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod.StartsWith(MarcajDsc)).ToList());
         os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajDsc)).ToList());
         os.CommitChanges();
     }
@@ -694,6 +696,79 @@ if (profil == ProfilContabil.Privat) {
         TvaService.AplicaTipTvaImplicit(os, fclTva, lExplicit);
         Check("Default TipTva: linia fără TipTva primește N21; linia cu SDD explicit rămâne neatinsă",
             lNoTva.TipTvaId == n21.ID && lExplicit.TipTvaId == sdd.ID);
+        os.CommitChanges();
+
+        // --- Defecte găsite la review advers (P2): validări noi de integritate ---
+        // Fiecare pe obiecte throwaway, șterse imediat (tipul nou nu e prins de
+        // markerul de doc al CurataDsc — se șterge explicit).
+
+        // Defect 1: Tip de stoc creat DUPĂ seed → fără regulă de contare derivată.
+        var tipNou = os.CreateObject<TipMaterial>();
+        tipNou.Cod = MarcajDsc + "-TIPNOU";
+        tipNou.Denumire = "Tip de stoc nou (post-seed, fără reguli)";
+        tipNou.Clasa = tip371.Clasa; // MF (Natura=Stoc) — dar fără rând de vânzare/cost
+        var produsNou = CreeazaProdus("-N", tipNou);
+        os.CommitChanges();
+
+        var fclDef1 = os.CreateObject<FacturaIesire>();
+        fclDef1.Data = d6; fclDef1.Predator = sediu; fclDef1.Primitor = client; fclDef1.GestiuneDescarcare = mag1;
+        var lFclDef1 = os.CreateObject<FacturaIesireDetaliu>();
+        lFclDef1.Document = fclDef1; lFclDef1.TipMaterial = tipNou; lFclDef1.Produs = produsNou;
+        lFclDef1.Cantitate = 1m; lFclDef1.PretUnitar = 10m; lFclDef1.TipTva = n21;
+        os.CommitChanges();
+        CheckRefuza("Defect 1 (FCL): linie de stoc cu Tip nou fără regulă de vânzare → refuz",
+            () => MotorOperare.Opereaza(os, fclDef1));
+        os.Delete(fclDef1.Detalii.ToList());
+        os.Delete(fclDef1);
+        os.CommitChanges();
+
+        // Simetric pe DSC manual: Tip fără regulă de cost (ar mișca stoc fără notă).
+        var lotNou = os.CreateObject<Lot>();
+        lotNou.Produs = produsNou; lotNou.Gestiune = mag1; lotNou.PretUnitar = 5m; lotNou.Data = d1;
+        var dscDef1 = os.CreateObject<DescarcareGestiune>();
+        dscDef1.Data = d6; dscDef1.Predator = mag1; dscDef1.Primitor = client;
+        var lDscDef1 = os.CreateObject<DescarcareGestiuneDetaliu>();
+        lDscDef1.Document = dscDef1; lDscDef1.TipMaterial = tipNou; lDscDef1.Lot = lotNou; lDscDef1.Cantitate = 1m;
+        os.CommitChanges();
+        CheckRefuza("Defect 1 (DSC manual): linie cu Tip fără regulă de cost → refuz",
+            () => MotorOperare.Opereaza(os, dscDef1));
+        os.Delete(dscDef1.Detalii.ToList());
+        os.Delete(dscDef1);
+        os.Delete(lotNou);
+        os.Delete(produsNou);
+        os.Delete(tipNou);
+        os.CommitChanges();
+
+        // Defect 4: produs de ALT Tip decât Tipul liniei (linie tip371 × produsC/345).
+        RefuzFcl("Defect 4 (FCL): linie de stoc cu produs de alt Tip decât Tipul liniei → refuz", mag1, produsC, null);
+
+        // Defect 7: linie de BAZĂ DocumentDetaliu (ne-derivată) pe FCL ar ocoli General!+Specific?.
+        var fclDef7 = os.CreateObject<FacturaIesire>();
+        fclDef7.Data = d6; fclDef7.Predator = sediu; fclDef7.Primitor = client;
+        var lDef7 = os.CreateObject<DocumentDetaliu>(); // NU FacturaIesireDetaliu
+        lDef7.Document = fclDef7; lDef7.TipMaterial = tip704; lDef7.Cantitate = 1m;
+        os.CommitChanges();
+        CheckRefuza("Defect 7 (FCL): linie de bază DocumentDetaliu (ne-derivată, «detaliu generic») → refuz",
+            () => MotorOperare.Opereaza(os, fclDef7));
+        os.Delete(fclDef7.Detalii.ToList());
+        os.Delete(fclDef7);
+        os.CommitChanges();
+
+        // Defect 2: DSC manual (fără DocumentSursa) cu LinieSursaId spre o linie a
+        // FCL-ului viu → refuz; ȘI RestNedescarcat filtrează pe DocumentSursa, deci
+        // draftul STRĂIN nu otrăvește acoperirea L4 (rest 7 neschimbat) cât există.
+        var poison = os.CreateObject<DescarcareGestiune>();
+        poison.Data = d6; poison.Predator = mag1; poison.Primitor = client; // fără DocumentSursa
+        var lPoison = os.CreateObject<DescarcareGestiuneDetaliu>();
+        lPoison.Document = poison; lPoison.TipMaterial = tip371; lPoison.Lot = lotA1;
+        lPoison.Cantitate = 7m; lPoison.LinieSursaId = lFclB.ID;
+        os.CommitChanges();
+        Check("Defect 2: draftul străin (alt DocumentSursa) NU otrăvește acoperirea — L4 rest rămâne 7",
+            DescarcareService.RestNedescarcat(os, fcl).Single(x => x.LinieId == lFclB.ID).RestNeacoperit == 7m);
+        CheckRefuza("Defect 2: DSC manual (fără DocumentSursa) cu LinieSursaId → refuz",
+            () => MotorOperare.Opereaza(os, poison));
+        os.Delete(poison.Detalii.ToList());
+        os.Delete(poison);
         os.CommitChanges();
 
         CurataDsc(os);

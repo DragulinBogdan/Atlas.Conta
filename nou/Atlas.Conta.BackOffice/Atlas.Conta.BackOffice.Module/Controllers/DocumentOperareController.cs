@@ -28,6 +28,19 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
                 e.ShowViewParameters.CreatedView = Application.CreateDetailView(os, os.GetObject(conex));
                 e.ShowViewParameters.TargetWindow = TargetWindow.Default;
             }
+            // P2 (design §5): restul nedescărcat se raportează și pe mesajul
+            // operării — pozițiile fără stoc rămân backorder, interogabile.
+            if (ViewCurrentObject is FacturaIesire fcl) {
+                var resturi = DescarcareService.RestNedescarcat(ObjectSpace, fcl)
+                    .Where(x => x.RestNeacoperit > 0).ToList();
+                if (resturi.Count > 0)
+                    Application.ShowViewStrategy.ShowMessage(new MessageOptions {
+                        Message = "Rest nedescărcat (backorder): "
+                            + FacturaIesireDescarcareController.RezumaResturi(ObjectSpace, resturi),
+                        Type = InformationType.Info,
+                        Duration = 6000,
+                    });
+            }
         };
 
         anuleaza = new SimpleAction(this, "Document.AnuleazaOperarea", PredefinedCategory.RecordEdit) {

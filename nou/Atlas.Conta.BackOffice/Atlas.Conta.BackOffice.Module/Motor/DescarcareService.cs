@@ -26,8 +26,10 @@ public static class DescarcareService {
     // Restul nedescărcat per linie FCL de STOC (cusătura §2.2: interogabilă per
     // linie). Acoperit = Σ cantități pe liniile DSC cu LinieSursaId == linia, din
     // documente Draft SAU Operat (Stornat nu acoperă; draftul contează — altfel a
-    // doua generare ar dubla alocarea). Liniile manuale DSC (LinieSursa null) nu
-    // intră. Totul pe proiecții server-side (25b).
+    // doua generare ar dubla alocarea), DOAR din DSC-urile copil ale ACESTEI
+    // facturi (DocumentSursa == fcl — un DSC străin nu poate otrăvi acoperirea;
+    // review P2 defect 2). Liniile manuale DSC (LinieSursa null) nu intră.
+    // Totul pe proiecții server-side (25b).
     public static IReadOnlyList<(Guid LinieId, Guid? ProdusId, Guid? LotId, decimal Cantitate, decimal Acoperit, decimal RestNeacoperit)>
         RestNedescarcat(IObjectSpace os, FacturaIesire fcl) {
         var idsTip = fcl.Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
@@ -46,7 +48,8 @@ public static class DescarcareService {
         var idsLinii = liniiStoc.Select(x => x.ID).ToList();
         var acoperit = os.GetObjectsQuery<DescarcareGestiuneDetaliu>()
             .Where(dd => dd.LinieSursaId != null && idsLinii.Contains(dd.LinieSursaId.Value)
-                && dd.Document.Stare != StareDocument.Stornat)
+                && dd.Document.Stare != StareDocument.Stornat
+                && dd.Document.DocumentSursaId == fcl.ID)
             .GroupBy(dd => dd.LinieSursaId.Value)
             .Select(g => new { LinieId = g.Key, Suma = g.Sum(x => x.Cantitate) })
             .ToDictionary(x => x.LinieId, x => x.Suma);

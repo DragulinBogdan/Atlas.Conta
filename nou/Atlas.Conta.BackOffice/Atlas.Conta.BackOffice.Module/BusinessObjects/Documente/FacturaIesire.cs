@@ -47,6 +47,13 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
             if (d.Cantitate <= 0)
                 erori.Add("Cantitatea fiecărei linii de factură trebuie să fie pozitivă.");
 
+        // Liniile FCL se culeg pe tipul derivat — o linie de bază DocumentDetaliu
+        // ar ocoli complet General!+Specific? (review P2 defect 7): fără produs,
+        // fără descărcare, fără rest urmăribil.
+        foreach (var d in Detalii)
+            if (d is not FacturaIesireDetaliu)
+                erori.Add("Linia facturii de ieșire trebuie culeasă ca linie de factură de ieșire, nu ca detaliu generic.");
+
         // P2 (design §4): culegerea de stoc — General! (produsul e identitatea
         // liniei) + Specific? (lotul e pinul opțional). Totul pe proiecții (25b).
         var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
@@ -63,6 +70,35 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
                 erori.Add("Linia de stoc a facturii de ieșire cere produsul (identitatea liniei) — alegeți-l.");
         if (liniiStoc.Count > 0 && GestiuneDescarcareId == null)
             erori.Add("Factura de ieșire cu linii de stoc cere gestiunea de descărcare.");
+
+        if (liniiStoc.Count > 0) {
+            // Fără regulă de contare per Tip pe FCL, linia de stoc ar cădea pe
+            // genericul de servicii și ar posta creditul pe contul de STOC al
+            // Tipului la preț de vânzare — exact bug-ul corectat de derivarea de
+            // vânzare (design §6). Un Tip nou creat între updater-e nu are încă
+            // rândul derivat: refuz explicit, nu postare greșită silențioasă
+            // (filozofia 30b — fără fallback = eroare clară; review P2 defect 1).
+            var tipFcl = Motor.MotorOperare.GasesteTipDocument(os, this);
+            var tipuriCuRegula = os.GetObjectsQuery<RegulaContare>()
+                .Where(r => r.TipDocumentId == tipFcl.ID && r.TipMaterialId != null)
+                .Select(r => r.TipMaterialId.Value).ToList();
+            // Identitatea dublă a liniei (Tip + Produs) trebuie să fie coerentă:
+            // un produs de alt Tip ar conta pe conturile Tipului greșit deși
+            // stocul se mișcă pe lotul produsului (review P2 defect 4).
+            var idsProdus = liniiStoc.Where(d => d.ProdusId != null)
+                .Select(d => d.ProdusId.Value).Distinct().ToList();
+            var tipPerProdus = os.GetObjectsQuery<Produs>()
+                .Where(p => idsProdus.Contains(p.ID))
+                .Select(p => new { p.ID, p.TipMaterialId })
+                .ToDictionary(p => p.ID, p => p.TipMaterialId);
+            foreach (var d in liniiStoc) {
+                if (!tipuriCuRegula.Contains(d.TipMaterialId))
+                    erori.Add("Linia de stoc nu are regulă de contare de vânzare pentru Tipul ei — adăugați rândul de politică (sau rulați updater-ul).");
+                if (d.ProdusId != null && tipPerProdus.TryGetValue(d.ProdusId.Value, out var tipProdus)
+                        && tipProdus != null && tipProdus != d.TipMaterialId)
+                    erori.Add("Produsul liniei de stoc aparține altui Tip decât Tipul liniei — corectați Tipul sau produsul.");
+            }
+        }
 
         // Pin-urile (LotId cules): lotul aparține produsului liniei; iar cu DSC
         // activ (reguli de stoc DSC — profilul privat), lotul are sold în
