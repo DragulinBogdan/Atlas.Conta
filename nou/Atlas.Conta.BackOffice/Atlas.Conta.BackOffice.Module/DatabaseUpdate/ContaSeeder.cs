@@ -62,6 +62,10 @@ public static class ContaSeeder {
             // bugetar rămâne tip inert (fără PoliticaInchidereTva, fără
             // numerotare), ca DSC/BPR.
             ("ITV", "Închidere TVA", nameof(InchidereTva)),
+            // Al 14-lea derivat (FAZA 1C §7): asamblarea (kitting n→m pe stoc).
+            // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
+            // inert (fără politici), ca DSC/ITV/BPR.
+            ("ASM", "Asamblare", nameof(Asamblare)),
         ];
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipDocument>(x => x.Cod == t.Cod) == null) {

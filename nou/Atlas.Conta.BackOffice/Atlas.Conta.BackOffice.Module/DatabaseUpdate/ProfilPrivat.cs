@@ -37,6 +37,7 @@ internal static class ProfilPrivat {
         SeedPoliticiDecont(os);
         SeedPoliticiNotaContabila(os);
         SeedPoliticiInchidereTva(os);
+        SeedPoliticiAsamblare(os);
         // După FCL: derivarea de vânzare presupune genericul FCL deja creat
         // (altfel guard-ul „fără regulă FCL" din SeedPoliticiFacturaIesire ar
         // vedea rândurile de vânzare și n-ar mai crea genericul de servicii).
@@ -501,6 +502,33 @@ internal static class ProfilPrivat {
         politica.ContColectata = os.FirstOrDefault<Cont>(c => c.Simbol == "4427");
         politica.ContDePlata = os.FirstOrDefault<Cont>(c => c.Simbol == "4423");
         politica.ContDeRecuperat = os.FirstOrDefault<Cont>(c => c.Simbol == "4424");
+    }
+
+    // Asamblarea (FAZA 1C §7): kitting n→m pe stoc, într-o gestiune. Stoc: UN
+    // SINGUR set de reguli, +1 pe predator — SEMNUL LINIEI dă direcția (consum
+    // −, produs +, materializat în PregatesteOperare, mecanismul LDI 28a);
+    // regula spune doar latura și registrul. Aceeași mapare de registre ca
+    // NIR/LDI/DSC privat (generic → Magazie, MF → Marfuri).
+    // FĂRĂ RegulaContare: la plan sintetic marfă→marfă (371=371) e zgomot
+    // (raționamentul 23c, ca la NotaTransfer) — valoarea se mută între loturi,
+    // nu între conturi. Producția reală (345=711) primește reguli la cerință.
+    static void SeedPoliticiAsamblare(IObjectSpace os) {
+        var asm = os.FirstOrDefault<TipDocument>(x => x.Cod == "ASM");
+        ContaSeeder.SeedNumerotare(os, "ASM", "ASM-");
+        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "ASM") != null)
+            return;
+        (string Clasa, TipStoc TipStoc)[] reguli = [
+            (null, TipStoc.Magazie),
+            ("MF", TipStoc.Marfuri),
+        ];
+        foreach (var r in reguli) {
+            var regula = os.CreateObject<RegulaStoc>();
+            regula.TipDocument = asm;
+            regula.Latura = LaturaDocument.Predator;
+            regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
+            regula.TipStoc = r.TipStoc;
+            regula.Semn = +1;
+        }
     }
 
     // Decontul (32): debit din contul Tipului (fără fallback), credit = avansul

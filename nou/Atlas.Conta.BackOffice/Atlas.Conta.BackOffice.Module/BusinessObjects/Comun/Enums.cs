@@ -17,6 +17,11 @@ public enum TipStoc {
 
 public enum DirectieDiferenta { Plus = 1, Minus = 2 }
 
+// Rolul liniei pe Asamblare (FAZA 1C §7): kitting n→m pe stoc — consumurile
+// descarcă loturi existente, produsele nasc loturi noi. Fără valoarea 0:
+// default-ul invalid e protecția la linii culese fără rol (ca DirectieDiferenta).
+public enum DirectieAsamblare { Consum = 1, Produs = 2 }
+
 // Curățarea Clasă/Tip la seed (inventar 10 §2): separă clasele purtătoare de
 // stoc de cele tehnice (TVA/Diferențe) și de naturile fără stoc.
 public enum NaturaClasa {

@@ -22,6 +22,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         Decont(registry);
         DescarcareGestiune(registry);
         NotaContabila(registry);
+        Asamblare(registry);
     }
 
     // Ascunderea generică a scalarilor `{Nav}Id` care au navigație pereche
@@ -43,6 +44,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<DecontDetaliu>().HideForeignKeys();            // ContDebitId/ContCreditId/RepartitorDebitId/RepartitorCreditId
         registry.For<DescarcareGestiuneDetaliu>().HideForeignKeys();// LinieSursaId
         registry.For<NotaContabilaDetaliu>().HideForeignKeys();     // ContDebitId/ContCreditId/RepartitorDebitId/RepartitorCreditId
+        registry.For<AsamblareDetaliu>().HideForeignKeys();          // fără FK propriu — declarația ține convenția pe derivată
 
         // Tipuri în afara ierarhiei de documente:
         registry.For<RegistruStoc>().HideForeignKeys();             // LotId/RepartitorId/DocumentId/DetaliuId
@@ -168,6 +170,26 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.TipMaterial, c => c.Index = -1)
             .Column(d => d.Lot, c => c.Index = -1)
             .Column(d => d.Cantitate, c => c.Index = -1)
+            .Column(d => d.TipTva, c => c.Index = -1)
+            .Column(d => d.ValoareTva, c => c.Index = -1);
+    }
+
+    // Asamblarea (FAZA 1C §7): rolul liniei (consum/produs) e primul câmp de
+    // culegere — restul e schema de stoc (lot, cantitate, preț de evaluare pe
+    // liniile de produs). ASM nu poartă TVA (marfa se mută între loturi).
+    static void Asamblare(UiBaselineRegistry registry) {
+        var entitate = registry.For<AsamblareDetaliu>();
+        entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
+        entitate.ListView(nameof(AsamblareDetaliu) + ListView, _ => { })
+            .Column(d => d.Directie, c => c.Index = 0)
+            .Column(d => d.TipMaterial, c => c.Index = 1)
+            .Column(d => d.Lot, c => c.Index = 2)
+            .Column(d => d.Cantitate, c => c.Index = 3)
+            .Column(d => d.PretEvaluare, c => c.Index = 4)
+            .Column(d => d.Valoare, c => c.Index = 5)
+            .Column(d => d.DataExpirare, c => c.Index = 6)
+            .Column(d => d.LotFabricatie, c => c.Index = 7)
+            // ASM nu poartă TVA — ascunde coloanele moștenite din bază.
             .Column(d => d.TipTva, c => c.Index = -1)
             .Column(d => d.ValoareTva, c => c.Index = -1);
     }

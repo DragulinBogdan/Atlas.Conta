@@ -1049,6 +1049,247 @@ if (profil == ProfilContabil.Privat) {
         }
     }
 
+    // ================= Scenariul e2e 1C-a: Asamblare (ASM) =================
+    // Kitting n→m pe stoc (design FAZA 1C §7): consumurile descarcă loturi
+    // EXISTENTE (preț lot × cantitate, pattern BCS), liniile de produs CREEAZĂ
+    // lot cu valoare explicită (PretEvaluare, ca LDI-plus), iar invariantul
+    // Σ produse = Σ consumuri ține valoarea în patrimoniu. Direcția explicită se
+    // materializează în SEMN (mecanismul LDI 28a) peste UN SINGUR set de reguli
+    // de stoc (+1 pe predator). Stocul se mișcă FĂRĂ notă contabilă (23c:
+    // marfă→marfă la sintetic = zgomot) — verificat explicit.
+    // Luna noiembrie 2026 e nefolosită de celelalte blocuri.
+    {
+        const string MarcajAsm = "E2E-ASM";
+
+        void CurataAsm(IObjectSpace os) {
+            var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajAsm)).Select(r => r.ID).ToList();
+            var docs = os.GetObjectsQuery<Document>()
+                .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+            var docIds = docs.Select(d => d.ID).ToList();
+            os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+                os.Delete(doc);
+            os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajAsm)).ToList());
+            os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajAsm)).ToList());
+            os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajAsm)).ToList());
+            os.CommitChanges();
+        }
+
+        using (var os = provider.CreateObjectSpace()) {
+            CurataAsm(os);
+
+            var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371"); // marfă (MF)
+            var tipAsm = os.FirstOrDefault<TipDocument>(t => t.Cod == "ASM");
+
+            // --- Seed ASM privat ---
+            var reguliStocAsm = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipAsm.ID).ToList();
+            Check("Seed ASM: ancoră TipDocument + numerotare ASM-; UN SINGUR set de reguli de stoc (+1 pe predator; generic→Magazie, MF→Marfuri)",
+                tipAsm != null && tipAsm.ClrType == nameof(Asamblare)
+                && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipAsm.ID)?.Serie == "ASM-"
+                && reguliStocAsm.Count == 2
+                && reguliStocAsm.All(r => r.Latura == LaturaDocument.Predator && r.Semn == +1)
+                && reguliStocAsm.Any(r => r.ClasaId == null && r.TipStoc == TipStoc.Magazie)
+                && reguliStocAsm.Any(r => r.TipStoc == TipStoc.Marfuri));
+            Check("Seed ASM: FĂRĂ reguli de contare (marfă→marfă la sintetic = zgomot — 23c) și fără politici de TVA/scadență/validare",
+                !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipAsm.ID)
+                && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipAsm.ID) == null
+                && os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tipAsm.ID) == null
+                && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocumentId == tipAsm.ID) == null
+                && os.FirstOrDefault<PoliticaConex>(p => p.TipDocumentSursaId == tipAsm.ID) == null);
+
+            // --- Fixtures: furnizor, gestiunea de lucru, 2 componente + kitul ---
+            var furnizor = os.CreateObject<Partener>();
+            furnizor.Cod = MarcajAsm + "-FURN";
+            furnizor.Denumire = "Furnizor probă asamblare";
+            var gestiune = os.CreateObject<Gestiune>();
+            gestiune.Cod = MarcajAsm + "-G";
+            gestiune.Denumire = "Gestiune probă asamblare";
+            Produs ProdusAsm(string sufix) {
+                var p = os.CreateObject<Produs>();
+                p.Cod = MarcajAsm + sufix;
+                p.Denumire = "Produs probă asamblare" + sufix;
+                p.UM = "BUC";
+                p.TipMaterial = tip371; // kitting pe marfă (ca la flax)
+                return p;
+            }
+            var produsA = ProdusAsm("-A");
+            var produsB = ProdusAsm("-B");
+            var produsKit = ProdusAsm("-KIT");
+            os.CommitChanges();
+
+            List<RegistruStoc> Stoc(Document doc) =>
+                os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID && !r.Storno).ToList();
+
+            // --- NIR manual: loturile componentelor (10 × 5 lei, 4 × 10 lei) ---
+            var dNir = new DateOnly(2026, 11, 2);
+            var nir = os.CreateObject<NIR>();
+            nir.Data = dNir; nir.Predator = furnizor; nir.Primitor = gestiune;
+            var linNirA = os.CreateObject<DocumentDetaliu>();
+            linNirA.Document = nir; linNirA.TipMaterial = tip371; linNirA.Cantitate = 10m; linNirA.Valoare = 50m;
+            var lotA = linNirA.CreeazaLot(os, produsA, gestiune);
+            var linNirB = os.CreateObject<DocumentDetaliu>();
+            linNirB.Document = nir; linNirB.TipMaterial = tip371; linNirB.Cantitate = 4m; linNirB.Valoare = 40m;
+            var lotB = linNirB.CreeazaLot(os, produsB, gestiune);
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, nir);
+            Check("Precondiție ASM: loturile componentelor pe Marfuri (A 10 buc × 5, B 4 buc × 10)",
+                lotA.PretUnitar == 5m && lotB.PretUnitar == 10m
+                && StocService.Sold(os, new CheieStoc(lotA.ID, gestiune.ID, TipStoc.Marfuri)) == 10m
+                && StocService.Sold(os, new CheieStoc(lotB.ID, gestiune.ID, TipStoc.Marfuri)) == 4m);
+
+            // Fabrica de linii: rolul + cantitatea POZITIVĂ culese, lotul fie
+            // existent (consum), fie născut pe linie (produs).
+            AsamblareDetaliu LinieAsm(Asamblare doc, DirectieAsamblare directie, decimal cantitate,
+                Lot lot = null, decimal? pretEvaluare = null, Produs produsNou = null, Gestiune gestiuneLot = null) {
+                var d = os.CreateObject<AsamblareDetaliu>();
+                d.Document = doc;
+                d.TipMaterial = tip371;
+                d.Directie = directie;
+                d.Cantitate = cantitate;
+                d.PretEvaluare = pretEvaluare;
+                if (lot != null)
+                    d.Lot = lot;
+                if (produsNou != null)
+                    d.CreeazaLot(os, produsNou, gestiuneLot ?? gestiune);
+                return d;
+            }
+
+            // --- Asamblarea: 6 × A (30) + 2 × B (20) → 2 kituri × 25 (50) ---
+            var dAsm = new DateOnly(2026, 11, 5);
+            var asm = os.CreateObject<Asamblare>();
+            asm.Data = dAsm; asm.Predator = gestiune; asm.Primitor = gestiune; // aceeași gestiune
+            var consumA = LinieAsm(asm, DirectieAsamblare.Consum, 6m, lotA);
+            var consumB = LinieAsm(asm, DirectieAsamblare.Consum, 2m, lotB);
+            var produsKitLinie = LinieAsm(asm, DirectieAsamblare.Produs, 2m, pretEvaluare: 25m, produsNou: produsKit);
+            var lotKit = produsKitLinie.Lot;
+            os.CommitChanges();
+
+            Check("Asamblarea nu generează conex/secundar", MotorOperare.Opereaza(os, asm) == null);
+            Check("Operare → Operat + număr din politică (ASM-)",
+                asm.Stare == StareDocument.Operat && asm.Numar?.StartsWith("ASM-") == true);
+            Check("Semnarea direcției: consumurile devin negative (−6/−30, −2/−20), produsul rămâne pozitiv (+2/+50)",
+                consumA.Cantitate == -6m && consumA.Valoare == -30m
+                && consumB.Cantitate == -2m && consumB.Valoare == -20m
+                && produsKitLinie.Cantitate == 2m && produsKitLinie.Valoare == 50m);
+            var stocAsm = Stoc(asm);
+            Check("Stoc: EXACT 3 rânduri (−6/−30 A, −2/−20 B, +2/+50 kit) pe Marfuri, în gestiunea de lucru",
+                stocAsm.Count == 3
+                && stocAsm.Single(r => r.LotId == lotA.ID) is { Cantitate: -6m, Valoare: -30m }
+                && stocAsm.Single(r => r.LotId == lotB.ID) is { Cantitate: -2m, Valoare: -20m }
+                && stocAsm.Single(r => r.LotId == lotKit.ID) is { Cantitate: 2m, Valoare: 50m }
+                && stocAsm.All(r => r.TipStoc == TipStoc.Marfuri && r.RepartitorId == gestiune.ID));
+            Check("ZERO rânduri contabile pe ASM (stocul se mișcă fără notă — marfă→marfă e zgomot, 23c)",
+                !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == asm.ID));
+            Check("Lotul kitului finalizat de motor: PretUnitar = valoarea alocată / cantitate (25), data documentului",
+                lotKit.PretUnitar == 25m && lotKit.Data == dAsm
+                && StocService.Sold(os, new CheieStoc(lotKit.ID, gestiune.ID, TipStoc.Marfuri)) == 2m
+                && StocService.Sold(os, new CheieStoc(lotA.ID, gestiune.ID, TipStoc.Marfuri)) == 4m
+                && StocService.Sold(os, new CheieStoc(lotB.ID, gestiune.ID, TipStoc.Marfuri)) == 2m);
+
+            // --- Refuzuri (fiecare pe obiecte throwaway, curățate imediat) ---
+            void RefuzAsm(string nume, Repartitor predator, Repartitor primitor, Action<Asamblare> linii) {
+                var doc = os.CreateObject<Asamblare>();
+                doc.Data = new DateOnly(2026, 11, 8);
+                doc.Predator = predator;
+                doc.Primitor = primitor;
+                linii(doc);
+                os.CommitChanges();
+                CheckRefuza(nume, () => MotorOperare.Opereaza(os, doc));
+                Check(nume + " — fără rânduri-fantomă în ObjectSpace (33d)",
+                    !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == doc.ID)
+                    && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == doc.ID));
+                var idsLinii = doc.Detalii.Select(d => d.ID).ToList();
+                os.Delete(doc.Detalii.ToList());
+                os.Delete(os.GetObjectsQuery<Lot>()
+                    .Where(l => l.LinieIntrareId != null && idsLinii.Contains(l.LinieIntrareId.Value)).ToList());
+                os.Delete(doc);
+                os.CommitChanges();
+            }
+
+            RefuzAsm("Invariantul valoric picat (2 kituri × 30 = 60 ≠ 50 consumate) → refuz", gestiune, gestiune, doc => {
+                LinieAsm(doc, DirectieAsamblare.Consum, 6m, lotA);
+                LinieAsm(doc, DirectieAsamblare.Consum, 2m, lotB);
+                LinieAsm(doc, DirectieAsamblare.Produs, 2m, pretEvaluare: 30m, produsNou: produsKit);
+            });
+            RefuzAsm("Consum pe lotul creat de linia proprie → refuz", gestiune, gestiune, doc =>
+                LinieAsm(doc, DirectieAsamblare.Consum, 1m, produsNou: produsKit));
+            RefuzAsm("Produs pe lot STRĂIN (refolosit, nu născut pe linie) → refuz", gestiune, gestiune, doc => {
+                LinieAsm(doc, DirectieAsamblare.Consum, 2m, lotB);
+                LinieAsm(doc, DirectieAsamblare.Produs, 2m, lotA, pretEvaluare: 10m);
+            });
+            RefuzAsm("Direcție nesetată (default-ul enum-ului nu e valid) → refuz", gestiune, gestiune, doc => {
+                var d = LinieAsm(doc, DirectieAsamblare.Consum, 1m, lotA);
+                d.Directie = default; // linie culeasă fără rol
+            });
+            RefuzAsm("Linie de produs fără preț de evaluare → refuz", gestiune, gestiune, doc =>
+                LinieAsm(doc, DirectieAsamblare.Produs, 2m, produsNou: produsKit));
+            RefuzAsm("Consum peste sold (A are 4 buc) → refuzul gardianului de sold", gestiune, gestiune, doc => {
+                LinieAsm(doc, DirectieAsamblare.Consum, 100m, lotA);
+                LinieAsm(doc, DirectieAsamblare.Produs, 2m, pretEvaluare: 250m, produsNou: produsKit);
+            });
+            RefuzAsm("Latură care nu e gestiune (predator = furnizor) → refuz", furnizor, gestiune, doc => {
+                LinieAsm(doc, DirectieAsamblare.Consum, 2m, lotA);
+                LinieAsm(doc, DirectieAsamblare.Produs, 1m, pretEvaluare: 10m, produsNou: produsKit);
+            });
+            RefuzAsm("Linie de bază DocumentDetaliu («detaliu generic») pe asamblare → refuz", gestiune, gestiune, doc => {
+                var d = os.CreateObject<DocumentDetaliu>(); // NU AsamblareDetaliu
+                d.Document = doc;
+                d.TipMaterial = tip371;
+                d.Lot = lotA;
+                d.Cantitate = 1m;
+            });
+
+            // --- Dezasamblarea = ACELAȘI tip (1 consum → n produse) ---
+            var dDez = new DateOnly(2026, 11, 10);
+            var dez = os.CreateObject<Asamblare>();
+            dez.Data = dDez; dez.Predator = gestiune; dez.Primitor = gestiune;
+            var consumKit = LinieAsm(dez, DirectieAsamblare.Consum, 1m, lotKit);           // −25
+            var produsA2 = LinieAsm(dez, DirectieAsamblare.Produs, 1m, pretEvaluare: 10m, produsNou: produsA);  // +10
+            var produsB2 = LinieAsm(dez, DirectieAsamblare.Produs, 1m, pretEvaluare: 15m, produsNou: produsB);  // +15
+            var lotA2 = produsA2.Lot;
+            var lotB2 = produsB2.Lot;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, dez);
+            Check("Dezasamblare (1 kit → 2 componente): Σ produse (10+15) = Σ consum (25); loturi noi la prețurile alocate",
+                dez.Stare == StareDocument.Operat && consumKit.Valoare == -25m
+                && lotA2.PretUnitar == 10m && lotB2.PretUnitar == 15m);
+            Check("Stoc după dezasamblare: kit 1 rămas, loturile componente noi cu 1 buc fiecare",
+                StocService.Sold(os, new CheieStoc(lotKit.ID, gestiune.ID, TipStoc.Marfuri)) == 1m
+                && StocService.Sold(os, new CheieStoc(lotA2.ID, gestiune.ID, TipStoc.Marfuri)) == 1m
+                && StocService.Sold(os, new CheieStoc(lotB2.ID, gestiune.ID, TipStoc.Marfuri)) == 1m
+                && Stoc(dez).Count == 3);
+
+            // --- Corecție directă → re-operare → storno ---
+            var numarDez = dez.Numar;
+            MotorOperare.AnuleazaOperarea(os, dez);
+            Check("Anulare directă (dezasamblarea e frunză) → Draft + registre goale",
+                dez.Stare == StareDocument.Draft
+                && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == dez.ID)
+                && StocService.Sold(os, new CheieStoc(lotKit.ID, gestiune.ID, TipStoc.Marfuri)) == 2m);
+            MotorOperare.Opereaza(os, dez);
+            Check("Re-operare → același număr, aceleași 3 rânduri (semnarea e idempotentă)",
+                dez.Stare == StareDocument.Operat && dez.Numar == numarDez
+                && Stoc(dez).Count == 3 && consumKit.Cantitate == -1m && consumKit.Valoare == -25m);
+            var dStorno = new DateOnly(2026, 11, 20);
+            MotorOperare.Storneaza(os, dez, dStorno);
+            var toateDez = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == dez.ID).ToList();
+            Check("Storno → 3 rânduri inverse (Storno=true) la data stornării; soldurile revin (kit 2, componentele noi 0)",
+                dez.Stare == StareDocument.Stornat && toateDez.Count == 6
+                && toateDez.Count(r => r.Storno && r.Data == dStorno) == 3
+                && toateDez.Where(r => r.Storno).Sum(r => r.Cantitate) == -1m
+                && StocService.Sold(os, new CheieStoc(lotKit.ID, gestiune.ID, TipStoc.Marfuri), dStorno) == 2m
+                && StocService.Sold(os, new CheieStoc(lotA2.ID, gestiune.ID, TipStoc.Marfuri), dStorno) == 0m);
+
+            CurataAsm(os);
+            Check("Curățenie finală asamblare (fără reziduuri e2e)",
+                !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajAsm))
+                && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajAsm))
+                && !os.GetObjectsQuery<Asamblare>().Any());
+        }
+    }
+
     Rezumat();
     return;
 }
@@ -2551,6 +2792,23 @@ using (var os = provider.CreateObjectSpace()) {
         InchidereTvaService.Genereaza(os, 2026, 9, sediu.ID) == null);
     Check("Bugetar: niciun document ITV creat de apelul de mai sus",
         !os.GetObjectsQuery<InchidereTva>().Any());
+}
+
+// ============== Scenariul e2e 1C-a: Asamblare la BUGETAR (tip inert) ==============
+// Ancora ASM trăiește în nucleu (ambele profiluri), dar politicile sunt DATE de
+// profil: la bugetar nu există reguli de stoc/contare și nici numerotare, deci
+// tipul e inert — ca DSC/ITV/BPR (decizia 29).
+using (var os = provider.CreateObjectSpace()) {
+    var tipAsm = os.FirstOrDefault<TipDocument>(t => t.Cod == "ASM");
+    Check("Seed bugetar: ancora TipDocument ASM există (nucleu), cu ClrType-ul clasei",
+        tipAsm != null && tipAsm.ClrType == nameof(Asamblare));
+    Check("Bugetar: ASM e tip INERT — fără reguli de stoc/contare, fără numerotare și fără politici de TVA/scadență/validare",
+        !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocumentId == tipAsm.ID)
+        && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipAsm.ID)
+        && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipAsm.ID) == null
+        && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipAsm.ID) == null
+        && os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tipAsm.ID) == null
+        && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocumentId == tipAsm.ID) == null);
 }
 
 Rezumat();

@@ -84,6 +84,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // contabilă GENERATĂ (TPT pe două niveluri: Documente → NoteContabile →
         // InchideriTva); detaliul rămâne NotaContabilaDetaliu.
         public DbSet<InchidereTva> InchideriTva { get; set; }
+        // Al 14-lea derivat (FAZA 1C §7): asamblarea/kitting n→m pe stoc
+        // (BPR rămâne rezervat — decizia 19).
+        public DbSet<Asamblare> Asamblari { get; set; }
+        public DbSet<AsamblareDetaliu> AsamblariDetalii { get; set; }
         public DbSet<Imperechere> Imperecheri { get; set; }
 
         // Registre + politici
