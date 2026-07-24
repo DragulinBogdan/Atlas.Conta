@@ -6,4 +6,5 @@
   </Configurations>
   <Project Path="Atlas.Conta.BackOffice.Blazor.Server/Atlas.Conta.BackOffice.Blazor.Server.csproj" />
   <Project Path="Atlas.Conta.BackOffice.Module/Atlas.Conta.BackOffice.Module.csproj" />
+  <Project Path="Atlas.Conta.BackOffice.WebApi/Atlas.Conta.BackOffice.WebApi.csproj" />
 </Solution>
