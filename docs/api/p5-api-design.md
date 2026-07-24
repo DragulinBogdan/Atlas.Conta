@@ -2,6 +2,8 @@
 
 Stare: **FIXAT (24.07.2026) — sesiune de explorare arhitecturală; toate cele 6
 tranșări confirmate; implementarea urmează (decizia 42 în CLAUDE.md).**
+*Anotare 24.07.2026: mandatul din §8 „sesiune separată — structura aplicației
+React" e închis: `p5-react-design.md` (decizia 43).*
 Contextul: deciziile vechi 5–8 (XAF Web API, endpoint per tip, DTO plate,
 metadata-driven UI) au fost formulate pre-registre și pre-EntityFluent —
 sesiunea le-a rafinat pe modelul stabilizat post-P2/polish (40/41). Scopul: o
