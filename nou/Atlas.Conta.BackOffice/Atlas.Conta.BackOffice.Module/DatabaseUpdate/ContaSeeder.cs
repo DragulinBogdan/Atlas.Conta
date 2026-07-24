@@ -66,6 +66,12 @@ public static class ContaSeeder {
             // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
             // inert (fără politici), ca DSC/ITV/BPR.
             ("ASM", "Asamblare", nameof(Asamblare)),
+            // Al 15-lea și al 16-lea derivat (FAZA 1C §7): retururile, pe
+            // corespondența de STORNO (valori negative pe latura originală).
+            // Ancorele sunt în nucleu pentru AMBELE profiluri; la bugetar rămân
+            // tipuri inerte (fără politici), ca DSC/ITV/ASM/BPR.
+            ("RLF", "Retur la furnizor", nameof(ReturFurnizor)),
+            ("RDC", "Retur de la client", nameof(ReturClient)),
         ];
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipDocument>(x => x.Cod == t.Cod) == null) {
@@ -147,9 +153,11 @@ public static class ContaSeeder {
     // 371→607, 345→711, 381→608 — decizia 29c). Incremental: tipurile fără
     // rând primesc regulă la fiecare updater; cele cu simbol non-3xx (bonuri
     // valorice 532/409) nu primesc — rând manual la nevoie (decizia 21).
-    // Folosită de BCS (consum, fără filtru de semn) și LDI (minus, SemnFiltru=-1).
+    // Folosită de BCS (consum, fără filtru de semn), LDI (minus, SemnFiltru=-1),
+    // DSC (costul descărcării) și RDC (costul care REVINE — `pastreazaSemn`:
+    // corespondența de storno postează 607 = 371 cu valoarea negativă a liniei).
     internal static void SeedContare6xxDin3xx(IObjectSpace os, TipDocument tipDoc, int? semnFiltru,
-        IReadOnlyDictionary<string, string> exceptii = null) {
+        IReadOnlyDictionary<string, string> exceptii = null, bool pastreazaSemn = false) {
         var conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
         var acoperite = os.GetObjectsQuery<RegulaContare>()
             .Where(r => r.TipDocumentId == tipDoc.ID && r.TipMaterialId != null)
@@ -168,6 +176,7 @@ public static class ContaSeeder {
             regula.TipDocument = tipDoc;
             regula.TipMaterialId = tip.ID;
             regula.SemnFiltru = semnFiltru;
+            regula.PastreazaSemn = pastreazaSemn;
             regula.SursaContDebit = SursaCont.Explicit;
             regula.ContDebitId = contDebit;
             regula.SursaContCredit = SursaCont.TipMaterial;

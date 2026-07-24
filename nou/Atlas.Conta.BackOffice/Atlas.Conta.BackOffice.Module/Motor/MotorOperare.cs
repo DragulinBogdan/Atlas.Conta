@@ -147,7 +147,11 @@ public static class MotorOperare {
             // codifică direcția — nota se postează pozitivă. Fără regulă nu
             // există filtru de semn: valoarea culeasă se postează CA ATARE
             // (nota storno de import rămâne negativă).
-            note.Add((d, contDebit, contCredit, (regula?.SemnFiltru ?? +1) * d.Valoare,
+            // Excepția declarativă: `PastreazaSemn` (FAZA 1C §7) — corespondența
+            // de STORNO a retururilor (RLF/RDC) postează minus pe corespondența
+            // ORIGINALĂ, deci semnul liniei trece nealterat prin normalizare.
+            note.Add((d, contDebit, contCredit,
+                regula != null && regula.PastreazaSemn ? d.Valoare : (regula?.SemnFiltru ?? +1) * d.Valoare,
                 dimensiuniDebit, dimensiuniCredit));
         }
 

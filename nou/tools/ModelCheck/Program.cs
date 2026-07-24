@@ -1290,6 +1290,358 @@ if (profil == ProfilContabil.Privat) {
         }
     }
 
+    // ============ Scenariul e2e 1C-a: ReturFurnizor / ReturClient ============
+    // Corespondența de STORNO (design §7, rezoluția spike-ului): liniile se culeg
+    // POZITIVE, PregatesteOperare le semnează negativ, iar rândurile se postează
+    // pe corespondența ORIGINALĂ cu valori negative — FĂRĂ flag-ul `Storno`
+    // (ăla rămâne al meta-operației Storneaza: stornarea unui retur dă rânduri
+    // POZITIVE cu Storno=true). Singura extensie de motor e
+    // `RegulaContare.PastreazaSemn`. RDC = UN document cu linii pe două roluri
+    // (venit fără lot / cost cu lotul original), cu `Total` = doar venitul.
+    // Luna decembrie 2026 e nefolosită de celelalte blocuri.
+    {
+        const string MarcajRet = "E2E-RET";
+
+        void CurataRet(IObjectSpace os) {
+            var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajRet)).Select(r => r.ID).ToList();
+            var docs = os.GetObjectsQuery<Document>()
+                .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+            var docIds = docs.Select(d => d.ID).ToList();
+            os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+                os.Delete(doc);
+            os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajRet)).ToList());
+            os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajRet)).ToList());
+            os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajRet)).ToList());
+            os.CommitChanges();
+        }
+
+        using (var os = provider.CreateObjectSpace()) {
+            CurataRet(os);
+
+            var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371");   // marfă (MF)
+            var tip301 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "301");   // alt Tip de stoc (coerență)
+            var tip707 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "707");   // venit din vânzarea mărfurilor
+            var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+            var tipRlf = os.FirstOrDefault<TipDocument>(t => t.Cod == "RLF");
+            var tipRdc = os.FirstOrDefault<TipDocument>(t => t.Cod == "RDC");
+            var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
+            var cont4111 = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
+            var cont4426 = os.FirstOrDefault<Cont>(c => c.Simbol == "4426");
+            var cont4427 = os.FirstOrDefault<Cont>(c => c.Simbol == "4427");
+            var cont371 = os.FirstOrDefault<Cont>(c => c.Simbol == "371");
+            var cont607 = os.FirstOrDefault<Cont>(c => c.Simbol == "607");
+            var cont707 = os.FirstOrDefault<Cont>(c => c.Simbol == "707");
+
+            // --- Seed RLF/RDC privat ---
+            var stocRlf = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipRlf.ID).ToList();
+            var stocRdc = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipRdc.ID).ToList();
+            Check("Seed RLF: ancoră + numerotare RLF-; stoc +1 pe PREDATOR (generic→Magazie, MF→Marfuri) — semnul liniei dă ieșirea",
+                tipRlf != null && tipRlf.ClrType == nameof(ReturFurnizor)
+                && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipRlf.ID)?.Serie == "RLF-"
+                && stocRlf.Count == 2
+                && stocRlf.All(r => r.Latura == LaturaDocument.Predator && r.Semn == +1)
+                && stocRlf.Any(r => r.ClasaId == null && r.TipStoc == TipStoc.Magazie)
+                && stocRlf.Any(r => r.TipStoc == TipStoc.Marfuri));
+            Check("Seed RDC: ancoră + numerotare RDC-; stoc −1 pe PRIMITOR (marfa REVINE pe lotul original)",
+                tipRdc != null && tipRdc.ClrType == nameof(ReturClient)
+                && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipRdc.ID)?.Serie == "RDC-"
+                && stocRdc.Count == 2
+                && stocRdc.All(r => r.Latura == LaturaDocument.Primitor && r.Semn == -1)
+                && stocRdc.Any(r => r.ClasaId == null && r.TipStoc == TipStoc.Magazie)
+                && stocRdc.Any(r => r.TipStoc == TipStoc.Marfuri));
+            var contareRlf = os.GetObjectsQuery<RegulaContare>().Where(r => r.TipDocumentId == tipRlf.ID).ToList();
+            Check("Seed RLF: UN rând generic Natura=Stoc cu PastreazaSemn — 3xx (Tipul) = furnizor (fallback 401)",
+                contareRlf.Count == 1
+                && contareRlf[0] is { NaturaFiltru: NaturaClasa.Stoc, PastreazaSemn: true, SemnFiltru: null,
+                    SursaContDebit: SursaCont.TipMaterial, SursaContCredit: SursaCont.RepartitorPrimitor }
+                && contareRlf[0].ContCreditId == cont401.ID && contareRlf[0].ContDebitId == null);
+            var venitRdc = os.GetObjectsQuery<RegulaContare>()
+                .Where(r => r.TipDocumentId == tipRdc.ID && r.TipMaterialId == null).ToList();
+            var costRdc = os.GetObjectsQuery<RegulaContare>()
+                .Where(r => r.TipDocumentId == tipRdc.ID && r.TipMaterialId == tip371.ID).ToList();
+            Check("Seed RDC: rând generic de VENIT (Natura=Serviciu, PastreazaSemn) — client (fallback 4111) = contul Tipului, fără fallback",
+                venitRdc.Count == 1
+                && venitRdc[0] is { NaturaFiltru: NaturaClasa.Serviciu, PastreazaSemn: true, SemnFiltru: null,
+                    SursaContDebit: SursaCont.RepartitorPredator, SursaContCredit: SursaCont.TipMaterial }
+                && venitRdc[0].ContDebitId == cont4111.ID && venitRdc[0].ContCreditId == null);
+            Check("Seed RDC: costul REVINE — 6xx = 3xx per TipMaterial cu excepțiile profilului (607=371), PastreazaSemn",
+                costRdc.Count == 1
+                && costRdc[0] is { PastreazaSemn: true, SemnFiltru: null,
+                    SursaContDebit: SursaCont.Explicit, SursaContCredit: SursaCont.TipMaterial }
+                && costRdc[0].ContDebitId == cont607.ID);
+            var tvaRlf = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipRlf.ID);
+            var tvaRdc = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipRdc.ID);
+            Check("Seed: PoliticaTva pe retururi (RLF deductibil/contrapartidă primitor 401; RDC colectat/contrapartidă predator 4111) + TipTva implicit N21",
+                tvaRlf is { Directie: DirectieTva.Deductibil, SursaContrapartida: SursaCont.RepartitorPrimitor }
+                && tvaRlf.ContrapartidaFallbackId == cont401.ID
+                && tvaRdc is { Directie: DirectieTva.Colectat, SursaContrapartida: SursaCont.RepartitorPredator }
+                && tvaRdc.ContrapartidaFallbackId == cont4111.ID
+                && tipRlf.TipTvaImplicitId == n21.ID && tipRdc.TipTvaImplicitId == n21.ID);
+
+            // --- Fixtures ---
+            var furnizor = os.CreateObject<Partener>();
+            furnizor.Cod = MarcajRet + "-FURN";
+            furnizor.Denumire = "Furnizor probă retur";
+            var client = os.CreateObject<Partener>();
+            client.Cod = MarcajRet + "-CLI";
+            client.Denumire = "Client probă retur";
+            var gestiune = os.CreateObject<Gestiune>();
+            gestiune.Cod = MarcajRet + "-G";
+            gestiune.Denumire = "Gestiune probă retur";
+            var produs = os.CreateObject<Produs>();
+            produs.Cod = MarcajRet + "-P";
+            produs.Denumire = "Marfă probă retur";
+            produs.UM = "BUC";
+            produs.TipMaterial = tip371;
+            os.CommitChanges();
+
+            List<RegistruStoc> Stoc(Document doc) =>
+                os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID && !r.Storno).ToList();
+            List<RegistruContabil> Note(Document doc) =>
+                os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID && !r.Storno).ToList();
+            decimal SoldCont(Cont cont) =>
+                (os.GetObjectsQuery<RegistruContabil>().Where(r => r.ContDebitId == cont.ID).Sum(r => (decimal?)r.Valoare) ?? 0m)
+                - (os.GetObjectsQuery<RegistruContabil>().Where(r => r.ContCreditId == cont.ID).Sum(r => (decimal?)r.Valoare) ?? 0m);
+            decimal SoldStoc(Lot lot, DateOnly? la = null) =>
+                StocService.Sold(os, new CheieStoc(lot.ID, gestiune.ID, TipStoc.Marfuri), la);
+
+            // --- Contextul: NIR manual, 10 buc × 10 lei ---
+            var nir = os.CreateObject<NIR>();
+            nir.Data = new DateOnly(2026, 12, 2);
+            nir.Predator = furnizor; nir.Primitor = gestiune;
+            var linNir = os.CreateObject<DocumentDetaliu>();
+            linNir.Document = nir; linNir.TipMaterial = tip371; linNir.Cantitate = 10m; linNir.Valoare = 100m;
+            var lot = linNir.CreeazaLot(os, produs, gestiune);
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, nir);
+            Check("Precondiție retururi: lotul original pe Marfuri (10 buc × 10 lei)",
+                lot.PretUnitar == 10m && SoldStoc(lot) == 10m);
+
+            var sold4426Initial = SoldCont(cont4426);
+            var sold4427Initial = SoldCont(cont4427);
+
+            // --- RLF: 4 buc din lotul original, N21 (culegere POZITIVĂ) ---
+            var dRlf = new DateOnly(2026, 12, 5);
+            var rlf = os.CreateObject<ReturFurnizor>();
+            rlf.Data = dRlf; rlf.Predator = gestiune; rlf.Primitor = furnizor;
+            var linRlf = os.CreateObject<DocumentDetaliu>();
+            linRlf.Document = rlf; linRlf.TipMaterial = tip371; linRlf.Lot = lot;
+            linRlf.Cantitate = 4m; linRlf.TipTva = n21;
+            os.CommitChanges();
+
+            Check("RLF nu generează conex/secundar", MotorOperare.Opereaza(os, rlf) == null);
+            Check("RLF → Operat + număr din politică (RLF-); linia culeasă pozitiv devine NEGATIVĂ (−4 / −40 / −8.4 TVA)",
+                rlf.Stare == StareDocument.Operat && rlf.Numar?.StartsWith("RLF-") == true
+                && linRlf.Cantitate == -4m && linRlf.Valoare == -40m && linRlf.ValoareTva == -8.4m);
+            var stocRlfRand = Stoc(rlf);
+            Check("RLF stoc: UN rând −4 / −40 pe Marfuri, în gestiunea predatoare (regula +1 × linia negativă)",
+                stocRlfRand.Count == 1
+                && stocRlfRand[0] is { Cantitate: -4m, Valoare: -40m, TipStoc: TipStoc.Marfuri }
+                && stocRlfRand[0].RepartitorId == gestiune.ID
+                && SoldStoc(lot) == 6m);
+            var noteRlf = Note(rlf);
+            Check("RLF note: 371 = 401 cu −40 și 4426 = 401 cu −8.4, pe corespondența ORIGINALĂ și FĂRĂ flag Storno",
+                noteRlf.Count == 2
+                && noteRlf.Any(r => r.ContDebitId == cont371.ID && r.ContCreditId == cont401.ID && r.Valoare == -40m)
+                && noteRlf.Any(r => r.ContDebitId == cont4426.ID && r.ContCreditId == cont401.ID && r.Valoare == -8.4m)
+                && noteRlf.All(r => !r.Storno && r.Data == dRlf));
+            Check("RLF: Total = brutul negativ (−48.4) — datoria către furnizor scade",
+                rlf.Total == -48.4m);
+            Check("TVA deductibilă scade cu 8.4 (soldul 4426 după retur)",
+                SoldCont(cont4426) - sold4426Initial == -8.4m);
+
+            // --- Gardianul de sold: retur peste disponibil ---
+            var pesteSold = os.CreateObject<ReturFurnizor>();
+            pesteSold.Data = new DateOnly(2026, 12, 8);
+            pesteSold.Predator = gestiune; pesteSold.Primitor = furnizor;
+            var linPesteSold = os.CreateObject<DocumentDetaliu>();
+            linPesteSold.Document = pesteSold; linPesteSold.TipMaterial = tip371; linPesteSold.Lot = lot;
+            linPesteSold.Cantitate = 20m; linPesteSold.TipTva = n21;
+            os.CommitChanges();
+            CheckRefuza("Retur la furnizor peste sold (20 din 6) → refuzul gardianului de sold",
+                () => MotorOperare.Opereaza(os, pesteSold));
+            Check("Retur refuzat — fără rânduri-fantomă (33d)",
+                !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == pesteSold.ID)
+                && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == pesteSold.ID));
+            os.Delete(pesteSold.Detalii.ToList());
+            os.Delete(pesteSold);
+            os.CommitChanges();
+
+            // --- RDC: UN document, linie de venit (fără lot) + linie de cost (lotul original) ---
+            var dRdc = new DateOnly(2026, 12, 10);
+            var rdc = os.CreateObject<ReturClient>();
+            rdc.Data = dRdc; rdc.Predator = client; rdc.Primitor = gestiune;
+            var linVenit = os.CreateObject<DocumentDetaliu>();
+            linVenit.Document = rdc; linVenit.TipMaterial = tip707; linVenit.Valoare = 100m; linVenit.TipTva = n21;
+            var linCost = os.CreateObject<DocumentDetaliu>();
+            linCost.Document = rdc; linCost.TipMaterial = tip371; linCost.Lot = lot; linCost.Cantitate = 3m;
+            os.CommitChanges();
+
+            MotorOperare.Opereaza(os, rdc);
+            Check("RDC → Operat + număr RDC-; venitul semnat negativ (−100 / −21), costul negativ (−3 / −30), cantitatea de venit pro-formă pozitivă",
+                rdc.Stare == StareDocument.Operat && rdc.Numar?.StartsWith("RDC-") == true
+                && linVenit.Cantitate == 1m && linVenit.Valoare == -100m && linVenit.ValoareTva == -21m
+                && linCost.Cantitate == -3m && linCost.Valoare == -30m && linCost.ValoareTva == 0m);
+            var stocRdcRand = Stoc(rdc);
+            Check("RDC stoc: UN rând +3 / +30 pe Marfuri, în gestiunea primitoare — marfa REVINE pe lotul original (regula −1 × linia negativă)",
+                stocRdcRand.Count == 1
+                && stocRdcRand[0] is { Cantitate: 3m, Valoare: 30m, TipStoc: TipStoc.Marfuri }
+                && stocRdcRand[0].LotId == lot.ID && stocRdcRand[0].RepartitorId == gestiune.ID
+                && SoldStoc(lot) == 9m);
+            var noteRdc = Note(rdc);
+            Check("RDC note: 4111 = 707 cu −100, 4111 = 4427 cu −21, 607 = 371 cu −30 — toate fără flag Storno",
+                noteRdc.Count == 3
+                && noteRdc.Any(r => r.ContDebitId == cont4111.ID && r.ContCreditId == cont707.ID && r.Valoare == -100m)
+                && noteRdc.Any(r => r.ContDebitId == cont4111.ID && r.ContCreditId == cont4427.ID && r.Valoare == -21m)
+                && noteRdc.Any(r => r.ContDebitId == cont607.ID && r.ContCreditId == cont371.ID && r.Valoare == -30m)
+                && noteRdc.All(r => !r.Storno && r.Data == dRdc));
+            Check("RDC: Total = DOAR liniile de venit (−121) — costul e mișcare internă venit↔stoc, nu creanță",
+                rdc.Total == -121m
+                && rdc.Detalii.Sum(d => d.Valoare + d.ValoareTva) == -151m); // totalul „naiv" al bazei
+            // 4427 e cont de PASIV: rândul −21 stă pe CREDIT, deci soldul creditor
+            // (−SoldCont, unde SoldCont = debit − credit) scade cu 21.
+            Check("TVA colectată (sold CREDITOR) scade cu 21 după retur",
+                -(SoldCont(cont4427) - sold4427Initial) == -21m);
+
+            // --- Idempotența semnării: anulare → re-operare ---
+            var numarRdc = rdc.Numar;
+            MotorOperare.AnuleazaOperarea(os, rdc);
+            Check("Anulare directă RDC (frunză) → Draft, registre goale, stocul revine la 6",
+                rdc.Stare == StareDocument.Draft
+                && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == rdc.ID)
+                && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == rdc.ID)
+                && SoldStoc(lot) == 6m);
+            MotorOperare.Opereaza(os, rdc);
+            Check("Re-operare → același număr și ACELEAȘI valori (semnarea e idempotentă prin Abs)",
+                rdc.Stare == StareDocument.Operat && rdc.Numar == numarRdc
+                && linVenit.Valoare == -100m && linVenit.ValoareTva == -21m
+                && linCost.Cantitate == -3m && linCost.Valoare == -30m
+                && rdc.Total == -121m && Note(rdc).Count == 3 && Stoc(rdc).Count == 1);
+
+            // --- Refuzuri (obiecte throwaway, curățate imediat) ---
+            void RefuzRet(string nume, Func<Document> fabrica) {
+                var doc = fabrica();
+                os.CommitChanges();
+                CheckRefuza(nume, () => MotorOperare.Opereaza(os, doc));
+                Check(nume + " — fără rânduri-fantomă în ObjectSpace (33d)",
+                    !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == doc.ID)
+                    && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == doc.ID));
+                var idsLinii = doc.Detalii.Select(d => d.ID).ToList();
+                os.Delete(doc.Detalii.ToList());
+                os.Delete(os.GetObjectsQuery<Lot>()
+                    .Where(l => l.LinieIntrareId != null && idsLinii.Contains(l.LinieIntrareId.Value)).ToList());
+                os.Delete(doc);
+                os.CommitChanges();
+            }
+
+            ReturClient RdcNou() {
+                var doc = os.CreateObject<ReturClient>();
+                doc.Data = new DateOnly(2026, 12, 12);
+                doc.Predator = client; doc.Primitor = gestiune;
+                return doc;
+            }
+            DocumentDetaliu LinieRdc(ReturClient doc, TipMaterial tip, decimal cantitate, decimal valoare, Lot lotLinie) {
+                var d = os.CreateObject<DocumentDetaliu>();
+                d.Document = doc; d.TipMaterial = tip; d.Cantitate = cantitate; d.Valoare = valoare;
+                if (lotLinie != null)
+                    d.Lot = lotLinie;
+                return d;
+            }
+
+            RefuzRet("RDC: linie de venit (fără lot) cu Tip de STOC → refuz (venitul poartă natura Serviciu)", () => {
+                var doc = RdcNou();
+                LinieRdc(doc, tip371, 1m, 100m, null);
+                return doc;
+            });
+            RefuzRet("RDC: linie de cost pe lotul creat de ea însăși → refuz (marfa revine pe lotul ORIGINAL)", () => {
+                var doc = RdcNou();
+                LinieRdc(doc, tip707, 1m, 100m, null);
+                var d = LinieRdc(doc, tip371, 2m, 0m, null);
+                d.CreeazaLot(os, produs, gestiune);
+                return doc;
+            });
+            RefuzRet("RDC: linie de cost cu Tip incoerent cu produsul lotului → refuz", () => {
+                var doc = RdcNou();
+                LinieRdc(doc, tip707, 1m, 100m, null);
+                LinieRdc(doc, tip301, 1m, 0m, lot); // lotul e al unui produs cu Tipul 371
+                return doc;
+            });
+            RefuzRet("RLF: laturi inversate (predator partener / primitor gestiune) → refuz", () => {
+                var doc = os.CreateObject<ReturFurnizor>();
+                doc.Data = new DateOnly(2026, 12, 12);
+                doc.Predator = furnizor; doc.Primitor = gestiune;
+                var d = os.CreateObject<DocumentDetaliu>();
+                d.Document = doc; d.TipMaterial = tip371; d.Lot = lot; d.Cantitate = 1m;
+                return doc;
+            });
+            RefuzRet("RLF: linie fără lot → refuz (returul descarcă lotul original)", () => {
+                var doc = os.CreateObject<ReturFurnizor>();
+                doc.Data = new DateOnly(2026, 12, 12);
+                doc.Predator = gestiune; doc.Primitor = furnizor;
+                var d = os.CreateObject<DocumentDetaliu>();
+                d.Document = doc; d.TipMaterial = tip371; d.Cantitate = 1m;
+                return doc;
+            });
+            // Fix post-review pas 4: un Tip de stoc creat ÎNTRE updater-e n-are
+            // regulă derivată 607=3xx → fără refuz, stocul s-ar mișca fără notă
+            // (exact defectul închis pe DSC la 38c). Lotul e „de deschidere"
+            // (LinieIntrareId null, ca migrarea) ca să izoleze EXACT eroarea.
+            var clasaMf = os.FirstOrDefault<ClasaProdus>(c => c.Cod == "MF");
+            var tipNou = os.CreateObject<TipMaterial>();
+            tipNou.Cod = MarcajRet + "-TIPX"; tipNou.Denumire = "Tip fără regulă (probă)"; tipNou.Clasa = clasaMf;
+            var produsNou = os.CreateObject<Produs>();
+            produsNou.Cod = MarcajRet + "-PRX"; produsNou.Denumire = "Produs Tip nou"; produsNou.UM = "BUC";
+            produsNou.TipMaterial = tipNou;
+            var lotNou = os.CreateObject<Lot>();
+            lotNou.Produs = produsNou; lotNou.Gestiune = gestiune;
+            lotNou.PretUnitar = 5m; lotNou.Data = new DateOnly(2026, 12, 1);
+            os.CommitChanges();
+            RefuzRet("RDC: linie de cost cu Tip FĂRĂ regulă de contare derivată → refuz (stocul nu se mișcă fără notă — 38c)", () => {
+                var doc = RdcNou();
+                LinieRdc(doc, tip707, 1m, 100m, null);
+                LinieRdc(doc, tipNou, 1m, 0m, lotNou);
+                return doc;
+            });
+            os.Delete(lotNou); os.Delete(produsNou); os.Delete(tipNou);
+            os.CommitChanges();
+            // Fix post-review pas 4: Capitalizat pe venitul stornat n-are sens
+            // economic și ar compunda brutul la re-operare — refuz la validare.
+            var ned21Ret = os.FirstOrDefault<TipTva>(t => t.Cod == "NED21");
+            RefuzRet("RDC: linie de venit cu regim Capitalizat (NED21) → refuz (semnarea ar compunda la re-operare)", () => {
+                var doc = RdcNou();
+                var d = LinieRdc(doc, tip707, 1m, 100m, null);
+                d.TipTva = ned21Ret;
+                return doc;
+            });
+
+            // --- Storno pe RLF: rândurile inverse sunt POZITIVE cu Storno=true ---
+            var dStorno = new DateOnly(2026, 12, 20);
+            MotorOperare.Storneaza(os, rlf, dStorno);
+            var toateStocRlf = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == rlf.ID).ToList();
+            var toateNoteRlf = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == rlf.ID).ToList();
+            Check("Storno pe RETUR: rândurile inverse sunt POZITIVE și poartă Storno=true (flag-ul rămâne al meta-operației)",
+                rlf.Stare == StareDocument.Stornat
+                && toateStocRlf.Count == 2 && toateNoteRlf.Count == 4
+                && toateStocRlf.Single(r => r.Storno) is { Cantitate: 4m, Valoare: 40m, Data.Day: 20 }
+                && toateNoteRlf.Count(r => r.Storno && r.Data == dStorno) == 2
+                && toateNoteRlf.Any(r => r.Storno && r.ContDebitId == cont371.ID && r.ContCreditId == cont401.ID && r.Valoare == 40m)
+                && toateNoteRlf.Any(r => r.Storno && r.ContDebitId == cont4426.ID && r.ContCreditId == cont401.ID && r.Valoare == 8.4m));
+            Check("Stocul revine după stornarea returului (10 − 4 + 3 + 4 = 13); TVA deductibilă revine la valoarea inițială",
+                SoldStoc(lot, dStorno) == 13m
+                && SoldCont(cont4426) - sold4426Initial == 0m);
+
+            CurataRet(os);
+            Check("Curățenie finală retururi (fără reziduuri e2e)",
+                !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajRet))
+                && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajRet))
+                && !os.GetObjectsQuery<ReturFurnizor>().Any()
+                && !os.GetObjectsQuery<ReturClient>().Any());
+        }
+    }
+
     Rezumat();
     return;
 }
@@ -2809,6 +3161,31 @@ using (var os = provider.CreateObjectSpace()) {
         && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipAsm.ID) == null
         && os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tipAsm.ID) == null
         && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocumentId == tipAsm.ID) == null);
+}
+
+// ========== Scenariul e2e 1C-a: retururile la BUGETAR (tipuri inerte) ==========
+// Ancorele RLF/RDC trăiesc în nucleu (ambele profiluri), politicile sunt DATE de
+// profil: la bugetar nu există reguli/numerotare/TVA implicit, deci tipurile sunt
+// inerte — ca DSC/ITV/ASM/BPR (decizia 29). Extensia de motor `PastreazaSemn` e
+// aditivă și inertă la default false: nicio regulă existentă nu o poartă.
+using (var os = provider.CreateObjectSpace()) {
+    var tipRlf = os.FirstOrDefault<TipDocument>(t => t.Cod == "RLF");
+    var tipRdc = os.FirstOrDefault<TipDocument>(t => t.Cod == "RDC");
+    Check("Seed bugetar: ancorele TipDocument RLF/RDC există (nucleu), cu ClrType-urile claselor",
+        tipRlf != null && tipRlf.ClrType == nameof(ReturFurnizor)
+        && tipRdc != null && tipRdc.ClrType == nameof(ReturClient));
+    bool Inert(TipDocument tip) =>
+        !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocumentId == tip.ID)
+        && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tip.ID)
+        && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tip.ID) == null
+        && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tip.ID) == null
+        && os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tip.ID) == null
+        && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocumentId == tip.ID) == null
+        && tip.TipTvaImplicitId == null;
+    Check("Bugetar: RLF și RDC sunt tipuri INERTE — fără reguli de stoc/contare, numerotare, politici sau TVA implicit",
+        Inert(tipRlf) && Inert(tipRdc));
+    Check("Extensia PastreazaSemn e inertă la bugetar: nicio regulă de contare existentă nu o poartă",
+        !os.GetObjectsQuery<RegulaContare>().Any(r => r.PastreazaSemn));
 }
 
 Rezumat();

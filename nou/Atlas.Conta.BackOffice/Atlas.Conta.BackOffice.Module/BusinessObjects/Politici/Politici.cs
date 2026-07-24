@@ -58,6 +58,12 @@ public class RegulaContare : BaseObject {
     // Null = orice semn; valoarea postată se normalizează cu semnul filtrului
     // (linia de minus poartă valoare negativă, nota ei rămâne pozitivă).
     public virtual int? SemnFiltru { get; set; }
+    // Corespondență de STORNO (FAZA 1C §7, rezoluția spike-ului): valoarea liniei
+    // se postează CU SEMNUL EI, fără normalizarea `SemnFiltru`, pe corespondența
+    // ORIGINALĂ a achiziției/vânzării. Retururile (RLF/RDC) culeg pozitiv, își
+    // semnează liniile negativ la operare și postează minus pe aceeași latură —
+    // exact convenția `Storneaza` a motorului (25d) și reprezentarea 1C.
+    public virtual bool PastreazaSemn { get; set; }
     // Conturile se rezolvă declarativ per latură (testul bazei §7.2): sursa
     // indică nomenclatorul purtător (Tip material / partenerul unei laturi),
     // iar contul explicit de mai jos rămâne valoare directă sau fallback.

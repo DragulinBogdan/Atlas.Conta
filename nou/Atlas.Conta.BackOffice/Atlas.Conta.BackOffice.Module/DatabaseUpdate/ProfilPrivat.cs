@@ -42,6 +42,9 @@ internal static class ProfilPrivat {
         // (altfel guard-ul „fără regulă FCL" din SeedPoliticiFacturaIesire ar
         // vedea rândurile de vânzare și n-ar mai crea genericul de servicii).
         SeedPoliticiDescarcare(os);
+        // Retururile derivă 6xx = 3xx pe RDC (independent de FCL/DSC — cheia e
+        // TipDocument), deci pot sta oriunde după nomenclatoare.
+        SeedPoliticiRetururi(os);
         os.CommitChanges();
         // PoliticaTva referă TipTva comise mai sus.
         SeedPoliticiTva(os);
@@ -214,6 +217,12 @@ internal static class ProfilPrivat {
         Politica("FCT", DirectieTva.Deductibil, SursaCont.RepartitorPredator, "401");
         Politica("DEC", DirectieTva.Deductibil, SursaCont.RepartitorPredator, "542");
         Politica("FCL", DirectieTva.Colectat, SursaCont.RepartitorPrimitor, "4111");
+        // Retururile (FAZA 1C §7): aceeași direcție ca documentul stornat, dar
+        // contrapartida stă pe latura INVERSĂ (RLF: furnizorul e primitor;
+        // RDC: clientul e predator). ValoareTva negativă ⇒ 4426 = 401 cu −TVA,
+        // respectiv 4111 = 4427 cu −TVA — exact rândurile 1C.
+        Politica("RLF", DirectieTva.Deductibil, SursaCont.RepartitorPrimitor, "401");
+        Politica("RDC", DirectieTva.Colectat, SursaCont.RepartitorPredator, "4111");
     }
 
     // Profilul de validare privat: la P2 nu mai are NICIUN rând — clasificația
@@ -223,13 +232,13 @@ internal static class ProfilPrivat {
 
     // Datoria P1 (design §8): default TipTva per tip de document, aplicat la
     // CULEGERE (nu în motor — un rând PoliticaTva doar-pentru-default ar activa
-    // pasul TVA). FCT/FCL/DEC → N21; setat DOAR unde null (editările manuale nu
+    // pasul TVA). FCT/FCL/DEC + retururile RLF/RDC → N21; setat DOAR unde null (editările manuale nu
     // se ating). Rulează după commit-ul TipTva (N21 referit prin FK).
     static void SeedTipTvaImplicit(IObjectSpace os) {
         var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
         if (n21 == null)
             return;
-        foreach (var cod in new[] { "FCT", "FCL", "DEC" }) {
+        foreach (var cod in new[] { "FCT", "FCL", "DEC", "RLF", "RDC" }) {
             var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == cod);
             if (tip != null && tip.TipTvaImplicitId == null)
                 tip.TipTvaImplicitId = n21.ID;
@@ -529,6 +538,73 @@ internal static class ProfilPrivat {
             regula.TipStoc = r.TipStoc;
             regula.Semn = +1;
         }
+    }
+
+    // Retururile (FAZA 1C §7, rezoluția spike-ului storno): corespondența
+    // ORIGINALĂ cu valori NEGATIVE. Liniile se culeg pozitive și se semnează la
+    // operare (PregatesteOperare), deci regulile spun doar LATURA și registrul —
+    // semnul liniei face direcția. `PastreazaSemn` scoate normalizarea de semn
+    // din motor pe rândurile astea (singura extensie de motor a feliei).
+    //   RLF: stoc +1 pe PREDATOR (gestiunea) × linia −q ⇒ −q (marfa iese);
+    //        contare 3xx = 401 cu −V; TVA 4426 = 401 cu −TVA (PoliticaTva).
+    //   RDC: stoc −1 pe PRIMITOR (gestiunea) × linia −q ⇒ +q (marfa revine pe
+    //        lotul original); venit 4111 = 70x cu −V, cost 607 = 371 cu −cost,
+    //        TVA 4111 = 4427 cu −TVA. Liniile de venit (Natura=Serviciu) nu
+    //        sunt atinse de regulile generice de stoc (Natura=Stoc).
+    // Mapările de registre oglindesc NIR/LDI/DSC privat (generic → Magazie,
+    // MF → Marfuri).
+    static void SeedPoliticiRetururi(IObjectSpace os) {
+        var rlf = os.FirstOrDefault<TipDocument>(x => x.Cod == "RLF");
+        var rdc = os.FirstOrDefault<TipDocument>(x => x.Cod == "RDC");
+        ContaSeeder.SeedNumerotare(os, "RLF", "RLF-");
+        ContaSeeder.SeedNumerotare(os, "RDC", "RDC-");
+
+        void ReguliStoc(TipDocument tipDoc, LaturaDocument latura, int semn) {
+            if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocumentId == tipDoc.ID) != null)
+                return;
+            (string Clasa, TipStoc TipStoc)[] reguli = [
+                (null, TipStoc.Magazie),
+                ("MF", TipStoc.Marfuri),
+            ];
+            foreach (var r in reguli) {
+                var regula = os.CreateObject<RegulaStoc>();
+                regula.TipDocument = tipDoc;
+                regula.Latura = latura;
+                regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
+                regula.TipStoc = r.TipStoc;
+                regula.Semn = semn;
+            }
+        }
+        ReguliStoc(rlf, LaturaDocument.Predator, +1);
+        ReguliStoc(rdc, LaturaDocument.Primitor, -1);
+
+        // RLF: stornarea achiziției — contul de stoc al Tipului = furnizorul.
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocumentId == rlf.ID) == null) {
+            var retur = os.CreateObject<RegulaContare>();
+            retur.TipDocument = rlf;
+            retur.NaturaFiltru = NaturaClasa.Stoc;
+            retur.PastreazaSemn = true;
+            retur.SursaContDebit = SursaCont.TipMaterial;
+            retur.SursaContCredit = SursaCont.RepartitorPrimitor;
+            retur.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
+        }
+
+        // RDC, liniile de venit: stornarea vânzării — clientul (predator) =
+        // contul de venit al Tipului, FĂRĂ fallback (Tip fără cont = eroare
+        // clară la operare, filozofia 30b).
+        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocumentId == rdc.ID && x.TipMaterialId == null) == null) {
+            var venit = os.CreateObject<RegulaContare>();
+            venit.TipDocument = rdc;
+            venit.NaturaFiltru = NaturaClasa.Serviciu;
+            venit.PastreazaSemn = true;
+            venit.SursaContDebit = SursaCont.RepartitorPredator;
+            venit.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
+            venit.SursaContCredit = SursaCont.TipMaterial;
+        }
+
+        // RDC, liniile de cost: costul REVINE — 6xx = 3xx per Tip cu excepțiile
+        // profilului (607=371, 711=345, 608=381), valoarea negativă a liniei.
+        ContaSeeder.SeedContare6xxDin3xx(os, rdc, semnFiltru: null, Derivari6xxExceptii, pastreazaSemn: true);
     }
 
     // Decontul (32): debit din contul Tipului (fără fallback), credit = avansul

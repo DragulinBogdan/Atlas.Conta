@@ -54,8 +54,11 @@ public abstract class Document : BaseObject {
     // Explicit BRUT (P1, design §3): imperecherea și plata autogenerată sting
     // brutul. La regimurile capitalizate ValoareTva e 0, deci rămâne exact
     // vechiul Σ Valoare — invarianții ImperechereService nu se schimbă.
+    // VIRTUAL (FAZA 1C §7): ReturClient poartă linii pe două roluri (venit +
+    // cost) și totalul lui = doar liniile de venit — brutul care ajustează
+    // creanța; costul e mișcare internă venit↔stoc, nu creanță.
     [NotMapped]
-    public decimal Total => Detalii.Sum(d => d.Valoare + d.ValoareTva);
+    public virtual decimal Total => Detalii.Sum(d => d.Valoare + d.ValoareTva);
 
     // Hooks polimorfe consumate DOAR de motorul de operare (decizia 14).
     // Primesc IObjectSpace și lucrează pe FK-uri, nu pe navigații — contextul

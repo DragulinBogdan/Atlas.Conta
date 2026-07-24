@@ -88,6 +88,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // (BPR rămâne rezervat — decizia 19).
         public DbSet<Asamblare> Asamblari { get; set; }
         public DbSet<AsamblareDetaliu> AsamblariDetalii { get; set; }
+        // Al 15-lea și al 16-lea derivat (FAZA 1C §7): retururile pe corespondența
+        // de storno; ambele folosesc detaliul de BAZĂ (fără tabele de detaliu).
+        public DbSet<ReturFurnizor> RetururiFurnizor { get; set; }
+        public DbSet<ReturClient> RetururiClient { get; set; }
         public DbSet<Imperechere> Imperecheri { get; set; }
 
         // Registre + politici
