@@ -4,9 +4,9 @@
     <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Atlas.DXF.Blazor" Version="26.1.3.*" />
-    <PackageVersion Include="Atlas.DXF.Core" Version="26.1.3.*" />
-    <PackageVersion Include="Atlas.DXF.EfCore" Version="26.1.3.*" />
+    <PackageVersion Include="Atlas.DXF.Blazor" Version="26.1.3.7" />
+    <PackageVersion Include="Atlas.DXF.Core" Version="26.1.3.7" />
+    <PackageVersion Include="Atlas.DXF.EfCore" Version="26.1.3.7" />	  
     <PackageVersion Include="DevExpress.AIIntegration.AspNetCore.Reporting" Version="26.1.*" />
     <PackageVersion Include="DevExpress.AIIntegration.Blazor.Reporting.Viewer" Version="26.1.*" />
     <PackageVersion Include="DevExpress.Drawing.Skia" Version="26.1.*" />
@@ -50,7 +50,7 @@
     <PackageVersion Include="DevExpress.ExpressApp.Validation.Blazor" Version="26.1.*" />
     <PackageVersion Include="DevExpress.ExpressApp.MultiTenancy.Blazor.EFCore" Version="26.1.*" />
     <PackageVersion Include="DevExpress.ExpressApp.Security.EFCore.Extensions.Blazor" Version="26.1.*" />
-    <PackageVersion Include="Azure.AI.OpenAI" Version="2.3.0-beta.2"/>
+    <PackageVersion Include="Azure.AI.OpenAI" Version="2.3.0-beta.2" />
     <PackageVersion Include="Azure.Identity" Version="1.17.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="5.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />

@@ -1,5 +1,5 @@
-using Atlas.DXF.Core.Editors;
 using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -19,15 +19,15 @@ public class TipTva : BaseObject {
 
     // Conturile de TVA (4426/4427/4428) trăiesc în planul mare: match exact pe Simbol.
     public virtual Guid? ContTvaDeductibilId { get; set; }
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContTvaDeductibil { get; set; }
     public virtual Guid? ContTvaColectatId { get; set; }
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContTvaColectat { get; set; }
     // REZERVAT (design §8): TVA la încasare / facturi nesosite — mecanismul e
     // amânat, nomenclatorul fixează doar contul.
     public virtual Guid? ContTvaNeexigibilId { get; set; }
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContTvaNeexigibil { get; set; }
 
     // Maparea D406 (nomenclatorul ANAF de coduri de taxă, direcțional).

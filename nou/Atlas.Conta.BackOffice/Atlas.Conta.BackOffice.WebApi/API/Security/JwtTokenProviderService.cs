@@ -4,7 +4,6 @@ using DevExpress.ExpressApp.Security.Authentication.ClientServer;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Runtime.ExceptionServices;
-using System.Security.Claims;
 using System.Text;
 
 namespace Atlas.Conta.BackOffice.WebApi.JWT {

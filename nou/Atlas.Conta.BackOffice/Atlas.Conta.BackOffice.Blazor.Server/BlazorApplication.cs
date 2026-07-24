@@ -1,14 +1,5 @@
-﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using DevExpress.EntityFrameworkCore.Security;
-using DevExpress.ExpressApp;
-using DevExpress.ExpressApp.ApplicationBuilder;
+﻿using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Blazor;
-using DevExpress.ExpressApp.EFCore;
-using DevExpress.ExpressApp.Security;
-using DevExpress.ExpressApp.Security.ClientServer;
-using DevExpress.ExpressApp.SystemModule;
-using DevExpress.ExpressApp.Updating;
-using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Blazor.Server {
     public class BackOfficeBlazorApplication : BlazorApplication {

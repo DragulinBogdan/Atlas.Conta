@@ -1,7 +1,5 @@
 ﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using DevExpress.Data.Filtering;
 using DevExpress.ExpressApp;
-using DevExpress.ExpressApp.EF;
 using DevExpress.ExpressApp.Security;
 using DevExpress.ExpressApp.SystemModule;
 using DevExpress.ExpressApp.Updating;

@@ -1,5 +1,5 @@
-using Atlas.DXF.Core.Editors;
 using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -32,6 +32,6 @@ public class TipMaterial : BaseObject {
     // Consumată de RegulaContare prin SursaCont.TipMaterial.
     public virtual Guid? ContImplicitId { get; set; }
     // Plan de conturi mare (1.679 rânduri la bugetar): match exact pe Simbol.
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContImplicit { get; set; }
 }

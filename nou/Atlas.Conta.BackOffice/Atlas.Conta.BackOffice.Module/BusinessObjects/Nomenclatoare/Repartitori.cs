@@ -1,5 +1,5 @@
-using Atlas.DXF.Core.Editors;
 using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -20,7 +20,7 @@ public abstract class Repartitor : BaseObject {
     // cont propriu 5xx/770, angajat 542 (avansuri) — deci stă pe bază.
     public virtual Guid? ContImplicitId { get; set; }
     // Plan de conturi mare: match exact pe Simbol în locul lookup-ului standard.
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContImplicit { get; set; }
 }
 

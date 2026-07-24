@@ -1,5 +1,5 @@
-using Atlas.DXF.Core.Editors;
 using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -65,10 +65,10 @@ public class RegulaContare : BaseObject {
     public virtual SursaCont SursaContCredit { get; set; }
     // Contul explicit al regulii trăiește în planul mare: match exact pe Simbol.
     public virtual Guid? ContDebitId { get; set; }
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContDebit { get; set; }
     public virtual Guid? ContCreditId { get; set; }
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContCredit { get; set; }
     public virtual Dimensiuni DimensiuniComun { get; set; } = new();
     public virtual Dimensiuni DimensiuniOverrideDebit { get; set; } = new();

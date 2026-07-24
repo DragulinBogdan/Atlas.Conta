@@ -1,5 +1,5 @@
 using Atlas.Conta.BackOffice.Module.UI;
-using Atlas.DXF.Core.Editors;
+using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -58,10 +58,10 @@ public class DecontDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
 
     // Postarea explicită pe linie alege din planul mare: match exact pe Simbol.
     public virtual Guid? ContDebitId { get; set; }
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContDebit { get; set; }
     public virtual Guid? ContCreditId { get; set; }
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContCredit { get; set; }
     public virtual Guid? RepartitorDebitId { get; set; }
     public virtual Repartitor RepartitorDebit { get; set; }

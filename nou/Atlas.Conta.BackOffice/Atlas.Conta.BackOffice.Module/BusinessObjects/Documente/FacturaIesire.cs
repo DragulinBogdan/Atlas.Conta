@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Atlas.Conta.BackOffice.Module.UI;
-using Atlas.DXF.Core.Editors;
+using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -153,7 +153,7 @@ public class FacturaIesireDetaliu : DocumentDetaliu {
     // (pin), prioritară la picking.
     public virtual Guid? ProdusId { get; set; }
     // Catalog de produse (potențial mare): match exact pe Denumire.
-    [EditorAlias(AtlasEditorAliases.SmartLookupPropertyEditor)]
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Produs Produs { get; set; }
 
     [NotMapped] public decimal ValoareLivrare => PretUnitar * Cantitate;

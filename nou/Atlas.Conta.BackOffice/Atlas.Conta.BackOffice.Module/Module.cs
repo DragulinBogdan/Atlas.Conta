@@ -1,17 +1,8 @@
 ﻿using DevExpress.ExpressApp;
-using DevExpress.ExpressApp.Actions;
-using DevExpress.ExpressApp.DC;
-using DevExpress.ExpressApp.Editors;
-using DevExpress.ExpressApp.Model;
 using DevExpress.ExpressApp.Model.Core;
-using DevExpress.ExpressApp.Model.DomainLogics;
-using DevExpress.ExpressApp.Model.NodeGenerators;
-using DevExpress.ExpressApp.ReportsV2;
 using DevExpress.ExpressApp.StateMachine;
 using DevExpress.ExpressApp.Updating;
-using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF.StateMachine;
-using System.ComponentModel;
 using Atlas.Conta.BackOffice.Module.UI;
 using Atlas.DXF.Core.Views.Discovery;
 using Atlas.DXF.Core.Views.Updaters;

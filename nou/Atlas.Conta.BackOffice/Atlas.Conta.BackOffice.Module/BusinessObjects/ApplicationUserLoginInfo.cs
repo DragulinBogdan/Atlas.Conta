@@ -1,11 +1,9 @@
-﻿using DevExpress.ExpressApp;
-using DevExpress.ExpressApp.ConditionalAppearance;
+﻿using DevExpress.ExpressApp.ConditionalAppearance;
 using DevExpress.ExpressApp.Security;
 using DevExpress.Persistent.BaseImpl.EF;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Runtime.CompilerServices;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
     [Table("PermissionPolicyUserLoginInfo")]
