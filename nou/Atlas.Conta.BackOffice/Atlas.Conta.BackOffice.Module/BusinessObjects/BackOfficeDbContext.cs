@@ -80,6 +80,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<DescarcareGestiuneDetaliu> DescarcariGestiuneDetalii { get; set; }
         public DbSet<NotaContabila> NoteContabile { get; set; }
         public DbSet<NotaContabilaDetaliu> NoteContabileDetalii { get; set; }
+        // Al 13-lea derivat (FAZA 1C §6): închiderea lunară de TVA — notă
+        // contabilă GENERATĂ (TPT pe două niveluri: Documente → NoteContabile →
+        // InchideriTva); detaliul rămâne NotaContabilaDetaliu.
+        public DbSet<InchidereTva> InchideriTva { get; set; }
         public DbSet<Imperechere> Imperecheri { get; set; }
 
         // Registre + politici
@@ -93,6 +97,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaScadenta> PoliticiScadenta { get; set; }
         public DbSet<PoliticaValidare> PoliticiValidare { get; set; }
         public DbSet<PoliticaTva> PoliticiTva { get; set; }
+        public DbSet<PoliticaInchidereTva> PoliticiInchidereTva { get; set; }
 
         // Infrastructura migrării (pasul 4): corelare legacy → nou.
         public DbSet<MigrareLegatura> MigrareLegaturi { get; set; }

@@ -57,6 +57,11 @@ public static class ContaSeeder {
             // Al 12-lea derivat (FAZA 1C §5): nota contabilă — ușa de import
             // (decizia 9) și tip de culegere manuală, în AMBELE profiluri.
             ("NTC", "Notă contabilă", nameof(NotaContabila)),
+            // Al 13-lea derivat (FAZA 1C §6): închiderea lunară de TVA — notă
+            // contabilă GENERATĂ. Ancora e în nucleu pentru AMBELE profiluri; la
+            // bugetar rămâne tip inert (fără PoliticaInchidereTva, fără
+            // numerotare), ca DSC/BPR.
+            ("ITV", "Închidere TVA", nameof(InchidereTva)),
         ];
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipDocument>(x => x.Cod == t.Cod) == null) {

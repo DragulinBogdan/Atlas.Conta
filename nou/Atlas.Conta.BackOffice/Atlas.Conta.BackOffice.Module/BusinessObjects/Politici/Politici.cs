@@ -135,6 +135,34 @@ public class PoliticaTva : BaseObject {
     public virtual Cont ContrapartidaFallback { get; set; }
 }
 
+// Conturile închiderii lunare de TVA (FAZA 1C §6) — DATE per profil, nu
+// simboluri în motor (decizia 29: motorul e agnostic la plan). Rândul privat
+// leagă 4426/4427/4423/4424; bugetarul nu primește rând, deci ITV rămâne tip
+// inert acolo (ca DSC — `InchidereTvaService.Genereaza` întoarce null).
+// Toate cele patru conturi sunt nullable în schemă (politică editabilă, culeasă
+// în trepte), dar serviciul cere setul COMPLET ca să genereze ceva.
+[NavigationItem("Politici")]
+public class PoliticaInchidereTva : BaseObject {
+    public virtual Guid TipDocumentId { get; set; }
+    public virtual TipDocument TipDocument { get; set; }
+    // 4426 — TVA deductibilă (sold debitor de închis).
+    public virtual Guid? ContDeductibilaId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    public virtual Cont ContDeductibila { get; set; }
+    // 4427 — TVA colectată (sold creditor de închis).
+    public virtual Guid? ContColectataId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    public virtual Cont ContColectata { get; set; }
+    // 4423 — TVA de plată (excedentul de colectată).
+    public virtual Guid? ContDePlataId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    public virtual Cont ContDePlata { get; set; }
+    // 4424 — TVA de recuperat (excedentul de deductibilă).
+    public virtual Guid? ContDeRecuperatId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    public virtual Cont ContDeRecuperat { get; set; }
+}
+
 [NavigationItem("Politici")]
 public class PoliticaNumerotare : BaseObject {
     public virtual Guid TipDocumentId { get; set; }

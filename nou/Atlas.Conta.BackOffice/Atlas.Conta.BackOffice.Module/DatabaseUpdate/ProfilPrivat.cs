@@ -36,6 +36,7 @@ internal static class ProfilPrivat {
         SeedPoliticiTrezorerie(os);
         SeedPoliticiDecont(os);
         SeedPoliticiNotaContabila(os);
+        SeedPoliticiInchidereTva(os);
         // După FCL: derivarea de vânzare presupune genericul FCL deja creat
         // (altfel guard-ul „fără regulă FCL" din SeedPoliticiFacturaIesire ar
         // vedea rândurile de vânzare și n-ar mai crea genericul de servicii).
@@ -485,6 +486,21 @@ internal static class ProfilPrivat {
     // TVA/scadență/validare; postarea explicită a liniei e completă).
     static void SeedPoliticiNotaContabila(IObjectSpace os) {
         ContaSeeder.SeedNumerotare(os, "NTC", "NTC-");
+    }
+
+    // Închiderea lunară de TVA (FAZA 1C §6): numerotare proprie + conturile
+    // închiderii ca DATE (4426/4427/4423/4424 OMFP). Motorul nu cunoaște niciun
+    // simbol — fără rândul ăsta ITV e tip inert (cazul bugetar).
+    static void SeedPoliticiInchidereTva(IObjectSpace os) {
+        ContaSeeder.SeedNumerotare(os, "ITV", "ITV-");
+        if (os.FirstOrDefault<PoliticaInchidereTva>(p => p.TipDocument.Cod == "ITV") != null)
+            return;
+        var politica = os.CreateObject<PoliticaInchidereTva>();
+        politica.TipDocument = os.FirstOrDefault<TipDocument>(t => t.Cod == "ITV");
+        politica.ContDeductibila = os.FirstOrDefault<Cont>(c => c.Simbol == "4426");
+        politica.ContColectata = os.FirstOrDefault<Cont>(c => c.Simbol == "4427");
+        politica.ContDePlata = os.FirstOrDefault<Cont>(c => c.Simbol == "4423");
+        politica.ContDeRecuperat = os.FirstOrDefault<Cont>(c => c.Simbol == "4424");
     }
 
     // Decontul (32): debit din contul Tipului (fără fallback), credit = avansul
