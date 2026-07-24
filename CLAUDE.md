@@ -921,6 +921,43 @@ Raport de producție.
     Reflection.Emit (Proxies tranzitiv e 8.x vs EF 10 — pariu de versiune
     refuzat); calea reală EF e acoperită de ModelCheck + smoke UI în Conta.
 
+42. **Design pasul 5 — tierul API + React — FIXAT**
+    (`docs/api/p5-api-design.md`, toate cele 6 tranșări confirmate
+    24.07.2026; implementarea urmează). Rafinează deciziile 5–8 pe modelul
+    stabilizat. Esența: (a) **o singură sursă de reguli** — gardian generic
+    de Committing în Module, activ DOAR pe ObjectSpace-uri secured (non-Draft
+    read-only, registre read-only pentru toți, Imperechere prin
+    ValideazaCreare); distincția secured/non-secured înlocuiește orice token
+    (non-secured = ușa de sistem); în securitate nimeni nu are Write pe
+    registre. Închide restanțele 40c/41a/41d. (b) **Motorul rulează în
+    ObjectSpace non-secured PROPRIU, secvență nu cuib**: faza 1 = culegerea
+    comisă prin secured OS; faza 2 = comanda prin ID, tranzacția integral a
+    motorului; puntea = ID în ambele sensuri, retur/erori ca date
+    (`{documentId, stareNoua, conexId?, mesaje[]}` / 422+erori[]);
+    DocumentOperareController migrează pe același pattern. (c) **Citirea =
+    registre + proiecții**: `Module/Proiectii` cu `IQueryable<RandDto>` +
+    DataSourceLoader (DevExtreme.AspNet.Data); atomii partajați Brut +
+    unpivot-ul Imperecherii (LINQ simplu, fără LINQKit; join pe agregate, nu
+    subquery corelat); test de consistență proiecție==StocService/
+    ImperechereService în ModelCheck; Dimensiuni aplatizate în Select (owned
+    nu traversează sârma — închide 24 pe citire). TS nu calculează niciodată
+    sold/rest/total. (d) **Scrierea = agregat per document** (PUT header+
+    linii, reconciliere server-side, WriteDto≠ReadDto vizibil în tipuri),
+    organizată în **felii verticale per tip** (Dtos+Apply+Endpoints, în
+    Module/assembly Api testabil în ModelCheck); importul (site/Tethys) =
+    alt apelant al aceluiași apply, un document per tranzacție. (e)
+    **Metadata pe criteriul deciziei 4**: build-time = OpenAPI→TS + captions
+    prin CaptionHelper (fluxul de localizare XAF); runtime = doar
+    politici-date; pe resursă = affordances în ReadDto; serializarea
+    layout-ului MOARE (layout per tip = componentă React). (f) **Host
+    separat** `Atlas.Conta.WebApi` din scaffold-ul DevExpress (fără
+    multitenancy — MT rămâne opțiune aditivă), același Module, OData opt-in
+    DOAR nomenclatoare, JWT + user store comun, updater unul singur, release
+    ca pereche per client. Datorie parcată împreună: concurență
+    multi-operator + acoperirea rest per linie (seam: advisory lock 25f).
+    De verificat la primul spike: atribuirea auditului sub OS non-secured,
+    formatul UserFriendlyExceptionFilter.
+
 ```
 /legacy   → surse Delphi (.pas, .dfm) + scripturi SQL vechi
 /db       → se poate export schemă (CREATE) + CONȚINUTUL tabelelor de configurare
@@ -943,7 +980,9 @@ Raport de producție.
    ciclu (decizia 12): nomenclatoare, politici, solduri de deschidere.
    Reconciliere: soldurile de deschidere în sistemul nou = soldurile de
    închidere din legacy — verificată de unealta `nou/tools/Migrare`.
-5. **API + React** → abia după validarea pașilor 1–4.
+5. **API + React** → abia după validarea pașilor 1–4. Designul tierului API:
+   FIXAT (decizia 42, `docs/api/p5-api-design.md`); partea React = sesiune
+   de design separată.
 
 ### Execuția pasului 3 — felii (o sesiune per felie; scheletul claselor există
 în `/nou`, compilează, modelul EF validează — vezi decizia 22)
