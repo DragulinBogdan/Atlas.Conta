@@ -4,7 +4,7 @@ using Atlas.DXF.Core.Views.Discovery;
 
 namespace Atlas.Conta.BackOffice.Module.UI;
 
-// Baseline de coloane (EntityFluent) pentru cele 5 ListView-uri de detaliu
+// Baseline de coloane (EntityFluent) pentru cele 6 ListView-uri de detaliu
 // tipizate comutate de TipDetaliuViewUpdater. Conținut: ordinea logică de culegere
 // (Index) + ascunderea FK-urilor brute (zgomot). Sunt DEFAULT-uri — diff-urile
 // utilizatorului din Model Editor rămân prioritare (SetIfEmpty/SetIfDefault).
@@ -21,6 +21,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         ListaDiferenteInventar(registry);
         Decont(registry);
         DescarcareGestiune(registry);
+        NotaContabila(registry);
     }
 
     // Ascunderea generică a scalarilor `{Nav}Id` care au navigație pereche
@@ -41,6 +42,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<FacturaIesireDetaliu>().HideForeignKeys();     // ProdusId
         registry.For<DecontDetaliu>().HideForeignKeys();            // ContDebitId/ContCreditId/RepartitorDebitId/RepartitorCreditId
         registry.For<DescarcareGestiuneDetaliu>().HideForeignKeys();// LinieSursaId
+        registry.For<NotaContabilaDetaliu>().HideForeignKeys();     // ContDebitId/ContCreditId/RepartitorDebitId/RepartitorCreditId
 
         // Tipuri în afara ierarhiei de documente:
         registry.For<RegistruStoc>().HideForeignKeys();             // LotId/RepartitorId/DocumentId/DetaliuId
@@ -143,6 +145,29 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.Cantitate, c => c.Index = 3)
             .Column(d => d.Valoare, c => c.Index = 4)
             // DSC nu poartă TVA (integral pe FCL) — ascunde coloanele din bază.
+            .Column(d => d.TipTva, c => c.Index = -1)
+            .Column(d => d.ValoareTva, c => c.Index = -1);
+    }
+
+    // Nota contabilă (FAZA 1C §5): linia E postarea — conturile și repartitorii
+    // per latură sunt câmpurile de culegere. Restul semanticii bazei (TipMaterial
+    // convențional TRZ, lot, cantitate, TVA) nu se folosește pe notă și se ascunde.
+    static void NotaContabila(UiBaselineRegistry registry) {
+        var entitate = registry.For<NotaContabilaDetaliu>();
+        entitate.HideMembers(
+            d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
+            d => d.ContDebitId, d => d.ContCreditId, d => d.RepartitorDebitId, d => d.RepartitorCreditId);
+        entitate.ListView(nameof(NotaContabilaDetaliu) + ListView, _ => { })
+            .Column(d => d.Descriere, c => c.Index = 0)
+            .Column(d => d.ContDebit, c => c.Index = 1)
+            .Column(d => d.ContCredit, c => c.Index = 2)
+            .Column(d => d.RepartitorDebit, c => c.Index = 3)
+            .Column(d => d.RepartitorCredit, c => c.Index = 4)
+            .Column(d => d.Valoare, c => c.Index = 5)
+            // Coloanele moștenite fără semantică pe notă.
+            .Column(d => d.TipMaterial, c => c.Index = -1)
+            .Column(d => d.Lot, c => c.Index = -1)
+            .Column(d => d.Cantitate, c => c.Index = -1)
             .Column(d => d.TipTva, c => c.Index = -1)
             .Column(d => d.ValoareTva, c => c.Index = -1);
     }

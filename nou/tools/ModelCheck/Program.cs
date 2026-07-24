@@ -777,6 +777,97 @@ if (profil == ProfilContabil.Privat) {
             && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajDsc)));
     }
 
+    // ================= Scenariul e2e 1C-a: NotaContabila (privat) =================
+    // Nota e NEUTRĂ față de profil (fără plan hardcodat, fără politici în afara
+    // numerotării): aceleași mecanisme, conturi OMFP. La privat niciun cont nu
+    // cere dimensiuni, deci rămâne nucleul — postare explicită, valoare CA ATARE
+    // (inclusiv negativă), storno.
+    {
+        const string MarcajNtcPrv = "E2E-NTP";
+
+        void CurataNtcPrv(IObjectSpace os) {
+            var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajNtcPrv)).Select(r => r.ID).ToList();
+            var docs = os.GetObjectsQuery<Document>()
+                .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+            var docIds = docs.Select(d => d.ID).ToList();
+            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            os.Delete(docs);
+            os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajNtcPrv)).ToList());
+            os.CommitChanges();
+        }
+
+        using (var os = provider.CreateObjectSpace()) {
+            CurataNtcPrv(os);
+
+            var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+            var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+            var cont605 = os.FirstOrDefault<Cont>(c => c.Simbol == "605");
+            var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
+            var cont471 = os.FirstOrDefault<Cont>(c => c.Simbol == "471");
+
+            var tipNtc = os.FirstOrDefault<TipDocument>(t => t.Cod == "NTC");
+            Check("Seed NTC privat: ancoră + numerotare NTC-, fără reguli de stoc/contare și fără PoliticaTva",
+                tipNtc != null
+                && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "NTC")?.Serie == "NTC-"
+                && !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocumentId == tipNtc.ID)
+                && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipNtc.ID)
+                && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipNtc.ID) == null);
+
+            var unitate = os.CreateObject<UnitateInterna>();
+            unitate.Cod = MarcajNtcPrv + "-UI";
+            unitate.Denumire = "Unitate probă notă privat";
+            os.CommitChanges();
+
+            var ntc = os.CreateObject<NotaContabila>();
+            ntc.Data = new DateOnly(2026, 4, 6);
+            ntc.Predator = sediu;
+            ntc.Primitor = unitate;
+            var linieUtilitati = os.CreateObject<NotaContabilaDetaliu>();
+            linieUtilitati.Document = ntc;
+            linieUtilitati.TipMaterial = tipTrz;
+            linieUtilitati.Descriere = "Utilități de regularizat";
+            linieUtilitati.ContDebit = cont605;
+            linieUtilitati.ContCredit = cont401;
+            linieUtilitati.Valoare = 300m;
+            var linieMinus = os.CreateObject<NotaContabilaDetaliu>();
+            linieMinus.Document = ntc;
+            linieMinus.TipMaterial = tipTrz;
+            linieMinus.Descriere = "Reportare în avans (minus)";
+            linieMinus.ContDebit = cont471;
+            linieMinus.ContCredit = cont605;
+            linieMinus.Valoare = -50m;
+            os.CommitChanges();
+
+            MotorOperare.Opereaza(os, ntc);
+            Check("Privat: operare → Operat + număr NTC-",
+                ntc.Stare == StareDocument.Operat && ntc.Numar?.StartsWith("NTC-") == true);
+            var notePrv = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == ntc.ID && !r.Storno).ToList();
+            Check("Privat: exact 2 rânduri, conturile OMFP explicite (605 = 401; 471 = 605)", notePrv.Count == 2
+                && notePrv.Any(n => n.ContDebitId == cont605.ID && n.ContCreditId == cont401.ID)
+                && notePrv.Any(n => n.ContDebitId == cont471.ID && n.ContCreditId == cont605.ID));
+            Check("Privat: valorile CA ATARE (300 / −50)",
+                notePrv.Any(n => n.Valoare == 300m) && notePrv.Any(n => n.Valoare == -50m));
+            Check("Privat: dimensiunile din default-ul polimorf (debit←predator, credit←primitor)",
+                notePrv.All(n => n.DimensiuniDebit.RepartitorId == sediu.ID
+                    && n.DimensiuniCredit.RepartitorId == unitate.ID));
+            Check("Privat: nota nu postează TVA (fără TipTva pe linii) și nu mișcă stoc",
+                notePrv.All(n => n.DetaliuId != null)
+                && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == ntc.ID));
+
+            MotorOperare.Storneaza(os, ntc, new DateOnly(2026, 7, 22));
+            var toatePrv = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == ntc.ID).ToList();
+            Check("Privat: storno → rânduri inverse (−300 / +50) la data stornării",
+                ntc.Stare == StareDocument.Stornat && toatePrv.Count == 4
+                && toatePrv.Count(r => r.Storno && r.Data == new DateOnly(2026, 7, 22)
+                    && (r.Valoare == -300m || r.Valoare == 50m)) == 2);
+
+            CurataNtcPrv(os);
+            Check("Curățenie finală notă contabilă privat (fără reziduuri e2e)",
+                !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajNtcPrv)));
+        }
+    }
+
     Rezumat();
     return;
 }
@@ -2069,6 +2160,199 @@ using (var os = provider.CreateObjectSpace()) {
     CurataDec(os);
     Check("Curățenie finală decont (fără reziduuri e2e)",
         !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajDec)));
+}
+
+// ===================== Scenariul e2e 1C-a: NotaContabila =====================
+// Nota contabilă (design FAZA 1C §5): tipul FĂRĂ nicio regulă de contare —
+// postarea explicită COMPLETĂ a liniei bate ABSENȚA regulii (mecanismul 32a
+// extins în motor). Acoperă: valoarea CA ATARE (inclusiv negativă — nota storno
+// de import), repartitorul explicit vs. default-ul polimorf, laturile interne,
+// gardianul generic de dimensiuni obligatorii per cont (628 cere E), anularea
+// directă, re-operarea și storno-ul.
+const string MarcajNtc = "E2E-NTC";
+
+void CurataNtc(IObjectSpace os) {
+    var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajNtc)).Select(r => r.ID).ToList();
+    var docs = os.GetObjectsQuery<Document>()
+        .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+    var docIds = docs.Select(d => d.ID).ToList();
+    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    os.Delete(docs);
+    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajNtc)).ToList());
+    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajNtc + "-CE").ToList());
+    os.CommitChanges();
+}
+
+using (var os = provider.CreateObjectSpace()) {
+    CurataNtc(os);
+
+    var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+    // Conturi CPLAN: 581.x și 623 fără defalcare obligatorie; 628 cere E.
+    var cont581a = os.FirstOrDefault<Cont>(c => c.Simbol == "581.01.01");
+    var cont581b = os.FirstOrDefault<Cont>(c => c.Simbol == "581.01.02");
+    var cont623 = os.FirstOrDefault<Cont>(c => c.Simbol == "623.00.00");
+    var cont628 = os.FirstOrDefault<Cont>(c => c.Simbol == "628.00.00");
+
+    var tipNtc = os.FirstOrDefault<TipDocument>(t => t.Cod == "NTC");
+    Check("Seed NTC: ancora TipDocument + numerotare NTC-, FĂRĂ reguli de stoc/contare și fără politici de TVA/scadență/validare",
+        tipNtc != null && tipNtc.ClrType == nameof(NotaContabila)
+        && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "NTC")?.Serie == "NTC-"
+        && !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocumentId == tipNtc.ID)
+        && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipNtc.ID)
+        && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipNtc.ID) == null
+        && os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tipNtc.ID) == null
+        && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocumentId == tipNtc.ID) == null);
+    Check("Precondiție de plan: 581.01.01/581.01.02/623.00.00 fără defalcare, 628.00.00 cere cod economic",
+        cont581a.DimensiuniObligatorii == DimensiuneFlags.Niciuna
+        && cont581b.DimensiuniObligatorii == DimensiuneFlags.Niciuna
+        && cont623.DimensiuniObligatorii == DimensiuneFlags.Niciuna
+        && cont628.DimensiuniObligatorii.HasFlag(DimensiuneFlags.CodEconomic));
+
+    // Laturile notei = repartitori INTERNI (convenția tipului); partenerul de
+    // probă există doar pentru refuzul de latură.
+    var unitate = os.CreateObject<UnitateInterna>();
+    unitate.Cod = MarcajNtc + "-UI";
+    unitate.Denumire = "Unitate probă notă contabilă";
+    var partener = os.CreateObject<Partener>();
+    partener.Cod = MarcajNtc + "-PART";
+    partener.Denumire = "Partener probă notă contabilă";
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = MarcajNtc + "-CE";
+    codEc.Denumire = "Cod economic probă notă contabilă";
+    os.CommitChanges();
+
+    List<RegistruContabil> Note(Document doc) =>
+        os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID && !r.Storno).ToList();
+
+    // --- Nota: două linii, a doua NEGATIVĂ (storno de notă din import) ---
+    var ntc = os.CreateObject<NotaContabila>();
+    ntc.Data = new DateOnly(2026, 4, 6);
+    ntc.Predator = sediu;
+    ntc.Primitor = unitate;
+    var linieViramente = os.CreateObject<NotaContabilaDetaliu>();
+    linieViramente.Document = ntc;
+    linieViramente.TipMaterial = tipTrz;
+    linieViramente.Descriere = "Virament intern";
+    linieViramente.ContDebit = cont581a;
+    linieViramente.ContCredit = cont581b;
+    linieViramente.Valoare = 100m;
+    linieViramente.RepartitorDebit = mag1; // postare explicită și pe repartitor
+    var linieStorno = os.CreateObject<NotaContabilaDetaliu>();
+    linieStorno.Document = ntc;
+    linieStorno.TipMaterial = tipTrz;
+    linieStorno.Descriere = "Corecție cu minus (notă storno)";
+    linieStorno.ContDebit = cont623;
+    linieStorno.ContCredit = cont581a;
+    linieStorno.Valoare = -40m;
+    os.CommitChanges();
+
+    Check("Nota contabilă nu generează conex/secundar", MotorOperare.Opereaza(os, ntc) == null);
+    Check("Operare → stare Operat + număr din politică (NTC-)",
+        ntc.Stare == StareDocument.Operat && ntc.Numar?.StartsWith("NTC-") == true);
+    Check("Nota nu mișcă stoc", !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == ntc.ID));
+    var noteNtc = Note(ntc);
+    Check("Exact 2 rânduri contabile (una per linie), fără regulă de contare", noteNtc.Count == 2);
+    var randViramente = noteNtc.SingleOrDefault(n => n.DetaliuId == linieViramente.ID);
+    var randStorno = noteNtc.SingleOrDefault(n => n.DetaliuId == linieStorno.ID);
+    Check("Conturile = cele EXPLICITE ale liniilor (581.01.01 = 581.01.02; 623 = 581.01.01)",
+        randViramente?.ContDebitId == cont581a.ID && randViramente.ContCreditId == cont581b.ID
+        && randStorno?.ContDebitId == cont623.ID && randStorno.ContCreditId == cont581a.ID);
+    Check("Valorile se postează CA ATARE, inclusiv negativa (100 / −40), fără flag de storno",
+        randViramente.Valoare == 100m && randStorno.Valoare == -40m
+        && !randViramente.Storno && !randStorno.Storno);
+    Check("Dimensiuni debit: repartitorul EXPLICIT (MAG1) pe prima linie, default polimorf (predator SEDIU) pe a doua",
+        randViramente.DimensiuniDebit.RepartitorId == mag1.ID
+        && randStorno.DimensiuniDebit.RepartitorId == sediu.ID);
+    Check("Dimensiuni credit: default polimorf (primitor) pe ambele linii",
+        noteNtc.All(n => n.DimensiuniCredit.RepartitorId == unitate.ID));
+
+    // --- Refuzurile: invarianții tipului + gardianul generic de dimensiuni ---
+    void RefuzNtc(string nume, Repartitor predator, Repartitor primitor, Action<NotaContabilaDetaliu> configurare) {
+        var doc = os.CreateObject<NotaContabila>();
+        doc.Data = new DateOnly(2026, 4, 7);
+        doc.Predator = predator;
+        doc.Primitor = primitor;
+        var linie = os.CreateObject<NotaContabilaDetaliu>();
+        linie.Document = doc;
+        linie.TipMaterial = tipTrz;
+        linie.ContDebit = cont581a;
+        linie.ContCredit = cont581b;
+        linie.Valoare = 10m;
+        configurare(linie);
+        os.CommitChanges();
+        CheckRefuza(nume, () => MotorOperare.Opereaza(os, doc));
+        Check(nume + " — fără rânduri-fantomă în ObjectSpace (33d)",
+            !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == doc.ID));
+        os.Delete(doc.Detalii.ToList());
+        os.Delete(doc);
+        os.CommitChanges();
+    }
+
+    RefuzNtc("Linie fără cont creditor → refuz", sediu, unitate, l => l.ContCredit = null);
+    RefuzNtc("Linie cu valoare 0 → refuz", sediu, unitate, l => l.Valoare = 0m);
+    RefuzNtc("Latură cu Partener (nota are laturi interne) → refuz", sediu, partener, _ => { });
+    RefuzNtc("Cont cu defalcare obligatorie (628 cere E) fără cod economic → refuzul gardianului generic",
+        sediu, unitate, l => l.ContDebit = cont628);
+
+    // Linia de BAZĂ ar fi sărită mut de motor (n-are postare explicită) — refuz
+    // explicit, ca pe DSC/FCL (38c).
+    var ntcBaza = os.CreateObject<NotaContabila>();
+    ntcBaza.Data = new DateOnly(2026, 4, 7);
+    ntcBaza.Predator = sediu;
+    ntcBaza.Primitor = unitate;
+    var linieBaza = os.CreateObject<DocumentDetaliu>(); // NU NotaContabilaDetaliu
+    linieBaza.Document = ntcBaza;
+    linieBaza.TipMaterial = tipTrz;
+    linieBaza.Valoare = 10m;
+    os.CommitChanges();
+    CheckRefuza("Linie de bază DocumentDetaliu («detaliu generic») pe notă → refuz",
+        () => MotorOperare.Opereaza(os, ntcBaza));
+    os.Delete(ntcBaza.Detalii.ToList());
+    os.Delete(ntcBaza);
+    os.CommitChanges();
+
+    // Același cont 628, cu codul economic cules pe linie → gardianul e satisfăcut.
+    var ntcDefalcare = os.CreateObject<NotaContabila>();
+    ntcDefalcare.Data = new DateOnly(2026, 4, 8);
+    ntcDefalcare.Predator = sediu;
+    ntcDefalcare.Primitor = unitate;
+    var linieDefalcare = os.CreateObject<NotaContabilaDetaliu>();
+    linieDefalcare.Document = ntcDefalcare;
+    linieDefalcare.TipMaterial = tipTrz;
+    linieDefalcare.ContDebit = cont628;
+    linieDefalcare.ContCredit = cont581a;
+    linieDefalcare.Valoare = 55m;
+    linieDefalcare.Dimensiuni.CodEconomicId = codEc.ID;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, ntcDefalcare);
+    Check("628 cu cod economic cules pe linie → operare acceptată, dimensiunea pe latura contului",
+        ntcDefalcare.Stare == StareDocument.Operat
+        && Note(ntcDefalcare).Single().DimensiuniDebit.CodEconomicId == codEc.ID);
+
+    // --- Corecție directă → re-operare → storno ---
+    var numarNtc = ntc.Numar;
+    MotorOperare.AnuleazaOperarea(os, ntc);
+    Check("Anulare directă → Draft + registrele goale",
+        ntc.Stare == StareDocument.Draft
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == ntc.ID));
+    MotorOperare.Opereaza(os, ntc);
+    Check("Re-operare → același număr, aceleași 2 rânduri (100 / −40)",
+        ntc.Stare == StareDocument.Operat && ntc.Numar == numarNtc
+        && Note(ntc).Count == 2 && Note(ntc).Sum(n => n.Valoare) == 60m);
+    MotorOperare.Storneaza(os, ntc, new DateOnly(2026, 7, 22));
+    var toateNoteNtc = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == ntc.ID).ToList();
+    Check("Storno → rânduri inverse append-only la data stornării (−100 / +40, nota negativă devine pozitivă)",
+        ntc.Stare == StareDocument.Stornat && toateNoteNtc.Count == 4
+        && toateNoteNtc.Count(r => r.Storno && r.Data == new DateOnly(2026, 7, 22)
+            && (r.Valoare == -100m || r.Valoare == 40m)) == 2);
+
+    CurataNtc(os);
+    Check("Curățenie finală notă contabilă (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajNtc)));
 }
 
 Rezumat();

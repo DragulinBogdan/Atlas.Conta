@@ -28,6 +28,7 @@ internal static class ProfilBugetar {
         SeedPoliticiFacturaIesire(os);
         SeedPoliticiTrezorerie(os);
         SeedPoliticiDecont(os);
+        SeedPoliticiNotaContabila(os);
         SeedPoliticiValidare(os);
         SeedTipTvaImplicit(os);
         os.CommitChanges();
@@ -488,6 +489,14 @@ internal static class ProfilBugetar {
             incasare.SursaContCredit = SursaCont.RepartitorPredator;
             incasare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
         }
+    }
+
+    // Nota contabilă (FAZA 1C §5): SINGURA politică e numerotarea. Fără reguli
+    // de stoc și fără reguli de contare — postarea explicită a liniei e completă
+    // (motorul o acceptă chiar și în absența regulii); fără PoliticaTva /
+    // Scadenta / Validare: nota e neutră față de profil.
+    static void SeedPoliticiNotaContabila(IObjectSpace os) {
+        ContaSeeder.SeedNumerotare(os, "NTC", "NTC-");
     }
 
     // Politicile decontului (inventar 06): justificarea avansurilor — fără

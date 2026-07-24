@@ -1,13 +1,11 @@
 ﻿using Atlas.DXF.EfCore.Owned;
 using DevExpress.ExpressApp.Design;
 using DevExpress.ExpressApp.EFCore.DesignTime;
-using DevExpress.ExpressApp.EFCore.Updating;
 using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.BaseImpl.EF.PermissionPolicy;
 using DevExpress.Persistent.BaseImpl.EF.StateMachine;
 using DevExpress.Persistent.BaseImpl.EFCore.AuditTrail;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
     // Factory pentru design-time (dotnet ef migrations/database) — schema e
@@ -80,6 +78,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<RaportProductie> RapoarteProductie { get; set; }
         public DbSet<DescarcareGestiune> DescarcariGestiune { get; set; }
         public DbSet<DescarcareGestiuneDetaliu> DescarcariGestiuneDetalii { get; set; }
+        public DbSet<NotaContabila> NoteContabile { get; set; }
+        public DbSet<NotaContabilaDetaliu> NoteContabileDetalii { get; set; }
         public DbSet<Imperechere> Imperecheri { get; set; }
 
         // Registre + politici

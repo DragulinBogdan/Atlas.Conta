@@ -35,6 +35,7 @@ internal static class ProfilPrivat {
         SeedPoliticiFacturaIesire(os);
         SeedPoliticiTrezorerie(os);
         SeedPoliticiDecont(os);
+        SeedPoliticiNotaContabila(os);
         // După FCL: derivarea de vânzare presupune genericul FCL deja creat
         // (altfel guard-ul „fără regulă FCL" din SeedPoliticiFacturaIesire ar
         // vedea rândurile de vânzare și n-ar mai crea genericul de servicii).
@@ -477,6 +478,13 @@ internal static class ProfilPrivat {
             incasare.SursaContCredit = SursaCont.RepartitorPredator;
             incasare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
         }
+    }
+
+    // Nota contabilă (FAZA 1C §5): SINGURA politică e numerotarea — identic cu
+    // bugetarul (nota e neutră față de profil: fără stoc, fără contare, fără
+    // TVA/scadență/validare; postarea explicită a liniei e completă).
+    static void SeedPoliticiNotaContabila(IObjectSpace os) {
+        ContaSeeder.SeedNumerotare(os, "NTC", "NTC-");
     }
 
     // Decontul (32): debit din contul Tipului (fără fallback), credit = avansul

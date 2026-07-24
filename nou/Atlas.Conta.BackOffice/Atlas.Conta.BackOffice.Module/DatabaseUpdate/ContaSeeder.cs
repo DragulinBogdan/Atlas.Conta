@@ -54,6 +54,9 @@ public static class ContaSeeder {
             // Al 11-lea derivat (P2, decizia 37a): ancora e în nucleu pentru
             // AMBELE profiluri; la bugetar rămâne tip inert (fără politici), ca BPR.
             ("DSC", "Descărcare de gestiune", nameof(DescarcareGestiune)),
+            // Al 12-lea derivat (FAZA 1C §5): nota contabilă — ușa de import
+            // (decizia 9) și tip de culegere manuală, în AMBELE profiluri.
+            ("NTC", "Notă contabilă", nameof(NotaContabila)),
         ];
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipDocument>(x => x.Cod == t.Cod) == null) {

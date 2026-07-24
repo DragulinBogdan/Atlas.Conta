@@ -102,12 +102,21 @@ public static class MotorOperare {
             var regula = candidati.FirstOrDefault(r => r.TipMaterialId == d.TipMaterialId)
                 ?? candidati.FirstOrDefault(r => r.TipMaterialId == null && r.NaturaFiltru == info.Natura)
                 ?? candidati.FirstOrDefault(r => r.TipMaterialId == null && r.NaturaFiltru == null);
-            if (regula == null)
-                continue;
             // Postarea explicită pe linie (Decont — inventar 06): contul setat
             // pe linie bate rezolvarea declarativă; contract de interfață, nu
             // mecanism generic — doar tipurile care o declară o au.
             var explicita = d as ILinieCuPostareExplicita;
+            // Mecanismul 32a EXTINS (NotaContabila — design FAZA 1C §5): postarea
+            // explicită COMPLETĂ (ambele conturi) bate și ABSENȚA regulii — NTC
+            // n-are nicio RegulaContare, fiecare linie își poartă nota. Fără
+            // ambele conturi explicite, lipsa regulii înseamnă ca până acum
+            // „linia nu contează pe acest tip de document". Tipurile CU reguli
+            // (Decont) rămân neschimbate: regula lor se potrivește, iar contul
+            // explicit continuă să o bată punctual.
+            if (regula == null && (explicita?.ContDebitId == null || explicita.ContCreditId == null))
+                continue;
+            // Când regula lipsește, conturile explicite sunt garantat nenule mai
+            // sus, deci ramura de rezolvare declarativă nici nu se evaluează.
             var contDebit = explicita?.ContDebitId
                 ?? RezolvaCont(regula.SursaContDebit, regula.ContDebitId,
                     info.ContImplicitId, repartitorPredator, repartitorPrimitor)
@@ -123,18 +132,22 @@ public static class MotorOperare {
             // Decont mută creditul pe titular) + Materialul din lot.
             var materialImplicit = d.LotId != null && produsPerLot.TryGetValue(d.LotId.Value, out var produsId)
                 ? produsId : (Guid?)null;
+            // Fără regulă (NTC) coalesce-ul sare peste nivelurile ei de
+            // override/comun — Rezolva ignoră sursele null.
             var dimensiuniDebit = DimensiuniResolver.Rezolva(
                 new Dimensiuni { RepartitorId = explicita?.RepartitorDebitId },
-                d.Dimensiuni, regula.DimensiuniOverrideDebit, regula.DimensiuniComun,
+                d.Dimensiuni, regula?.DimensiuniOverrideDebit, regula?.DimensiuniComun,
                 new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit(), MaterialId = materialImplicit });
             var dimensiuniCredit = DimensiuniResolver.Rezolva(
                 new Dimensiuni { RepartitorId = explicita?.RepartitorCreditId },
-                d.Dimensiuni, regula.DimensiuniOverrideCredit, regula.DimensiuniComun,
+                d.Dimensiuni, regula?.DimensiuniOverrideCredit, regula?.DimensiuniComun,
                 new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit(), MaterialId = materialImplicit });
             // Normalizarea cu semnul filtrului: valoarea liniei poartă semnul
             // cantității (LDI minus = negativă), dar conturile regulii deja
-            // codifică direcția — nota se postează pozitivă.
-            note.Add((d, contDebit, contCredit, (regula.SemnFiltru ?? +1) * d.Valoare,
+            // codifică direcția — nota se postează pozitivă. Fără regulă nu
+            // există filtru de semn: valoarea culeasă se postează CA ATARE
+            // (nota storno de import rămâne negativă).
+            note.Add((d, contDebit, contCredit, (regula?.SemnFiltru ?? +1) * d.Valoare,
                 dimensiuniDebit, dimensiuniCredit));
         }
 
