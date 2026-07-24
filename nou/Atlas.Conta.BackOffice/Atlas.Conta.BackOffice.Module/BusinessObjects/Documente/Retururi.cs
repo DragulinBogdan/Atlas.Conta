@@ -58,8 +58,14 @@ public class ReturFurnizor : Document {
             .Where(l => idsLot.Contains(l.ID))
             .Select(l => new { l.ID, l.Produs.TipMaterialId, l.LinieIntrareId })
             .ToDictionary(l => l.ID, l => (l.TipMaterialId, l.LinieIntrareId));
+        // Capitalizat ar umfla valoarea liniei peste costul lotului (net × cotă)
+        // și ar rupe identificarea specifică (decizia 13) — refuz, simetric cu
+        // guard-ul RDC (review advers 1C-a).
+        var regimuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
 
         foreach (var linie in Detalii) {
+            if (linie.TipTvaId != null && regimuri.GetValueOrDefault(linie.TipTvaId.Value).Regim == RegimTva.Capitalizat)
+                erori.Add("Regimul de TVA capitalizat nu are sens pe retur — valoarea returului e costul lotului; folosiți regimul achiziției originale.");
             if (linie.LotId == null) {
                 erori.Add("Fiecare linie de retur descarcă LOTUL ORIGINAL al intrării (ieșirea e pe lot — decizia 13).");
                 continue;
@@ -123,6 +129,11 @@ public class ReturClient : Document {
     public override decimal Total =>
         Detalii.Where(d => d.LotId == null).Sum(d => d.Valoare + d.ValoareTva);
 #pragma warning restore XAF0033
+
+    // Oglinda server-side a lui Total (contractul din bază): imperecherea
+    // stinge DOAR liniile de venit — ImperechereService.Total trece prin filtru.
+    public override IQueryable<DocumentDetaliu> LiniiCreanta(IQueryable<DocumentDetaliu> linii) =>
+        linii.Where(d => d.LotId == null);
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);

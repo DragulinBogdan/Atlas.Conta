@@ -18,7 +18,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // conturile liniilor) — convenția fixată e că ambele laturi sunt repartitori
 // INTERNI (ex. SEDIU), purtători ai dimensiunii Repartitor implicite din 00 §5.
 [TipDetaliu(typeof(NotaContabilaDetaliu))]
-public class NotaContabila : Document {
+public class NotaContabila : Document, IDocumentCuPostareExplicita {
     // Fără PregatesteOperare: `Valoare` se culege direct pe linie (nu există
     // lanț de valori — nici cantitate, nici preț, nici TVA calculat).
 

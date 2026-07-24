@@ -108,12 +108,15 @@ public static class MotorOperare {
             var explicita = d as ILinieCuPostareExplicita;
             // Mecanismul 32a EXTINS (NotaContabila — design FAZA 1C §5): postarea
             // explicită COMPLETĂ (ambele conturi) bate și ABSENȚA regulii — NTC
-            // n-are nicio RegulaContare, fiecare linie își poartă nota. Fără
-            // ambele conturi explicite, lipsa regulii înseamnă ca până acum
-            // „linia nu contează pe acest tip de document". Tipurile CU reguli
-            // (Decont) rămân neschimbate: regula lor se potrivește, iar contul
-            // explicit continuă să o bată punctual.
-            if (regula == null && (explicita?.ContDebitId == null || explicita.ContCreditId == null))
+            // n-are nicio RegulaContare, fiecare linie își poartă nota. Extensia
+            // e OPT-IN pe tipul DOCUMENTULUI (IDocumentCuPostareExplicita —
+            // review advers 1C-a): o linie străină cu conturi explicite atașată
+            // unui tip fără reguli (BTR/NIR/ASM) rămâne sărită, ca înainte —
+            // altfel ar injecta note arbitrare sau dublă postare pe lanțul conex.
+            // Tipurile CU reguli (Decont) rămân neschimbate: regula lor se
+            // potrivește, iar contul explicit continuă să o bată punctual.
+            if (regula == null && (doc is not IDocumentCuPostareExplicita
+                    || explicita?.ContDebitId == null || explicita.ContCreditId == null))
                 continue;
             // Când regula lipsește, conturile explicite sunt garantat nenule mai
             // sus, deci ramura de rezolvare declarativă nici nu se evaluează.

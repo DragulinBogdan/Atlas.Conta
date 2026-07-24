@@ -15,10 +15,15 @@ public static class ImperechereService {
     // apelanții nu garantează lazy loading, iar imperecherea se face pe
     // documente deja operate, deci comise). BRUT (P1, design §3): plata stinge
     // Valoare + ValoareTva; la regimurile capitalizate ValoareTva e 0.
-    public static decimal Total(IObjectSpace os, Guid documentId) =>
-        os.GetObjectsQuery<DocumentDetaliu>()
-            .Where(d => d.DocumentId == documentId)
-            .Select(d => (decimal?)(d.Valoare + d.ValoareTva)).Sum() ?? 0m;
+    // Filtrul `LiniiCreanta` ține serviciul în oglindă cu `Document.Total`
+    // suprascris (ReturClient: doar liniile de venit — review advers 1C-a).
+    public static decimal Total(IObjectSpace os, Guid documentId) {
+        var doc = os.GetObjectByKey<Document>(documentId);
+        var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == documentId);
+        if (doc != null)
+            linii = doc.LiniiCreanta(linii);
+        return linii.Select(d => (decimal?)(d.Valoare + d.ValoareTva)).Sum() ?? 0m;
+    }
 
     public static decimal Asignat(IObjectSpace os, Guid documentId) =>
         os.GetObjectsQuery<Imperechere>()

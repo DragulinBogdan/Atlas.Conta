@@ -63,6 +63,11 @@ public class Asamblare : Document {
             .Where(l => idsLot.Contains(l.ID))
             .Select(l => new { l.ID, l.Produs.TipMaterialId })
             .ToDictionary(l => l.ID, l => l.TipMaterialId);
+        // Consumul unui lot produs de ACELAȘI document ar intra cu preț
+        // nefinalizat (0) — invariantul ar fi satisfiabil cu valoare orfană în
+        // registrul de stoc (review advers 1C-a): lanțul de kitting se face în
+        // documente separate, în ordinea operării.
+        var idsLiniiProprii = Detalii.Select(d => d.ID).ToHashSet();
 
         foreach (var d in Detalii) {
             if (d is not AsamblareDetaliu linie) {
@@ -90,8 +95,8 @@ public class Asamblare : Document {
                 if ((linie.PretEvaluare ?? 0m) <= 0m)
                     erori.Add("Linia de produs cere preț de evaluare pozitiv (valoarea nu se derivă din rețetar).");
             }
-            else if (lot.LinieIntrareId == linie.ID)
-                erori.Add("Linia de consum descarcă un lot existent, nu unul creat de ea.");
+            else if (lot.LinieIntrareId != null && idsLiniiProprii.Contains(lot.LinieIntrareId.Value))
+                erori.Add("Linia de consum descarcă un lot existent, nu unul creat de acest document (lanțul de kitting = documente separate, operate în ordine).");
             if (tipPerLot.TryGetValue(linie.LotId.Value, out var tipLot) && tipLot != null && tipLot != linie.TipMaterialId)
                 erori.Add("Lotul liniei aparține unui produs cu alt Tip decât Tipul liniei.");
         }

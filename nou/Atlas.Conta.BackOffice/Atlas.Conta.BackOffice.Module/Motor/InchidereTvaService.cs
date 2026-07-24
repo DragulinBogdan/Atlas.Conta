@@ -38,22 +38,17 @@ public static class InchidereTvaService {
                 .Any(d => d.Data >= primaZi && d.Data <= ultimaZi && d.Stare != StareDocument.Stornat))
             return null;
 
-        // 3. Soldurile CUMULATE la ultima zi a lunii (nu rulajele lunii):
-        //    lunile anterioare, o dată închise, lasă sold 0, iar primul run
-        //    prinde și soldul de deschidere. Rândurile de storno intră în calcul
-        //    — sunt rânduri reale de registru, cu semn.
-        decimal Debit(Guid contId) => os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => r.Data <= ultimaZi && r.ContDebitId == contId)
-            .Sum(r => (decimal?)r.Valoare) ?? 0m;
-        decimal Credit(Guid contId) => os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => r.Data <= ultimaZi && r.ContCreditId == contId)
-            .Sum(r => (decimal?)r.Valoare) ?? 0m;
+        // 2b. Cronologia e obligatorie (review advers 1C-a): o închidere vie
+        //     ULTERIOARĂ lunii cerute a închis deja cumulat și soldurile lunii
+        //     ăsteia — a genera „în urmă" ar închide aceleași solduri a doua
+        //     oară (4423/4424 dublate). Refuz zgomotos, nu null.
+        if (os.GetObjectsQuery<InchidereTva>()
+                .Any(d => d.Data > ultimaZi && d.Stare != StareDocument.Stornat))
+            throw new OperareException(
+                $"Există o închidere de TVA vie pentru o lună ulterioară lui {luna:00}/{an} — închiderile se generează cronologic.");
 
-        // 4426 e cont de activ (sold debitor), 4427 de pasiv (sold creditor);
-        // un sold pe sensul „greșit" nu se închide (Max 0) — s-ar transforma
-        // într-o notă absurdă. Cazul e patologic și se vede în reconciliere.
-        var sold4426 = Math.Max(0m, Debit(deductibilaId) - Credit(deductibilaId));
-        var sold4427 = Math.Max(0m, Credit(colectataId) - Debit(colectataId));
+        // 3. Soldurile CUMULATE la ultima zi a lunii (nu rulajele lunii).
+        var (sold4426, sold4427) = Solduri(os, deductibilaId, colectataId, ultimaZi);
         if (sold4426 == 0m && sold4427 == 0m)
             return null;
 
@@ -92,5 +87,24 @@ public static class InchidereTvaService {
             politica.ContDeRecuperatId.Value, deductibilaId, sold4426 - transfer);
 
         return itv;
+    }
+
+    // Soldurile cumulate ale conturilor de TVA la o dată: lunile anterioare, o
+    // dată închise, lasă sold 0, iar primul run prinde și soldul de deschidere.
+    // Rândurile de storno intră în calcul — sunt rânduri reale de registru.
+    // 4426 e cont de activ (sold debitor), 4427 de pasiv (sold creditor); un
+    // sold pe sensul „greșit" nu se închide (Max 0) — s-ar transforma într-o
+    // notă absurdă; cazul e patologic și se vede în reconciliere.
+    // Partajat cu validarea anti-stale din `InchidereTva.ValideazaOperare`.
+    internal static (decimal Sold4426, decimal Sold4427) Solduri(
+        IObjectSpace os, Guid deductibilaId, Guid colectataId, DateOnly panaLa) {
+        decimal Debit(Guid contId) => os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.Data <= panaLa && r.ContDebitId == contId)
+            .Sum(r => (decimal?)r.Valoare) ?? 0m;
+        decimal Credit(Guid contId) => os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.Data <= panaLa && r.ContCreditId == contId)
+            .Sum(r => (decimal?)r.Valoare) ?? 0m;
+        return (Math.Max(0m, Debit(deductibilaId) - Credit(deductibilaId)),
+                Math.Max(0m, Credit(colectataId) - Debit(colectataId)));
     }
 }

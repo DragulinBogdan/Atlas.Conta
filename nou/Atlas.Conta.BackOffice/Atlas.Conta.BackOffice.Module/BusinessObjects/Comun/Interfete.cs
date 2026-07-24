@@ -31,3 +31,11 @@ public interface ILinieCuPostareExplicita {
     Guid? RepartitorDebitId { get; }
     Guid? RepartitorCreditId { get; }
 }
+
+// Opt-in-ul DOCUMENTULUI pentru postarea fără regulă (review advers 1C-a):
+// mecanismul 32a extins — o linie cu postare explicită COMPLETĂ postează și în
+// absența oricărei RegulaContare — e valid DOAR pe tipurile care îl declară
+// (NotaContabila și derivatele ei). Fără marker, o linie străină cu conturi
+// explicite atașată programatic unui tip fără reguli (BTR, NIR, ASM) ar
+// injecta note arbitrare — motorul o sare, ca înainte de extensie.
+public interface IDocumentCuPostareExplicita { }

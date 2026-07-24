@@ -998,6 +998,10 @@ if (profil == ProfilContabil.Privat) {
             Check("După închidere: 4423 TVA de plată = 21, iar 4426/4427 rămân la 0 pe 30.09",
                 SoldCreditor(cont4423, finalSep) == 21m
                 && SoldDebitor(cont4426, finalSep) == 0m && SoldCreditor(cont4427, finalSep) == 0m);
+            // Fix post-review: generarea „în urmă" ar închide a doua oară
+            // soldurile deja închise cumulat de o lună ulterioară vie.
+            CheckRefuza("Generare pentru o lună ANTERIOARĂ unei închideri vii → refuz zgomotos (închiderile sunt cronologice)",
+                () => InchidereTvaService.Genereaza(os, 2026, 8, unitate.ID));
 
             // --- Octombrie: doar achiziție (4426 = 10,5) → excedent de recuperat ---
             var fctOct = os.CreateObject<FacturaIntrare>();
@@ -1037,6 +1041,30 @@ if (profil == ProfilContabil.Privat) {
             Check("Regenerare după storno: draft NOU cu aceeași linie 4424 = 4426 (10,5) — guard-ul de idempotență exclude Stornatul",
                 itvOctBis != null && itvOctBis.ID != itvOct.ID && itvOctBis.Detalii.Count == 1
                 && liniiOctBis.Single().ContDebitId == cont4424.ID && liniiOctBis.Single().Valoare == 10.5m);
+            os.CommitChanges();
+
+            // Fix post-review (anti-stale): între generarea draftului și operare
+            // mai intră un document de TVA în lună → soldurile nu mai sunt cele
+            // din linii, operarea trebuie să REFUZE (altfel luna nu se închide
+            // la 0 și regenerarea rămâne blocată de „închiderea vie").
+            var fctOct2 = os.CreateObject<FacturaIntrare>();
+            fctOct2.Numar = "E2E-ITV-FF3";
+            fctOct2.Data = new DateOnly(2026, 10, 20);
+            fctOct2.Predator = furnizor;
+            fctOct2.Primitor = gestiune;
+            var linieOct2 = os.CreateObject<FacturaIntrareDetaliu>();
+            linieOct2.Document = fctOct2;
+            linieOct2.TipMaterial = tip628;
+            linieOct2.Cantitate = 1m;
+            linieOct2.PretUnitar = 10m;
+            linieOct2.TipTva = n21;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, fctOct2);
+            CheckRefuza("Operarea unui draft STALE (soldurile s-au schimbat de la generare) → refuz, cu îndemnul de regenerare",
+                () => MotorOperare.Opereaza(os, itvOctBis));
+            Check("Draftul stale nu a lăsat rânduri-fantomă (33d)",
+                !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == itvOctBis.ID));
+
             os.Delete(itvOctBis.Detalii.ToList());
             os.Delete(itvOctBis);
             os.CommitChanges();
@@ -1215,6 +1243,14 @@ if (profil == ProfilContabil.Privat) {
             });
             RefuzAsm("Consum pe lotul creat de linia proprie → refuz", gestiune, gestiune, doc =>
                 LinieAsm(doc, DirectieAsamblare.Consum, 1m, produsNou: produsKit));
+            // Fix post-review: lotul produs de ALTĂ linie a aceluiași document
+            // are prețul nefinalizat (0) la validare — consumul lui ar lăsa
+            // valoare orfană în registrul de stoc, cu invariantul satisfăcut.
+            RefuzAsm("Consum pe lotul PRODUS de altă linie a aceluiași document → refuz (lanțul de kitting = documente separate)", gestiune, gestiune, doc => {
+                LinieAsm(doc, DirectieAsamblare.Consum, 2m, lotA);
+                var produsNouLinie = LinieAsm(doc, DirectieAsamblare.Produs, 1m, pretEvaluare: 10m, produsNou: produsKit);
+                LinieAsm(doc, DirectieAsamblare.Consum, 1m, produsNouLinie.Lot);
+            });
             RefuzAsm("Produs pe lot STRĂIN (refolosit, nu născut pe linie) → refuz", gestiune, gestiune, doc => {
                 LinieAsm(doc, DirectieAsamblare.Consum, 2m, lotB);
                 LinieAsm(doc, DirectieAsamblare.Produs, 2m, lotA, pretEvaluare: 10m);
@@ -1614,6 +1650,16 @@ if (profil == ProfilContabil.Privat) {
                 var doc = RdcNou();
                 var d = LinieRdc(doc, tip707, 1m, 100m, null);
                 d.TipTva = ned21Ret;
+                return doc;
+            });
+            // Fix post-review: Capitalizat pe RLF ar umfla valoarea liniei peste
+            // costul lotului (net × cotă) — identificarea specifică ruptă.
+            RefuzRet("RLF: linie cu regim Capitalizat (NED21) → refuz (valoarea returului e costul lotului)", () => {
+                var doc = os.CreateObject<ReturFurnizor>();
+                doc.Data = new DateOnly(2026, 12, 12);
+                doc.Predator = gestiune; doc.Primitor = furnizor;
+                var d = os.CreateObject<DocumentDetaliu>();
+                d.Document = doc; d.TipMaterial = tip371; d.Lot = lot; d.Cantitate = 1m; d.TipTva = ned21Ret;
                 return doc;
             });
 

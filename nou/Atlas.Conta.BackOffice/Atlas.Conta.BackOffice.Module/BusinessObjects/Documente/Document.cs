@@ -60,6 +60,13 @@ public abstract class Document : BaseObject {
     [NotMapped]
     public virtual decimal Total => Detalii.Sum(d => d.Valoare + d.ValoareTva);
 
+    // Geamănul SERVER-SIDE al lui Total (review advers 1C-a): liniile care
+    // constituie creanța/datoria stinsă de imperechere. ImperechereService nu
+    // poate enumera navigația Detalii (apelanții nu garantează lazy loading),
+    // deci filtrează query-ul prin hook-ul ăsta — orice derivată care
+    // suprascrie Total trebuie să țină cele două filtre în oglindă.
+    public virtual IQueryable<DocumentDetaliu> LiniiCreanta(IQueryable<DocumentDetaliu> linii) => linii;
+
     // Hooks polimorfe consumate DOAR de motorul de operare (decizia 14).
     // Primesc IObjectSpace și lucrează pe FK-uri, nu pe navigații — contextul
     // apelant (UI, harness, viitorul Web API) nu garantează lazy loading.
