@@ -28,9 +28,10 @@ using Microsoft.EntityFrameworkCore;
 // baza se RECITEȘTE din Postgres și se compară cu sursa brută, independent de
 // structurile fazei 3.
 
-// Argumentele pozitionale sunt conexiunile; flag-urile „--" se filtrează.
-var pozitionale = args.Where(a => !a.StartsWith("--")).ToArray();
-
+// Argumentele pozitionale sunt conexiunile; restul sunt flag-uri „--".
+// Parsarea e explicită (nu un filtru pe prefix) fiindcă `--pana-la` are VALOARE:
+// un filtru ar lăsa „3" să treacă drept connection string.
+var pozitionale = new List<string>();
 // Auto-testul reconcilierii (`--sabotaj`): alterează cu 1 leu rânduri deja
 // SCRISE, între deschidere și reconciliere. E singura cale onestă de a dovedi
 // sensibilitatea — deschiderea se rescrie integral la fiecare rulare, deci o
@@ -38,12 +39,44 @@ var pozitionale = args.Where(a => !a.StartsWith("--")).ToArray();
 // sursă n-ar testa citirea din bază. Flag-ul rămâne ca unealtă permanentă:
 // contractul de reconciliere e cod ca oricare altul și trebuie să poată fi
 // verificat că mai e viu, nu doar că e verde.
-var sabotaj = args.Contains("--sabotaj");
+var sabotaj = false;
+// `--pana-la N` = importă lunile 1..N (măsurătoarea cerută de §12.4 pornește de
+// la ianuarie singur); `--continua` = o lună picată nu oprește rularea, se
+// raportează și diferențele se poartă înainte.
+var panaLa = 12;
+var continua = false;
+for (var i = 0; i < args.Length; i++) {
+    var arg = args[i];
+    if (!arg.StartsWith("--")) {
+        pozitionale.Add(arg);
+        continue;
+    }
+    var (nume, valoare) = arg.Split('=', 2) is [var n, var v] ? (n, v) : (arg, null);
+    switch (nume) {
+        case "--sabotaj":
+            sabotaj = true;
+            break;
+        case "--continua":
+            continua = true;
+            break;
+        case "--pana-la":
+            valoare ??= i + 1 < args.Length ? args[++i] : null;
+            if (!int.TryParse(valoare, out panaLa) || panaLa is < 1 or > 12) {
+                Console.Error.WriteLine($"--pana-la cere o lună între 1 și 12 (primit „{valoare}”).");
+                return 2;
+            }
+            break;
+        default:
+            Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
+                + "[--pana-la <lună>] [--continua] [--sabotaj]");
+            return 2;
+    }
+}
 
-var flaxCs = pozitionale.Length > 0
+var flaxCs = pozitionale.Count > 0
     ? pozitionale[0]
     : "Server=(local);Database=EServicesFlx;Integrated Security=True;TrustServerCertificate=True";
-var pgCs = pozitionale.Length > 1
+var pgCs = pozitionale.Count > 1
     ? pozitionale[1]
     : "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=Atlas.Conta.Import1C.Flax";
 
@@ -100,60 +133,55 @@ using (var os = provider.CreateObjectSpace()) {
 // ==================== Maparea planului de conturi ====================
 // (Idempotența — `Legaturi.Incarca`/`Leaga` — trăiește în Legaturi.cs.)
 //
-// Codurile 1C sunt PUNCTATE cu altă semantică decât cele legacy: punctul separă
-// cifrele contului sintetic, nu analiticul (`442.6` = 4426 TVA, nu „442
-// analitic 6"). De aici mecanica proprie: se CONCATENEAZĂ segmentele, iar dacă
-// simbolul rezultat nu există în planul OMFP se taie ultimul segment și se reia
-// (`121.25` → `12125`? nu → `121` da). Override-urile rămân pentru cazurile în
-// care mecanica greșește — se populează pe măsură ce importul le scoate
-// (decizia 21: fiecare gaură = decizie explicită, nu transcriere).
-//
-// Cele 9 de mai jos sunt exact găurile scoase de smoke-ul pasului 2 (4 coduri
-// nerezolvabile + 5 solduri care cădeau pe conturi SUMATOARE). Fiecare e o
-// decizie de profil, luată pe denumirea contului din ambele planuri — nu o
-// transcriere mecanică (decizia 21/35b).
-Dictionary<string, string> overrideCont = new() {
-    // 1C ține subvențiile pentru investiții pe „132."; OMFP are aceeași
-    // denumire pe 4752 („Împrumuturi nerambursabile cu caracter de subvenții").
-    ["132"] = "4752",
-    // Impozitul pe dividende → „Alte impozite, taxe și vărsăminte asimilate".
-    ["4465"] = "446",
-    // Contribuțiile salariatului: 43111 = CASS (4316), 43115 = CAS (4315).
-    ["43111"] = "4316",
-    ["43115"] = "4315",
-    // Profitul nerepartizat per an (117.21/22/23) → 1171; anul se pierde ca
-    // analitic, iar 117 e SUMATOR în OMFP.
-    ["117.21"] = "1171",
-    ["117.22"] = "1171",
-    ["117.23"] = "1171",
-    // Terenuri: 211 e sumator în OMFP, soldul aparține lui 2111.
-    ["211.3"] = "2111",
-    // Clienți din străinătate: 411 e sumator, soldul aparține lui 4111.
-    ["411.2"] = "4111",
-};
-
-string MapeazaCont(string cod1C, IReadOnlyDictionary<string, Guid> plan) {
-    var s = cod1C?.Trim().TrimEnd('.') ?? "";
-    if (s.Length == 0)
-        return null;
-    if (overrideCont.TryGetValue(s, out var forțat))
-        return plan.ContainsKey(forțat) ? forțat : null;
-    var segmente = s.Split('.', StringSplitOptions.RemoveEmptyEntries).ToList();
-    while (segmente.Count > 0) {
-        var candidat = string.Concat(segmente);
-        if (plan.ContainsKey(candidat))
-            return candidat;
-        segmente.RemoveAt(segmente.Count - 1);
-    }
-    return null;
+// Dicționarul 1C→OMFP e o LISTĂ, nu o regulă (decizia 48c): trăiește în
+// `mapari-conturi.csv`, comentat rând cu rând, iar mecanica generică (concatenare
+// + tăiere de segmente) rămâne doar pentru codurile pe care nimeni nu le-a
+// contestat. Vezi MapariConturi.cs pentru mecanică și pentru forma de livrare.
+var caleMapari = MapariConturi.CaleImplicita();
+if (!File.Exists(caleMapari)) {
+    Console.Error.WriteLine($"Lipsește dicționarul de mapare a conturilor: {caleMapari}");
+    return 2;
 }
+var mapari = MapariConturi.Incarca(caleMapari, Avert);
+Console.WriteLine($"Mapări de cont încărcate din „{caleMapari}”: {mapari.Randuri.Count} rânduri.");
+
+string MapeazaCont(string cod1C, IReadOnlyDictionary<string, Guid> plan) =>
+    mapari.Mapeaza(cod1C, plan);
+
+// Snapshot-ul planului Atlas, luat o dată, imediat după seed: maparea de cont,
+// pre-flight-ul și toate fazele lucrează pe el (planul nu se mai schimbă).
+Dictionary<string, Guid> planAtlas;
+HashSet<string> sumatoriAtlas;
+Dictionary<string, string> denumiriAtlas;
+Dictionary<string, List<string>> copiiAtlas;
+using (var os = provider.CreateObjectSpace()) {
+    var conturi = os.GetObjectsQuery<Cont>()
+        .Select(c => new { c.Simbol, c.ID, c.Sumator, c.Denumire, Parinte = c.Parinte.Simbol })
+        .ToList();
+    planAtlas = conturi.ToDictionary(c => c.Simbol, c => c.ID);
+    sumatoriAtlas = conturi.Where(c => c.Sumator).Select(c => c.Simbol).ToHashSet();
+    denumiriAtlas = conturi.ToDictionary(c => c.Simbol, c => c.Denumire);
+    copiiAtlas = conturi.Where(c => c.Parinte != null)
+        .GroupBy(c => c.Parinte)
+        .ToDictionary(g => g.Key, g => g.Select(c => c.Simbol).ToList());
+}
+string Mapeaza(string cod1C) => MapeazaCont(cod1C, planAtlas);
+
+// ======================= Faza PRE-FLIGHT (decizia 48c) =======================
+// Rulează după seed și ÎNAINTEA oricărui import: triajul conturilor și
+// inventarul tipurilor de document-sursă se emit ca raport unic, nu descoperit
+// în mers. Vezi PreFlight.cs.
+
+using var flax = new FlaxDb(flaxCs);
+var plan1C = flax.PlanConturi();
+
+var preflight = PreFlight.Executa(flax, dataDeschidere.Year, mapari, planAtlas, sumatoriAtlas,
+    denumiriAtlas, copiiAtlas, plan1C, Handlere.Cunoscute, Handlere.Implementate, Avert, Check);
 
 // ======================= Faza Nomenclatoare (pasul 2) =======================
 // Nomenclatoarele MICI se importă integral: sunt laturi de document (gestiuni,
 // conturi proprii, angajați) și trebuie să existe înainte de orice document.
 // Cele MARI (parteneri, nomenclator) rămân la cerere — vezi Nomenclatoare.cs.
-
-using var flax = new FlaxDb(flaxCs);
 
 var depozite = flax.Depozite();
 var casierii = flax.Casierii();
@@ -162,13 +190,10 @@ var persoane = flax.PersoaneFizice();
 
 (int Procesate, int Noi) impDepozite, impCasierii, impConturi, impPersoane;
 using (var os = provider.CreateObjectSpace()) {
-    var plan = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
-    var sumatori = os.GetObjectsQuery<Cont>().Where(c => c.Sumator).Select(c => c.Simbol).ToHashSet();
-
     impDepozite = Nomenclatoare.Depozite(os, depozite, Avert);
-    impCasierii = Nomenclatoare.Casierii(os, casierii, plan, Avert);
-    impConturi = Nomenclatoare.ConturiBancare(os, conturiBancare, plan, sumatori,
-        cod => MapeazaCont(cod, plan), Avert);
+    impCasierii = Nomenclatoare.Casierii(os, casierii, planAtlas, Avert);
+    impConturi = Nomenclatoare.ConturiBancare(os, conturiBancare, planAtlas, sumatoriAtlas,
+        Mapeaza, Avert);
     impPersoane = Nomenclatoare.PersoaneFizice(os, persoane, Avert);
 }
 
@@ -182,7 +207,6 @@ Console.WriteLine($"Persoane fizice → Angajat:      {impPersoane.Procesate,5} 
 // Se citește o singură dată, integral, și se folosește de toate fazele care
 // urmează (deschiderea propriu-zisă + smoke-ul de la final).
 
-var plan1C = flax.PlanConturi();
 var solduri = flax.SolduriDeschidere(dataDeschidere);
 var solduriPartener = flax.SolduriPartener(dataDeschidere);
 var stoc = flax.StocDeschidere(dataDeschidere);
@@ -193,12 +217,6 @@ var stocOrfan = flax.StocFaraIdentitate(dataDeschidere);
 // (precedentul pasului 4, decizia 34d): soldul e rezultatul lui 2024, iar
 // documentele importate ale lui 2025 se așază după el, nu peste el.
 var dataRanduri = DateOnly.FromDateTime(dataDeschidere.AddDays(-1));
-
-// Snapshot-ul planului Atlas: maparea de cont se aplică în toate fazele.
-Dictionary<string, Guid> planAtlas;
-using (var os = provider.CreateObjectSpace())
-    planAtlas = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
-string Mapeaza(string cod1C) => MapeazaCont(cod1C, planAtlas);
 
 var cronometru = System.Diagnostics.Stopwatch.StartNew();
 
@@ -448,6 +466,45 @@ Console.WriteLine($"\n=== Reconcilierea deschiderii la {dataRanduri:yyyy-MM-dd} 
 var rezRec = Reconciliere.Executa(provider, solduri, extrabilantiere1C, stoc, stocOrfan,
     rezStoc.DiferenteJustificate, Mapeaza, Avert, Check);
 
+// ==================== Faza DOCUMENTE: bucla lunară (pasul 1) ====================
+// Perioadele fiscale întâi (motorul tratează perioada LIPSĂ ca închisă, decizia
+// 14), apoi bucla: documente → imperecheri → ITV → reconciliere lunară.
+// Handler-ele per tip 1C se înregistrează în `Handlere.Toate` (pașii 3–5); azi
+// lista e goală, deci bucla rulează în gol — deliberat, ca infrastructura să fie
+// verificabilă înaintea primului tip.
+
+var anImport = dataDeschidere.Year;
+var (perioadeExistente, perioadeCreate) = Perioade.Asigura(provider, anImport);
+Console.WriteLine($"\n=== Documentele {anImport} (lunile 1..{panaLa}) ===");
+Console.WriteLine($"Perioade fiscale {anImport}: {perioadeExistente} existente, {perioadeCreate} create "
+    + "(deschise — perioada lipsă e tratată ca închisă de gardian).");
+
+var bucla = new BuclaImport(provider, flax, laCerere, new AlocareIesire(), Avert, Check);
+var luni = new List<RezultatLuna>();
+var lunaPicata = 0;
+var cronometruDocumente = System.Diagnostics.Stopwatch.StartNew();
+for (var luna = 1; luna <= panaLa; luna++) {
+    var rez = bucla.ImportaLuna(anImport, luna);
+    luni.Add(rez);
+    if (rez.Esecuri == 0)
+        continue;
+    // Stop dur implicit (§12.4): o lună picată oprește rularea cu raportul
+    // complet; `--continua` o transformă în recoltare de găuri, cu diferențele
+    // purtate înainte.
+    lunaPicata = luna;
+    if (!continua) {
+        Avert($"Luna {luna:00}/{anImport} a picat cu {rez.Esecuri} eșecuri — rularea se oprește "
+            + "(stop dur implicit, §12.4). Rulează cu --continua pentru a recolta găurile "
+            + "din toate lunile.");
+        break;
+    }
+}
+var durataDocumente = cronometruDocumente.Elapsed;
+Console.WriteLine($"\nDocumente {anImport}: {luni.Sum(l => l.Documente)} importate, "
+    + $"{luni.Sum(l => l.Sarite)} sărite, {luni.Sum(l => l.Copii)} copii autogenerați, "
+    + $"{luni.Sum(l => l.Esecuri)} eșecuri, {luni.Sum(l => l.Realocari)} realocări de lot "
+    + $"(supapa 48a) în {luni.Count} luni — {durataDocumente:hh\\:mm\\:ss}.");
+
 // ==================== Sumarul rulării ====================
 // Raportul pe care îl citește omul la fiecare rulare a deschiderii: cifrele-cheie
 // ale întregii rulări, într-un singur loc, cu rezultatul contractului la coadă.
@@ -459,6 +516,9 @@ Console.WriteLine($"""
     ║   plan de conturi          {plan1C.Count,10} conturi ({plan1C.Count(c => c.Extrabilantier)} extrabilanțiere)
     ║   solduri de deschidere    {solduri.Count,10} conturi cu sold nenul
     ║   poziții de stoc          {stoc.Count,10} (Σ {stoc.Sum(s => s.Valoare):N2} lei) + {stocOrfan.Count} orfane (Σ {stocOrfan.Sum(s => s.Valoare):N2} lei)
+    ║ PRE-FLIGHT (decizia 48c — triaj înaintea primului document)
+    ║   coduri de cont {anImport}      {preflight.Coduri,10} ({preflight.PrinDictionar} prin dicționar, {preflight.PrinMecanica} prin mecanică, {preflight.Nerezolvabile + preflight.PeSumator} probleme)
+    ║   tipuri Recorder {anImport}     {preflight.Tipuri,10} ({preflight.TipuriNecunoscute} necunoscute, {preflight.TipuriNeimplementate} fără handler → {preflight.DocumenteNeacoperite} documente neacoperite)
     ║ NOMENCLATOARE IMPORTATE (procesate / noi în rularea asta)
     ║   gestiuni                 {impDepozite.Procesate,10} / {impDepozite.Noi}
     ║   conturi proprii          {impCasierii.Procesate + impConturi.Procesate,10} / {impCasierii.Noi + impConturi.Noi}  (casierii + bancare)
@@ -478,7 +538,11 @@ Console.WriteLine($"""
     ║   2. ancora {Deschidere.Ancora,-14}  {rezRec.AncoraDb,10:N2} în bază = {rezRec.AncoraSursa:N2} în sursă
     ║   3. stoc produs×gestiune  {rezRec.CheiStoc,10} chei comparate, {rezRec.Nejustificate} nejustificate
     ║      justificate           {rezRec.JustificateGasite,10} chei (Σ {rezRec.JustificatV:N2} lei / {rezRec.JustificatQ:N3} buc)
-    ║ REZULTAT: {(esecuri == 0 ? "CONTRACT ÎNDEPLINIT" : $"{esecuri} VERIFICĂRI PICATE")}, {avertismente.Count} avertismente, deschidere {durataDeschidere:hh\:mm\:ss} / total {cronometru.Elapsed:hh\:mm\:ss}
+    ║ DOCUMENTELE {anImport} (lunile 1..{panaLa}{(lunaPicata > 0 && !continua ? $", oprit la {lunaPicata:00}" : "")})
+    ║   importate / sărite      {luni.Sum(l => l.Documente),10} / {luni.Sum(l => l.Sarite)} ({luni.Sum(l => l.Copii)} copii autogenerați operați)
+    ║   eșecuri de operare      {luni.Sum(l => l.Esecuri),10} pe {luni.Count(l => l.Esecuri > 0)} luni
+    ║   realocări de lot (48a)  {luni.Sum(l => l.Realocari),10} (Σ {luni.Sum(l => l.CantitateRealocata):N3} buc mutate de pe pin pe FIFO)
+    ║ REZULTAT: {(esecuri == 0 ? "CONTRACT ÎNDEPLINIT" : $"{esecuri} VERIFICĂRI PICATE")}, {avertismente.Count} avertismente, deschidere {durataDeschidere:hh\:mm\:ss} / documente {durataDocumente:hh\:mm\:ss} / total {cronometru.Elapsed:hh\:mm\:ss}
     ╚═══════════════════════════════════════════════════════════════════════════════
     """);
 

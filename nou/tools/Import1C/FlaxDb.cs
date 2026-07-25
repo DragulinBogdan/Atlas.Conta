@@ -48,6 +48,12 @@ record FlaxPozitieStoc(string Cont, string NomenclatorId, string NomenclatorDesc
     string DocTip, string DocId, string DocDesc, string DepozitId, string DepozitDesc,
     decimal Cantitate, decimal Valoare);
 
+// Măturile fazei PRE-FLIGHT (decizia 48c): tot ce ating mișcările anului, ÎNAINTE
+// de primul document — codurile de cont și tipurile de document-sursă (Recorder).
+record FlaxCodMiscare(string Cod, int Randuri, int Documente);
+
+record FlaxTipRecorder(string TypeRef, string Nume, int Documente, int Randuri);
+
 class FlaxDb(string connectionString) : IDisposable {
     readonly SqlConnection conn = Open(connectionString);
 
@@ -70,6 +76,7 @@ class FlaxDb(string connectionString) : IDisposable {
         return result;
     }
 
+    static int Int(SqlDataReader r, int i) => r.IsDBNull(i) ? 0 : Convert.ToInt32(r.GetValue(i));
     static string Text(SqlDataReader r, int i) =>
         r.IsDBNull(i) ? null : r.GetValue(i).ToString().Trim() is { Length: > 0 } s ? s : null;
     static decimal Dec(SqlDataReader r, int i) => r.IsDBNull(i) ? 0m : Convert.ToDecimal(r.GetValue(i));
@@ -174,6 +181,64 @@ class FlaxDb(string connectionString) : IDisposable {
                 Hex(r, 3), Hex(r, 4), Text(r, 5), Hex(r, 6), Text(r, 7),
                 Dec(r, 8), Dec(r, 9)),
             ("@p", period));
+
+    // ============================ Pre-flight ============================
+    // Măturile care se fac ÎNAINTEA primului document (decizia 48c): triajul se
+    // face pe TOT ce atinge anul, într-un raport unic, nu descoperit în mers.
+
+    // Toate codurile de cont atinse de mișcările anului, pe ambele laturi.
+    // `count(distinct DocReferinta_Id)` dă volumul real (un cod pe 3 rânduri ale
+    // aceluiași document nu e mai important decât unul pe 3 documente).
+    public List<FlaxCodMiscare> CoduriConturiMiscari(int an) =>
+        Query(@"select Cont, count(*), count(distinct DocId)
+                from (
+                    select ltrim(rtrim(ContDebit)) as Cont, DocReferinta_Id as DocId
+                    from flax.NoteContabile
+                    where Period >= @de and Period < @pana and ContDebit is not null
+                    union all
+                    select ltrim(rtrim(ContCredit)), DocReferinta_Id
+                    from flax.NoteContabile
+                    where Period >= @de and Period < @pana and ContCredit is not null
+                ) x
+                where Cont <> ''
+                group by Cont",
+            r => new FlaxCodMiscare(Text(r, 0), Int(r, 1), Int(r, 2)),
+            ("@de", new DateTime(an, 1, 1)), ("@pana", new DateTime(an + 1, 1, 1)));
+
+    // Rândurile din perioade REZIDUALE (1C parchează artefacte pe ani imposibili
+    // — `3999-11` e cunoscut din Balanta, 47f). Se numără separat ca să nu treacă
+    // invizibile prin filtrarea pe an, nu se importă.
+    public int RanduriPerioadeReziduale() =>
+        Query(@"select count(*) from flax.NoteContabile where year(Period) > 3000",
+            r => Int(r, 0)).Single();
+
+    // Tipurile de document-sursă (Recorder) care au generat note în an.
+    // Identitatea 1C a tipului e `DocReferinta_Type` (TypeRef binary(4)); numele
+    // vine din coloana tipizată nenulă a rândului — CONTRACT DE COLOANE, ca tot
+    // cititorul (§2). Un TypeRef fără coloană proprie în view iese cu nume NULL:
+    // e semnal (tip pe care view-ul nu-l expune), nu eroare de citit.
+    public static readonly string[] TipuriCuColoana = [
+        "AprovizionareMarfuriSiServiciiPrimite", "VanzareMarfuriSiServiciiPrestate",
+        "TransferDeMarfuri", "BonDeConsum", "MarireStocDeMarfuri", "DiminuareStocDeMarfuri",
+        "ExtrasDeCont", "Plata", "Incasare", "Compensare",
+        "ReturDeLaClient", "ReturLaFurnizor", "Asamblare", "Dezasamblare",
+        "RaportDeVanzariCuAmanunt", "AvizDeIesire", "AvizDeIntrare",
+        "Operatia", "Salarii", "CasareMF", "InchidereLunaDeExercitiu", "Import",
+        "BonFiscal", "Stornare", "IntroducereaSoldurilor", "IntroducereSolduriInitialeMF",
+    ];
+
+    public List<FlaxTipRecorder> TipuriRecorder(int an) {
+        var cazuri = string.Join("\n                                 ", TipuriCuColoana
+            .Select(t => $"when DocReferinta_{t}_ID is not null then '{t}'"));
+        return Query($@"select convert(varchar(10), DocReferinta_Type, 2),
+                               max(case {cazuri} end),
+                               count(distinct DocReferinta_Id), count(*)
+                        from flax.NoteContabile
+                        where Period >= @de and Period < @pana
+                        group by DocReferinta_Type",
+            r => new FlaxTipRecorder(Text(r, 0), Text(r, 1), Int(r, 2), Int(r, 3)),
+            ("@de", new DateTime(an, 1, 1)), ("@pana", new DateTime(an + 1, 1, 1)));
+    }
 
     // Reversul lui StocDeschidere: pozițiile de pe conturi de stoc cărora le
     // LIPSEȘTE produsul sau depozitul. Un lot fără produs nu poate exista în

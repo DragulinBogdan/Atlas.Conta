@@ -5,6 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Dicționarul de mapare a conturilor (decizia 48c): unealtă de import,
+         editabilă de om între rulări — merge lângă executabil, nu în asamblare
+         (planurile de conturi din Module rămân EmbeddedResource: alea sunt seed). -->
+    <Content Include="mapari-conturi.csv" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.*" />
     <ProjectReference Include="..\..\Atlas.Conta.BackOffice\Atlas.Conta.BackOffice.Module\Atlas.Conta.BackOffice.Module.csproj" />
   </ItemGroup>

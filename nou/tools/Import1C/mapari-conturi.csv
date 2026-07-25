@@ -1,0 +1,28 @@
+# Dicționarul de mapare cont 1C → cont OMFP (decizia 48c: LISTĂ, nu regulă).
+# Se aplică ÎNAINTEA mecanicii generice (concatenare segmente + tăierea
+# progresivă a ultimului segment punctat) — un rând aici bate orice derivare.
+# Triajul e o sesiune de DECIZII pe raportul pre-flight (25.07.2026, 132 de
+# coduri distincte pe mișcările 2025); sugestiile mecanice NU s-au aplicat
+# automat — fiecare rând de mai jos e o alegere semantică, comentată.
+#
+# Format: Cod1C,ContOmfp,Comentariu (comentariul e doar documentație).
+#
+# — Moștenite din deschidere (1C-b, decizia 47c) —
+132.,4752,Împrumuturi nerambursabile cu caracter de subvenții pentru investiții (132 nu există în OMFP)
+4465,446,Impozit dividende — analitic propriu 1C peste 446
+43111,4316,CASS salariați — familia contribuțiilor NU urmează structura sintetică (contra-exemplul 48c)
+43115,4315,CAS salariați — idem
+117.21,1171,Profit nerepartizat an 2021 → rezultatul reportat
+117.22,1171,Profit nerepartizat an 2022 → rezultatul reportat
+117.23,1171,Profit nerepartizat an 2023 → rezultatul reportat
+211.3,2111,Terenuri — analitic 1C peste 2111
+411.2,4111,Clienți din străinătate → 4111 (fără analitic de țară în plan)
+#
+# — Triajul mișcărilor 2025 (pre-flight 1C-c) —
+117.24,1171,Profit nerepartizat an 2024 → rezultatul reportat (seria 117.2x)
+6351,6584,Sponsorizări — NU 635 (sugestia mecanică ar fi colaps semantic pe impozite); OMFP are cont dedicat
+623.3,6232,Cheltuieli de publicitate → reclamă și publicitate
+623.,6231,Postările directe pe părintele 623 = protocol (publicitatea are analiticul 623.3 propriu; volum 3 rânduri)
+646.,6461,CAM → contribuția asiguratorie pentru salariați (6462 = non-salariați, nefolosit aici)
+765.,7651,Diferențe favorabile de curs valutar pe elemente monetare (7652 = investiție netă, nu e cazul)
+665.,6651,Diferențe nefavorabile de curs valutar pe elemente monetare (6652 = investiție netă, nu e cazul)
