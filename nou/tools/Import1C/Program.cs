@@ -19,15 +19,22 @@ using Microsoft.EntityFrameworkCore;
 // singură pe profilul Privat, exact calea updater-ului (ContaSeeder) — la fel
 // ca ModelCheck pe baza lui privată (profil-per-bază, decizia 35d).
 //
-// PASUL 1 (felia 1C-b): schelet + citirea sursei + baza pregătită. Faza de
-// conținut e deocamdată doar SMOKE — nomenclatoarele, deschiderea și
-// reconcilierea vin în pașii 2-4.
+// PASUL 1 (felia 1C-b): schelet + citirea sursei + baza pregătită.
+// PASUL 2: nomenclatoarele mici (integral) + helper-ele de import la cerere
+// pentru cele mari (Nomenclatoare.cs). Deschiderea și reconcilierea: pașii 3-4.
 
-var flaxCs = args.Length > 0
-    ? args[0]
+// Argumentele pozitionale sunt conexiunile; flag-urile „--" se filtrează.
+var pozitionale = args.Where(a => !a.StartsWith("--")).ToArray();
+// Exercițiul helper-elor la cerere creează parteneri/produse REALI în baza
+// țintă. Ei aparțin pasului 3 (deschiderea îi cere), deci implicit nu rulează —
+// flag-ul e pentru verificarea mecanicii (creare, legătură, cache, idempotență).
+var exerseazaLaCerere = args.Contains("--exerseaza");
+
+var flaxCs = pozitionale.Length > 0
+    ? pozitionale[0]
     : "Server=(local);Database=EServicesFlx;Integrated Security=True;TrustServerCertificate=True";
-var pgCs = args.Length > 1
-    ? args[1]
+var pgCs = pozitionale.Length > 1
+    ? pozitionale[1]
     : "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=Atlas.Conta.Import1C.Flax";
 
 // Anul fiscal importat: deschiderea = soldurile la 01.01 (design §3).
@@ -108,11 +115,10 @@ string MapeazaCont(string cod1C, IReadOnlyDictionary<string, Guid> plan) {
     return null;
 }
 
-// ============================ Faza SMOKE ============================
-// Citește sursa integral la data deschiderii și verifică invarianții pe care se
-// sprijină pașii 2-4: planul Atlas are ancorele, maparea de cont funcționează
-// pe formele reale, balanța 1C e echilibrată, iar stocul per lot reconciliază
-// cu soldul contabil (dovada că BalantaNivel3 e o defalcare fidelă a Balanței).
+// ======================= Faza Nomenclatoare (pasul 2) =======================
+// Nomenclatoarele MICI se importă integral: sunt laturi de document (gestiuni,
+// conturi proprii, angajați) și trebuie să existe înainte de orice document.
+// Cele MARI (parteneri, nomenclator) rămân la cerere — vezi Nomenclatoare.cs.
 
 using var flax = new FlaxDb(flaxCs);
 
@@ -120,6 +126,67 @@ var depozite = flax.Depozite();
 var casierii = flax.Casierii();
 var conturiBancare = flax.ConturiBancareProprii();
 var persoane = flax.PersoaneFizice();
+
+(int Procesate, int Noi) impDepozite, impCasierii, impConturi, impPersoane;
+using (var os = provider.CreateObjectSpace()) {
+    var plan = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
+    var sumatori = os.GetObjectsQuery<Cont>().Where(c => c.Sumator).Select(c => c.Simbol).ToHashSet();
+
+    impDepozite = Nomenclatoare.Depozite(os, depozite, Avert);
+    impCasierii = Nomenclatoare.Casierii(os, casierii, plan, Avert);
+    impConturi = Nomenclatoare.ConturiBancare(os, conturiBancare, plan, sumatori,
+        cod => MapeazaCont(cod, plan), Avert);
+    impPersoane = Nomenclatoare.PersoaneFizice(os, persoane, Avert);
+}
+
+Console.WriteLine($"\n--- Nomenclatoare importate (procesate / noi în rularea asta) ---");
+Console.WriteLine($"Depozite → Gestiune:            {impDepozite.Procesate,5} / {impDepozite.Noi}");
+Console.WriteLine($"Casierii → ContPropriu:         {impCasierii.Procesate,5} / {impCasierii.Noi}");
+Console.WriteLine($"Conturi bancare → ContPropriu:  {impConturi.Procesate,5} / {impConturi.Noi}");
+Console.WriteLine($"Persoane fizice → Angajat:      {impPersoane.Procesate,5} / {impPersoane.Noi}");
+
+// Helper-ele la cerere: exercițiu opțional (--exerseaza) pe un eșantion mic din
+// exact referințele pe care le va cere pasul 3 — parteneri din soldurile
+// analitice, produse din pozițiile de stoc (contul poziției dă TipMaterial-ul).
+if (exerseazaLaCerere) {
+    var laCerere = new ImportLaCerere(provider, flax, Avert);
+    using (var os = provider.CreateObjectSpace()) {
+        var plan = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
+        var tipuri = os.GetObjectsQuery<TipMaterial>().Select(t => t.Cod).ToHashSet();
+        var partenerii = flax.SolduriPartener(dataDeschidere).Select(s => s.PartenerId).Take(3).ToList();
+        // Poziții pe simboluri care AU Tip în profil (calea de creare) + una fără
+        // (calea de raportare a găurii) — ambele ramuri, o dată.
+        var pozitii = flax.StocDeschidere(dataDeschidere)
+            .Select(p => (p.NomenclatorId, Simbol: MapeazaCont(p.Cont, plan)))
+            .Where(x => x.Simbol != null && tipuri.Contains(x.Simbol))
+            .DistinctBy(x => x.NomenclatorId).Take(3)
+            .Concat(flax.StocDeschidere(dataDeschidere)
+                .Select(p => (p.NomenclatorId, Simbol: MapeazaCont(p.Cont, plan)))
+                .Where(x => x.Simbol == null || !tipuri.Contains(x.Simbol)).Take(2))
+            .ToList();
+
+        foreach (var id in partenerii)
+            laCerere.AsiguraPartener(id);
+        foreach (var (id, simbol) in pozitii)
+            laCerere.AsiguraProdus(id, simbol);
+        // A doua trecere pe aceleași referințe: cache-ul (și setul de respinse)
+        // trebuie să le servească fără să creeze și fără să re-avertizeze.
+        foreach (var id in partenerii)
+            laCerere.AsiguraPartener(id);
+        foreach (var (id, simbol) in pozitii)
+            laCerere.AsiguraProdus(id, simbol);
+    }
+    Console.WriteLine($"La cerere (--exerseaza): {laCerere.ParteneriNoi} parteneri noi, "
+        + $"{laCerere.ProduseNoi} produse noi, {laCerere.Recuperate} recuperate, "
+        + $"{laCerere.ReferinteMoarte} referințe moarte, {laCerere.ProduseFaraTip} fără TipMaterial.");
+}
+
+// ============================ Faza SMOKE ============================
+// Citește sursa integral la data deschiderii și verifică invarianții pe care se
+// sprijină pașii 3-4: planul Atlas are ancorele, maparea de cont funcționează
+// pe formele reale, balanța 1C e echilibrată, iar stocul per lot reconciliază
+// cu soldul contabil (dovada că BalantaNivel3 e o defalcare fidelă a Balanței).
+
 var plan1C = flax.PlanConturi();
 var solduri = flax.SolduriDeschidere(dataDeschidere);
 var solduriPartener = flax.SolduriPartener(dataDeschidere);
@@ -217,10 +284,85 @@ using (var os = provider.CreateObjectSpace()) {
         Avert($"Cont 1C {x.Cont} (sold {x.SoldIni:N2}) → {x.Simbol}, care e SUMATOR în OMFP "
             + "— cere override pe un cont de gradul II (decizie de profil, pasul 3).");
 
-    // Legăturile de idempotență: goale la prima rulare, populate de pașii 2-3.
-    Console.WriteLine($"Legături 1C existente: "
-        + $"depozite {Legaturi.Incarca(os, "Depozite").Count}, "
-        + $"parteneri {Legaturi.Incarca(os, "Partenerii").Count}, "
+    // Acoperirea Clasă/Tip a stocului de deschidere. Fiecare poziție va cere un
+    // `Produs` cu TipMaterial = Tipul al cărui Cod E simbolul contului (decizia
+    // 26b) — deci un simbol fără Tip în profil oprește importul lotului. Se
+    // raportează AICI, agregat, ca intrare a pasului 3; altfel gaura ar apărea
+    // abia la a 11.762-a poziție, câte un avertisment pe fiecare.
+    var tipuriProfil = os.GetObjectsQuery<TipMaterial>().Select(t => t.Cod).ToHashSet();
+    Console.WriteLine("Acoperirea Clasă/Tip a pozițiilor de stoc (cont 1C → simbol OMFP → Tip în profil):");
+    foreach (var grup in stoc
+                 .GroupBy(s => (s.Cont, Simbol: MapeazaCont(s.Cont, plan)))
+                 .OrderByDescending(g => Math.Abs(g.Sum(s => s.Valoare)))) {
+        var are = grup.Key.Simbol != null && tipuriProfil.Contains(grup.Key.Simbol);
+        Console.WriteLine($"     {grup.Key.Cont,-10} → {grup.Key.Simbol ?? "(nemapat)",-8} "
+            + $"{grup.Count(),6} poziții  Σ {grup.Sum(s => s.Valoare),15:N2}  "
+            + (are ? "Tip OK" : "TIP LIPSĂ"));
+        if (!are)
+            Avert($"Stoc pe contul 1C {grup.Key.Cont} → OMFP „{grup.Key.Simbol ?? "(nemapat)"}”: "
+                + $"profilul privat NU are TipMaterial cu acest cod — {grup.Count()} poziții "
+                + $"({grup.Sum(s => s.Valoare):N2} lei) nu pot deveni loturi. Gaură de profil, "
+                + "de tranșat la pasul 3 (Tip nou sau tăiere la sintetic).");
+    }
+}
+
+// ================= Verificarea nomenclatoarelor (pasul 2) =================
+// Contorul „noi" de mai sus arată ce s-a creat în rularea CURENTĂ; el nu poate
+// fi verificat (0 la a doua rulare, >0 la prima). Invariantul verificabil pe
+// ORICE rulare e altul: o legătură per rând-sursă, o entitate per legătură,
+// coduri distincte. Un import care dublează sparge prima verificare (2× legături
+// pentru aceeași sursă) — deci idempotența e prinsă, nu doar observată.
+
+using (var os = provider.CreateObjectSpace()) {
+    var gestiuni = os.GetObjectsQuery<Gestiune>().ToList();
+    var conturiProprii = os.GetObjectsQuery<ContPropriu>().ToList();
+    var angajati = os.GetObjectsQuery<Angajat>().ToList();
+    var parteneriNoi = os.GetObjectsCount(typeof(Partener), null);
+    var produseNoi = os.GetObjectsCount(typeof(Produs), null);
+
+    Console.WriteLine($"\n--- Nomenclatoare în Postgres ---");
+    Console.WriteLine($"Gestiuni: {gestiuni.Count}, conturi proprii: {conturiProprii.Count}, "
+        + $"angajați: {angajati.Count}, parteneri: {parteneriNoi}, produse: {produseNoi}.");
+
+    void VerificaSursa<T>(string view, int randuriSursa, IReadOnlyList<T> entitati, int dinSeed)
+            where T : Repartitor {
+        var legaturi = Legaturi.Incarca(os, view);
+        var dupaId = entitati.ToDictionary(e => e.ID);
+        var legate = legaturi.Values.Where(dupaId.ContainsKey).ToList();
+        Check($"1C:{view}: {legaturi.Count} legături = {randuriSursa} rânduri sursă importabile",
+            legaturi.Count == randuriSursa);
+        Check($"1C:{view}: {legate.Count} entități legate (nicio legătură orfană)",
+            legate.Count == legaturi.Count);
+        var coduri = legate.Select(id => dupaId[id].Cod).ToList();
+        Check($"1C:{view}: {coduri.Distinct().Count()} coduri distincte pe {coduri.Count} entități "
+            + "(fără duplicate)", coduri.Distinct().Count() == coduri.Count);
+        var neLegate = entitati.Count(e => !legaturi.Values.Contains(e.ID));
+        if (neLegate != dinSeed)
+            Avert($"1C:{view}: {neLegate} entități {typeof(T).Name} fără legătură 1C "
+                + $"(așteptate {dinSeed} din seed) — de verificat dacă importul a dublat.");
+    }
+
+    // Cele două ContProprii din seed (CASA/BANCA) sunt împărțite între cele două
+    // view-uri sursă, deci se numără o singură dată — la casierii.
+    VerificaSursa("Depozite", depozite.Count(d => d.EsteElement), gestiuni, dinSeed: 2);
+    VerificaSursa("Casierii", casierii.Count, conturiProprii,
+        dinSeed: 2 + conturiBancare.Count);
+    VerificaSursa("ConturiBancare", conturiBancare.Count, conturiProprii,
+        dinSeed: 2 + casierii.Count);
+    VerificaSursa("PersoaneFizice", persoane.Count(p => p.EsteElement), angajati, dinSeed: 0);
+
+    // Contul implicit al conturilor proprii e maparea cea mai consecventă:
+    // contarea PLT/INC îl ia ca latură de trezorerie FĂRĂ fallback (31c), deci
+    // un null aici devine eroare abia la operarea plății. Se afișează distribuția.
+    var peCont = conturiProprii
+        .GroupBy(c => c.ContImplicit?.Simbol ?? "(fără cont)")
+        .OrderBy(g => g.Key);
+    Console.WriteLine("Conturi proprii pe cont implicit: "
+        + string.Join(", ", peCont.Select(g => $"{g.Key} × {g.Count()}")));
+    Check($"Toate conturile proprii au cont implicit",
+        conturiProprii.All(c => c.ContImplicitId != null));
+
+    Console.WriteLine($"Legături la cerere: parteneri {Legaturi.Incarca(os, "Partenerii").Count}, "
         + $"nomenclator {Legaturi.Incarca(os, "Nomenclator").Count}.");
 }
 
