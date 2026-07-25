@@ -527,7 +527,7 @@ public static class MotorOperare {
     // refuz conservator: utilizatorul șterge întâi imperecherile (link simplu,
     // fără registre proprii), apoi corectează documentul.
     static void VerificaFaraImperecheri(IObjectSpace os, Document doc) {
-        if (os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentTrezorerieId == doc.ID || i.DocumentId == doc.ID))
+        if (os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == doc.ID || i.DocumentId == doc.ID))
             throw new OperareException(
                 "Documentul are imperecheri (stingeri) — ștergeți-le întâi, apoi anulați/stornați.");
     }

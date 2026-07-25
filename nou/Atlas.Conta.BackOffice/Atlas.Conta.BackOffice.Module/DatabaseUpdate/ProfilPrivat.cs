@@ -24,6 +24,7 @@ internal static class ProfilPrivat {
         SeedClasaTip(os);
         SeedPlanConturi(os);
         ContaSeeder.SeedRepartitoriMinimali(os);
+        SeedPartenerRetail(os);
         // Derivările interoghează BAZA — nomenclatoarele se comit întâi (30e).
         os.CommitChanges();
         ContaSeeder.SeedContImplicitTipMaterial(os);
@@ -128,6 +129,18 @@ internal static class ProfilPrivat {
         }
     }
 
+    // Partenerul generic de retail (decizia 48b): vânzarea cu amănuntul nu are
+    // client identificat, dar factura are nevoie de o latură — surogatul RVA
+    // (raportul zilnic de vânzări → FCL) o primește pe acesta. Fără ContImplicit
+    // propriu: fallback-ul 4111 al regulii de facturare e exact contul corect.
+    static void SeedPartenerRetail(IObjectSpace os) {
+        if (os.FirstOrDefault<Partener>(p => p.Cod == "CF") != null)
+            return;
+        var consumatorFinal = os.CreateObject<Partener>();
+        consumatorFinal.Cod = "CF";
+        consumatorFinal.Denumire = "CONSUMATOR FINAL";
+    }
+
     // Planul OMFP 1802 (sursa: nomenclatorul ANAF PlanConturiBalSocCom, format
     // Account,ParentAccount,Denumire — numele poate conține virgule, deci
     // split cu limită). OMFP nu poartă funcție/defalcare: DimensiuniObligatorii
@@ -182,6 +195,13 @@ internal static class ProfilPrivat {
             ("N11", "TVA 11% (redusă)", 11m, RegimTva.Normal, true, "310351", "301105"),
             ("N9", "TVA 9% (tranzitoriu locuințe, până la 31.07.2026)", 9m, RegimTva.Normal, true, "310310", "301102"),
             ("TI21", "Taxare inversă 21%", 21m, RegimTva.TaxareInversa, true, "310312", "300906"),
+            // Cotele ISTORICE (standard 19% până la 31.07.2025) — necesare
+            // importului 1C, care aduce un an fiscal complet dinaintea Legii
+            // 141/2025 (FAZA 1C §1). Codurile SAF-T rămân NULL: nomenclatorul
+            // ANAF e cel în vigoare, iar D406-ul pe perioade vechi nu e o
+            // proiecție a acestui sistem; se completează dacă apare vreodată.
+            ("N19", "TVA 19% (standard, istoric — până la 31.07.2025)", 19m, RegimTva.Normal, true, null, null),
+            ("TI19", "Taxare inversă 19% (istoric — până la 31.07.2025)", 19m, RegimTva.TaxareInversa, true, null, null),
             ("NED21", "Achiziție fără drept de deducere 21% (TVA capitalizat)", 21m, RegimTva.Capitalizat, false, null, "351104"),
             ("SDD", "Scutit cu drept de deducere", 0m, RegimTva.Scutit, false, "310314", null),
             ("SFD", "Scutit fără drept de deducere", 0m, RegimTva.Scutit, false, "310326", null),

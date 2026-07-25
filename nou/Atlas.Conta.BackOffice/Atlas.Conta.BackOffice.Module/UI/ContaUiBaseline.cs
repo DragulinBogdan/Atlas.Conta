@@ -50,7 +50,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<RegistruStoc>().HideForeignKeys();             // LotId/RepartitorId/DocumentId/DetaliuId
         registry.For<RegistruContabil>().HideForeignKeys();         // ContDebitId/ContCreditId/DocumentId/DetaliuId
         registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
-        registry.For<Imperechere>().HideForeignKeys();              // DocumentTrezorerieId/DocumentId
+        registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId
 
         // Expansiunea InDetailView a owned-urilor (Registre.cs) generează item-uri
         // și pentru scalarii FK INTERNI ai owned-ului, cu path nested

@@ -22,13 +22,15 @@ public class Decont : Document, IDocumentCuPV {
     // Cantitatea e pro-formă (legacy: defaults 'BUC'/'1'); lanțul de valori
     // trăiește pe derivată (testul bazei §3) — capătul se materializează aici,
     // cu TVA-ul din TipTva (P1): bonul cu TVA deductibil justificat pe decont
-    // postează 4426 = 542 prin PoliticaTva.
+    // postează 4426 = 542 prin PoliticaTva. `ValoareTva` nenulă culeasă se
+    // păstrează (regula 36a uniformizată — decizia 48b): TVA-ul de pe bonul
+    // justificat bate rotunjirea noastră, exact ca la FCT.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         foreach (var d in Detalii.OfType<DecontDetaliu>()) {
             if (d.Cantitate == 0)
                 d.Cantitate = 1;
-            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri);
+            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, pastreazaTvaCules: true);
         }
     }
 

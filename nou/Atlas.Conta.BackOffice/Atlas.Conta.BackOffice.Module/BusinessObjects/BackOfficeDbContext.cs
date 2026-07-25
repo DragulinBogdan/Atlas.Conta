@@ -146,6 +146,15 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<DocumentDetaliu>().UseTptMappingStrategy();
             modelBuilder.Entity<Repartitor>().UseTptMappingStrategy();
 
+            // Nivelul abstract intermediar al trezoreriei se declară EXPLICIT:
+            // până la decizia 48b el intra în model doar fiindcă navigația
+            // `Imperechere.DocumentTrezorerie` îl referea; odată relaxată la
+            // `Document`, EF nu-l mai descoperea, iar Plata/Incasare ar fi
+            // moștenit direct din Document — cu tabela `DocumentTrezorerie`
+            // ștearsă și coloanele ei (TipInstrument/NumarExtras/DataExtras)
+            // recreate goale pe frunze. Declarația ține schema neatinsă.
+            modelBuilder.Entity<DocumentTrezorerie>();
+
             modelBuilder.Entity<Document>()
                 .HasMany(d => d.Detalii)
                 .WithOne(d => d.Document)

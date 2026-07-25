@@ -22,8 +22,11 @@ public static class TvaService {
     //   Capitalizat:            Valoare = net × (1 + Cota/100); ValoareTva = 0
     //   Normal / TaxareInversa: Valoare = net;                  ValoareTva = net × Cota/100
     //   Scutit / Neimpozabil / TipTva null: Valoare = net;      ValoareTva = 0
-    // `pastreazaTvaCules` (doar FCT): factura furnizorului bate rotunjirea
-    // noastră — un ValoareTva nenul cules manual nu se suprascrie la operare.
+    // `pastreazaTvaCules` (FCT/FCL/DEC — regula 36a uniformizată prin decizia
+    // 48b): un ValoareTva nenul CULES nu se suprascrie la operare. Documentul
+    // real (factura furnizorului, factura emisă, bonul justificat) poartă
+    // rotunjirea lui; recalculul din cotă ar diferi pe bani mărunți și ar rupe
+    // atât reconcilierea de import, cât și e-Factura (36f).
     public static void CalculeazaValori(DocumentDetaliu d, decimal net,
         IReadOnlyDictionary<Guid, InfoTva> tipuri, bool pastreazaTvaCules = false) {
         var info = d.TipTvaId != null ? tipuri.GetValueOrDefault(d.TipTvaId.Value) : default;

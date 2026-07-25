@@ -18,12 +18,14 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
     public virtual Guid? GestiuneDescarcareId { get; set; }
     public virtual Gestiune GestiuneDescarcare { get; set; }
 
-    // Pe FCL TVA-ul se CALCULEAZĂ (spre deosebire de FCT, unde valoarea culeasă
-    // de pe factura furnizorului bate rotunjirea) — design §3.
+    // TVA-ul se calculează din cotă, DAR o `ValoareTva` nenulă culeasă se
+    // păstrează — regula 36a, uniformizată pe FCT/FCL/DEC (decizia 48b): pe
+    // facturarea proprie rotunjirea aparține documentului emis (e-Factura,
+    // agregarea retailului), nu recalculului nostru.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         foreach (var d in Detalii.OfType<FacturaIesireDetaliu>())
-            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri);
+            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, pastreazaTvaCules: true);
     }
 
     // Descărcarea de gestiune (P2 §5): la operarea FCL se generează DSC-ul conex

@@ -20,6 +20,14 @@ public abstract class DocumentTrezorerie : Document {
     // Metodă, nu proprietate: nu e stare, iar XAF n-are ce căuta pe ea (XAF0033).
     public abstract Guid GetContrapartidaId();
 
+    // Trezoreria e stingătorul „clasic" (31d): o SINGURĂ contrapartidă (latura
+    // non-ContPropriu), cu plafonul = totalul brut al plății/încasării. Cum
+    // toate stingerile ei merg către aceeași contrapartidă, plafonul per
+    // contrapartidă e identic cu plafonul global de dinainte — comportamentul
+    // trezoreriei nu se schimbă.
+    public override IReadOnlyDictionary<Guid, decimal> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) =>
+        new Dictionary<Guid, decimal> { [GetContrapartidaId()] = Motor.ImperechereService.Total(os, ID) };
+
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
         foreach (var d in Detalii)
@@ -54,16 +62,22 @@ public class Incasare : DocumentTrezorerie {
     }
 }
 
-// Decizia 17: stingerea — m2m plată↔document cu sume parțiale (GEST_DECONTARI).
-// Nu e document (fără ciclu Draft/Operat): un rând e o legătură între două
-// documente DEJA operate. Invarianții (motor/ImperechereService): ambele
-// Operat, Σ imperecheri ≤ totalul fiecărei părți, contrapartida plății apare
-// pe document; `ramas` e calcul, nu coloană. Autogenerat = creată de motor la
-// operarea unei plăți autogenerate (plata automată din factură — 00 §7).
+// Decizia 17: stingerea — m2m stingător↔document cu sume parțiale
+// (GEST_DECONTARI). Nu e document (fără ciclu Draft/Operat): un rând e o
+// legătură între două documente DEJA operate. Invarianții
+// (motor/ImperechereService): ambele Operat, Σ imperecheri ≤ totalul
+// documentului stins, contrapartida stingătorului apare pe el; `ramas` e
+// calcul, nu coloană. Autogenerat = creată de motor la operarea unei plăți
+// autogenerate (plata automată din factură — 00 §7).
+//
+// `DocumentStingator` e tipat `Document`, nu `DocumentTrezorerie` (decizia 48b
+// — compensarea): rolul de stingător e declarat POLIMORF, prin
+// `Document.CapacitateStingere`, iar azi îl poartă trezoreria și nota
+// contabilă. Tipul FK-ului nu mai face filtrarea — o face validarea.
 [NavigationItem("Documente")]
 public class Imperechere : BaseObject {
-    public virtual Guid DocumentTrezorerieId { get; set; }
-    public virtual DocumentTrezorerie DocumentTrezorerie { get; set; }
+    public virtual Guid DocumentStingatorId { get; set; }
+    public virtual Document DocumentStingator { get; set; }
     public virtual Guid DocumentId { get; set; }
     public virtual Document Document { get; set; }
     public virtual decimal Suma { get; set; }

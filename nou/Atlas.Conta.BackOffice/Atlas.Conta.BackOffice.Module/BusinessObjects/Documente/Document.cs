@@ -82,6 +82,19 @@ public abstract class Document : BaseObject {
     public virtual Guid RepartitorImplicitDebit() => PredatorId;
     public virtual Guid RepartitorImplicitCredit() => PrimitorId;
 
+    // Rolul de STINGĂTOR în imperechere (decizia 31d, extinsă de 48b —
+    // compensarea): contrapartidele pe care documentul le poate stinge, fiecare
+    // cu PLAFONUL ei. `null` = tipul NU stinge nimic (majoritatea — facturile
+    // stau doar pe rolul de document stins); dicționar gol = tipul stinge, dar
+    // documentul ăsta n-are contrapartidă (refuz zgomotos în validare).
+    // Invariantul rămâne cel din 31d: contrapartida trebuie să apară pe laturile
+    // documentului stins, iar Σ stingerilor către ea ≤ plafon. Plafonul e per
+    // contrapartidă (nu pe tot documentul) fiindcă nota de compensare e DUBLĂ
+    // prin construcție: 401 = 4111 pe partenerul X stinge X lei de datorie ȘI
+    // X lei de creanță — un plafon global ar refuza a doua stingere legitimă.
+    // Hook pe FK-uri + IObjectSpace (25b): apelanții nu garantează lazy loading.
+    public virtual IReadOnlyDictionary<Guid, decimal> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) => null;
+
     // Documentul SECUNDAR (00 §7 — plata automată legacy, decizia 31): spre
     // deosebire de conexul din PoliticaConex (clonă filtrată pe natură, trăiește
     // în motor), secundarul se construiește din date CULESE pe derivată

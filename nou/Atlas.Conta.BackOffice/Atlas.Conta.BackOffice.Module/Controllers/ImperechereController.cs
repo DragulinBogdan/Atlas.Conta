@@ -5,8 +5,9 @@ using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Controllers;
 
-// Imperecherea (decizia 31d) = stingerea m2m plată↔document; invarianții trăiesc
-// în ImperechereService, dar New generic prin UI îi ocolea. Decizia: New rămâne
+// Imperecherea (decizia 31d, extinsă de 48b la nota de compensare) = stingerea
+// m2m stingător↔document; invarianții trăiesc în ImperechereService, dar New
+// generic prin UI îi ocolea. Decizia: New rămâne
 // PERMIS, dar validat la commit; Edit blocat (șterge + recreează); Delete liber
 // (link-ul se desface fără registre proprii — gardianul de anulare/storno există
 // deja în motor). Calea nu se suprapune cu motorul: controller-ul se activează
@@ -58,7 +59,7 @@ public sealed class ImperechereController : ViewController {
                 // link-uri NOI în același commit nu se văd reciproc la Σ≤rest —
                 // niciunul nu e încă persistat, deci fiecare se validează contra
                 // restului din baza de date (back-office cu operator unic).
-                ImperechereService.ValideazaCreare(os, imp.DocumentTrezorerie, imp.Document, imp.Suma);
+                ImperechereService.ValideazaCreare(os, imp.DocumentStingator, imp.Document, imp.Suma);
             else
                 throw new OperareException("Imperecherea nu se editează — șterge-o și creeaz-o din nou.");
         }

@@ -22,6 +22,34 @@ public class NotaContabila : Document, IDocumentCuPostareExplicita {
     // Fără PregatesteOperare: `Valoare` se culege direct pe linie (nu există
     // lanț de valori — nici cantitate, nici preț, nici TVA calculat).
 
+    // Rolul de STINGĂTOR (decizia 48b — Compensarea din 1C, 869/an): nota
+    // operată poate stinge documente, iar invariantul de contrapartidă al
+    // trezoreriei (31d) se reformulează pe ea — contrapartidele stinse sunt
+    // repartitorii EXPLICIȚI de pe linii (401 = 4111 pe partenerul X stinge
+    // atât factura lui de furnizor, cât și pe cea de client). Plafonul per
+    // contrapartidă = suma liniilor pe care ea apare, NUMĂRATĂ PER LATURĂ:
+    // rândul 401 = 4111 de X lei pe același partener duce X pe debit (datoria)
+    // și X pe credit (creanța), adică exact cele două stingeri legitime.
+    // Fără repartitori pe linii nota nu stinge nimic (dicționar gol → refuz).
+    // Proiecție pe FK-uri, fără navigația Detalii (25b).
+    public override IReadOnlyDictionary<Guid, decimal> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) {
+        var id = ID;
+        var linii = os.GetObjectsQuery<NotaContabilaDetaliu>()
+            .Where(d => d.DocumentId == id)
+            .Select(d => new { d.Valoare, d.RepartitorDebitId, d.RepartitorCreditId })
+            .ToList();
+        var capacitati = new Dictionary<Guid, decimal>();
+        void Adauga(Guid? repartitorId, decimal valoare) {
+            if (repartitorId != null)
+                capacitati[repartitorId.Value] = capacitati.GetValueOrDefault(repartitorId.Value) + Math.Abs(valoare);
+        }
+        foreach (var l in linii) {
+            Adauga(l.RepartitorDebitId, l.Valoare);
+            Adauga(l.RepartitorCreditId, l.Valoare);
+        }
+        return capacitati;
+    }
+
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
         if (os.GetObjectByKey<Repartitor>(PredatorId) is Partener

@@ -131,7 +131,7 @@ if (profil == ProfilContabil.Privat) {
             .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
         var docIds = docs.Select(d => d.ID).ToList();
         os.Delete(os.GetObjectsQuery<Imperechere>()
-            .Where(i => docIds.Contains(i.DocumentTrezorerieId) || docIds.Contains(i.DocumentId)).ToList());
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
         os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
         os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
         os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
@@ -287,7 +287,7 @@ if (profil == ProfilContabil.Privat) {
             notePlata.Count == 2 && notePlata.All(n => n.ContDebitId == cont401.ID && n.ContCreditId == cont5121.ID)
             && notePlata.Sum(n => n.Valoare) == 181.5m);
         Check("Imperecherea automată stinge BRUTUL facturii (181,5; rest 0)",
-            os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentTrezorerieId == plataAuto.ID).Suma == 181.5m
+            os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plataAuto.ID).Suma == 181.5m
             && ImperechereService.Ramas(os, fct.ID) == 0m);
 
         // --- FCL: 4427 colectat ---
@@ -394,6 +394,45 @@ if (profil == ProfilContabil.Privat) {
             linieManual.ValoareTva == 20.9m
             && Note(fctManual).Any(n => n.ContDebitId == cont4426.ID && n.Valoare == 20.9m));
 
+        // --- Aceeași regulă pe FCL și DEC (36a uniformizat — decizia 48b) ---
+        // Recalculul din cotă ar da 21,00; documentul real poartă 20,99, iar
+        // rândul de TVA trebuie să posteze EXACT valoarea culeasă.
+        var fclManual = os.CreateObject<FacturaIesire>();
+        fclManual.Data = new DateOnly(2026, 3, 12);
+        fclManual.Predator = sediu;
+        fclManual.Primitor = client;
+        var linieFclManual = os.CreateObject<FacturaIesireDetaliu>();
+        linieFclManual.Document = fclManual;
+        linieFclManual.TipMaterial = tip704;
+        linieFclManual.Cantitate = 1m;
+        linieFclManual.PretUnitar = 100m;
+        linieFclManual.TipTva = n21;
+        linieFclManual.ValoareTva = 20.99m; // TVA-ul de pe factura emisă (rotunjirea ei)
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fclManual);
+        Check("FCL: ValoareTva culeasă (20,99) nu se suprascrie; 4111 = 4427 postează exact 20,99",
+            linieFclManual.Valoare == 100m && linieFclManual.ValoareTva == 20.99m
+            && Note(fclManual).Any(n => n.ContDebitId == cont4111.ID && n.ContCreditId == cont4427.ID
+                && n.Valoare == 20.99m)
+            && fclManual.Total == 120.99m);
+
+        var decManual = os.CreateObject<Decont>();
+        decManual.Data = new DateOnly(2026, 3, 13);
+        decManual.Predator = angajat;
+        decManual.Primitor = sediu;
+        var linieDecManual = os.CreateObject<DecontDetaliu>();
+        linieDecManual.Document = decManual;
+        linieDecManual.TipMaterial = tip628;
+        linieDecManual.PretUnitar = 100m;
+        linieDecManual.TipTva = n21;
+        linieDecManual.ValoareTva = 20.99m; // TVA-ul de pe bonul justificat
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, decManual);
+        Check("DEC: ValoareTva culeasă (20,99) nu se suprascrie; 4426 = 542 postează exact 20,99",
+            linieDecManual.Valoare == 100m && linieDecManual.ValoareTva == 20.99m
+            && Note(decManual).Any(n => n.ContDebitId == cont4426.ID && n.ContCreditId == cont542.ID
+                && n.Valoare == 20.99m));
+
         CurataPrv(os);
         Check("Curățenie finală privat (fără reziduuri e2e)",
             !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajPrv))
@@ -417,7 +456,7 @@ if (profil == ProfilContabil.Privat) {
             .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
         var docIds = docs.Select(d => d.ID).ToList();
         os.Delete(os.GetObjectsQuery<Imperechere>()
-            .Where(i => docIds.Contains(i.DocumentTrezorerieId) || docIds.Contains(i.DocumentId)).ToList());
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
         os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
         os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
         os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
@@ -868,6 +907,175 @@ if (profil == ProfilContabil.Privat) {
         }
     }
 
+    // ============ Scenariul e2e: compensarea (NTC pe rolul de stingător) ============
+    // Decizia 48b: Compensarea din 1C (869/an) e o notă contabilă operată care
+    // STINGE — 401 = 4111 pe același partener stinge simultan datoria și creanța.
+    // Acoperă: rolul de stingător declarat polimorf (facturile NU pot stinge),
+    // plafonul PER CONTRAPARTIDĂ (nota dublă stinge de două ori), invariantul de
+    // contrapartidă reformulat (repartitorii expliciți ai liniilor), refuzul pe
+    // notă needitată/nepotrivită și gardianul de anulare cât există stingeri.
+    {
+        const string MarcajCmp = "E2E-CMP";
+
+        void CurataCmp(IObjectSpace os) {
+            var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajCmp)).Select(r => r.ID).ToList();
+            var docs = os.GetObjectsQuery<Document>()
+                .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+            // Nota are laturi INTERNE (partenerul stă pe linii), deci nu e prinsă
+            // de filtrul pe laturi — se adaugă prin numărul propriu.
+            docs.AddRange(os.GetObjectsQuery<NotaContabila>().Where(d => d.Numar.StartsWith(MarcajCmp)));
+            var docIds = docs.Select(d => d.ID).Distinct().ToList();
+            os.Delete(os.GetObjectsQuery<Imperechere>()
+                .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            os.Delete(docs);
+            os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajCmp)).ToList());
+            os.CommitChanges();
+        }
+
+        using (var os = provider.CreateObjectSpace()) {
+            CurataCmp(os);
+
+            var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+            var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+            var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+            var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+            var tip704 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704");
+            var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
+            var cont4111 = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
+
+            Check("Seed privat: partenerul generic de retail CF (surogatul RVA — decizia 48b), fără ContImplicit propriu",
+                os.FirstOrDefault<Partener>(p => p.Cod == "CF") is { Denumire: "CONSUMATOR FINAL", ContImplicitId: null });
+            TipTva Tva(string cod) => os.FirstOrDefault<TipTva>(t => t.Cod == cod);
+            Check("Seed privat: cotele istorice N19/TI19 (importul 1C aduce un an dinaintea Legii 141/2025), cu conturile 4426/4427 și SAF-T null",
+                Tva("N19") is { Cota: 19m, Regim: RegimTva.Normal, CodSafTLivrare: null, CodSafTAchizitie: null }
+                && Tva("N19").ContTvaDeductibilId != null && Tva("N19").ContTvaColectatId != null
+                && Tva("TI19") is { Cota: 19m, Regim: RegimTva.TaxareInversa, CodSafTLivrare: null }
+                && Tva("TI19").ContTvaDeductibilId != null);
+
+            // Partenerul X e furnizor pe o factură și client pe alta — cazul real
+            // al compensării; Y e martorul care nu apare pe notă.
+            var partenerX = os.CreateObject<Partener>();
+            partenerX.Cod = MarcajCmp + "-X";
+            partenerX.Denumire = "Partener compensare X";
+            var partenerY = os.CreateObject<Partener>();
+            partenerY.Cod = MarcajCmp + "-Y";
+            partenerY.Denumire = "Partener compensare Y";
+            os.CommitChanges();
+
+            var fct = os.CreateObject<FacturaIntrare>();
+            fct.Numar = MarcajCmp + "-FF";
+            fct.Data = new DateOnly(2026, 5, 4);
+            fct.Predator = partenerX;
+            fct.Primitor = mag1;
+            var linieFct = os.CreateObject<FacturaIntrareDetaliu>();
+            linieFct.Document = fct;
+            linieFct.TipMaterial = tip628;
+            linieFct.Cantitate = 1m;
+            linieFct.PretUnitar = 100m;
+
+            var fcl = os.CreateObject<FacturaIesire>();
+            fcl.Data = new DateOnly(2026, 5, 5);
+            fcl.Predator = sediu;
+            fcl.Primitor = partenerX;
+            var linieFcl = os.CreateObject<FacturaIesireDetaliu>();
+            linieFcl.Document = fcl;
+            linieFcl.TipMaterial = tip704;
+            linieFcl.Cantitate = 1m;
+            linieFcl.PretUnitar = 100m;
+
+            var fclY = os.CreateObject<FacturaIesire>();
+            fclY.Data = new DateOnly(2026, 5, 5);
+            fclY.Predator = sediu;
+            fclY.Primitor = partenerY;
+            var linieFclY = os.CreateObject<FacturaIesireDetaliu>();
+            linieFclY.Document = fclY;
+            linieFclY.TipMaterial = tip704;
+            linieFclY.Cantitate = 1m;
+            linieFclY.PretUnitar = 100m;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, fct);
+            MotorOperare.Opereaza(os, fcl);
+            MotorOperare.Opereaza(os, fclY);
+
+            // Nota de compensare: laturi interne (partenerul stă pe LINIE, nu pe
+            // latură — validarea NTC o cere), 401 = 4111 pe X, valoare parțială.
+            NotaContabila NotaCompensare(decimal valoare, Repartitor repartitor) {
+                var n = os.CreateObject<NotaContabila>();
+                n.Numar = MarcajCmp + "-C" + valoare;
+                n.Data = new DateOnly(2026, 5, 6);
+                n.Predator = sediu;
+                n.Primitor = sediu;
+                var linie = os.CreateObject<NotaContabilaDetaliu>();
+                linie.Document = n;
+                linie.TipMaterial = tipTrz;
+                linie.Descriere = "Compensare " + repartitor.Cod;
+                linie.ContDebit = cont401;
+                linie.ContCredit = cont4111;
+                linie.RepartitorDebit = repartitor;
+                linie.RepartitorCredit = repartitor;
+                linie.Valoare = valoare;
+                os.CommitChanges();
+                return n;
+            }
+
+            var ntcDraft = NotaCompensare(60m, partenerX);
+            CheckRefuza("Nota NEOPERATĂ nu stinge (invariantul „ambele operate” neatins)",
+                () => ImperechereService.Imperecheaza(os, ntcDraft, fct, 10m));
+            CheckRefuza("Factura NU e stingător — rolul e declarat de tip (CapacitateStingere), nu de FK",
+                () => ImperechereService.Imperecheaza(os, fcl, fct, 10m));
+
+            MotorOperare.Opereaza(os, ntcDraft);
+            var ntc = ntcDraft;
+            Check("Nota de compensare operată: 401 = 4111 pe X (60), fără stoc și fără TVA",
+                ntc.Stare == StareDocument.Operat
+                && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == ntc.ID && !r.Storno
+                    && r.ContDebitId == cont401.ID && r.ContCreditId == cont4111.ID && r.Valoare == 60m) == 1);
+
+            CheckRefuza("Contrapartida stinsă trebuie să apară pe liniile notei (factura lui Y nu se compensează cu nota lui X)",
+                () => ImperechereService.Imperecheaza(os, ntc, fclY, 10m));
+
+            ImperechereService.Imperecheaza(os, ntc, fct, 60m);
+            ImperechereService.Imperecheaza(os, ntc, fcl, 60m);
+            Check("Nota DUBLĂ stinge de două ori (60 pe datoria X + 60 pe creanța X); ambele facturi rămân cu 40",
+                os.GetObjectsQuery<Imperechere>().Count(i => i.DocumentStingatorId == ntc.ID) == 2
+                && ImperechereService.Ramas(os, fct.ID) == 40m
+                && ImperechereService.Ramas(os, fcl.ID) == 40m);
+
+            CheckRefuza("Plafonul PER CONTRAPARTIDĂ e consumat (2 × 60): a treia stingere se refuză",
+                () => {
+                    var altaFcl = os.CreateObject<FacturaIesire>();
+                    altaFcl.Data = new DateOnly(2026, 5, 7);
+                    altaFcl.Predator = sediu;
+                    altaFcl.Primitor = partenerX;
+                    var l = os.CreateObject<FacturaIesireDetaliu>();
+                    l.Document = altaFcl;
+                    l.TipMaterial = tip704;
+                    l.Cantitate = 1m;
+                    l.PretUnitar = 50m;
+                    os.CommitChanges();
+                    MotorOperare.Opereaza(os, altaFcl);
+                    ImperechereService.Imperecheaza(os, ntc, altaFcl, 10m);
+                });
+
+            CheckRefuza("Gardianul de anulare acoperă nota pe rolul de stingător (coloana DocumentStingator)",
+                () => MotorOperare.AnuleazaOperarea(os, ntc));
+
+            os.Delete(os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentStingatorId == ntc.ID).ToList());
+            os.CommitChanges();
+            MotorOperare.AnuleazaOperarea(os, ntc);
+            Check("După ștergerea stingerilor nota se anulează normal (link fără registre proprii — 31d)",
+                ntc.Stare == StareDocument.Draft
+                && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == ntc.ID));
+
+            CurataCmp(os);
+            Check("Curățenie finală compensare (fără reziduuri e2e)",
+                !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajCmp))
+                && !os.GetObjectsQuery<NotaContabila>().Any(d => d.Numar.StartsWith(MarcajCmp)));
+        }
+    }
+
     // ================= Scenariul e2e 1C-a: InchidereTva (privat) =================
     // Închiderea lunară de TVA (design FAZA 1C §6) — forcing function-ul TVA-ului
     // structural din P1: ITV E o notă contabilă GENERATĂ din soldurile registrului
@@ -888,7 +1096,7 @@ if (profil == ProfilContabil.Privat) {
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
             os.Delete(os.GetObjectsQuery<Imperechere>()
-                .Where(i => docIds.Contains(i.DocumentTrezorerieId) || docIds.Contains(i.DocumentId)).ToList());
+                .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
             os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
             os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
             os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
@@ -2560,7 +2768,7 @@ void CurataTrz(IObjectSpace os) {
         .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
     var docIds = docs.Select(d => d.ID).ToList();
     os.Delete(os.GetObjectsQuery<Imperechere>()
-        .Where(i => docIds.Contains(i.DocumentTrezorerieId) || docIds.Contains(i.DocumentId)).ToList());
+        .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
     os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
     os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
     os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
@@ -2679,7 +2887,7 @@ using (var os = provider.CreateObjectSpace()) {
         notePlata.Count == 2 && notePlata.All(n => n.ContDebitId == cont401.ID && n.ContCreditId == cont770.ID)
         && notePlata.Sum(n => n.Valoare) == 159.5m);
     Check("Plata nu mișcă stoc", !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == plataAuto.ID));
-    var impAuto = os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentTrezorerieId == plataAuto.ID);
+    var impAuto = os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plataAuto.ID);
     Check("Imperecherea automată: FCT stinsă integral (159,5, Autogenerat)",
         impAuto.DocumentId == fct.ID && impAuto.Suma == 159.5m && impAuto.Autogenerat
         && ImperechereService.Ramas(os, fct.ID) == 0m && ImperechereService.Ramas(os, plataAuto.ID) == 0m);
@@ -2695,7 +2903,7 @@ using (var os = provider.CreateObjectSpace()) {
         plataAuto.Stare == StareDocument.Draft && Note(plataAuto).Count == 0);
     MotorOperare.Opereaza(os, plataAuto);
     Check("Re-operarea plății re-creează imperecherea automată",
-        os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentTrezorerieId == plataAuto.ID).Suma == 159.5m);
+        os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plataAuto.ID).Suma == 159.5m);
 
     // --- Încasare manuală + imperechere manuală cu FCL (invarianții stingerii) ---
     var fcl = os.CreateObject<FacturaIesire>();
@@ -2810,7 +3018,7 @@ void CurataDec(IObjectSpace os) {
         .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
     var docIds = docs.Select(d => d.ID).ToList();
     os.Delete(os.GetObjectsQuery<Imperechere>()
-        .Where(i => docIds.Contains(i.DocumentTrezorerieId) || docIds.Contains(i.DocumentId)).ToList());
+        .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
     os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
     os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
     os.Delete(docs);
