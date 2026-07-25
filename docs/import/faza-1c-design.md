@@ -299,6 +299,12 @@ Numerele care trebuie să bată (după fiecare lună importată + la final):
 3. **Stoc per produs×gestiune la fine de lună** (cantitate + valoare) =
    `BalantaNivel3` agregat pe conturile de stoc. **Per lot NU e țintă** —
    loturile negative 1C (retururi) fac per-lot zgomot permanent.
+   **Amendament pre-1C-c (§12.1): cantitatea = strictă peste tot; valoarea =
+   strictă pe grupele neatinse de netarea deschiderii, iar pe grupele netate
+   (set cunoscut din 1C-b) diferența valorică se raportează ca justificată**
+   („netare deschidere") — netarea a schimbat prețurile per lot, deci Atlas
+   descarcă la alte prețuri decât 1C; diferența e mărginită de valoarea
+   redistribuită și se stinge când grupa se golește.
 4. **891.01.00 se închide la 0** după deschidere (34f).
 
 Toleranță 0.005 per cont/poziție; diferențele SURSEI se raportează explicit,
@@ -345,8 +351,110 @@ nu se ascund (34f); contractul picat = cod de ieșire ≠ 0 cu raportul complet.
   BalantaNivel3, netarea negativului raportată), reconcilierea deschiderii
   (891→0, stoc per produs×gestiune = sursa).
 - **1C-c. Documentele prin motor**: maparea §4 în ordine cronologică, pe luni;
+  bucla lunii = documente → imperecheri (trecerea 2) → **ITV la fine de lună**
+  (relaxarea graniței 1C-c/1C-d, §12.4: fără închiderea de TVA, contractul (1)
+  ar pica lunar pe 4426/4427/4423 — Balanța 1C ARE închiderea în ea) →
   reconcilierea lunară de solduri + stoc; găurile de profil descoperite se
   tranșează pe măsură.
-- **1C-d. Închiderea de TVA + contractul final**: ITV generat per lună,
-  reconcilierea 4423/4424 (forcing function), raportul complet al anului —
-  gate-ul fazei.
+- **1C-d. Gate-ul fazei**: rularea integrală a anului, reconcilierea 4423/4424
+  pe toate cele 12 luni (forcing function), raportul complet al anului.
+
+## 12. Tranșările pre-1C-c (analiza 25.07.2026 — toate confirmate)
+
+Patru probleme analizate explicit înainte de execuția 1C-c; unde a fost nevoie,
+deciziile anterioare s-au relaxat conștient, nu s-au ocolit.
+
+### 12.1 Pin pe lot vs. soldurile netate → supapă de IMPORT, motorul neatins
+
+Problema e a întregii familii de ieșiri pe lot (BTR — cel mai mare tip, BCS,
+consum ASM, RLF, DSC pin-uit), nu doar a DSC: netarea din 1C-b a rearanjat
+soldurile ȘI prețurile per lot, deci gardianul de sold poate refuza pe orice
+lot atins. **Decizia 37d („pinul fără fallback FIFO") rămâne intactă** —
+netarea e artefactul importului, consecința se plătește în import:
+
+- Helper unic în Import1C pentru toate ieșirile pe lot: cererea = (lot dorit,
+  produs, gestiune, TipStoc, cantitate); ce are pinul se ia de pe pin,
+  deficitul se realocă FIFO în interiorul produs×gestiune (grupa în care
+  netarea a conservat sumele — acoperirea există prin construcție, mai puțin
+  grupele sărite); mapă `dejaAlocat` per document pentru contenția
+  intra-document (pattern-ul DescarcareService).
+- Realocările se numără și se raportează per lună — diagnostic, nu eșec.
+- Consecința pe contract: amendamentul de la §8.3 (valoarea pe grupele netate
+  = diferență justificată, purtată înainte lună de lună).
+
+### 12.2 Mecanica per tip rămasă „la implementare" (cele cinci)
+
+- **ExtrasDeCont per rând**: PLT/INC per rând, contul propriu din
+  nomenclatoarele importate, direcția din semnul rândului, linia pe TRZ.
+- **Stingerile din subconto → Imperechere: DOUĂ treceri per lună** — trecerea
+  1 operează documentele cronologic, trecerea 2 creează imperecherile lunii
+  (imperecherea nu postează registre, amânarea e gratuită și elimină problema
+  de ordine). Ținta legăturii nu există (factură 2024 pe soldul global de
+  deschidere — modelul 34d/47c — sau tip neimportat, ex. BonFiscal) → fără
+  imperechere, contor + raport. Invariant picat pe date reale → raport, nu
+  stop (reconcilierea nu depinde de imperecheri).
+- **Compensare → NTC + Imperechere, cu EXTENSIE DE INVARIANT ca decizie de
+  produs** (compensarea e stingere reală — 869/an): un `NotaContabila` operat
+  poate sta pe rolul de stingere, invariantul de trezorerie (31d) reformulat
+  pentru el — contrapartida stinsă (401/411) apare pe liniile lui explicite;
+  restul invarianților neschimbați. **Retururile** (totalul negativ — 46f):
+  skip + raport la 1C-c; designul compensare/rambursare pe retur la momentul
+  lui.
+- **Surogat RVA**: FCL pe partenerul generic „consumator final" (rând de
+  seed, decizie de profil), linii per (cont venit × cotă) cu Tipul VEN, DSC
+  din 607=371 cu pin prin supapa §12.1. **Datorie P1 scoasă la iveală:
+  regula „ValoareTva culeasă nenulă NU se suprascrie" (36a, azi doar FCT) se
+  uniformizează pe FCT/FCL/DEC** — altfel TVA-ul recalculat diferă prin
+  rotunjire de 4427-ul 1C și contractul (2) pică pe bani mărunți; aditivă,
+  cu sens de produs (rotunjirea e-Factura, 36f).
+- **Avizele + rețeta generală de surogat** (aplicabilă oricărui tip-rătăcit):
+  latura de stoc = DSC (sau LDI+) cu loturile 1C ca pin; latura contabilă =
+  NTC cu transcrierea exactă a rândurilor 1C (418=707, 4111=418, 4428…).
+  Respectă „stocul nu se mișcă fără registru de stoc"; 418/4428 rămân fapte
+  ale sursei transcrise, nu mecanisme Atlas (tipul Aviz propriu — amânat §10).
+
+### 12.3 Maparea conturilor (datoria 47f): LISTĂ, nu regulă + pre-flight
+
+Tăierea mecanică a cifrelor terminale e demonstrabil nesigură exact unde e
+volumul: `43111` → ar cădea pe 4311 (există, ne-sumator — regula s-ar opri
+mulțumită), dar semantic corect e **4316** (CASS) — familia contribuțiilor
+salariale nu urmează structura sintetică OMFP. O regulă cu colapsuri semantice
+tăcute e mai scumpă decât ~130 de rânduri de dicționar și ar face imposibilă
+verificarea „zero colapsuri tăcute" din 47f. Rezolvarea descoperirii-în-mers:
+
+- **Fază pre-flight în Import1C**: înainte de orice document se mătură TOATE
+  codurile de cont folosite de mișcările 2025 (NoteContabile/DefalcareNote),
+  se trec prin `MapeazaCont`, iar nerezolvabilele + căderile pe sumator se
+  emit ca raport UNIC — denumirile din ambele planuri una lângă alta + coloană
+  de sugestie mecanică (tăierea de cifre, copilul unic al sumatorului),
+  sugestie de triaj, NICIODATĂ aplicată automat. Triajul = o sesiune de
+  decizii, nu 130 de descoperiri în timpul rulării.
+- Dicționarul crește în **CSV comentat** în tool (forma §8.1) — decizia 21
+  aplicată literal.
+- **Planul seed aliniat la validatorul D406** (verificat 25.07.2026 contra
+  `anaf/plan_conturi_bal_soc_com.md`, extras din DUKIntegrator): CSV-ul
+  `plan-conturi-omfp.csv` era TRUNCHIAT la coadă (921 tăiat în mijlocul
+  denumirii, fără 922–925/93/931/933) — reparat; restul simbolurilor
+  (inclusiv adăugirile 1496, 616–618, 4417, 697) erau deja prezente.
+
+### 12.4 Ordinea și granularitatea rulării
+
+- **Unitatea de idempotență = documentul; unitatea de contract = luna.**
+  Legătura `1C:<view>` se scrie **în același commit cu draftul** (documentele
+  n-au cod natural de recuperare, spre deosebire de nomenclatoare — 47b).
+  Resume oriunde, inclusiv la mijloc de lună: legat + Operat → skip; legat +
+  Draft → re-operare (crash-ul dintre creare și operare se vindecă singur).
+- **Ordinea**: cronologic pe timestamp-ul 1C complet. Gardianul de sold e pe
+  prefix-sum pe ZILE (25d) — ordinea intra-zi nu contează pentru solduri, doar
+  pentru existența loturilor (FCT înaintea vânzării care îi pin-uiește lotul);
+  excepțiile cad în supapa §12.1 cu raport.
+- **Bucla lunii**: documente → imperecheri → ITV → reconciliere → verdict
+  (vezi §11/1C-c — ITV intră în buclă).
+- **Lună picată: stop dur implicit** (exit ≠ 0 cu raportul complet) + flag
+  `--continua` pentru rulările de recoltat găuri; diferențele
+  justificate/cunoscute (netarea §12.1, artefactele sursei) se **poartă
+  înainte** dintr-o lună în alta de reconciliator — altfel o diferență din
+  ianuarie face zgomot în toate lunile următoare.
+- **Progres**: contoare per tip la fiecare 1.000 de documente + durata per
+  lună; prima rulare reală = ianuarie singur (`--pana-la`), cu măsurătoare —
+  abia cifra de acolo decide dacă se discută performanță (§3).

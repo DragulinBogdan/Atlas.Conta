@@ -635,4 +635,11 @@ Account,ParentAccount,Romana
 902,90,Decontări interne privind producţia obţinută
 903,90,Decontări interne privind diferenţele de preţ
 92,9,Conturi de calculaţie
-921,92,Cheltuielile act
+921,92,Cheltuielile activităţii de bază
+922,92,Cheltuielile activităţilor auxiliare
+923,92,Cheltuieli indirecte de producţie
+924,92,Cheltuieli generale de administraţie
+925,92,Cheltuieli de desfacere
+93,9,Costul producţiei
+931,93,Costul producţiei obţinute
+933,93,Costul producţiei în curs de execuţie
