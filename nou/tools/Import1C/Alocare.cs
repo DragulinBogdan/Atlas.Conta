@@ -20,14 +20,18 @@ namespace Import1C;
 // decide (backorder, raport, refuz). Gardianul de sold al motorului rămâne
 // autoritatea finală la operare.
 //
-// **Disponibilul e cel al ÎNTREGII linii de timp, nu soldul la dată** (pasul 4):
-// gardianul motorului cere sold ≥ 0 la sfârșitul FIECĂREI zile de la data
-// documentului încolo (25d), iar importul scrie documentele grupate pe TIP, nu
-// strict cronologic — deci în momentul în care se planifică o vânzare de pe 9
-// ianuarie, registrul poate conține deja transferul de pe 20. Un „sold la dată"
-// ar spune că lotul are marfă, iar operarea ar pica pe ziua de 20. Disponibilul
-// real e MINIMUL sumelor cumulate pe zilele ≥ data — exact mărimea pe care o poți
-// scoate fără să duci vreo zi ulterioară sub zero.
+// **Disponibilul e SOLDUL LA DATA documentului** — soldul cumulat până la ea
+// inclusiv. Până la ordinea cronologică a buclei (pasul 1 al lotului de robustețe)
+// era minimul sumelor cumulate pe zilele ≥ data: importul scria documentele
+// grupate pe TIP, deci în momentul în care se planifica o vânzare de pe 3 ianuarie
+// registrul putea conține deja transferul de pe 17, iar un „sold la dată" ar fi
+// spus că lotul are marfă pe care operarea ar fi refuzat-o la 17. Prudența aia
+// costa exact ce trebuia să apere: vânzarea de pe 3 rămânea fără linie de stoc
+// deși la data ei lotul era acoperit. De când unitățile lunii se execută în
+// ordinea sursei, mișcările viitoare nu se mai scriu înaintea celor trecute, deci
+// minimul pe viitor n-are obiect. Gardianul de sold al motorului (prefix-sum pe
+// zile, 25d) rămâne autoritatea finală la operare: o alocare învechită e refuzată
+// zgomotos, nu strecurată.
 sealed class AlocareIesire {
     // Diagnostic, nu eșec (§12.1): se raportează per lună.
     public int Realocari { get; private set; }
@@ -150,25 +154,10 @@ sealed class AlocareIesire {
         return (alocari, ramas);
     }
 
-    // Cantitatea maximă care poate ieși la `data` fără ca soldul cumulat să scadă
-    // sub zero la sfârșitul vreunei zile ≥ `data` (gardianul 25d, în oglindă).
-    static decimal Disponibil(IEnumerable<(DateOnly Data, decimal Cantitate)> miscari, DateOnly data) {
-        decimal cumulat = 0, minim = decimal.MaxValue;
-        var punctat = false;
-        foreach (var zi in miscari.GroupBy(m => m.Data).OrderBy(g => g.Key)) {
-            // Punctul de control al zilei documentului: ce era în stoc ÎNAINTE de
-            // prima zi ulterioară (marfa care intră mai târziu nu se poate vinde
-            // acum).
-            if (zi.Key > data && !punctat) {
-                minim = Math.Min(minim, cumulat);
-                punctat = true;
-            }
-            cumulat += zi.Sum(m => m.Cantitate);
-            if (zi.Key >= data) {
-                minim = Math.Min(minim, cumulat);
-                punctat = true;
-            }
-        }
-        return minim == decimal.MaxValue ? cumulat : minim;
-    }
+    // Soldul lotului la sfârșitul zilei `data`: ce marfă exista în momentul
+    // documentului. Mișcările de după (dacă totuși există — un document al lunii
+    // scris deja, cu timestamp mai mare) nu scad disponibilul: le acoperă
+    // gardianul motorului la operare.
+    static decimal Disponibil(IEnumerable<(DateOnly Data, decimal Cantitate)> miscari, DateOnly data) =>
+        miscari.Where(m => m.Data <= data).Sum(m => m.Cantitate);
 }

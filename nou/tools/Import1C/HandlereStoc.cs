@@ -130,24 +130,25 @@ static class HandlerTransfer {
 
     static void Importa(ContextLuna ctx) {
         var bucla = ctx.Bucla;
-        foreach (var h in bucla.Flax.Transferuri(ctx.An, ctx.Luna)) {
-            Plan plan = null;
-            if (!bucla.EsteCunoscut(View, h.Id)) {
-                try {
-                    plan = Planifica(ctx, h);
+        foreach (var h in bucla.Flax.Transferuri(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                Plan plan = null;
+                if (!bucla.EsteCunoscut(View, h.Id)) {
+                    try {
+                        plan = Planifica(ctx, h);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(View, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (!plan.AreDocument && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(View, h.Id, ex);
-                    continue;
-                }
-                Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                    h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (!plan.AreDocument && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            if (plan == null || plan.AreDocument)
-                bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, plan));
-        }
+                if (plan == null || plan.AreDocument)
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, plan));
+            });
     }
 
     static Plan Planifica(ContextLuna ctx, FlaxTransfer h) {
@@ -269,32 +270,34 @@ static class HandlerConsum {
 
     static void Importa(ContextLuna ctx) {
         var bucla = ctx.Bucla;
-        foreach (var h in bucla.Flax.BonuriConsum(ctx.An, ctx.Luna)) {
-            // Un bon de consum poate descărca din MAI MULTE gestiuni (5 din 542
-            // pe an), iar documentul Atlas are o singură latură predatoare: se
-            // sparge în câte un bon per gestiune. Cheia de idempotență poartă
-            // gestiunea, deci reluarea rămâne exactă.
-            List<(string Depozit, Plan Plan)> peGestiune;
-            try {
-                peGestiune = Grupeaza(ctx, h);
-            }
-            catch (Exception ex) {
-                bucla.EsecPlanificare(View, h.Id, ex);
-                continue;
-            }
-            if (peGestiune.Count > 1)
-                DocumenteSparte++;
-            foreach (var (depozitHex, plan) in peGestiune) {
-                var cheie = peGestiune.Count == 1 ? h.Id : $"{h.Id}@{depozitHex}";
-                if (plan != null)
-                    Punti.Scrie(bucla, View, plan.AreDocument ? cheie + "#punte" : cheie,
-                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (plan is { AreDocument: false } && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-                if (plan == null || plan.AreDocument)
-                    bucla.ImportaDocument(View, cheie, os => Materializeaza(os, bucla.Catalog, plan));
-            }
-        }
+        foreach (var h in bucla.Flax.BonuriConsum(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                // Un bon de consum poate descărca din MAI MULTE gestiuni (5 din 542
+                // pe an), iar documentul Atlas are o singură latură predatoare: se
+                // sparge în câte un bon per gestiune. Cheia de idempotență poartă
+                // gestiunea, deci reluarea rămâne exactă. Bonurile sparte rămân O
+                // unitate: gruparea e a sursei, nu a ordinii.
+                List<(string Depozit, Plan Plan)> peGestiune;
+                try {
+                    peGestiune = Grupeaza(ctx, h);
+                }
+                catch (Exception ex) {
+                    bucla.EsecPlanificare(View, h.Id, ex);
+                    return;
+                }
+                if (peGestiune.Count > 1)
+                    DocumenteSparte++;
+                foreach (var (depozitHex, plan) in peGestiune) {
+                    var cheie = peGestiune.Count == 1 ? h.Id : $"{h.Id}@{depozitHex}";
+                    if (plan != null)
+                        Punti.Scrie(bucla, View, plan.AreDocument ? cheie + "#punte" : cheie,
+                            h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (plan is { AreDocument: false } && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
+                    if (plan == null || plan.AreDocument)
+                        bucla.ImportaDocument(View, cheie, os => Materializeaza(os, bucla.Catalog, plan));
+                }
+            });
     }
 
     // Gruparea pe gestiune se face pe SURSĂ, deci și când documentul e deja
@@ -455,31 +458,32 @@ static class HandlerDiferente {
         var linii = bucla.Flax.MaririStocMarfuri(ctx.An, ctx.Luna)
             .GroupBy(l => l.DocumentId, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
-        foreach (var h in bucla.Flax.MaririStoc(ctx.An, ctx.Luna)) {
-            // Aceeași gardă ca la factură: plusul se construiește din SECȚIUNE,
-            // deci un antet Posted care nu postează în 1C ar intra în Atlas cu lot
-            // și stoc pe care sursa nu le are (2 astfel de antete pe 2025).
-            if ((bucla.RanduriLuna.GetValueOrDefault(h.Id)?.Count ?? 0) == 0) {
-                NepostateSarite++;
-                continue;
-            }
-            Plan plan = null;
-            if (!bucla.EsteCunoscut(ViewPlus, h.Id)) {
-                try {
-                    plan = PlanificaPlus(ctx, h, linii.GetValueOrDefault(h.Id) ?? []);
+        foreach (var h in bucla.Flax.MaririStoc(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                // Aceeași gardă ca la factură: plusul se construiește din SECȚIUNE,
+                // deci un antet Posted care nu postează în 1C ar intra în Atlas cu lot
+                // și stoc pe care sursa nu le are (2 astfel de antete pe 2025).
+                if ((bucla.RanduriLuna.GetValueOrDefault(h.Id)?.Count ?? 0) == 0) {
+                    NepostateSarite++;
+                    return;
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(ViewPlus, h.Id, ex);
-                    continue;
+                Plan plan = null;
+                if (!bucla.EsteCunoscut(ViewPlus, h.Id)) {
+                    try {
+                        plan = PlanificaPlus(ctx, h, linii.GetValueOrDefault(h.Id) ?? []);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(ViewPlus, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, ViewPlus, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (!plan.AreDocument && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                Punti.Scrie(bucla, ViewPlus, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                    h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (!plan.AreDocument && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            if (plan == null || plan.AreDocument)
-                bucla.ImportaDocument(ViewPlus, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
-        }
+                if (plan == null || plan.AreDocument)
+                    bucla.ImportaDocument(ViewPlus, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+            });
     }
 
     static Plan PlanificaPlus(ContextLuna ctx, FlaxAjustareStoc h, List<FlaxAjustareStocMarfa> linii) {
@@ -526,24 +530,25 @@ static class HandlerDiferente {
     // și NETESTAT pe date reale; apariția unuia îl exersează.
     static void ImportaMinus(ContextLuna ctx) {
         var bucla = ctx.Bucla;
-        foreach (var h in bucla.Flax.DiminuariStoc(ctx.An, ctx.Luna)) {
-            Plan plan = null;
-            if (!bucla.EsteCunoscut(ViewMinus, h.Id)) {
-                try {
-                    plan = PlanificaMinus(ctx, h);
+        foreach (var h in bucla.Flax.DiminuariStoc(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                Plan plan = null;
+                if (!bucla.EsteCunoscut(ViewMinus, h.Id)) {
+                    try {
+                        plan = PlanificaMinus(ctx, h);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(ViewMinus, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, ViewMinus, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (!plan.AreDocument && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(ViewMinus, h.Id, ex);
-                    continue;
-                }
-                Punti.Scrie(bucla, ViewMinus, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                    h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (!plan.AreDocument && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            if (plan == null || plan.AreDocument)
-                bucla.ImportaDocument(ViewMinus, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
-        }
+                if (plan == null || plan.AreDocument)
+                    bucla.ImportaDocument(ViewMinus, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+            });
     }
 
     static Plan PlanificaMinus(ContextLuna ctx, FlaxAjustareStoc h) {

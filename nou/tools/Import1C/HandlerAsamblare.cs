@@ -69,34 +69,36 @@ static class HandlerAsamblare {
             ? bucla.Flax.Asamblari(ctx.An, ctx.Luna)
             : bucla.Flax.Dezasamblari(ctx.An, ctx.Luna);
 
-        foreach (var h in antete) {
-            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
-            if (randuri.Count == 0)
-                continue;
-            Plan plan = null;
-            if (!bucla.EsteCunoscut(view, h.Id)) {
-                try {
-                    plan = Planifica(ctx, view, h, randuri);
+        foreach (var h in antete)
+            ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                if (randuri.Count == 0)
+                    return;
+                Plan plan = null;
+                if (!bucla.EsteCunoscut(view, h.Id)) {
+                    try {
+                        plan = Planifica(ctx, view, h, randuri);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(view, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, view, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (!plan.AreDocument && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(view, h.Id, ex);
-                    continue;
+                if (plan == null || plan.AreDocument) {
+                    bucla.ImportaDocument(view, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+                    // Transferul produselor în depozitul lor: document propriu, DUPĂ
+                    // asamblare (loturile există abia acum — se caută în index pe cheia
+                    // lor 1C, exact ca orice pin ulterior). Rămâne în ACEEAȘI unitate:
+                    // ordinea asamblare → transfer e internă, nu cronologică.
+                    if (plan == null || plan.CereTransfer)
+                        bucla.ImportaDocument(view, h.Id + "#btr",
+                            os => TransferaProduse(os, bucla.Catalog, plan, h.Numar));
                 }
-                Punti.Scrie(bucla, view, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                    h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (!plan.AreDocument && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            if (plan == null || plan.AreDocument) {
-                bucla.ImportaDocument(view, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
-                // Transferul produselor în depozitul lor: document propriu, DUPĂ
-                // asamblare (loturile există abia acum — se caută în index pe cheia
-                // lor 1C, exact ca orice pin ulterior).
-                if (plan == null || plan.CereTransfer)
-                    bucla.ImportaDocument(view, h.Id + "#btr",
-                        os => TransferaProduse(os, bucla.Catalog, plan, h.Numar));
-            }
-        }
+            });
     }
 
     static Plan Planifica(ContextLuna ctx, string view, FlaxAsamblare h,

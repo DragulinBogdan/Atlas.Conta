@@ -130,31 +130,32 @@ static class HandlerCompensare {
 
     static void Importa(ContextLuna ctx) {
         var bucla = ctx.Bucla;
-        foreach (var h in bucla.Flax.Compensari(ctx.An, ctx.Luna)) {
-            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
-            if (randuri.Count == 0) {
-                AnteteFaraRanduri++;
-                continue;
-            }
-            List<NoteComune.Linie> linii = null;
-            if (!bucla.EsteCunoscut(View, h.Id)) {
-                try {
-                    linii = Planifica(ctx, h, randuri);
+        foreach (var h in bucla.Flax.Compensari(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                if (randuri.Count == 0) {
+                    AnteteFaraRanduri++;
+                    return;
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(View, h.Id, ex);
-                    continue;
+                List<NoteComune.Linie> linii = null;
+                if (!bucla.EsteCunoscut(View, h.Id)) {
+                    try {
+                        linii = Planifica(ctx, h, randuri);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(View, h.Id, ex);
+                        return;
+                    }
+                    if (linii.Count == 0)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                if (linii.Count == 0)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            if (linii is { Count: 0 })
-                continue;
-            if (bucla.ImportaDocument(View, h.Id,
-                    os => NoteComune.Materializeaza(os, bucla.Catalog, DateOnly.FromDateTime(h.Data),
-                        h.Numar, linii)) == StareImport.Importat)
-                Note++;
-        }
+                if (linii is { Count: 0 })
+                    return;
+                if (bucla.ImportaDocument(View, h.Id,
+                        os => NoteComune.Materializeaza(os, bucla.Catalog, DateOnly.FromDateTime(h.Data),
+                            h.Numar, linii)) == StareImport.Importat)
+                    Note++;
+            });
     }
 
     static List<NoteComune.Linie> Planifica(ContextLuna ctx, FlaxCompensare h,
@@ -280,32 +281,33 @@ static class HandlereNoteSimple {
                 .ToDictionary(x => (x.DocumentId, x.Linie), x => x, TupluOrdinal.Instanta)
             : null;
 
-        foreach (var h in sursa.Antete(ctx)) {
-            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
-            if (randuri.Count == 0) {
-                AnteteFaraRanduri++;
-                continue;
-            }
-            List<NoteComune.Linie> linii = null;
-            if (!bucla.EsteCunoscut(sursa.View, h.Id)) {
-                try {
-                    linii = NoteComune.Transcrie(bucla.Catalog, sursa.View, h.Id, randuri, sursa.SareTva,
-                        dimensiuni == null ? null : linie => Repartitori(bucla, dimensiuni, h.Id, linie));
+        foreach (var h in sursa.Antete(ctx))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                if (randuri.Count == 0) {
+                    AnteteFaraRanduri++;
+                    return;
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(sursa.View, h.Id, ex);
-                    continue;
+                List<NoteComune.Linie> linii = null;
+                if (!bucla.EsteCunoscut(sursa.View, h.Id)) {
+                    try {
+                        linii = NoteComune.Transcrie(bucla.Catalog, sursa.View, h.Id, randuri, sursa.SareTva,
+                            dimensiuni == null ? null : linie => Repartitori(bucla, dimensiuni, h.Id, linie));
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(sursa.View, h.Id, ex);
+                        return;
+                    }
+                    if (linii.Count == 0)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                if (linii.Count == 0)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            if (linii is { Count: 0 })
-                continue;
-            if (bucla.ImportaDocument(sursa.View, h.Id,
-                    os => NoteComune.Materializeaza(os, bucla.Catalog, DateOnly.FromDateTime(h.Data),
-                        h.Numar, linii)) == StareImport.Importat)
-                note[sursa.View] = note.GetValueOrDefault(sursa.View) + 1;
-        }
+                if (linii is { Count: 0 })
+                    return;
+                if (bucla.ImportaDocument(sursa.View, h.Id,
+                        os => NoteComune.Materializeaza(os, bucla.Catalog, DateOnly.FromDateTime(h.Data),
+                            h.Numar, linii)) == StareImport.Importat)
+                    note[sursa.View] = note.GetValueOrDefault(sursa.View) + 1;
+            });
     }
 
     static (Guid? Debit, Guid? Credit) Repartitori(BuclaImport bucla,

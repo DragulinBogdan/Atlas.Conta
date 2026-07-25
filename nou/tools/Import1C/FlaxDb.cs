@@ -282,8 +282,73 @@ partial class FlaxDb(string connectionString) : IDisposable {
             ["000018C0"] = ("ReevaluareMF", 6336),
         };
 
+    // ---- Rezistența la REGENERAREA view-urilor SkyConta ----
+    // Regenerarea din 25.07.2026 (precondiția 1C-d) a schimbat FORMA sursei, nu
+    // doar conținutul ei: `DiminuareStocDeMarfuri` și-a pierdut și coloana
+    // `DocReferinta_..._ID` din `NoteContabile`, și coloana `Posted` din view-ul
+    // propriu (rămâne un antet fără flag de postare, cu 3 rânduri, niciunul în
+    // 2025 — tipul are zero documente pe anul importat, ca la prima rulare).
+    // O coloană inexistentă face interogarea să pice cu „Invalid column name",
+    // adică toată unealta moare la pre-flight din cauza unui tip MORT.
+    //
+    // Regula adoptată: declarațiile de mai sus NU se scurtează (contractul de
+    // coloane §2 rămâne ce ne așteptăm să găsim), dar se INTERSECTEAZĂ cu ce
+    // expune baza acum, iar diferența se STRIGĂ o dată. Un tip declarat pe care
+    // sursa nu-l mai expune devine astfel semnalul pe care designul îl prevede
+    // (nume NULL în recensământ, zero antete), nu o oprire brutală.
+    readonly Dictionary<string, bool> coloanaExista = new(StringComparer.OrdinalIgnoreCase);
+
+    bool AreColoana(string obiect, string coloana) {
+        var cheie = $"{obiect}.{coloana}";
+        if (coloanaExista.TryGetValue(cheie, out var exista))
+            return exista;
+        return coloanaExista[cheie] = Query(
+            "select count(*) from sys.columns where object_id = object_id(@o) and name = @c",
+            r => Int(r, 0), ("@o", $"flax.{obiect}"), ("@c", coloana)).Single() > 0;
+    }
+
+    // Un view de document e citibil doar dacă poartă flagul de postare: filtrul
+    // `Posted <> 0x00` e în toate interogările de antet (`FiltruLuna`).
+    public bool ViewPostabil(string view) {
+        if (AreColoana(view, "Posted"))
+            return true;
+        if (viewuriNepostabile.Add(view))
+            Console.WriteLine($"  ATENȚIE: view-ul flax.{view} nu mai expune coloana `Posted` "
+                + "(regenerare SkyConta) — tipul se tratează ca fiind FĂRĂ antete în fereastra "
+                + "importată. Dacă sursa capătă documente de tipul ăsta, se pierd TĂCUT: "
+                + "cititorul lui trebuie refăcut pe forma nouă a view-ului.");
+        return false;
+    }
+
+    readonly HashSet<string> viewuriNepostabile = new(StringComparer.OrdinalIgnoreCase);
+
+    // Lista declarată mai sus, INTERSECTATĂ cu ce expune view-ul chiar acum.
+    // O regenerare a view-urilor SkyConta poate scoate coloane (25.07.2026:
+    // `DiminuareStocDeMarfuri` și `Stornare` au dispărut din `NoteContabile`, deși
+    // view-urile lor proprii există), iar un `case` pe o coloană inexistentă face
+    // interogarea să pice cu „Invalid column name" — adică toată unealta moare la
+    // pre-flight. Filtrarea o transformă în exact semnalul pe care designul îl
+    // prevede: tipul rămâne DECLARAT, dar iese cu nume NULL, iar recensământul de
+    // pre-flight îl raportează ca tip pe care view-ul nu-l expune. Declarația nu
+    // se scurtează niciodată tăcut — tipurile pierdute se listează o dată.
+    string[] tipuriCuColoanaVii;
+
+    string[] TipuriCuColoanaVii() {
+        if (tipuriCuColoanaVii != null)
+            return tipuriCuColoanaVii;
+        tipuriCuColoanaVii = TipuriCuColoana
+            .Where(t => AreColoana("NoteContabile", $"DocReferinta_{t}_ID")).ToArray();
+        var lipsa = TipuriCuColoana.Except(tipuriCuColoanaVii, StringComparer.Ordinal).ToList();
+        if (lipsa.Count > 0)
+            Console.WriteLine($"  ATENȚIE: view-ul flax.NoteContabile nu mai expune coloana "
+                + $"DocReferinta_<tip>_ID pentru: {string.Join(", ", lipsa)} (regenerare SkyConta) "
+                + "— tipurile rămân declarate, dar rândurile lor (dacă apar) ies fără nume în "
+                + "recensământ, iar pre-flight-ul le raportează ca tipuri necunoscute.");
+        return tipuriCuColoanaVii;
+    }
+
     public List<FlaxTipRecorder> TipuriRecorder(int an) {
-        var cazuri = string.Join("\n                                 ", TipuriCuColoana
+        var cazuri = string.Join("\n                                 ", TipuriCuColoanaVii()
             .Select(t => $"when DocReferinta_{t}_ID is not null then '{t}'"));
         return Query($@"select convert(varchar(10), DocReferinta_Type, 2),
                                max(case {cazuri} end),

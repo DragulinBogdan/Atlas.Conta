@@ -50,71 +50,72 @@ static class HandlerVanzare {
             .GroupBy(s => s.DocumentId, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
 
-        foreach (var h in bucla.Flax.Vanzari(ctx.An, ctx.Luna)) {
-            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
-            // Antet POSTAT care nu POSTEAZĂ (garda facturii de intrare, pasul 3):
-            // fără rânduri contabile n-are ce muta nici în stoc, nici în conturi —
-            // l-am inventa noi din secțiuni.
-            if (randuri.Count == 0) {
-                NepostateSarite++;
-                continue;
-            }
-            var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
-
-            // Cheile pe care documentul TREBUIE să le producă, deduse din sursă
-            // fără planificare (gardul reluării).
-            var areVenit = marfuri.ContainsKey(h.Id) || servicii.ContainsKey(h.Id);
-            var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
-            var areCard = randuri.Any(r => EsteIncasareCard(cat, r));
-            // Se citește ÎNAINTE de planificare: `Punti.Scrie` leagă cheia punții
-            // în aceeași trecere, deci după ea n-am mai putea distinge „puntea e a
-            // rulării de acum" de „puntea e a unei rulări anterioare".
-            var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
-            var cunoscut = (!areVenit || bucla.EsteCunoscut(View, h.Id))
-                && depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
-                && (!areCard || bucla.EsteCunoscut(View, h.Id + "#card"));
-
-            Plan plan = null;
-            if (!cunoscut) {
-                try {
-                    plan = Planifica(ctx, h, randuri, index,
-                        marfuri.GetValueOrDefault(h.Id) ?? [], servicii.GetValueOrDefault(h.Id) ?? []);
+        foreach (var h in bucla.Flax.Vanzari(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                // Antet POSTAT care nu POSTEAZĂ (garda facturii de intrare, pasul 3):
+                // fără rânduri contabile n-are ce muta nici în stoc, nici în conturi —
+                // l-am inventa noi din secțiuni.
+                if (randuri.Count == 0) {
+                    NepostateSarite++;
+                    return;
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(View, h.Id, ex);
-                    continue;
-                }
-                Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                    plan.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (!plan.AreDocument && !plan.Punte.AreCeva && depozite.Count == 0)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
+                var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
 
-            // Fabricile de mai jos primesc `plan == null` pe două căi: documentul
-            // e deja importat (cheia e cunoscută, deci nici nu se apelează) sau
-            // legătura e ORFANĂ și `ImportaDocument` cere draftul din nou — atunci
-            // nu-l putem construi fără plan, deci întoarcem null (se raportează ca
-            // sărit, iar rularea următoare replanifică pe legătura ștearsă).
-            if (areVenit)
-                bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan));
-            foreach (var depozit in depozite) {
-                var cheie = Descarcare1C.Cheie(h.Id, depozit);
-                if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheie))
-                    continue;
-                bucla.ImportaDocument(View, cheie,
-                    os => plan == null ? null
-                        : Descarcare1C.Materializeaza(os, Grup(plan, depozit), plan.Data,
-                            $"{h.Numar}-D", plan.PartenerId, bucla.Tinta(View, h.Id)));
-            }
-            if (areCard)
-                bucla.ImportaDocument(View, h.Id + "#card", os => {
-                    if (plan == null)
-                        return null;
-                    IncasariCard++;
-                    return Trezorerie1C.Incasare(os, cat, plan.Data, $"{h.Numar}-C",
-                        plan.PartenerId, cat.ContPropriuCard(), plan.SumaCard);
-                });
-        }
+                // Cheile pe care documentul TREBUIE să le producă, deduse din sursă
+                // fără planificare (gardul reluării).
+                var areVenit = marfuri.ContainsKey(h.Id) || servicii.ContainsKey(h.Id);
+                var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
+                var areCard = randuri.Any(r => EsteIncasareCard(cat, r));
+                // Se citește ÎNAINTE de planificare: `Punti.Scrie` leagă cheia punții
+                // în aceeași trecere, deci după ea n-am mai putea distinge „puntea e a
+                // rulării de acum" de „puntea e a unei rulări anterioare".
+                var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
+                var cunoscut = (!areVenit || bucla.EsteCunoscut(View, h.Id))
+                    && depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
+                    && (!areCard || bucla.EsteCunoscut(View, h.Id + "#card"));
+
+                Plan plan = null;
+                if (!cunoscut) {
+                    try {
+                        plan = Planifica(ctx, h, randuri, index,
+                            marfuri.GetValueOrDefault(h.Id) ?? [], servicii.GetValueOrDefault(h.Id) ?? []);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(View, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                        plan.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (!plan.AreDocument && !plan.Punte.AreCeva && depozite.Count == 0)
+                        bucla.NumaraSursaFaraCorespondent();
+                }
+
+                // Fabricile de mai jos primesc `plan == null` pe două căi: documentul
+                // e deja importat (cheia e cunoscută, deci nici nu se apelează) sau
+                // legătura e ORFANĂ și `ImportaDocument` cere draftul din nou — atunci
+                // nu-l putem construi fără plan, deci întoarcem null (se raportează ca
+                // sărit, iar rularea următoare replanifică pe legătura ștearsă).
+                if (areVenit)
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan));
+                foreach (var depozit in depozite) {
+                    var cheie = Descarcare1C.Cheie(h.Id, depozit);
+                    if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheie))
+                        continue;
+                    bucla.ImportaDocument(View, cheie,
+                        os => plan == null ? null
+                            : Descarcare1C.Materializeaza(os, Grup(plan, depozit), plan.Data,
+                                $"{h.Numar}-D", plan.PartenerId, bucla.Tinta(View, h.Id)));
+                }
+                if (areCard)
+                    bucla.ImportaDocument(View, h.Id + "#card", os => {
+                        if (plan == null)
+                            return null;
+                        IncasariCard++;
+                        return Trezorerie1C.Incasare(os, cat, plan.Data, $"{h.Numar}-C",
+                            plan.PartenerId, cat.ContPropriuCard(), plan.SumaCard);
+                    });
+            });
     }
 
     // Grupul de descărcare al unui depozit; `null` când documentul e deja importat
@@ -298,72 +299,73 @@ static class HandlerAmanunt {
             .GroupBy(s => s.DocumentId, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
 
-        foreach (var h in bucla.Flax.RapoarteAmanunt(ctx.An, ctx.Luna)) {
-            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
-            if (randuri.Count == 0) {
-                NepostateSarite++;
-                continue;
-            }
-            var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
-            var areVenit = marfuri.ContainsKey(h.Id) || servicii.ContainsKey(h.Id);
-            var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
-            // Cheile încasărilor sunt derivabile din rândurile de trezorerie, deci
-            // intră și ele în gardul reluării (ca descărcările).
-            var cheiIncasari = randuri.Where(r => (cat.Mapeaza(r.ContCredit)?.StartsWith("411") ?? false)
-                    && (cat.Mapeaza(r.ContDebit)?.StartsWith('5') ?? false))
-                .Select(r => $"{h.Id}#inc{r.Linie}").ToList();
-            var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
-            var cunoscut = (!areVenit || bucla.EsteCunoscut(View, h.Id))
-                && depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
-                && cheiIncasari.All(c => bucla.EsteCunoscut(View, c));
-
-            Plan plan = null;
-            if (!cunoscut) {
-                try {
-                    plan = Planifica(ctx, h, randuri, index,
-                        marfuri.GetValueOrDefault(h.Id) ?? [], servicii.GetValueOrDefault(h.Id) ?? []);
+        foreach (var h in bucla.Flax.RapoarteAmanunt(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                if (randuri.Count == 0) {
+                    NepostateSarite++;
+                    return;
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(View, h.Id, ex);
-                    continue;
-                }
-                Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                    h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (!plan.AreDocument && !plan.Punte.AreCeva && depozite.Count == 0)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
+                var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
+                var areVenit = marfuri.ContainsKey(h.Id) || servicii.ContainsKey(h.Id);
+                var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
+                // Cheile încasărilor sunt derivabile din rândurile de trezorerie, deci
+                // intră și ele în gardul reluării (ca descărcările).
+                var cheiIncasari = randuri.Where(r => (cat.Mapeaza(r.ContCredit)?.StartsWith("411") ?? false)
+                        && (cat.Mapeaza(r.ContDebit)?.StartsWith('5') ?? false))
+                    .Select(r => $"{h.Id}#inc{r.Linie}").ToList();
+                var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
+                var cunoscut = (!areVenit || bucla.EsteCunoscut(View, h.Id))
+                    && depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
+                    && cheiIncasari.All(c => bucla.EsteCunoscut(View, c));
 
-            if (areVenit)
-                bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan));
-            var sursaId = bucla.Tinta(View, h.Id);
-            foreach (var depozit in depozite) {
-                var cheieDsc = Descarcare1C.Cheie(h.Id, depozit);
-                if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheieDsc))
-                    continue;
-                bucla.ImportaDocument(View, cheieDsc,
-                    os => plan == null ? null
-                        : Descarcare1C.Materializeaza(os,
-                            plan.Descarcari.FirstOrDefault(g => g.DepozitHex == depozit), plan.Data,
-                            $"{h.Numar}-D", cat.ConsumatorFinalId, sursaId));
-            }
-            // Încasarea retailului: una per formă de plată, pe consumatorul final.
-            if (plan is { RetailNumerar: > 0 })
-                bucla.ImportaDocument(View, h.Id + "#numerar", os => Trezorerie1C.Incasare(os, cat,
-                    plan.Data, $"{h.Numar}-N", cat.ConsumatorFinalId, plan.ContCasaId, plan.RetailNumerar));
-            else if (plan == null)
-                bucla.ImportaDocument(View, h.Id + "#numerar", _ => null);
-            if (plan is { RetailCard: > 0 })
-                bucla.ImportaDocument(View, h.Id + "#card", os => Trezorerie1C.Incasare(os, cat,
-                    plan.Data, $"{h.Numar}-C", cat.ConsumatorFinalId, cat.ContPropriuCard(), plan.RetailCard));
-            else if (plan == null)
-                bucla.ImportaDocument(View, h.Id + "#card", _ => null);
-            foreach (var cheie in cheiIncasari) {
-                var inc = plan?.PeFacturi.FirstOrDefault(x => $"{h.Id}#inc{x.Linie}" == cheie);
-                bucla.ImportaDocument(View, cheie, os => inc == null ? null
-                    : Trezorerie1C.Incasare(os, cat, plan.Data, $"{h.Numar}-{inc.Linie}",
-                        inc.PartenerId, inc.ContPropriuId, inc.Suma));
-            }
-        }
+                Plan plan = null;
+                if (!cunoscut) {
+                    try {
+                        plan = Planifica(ctx, h, randuri, index,
+                            marfuri.GetValueOrDefault(h.Id) ?? [], servicii.GetValueOrDefault(h.Id) ?? []);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(View, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (!plan.AreDocument && !plan.Punte.AreCeva && depozite.Count == 0)
+                        bucla.NumaraSursaFaraCorespondent();
+                }
+
+                if (areVenit)
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan));
+                var sursaId = bucla.Tinta(View, h.Id);
+                foreach (var depozit in depozite) {
+                    var cheieDsc = Descarcare1C.Cheie(h.Id, depozit);
+                    if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheieDsc))
+                        continue;
+                    bucla.ImportaDocument(View, cheieDsc,
+                        os => plan == null ? null
+                            : Descarcare1C.Materializeaza(os,
+                                plan.Descarcari.FirstOrDefault(g => g.DepozitHex == depozit), plan.Data,
+                                $"{h.Numar}-D", cat.ConsumatorFinalId, sursaId));
+                }
+                // Încasarea retailului: una per formă de plată, pe consumatorul final.
+                if (plan is { RetailNumerar: > 0 })
+                    bucla.ImportaDocument(View, h.Id + "#numerar", os => Trezorerie1C.Incasare(os, cat,
+                        plan.Data, $"{h.Numar}-N", cat.ConsumatorFinalId, plan.ContCasaId, plan.RetailNumerar));
+                else if (plan == null)
+                    bucla.ImportaDocument(View, h.Id + "#numerar", _ => null);
+                if (plan is { RetailCard: > 0 })
+                    bucla.ImportaDocument(View, h.Id + "#card", os => Trezorerie1C.Incasare(os, cat,
+                        plan.Data, $"{h.Numar}-C", cat.ConsumatorFinalId, cat.ContPropriuCard(), plan.RetailCard));
+                else if (plan == null)
+                    bucla.ImportaDocument(View, h.Id + "#card", _ => null);
+                foreach (var cheie in cheiIncasari) {
+                    var inc = plan?.PeFacturi.FirstOrDefault(x => $"{h.Id}#inc{x.Linie}" == cheie);
+                    bucla.ImportaDocument(View, cheie, os => inc == null ? null
+                        : Trezorerie1C.Incasare(os, cat, plan.Data, $"{h.Numar}-{inc.Linie}",
+                            inc.PartenerId, inc.ContPropriuId, inc.Suma));
+                }
+            });
     }
 
     static Plan Planifica(ContextLuna ctx, FlaxRaportAmanunt h, IReadOnlyList<FlaxRandNota> randuri,
@@ -498,44 +500,45 @@ static class HandlerAvizIesire {
     static void Importa(ContextLuna ctx) {
         var bucla = ctx.Bucla;
         var cat = bucla.Catalog;
-        foreach (var h in bucla.Flax.AvizeIesire(ctx.An, ctx.Luna)) {
-            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
-            if (randuri.Count == 0) {
-                NepostateSarite++;
-                continue;
-            }
-            var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
-            var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
-            var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
-            var cunoscut = depozite.Count > 0
-                ? depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
-                : bucla.EsteCunoscut(View, h.Id);
+        foreach (var h in bucla.Flax.AvizeIesire(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                if (randuri.Count == 0) {
+                    NepostateSarite++;
+                    return;
+                }
+                var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
+                var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
+                var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
+                var cunoscut = depozite.Count > 0
+                    ? depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
+                    : bucla.EsteCunoscut(View, h.Id);
 
-            Plan plan = null;
-            if (!cunoscut) {
-                try {
-                    plan = Planifica(ctx, h, randuri, index);
+                Plan plan = null;
+                if (!cunoscut) {
+                    try {
+                        plan = Planifica(ctx, h, randuri, index);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(View, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, View, depozite.Count > 0 ? h.Id + "#punte" : h.Id,
+                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (depozite.Count == 0 && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(View, h.Id, ex);
-                    continue;
+                foreach (var depozit in depozite) {
+                    if (Reluare1C.Blocheaza(bucla, View, punteVeche, Descarcare1C.Cheie(h.Id, depozit)))
+                        continue;
+                    Descarcari++;
+                    bucla.ImportaDocument(View, Descarcare1C.Cheie(h.Id, depozit),
+                        os => plan == null ? null
+                            : Descarcare1C.Materializeaza(os,
+                                plan.Descarcari.FirstOrDefault(g => g.DepozitHex == depozit),
+                                plan.Data, h.Numar, plan.PartenerId, null));
                 }
-                Punti.Scrie(bucla, View, depozite.Count > 0 ? h.Id + "#punte" : h.Id,
-                    h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (depozite.Count == 0 && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            foreach (var depozit in depozite) {
-                if (Reluare1C.Blocheaza(bucla, View, punteVeche, Descarcare1C.Cheie(h.Id, depozit)))
-                    continue;
-                Descarcari++;
-                bucla.ImportaDocument(View, Descarcare1C.Cheie(h.Id, depozit),
-                    os => plan == null ? null
-                        : Descarcare1C.Materializeaza(os,
-                            plan.Descarcari.FirstOrDefault(g => g.DepozitHex == depozit),
-                            plan.Data, h.Numar, plan.PartenerId, null));
-            }
-        }
+            });
     }
 
     static Plan Planifica(ContextLuna ctx, FlaxAvizIesire h, IReadOnlyList<FlaxRandNota> randuri,
@@ -598,29 +601,30 @@ static class HandlerAvizIntrare {
 
     static void Importa(ContextLuna ctx) {
         var bucla = ctx.Bucla;
-        foreach (var h in bucla.Flax.AvizeIntrare(ctx.An, ctx.Luna)) {
-            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
-            if (randuri.Count == 0) {
-                NepostateSarite++;
-                continue;
-            }
-            Plan plan = null;
-            if (!bucla.EsteCunoscut(View, h.Id)) {
-                try {
-                    plan = Planifica(ctx, h, randuri);
+        foreach (var h in bucla.Flax.AvizeIntrare(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                if (randuri.Count == 0) {
+                    NepostateSarite++;
+                    return;
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(View, h.Id, ex);
-                    continue;
+                Plan plan = null;
+                if (!bucla.EsteCunoscut(View, h.Id)) {
+                    try {
+                        plan = Planifica(ctx, h, randuri);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(View, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (!plan.AreDocument && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                    h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (!plan.AreDocument && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            if (plan == null || plan.AreDocument)
-                bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
-        }
+                if (plan == null || plan.AreDocument)
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+            });
     }
 
     static Plan Planifica(ContextLuna ctx, FlaxAvizIntrare h, IReadOnlyList<FlaxRandNota> randuri) {

@@ -16,12 +16,39 @@ namespace Import1C;
 // sursa, importul la cerere, supapa de alocare), ca handler-ele să fie funcții
 // pure de context — se pot înregistra STATIC, înainte ca bucla să existe (faza
 // pre-flight are nevoie de lista lor înainte de orice import).
-sealed record ContextLuna(int An, int Luna, DateOnly Prima, DateOnly Ultima, BuclaImport Bucla);
+sealed record ContextLuna(int An, int Luna, DateOnly Prima, DateOnly Ultima, BuclaImport Bucla) {
+    // Înregistrează o unitate de import. `moment` e data-oră a ANTETULUI sursă
+    // (nu `DateOnly` — ora e ordinea de introducere a sursei și e singurul
+    // criteriu care desparte două documente din aceeași zi), `numar` e numărul
+    // documentului, folosit doar ca tiebreak stabil.
+    public void Planifica(DateTime moment, string numar, Action executa) =>
+        Bucla.Planifica(moment, numar, executa);
+}
 
 // Un tip de document 1C și rutina care îi mătură luna. `TipRecorder` e numele
 // tipului din sursă (coloana tipizată `DocReferinta_<Tip>` — vezi FlaxDb) și e
 // cheia cu care pre-flight-ul verifică acoperirea.
+//
+// `Importa` NU mai importă când e chemată: **colectează unități** (`ctx.Planifica`),
+// pe care bucla le execută în ordinea cronologiei sursei. Citirea antetelor și a
+// secțiunilor rămâne per view, o dată pe lună — se amână doar execuția.
 sealed record HandlerTip(string TipRecorder, string Descriere, Action<ContextLuna> Importa);
+
+// O unitate de import amânată: TOT ce se întâmplă pentru un document-sursă
+// (planificarea cu alocările ei, puntea, materializarea, operarea, documentele
+// secundare pe care le naște). Handlerele care GRUPEAZĂ mai multe rânduri-sursă
+// într-un document Atlas (extrasul, raportul de amănunt, compensarea) rămân cu
+// unitatea lor de azi — gruparea nu se sparge, doar se amână.
+//
+// De ce (măsurat pe ianuarie): nicio ordine fixă pe TIPURI nu poate fi corectă
+// simultan pentru toate cazurile. Transferurile din 10–30.01, importate înaintea
+// vânzărilor, coborau soldul unui lot la zero pe 17.01, iar vânzarea din 03.01 —
+// care la data ei avea acoperire — rămânea fără linie de stoc; invers, o
+// dezasamblare din 14.01 naște un lot pe care transferul din 18.01 îl mută, dar
+// mutările veneau înaintea transformărilor și mișcarea se pierdea. Singura ordine
+// care le satisface pe toate e ordinea SURSEI: antetele 1C au oră, adică ordinea
+// în care documentele au fost introduse.
+sealed record UnitateImport(DateTime Moment, int OrdineTip, string Tip, string Numar, Action Executa);
 
 static class Handlere {
     // Maparea §4 a designului, ca listă de tipuri CUNOSCUTE: tipurile pe care
@@ -41,13 +68,13 @@ static class Handlere {
     };
 
     // Pașii 3–5 adaugă aici câte o înregistrare per tip.
-    // Ordinea din listă = ordinea ÎN INTERIORUL lunii, iar criteriul e unul
-    // singur: **tot ce ADAUGĂ stoc înaintea a tot ce CONSUMĂ stoc.** Gardianul de
-    // sold e prefix-sum pe zile (25d), deci datele nu contează pentru solduri —
-    // dar o ieșire planificată înainte ca intrarea ei să existe în registru nu-și
-    // găsește acoperirea și cade în supapa 48a, cu tot cortegiul de realocări și
-    // transcrieri. Măsurat pe ianuarie: ordinea greșită lăsa 190 de documente
-    // nematerializate la prima trecere (le prindea a doua rulare).
+    //
+    // Ordinea listei NU mai e ordinea de import: documentele lunii se execută
+    // CRONOLOGIC, după data-oră a antetului sursă (vezi `UnitateImport`). Poziția
+    // în listă a rămas doar TIEBREAK la timestamp identic — și în rolul ăsta
+    // criteriul de mai jos e în continuare cel bun: la aceeași secundă, tot ce
+    // ADAUGĂ stoc înaintea a tot ce CONSUMĂ stoc, ca ieșirea să-și găsească
+    // acoperirea fără să treacă prin supapa 48a.
     public static readonly IReadOnlyList<HandlerTip> Toate = [
         // 1. INTRĂRILE — nasc loturi: factura (cu NIR-ul conex), avizul de intrare
         //    (plus de inventar), returul de la client (marfa revine în gestiune).
@@ -156,6 +183,14 @@ sealed class BuclaImport {
     int an, luna;
     Stopwatch cronometruLuna;
 
+    // Unitățile lunii, colectate de handlere și executate cronologic.
+    readonly List<UnitateImport> unitati = [];
+    int ordineTipCurent;
+    string tipCurent = "";
+
+    public void Planifica(DateTime moment, string numar, Action executa) =>
+        unitati.Add(new UnitateImport(moment, ordineTipCurent, tipCurent, numar ?? "", executa));
+
     public FlaxDb Flax { get; }
     public ImportLaCerere LaCerere { get; }
     public AlocareIesire Alocare { get; }
@@ -251,7 +286,15 @@ sealed class BuclaImport {
         Console.WriteLine($"\n--- Luna {luna:00}/{an} ---");
         RanduriLuna = Flax.RanduriNotaPeLuna(an, luna);
         SubcontoLuna = Flax.SubcontoNotaPeLuna(an, luna);
-        foreach (var h in Handlere.Toate) {
+
+        // Trecerea 1a — COLECTAREA: fiecare handler își citește antetele lunii
+        // (o interogare per view, ca înainte) și înregistrează câte o unitate per
+        // document-sursă. Nu se atinge încă nimic în baza țintă.
+        unitati.Clear();
+        for (var i = 0; i < Handlere.Toate.Count; i++) {
+            var h = Handlere.Toate[i];
+            ordineTipCurent = i;
+            tipCurent = h.TipRecorder;
             try {
                 h.Importa(ctx);
             }
@@ -263,6 +306,29 @@ sealed class BuclaImport {
         if (Handlere.Toate.Count == 0)
             Console.WriteLine("  (niciun handler înregistrat — pașii 3–5 îi adaugă; "
                 + "bucla rulează în gol, deliberat.)");
+
+        // Trecerea 1b — EXECUȚIA, în ordinea sursei: data-oră a antetului, apoi
+        // poziția tipului în `Handlere.Toate` (tiebreak la timestamp identic),
+        // apoi numărul documentului. `OrderBy` e stabil, deci la chei egale rămâne
+        // ordinea de enumerare a sursei.
+        var planificate = unitati
+            .OrderBy(u => u.Moment)
+            .ThenBy(u => u.OrdineTip)
+            .ThenBy(u => u.Numar, StringComparer.Ordinal)
+            .ToList();
+        unitati.Clear();
+        Console.WriteLine($"  {planificate.Count} unități de import, executate cronologic.");
+        foreach (var u in planificate) {
+            try {
+                u.Executa();
+            }
+            catch (Exception ex) {
+                // Eșecul UNEI unități e diagnostic, ca eșecul unui document
+                // (`Esec`): se numără complet, se detaliază plafonat, iar
+                // verdictul rămâne al lunii.
+                Esec(u.Tip, u.Numar, "importul documentului", ex);
+            }
+        }
 
         Imperecheri(ctx);
         InchidereTva(ctx);

@@ -66,45 +66,46 @@ static class HandlerReturFurnizor {
             .GroupBy(m => m.DocumentId, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
 
-        foreach (var h in bucla.Flax.RetururiFurnizor(ctx.An, ctx.Luna)) {
-            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
-            if (randuri.Count == 0) {
-                NepostateSarite++;
-                continue;
-            }
-            var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
-            // Gestiunile atinse, derivate din sursă — cheile documentelor Atlas
-            // (mecanica bonului de consum: un document per gestiune predatoare).
-            var depozite = Depozite(cat, randuri, index, h.DepozitId);
-            var chei = depozite.Select(d => Cheie(h.Id, d, depozite.Count)).ToList();
-            var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
-            if (depozite.Count > 1)
-                DocumenteSparte++;
+        foreach (var h in bucla.Flax.RetururiFurnizor(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                if (randuri.Count == 0) {
+                    NepostateSarite++;
+                    return;
+                }
+                var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
+                // Gestiunile atinse, derivate din sursă — cheile documentelor Atlas
+                // (mecanica bonului de consum: un document per gestiune predatoare).
+                var depozite = Depozite(cat, randuri, index, h.DepozitId);
+                var chei = depozite.Select(d => Cheie(h.Id, d, depozite.Count)).ToList();
+                var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
+                if (depozite.Count > 1)
+                    DocumenteSparte++;
 
-            Plan plan = null;
-            if (!chei.All(c => bucla.EsteCunoscut(View, c))
-                    || (chei.Count == 0 && !bucla.EsteCunoscut(View, h.Id))) {
-                try {
-                    plan = Planifica(ctx, h, randuri, index, sectiuni.GetValueOrDefault(h.Id) ?? []);
+                Plan plan = null;
+                if (!chei.All(c => bucla.EsteCunoscut(View, c))
+                        || (chei.Count == 0 && !bucla.EsteCunoscut(View, h.Id))) {
+                    try {
+                        plan = Planifica(ctx, h, randuri, index, sectiuni.GetValueOrDefault(h.Id) ?? []);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(View, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, View, chei.Count > 0 ? h.Id + "#punte" : h.Id,
+                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (chei.Count == 0 && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(View, h.Id, ex);
-                    continue;
+                foreach (var depozit in depozite) {
+                    var cheie = Cheie(h.Id, depozit, depozite.Count);
+                    if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheie))
+                        continue;
+                    bucla.ImportaDocument(View, cheie,
+                        os => plan == null ? null
+                            : Materializeaza(os, plan, plan.Grupuri.FirstOrDefault(g => g.DepozitHex == depozit)));
                 }
-                Punti.Scrie(bucla, View, chei.Count > 0 ? h.Id + "#punte" : h.Id,
-                    h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (chei.Count == 0 && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            foreach (var depozit in depozite) {
-                var cheie = Cheie(h.Id, depozit, depozite.Count);
-                if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheie))
-                    continue;
-                bucla.ImportaDocument(View, cheie,
-                    os => plan == null ? null
-                        : Materializeaza(os, plan, plan.Grupuri.FirstOrDefault(g => g.DepozitHex == depozit)));
-            }
-        }
+            });
     }
 
     static string Cheie(string docId, string depozitHex, int total) =>
@@ -326,13 +327,16 @@ static class HandlerReturClient {
     public static int LiniiVenit { get; private set; }
     public static int LiniiCost { get; private set; }
     public static int LoturiCreate { get; private set; }
+    public static int AliasuriLot { get; private set; }
     public static int RanduriNerezolvate { get; private set; }
 
     // Linia de cost: ori revine pe un lot EXISTENT (`LotId`), ori pe unul pe care
     // importul îl creează din cheia sursei (`CheieLot` + `Pret` — vezi nota din
-    // `Planifica`).
+    // `Planifica`). `CheieAlias` = identitatea 1C a lotului ORIGINAL, când acesta
+    // nu există în Atlas: lotul creat de retur îi ține locul, iar aliasul face ca
+    // mișcările 1C ulterioare pin-uite pe original să-l regăsească.
     sealed record LinieCost(Guid TipMaterialId, decimal Cantitate, Guid? LotId,
-        Guid ProdusId, string CheieLot, decimal Pret);
+        Guid ProdusId, string CheieLot, decimal Pret, string CheieAlias);
 
     sealed class Plan {
         public Guid PartenerId;
@@ -356,30 +360,31 @@ static class HandlerReturClient {
             .GroupBy(s => s.DocumentId, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
 
-        foreach (var h in bucla.Flax.RetururiClient(ctx.An, ctx.Luna)) {
-            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
-            if (randuri.Count == 0) {
-                NepostateSarite++;
-                continue;
-            }
-            Plan plan = null;
-            if (!bucla.EsteCunoscut(View, h.Id)) {
-                try {
-                    plan = Planifica(ctx, h, randuri,
-                        marfuri.GetValueOrDefault(h.Id) ?? [], servicii.GetValueOrDefault(h.Id) ?? []);
+        foreach (var h in bucla.Flax.RetururiClient(ctx.An, ctx.Luna))
+            ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                if (randuri.Count == 0) {
+                    NepostateSarite++;
+                    return;
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(View, h.Id, ex);
-                    continue;
+                Plan plan = null;
+                if (!bucla.EsteCunoscut(View, h.Id)) {
+                    try {
+                        plan = Planifica(ctx, h, randuri,
+                            marfuri.GetValueOrDefault(h.Id) ?? [], servicii.GetValueOrDefault(h.Id) ?? []);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(View, h.Id, ex);
+                        return;
+                    }
+                    Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                        plan.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (!plan.AreDocument && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                    plan.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (!plan.AreDocument && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            if (plan == null || plan.AreDocument)
-                bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
-        }
+                if (plan == null || plan.AreDocument)
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+            });
     }
 
     static Plan Planifica(ContextLuna ctx, FlaxReturClient h, IReadOnlyList<FlaxRandNota> randuri,
@@ -465,15 +470,25 @@ static class HandlerReturClient {
                 nomRef?.Id ?? produsId.ToString(), simbolCredit);
             if (lotId != null && EsteLotPropriu(lotRef, h.Id))
                 lotId = null;
+            // Aliasul identității 1C a lotului-sursă → lotul creat de retur
+            // (mecanismul `1C:LotAlias`, folosit deja pentru reclasificările BTR).
+            // Fără el, orice mișcare 1C ulterioară pin-uită pe lotul ORIGINAL —
+            // vânzarea mărfii tocmai returnate — n-ar rezolva niciodată și ar cădea
+            // în supapa FIFO, cu costul altui lot. Se scrie DOAR când originalul
+            // lipsește (când există, comportamentul rămâne cel de azi: se creditează
+            // lotul original și nu se creează nimic).
+            string cheieAlias = null;
             if (lotId == null) {
                 LoturiCreate++;
                 if (cantitate == 0)
                     throw new InvalidOperationException(
                         $"{context}: marfa returnată n-are lot original și nici cantitate — "
                         + "nu se poate crea lotul de retur.");
+                cheieAlias = Catalog.CheieLot(lotRef.TipRef, lotRef.Id,
+                    nomRef?.Id ?? produsId.ToString(), simbolCredit);
             }
             plan.Costuri.Add(new LinieCost(tip.Id, cantitate, lotId, produsId, cheieLot,
-                cantitate == 0 ? 0m : Math.Abs(r.Suma) / cantitate));
+                cantitate == 0 ? 0m : Math.Abs(r.Suma) / cantitate, cheieAlias));
             LiniiCost++;
         }
 
@@ -544,12 +559,17 @@ static class HandlerReturClient {
             lot.Data = plan.Data;
             d.Lot = lot;
             cat.LeagaLotNou(os, c.CheieLot, lot.ID);
+            // …și identitatea 1C a lotului original trimite tot aici (aceeași
+            // tranzacție cu lotul), ca pin-urile ulterioare să nu rămână orfane.
+            if (c.CheieAlias != null && cat.LeagaAliasLot(os, c.CheieAlias, lot.ID))
+                AliasuriLot++;
         }
         return rdc;
     }
 
     public static void Raporteaza() =>
         Console.WriteLine($"  RDC: {LiniiVenit} linii de venit stornat, {LiniiCost} linii de cost pe lot "
-            + $"({LoturiCreate} pe lot creat din cheia sursei — retur-ca-lot / achiziție dinaintea ferestrei), "
+            + $"({LoturiCreate} pe lot creat din cheia sursei — retur-ca-lot / achiziție dinaintea ferestrei, "
+            + $"{AliasuriLot} cu alias de la identitatea lotului original), "
             + $"{RanduriNerezolvate} rânduri nerezolvate, {NepostateSarite} antete fără rânduri.");
 }

@@ -35,9 +35,11 @@ namespace Import1C;
 
 // Antetul unei surse de trezorerie, normalizat: identitatea 1C + contul propriu
 // Atlas pe care stau banii + simbolul lui de evidență (latura pe care o postează
-// motorul prin `SursaCont.Repartitor*`).
+// motorul prin `SursaCont.Repartitor*`). `Moment` = data-oră a sursei, păstrată
+// pe lângă `Data` (documentul Atlas poartă doar ziua) fiindcă ordinea în care se
+// execută unitățile lunii e a orei — vezi `UnitateImport`.
 sealed record AntetTrezorerie(string Id, string Numar, DateOnly Data, Guid ContPropriuId,
-    string SimbolTrezorerie, TipInstrumentPlata Instrument, string NumarExtras);
+    string SimbolTrezorerie, TipInstrumentPlata Instrument, string NumarExtras, DateTime Moment);
 
 // Un rând de registru care POATE deveni PLT/INC: direcția, contul de decontare,
 // contrapartida 1C (parteneri sau persoane fizice) și documentul pe care îl stinge.
@@ -346,7 +348,7 @@ static class HandlerExtras {
     public static readonly HandlerTip Handler =
         new(View, "Extras de cont (plăți/încasări + notă)", ctx => {
             foreach (var h in Antete(ctx))
-                MotorTrezorerie.Importa(ctx, View, h);
+                ctx.Planifica(h.Moment, h.Numar, () => MotorTrezorerie.Importa(ctx, View, h));
         });
 
     public static IEnumerable<StingereSursa> Stingeri(ContextLuna ctx) =>
@@ -372,7 +374,7 @@ static class HandlerExtras {
                 continue;
             }
             antete.Add(new AntetTrezorerie(h.Id, h.Numar, DateOnly.FromDateTime(h.Data),
-                contPropriuId, simbol, TipInstrumentPlata.OrdinPlata, h.Numar));
+                contPropriuId, simbol, TipInstrumentPlata.OrdinPlata, h.Numar, h.Data));
         }
         return antete;
     }
@@ -396,7 +398,7 @@ static class HandlerPlataCasa {
 
     public static void Importa(ContextLuna ctx, string view, List<FlaxTrezorerie> sursa) {
         foreach (var h in Antete(ctx, view, sursa))
-            MotorTrezorerie.Importa(ctx, view, h);
+            ctx.Planifica(h.Moment, h.Numar, () => MotorTrezorerie.Importa(ctx, view, h));
     }
 
     public static List<AntetTrezorerie> Antete(ContextLuna ctx, string view, List<FlaxTrezorerie> sursa) {
@@ -422,7 +424,7 @@ static class HandlerPlataCasa {
                 continue;
             }
             antete.Add(new AntetTrezorerie(h.Id, h.Numar, DateOnly.FromDateTime(h.Data),
-                contPropriuId, simbol, TipInstrumentPlata.DispozitieCasa, null));
+                contPropriuId, simbol, TipInstrumentPlata.DispozitieCasa, null, h.Data));
         }
         return antete;
     }
@@ -455,7 +457,7 @@ static class HandlerCard {
     public static readonly HandlerTip Handler =
         new(View, "Încasare pe card (tabelă generică 7633)", ctx => {
             foreach (var h in Antete(ctx))
-                MotorTrezorerie.Importa(ctx, View, h);
+                ctx.Planifica(h.Moment, h.Numar, () => MotorTrezorerie.Importa(ctx, View, h));
         });
 
     public static IEnumerable<StingereSursa> Stingeri(ContextLuna ctx) =>
@@ -467,7 +469,7 @@ static class HandlerCard {
         var simbol = cat.SimbolContPropriu(contPropriuId);
         return ctx.Bucla.Flax.AnteteRaw(Tabela, ctx.An, ctx.Luna)
             .Select(h => new AntetTrezorerie(h.Id, h.Numar, DateOnly.FromDateTime(h.Data),
-                contPropriuId, simbol, TipInstrumentPlata.OrdinPlata, null))
+                contPropriuId, simbol, TipInstrumentPlata.OrdinPlata, null, h.Data))
             .ToList();
     }
 }

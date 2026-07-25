@@ -469,7 +469,11 @@ partial class FlaxDb {
 
     // Simetria e ieftină: pe 2025 nu există niciun document de diminuare, dar
     // cititorul face ca apariția unuia să fie o linie de handler, nu o felie.
+    // Regenerarea SkyConta din 25.07.2026 a lăsat view-ul FĂRĂ `Posted` (vezi
+    // `ViewPostabil`), deci filtrul de antet nu se mai poate scrie: tipul se
+    // citește ca gol, cu avertisment, în loc să pice toată unealta.
     public List<FlaxAjustareStoc> DiminuariStoc(int an, int luna) =>
+        !ViewPostabil("DiminuareStocDeMarfuri") ? [] :
         Query($@"select h.KeyField, h.Number, h.DateTime, h.Depozit_ID, h.SumaDocument,
                         ltrim(rtrim(h.ContCheltuieli)), h.TipOperatiune
                  from flax.DiminuareStocDeMarfuri h {FiltruLuna} {OrdineAntete}",
@@ -478,6 +482,7 @@ partial class FlaxDb {
             Fereastra(an, luna));
 
     public List<FlaxAjustareStocMarfa> DiminuariStocMarfuri(int an, int luna) =>
+        !ViewPostabil("DiminuareStocDeMarfuri") ? [] :
         Query($@"select s.ParentRef, s.[LineNo], s.Nomenclator_ID, ltrim(rtrim(s.ContEvidenta)),
                         s.CotaTVA, s.[Count], s.Pret, s.Suma
                  from flax.DiminuareStocDeMarfuri_Marfuri s
@@ -892,9 +897,17 @@ partial class FlaxDb {
     // `--cititori`). Ordinea trebuie să fie a datelor, nu a planului de execuție —
     // altfel identitatea de lot ar depinde de calea pe care a citit-o handler-ul.
 
-    static string SqlRanduriNota(string cheie, string filtru) => $@"
+    // Explicația rândului și-a schimbat numele la regenerarea SkyConta din
+    // 25.07.2026 (`Explicatie_Desc` → `Explicatie`). E singura coloană redenumită
+    // din cele 51 de cititoare (probat cu `--cititori`), iar conținutul e același
+    // text liber; se citește de sub oricare dintre cele două nume, ca unealta să
+    // meargă pe ambele generații de view-uri. Alegerea se face O DATĂ per rulare.
+    string ColoanaExplicatie => AreColoana("NoteContabile", "Explicatie")
+        ? "Explicatie" : "Explicatie_Desc";
+
+    string SqlRanduriNota(string cheie, string filtru) => $@"
         select {cheie}, n.[LineNo], ltrim(rtrim(n.ContDebit)), ltrim(rtrim(n.ContCredit)),
-               n.Suma, n.CountDt, n.CountCt, n.Explicatie_Desc
+               n.Suma, n.CountDt, n.CountCt, n.{ColoanaExplicatie}
         from flax.NoteContabile n
         {filtru}
         order by n.[LineNo], n.ContDebit, n.ContCredit, n.Suma";
@@ -972,7 +985,7 @@ partial class FlaxDb {
     ];
 
     public List<FlaxVolumAntet> VolumeAntete(int an) {
-        var bucati = ViewuriDocument.Select(v =>
+        var bucati = ViewuriDocument.Where(ViewPostabil).Select(v =>
             $@"select '{v}', count(*), sum(case when Posted <> 0x00 then 1 else 0 end)
                from flax.{v} where DateTime >= @de and DateTime < @pana");
         return Query(string.Join("\n                union all\n                ", bucati),

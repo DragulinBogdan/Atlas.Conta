@@ -434,4 +434,17 @@ sealed class Catalog {
         os.CommitChanges();
         return true;
     }
+
+    // Varianta pentru loturile care se NASC odată cu documentul (returul de la
+    // client, care recreează lotul-sursă absent): aliasul se scrie în
+    // ObjectSpace-ul documentului, deci în ACELAȘI commit cu lotul — altfel o
+    // rulare întreruptă între cele două ar lăsa un alias către un lot inexistent,
+    // pe care pin-urile ulterioare l-ar rezolva și operarea l-ar refuza.
+    // Simbolul lotului e cel din cheia aliasului (ultimul segment, convenția 47d).
+    public bool LeagaAliasLot(IObjectSpace os, string cheie, Guid lotId) {
+        if (!loturi.TryAdd(cheie, new LotImport(lotId, Simbol(cheie))))
+            return false;
+        Legaturi.Leaga(os, "LotAlias", cheie, lotId);
+        return true;
+    }
 }

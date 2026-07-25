@@ -72,39 +72,40 @@ static class HandlerFactura {
             .GroupBy(s => s.DocumentId, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
 
-        foreach (var h in antete) {
-            // Antet POSTAT care nu POSTEAZĂ (22 pe an, verificat): `Posted` spune
-            // doar că documentul e validat în 1C, nu că a produs înregistrări.
-            // Factura se construiește din secțiuni, deci fără garda asta un astfel
-            // de document ar intra în Atlas cu recepție și stoc — o mișcare pe care
-            // sursa n-o are. Tipurile care se construiesc DIN rândurile contabile
-            // (BTR/BCS/LDI−) sunt imune prin construcție.
-            if ((bucla.RanduriLuna.GetValueOrDefault(h.Id)?.Count ?? 0) == 0) {
-                NepostateSarite++;
-                continue;
-            }
-            Plan plan = null;
-            if (!bucla.EsteCunoscut(View, h.Id)) {
-                try {
-                    plan = Planifica(ctx, h,
-                        marfuri.GetValueOrDefault(h.Id) ?? [], servicii.GetValueOrDefault(h.Id) ?? []);
+        foreach (var h in antete)
+            ctx.Planifica(h.Data, h.Numar, () => {
+                // Antet POSTAT care nu POSTEAZĂ (22 pe an, verificat): `Posted` spune
+                // doar că documentul e validat în 1C, nu că a produs înregistrări.
+                // Factura se construiește din secțiuni, deci fără garda asta un astfel
+                // de document ar intra în Atlas cu recepție și stoc — o mișcare pe care
+                // sursa n-o are. Tipurile care se construiesc DIN rândurile contabile
+                // (BTR/BCS/LDI−) sunt imune prin construcție.
+                if ((bucla.RanduriLuna.GetValueOrDefault(h.Id)?.Count ?? 0) == 0) {
+                    NepostateSarite++;
+                    return;
                 }
-                catch (Exception ex) {
-                    bucla.EsecPlanificare(View, h.Id, ex);
-                    continue;
+                Plan plan = null;
+                if (!bucla.EsteCunoscut(View, h.Id)) {
+                    try {
+                        plan = Planifica(ctx, h,
+                            marfuri.GetValueOrDefault(h.Id) ?? [], servicii.GetValueOrDefault(h.Id) ?? []);
+                    }
+                    catch (Exception ex) {
+                        bucla.EsecPlanificare(View, h.Id, ex);
+                        return;
+                    }
+                    // Puntea se scrie ÎNAINTEA facturii: dacă rularea moare între
+                    // cele două, la reluare factura încă lipsește și se reface tot
+                    // lanțul. Invers, un document operat fără puntea lui ar fi
+                    // irecuperabil (calea de skip nu mai replanifică).
+                    Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                        plan.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                    if (!plan.AreDocument && !plan.Punte.AreCeva)
+                        bucla.NumaraSursaFaraCorespondent();
                 }
-                // Puntea se scrie ÎNAINTEA facturii: dacă rularea moare între
-                // cele două, la reluare factura încă lipsește și se reface tot
-                // lanțul. Invers, un document operat fără puntea lui ar fi
-                // irecuperabil (calea de skip nu mai replanifică).
-                Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                    plan.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                if (!plan.AreDocument && !plan.Punte.AreCeva)
-                    bucla.NumaraSursaFaraCorespondent();
-            }
-            if (plan == null || plan.AreDocument)
-                bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
-        }
+                if (plan == null || plan.AreDocument)
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+            });
     }
 
     static Plan Planifica(ContextLuna ctx, FlaxAprovizionare h,
