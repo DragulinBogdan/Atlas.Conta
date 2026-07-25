@@ -49,6 +49,12 @@ var continua = false;
 // o dată fiecare cititor de document pe prima lună a ferestrei. Opt-in fiindcă e
 // probă de FORMĂ, nu de conținut — se rulează după orice regenerare de view-uri.
 var smokeCititori = false;
+// `--recreeaza` = baza țintă se ARUNCĂ și se reconstruiește de la zero. Baza de
+// import e de unică folosință prin design (§3), iar documentele deja operate nu
+// se re-importă (idempotența e pe legături): când o convenție a sursei se
+// corectează — cum a fost conversia valutară a facturilor — singura cale onestă
+// spre un import curat e reconstrucția, nu peticirea rândurilor scrise.
+var recreeaza = false;
 for (var i = 0; i < args.Length; i++) {
     var arg = args[i];
     if (!arg.StartsWith("--")) {
@@ -66,6 +72,9 @@ for (var i = 0; i < args.Length; i++) {
         case "--cititori":
             smokeCititori = true;
             break;
+        case "--recreeaza":
+            recreeaza = true;
+            break;
         case "--pana-la":
             valoare ??= i + 1 < args.Length ? args[++i] : null;
             if (!int.TryParse(valoare, out panaLa) || panaLa is < 1 or > 12) {
@@ -75,7 +84,7 @@ for (var i = 0; i < args.Length; i++) {
             break;
         default:
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
-                + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori]");
+                + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--recreeaza]");
             return 2;
     }
 }
@@ -107,6 +116,10 @@ var opts = new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
     .Options;
 
 using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
+    if (recreeaza) {
+        await ctx.Database.EnsureDeletedAsync();
+        Console.WriteLine("*** --recreeaza: baza țintă a fost ștearsă; se reconstruiește de la zero. ***");
+    }
     await ctx.Database.MigrateAsync();
     Console.WriteLine($"Bază țintă migrată: {ctx.Model.GetEntityTypes().Count()} entity types.");
 }
@@ -493,7 +506,14 @@ Console.WriteLine($"\n=== Documentele {anImport} (lunile 1..{panaLa}) ===");
 Console.WriteLine($"Perioade fiscale {anImport}: {perioadeExistente} existente, {perioadeCreate} create "
     + "(deschise — perioada lipsă e tratată ca închisă de gardian).");
 
-var bucla = new BuclaImport(provider, flax, laCerere, new AlocareIesire(), Avert, Check);
+// Catalogul (pasul 3) se construiește DUPĂ nomenclatoare și după deschidere:
+// citește gestiunile legate, Clasă/Tip, cotele de TVA, regulile de contare și
+// indexul de loturi pe care le folosesc handlerele.
+var catalog = new Catalog(provider, flax, anImport, Mapeaza, planAtlas, Avert);
+Console.WriteLine($"Catalog: {catalog.Gestiuni.Count} gestiuni legate, "
+    + $"plusul de inventar contează pe {catalog.ContPlusInventar}.");
+
+var bucla = new BuclaImport(provider, flax, laCerere, new AlocareIesire(), catalog, Avert, Check);
 var luni = new List<RezultatLuna>();
 var lunaPicata = 0;
 var cronometruDocumente = System.Diagnostics.Stopwatch.StartNew();
@@ -514,6 +534,29 @@ for (var luna = 1; luna <= panaLa; luna++) {
     }
 }
 var durataDocumente = cronometruDocumente.Elapsed;
+
+// Invariantul de IDEMPOTENȚĂ al importului de documente, verificabil pe ORICE
+// rulare (contorul „importate" nu e: e 0 la a doua rulare prin construcție).
+// Fiecare document care nu e autogenerat de motor trebuie să aibă exact o
+// legătură 1C, și fiecare legătură exact un document: un import care dublează
+// sparge egalitatea, indiferent câte rulări s-au succedat.
+using (var os = provider.CreateObjectSpace()) {
+    var documente = os.GetObjectsQuery<Document>()
+        .Select(d => new { d.ID, d.Autogenerat }).ToList();
+    var legate = os.GetObjectsQuery<MigrareLegatura>()
+        .Where(m => m.Tabela.StartsWith("1C:")).Select(m => m.TintaId).ToList();
+    var idsDocumente = documente.Select(d => d.ID).ToHashSet();
+    var legateDocumente = legate.Where(idsDocumente.Contains).ToList();
+    var proprii = documente.Count(d => !d.Autogenerat);
+    Console.WriteLine($"\nDocumente în bază: {documente.Count} "
+        + $"({documente.Count - proprii} autogenerate de motor); legături 1C către documente: "
+        + $"{legateDocumente.Count}.");
+    Check($"Idempotență: {proprii} documente proprii = {legateDocumente.Count} legături 1C "
+        + "(niciun document dublat, nicio legătură orfană)", proprii == legateDocumente.Count);
+    Check($"Idempotență: {legateDocumente.Distinct().Count()} ținte distincte pe "
+        + $"{legateDocumente.Count} legături (o legătură per document)",
+        legateDocumente.Distinct().Count() == legateDocumente.Count);
+}
 Console.WriteLine($"\nDocumente {anImport}: {luni.Sum(l => l.Documente)} importate, "
     + $"{luni.Sum(l => l.Sarite)} sărite, {luni.Sum(l => l.Copii)} copii autogenerați, "
     + $"{luni.Sum(l => l.Esecuri)} eșecuri, {luni.Sum(l => l.Realocari)} realocări de lot "

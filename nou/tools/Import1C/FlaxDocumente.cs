@@ -44,10 +44,20 @@ record FlaxRef(string TipRef, string Tip, string Id, string Descriere);
 // `LineNo` E CUVÂNT REZERVAT T-SQL (`SET LINENO`) — se scrie `[LineNo]`.
 
 // -- AprovizionareMarfuriSiServiciiPrimite → FCT + NIR conex (§4) --
+// `Valuta` + `Curs` (`ValutaDoc` / `CursDeDecontari`) NU sunt decor: sumele din
+// SECȚIUNI sunt în valuta documentului, iar registrul contabil e în lei — pe
+// 2025, 1.270 de facturi în EUR și 4 în USD. Verificat pe eșantion:
+// `round(Suma × Curs, 2)` reproduce EXACT rândul de notă (961,73 × 4,9741 =
+// 4.783,74). La documentele în lei cursul iese 0 sau 1 — se normalizează la 1.
 record FlaxAprovizionare(string Id, string Numar, DateTime Data, string PartenerId,
     string NumarFactura, string SeriaFactura, DateTime? DataFacturii, DateTime? DataScadenta,
     string DepozitId, decimal SumaDocument, bool SumaIncludeTva, bool TaxareInversa,
-    bool CalcTva, string PoliticaTva, string TipOperatiune);
+    bool CalcTva, string PoliticaTva, string TipOperatiune, string Valuta, decimal Curs) {
+    // Cursul de aplicat sumelor din secțiuni: 1 pentru documentele în lei.
+    public decimal CursLei => Curs <= 0m ? 1m : Curs;
+
+    public decimal InLei(decimal suma) => Math.Round(suma * CursLei, 2);
+}
 
 record FlaxAprovizionareMarfa(string DocumentId, int Linie, string NomenclatorId,
     string ContEvidenta, string CotaTva, decimal Cantitate, decimal Pret, decimal Suma,
@@ -309,11 +319,12 @@ partial class FlaxDb {
         Query($@"select h.KeyField, h.Number, h.DateTime, h.Partener_ID, h.NumarFactura,
                         h.SeriaFactura, h.DataFacturii, h.DataScadenta, h.Depozit_ID,
                         h.SumaDocument, h.SumaIncludeTVA, h.TaxareInversa, h.CalcTVA,
-                        h.PoliticaTVA, h.TipOperatiune
+                        h.PoliticaTVA, h.TipOperatiune, ltrim(rtrim(h.ValutaDoc)),
+                        h.CursDeDecontari
                  from flax.AprovizionareMarfuriSiServiciiPrimite h {FiltruLuna} {OrdineAntete}",
             r => new FlaxAprovizionare(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3), Text(r, 4),
                 Text(r, 5), DataOpt(r, 6), DataOpt(r, 7), Hex(r, 8), Dec(r, 9), Bit(r, 10),
-                Bit(r, 11), Bit(r, 12), Text(r, 13), Text(r, 14)),
+                Bit(r, 11), Bit(r, 12), Text(r, 13), Text(r, 14), Text(r, 15), Dec(r, 16)),
             Fereastra(an, luna));
 
     public List<FlaxAprovizionareMarfa> AprovizionariMarfuri(int an, int luna) =>

@@ -41,10 +41,26 @@ static class Handlere {
     // existența loturilor (intrarea înaintea ieșirii care o pin-uiește), nu
     // pentru solduri (gardianul e prefix-sum pe zile, §12.4).
     public static readonly IReadOnlyList<HandlerTip> Toate = [
-        // PASUL 3: FCT+NIR, BTR, BCS, LDI±
+        // PASUL 3: intrările înaintea mișcărilor care le pin-uiesc loturile —
+        // ordinea din listă e ordinea din interiorul lunii (o factură de pe 3 ale
+        // lunii trebuie să-și fi născut lotul înainte ca un transfer de pe 5 să-l
+        // ceară). Restul e treaba gardianului de sold, care e prefix-sum pe zile.
+        HandlerFactura.Handler,
+        HandlerTransfer.Handler,
+        HandlerConsum.Handler,
+        HandlerDiferente.HandlerPlus,
+        HandlerDiferente.HandlerMinus,
         // PASUL 4: FCL+DSC, RVA, RLF/RDC, ASM, avize
         // PASUL 5: PLT/INC, Compensare, familia NTC
     ];
+
+    // Rapoartele de tip ale pasului 3 (contoarele proprii fiecărui handler).
+    public static void Raporteaza() {
+        HandlerFactura.Raporteaza();
+        HandlerTransfer.Raporteaza();
+        HandlerConsum.Raporteaza();
+        HandlerDiferente.Raporteaza();
+    }
 
     public static IReadOnlySet<string> Implementate =>
         Toate.Select(h => h.TipRecorder).ToHashSet(StringComparer.Ordinal);
@@ -99,15 +115,54 @@ sealed class BuclaImport {
     public FlaxDb Flax { get; }
     public ImportLaCerere LaCerere { get; }
     public AlocareIesire Alocare { get; }
+    public Catalog Catalog { get; }
+    public ContorPunti ContorPunti { get; } = new();
+    public Action<string> Avert => avert;
+
+    // Registrul contabil 1C al lunii, indexat pe document: sursa identității de
+    // LOT pentru tipurile ale căror secțiuni n-o poartă (BTR/BCS/LDI). Se citește
+    // O DATĂ per lună, nu per document — măsurat la pasul 2, diferența e 0,8 s
+    // per lună față de ~70 s dacă fiecare document și-ar cere rândurile.
+    public Dictionary<string, List<FlaxRandNota>> RanduriLuna { get; private set; } = [];
+    public Dictionary<string, List<FlaxSubcontoNota>> SubcontoLuna { get; private set; } = [];
+
+    public IObjectSpace CreeazaObjectSpace() => provider.CreateObjectSpace();
+
+    // Documente-sursă care nu produc NIMIC în Atlas: nici document tipizat, nici
+    // punte (antete goale, transferuri în aceeași gestiune fără reclasificare).
+    // N-au unde primi legătură, deci se replanifică la fiecare rulare — inofensiv,
+    // dar se numără, ca „de ce mai lucrează unealta la a doua rulare?" să aibă
+    // un răspuns scris.
+    public int SurseFaraCorespondent { get; private set; }
+
+    public void NumaraSursaFaraCorespondent() => SurseFaraCorespondent++;
+
+    // Eșecul de PLANIFICARE (handlerele pasului 3 planifică înaintea lui
+    // `ImportaDocument`, ca puntea să se poată scrie prima). Fără el, o excepție
+    // la un document ar urca până la prinderea de la nivelul handlerului și ar
+    // opri tot tipul pe luna aia; aici rămâne ce trebuie să fie — eșecul UNUI
+    // document, numărat și detaliat ca oricare altul.
+    public void EsecPlanificare(string view, string cheie, Exception ex) =>
+        Esec(view, cheie, "planificarea", ex);
+
+    // Documentul e deja cunoscut (importat sau lăsat Draft de o rulare
+    // întreruptă)? Handlerele o întreabă ca să NU replanifice degeaba la reluare;
+    // decizia propriu-zisă (skip / re-operare) rămâne a lui `ImportaDocument`.
+    // O legătură ORFANĂ (documentul a dispărut din bază) nu contează ca
+    // „cunoscut": `Executa` o șterge și cere draftul din nou, deci planul trebuie
+    // să existe — altfel reluarea ar intra în materializare cu mâna goală.
+    public bool EsteCunoscut(string view, string cheie) =>
+        legaturi.TryGetValue((Legaturi.Tabela(view), cheie), out var tinta) && stari.ContainsKey(tinta);
 
     public BuclaImport(IObjectSpaceProvider provider, FlaxDb flax, ImportLaCerere laCerere,
-            AlocareIesire alocare, Action<string> avert, Action<string, bool> check) {
+            AlocareIesire alocare, Catalog catalog, Action<string> avert, Action<string, bool> check) {
         this.provider = provider;
         this.avert = avert;
         this.check = check;
         Flax = flax;
         LaCerere = laCerere;
         Alocare = alocare;
+        Catalog = catalog;
 
         using var os = provider.CreateObjectSpace();
         foreach (var l in os.GetObjectsQuery<MigrareLegatura>()
@@ -135,6 +190,8 @@ sealed class BuclaImport {
         var ctx = new ContextLuna(an, luna, prima, prima.AddMonths(1).AddDays(-1), this);
 
         Console.WriteLine($"\n--- Luna {luna:00}/{an} ---");
+        RanduriLuna = Flax.RanduriNotaPeLuna(an, luna);
+        SubcontoLuna = Flax.SubcontoNotaPeLuna(an, luna);
         foreach (var h in Handlere.Toate) {
             try {
                 h.Importa(ctx);
@@ -155,6 +212,11 @@ sealed class BuclaImport {
         var (realocari, cantitate) = Alocare.DeltaLunii();
         var rez = new RezultatLuna(an, luna, documente, sarite, copii, esecuri,
             realocari, cantitate, cronometruLuna.Elapsed);
+        Handlere.Raporteaza();
+        ContorPunti.Raporteaza();
+        if (SurseFaraCorespondent > 0)
+            Console.WriteLine($"  {SurseFaraCorespondent} documente-sursă fără corespondent în Atlas "
+                + "(nici document, nici punte) — se replanifică la fiecare rulare, fără efect.");
         Console.WriteLine($"  Luna {luna:00}/{an}: {documente} documente importate, {sarite} sărite, "
             + $"{copii} copii autogenerați operați, {esecuri} eșecuri, {realocari} realocări de lot "
             + $"({cantitate:N3} buc) — {rez.Durata:hh\\:mm\\:ss}.");

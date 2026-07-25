@@ -91,6 +91,7 @@ internal static class ProfilPrivat {
             // deschidere de pe aceste conturi n-ar putea deveni loturi. Derivările
             // (ContImplicit din simbol, 6xx=3xx → 6021/6028) le prind automat.
             ("M", "3021", "Materiale auxiliare"),
+            ("M", "3024", "Piese de schimb"),
             ("M", "3028", "Alte materiale consumabile"),
             ("OI", "303", "Materiale de natura obiectelor de inventar"),
             ("PF", "345", "Produse finite"),
@@ -271,22 +272,45 @@ internal static class ProfilPrivat {
         }
     }
 
-    // Transferul (23c): două rânduri ±Magazie, fără contare la plan sintetic.
+    // Registrele private, ca rânduri de politică: generic → Magazie, mărfurile pe
+    // registrul propriu. INCREMENTAL per (latură × clasă), nu „există un rând ⇒
+    // gata": tipurile seed-uite înaintea P2 (BTR/BCS — feliile 3b/3c) au primit
+    // doar rândul generic, iar un lot de MARFĂ trăiește în registrul Marfuri (așa
+    // îl scriu NIR/LDI/DSC/ASM/retururile și deschiderea importului 1C). Fără
+    // rândul MF, orice transfer sau consum de marfă ar căuta soldul în Magazie și
+    // ar cădea pe gardianul de sold — gaură de profil scoasă la iveală de import
+    // (decizia 21/45f), nu schimbare de semantică.
+    static void SeedReguliStoc(IObjectSpace os, TipDocument tipDoc, LaturaDocument latura, int semn,
+            params (string Clasa, TipStoc TipStoc)[] reguli) {
+        foreach (var r in reguli) {
+            var clasaId = r.Clasa == null
+                ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa)?.ID;
+            var exista = clasaId == null
+                ? os.FirstOrDefault<RegulaStoc>(x => x.TipDocumentId == tipDoc.ID
+                    && x.Latura == latura && x.ClasaId == null)
+                : os.FirstOrDefault<RegulaStoc>(x => x.TipDocumentId == tipDoc.ID
+                    && x.Latura == latura && x.ClasaId == clasaId);
+            if (exista != null)
+                continue;
+            var regula = os.CreateObject<RegulaStoc>();
+            regula.TipDocument = tipDoc;
+            regula.Latura = latura;
+            regula.ClasaId = clasaId;
+            regula.TipStoc = r.TipStoc;
+            regula.Semn = semn;
+        }
+    }
+
+    // Registrele „generic + mărfuri" folosite de aproape toate tipurile private.
+    static readonly (string Clasa, TipStoc TipStoc)[] MagazieSiMarfuri =
+        [(null, TipStoc.Magazie), ("MF", TipStoc.Marfuri)];
+
+    // Transferul (23c): ± pe același registru, fără contare la plan sintetic.
     static void SeedPoliticiNotaTransfer(IObjectSpace os) {
         var btr = os.FirstOrDefault<TipDocument>(x => x.Cod == "BTR");
         ContaSeeder.SeedNumerotare(os, "BTR", "BTR-");
-        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "BTR") != null)
-            return;
-        var iesire = os.CreateObject<RegulaStoc>();
-        iesire.TipDocument = btr;
-        iesire.Latura = LaturaDocument.Predator;
-        iesire.TipStoc = TipStoc.Magazie;
-        iesire.Semn = -1;
-        var intrare = os.CreateObject<RegulaStoc>();
-        intrare.TipDocument = btr;
-        intrare.Latura = LaturaDocument.Primitor;
-        intrare.TipStoc = TipStoc.Magazie;
-        intrare.Semn = +1;
+        SeedReguliStoc(os, btr, LaturaDocument.Predator, -1, MagazieSiMarfuri);
+        SeedReguliStoc(os, btr, LaturaDocument.Primitor, +1, MagazieSiMarfuri);
     }
 
     // Lanțul de cumpărare (26a, sub TVA structural — design §6): recepția
@@ -360,18 +384,11 @@ internal static class ProfilPrivat {
     static void SeedPoliticiBonConsum(IObjectSpace os) {
         var bcs = os.FirstOrDefault<TipDocument>(x => x.Cod == "BCS");
         ContaSeeder.SeedNumerotare(os, "BCS", "BCS-");
-        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "BCS") == null) {
-            var iesire = os.CreateObject<RegulaStoc>();
-            iesire.TipDocument = bcs;
-            iesire.Latura = LaturaDocument.Predator;
-            iesire.TipStoc = TipStoc.Magazie;
-            iesire.Semn = -1;
-            var consum = os.CreateObject<RegulaStoc>();
-            consum.TipDocument = bcs;
-            consum.Latura = LaturaDocument.Primitor;
-            consum.TipStoc = TipStoc.Consum;
-            consum.Semn = +1;
-        }
+        // Ieșirea din registrul în care STĂ lotul (generic Magazie, marfă
+        // Marfuri — vezi nota de la SeedReguliStoc); intrarea în Consum e
+        // aceeași pentru orice clasă, deci un singur rând generic.
+        SeedReguliStoc(os, bcs, LaturaDocument.Predator, -1, MagazieSiMarfuri);
+        SeedReguliStoc(os, bcs, LaturaDocument.Primitor, +1, (null, TipStoc.Consum));
         ContaSeeder.SeedContare6xxDin3xx(os, bcs, null, Derivari6xxExceptii);
     }
 
