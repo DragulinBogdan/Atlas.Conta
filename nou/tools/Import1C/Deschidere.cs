@@ -187,12 +187,22 @@ static partial class Deschidere {
         public decimal ValoareBruta;
     }
 
+    // O poziție a sursei care NU ajunge în registrul de stoc, cu identitatea 1C
+    // păstrată (hex, nu doar denumire): e intrarea reconcilierii (pasul 4), care
+    // compară baza cu sursa BRUTĂ și trebuie să poată recunoaște nepotrivirile
+    // deja explicate ca „diferență a sursei" (34f) — altfel le-ar raporta ca
+    // eșecuri. Δq/Δv = ce lipsește din registru față de sursă.
+    public record DiferentaSursa(
+        string ProdusHex, string DepozitHex, string ProdusDesc, string DepozitDesc,
+        decimal Cantitate, decimal Valoare, string Motiv);
+
     public record RezultatStoc(
         int Loturi, int LoturiNoi, int Produse, int ProduseNoi, int ProduseFaraTip,
         int RanduriStoc, int PozitiiNegative, int GrupeSarite,
         decimal CantitateSarita, decimal ValoareSarita,
         int CeluleDegenerate, int DateNeparsate,
-        decimal CantitateScrisa, decimal ValoareScrisa);
+        decimal CantitateScrisa, decimal ValoareScrisa,
+        IReadOnlyList<DiferentaSursa> DiferenteJustificate);
 
     public static RezultatStoc Stoc(
             IObjectSpaceProvider provider, ImportLaCerere laCerere,
@@ -252,7 +262,7 @@ static partial class Deschidere {
         var vInitial = celule.Sum(c => c.Valoare);
 
         // ---- 3. Netarea negativelor, per produs × depozit ----
-        var grupeSarite = new List<(string Produs, string Depozit, decimal Q, decimal V)>();
+        var grupeSarite = new List<DiferentaSursa>();
         var sariteHex = new HashSet<(string, string)>();
         var grupeDezechilibrate = 0;
         foreach (var grup in celule.GroupBy(c => (c.ProdusHex, c.DepozitHex))) {
@@ -269,8 +279,9 @@ static partial class Deschidere {
             // ≥ 0), și nu se îndoaie invariantul pentru ea — se raportează
             // integral ca diferență a sursei (34f) și nu se scrie deloc.
             if (qInainte < -EpsQ || vInainte < -EpsV) {
-                grupeSarite.Add((lot[0].ProdusDesc ?? grup.Key.ProdusHex,
-                    lot[0].DepozitDesc ?? grup.Key.DepozitHex, qInainte, vInainte));
+                grupeSarite.Add(new DiferentaSursa(grup.Key.ProdusHex, grup.Key.DepozitHex,
+                    lot[0].ProdusDesc, lot[0].DepozitDesc, qInainte, vInainte,
+                    "grupă produs × depozit cu TOTAL negativ"));
                 sariteHex.Add(grup.Key);
                 continue;
             }
@@ -296,8 +307,8 @@ static partial class Deschidere {
         // creează și nu-i pierde. Se compară ce se scrie cu totalul de DINAINTE de
         // netare, din care se scad grupele sărite (raportate separat, ca diferență
         // a sursei) — acoperă atât netarea, cât și celulele căzute la zero.
-        var qBrut = qInitial - grupeSarite.Sum(g => g.Q);
-        var vBrut = vInitial - grupeSarite.Sum(g => g.V);
+        var qBrut = qInitial - grupeSarite.Sum(g => g.Cantitate);
+        var vBrut = vInitial - grupeSarite.Sum(g => g.Valoare);
         var qNet = deScris.Sum(c => c.Cantitate);
         var vNet = deScris.Sum(c => c.Valoare);
         check($"Σ cantitate scrisă = Σ înainte de netare, fără grupele sărite: "
@@ -439,18 +450,20 @@ static partial class Deschidere {
                 !scrise.Any(r => r.Cantitate < 0 || r.Valoare < 0));
         }
 
-        foreach (var (produs, depozit, q, v) in grupeSarite.OrderBy(g => g.V))
-            avert($"Grupă „{produs}” × depozit „{depozit}” cu TOTAL negativ ({q:N3} buc, {v:N2} lei) "
-                + "— nereprezentabilă (Atlas cere sold ≥ 0 per lot); NU se scrie. Diferență a sursei.");
+        foreach (var g in grupeSarite.OrderBy(g => g.Valoare))
+            avert($"Grupă „{g.ProdusDesc ?? g.ProdusHex}” × depozit „{g.DepozitDesc ?? g.DepozitHex}” "
+                + $"cu TOTAL negativ ({g.Cantitate:N3} buc, {g.Valoare:N2} lei) — nereprezentabilă "
+                + "(Atlas cere sold ≥ 0 per lot); NU se scrie. Diferență a sursei.");
 
         return new RezultatStoc(
             descriptori.Count, loturiNoi,
             descriptori.Values.Select(d => d.ProdusHex).Distinct().Count(),
             laCerere.ProduseNoi, faraTip.Count,
             randuri, negativeInitial, grupeSarite.Count,
-            grupeSarite.Sum(g => g.Q), grupeSarite.Sum(g => g.V),
+            grupeSarite.Sum(g => g.Cantitate), grupeSarite.Sum(g => g.Valoare),
             degenerate, descriptori.Values.Count(d => !d.DataParsata),
-            deScris.Sum(c => c.Cantitate), deScris.Sum(c => c.Valoare));
+            deScris.Sum(c => c.Cantitate), deScris.Sum(c => c.Valoare),
+            grupeSarite);
     }
 
     // Netarea unei grupe produs × depozit. Negativul se consumă din loturile

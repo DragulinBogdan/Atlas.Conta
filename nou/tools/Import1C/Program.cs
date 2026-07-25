@@ -23,11 +23,22 @@ using Microsoft.EntityFrameworkCore;
 // PASUL 2: nomenclatoarele mici (integral) + helper-ele de import la cerere
 // pentru cele mari (Nomenclatoare.cs).
 // PASUL 3: DESCHIDEREA la 01.01.2025 — solduri contabile + loturi/stoc, scrise
-// direct în registre cu `DocumentId = null` (Deschidere.cs). Reconcilierea
-// deschiderii: pasul 4.
+// direct în registre cu `DocumentId = null` (Deschidere.cs).
+// PASUL 4: RECONCILIEREA deschiderii (Reconciliere.cs) — contractul design §8:
+// baza se RECITEȘTE din Postgres și se compară cu sursa brută, independent de
+// structurile fazei 3.
 
 // Argumentele pozitionale sunt conexiunile; flag-urile „--" se filtrează.
 var pozitionale = args.Where(a => !a.StartsWith("--")).ToArray();
+
+// Auto-testul reconcilierii (`--sabotaj`): alterează cu 1 leu rânduri deja
+// SCRISE, între deschidere și reconciliere. E singura cale onestă de a dovedi
+// sensibilitatea — deschiderea se rescrie integral la fiecare rulare, deci o
+// alterare făcută înaintea ei ar fi reparată de ea însăși, iar una făcută pe
+// sursă n-ar testa citirea din bază. Flag-ul rămâne ca unealtă permanentă:
+// contractul de reconciliere e cod ca oricare altul și trebuie să poată fi
+// verificat că mai e viu, nu doar că e verde.
+var sabotaj = args.Contains("--sabotaj");
 
 var flaxCs = pozitionale.Length > 0
     ? pozitionale[0]
@@ -218,7 +229,8 @@ Console.WriteLine($"Registru stoc: {rezStoc.RanduriStoc} rânduri de deschidere;
 Console.WriteLine($"La cerere: {laCerere.ParteneriNoi} parteneri noi, {laCerere.ProduseNoi} produse noi, "
     + $"{laCerere.Recuperate} recuperate, {laCerere.ReferinteMoarte} referințe moarte, "
     + $"{laCerere.ProduseFaraTip} fără TipMaterial.");
-Console.WriteLine($"Durata fazei de deschidere: {cronometru.Elapsed:hh\\:mm\\:ss}.");
+var durataDeschidere = cronometru.Elapsed;
+Console.WriteLine($"Durata fazei de deschidere: {durataDeschidere:hh\\:mm\\:ss}.");
 
 // Diferența stoc↔contabilitate a SURSEI: pozițiile orfane (fără produs sau fără
 // depozit) rămân doar în soldul contabil, iar grupele total-negative nu se pot
@@ -409,11 +421,72 @@ using (var os = provider.CreateObjectSpace()) {
         + $"nomenclator {Legaturi.Incarca(os, "Nomenclator").Count}.");
 }
 
+// ==================== Faza RECONCILIERE (pasul 4) ====================
+// Contractul design §8, restrâns la deschidere. Recitește TOTUL din Postgres și
+// compară cu sursa brută — vezi principiul din Reconciliere.cs.
+
+if (sabotaj) {
+    using var os = provider.CreateObjectSpace();
+    var rc = os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => r.DocumentId == null)
+        .OrderBy(r => r.Valoare).ThenBy(r => r.ID)
+        .FirstOrDefault();
+    var rs = os.GetObjectsQuery<RegistruStoc>()
+        .Where(r => r.DocumentId == null)
+        .OrderBy(r => r.Valoare).ThenBy(r => r.ID)
+        .FirstOrDefault();
+    if (rc != null)
+        rc.Valoare += 1m;
+    if (rs != null)
+        rs.Valoare += 1m;
+    os.CommitChanges();
+    Console.WriteLine($"\n*** SABOTAJ (--sabotaj): +1 leu pe rândul contabil {rc?.ID} și pe "
+        + $"rândul de stoc {rs?.ID}. Reconcilierea TREBUIE să pice. ***");
+}
+
+Console.WriteLine($"\n=== Reconcilierea deschiderii la {dataRanduri:yyyy-MM-dd} ===");
+var rezRec = Reconciliere.Executa(provider, solduri, extrabilantiere1C, stoc, stocOrfan,
+    rezStoc.DiferenteJustificate, Mapeaza, Avert, Check);
+
+// ==================== Sumarul rulării ====================
+// Raportul pe care îl citește omul la fiecare rulare a deschiderii: cifrele-cheie
+// ale întregii rulări, într-un singur loc, cu rezultatul contractului la coadă.
+
+Console.WriteLine($"""
+
+    ╔══════════════════ SUMARUL RULĂRII (deschidere {dataRanduri:yyyy-MM-dd}) ══════════════════
+    ║ SURSA 1C ({flaxCs.Split("Database=")[^1].Split(';')[0]})
+    ║   plan de conturi          {plan1C.Count,10} conturi ({plan1C.Count(c => c.Extrabilantier)} extrabilanțiere)
+    ║   solduri de deschidere    {solduri.Count,10} conturi cu sold nenul
+    ║   poziții de stoc          {stoc.Count,10} (Σ {stoc.Sum(s => s.Valoare):N2} lei) + {stocOrfan.Count} orfane (Σ {stocOrfan.Sum(s => s.Valoare):N2} lei)
+    ║ NOMENCLATOARE IMPORTATE (procesate / noi în rularea asta)
+    ║   gestiuni                 {impDepozite.Procesate,10} / {impDepozite.Noi}
+    ║   conturi proprii          {impCasierii.Procesate + impConturi.Procesate,10} / {impCasierii.Noi + impConturi.Noi}  (casierii + bancare)
+    ║   angajați                 {impPersoane.Procesate,10} / {impPersoane.Noi}
+    ║   produse (la cerere)      {rezStoc.Produse,10} / {rezStoc.ProduseNoi}
+    ║ DESCHIDEREA SCRISĂ (DocumentId = null)
+    ║   rânduri contabile        {rezContabil.Randuri,10} contra ancorei {Deschidere.Ancora}
+    ║   extrabilanțiere sărite   {rezContabil.Extrabilantiere,10} (Σ {rezContabil.SumaExtrabilantiera:N2} lei — clasa 8, alt modul)
+    ║   loturi                   {rezStoc.Loturi,10} ({rezStoc.LoturiNoi} noi; data FIFO parsată pe {rezStoc.Loturi - rezStoc.DateNeparsate})
+    ║   rânduri de stoc          {rezStoc.RanduriStoc,10} (Σ {rezStoc.ValoareScrisa:N2} lei / {rezStoc.CantitateScrisa:N3} buc)
+    ║ DIFERENȚELE SURSEI (raportate, nu ascunse — decizia 34f)
+    ║   grupe total-negative     {rezStoc.GrupeSarite,10} (Σ {rezStoc.ValoareSarita:N2} lei / {rezStoc.CantitateSarita:N3} buc)
+    ║   poziții orfane           {stocOrfan.Count,10} (Σ {stocOrfan.Sum(s => s.Valoare):N2} lei)
+    ║   Δ sold contabil − stoc   {stocOrfan.Sum(s => s.Valoare) + rezStoc.ValoareSarita,10:N2} lei
+    ║ CONTRACTUL DE RECONCILIERE (design §8, restrâns la deschidere)
+    ║   1. sold per cont OMFP    {rezRec.SimboluriContabile,10} simboluri comparate, {rezRec.DiferenteContabile} diferențe
+    ║   2. ancora {Deschidere.Ancora,-14}  {rezRec.AncoraDb,10:N2} în bază = {rezRec.AncoraSursa:N2} în sursă
+    ║   3. stoc produs×gestiune  {rezRec.CheiStoc,10} chei comparate, {rezRec.Nejustificate} nejustificate
+    ║      justificate           {rezRec.JustificateGasite,10} chei (Σ {rezRec.JustificatV:N2} lei / {rezRec.JustificatQ:N3} buc)
+    ║ REZULTAT: {(esecuri == 0 ? "CONTRACT ÎNDEPLINIT" : $"{esecuri} VERIFICĂRI PICATE")}, {avertismente.Count} avertismente, deschidere {durataDeschidere:hh\:mm\:ss} / total {cronometru.Elapsed:hh\:mm\:ss}
+    ╚═══════════════════════════════════════════════════════════════════════════════
+    """);
+
 // ==================== Rezumat ====================
 
 foreach (var a in avertismente)
     Console.WriteLine($"AVERT {a}");
 Console.WriteLine(esecuri == 0
-    ? "\nSmoke 1C încheiat fără eșecuri."
-    : $"\nSmoke 1C încheiat cu {esecuri} eșecuri.");
+    ? "\nImport 1C (deschidere + reconciliere) încheiat fără eșecuri."
+    : $"\nImport 1C (deschidere + reconciliere) încheiat cu {esecuri} eșecuri.");
 return esecuri == 0 ? 0 : 1;
