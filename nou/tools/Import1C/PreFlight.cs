@@ -17,10 +17,11 @@ static class PreFlight {
     public record Rezultat(
         int Coduri, int PrinDictionar, int PrinMecanica, int Nerezolvabile, int PeSumator,
         int RanduriReziduale,
-        int Tipuri, int TipuriNecunoscute, int TipuriNeimplementate, int DocumenteNeacoperite);
+        int Tipuri, int TipuriNecunoscute, int TipuriNeimplementate, int DocumenteNeacoperite,
+        int Antete, int AntetePostate, int PostateFaraNote, int LiniiFaraCota);
 
     public static Rezultat Executa(
-            FlaxDb flax, int an, MapariConturi mapari,
+            FlaxDb flax, int an, int panaLa, MapariConturi mapari,
             IReadOnlyDictionary<string, Guid> plan,
             IReadOnlySet<string> sumatori,
             IReadOnlyDictionary<string, string> denumiriOmfp,
@@ -133,9 +134,59 @@ static class PreFlight {
             + $"({neimplementate.Count} fără handler, {docNeacoperite} documente neacoperite)",
             neimplementate.Count == 0);
 
+        // ---- 3. Volumul per view: antetele pe care le vor citi cititorii ----
+        // Cititorii documentelor filtrează pe `Posted <> 0x00` (FlaxDocumente.cs).
+        // Ipoteza pe care stă filtrul e că un document NEPOSTAT nu are rânduri în
+        // registrul contabil — dacă ar avea, importul ar pierde tăcut postări.
+        // Se verifică din cele două numărători deja făcute: documentele care
+        // POSTEAZĂ (recensământul Recorder) trebuie să încapă în antetele Posted.
+        var volume = flax.VolumeAntete(an);
+        var postePeTip = tipuri.Where(t => t.Nume != null)
+            .ToDictionary(t => t.Nume, t => t.Documente, StringComparer.Ordinal);
+        Console.WriteLine($"\n  VOLUM DOCUMENTE {an} (antete în sursă vs. documente care postează):");
+        Console.WriteLine($"  {"View 1C",-42} {"Antete",8} {"Posted",8} {"Postează",9} {"Δ",7}  notă");
+        var acoperireRea = 0;
+        foreach (var v in volume.OrderByDescending(v => v.Postate)) {
+            var posteaza = postePeTip.GetValueOrDefault(v.View);
+            var delta = v.Postate - posteaza;
+            if (delta < 0) {
+                acoperireRea++;
+                avert($"View {v.View}: {posteaza} documente postează în {an}, dar doar {v.Postate} "
+                    + "antete au Posted=1 — filtrul cititorilor ar ascunde postări (FlaxDocumente.cs).");
+            }
+            Console.WriteLine($"  {v.View,-42} {v.Antete,8} {v.Postate,8} {posteaza,9} {delta,7}  "
+                + (delta < 0 ? "ACOPERIRE RUPTĂ" : delta > 0 ? "antete Posted fără rânduri contabile" : ""));
+        }
+        var postateFaraNote = volume.Sum(v => Math.Max(0, v.Postate - postePeTip.GetValueOrDefault(v.View)));
+        check($"Pre-flight volume: fiecare view are documentele care postează în interiorul "
+            + $"antetelor Posted ({acoperireRea} view-uri cu acoperire ruptă; {postateFaraNote} "
+            + "antete Posted fără rânduri contabile — documente goale sau neutre contabil)",
+            acoperireRea == 0);
+
+        // ---- 4. View-uri STALE: cotele de TVA de 21% ----
+        // `CotaTVA` e decodată în view printr-un CASE peste GUID-urile cotelor,
+        // fixat la generare; elementele de 21% (1 august 2025) nu sunt în el și
+        // ies NULL. Ocolirea în conector ar rupe contractul de coloane (§2) —
+        // singura reparație e regenerarea view-urilor. Verificarea depinde de
+        // `--pana-la`: lunile 1–7 sunt curate, din august pică.
+        var faraCota = flax.LiniiFaraCotaTva(an, panaLa);
+        var totalFaraCota = faraCota.Sum(x => x.Linii);
+        if (totalFaraCota > 0) {
+            Console.WriteLine($"\n  LINII FĂRĂ COTĂ DE TVA (lunile 1..{panaLa}):");
+            foreach (var x in faraCota.Where(x => x.Linii > 0).OrderByDescending(x => x.Linii))
+                Console.WriteLine($"  {x.Sectiune,-52} {x.Linii,8}");
+            avert($"View-urile SkyConta sunt generate ÎNAINTEA cotelor de 21%: {totalFaraCota} linii "
+                + $"de document din lunile 1..{panaLa} ies cu CotaTVA NULL. Regenerează view-urile "
+                + "(design §2, rețeta 8.A din inventar) — conectorul NU are voie să ocolească prin "
+                + "dicționar propriu de GUID-uri.");
+        }
+        check($"Pre-flight cote TVA: toate liniile de document din lunile 1..{panaLa} au cotă "
+            + $"decodată în view ({totalFaraCota} linii fără cotă)", totalFaraCota == 0);
+
         return new Rezultat(coduri.Count, prinDictionar, prinMecanica,
             probleme.Count(p => p.Motiv == "NEREZOLVABIL"), probleme.Count(p => p.Motiv == "SUMATOR"),
-            reziduale, tipuri.Count, necunoscute.Count, neimplementate.Count, docNeacoperite);
+            reziduale, tipuri.Count, necunoscute.Count, neimplementate.Count, docNeacoperite,
+            volume.Sum(v => v.Antete), volume.Sum(v => v.Postate), postateFaraNote, totalFaraCota);
     }
 
     // Sugestia pentru un cod nerezolvabil: forma concatenată, cu cifre terminale

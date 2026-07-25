@@ -54,7 +54,10 @@ record FlaxCodMiscare(string Cod, int Randuri, int Documente);
 
 record FlaxTipRecorder(string TypeRef, string Nume, int Documente, int Randuri);
 
-class FlaxDb(string connectionString) : IDisposable {
+// Clasa e PARȚIALĂ: nomenclatoarele + balanțele + măturile pre-flight stau aici,
+// cititorii documentelor anului (pasul 2 al feliei 1C-c) în `FlaxDocumente.cs`.
+// Helper-ele private (Query/Text/Dec/Bit/Hex/Int) sunt comune ambelor jumătăți.
+partial class FlaxDb(string connectionString) : IDisposable {
     readonly SqlConnection conn = Open(connectionString);
 
     static SqlConnection Open(string cs) {

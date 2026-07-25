@@ -45,6 +45,10 @@ var sabotaj = false;
 // raportează și diferențele se poartă înainte.
 var panaLa = 12;
 var continua = false;
+// `--cititori` = auto-testul contractului de coloane (SmokeCititori.cs): cheamă
+// o dată fiecare cititor de document pe prima lună a ferestrei. Opt-in fiindcă e
+// probă de FORMĂ, nu de conținut — se rulează după orice regenerare de view-uri.
+var smokeCititori = false;
 for (var i = 0; i < args.Length; i++) {
     var arg = args[i];
     if (!arg.StartsWith("--")) {
@@ -59,6 +63,9 @@ for (var i = 0; i < args.Length; i++) {
         case "--continua":
             continua = true;
             break;
+        case "--cititori":
+            smokeCititori = true;
+            break;
         case "--pana-la":
             valoare ??= i + 1 < args.Length ? args[++i] : null;
             if (!int.TryParse(valoare, out panaLa) || panaLa is < 1 or > 12) {
@@ -68,7 +75,7 @@ for (var i = 0; i < args.Length; i++) {
             break;
         default:
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
-                + "[--pana-la <lună>] [--continua] [--sabotaj]");
+                + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori]");
             return 2;
     }
 }
@@ -175,8 +182,15 @@ string Mapeaza(string cod1C) => MapeazaCont(cod1C, planAtlas);
 using var flax = new FlaxDb(flaxCs);
 var plan1C = flax.PlanConturi();
 
-var preflight = PreFlight.Executa(flax, dataDeschidere.Year, mapari, planAtlas, sumatoriAtlas,
-    denumiriAtlas, copiiAtlas, plan1C, Handlere.Cunoscute, Handlere.Implementate, Avert, Check);
+// `panaLa` intră în pre-flight fiindcă una dintre verificări e a FERESTREI, nu a
+// anului: cotele de TVA de 21% lipsesc din view-urile stale abia din august, iar
+// o rulare pe ianuarie n-are de ce să pice pentru date pe care nu le atinge.
+var preflight = PreFlight.Executa(flax, dataDeschidere.Year, panaLa, mapari, planAtlas,
+    sumatoriAtlas, denumiriAtlas, copiiAtlas, plan1C, Handlere.Cunoscute, Handlere.Implementate,
+    Avert, Check);
+
+if (smokeCititori)
+    SmokeCititori.Executa(flax, dataDeschidere.Year, 1, Check);
 
 // ======================= Faza Nomenclatoare (pasul 2) =======================
 // Nomenclatoarele MICI se importă integral: sunt laturi de document (gestiuni,
@@ -519,6 +533,8 @@ Console.WriteLine($"""
     ║ PRE-FLIGHT (decizia 48c — triaj înaintea primului document)
     ║   coduri de cont {anImport}      {preflight.Coduri,10} ({preflight.PrinDictionar} prin dicționar, {preflight.PrinMecanica} prin mecanică, {preflight.Nerezolvabile + preflight.PeSumator} probleme)
     ║   tipuri Recorder {anImport}     {preflight.Tipuri,10} ({preflight.TipuriNecunoscute} necunoscute, {preflight.TipuriNeimplementate} fără handler → {preflight.DocumenteNeacoperite} documente neacoperite)
+    ║   antete de citit {anImport}     {preflight.AntetePostate,10} Posted din {preflight.Antete} ({preflight.PostateFaraNote} fără rânduri contabile)
+    ║   linii fără cotă TVA      {preflight.LiniiFaraCota,10} în lunile 1..{panaLa} (view-uri stale ⇒ regenerare)
     ║ NOMENCLATOARE IMPORTATE (procesate / noi în rularea asta)
     ║   gestiuni                 {impDepozite.Procesate,10} / {impDepozite.Noi}
     ║   conturi proprii          {impCasierii.Procesate + impConturi.Procesate,10} / {impCasierii.Noi + impConturi.Noi}  (casierii + bancare)
