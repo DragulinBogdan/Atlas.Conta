@@ -85,6 +85,12 @@ internal static class ProfilPrivat {
         (string Clasa, string Cod, string Denumire)[] tipuri = [
             ("MP", "301", "Materii prime"),
             ("M", "302", "Materiale consumabile"),
+            // Gradul II al lui 302: 1C ține stocul pe `302.1`/`302.8`, iar Cod-ul
+            // Tipului E simbolul de cont (decizia 26b) — fără ele, pozițiile de
+            // deschidere de pe aceste conturi n-ar putea deveni loturi. Derivările
+            // (ContImplicit din simbol, 6xx=3xx → 6021/6028) le prind automat.
+            ("M", "3021", "Materiale auxiliare"),
+            ("M", "3028", "Alte materiale consumabile"),
             ("OI", "303", "Materiale de natura obiectelor de inventar"),
             ("PF", "345", "Produse finite"),
             ("MF", "371", "Mărfuri"),

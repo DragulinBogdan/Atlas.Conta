@@ -21,14 +21,13 @@ using Microsoft.EntityFrameworkCore;
 //
 // PASUL 1 (felia 1C-b): schelet + citirea sursei + baza pregătită.
 // PASUL 2: nomenclatoarele mici (integral) + helper-ele de import la cerere
-// pentru cele mari (Nomenclatoare.cs). Deschiderea și reconcilierea: pașii 3-4.
+// pentru cele mari (Nomenclatoare.cs).
+// PASUL 3: DESCHIDEREA la 01.01.2025 — solduri contabile + loturi/stoc, scrise
+// direct în registre cu `DocumentId = null` (Deschidere.cs). Reconcilierea
+// deschiderii: pasul 4.
 
 // Argumentele pozitionale sunt conexiunile; flag-urile „--" se filtrează.
 var pozitionale = args.Where(a => !a.StartsWith("--")).ToArray();
-// Exercițiul helper-elor la cerere creează parteneri/produse REALI în baza
-// țintă. Ei aparțin pasului 3 (deschiderea îi cere), deci implicit nu rulează —
-// flag-ul e pentru verificarea mecanicii (creare, legătură, cache, idempotență).
-var exerseazaLaCerere = args.Contains("--exerseaza");
 
 var flaxCs = pozitionale.Length > 0
     ? pozitionale[0]
@@ -97,7 +96,30 @@ using (var os = provider.CreateObjectSpace()) {
 // (`121.25` → `12125`? nu → `121` da). Override-urile rămân pentru cazurile în
 // care mecanica greșește — se populează pe măsură ce importul le scoate
 // (decizia 21: fiecare gaură = decizie explicită, nu transcriere).
-Dictionary<string, string> overrideCont = new();
+//
+// Cele 9 de mai jos sunt exact găurile scoase de smoke-ul pasului 2 (4 coduri
+// nerezolvabile + 5 solduri care cădeau pe conturi SUMATOARE). Fiecare e o
+// decizie de profil, luată pe denumirea contului din ambele planuri — nu o
+// transcriere mecanică (decizia 21/35b).
+Dictionary<string, string> overrideCont = new() {
+    // 1C ține subvențiile pentru investiții pe „132."; OMFP are aceeași
+    // denumire pe 4752 („Împrumuturi nerambursabile cu caracter de subvenții").
+    ["132"] = "4752",
+    // Impozitul pe dividende → „Alte impozite, taxe și vărsăminte asimilate".
+    ["4465"] = "446",
+    // Contribuțiile salariatului: 43111 = CASS (4316), 43115 = CAS (4315).
+    ["43111"] = "4316",
+    ["43115"] = "4315",
+    // Profitul nerepartizat per an (117.21/22/23) → 1171; anul se pierde ca
+    // analitic, iar 117 e SUMATOR în OMFP.
+    ["117.21"] = "1171",
+    ["117.22"] = "1171",
+    ["117.23"] = "1171",
+    // Terenuri: 211 e sumator în OMFP, soldul aparține lui 2111.
+    ["211.3"] = "2111",
+    // Clienți din străinătate: 411 e sumator, soldul aparține lui 4111.
+    ["411.2"] = "4111",
+};
 
 string MapeazaCont(string cod1C, IReadOnlyDictionary<string, Guid> plan) {
     var s = cod1C?.Trim().TrimEnd('.') ?? "";
@@ -145,53 +167,72 @@ Console.WriteLine($"Casierii → ContPropriu:         {impCasierii.Procesate,5} 
 Console.WriteLine($"Conturi bancare → ContPropriu:  {impConturi.Procesate,5} / {impConturi.Noi}");
 Console.WriteLine($"Persoane fizice → Angajat:      {impPersoane.Procesate,5} / {impPersoane.Noi}");
 
-// Helper-ele la cerere: exercițiu opțional (--exerseaza) pe un eșantion mic din
-// exact referințele pe care le va cere pasul 3 — parteneri din soldurile
-// analitice, produse din pozițiile de stoc (contul poziției dă TipMaterial-ul).
-if (exerseazaLaCerere) {
-    var laCerere = new ImportLaCerere(provider, flax, Avert);
-    using (var os = provider.CreateObjectSpace()) {
-        var plan = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
-        var tipuri = os.GetObjectsQuery<TipMaterial>().Select(t => t.Cod).ToHashSet();
-        var partenerii = flax.SolduriPartener(dataDeschidere).Select(s => s.PartenerId).Take(3).ToList();
-        // Poziții pe simboluri care AU Tip în profil (calea de creare) + una fără
-        // (calea de raportare a găurii) — ambele ramuri, o dată.
-        var pozitii = flax.StocDeschidere(dataDeschidere)
-            .Select(p => (p.NomenclatorId, Simbol: MapeazaCont(p.Cont, plan)))
-            .Where(x => x.Simbol != null && tipuri.Contains(x.Simbol))
-            .DistinctBy(x => x.NomenclatorId).Take(3)
-            .Concat(flax.StocDeschidere(dataDeschidere)
-                .Select(p => (p.NomenclatorId, Simbol: MapeazaCont(p.Cont, plan)))
-                .Where(x => x.Simbol == null || !tipuri.Contains(x.Simbol)).Take(2))
-            .ToList();
-
-        foreach (var id in partenerii)
-            laCerere.AsiguraPartener(id);
-        foreach (var (id, simbol) in pozitii)
-            laCerere.AsiguraProdus(id, simbol);
-        // A doua trecere pe aceleași referințe: cache-ul (și setul de respinse)
-        // trebuie să le servească fără să creeze și fără să re-avertizeze.
-        foreach (var id in partenerii)
-            laCerere.AsiguraPartener(id);
-        foreach (var (id, simbol) in pozitii)
-            laCerere.AsiguraProdus(id, simbol);
-    }
-    Console.WriteLine($"La cerere (--exerseaza): {laCerere.ParteneriNoi} parteneri noi, "
-        + $"{laCerere.ProduseNoi} produse noi, {laCerere.Recuperate} recuperate, "
-        + $"{laCerere.ReferinteMoarte} referințe moarte, {laCerere.ProduseFaraTip} fără TipMaterial.");
-}
-
-// ============================ Faza SMOKE ============================
-// Citește sursa integral la data deschiderii și verifică invarianții pe care se
-// sprijină pașii 3-4: planul Atlas are ancorele, maparea de cont funcționează
-// pe formele reale, balanța 1C e echilibrată, iar stocul per lot reconciliază
-// cu soldul contabil (dovada că BalantaNivel3 e o defalcare fidelă a Balanței).
+// ======================= Citirea sursei la deschidere =======================
+// Se citește o singură dată, integral, și se folosește de toate fazele care
+// urmează (deschiderea propriu-zisă + smoke-ul de la final).
 
 var plan1C = flax.PlanConturi();
 var solduri = flax.SolduriDeschidere(dataDeschidere);
 var solduriPartener = flax.SolduriPartener(dataDeschidere);
 var stoc = flax.StocDeschidere(dataDeschidere);
 var stocOrfan = flax.StocFaraIdentitate(dataDeschidere);
+
+// ==================== Faza DESCHIDERE (pasul 3) ====================
+// Rândurile de deschidere poartă data ULTIMEI zile a anului precedent
+// (precedentul pasului 4, decizia 34d): soldul e rezultatul lui 2024, iar
+// documentele importate ale lui 2025 se așază după el, nu peste el.
+var dataRanduri = DateOnly.FromDateTime(dataDeschidere.AddDays(-1));
+
+// Snapshot-ul planului Atlas: maparea de cont se aplică în toate fazele.
+Dictionary<string, Guid> planAtlas;
+using (var os = provider.CreateObjectSpace())
+    planAtlas = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
+string Mapeaza(string cod1C) => MapeazaCont(cod1C, planAtlas);
+
+var cronometru = System.Diagnostics.Stopwatch.StartNew();
+
+Console.WriteLine($"\n--- Deschiderea contabilă la {dataRanduri:yyyy-MM-dd} ---");
+var extrabilantiere1C = plan1C.Where(c => c.Extrabilantier).Select(c => c.Cod).ToHashSet();
+var rezContabil = Deschidere.Contabile(provider, solduri, extrabilantiere1C, Mapeaza,
+    dataRanduri, Avert, Check);
+Console.WriteLine($"Registru contabil: {rezContabil.Randuri} rânduri contra ancorei "
+    + $"{Deschidere.Ancora}; extrabilanțiere sărite: {rezContabil.Extrabilantiere} "
+    + $"({rezContabil.SumaExtrabilantiera:N2}); reziduul propriu al sursei pe ancoră: "
+    + $"{rezContabil.ReziduuAncora:N2}.");
+
+Console.WriteLine($"\n--- Stocul de deschidere la {dataRanduri:yyyy-MM-dd} ---");
+var laCerere = new ImportLaCerere(provider, flax, Avert);
+var rezStoc = Deschidere.Stoc(provider, laCerere, stoc, Mapeaza, dataRanduri, Avert, Check);
+Console.WriteLine($"Loturi: {rezStoc.Loturi} (noi în rularea asta: {rezStoc.LoturiNoi}) "
+    + $"din {stoc.Count} poziții; produse: {rezStoc.Produse} distincte "
+    + $"({rezStoc.ProduseNoi} noi, {rezStoc.ProduseFaraTip} refuzate).");
+Console.WriteLine($"Data lotului parsată din descrierea documentului creator: "
+    + $"{rezStoc.Loturi - rezStoc.DateNeparsate}/{rezStoc.Loturi} "
+    + $"({(rezStoc.Loturi == 0 ? 0 : 100.0 * (rezStoc.Loturi - rezStoc.DateNeparsate) / rezStoc.Loturi):N1}%).");
+Console.WriteLine($"Netare: {rezStoc.PozitiiNegative} celule negative absorbite; "
+    + $"{rezStoc.GrupeSarite} grupe produs×depozit cu total negativ SĂRITE "
+    + $"({rezStoc.CantitateSarita:N3} buc, {rezStoc.ValoareSarita:N2} lei); "
+    + $"{rezStoc.CeluleDegenerate} celule rămase cu o singură coordonată nenulă.");
+Console.WriteLine($"Registru stoc: {rezStoc.RanduriStoc} rânduri de deschidere; "
+    + $"Σ {rezStoc.ValoareScrisa:N2} lei / {rezStoc.CantitateScrisa:N3} buc.");
+Console.WriteLine($"La cerere: {laCerere.ParteneriNoi} parteneri noi, {laCerere.ProduseNoi} produse noi, "
+    + $"{laCerere.Recuperate} recuperate, {laCerere.ReferinteMoarte} referințe moarte, "
+    + $"{laCerere.ProduseFaraTip} fără TipMaterial.");
+Console.WriteLine($"Durata fazei de deschidere: {cronometru.Elapsed:hh\\:mm\\:ss}.");
+
+// Diferența stoc↔contabilitate a SURSEI: pozițiile orfane (fără produs sau fără
+// depozit) rămân doar în soldul contabil, iar grupele total-negative nu se pot
+// reprezenta. Se raportează, nu se ascund (34f).
+Console.WriteLine($"Diferență stoc↔contabilitate a sursei: {stocOrfan.Count} poziții orfane "
+    + $"({stocOrfan.Sum(s => s.Valoare):N2} lei) + {rezStoc.GrupeSarite} grupe total-negative "
+    + $"({rezStoc.ValoareSarita:N2} lei) = {stocOrfan.Sum(s => s.Valoare) + rezStoc.ValoareSarita:N2} lei "
+    + "diferență algebrică sold contabil − registru de stoc.");
+
+// ============================ Faza SMOKE ============================
+// Verifică invarianții pe care se sprijină pașii 3-4: planul Atlas are ancorele,
+// maparea de cont funcționează pe formele reale, balanța 1C e echilibrată, iar
+// stocul per lot reconciliază cu soldul contabil (dovada că BalantaNivel3 e o
+// defalcare fidelă a Balanței).
 
 Console.WriteLine($"\n--- Sursa 1C (flax), deschidere {dataDeschidere:yyyy-MM-dd} ---");
 Console.WriteLine($"Depozite:          {depozite.Count} (elemente: {depozite.Count(d => d.EsteElement)}, marcate șterse: {depozite.Count(d => d.Marcat)})");
@@ -230,10 +271,11 @@ foreach (var cont in stoc.Select(s => s.Cont).Concat(stocOrfan.Select(s => s.Con
     if (orfan != 0 || stocOrfan.Any(s => s.Cont == cont))
         Avert($"Cont de stoc {cont}: {stocOrfan.Count(s => s.Cont == cont)} poziții orfane "
             + $"({orfan:N2} lei, {stocOrfan.Where(s => s.Cont == cont).Sum(s => s.Cantitate):N3} buc) "
-            + "fără produs/depozit — nu pot deveni loturi; de tranșat la pasul 3.");
+            + "fără produs/depozit — nu au devenit loturi; rămân doar în soldul contabil "
+            + "(diferență a sursei, raportată).");
     if (importabil == 0 && orfan == 0 && sold != 0)
         Avert($"Cont de stoc {cont} are sold {sold:N2} dar NICIO poziție în BalantaNivel3 "
-            + "— deschiderea lui nu are detaliu de lot (de tranșat la pasul 3).");
+            + "— deschiderea lui nu are detaliu de lot (diferență a sursei).");
 }
 
 // ==================== Planul Atlas: ancore + maparea de cont ====================
@@ -267,7 +309,7 @@ using (var os = provider.CreateObjectSpace()) {
         + (nerezolvate.Count > 0 ? $" ({nerezolvate.Sum(x => Math.Abs(x.SoldIni)):N2} în valoare absolută)" : ""));
     foreach (var x in nerezolvate.OrderByDescending(x => Math.Abs(x.SoldIni)))
         Avert($"Cont 1C {x.Cont} (sold {x.SoldIni:N2}) nu se mapează pe planul OMFP "
-            + "— de tranșat la pasul 3 (override sau cont nou în profil).");
+            + "— cere un rând în `overrideCont` (deschiderea a eșuat deja pe el).");
 
     // Soldurile nu au voie să cadă pe un cont SUMATOR — dar rezolvarea NU e
     // aici: 1C ține soldul pe sinteticul de gradul I (`411.`, `211.`) acolo
@@ -279,10 +321,10 @@ using (var os = provider.CreateObjectSpace()) {
         .Select(s => (s.Cont, s.SoldIni, Simbol: MapeazaCont(s.Cont, plan)))
         .Where(x => x.Simbol != null && sumatori.Contains(x.Simbol))
         .ToList();
-    Console.WriteLine($"Solduri care cad pe cont SUMATOR (cer override la pasul 3): {peSumator.Count}");
+    Console.WriteLine($"Solduri care cad pe cont SUMATOR (cer override): {peSumator.Count}");
     foreach (var x in peSumator.OrderByDescending(x => Math.Abs(x.SoldIni)))
         Avert($"Cont 1C {x.Cont} (sold {x.SoldIni:N2}) → {x.Simbol}, care e SUMATOR în OMFP "
-            + "— cere override pe un cont de gradul II (decizie de profil, pasul 3).");
+            + "— cere override pe un cont de gradul II (deschiderea a eșuat deja pe el).");
 
     // Acoperirea Clasă/Tip a stocului de deschidere. Fiecare poziție va cere un
     // `Produs` cu TipMaterial = Tipul al cărui Cod E simbolul contului (decizia
@@ -322,7 +364,8 @@ using (var os = provider.CreateObjectSpace()) {
 
     Console.WriteLine($"\n--- Nomenclatoare în Postgres ---");
     Console.WriteLine($"Gestiuni: {gestiuni.Count}, conturi proprii: {conturiProprii.Count}, "
-        + $"angajați: {angajati.Count}, parteneri: {parteneriNoi}, produse: {produseNoi}.");
+        + $"angajați: {angajati.Count}, parteneri: {parteneriNoi}, produse: {produseNoi}, "
+        + $"loturi: {os.GetObjectsCount(typeof(Lot), null)}.");
 
     void VerificaSursa<T>(string view, int randuriSursa, IReadOnlyList<T> entitati, int dinSeed)
             where T : Repartitor {
