@@ -256,11 +256,11 @@ static class HandlerFactura {
 
         // Recepția liniilor de stoc se postează pe NIR-ul conex (26a), la net.
         foreach (var m in plan.Marfuri) {
-            punte.ActualAtlas(m.Tip.Cod, Catalog.CreditorFacturaIntrare(m.Tip.Natura), m.Net);
+            punte.ActualAtlas(m.Tip.Simbol, Catalog.CreditorFacturaIntrare(m.Tip.Natura), m.Net);
             PunteTva(cat, punte, m.TipTvaId, m.Tva, m.Tip.Natura);
         }
         foreach (var s in plan.Servicii) {
-            punte.ActualAtlas(s.Tip.Cod, Catalog.CreditorFacturaIntrare(s.Tip.Natura), s.Net);
+            punte.ActualAtlas(s.Tip.Simbol, Catalog.CreditorFacturaIntrare(s.Tip.Natura), s.Net);
             PunteTva(cat, punte, s.TipTvaId, s.Tva, s.Tip.Natura);
         }
     }

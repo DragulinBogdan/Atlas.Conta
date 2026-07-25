@@ -15,7 +15,11 @@ namespace Import1C;
 // Clasă/Tip, pre-încărcat: `Registru` oglindește rândurile RegulaStoc private
 // (generic → Magazie, MF → Marfuri) — handlerele au nevoie de registru înaintea
 // motorului, ca să ceară supapei de alocare soldul din cutia corectă.
-sealed record TipInfo(Guid Id, string Cod, string ClasaCod, NaturaClasa Natura) {
+// `Simbol` = contul pe care Tipul chiar POSTEAZĂ (ContImplicit) — diferă de
+// `Cod` doar la gemenii ne-stoc („S371" postează pe 371). Punțile îl folosesc pe
+// EL: declararea pe Cod ar produce simboluri inexistente în plan („S371"), iar
+// nota de punte ar pica la materializare (defect D5 al review-ului advers).
+sealed record TipInfo(Guid Id, string Cod, string ClasaCod, NaturaClasa Natura, string Simbol) {
     public TipStoc Registru => ClasaCod == "MF" ? TipStoc.Marfuri : TipStoc.Magazie;
 }
 
@@ -84,8 +88,9 @@ sealed class Catalog {
         ComisieId = CereRepartitor(os, "COMISIE");
         ConsumatorFinalId = CereRepartitor(os, "CF");
         foreach (var t in os.GetObjectsQuery<TipMaterial>()
-                     .Select(t => new { t.ID, t.Cod, ClasaCod = t.Clasa.Cod, t.Clasa.Natura }).ToList())
-            tipuri[t.Cod] = new TipInfo(t.ID, t.Cod, t.ClasaCod, t.Natura);
+                     .Select(t => new { t.ID, t.Cod, ClasaCod = t.Clasa.Cod, t.Clasa.Natura,
+                         SimbolCont = t.ContImplicit.Simbol }).ToList())
+            tipuri[t.Cod] = new TipInfo(t.ID, t.Cod, t.ClasaCod, t.Natura, t.SimbolCont ?? t.Cod);
         TipTrezorerieId = tipuri.TryGetValue("TRZ", out var trz)
             ? trz.Id
             : throw new InvalidOperationException("Profilul privat nu are Tipul tehnic TRZ (seed).");
@@ -238,7 +243,7 @@ sealed class Catalog {
         tip.ContImplicitId = contId;
         os.CommitChanges();
         var info = new TipInfo(tip.ID, cod, clasaCod,
-            imobilizare ? NaturaClasa.Imobilizare : NaturaClasa.Serviciu);
+            imobilizare ? NaturaClasa.Imobilizare : NaturaClasa.Serviciu, simbol);
         tipuri[cod] = info;
         return info;
     }

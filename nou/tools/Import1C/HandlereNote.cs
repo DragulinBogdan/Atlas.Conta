@@ -206,10 +206,17 @@ static class HandlerCompensare {
             foreach (var r in randuri) {
                 if (r.Suma == 0m)
                     continue;
-                var tinta = subconto.Latura(r.Linie, Subconto.Debit).DeFel(Subconto.FelDocumente)
-                    ?? subconto.Latura(r.Linie, Subconto.Credit).DeFel(Subconto.FelDocumente);
-                if (tinta != null)
-                    yield return new StingereSursa(View, h.Id, tinta, Math.Abs(r.Suma));
+                // CÂTE O stingere per latură care poartă document (review advers,
+                // D1): rândul 401=4111 cu factura furnizorului pe debit ȘI a
+                // clientului pe credit stinge DOUĂ documente în 1C (104 linii pe
+                // 2025) — exact cazul pentru care capacitatea notei e per latură
+                // (2X pe același partener). Doar debitul ar pierde creditul.
+                var debit = subconto.Latura(r.Linie, Subconto.Debit).DeFel(Subconto.FelDocumente);
+                var credit = subconto.Latura(r.Linie, Subconto.Credit).DeFel(Subconto.FelDocumente);
+                if (debit != null)
+                    yield return new StingereSursa(View, h.Id, debit, Math.Abs(r.Suma));
+                if (credit != null)
+                    yield return new StingereSursa(View, h.Id, credit, Math.Abs(r.Suma));
             }
         }
     }

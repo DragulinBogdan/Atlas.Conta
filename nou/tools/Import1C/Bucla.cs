@@ -309,8 +309,19 @@ sealed class BuclaImport {
     // cronologie; aici nu se ocolește niciunul: gardienii lui sunt ai modelului,
     // nu ai importului.
     void InchidereTva(ContextLuna ctx) {
+        // Gardul review-ului advers (D2a): o lună cu eșecuri de import are solduri
+        // de TVA INCOMPLETE — închiderea generată acum ar îngheța cifre greșite,
+        // iar rularea care repară documentele n-ar mai putea-o regenera (ITV viu ⇒
+        // serviciul întoarce null). Se sare zgomotos; rularea reparată o generează.
+        if (esecuri > 0) {
+            avert($"Luna {ctx.Luna:00}/{ctx.An}: {esecuri} eșecuri de import — închiderea de TVA "
+                + "NU se generează (ar prinde solduri incomplete); se generează la rularea care repară.");
+            itvSarite++;
+            return;
+        }
         var stare = ImportaDocument("InchidereTva", $"{ctx.An:0000}-{ctx.Luna:00}",
-            os => InchidereTvaService.Genereaza(os, ctx.An, ctx.Luna, Catalog.SediuId));
+            os => InchidereTvaService.Genereaza(os, ctx.An, ctx.Luna, Catalog.SediuId),
+            regenerabilLaStorno: true);
         if (stare == StareImport.Sarit)
             itvSarite++;
     }
@@ -379,14 +390,20 @@ sealed class BuclaImport {
     // fără linii utile). Operarea se face imediat, în același ObjectSpace:
     // `MotorOperare.Opereaza` își comite singur tranzacția și întoarce copilul
     // autogenerat (conex NIR / secundar Plata), care se operează la rândul lui.
+    // `regenerabilLaStorno` (review advers, D2b): pentru documentele UNELTEI
+    // (azi doar ITV), stornarea e calea documentată de regenerare (46f) — la
+    // reluare legătura moartă se șterge și documentul se regenerează, altfel
+    // luna ar rămâne închisă pe cifre vechi pentru totdeauna. Documentele SURSEI
+    // rămân la comportamentul conservator (stornat = sărit).
     public StareImport ImportaDocument(string view, string cheieHex,
-            Func<IObjectSpace, Document> construiesteDraft) {
-        var rezultat = Executa(view, cheieHex, construiesteDraft);
+            Func<IObjectSpace, Document> construiesteDraft, bool regenerabilLaStorno = false) {
+        var rezultat = Executa(view, cheieHex, construiesteDraft, regenerabilLaStorno);
         Numara(view);
         return rezultat;
     }
 
-    StareImport Executa(string view, string cheieHex, Func<IObjectSpace, Document> construiesteDraft) {
+    StareImport Executa(string view, string cheieHex, Func<IObjectSpace, Document> construiesteDraft,
+            bool regenerabilLaStorno = false) {
         var cheie = (Legaturi.Tabela(view), cheieHex);
         if (legaturi.TryGetValue(cheie, out var tinta)) {
             if (!stari.TryGetValue(tinta, out var stare)) {
@@ -407,10 +424,17 @@ sealed class BuclaImport {
             else if (stare == StareDocument.Draft)
                 return ReOpereaza(tinta, view, cheieHex);
             else {
-                avert($"1C:{view}/{cheieHex}: documentul din bază e {stare} — sărit "
-                    + "(importul nu re-operează un document stornat).");
-                sarite++;
-                return StareImport.Sarit;
+                if (!regenerabilLaStorno) {
+                    avert($"1C:{view}/{cheieHex}: documentul din bază e {stare} — sărit "
+                        + "(importul nu re-operează un document stornat).");
+                    sarite++;
+                    return StareImport.Sarit;
+                }
+                // Documentul uneltei, stornat deliberat (regenerarea 46f): legătura
+                // moare, iar mai jos se generează unul proaspăt.
+                avert($"1C:{view}/{cheieHex}: document al uneltei stornat — se regenerează.");
+                StergeLegatura(view, cheieHex);
+                legaturi.Remove(cheie);
             }
         }
 
