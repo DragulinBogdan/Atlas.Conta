@@ -210,10 +210,17 @@ static partial class Deschidere {
             Func<string, string> mapeaza,
             DateOnly data, Action<string> avert, Action<string, bool> check) {
 
-        // ---- 1. Gruparea pe loturi (document creator × produs) ----
+        // ---- 1. Gruparea pe loturi (document creator × produs × CONT) ----
         // Același lot poate sta în MAI MULTE depozite: Atlas ține soldul per
         // Lot × Repartitor, iar `Lot.Gestiune` e doar gestiunea NAȘTERII —
-        // deci cheia lotului NU include depozitul (design §3).
+        // deci cheia lotului NU include depozitul (design §3). Include în schimb
+        // SIMBOLUL contului (fix review 1C-b): subconto-ul 1C e per cont, iar 46
+        // de perechi (document, produs) stau pe mai multe conturi de stoc la
+        // deschidere — fuzionarea lor ar amesteca marfă (371) cu materiale
+        // (3028) într-un singur lot, cu TipStoc-ul și contarea 1C-c ale celui
+        // greșit.
+        string CheieLot(FlaxPozitieStoc p) =>
+            $"{p.DocTip}:{p.DocId}:{p.NomenclatorId}:{mapeaza(p.Cont)}";
         var descriptori = new Dictionary<string, DescriptorLot>(StringComparer.Ordinal);
         foreach (var p in pozitii.OrderBy(p => CheieLot(p), StringComparer.Ordinal)
                      .ThenBy(p => p.Cont, StringComparer.Ordinal)
@@ -224,8 +231,8 @@ static partial class Deschidere {
                 d = new DescriptorLot {
                     Cheie = cheie,
                     ProdusHex = p.NomenclatorId,
-                    // Contul primei poziții dă TipMaterial-ul produsului (decizia
-                    // 26b: Cod-ul Tipului E simbolul de cont).
+                    // Simbolul e parte din cheie — toate pozițiile lotului îl au
+                    // pe același (decizia 26b: Cod-ul Tipului E simbolul de cont).
                     SimbolCont = mapeaza(p.Cont),
                     DepozitHex = p.DepozitId,
                     Data = parsata ?? data,
@@ -317,11 +324,31 @@ static partial class Deschidere {
             + $"{vNet:N2} = {vBrut:N2}", Math.Abs(vBrut - vNet) < EpsV);
 
         // ---- 4. Produsele (la cerere) ----
+        // Produsul are UN TipMaterial, dar 74 de nomenclatoare stau pe mai multe
+        // conturi la deschidere (fix review 1C-b): Tipul se alege pe contul
+        // DOMINANT pe valoare absolută, nu pe primul întâlnit (ordinea hex e
+        // arbitrară, iar „primul" putea fi contul rezidual negativ). Cazurile
+        // multi-cont se raportează — la 1C-c pot cere Tip per linie, nu per produs.
+        var simbolDominant = descriptori.Values
+            .GroupBy(d => d.ProdusHex, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g
+                .GroupBy(d => d.SimbolCont)
+                .OrderByDescending(sg => sg.Sum(d => Math.Abs(d.ValoareBruta)))
+                .ThenBy(sg => sg.Key, StringComparer.Ordinal)
+                .First().Key, StringComparer.Ordinal);
+        var multiCont = descriptori.Values
+            .GroupBy(d => d.ProdusHex, StringComparer.Ordinal)
+            .Count(g => g.Select(d => d.SimbolCont).Distinct().Count() > 1);
+        if (multiCont > 0)
+            avert($"{multiCont} produse stau pe MAI MULTE conturi de stoc la deschidere — "
+                + "TipMaterial-ul s-a ales pe contul dominant pe valoare; loturile rămân "
+                + "separate per cont (cheia include simbolul).");
+
         var produsPerLot = new Dictionary<string, Guid>(StringComparer.Ordinal);
         var faraTip = new HashSet<string>(StringComparer.Ordinal);
         var procesate = 0;
         foreach (var d in descriptori.Values.OrderBy(d => d.Cheie, StringComparer.Ordinal)) {
-            var id = laCerere.AsiguraProdus(d.ProdusHex, d.SimbolCont);
+            var id = laCerere.AsiguraProdus(d.ProdusHex, simbolDominant[d.ProdusHex]);
             if (id != null)
                 produsPerLot[d.Cheie] = id.Value;
             else
@@ -347,16 +374,33 @@ static partial class Deschidere {
             // asumată față de spec (care spunea „a grupei", adică brut): Atlas
             // evaluează ieșirile la `Lot.PretUnitar`, deci un preț rupt de
             // valoarea din registru ar lăsa reziduu nedescărcabil în stoc la
-            // pasul 1C-c. Loturile fără celule scrise (grupe sărite) cad pe
-            // raportul brut, ca să nu piardă informația.
+            // pasul 1C-c.
+            //
+            // Cine se creează (fix review 1C-b, rafinat): lotul trăiește dacă are
+            // măcar o celulă în afara grupelor total-negative sărite. Loturile
+            // GOLITE de netare (sold 0 după absorbția retururilor — mii) se
+            // creează totuși, cu prețul BRUT istoric: documentele 2025 le pot
+            // pin-ui (rândurile 607=371 ale 1C referă lotul original), iar un lot
+            // absent sau cu preț 0 ar strica evaluarea acolo unde soldul revine.
+            // NU se creează doar loturile ale căror celule aparțin TOATE grupelor
+            // sărite — un Lot cu preț negativ n-ar avea nicio utilizare legală.
+            var loturiVii = celule
+                .Where(c => !sariteHex.Contains((c.ProdusHex, c.DepozitHex)))
+                .Select(c => c.CheieLot)
+                .ToHashSet(StringComparer.Ordinal);
             var netPerLot = deScris
                 .GroupBy(c => c.CheieLot, StringComparer.Ordinal)
                 .ToDictionary(g => g.Key, g => (Q: g.Sum(c => c.Cantitate), V: g.Sum(c => c.Valoare)),
                     StringComparer.Ordinal);
 
+            var loturiFaraCelule = 0;
             foreach (var d in descriptori.Values.OrderBy(d => d.Cheie, StringComparer.Ordinal)) {
                 if (!produsPerLot.TryGetValue(d.Cheie, out var produsId))
                     continue; // produs refuzat — deja Check FAIL mai sus
+                if (!loturiVii.Contains(d.Cheie)) {
+                    loturiFaraCelule++;
+                    continue; // grupele lui, sărite integral — raportate ca diferență a sursei
+                }
                 if (!depozite.TryGetValue(d.DepozitHex, out var gestiuneId)) {
                     faraDepozit.Add(d);
                     continue;
@@ -388,6 +432,9 @@ static partial class Deschidere {
             }
             os.CommitChanges();
             loturiNoi = deLegat.Count;
+            if (loturiFaraCelule > 0)
+                avert($"{loturiFaraCelule} loturi identificate în sursă nu s-au creat: toate "
+                    + "celulele lor aparțin grupelor total-negative sărite (diferență a sursei).");
 
             foreach (var d in faraDepozit.Take(10))
                 check($"Depozitul 1C {d.DepozitHex} (lot {d.Cheie}) e legat de o Gestiune", false);
@@ -404,11 +451,14 @@ static partial class Deschidere {
             var depozite = Legaturi.Incarca(os, "Depozite");
             // TipStoc-ul oglindește regulile de stoc private (NIR/LDI/DSC, decizia
             // 37a): marfa merge în registrul Marfuri, restul în Magazie —
-            // reconcilierea pasului 1C-c citește aceleași chei.
-            var tipStoc = os.GetObjectsQuery<Produs>()
-                .Select(p => new { p.ID, Clasa = p.TipMaterial.Clasa.Cod })
+            // reconcilierea pasului 1C-c citește aceleași chei. Se derivă din
+            // SIMBOLUL lotului (fix review 1C-b), nu din Tipul produsului: un
+            // produs multi-cont poartă Tipul contului dominant, dar lotul lui de
+            // pe 3028 tot în Magazie trebuie să stea, nu în Marfuri.
+            var tipStocPerSimbol = os.GetObjectsQuery<TipMaterial>()
+                .Select(t => new { t.Cod, Clasa = t.Clasa.Cod })
                 .ToList()
-                .ToDictionary(x => x.ID, x => x.Clasa == "MF" ? TipStoc.Marfuri : TipStoc.Magazie);
+                .ToDictionary(x => x.Cod, x => x.Clasa == "MF" ? TipStoc.Marfuri : TipStoc.Magazie);
 
             randuri = 0;
             foreach (var c in deScris.OrderBy(c => c.CheieLot, StringComparer.Ordinal)
@@ -416,11 +466,13 @@ static partial class Deschidere {
                 if (!lotId.TryGetValue(c.CheieLot, out var id)
                     || !depozite.TryGetValue(c.DepozitHex, out var repartitorId))
                     continue; // raportat mai sus (produs fără Tip / depozit nelegat)
+                var simbol = descriptori[c.CheieLot].SimbolCont;
                 var r = os.CreateObject<RegistruStoc>();
                 r.Data = data;
                 r.LotId = id;
                 r.RepartitorId = repartitorId;
-                r.TipStoc = tipStoc.TryGetValue(produsPerLot[c.CheieLot], out var t) ? t : TipStoc.Magazie;
+                r.TipStoc = simbol != null && tipStocPerSimbol.TryGetValue(simbol, out var t)
+                    ? t : TipStoc.Magazie;
                 r.Cantitate = c.Cantitate;
                 r.Valoare = c.Valoare;
                 randuri++;
@@ -531,8 +583,6 @@ static partial class Deschidere {
                 return;
         }
     }
-
-    static string CheieLot(FlaxPozitieStoc p) => $"{p.DocTip}:{p.DocId}:{p.NomenclatorId}";
 
     // Data lotului = data documentului creator, extrasă din descrierea 1C
     // („Factura achiziție X din 31.12.2013", „AsamblareSED00000434/30.08.2021").

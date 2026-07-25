@@ -25,13 +25,25 @@ static class Nomenclatoare {
     // cea nouă se creează, iar legătura se scrie DUPĂ `CommitChanges` — ID-ul
     // entității e contractul ei, nu se anticipează.
     static (int Procesate, int Noi) Upsert<T>(IObjectSpace os, string view,
-            IReadOnlyList<(string Cheie, Action<T> Aplica)> randuri, Action<string> avert)
-            where T : BaseObject {
+            IReadOnlyList<(string Cheie, string Cod, Action<T> Aplica)> randuri, Action<string> avert)
+            where T : Repartitor {
         var tabela = Legaturi.Tabela(view);
         var legaturi = Legaturi.Incarca(os, view);
         var deLegat = new List<(string Cheie, T Entitate)>();
 
-        foreach (var (cheie, aplica) in randuri) {
+        // Recuperarea rulării întrerupte între cele două commit-uri (fix review
+        // 1C-b; mecanica Materializeaza): o entitate de tipul T cu același Cod,
+        // nelegată de NICIO legătură, nu poate proveni decât dintr-un kill între
+        // commit-ul entității și cel al legăturii — se adoptă, nu se dublează.
+        // (Entitățile seed — MAG1/CASA/… — sunt și ele nelegate, dar codurile lor
+        // nu apar printre codurile sursei 1C, deci nu pot fi adoptate.)
+        var legateGlobal = os.GetObjectsQuery<MigrareLegatura>().Select(m => m.TintaId).ToHashSet();
+        var nelegate = os.GetObjectsQuery<T>().ToList()
+            .Where(e => !legateGlobal.Contains(e.ID) && e.Cod != null)
+            .GroupBy(e => e.Cod)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        foreach (var (cheie, cod, aplica) in randuri) {
             T entitate = null;
             if (legaturi.TryGetValue(cheie, out var tinta)) {
                 entitate = os.GetObjectByKey<T>(tinta);
@@ -45,6 +57,13 @@ static class Nomenclatoare {
                     if (moarta != null)
                         os.Delete(moarta);
                 }
+            }
+            if (entitate == null && cod != null && nelegate.TryGetValue(cod, out var candidat)) {
+                avert($"{tabela}/{cheie}: adoptată entitatea nelegată cu codul „{cod}” "
+                    + "(rest al unei rulări întrerupte) — nu se dublează.");
+                entitate = candidat;
+                nelegate.Remove(cod);
+                deLegat.Add((cheie, entitate));
             }
             if (entitate == null) {
                 entitate = os.CreateObject<T>();
@@ -68,7 +87,7 @@ static class Nomenclatoare {
     public static (int Procesate, int Noi) Depozite(IObjectSpace os,
             IReadOnlyList<FlaxDepozit> sursa, Action<string> avert) =>
         Upsert<Gestiune>(os, "Depozite", sursa.Where(d => d.EsteElement)
-            .Select(d => (d.Id, (Action<Gestiune>)(g => {
+            .Select(d => (d.Id, d.Cod, (Action<Gestiune>)(g => {
                 g.Cod = d.Cod;
                 g.Denumire = d.Denumire ?? d.Cod;
                 g.Activ = !d.Marcat;
@@ -81,7 +100,7 @@ static class Nomenclatoare {
             IReadOnlyList<FlaxCasierie> sursa, IReadOnlyDictionary<string, Guid> plan,
             Action<string> avert) =>
         Upsert<ContPropriu>(os, "Casierii", sursa
-            .Select(c => (c.Id, (Action<ContPropriu>)(e => {
+            .Select(c => (c.Id, c.Cod, (Action<ContPropriu>)(e => {
                 e.Cod = c.Cod;
                 e.Denumire = c.Denumire ?? c.Cod;
                 e.EsteBanca = false;
@@ -102,7 +121,7 @@ static class Nomenclatoare {
             IReadOnlyList<FlaxContBancar> sursa, IReadOnlyDictionary<string, Guid> plan,
             IReadOnlySet<string> sumatori, Func<string, string> mapeaza1C, Action<string> avert) =>
         Upsert<ContPropriu>(os, "ConturiBancare", sursa
-            .Select(c => (c.Id, (Action<ContPropriu>)(e => {
+            .Select(c => (c.Id, c.Cod, (Action<ContPropriu>)(e => {
                 e.Cod = c.Cod;
                 e.Denumire = Denumeste(c);
                 e.EsteBanca = true;
@@ -137,7 +156,7 @@ static class Nomenclatoare {
     public static (int Procesate, int Noi) PersoaneFizice(IObjectSpace os,
             IReadOnlyList<FlaxPersoana> sursa, Action<string> avert) =>
         Upsert<Angajat>(os, "PersoaneFizice", sursa.Where(p => p.EsteElement)
-            .Select(p => (p.Id, (Action<Angajat>)(a => {
+            .Select(p => (p.Id, p.Cod, (Action<Angajat>)(a => {
                 a.Cod = p.Cod;
                 a.Marca = p.Cod;
                 a.Denumire = p.Nume ?? p.Cod;
@@ -303,6 +322,11 @@ class ImportLaCerere {
         var recuperat = cautaDupaCod(os).FirstOrDefault(x => !legate.Contains(x.ID));
         if (recuperat != null) {
             Recuperate++;
+            // Atributele se RE-aplică pe entitatea adoptată (fix review 1C-b):
+            // candidatul nelegat poate fi restul unei rulări întrerupte pentru un
+            // OMONIM (același Cod, alt KeyField) — fără re-aplicare, adopția ar
+            // încrucișa tăcut Denumire/UM/TipMaterial între cele două poziții.
+            aplica(recuperat);
             Legaturi.Leaga(os, view, cheie, recuperat.ID);
             os.CommitChanges();
             legate.Add(recuperat.ID);
