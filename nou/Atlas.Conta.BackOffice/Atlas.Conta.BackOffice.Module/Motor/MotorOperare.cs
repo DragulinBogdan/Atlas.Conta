@@ -227,7 +227,13 @@ public static class MotorOperare {
             var linie = doc.Detalii.First(d => d.ID == lot.LinieIntrareId);
             if (linie.Cantitate <= 0)
                 throw new OperareException("O linie care creează lot trebuie să aibă cantitate pozitivă.");
-            lot.PretUnitar = linie.Valoare / linie.Cantitate;
+            // Împărțirea e sursa istorică a scării nemărginite (vezi `Scara`):
+            // `decimal` păstrează toate zecimalele câtului, iar prețul se
+            // propaga în fiecare `Valoare = Preț × Cantitate` de mai departe.
+            // Prețul rămâne FIN (6 zecimale — identificarea specifică), doar
+            // mărginit; coloana e oricum `numeric(18,6)`, rotunjirea aici ține
+            // instanța din ObjectSpace-ul viu egală cu ce se persistă.
+            lot.PretUnitar = Scara.RotunjestePret(linie.Valoare / linie.Cantitate);
             lot.Data = doc.Data;
             if (linie is ILinieCuAtributeLot atribute) {
                 lot.DataExpirare = atribute.DataExpirare;

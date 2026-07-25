@@ -196,6 +196,43 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
             modelBuilder.Entity<MigrareLegatura>()
                 .HasIndex(m => new { m.Tabela, m.CheieLegacy }).IsUnique();
+
+            AplicaScaraNumerica(modelBuilder);
+        }
+
+        // Scara fixă pe TOATE coloanele zecimale ale modelului (vezi `Scara`
+        // pentru motiv: `numeric` fără scară moștenește scara împărțirii care a
+        // produs valoarea, iar SUM-ul server-side peste ea depășește mantisa lui
+        // `decimal`). Convenție centrală în locul a ~15 apeluri `HasPrecision`
+        // împrăștiate: se aplică singură pe orice coloană nouă cu nume cunoscut.
+        //
+        // Gardianul (aruncă la construirea modelului) e jumătatea care contează:
+        // un `decimal` cu nume nou nu poate ajunge în schemă fără scară — fail
+        // zgomotos la pornire/migrare, nu drift descoperit peste luni într-un
+        // OverflowException. Restrâns la tipurile PROPRII: tipurile DevExpress
+        // mapate în context (audit, rapoarte, state machine) nu sunt ale noastre
+        // de fixat, iar un `decimal` apărut la un upgrade de pachet n-are voie să
+        // oprească aplicația.
+        private static void AplicaScaraNumerica(ModelBuilder modelBuilder) {
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
+                if (entityType.ClrType?.Namespace?.StartsWith("Atlas.Conta.") != true)
+                    continue;
+                // Declarate, nu moștenite: sub TPT proprietatea bazei apare pe
+                // fiecare derivată, dar aparține (și se configurează) o dată.
+                foreach (var proprietate in entityType.GetDeclaredProperties()) {
+                    var tip = Nullable.GetUnderlyingType(proprietate.ClrType) ?? proprietate.ClrType;
+                    if (tip != typeof(decimal))
+                        continue;
+                    var scara = Scara.ScaraPentru(proprietate.Name)
+                        ?? throw new InvalidOperationException(
+                            $"Proprietatea zecimală {entityType.ClrType.Name}.{proprietate.Name} nu are scară " +
+                            $"definită. Adaugă numele în Scara.ScaraPentru (bani / preț unitar / cantitate) — " +
+                            $"o coloană `numeric` fără scară moștenește scara calculului care o produce și " +
+                            $"sparge SUM-ul server-side.");
+                    proprietate.SetPrecision(Scara.Precizie);
+                    proprietate.SetScale(scara);
+                }
+            }
         }
 
         private static void ConfigureDimensiuni<T>(Microsoft.EntityFrameworkCore.Metadata.Builders.OwnedNavigationBuilder<T, Dimensiuni> b) where T : class {

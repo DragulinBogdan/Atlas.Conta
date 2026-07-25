@@ -19,9 +19,9 @@ public class ListaDiferenteInventar : Document {
             // ca atare); minusul se evaluează la prețul lotului descărcat,
             // plusul la prețul de evaluare cules (lotul nou se naște cu el).
             if (d.Directie == DirectieDiferenta.Minus && d.LotId != null)
-                d.Valoare = d.Cantitate * os.GetObjectByKey<Lot>(d.LotId.Value).PretUnitar;
+                d.Valoare = Scara.RotunjesteBani(d.Cantitate * os.GetObjectByKey<Lot>(d.LotId.Value).PretUnitar);
             else if (d.Directie == DirectieDiferenta.Plus)
-                d.Valoare = d.Cantitate * (d.PretEvaluare ?? 0m);
+                d.Valoare = Scara.RotunjesteBani(d.Cantitate * (d.PretEvaluare ?? 0m));
         }
     }
 

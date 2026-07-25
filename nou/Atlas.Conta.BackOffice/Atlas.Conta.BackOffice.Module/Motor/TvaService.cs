@@ -46,6 +46,12 @@ public static class TvaService {
                 d.ValoareTva = 0m;
                 break;
         }
+        // Cele două valori de POSTARE se rotunjesc la bani (`Scara`) — inclusiv
+        // TVA-ul cules pe calea `pastreazaTvaCules`, ca instanța din memorie să
+        // fie exact ce ajunge în `numeric(18,2)`. `net` rămâne nerotunjit până
+        // aici: rotunjirea se face o singură dată, pe rezultat.
+        d.Valoare = Scara.RotunjesteBani(d.Valoare);
+        d.ValoareTva = Scara.RotunjesteBani(d.ValoareTva);
     }
 
     // Datoria P1 (design §8): default TipTva per tip de document, aplicat la

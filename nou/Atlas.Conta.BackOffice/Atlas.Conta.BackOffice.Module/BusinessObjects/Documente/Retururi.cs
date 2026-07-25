@@ -112,7 +112,7 @@ public class ReturClient : Document {
                 // Costul revine la prețul lotului original (nu se culege).
                 var q = Math.Abs(linie.Cantitate);
                 linie.Cantitate = -q;
-                linie.Valoare = -(q * os.GetObjectByKey<Lot>(linie.LotId.Value).PretUnitar);
+                linie.Valoare = -Scara.RotunjesteBani(q * os.GetObjectByKey<Lot>(linie.LotId.Value).PretUnitar);
                 linie.ValoareTva = 0m;
             }
         }

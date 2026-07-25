@@ -185,7 +185,15 @@ static class HandlerAsamblare {
                 tip.Registru, plan.Data, c.Cantitate, dejaAlocat);
             foreach (var (lotId, q) in alocari) {
                 plan.Consumuri.Add(new Consum(lotId, tip.Id, q));
-                valoareConsum += q * HandlerTransfer.PretLot(os, lotId);
+                // Rotunjit PER LINIE, exact ca `Asamblare.PregatesteOperare`:
+                // `valoareConsum` e o PREDICȚIE a ceea ce va calcula motorul, iar
+                // `Scaleaza` o distribuie pe produse ca invariantul (|Σ produse −
+                // Σ consumuri| ≤ 0,005) să treacă exact. De când valorile de
+                // postare au scară fixă (`Scara`, bani), motorul scrie
+                // `round(q × preț, 2)` pe fiecare linie — o sumă neroturnjită aici
+                // se abate de la el cu până la o jumătate de ban pe linie și pică
+                // invariantul pe documentele cu mai multe consumuri.
+                valoareConsum += Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId));
                 LiniiConsum++;
             }
             if (ramas > 0)

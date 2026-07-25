@@ -49,6 +49,10 @@ public static class ImperechereService {
     // Fără commit — motorul o cheamă din tranzacția operării plății autogenerate.
     internal static Imperechere Creeaza(IObjectSpace os,
         Document stingator, Document document, decimal suma, bool autogenerat) {
+        // Rotunjirea ÎNAINTE de validare, nu după: altfel suma validată contra
+        // restului n-ar fi cea persistată în `numeric(18,2)` și o stingere ar
+        // putea depăși plafonul cu bani mărunți (`Scara`).
+        suma = Scara.RotunjesteBani(suma);
         // Validarea rulează ÎNAINTE de CreateObject — comportamentul existent
         // (motorul nu lasă rând-fantomă pe eșec) rămâne exact.
         ValideazaCreare(os, stingator, document, suma);

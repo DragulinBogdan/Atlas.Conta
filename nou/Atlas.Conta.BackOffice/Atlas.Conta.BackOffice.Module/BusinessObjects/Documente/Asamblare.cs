@@ -37,12 +37,12 @@ public class Asamblare : Document {
             if (d.Directie == DirectieAsamblare.Consum) {
                 d.Cantitate = -Math.Abs(d.Cantitate);
                 d.Valoare = d.LotId != null
-                    ? d.Cantitate * os.GetObjectByKey<Lot>(d.LotId.Value).PretUnitar
+                    ? Scara.RotunjesteBani(d.Cantitate * os.GetObjectByKey<Lot>(d.LotId.Value).PretUnitar)
                     : 0m;
             }
             else if (d.Directie == DirectieAsamblare.Produs) {
                 d.Cantitate = Math.Abs(d.Cantitate);
-                d.Valoare = d.Cantitate * (d.PretEvaluare ?? 0m);
+                d.Valoare = Scara.RotunjesteBani(d.Cantitate * (d.PretEvaluare ?? 0m));
             }
         }
     }

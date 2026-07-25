@@ -20,7 +20,7 @@ public class DescarcareGestiune : Document {
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.Where(d => d.LotId != null)) {
             var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
-            d.Valoare = d.Cantitate * lot.PretUnitar;
+            d.Valoare = Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar);
             d.ValoareTva = 0;
         }
     }

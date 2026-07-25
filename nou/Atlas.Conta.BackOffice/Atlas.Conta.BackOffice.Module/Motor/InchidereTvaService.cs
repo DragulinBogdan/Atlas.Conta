@@ -73,7 +73,7 @@ public static class InchidereTvaService {
             linie.Descriere = descriere;
             linie.ContDebitId = contDebitId;
             linie.ContCreditId = contCreditId;
-            linie.Valoare = valoare;
+            linie.Valoare = Scara.RotunjesteBani(valoare);
         }
 
         // Transferul deductibilei în colectată, pe minimul celor două solduri;
