@@ -42,6 +42,39 @@ static class Subconto {
     public static FlaxRef Ia(this Dictionary<(int, int), Dictionary<string, FlaxRef>> index,
             int linie, int latura, string fel) =>
         index.TryGetValue((linie, latura), out var f) && f.TryGetValue(fel, out var v) ? v : null;
+
+    // ---- Indexul COMPLET, per latură (pasul 5: trezoreria și notele) ----
+    // Forma de mai sus ține un singur analitic per FEL, ceea ce ajunge pentru
+    // stoc (lot × nomenclator × depozit sunt feluri distincte). Trezoreria are
+    // nevoie de întreaga listă a laturii: partenerul și documentul stins stau pe
+    // ACEEAȘI latură, iar felul partenerului diferă („Parteneri" vs „Angajați
+    // încadrați") — se caută după TIPUL referinței, nu după eticheta felului,
+    // fiindcă eticheta e text 1C cu diacritice, iar tipul vine din coloana
+    // tipizată a view-ului (contractul de coloane, §2).
+    public const string FelDocumente = "Documente";
+    public const string TipPartener = "Partenerii";
+    public const string TipPersoana = "PersoaneFizice";
+
+    public static Dictionary<(int Linie, int Latura), List<FlaxSubcontoNota>> IndexeazaTot(
+            IEnumerable<FlaxSubcontoNota> randuri) {
+        var index = new Dictionary<(int, int), List<FlaxSubcontoNota>>();
+        foreach (var s in randuri) {
+            if (!index.TryGetValue((s.Linie, s.Correspond), out var lista))
+                index[(s.Linie, s.Correspond)] = lista = [];
+            lista.Add(s);
+        }
+        return index;
+    }
+
+    public static List<FlaxSubcontoNota> Latura(
+            this Dictionary<(int Linie, int Latura), List<FlaxSubcontoNota>> index, int linie, int latura) =>
+        index.TryGetValue((linie, latura), out var lista) ? lista : [];
+
+    public static FlaxRef DeTip(this List<FlaxSubcontoNota> latura, params string[] tipuri) =>
+        latura.FirstOrDefault(s => s.Valoare?.Tip != null && tipuri.Contains(s.Valoare.Tip))?.Valoare;
+
+    public static FlaxRef DeFel(this List<FlaxSubcontoNota> latura, string fel) =>
+        latura.FirstOrDefault(s => s.Fel == fel && s.Valoare != null)?.Valoare;
 }
 
 // O linie de ieșire/intrare pe lot, gata de materializat.

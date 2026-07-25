@@ -34,6 +34,10 @@ static class Handlere {
         "ReturDeLaClient", "ReturLaFurnizor", "Asamblare", "Dezasamblare",
         "RaportDeVanzariCuAmanunt", "AvizDeIesire", "AvizDeIntrare",
         "Operatia", "Salarii", "CasareMF", "InchidereLunaDeExercitiu", "Import", "ReevaluareMF",
+        // Fără view generat, deci fără nume propriu în sursă: numele e al uneltei
+        // (`FlaxDb.TipuriFaraColoana`), iar tipul se citește din structura
+        // generică 1C. Pre-flight-ul îl vede prin recensământul Recorder.
+        "IncasareCard",
     };
 
     // Pașii 3–5 adaugă aici câte o înregistrare per tip.
@@ -65,7 +69,15 @@ static class Handlere {
         HandlerAmanunt.Handler,
         HandlerAvizIesire.Handler,
         HandlerReturFurnizor.Handler,
-        // PASUL 5: PLT/INC, Compensare, familia NTC
+        // 5. TREZORERIA ȘI NOTELE — nu ating stocul deloc, deci poziția lor în
+        //    lună e liberă; stau la coadă fiindcă stingerile (trecerea 2) se
+        //    calculează după ce toate documentele lunii există.
+        HandlerExtras.Handler,
+        HandlerPlataCasa.Handler,
+        HandlerIncasareCasa.Handler,
+        HandlerCard.Handler,
+        HandlerCompensare.Handler,
+        .. HandlereNoteSimple.Handlere,
     ];
 
     // Rapoartele de tip ale pasului 3 (contoarele proprii fiecărui handler).
@@ -82,6 +94,11 @@ static class Handlere {
         HandlerReturFurnizor.Raporteaza();
         HandlerReturClient.Raporteaza();
         HandlerAsamblare.Raporteaza();
+        MotorTrezorerie.Raporteaza();
+        HandlerCompensare.Raporteaza();
+        HandlereNoteSimple.Raporteaza();
+        NoteComune.Raporteaza();
+        Imperecheri1C.Raporteaza();
         Reluare1C.Raporteaza();
     }
 
@@ -180,6 +197,11 @@ sealed class BuclaImport {
     // Documentul Atlas al unei chei deja importate — pasul 4 are nevoie de el ca
     // FK (descărcarea de gestiune poartă `DocumentSursa` = factura de ieșire,
     // creată de un apel `ImportaDocument` anterior, în alt ObjectSpace).
+    // Starea unui document Atlas, din indexul rulării: imperecherea (trecerea 2)
+    // leagă doar documente OPERATE, iar un document care a eșuat la operare a
+    // rămas Draft — se sare, nu se încearcă.
+    public StareDocument? Stare(Guid id) => stari.TryGetValue(id, out var s) ? s : null;
+
     public Guid? Tinta(string view, string cheie) =>
         legaturi.TryGetValue((Legaturi.Tabela(view), cheie), out var tinta) && stari.ContainsKey(tinta)
             ? tinta : null;
@@ -255,10 +277,10 @@ sealed class BuclaImport {
         return rez;
     }
 
-    // PASUL 5: stingerile din subconto → `Imperechere`, trecerea 2 a lunii
-    // (§12.2 — imperecherea nu postează registre, deci amânarea față de operare
-    // e gratuită și scapă de problema de ordine).
-    void Imperecheri(ContextLuna ctx) { }
+    // Stingerile din subconto → `Imperechere`, trecerea 2 a lunii (§12.2 —
+    // imperecherea nu postează registre, deci amânarea față de operare e gratuită
+    // și scapă de problema de ordine). Vezi Imperecheri.cs.
+    void Imperecheri(ContextLuna ctx) => Imperecheri1C.Executa(ctx);
 
     // PASUL 6: `InchidereTvaService.Genereaza` + operarea ei, la fine de lună
     // (§12.4 — fără ea, contractul de sold ar pica lunar pe 4426/4427/4423,

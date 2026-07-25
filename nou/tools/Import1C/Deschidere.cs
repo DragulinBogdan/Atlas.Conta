@@ -592,7 +592,10 @@ static partial class Deschidere {
     [GeneratedRegex(@"\d{2}\.\d{2}\.\d{4}")]
     private static partial Regex RegexData();
 
-    static DateOnly? ParseData(string descriere) {
+    // `internal` fiindcă o folosește și trecerea 2 a imperecherilor: descrierea
+    // documentului-țintă spune dacă ținta e dinaintea ferestrei de import (deci
+    // sold de deschidere) sau doar neimportată încă.
+    internal static DateOnly? ParseData(string descriere) {
         if (string.IsNullOrEmpty(descriere))
             return null;
         var potriviri = RegexData().Matches(descriere);

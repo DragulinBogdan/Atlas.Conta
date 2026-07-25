@@ -35,6 +35,9 @@ sealed class Catalog {
     // Conturile proprii importate (casierii + conturi bancare, 47b): laturile
     // încasărilor generate de import (cardul retailului, încasarea în numerar).
     public IReadOnlyDictionary<string, Guid> ConturiProprii { get; }
+    // Persoanele fizice importate → `Angajat` (47b): contrapartida plăților și
+    // încasărilor pe care 1C le ține pe persoană, nu pe partener (pasul 5).
+    public IReadOnlyDictionary<string, Guid> Angajati { get; }
     public Guid SediuId { get; }
     public Guid ComisieId { get; }
     public Guid TipTrezorerieId { get; }
@@ -76,6 +79,7 @@ sealed class Catalog {
         foreach (var (cheie, id) in Legaturi.Incarca(os, "ConturiBancare"))
             proprii[cheie] = id;
         ConturiProprii = proprii;
+        Angajati = Legaturi.Incarca(os, "PersoaneFizice");
         SediuId = CereRepartitor(os, "SEDIU");
         ComisieId = CereRepartitor(os, "COMISIE");
         ConsumatorFinalId = CereRepartitor(os, "CF");
@@ -151,6 +155,11 @@ sealed class Catalog {
     // Constantă, nu interogare per document: dacă vreodată importul va seta
     // conturi implicite pe parteneri, aici e locul care trebuie să afle.
     public const string ContCreantaImplicit = "4111";
+
+    // Simetricul, pe latura de DATORIE: contul pe care regula plății îl pune pe
+    // debit (`SursaCont.RepartitorPrimitor`, fallback-ul seed-ului privat) când
+    // partenerul n-are cont implicit — adică întotdeauna, la partenerii importați.
+    public const string ContDatorieImplicit = "401";
 
     static Guid CereRepartitor(IObjectSpace os, string cod) =>
         os.FirstOrDefault<Repartitor>(r => r.Cod == cod)?.ID

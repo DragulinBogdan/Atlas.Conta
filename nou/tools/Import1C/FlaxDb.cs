@@ -230,6 +230,19 @@ partial class FlaxDb(string connectionString) : IDisposable {
         "BonFiscal", "Stornare", "IntroducereaSoldurilor", "IntroducereSolduriInitialeMF",
     ];
 
+    // Tipurile pe care view-urile NU le expun deloc (nici coloană tipizată, nici
+    // view propriu), dar care POSTEAZĂ — se citesc din tabelele generice 1C
+    // (`AnteteRaw`, pasul 5). Numele e al nostru, nu al sursei: contractul de
+    // coloane (§2) nu are ce oferi aici, deci identitatea rămâne TypeRef-ul, iar
+    // numele e doar eticheta sub care handlerul se înregistrează în buclă.
+    // Convenția 1C care le leagă (verificată empiric): TypeRef-ul E numărul
+    // tabelei — 0x1DD1 = 7633 ⇒ `_Document7633`, 0x18C0 = 6336 ⇒ `_Document6336`.
+    public static readonly IReadOnlyDictionary<string, (string Nume, int Tabela)> TipuriFaraColoana =
+        new Dictionary<string, (string, int)>(StringComparer.OrdinalIgnoreCase) {
+            ["00001DD1"] = ("IncasareCard", 7633),
+            ["000018C0"] = ("ReevaluareMF", 6336),
+        };
+
     public List<FlaxTipRecorder> TipuriRecorder(int an) {
         var cazuri = string.Join("\n                                 ", TipuriCuColoana
             .Select(t => $"when DocReferinta_{t}_ID is not null then '{t}'"));
@@ -240,7 +253,11 @@ partial class FlaxDb(string connectionString) : IDisposable {
                         where Period >= @de and Period < @pana
                         group by DocReferinta_Type",
             r => new FlaxTipRecorder(Text(r, 0), Text(r, 1), Int(r, 2), Int(r, 3)),
-            ("@de", new DateTime(an, 1, 1)), ("@pana", new DateTime(an + 1, 1, 1)));
+            ("@de", new DateTime(an, 1, 1)), ("@pana", new DateTime(an + 1, 1, 1)))
+            .Select(t => t.Nume == null && t.TypeRef != null
+                    && TipuriFaraColoana.TryGetValue(t.TypeRef, out var cunoscut)
+                ? t with { Nume = cunoscut.Nume } : t)
+            .ToList();
     }
 
     // Reversul lui StocDeschidere: pozițiile de pe conturi de stoc cărora le

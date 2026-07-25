@@ -838,10 +838,42 @@ partial class FlaxDb {
     public List<FlaxDocumentSimplu> InchideriLuna(int an, int luna) =>
         Antet("InchidereLunaDeExercitiu", an, luna);
 
+    public List<FlaxDocumentSimplu> Importuri(int an, int luna) => Antet("Import", an, luna);
+
     List<FlaxDocumentSimplu> Antet(string view, int an, int luna) =>
         Query($"select h.KeyField, h.Number, h.DateTime from flax.{view} h {FiltruLuna} {OrdineAntete}",
             r => new FlaxDocumentSimplu(Hex(r, 0), Text(r, 1), Data(r, 2)),
             Fereastra(an, luna));
+
+    // ---- Antete din tabelele GENERICE 1C (pasul 5) ----
+    // Două tipuri care POSTEAZĂ n-au niciun view generat (`TipuriFaraColoana`):
+    // încasarea pe card (7633, 1.137 documente pe 2025) și reevaluarea de
+    // imobilizări (6336, 1 document). Contractul de coloane (§2) nu are ce oferi
+    // acolo, așa că se citește structura generică — dar NUMAI antetul (id, număr,
+    // dată): tot restul (rândurile contabile, subconto-ul) vine din aceleași
+    // view-uri ca la orice alt tip, deci excepția rămâne cât se poate de mică.
+    //
+    // Două capcane ale stratului raw, ambele verificate pe date:
+    //  * `_Date_Time` NU are corecția de an aplicată (view-urile o fac) — anii
+    //    sunt deplasați cu +2000, exact ca în `flax.Balanta` (47f);
+    //  * identitatea e `_IDRRef`, NEPERMUTATĂ: view-urile expun `KeyField` =
+    //    `_IDRRef` fără conversie (verificat în definiția view-ului `Plata` și
+    //    empiric — `NoteContabile.DocReferinta_Id` se leagă direct de rândurile
+    //    raw ale lui 7633).
+    // Baza fizică (`flax`) e ALTA decât cea a view-urilor (`EServicesFlx`), pe
+    // același server; referința cross-database e deliberată și izolată aici.
+    const string BazaRaw = "flax.dbo";
+
+    public List<FlaxDocumentSimplu> AnteteRaw(int numarTabela, int an, int luna) {
+        var data = $"case when year(h._Date_Time) > 3000 then dateadd(year, -2000, h._Date_Time) "
+            + "else h._Date_Time end";
+        return Query($@"select h._IDRRef, h._Number, {data}
+                        from {BazaRaw}._Document{numarTabela} h
+                        where {data} >= @de and {data} < @pana and h._Posted <> 0x00
+                        order by 3, h._Number, h._IDRRef",
+            r => new FlaxDocumentSimplu(Hex(r, 0), Text(r, 1), Data(r, 2)),
+            Fereastra(an, luna));
+    }
 
     // =============== B. Registrul contabil + subconto, per document ===============
     // Sursa identității de LOT pentru tipurile ale căror secțiuni NU poartă lotul
