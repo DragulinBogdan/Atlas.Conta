@@ -278,7 +278,9 @@ static class Reconciliere {
     // (`ImportLaCerere.Materializeaza` recuperează doar entități NELEGATE), dar
     // dacă apar, traducerea devine ambiguă exact acolo unde reconcilierea are
     // nevoie de ea — deci se raportează, nu se rezolvă tăcut.
-    static Dictionary<Guid, string> Inverseaza(IObjectSpace os, string view, Action<string> avert) {
+    // Partajat cu reconcilierea LUNARĂ (pasul 6): traducerea înapoi la identitatea
+    // 1C e aceeași operație, iar o a doua copie ar putea diverge tăcut.
+    internal static Dictionary<Guid, string> Inverseaza(IObjectSpace os, string view, Action<string> avert) {
         var directe = Legaturi.Incarca(os, view);
         var invers = new Dictionary<Guid, string>();
         foreach (var (hex, tinta) in directe) {

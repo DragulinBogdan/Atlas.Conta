@@ -185,6 +185,45 @@ partial class FlaxDb(string connectionString) : IDisposable {
                 Dec(r, 8), Dec(r, 9)),
             ("@p", period));
 
+    // ==================== Fine de lună (pasul 6: reconcilierea lunară) ====================
+    //
+    // `Period` e LUNAR (verificat: 12 rânduri pe 2025 + 2026-01/02), iar soldul de
+    // ÎNCHIDERE al unei luni e `SoldIni` al perioadei URMĂTOARE — verificat pe date,
+    // nu presupus: pe toate conturile lui ianuarie 2025 `SoldIni + Rulaj` al lunii
+    // = `SoldIni` al lui februarie, cu diferență zero. Se folosește forma
+    // „SoldIni al lunii următoare" fiindcă e ACEEAȘI citire ca la deschidere
+    // (aceleași filtre, aceeași agregare peste valute) — o a doua formulă ar fi o
+    // a doua sursă de adevăr pentru același număr.
+    //
+    // Consecință de acoperire: decembrie 2025 se reconciliază contra perioadei
+    // 2026-01-01, care există în sursă. Un cont căzut la zero nu mai are rând în
+    // luna următoare (`having <> 0`) ⇒ apare ca sold 0, ceea ce e corect.
+
+    public List<FlaxSold> SolduriLaFineDeLuna(int an, int luna) =>
+        SolduriDeschidere(new DateTime(an, luna, 1).AddMonths(1));
+
+    public List<FlaxPozitieStoc> StocLaFineDeLuna(int an, int luna) =>
+        StocDeschidere(new DateTime(an, luna, 1).AddMonths(1));
+
+    public List<FlaxPozitieStoc> StocFaraIdentitateLaFineDeLuna(int an, int luna) =>
+        StocFaraIdentitate(new DateTime(an, luna, 1).AddMonths(1));
+
+    // Rândurile de registru ale ÎNCHIDERII DE LUNĂ 1C, agregate pe corespondență.
+    // Sunt rândurile pe care importul le-a SĂRIT (HandlereNote: 4427 = 4426/4423/
+    // 4424, design §6) — reconcilierea le recitește din sursă, nu din contorul
+    // importului: contractul (2) e forcing function-ul TVA-ului structural P1,
+    // deci trebuie să compare Atlas cu SURSA, nu cu propria contabilitate a ceea
+    // ce a sărit.
+    public List<(string ContDebit, string ContCredit, decimal Suma)> SumeInchidereLuna(int an, int luna) =>
+        Query(@"select ltrim(rtrim(ContDebit)), ltrim(rtrim(ContCredit)), sum(Suma)
+                from flax.NoteContabile
+                where Period >= @de and Period < @pana
+                  and DocReferinta_InchidereLunaDeExercitiu_ID is not null
+                  and ContDebit is not null and ContCredit is not null
+                group by ltrim(rtrim(ContDebit)), ltrim(rtrim(ContCredit))",
+            r => (Text(r, 0), Text(r, 1), Dec(r, 2)),
+            ("@de", new DateTime(an, luna, 1)), ("@pana", new DateTime(an, luna, 1).AddMonths(1)));
+
     // ============================ Pre-flight ============================
     // Măturile care se fac ÎNAINTEA primului document (decizia 48c): triajul se
     // face pe TOT ce atinge anul, într-un raport unic, nu descoperit în mers.

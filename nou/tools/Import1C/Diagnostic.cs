@@ -1,0 +1,63 @@
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using DevExpress.ExpressApp;
+
+namespace Import1C;
+
+// PASUL 6: interogarea ȚINTITĂ pe care o cere diagnosticul contractului picat —
+// „ce mișcări are Atlas pe produsul ăsta, pe ce document, în ce gestiune".
+//
+// De ce în unealtă și nu ad-hoc: identitatea produsului e hex-ul 1C, iar
+// traducerea lui în Atlas trece prin `MigrareLegatura`; o interogare SQL scrisă
+// de mână ar trebui să refacă exact aceeași traducere și ar putea diverge tăcut
+// de reconciliere fix acolo unde se caută cauza. Rulează imediat după seed
+// (`--diag=<hexProdus>`), înaintea oricărei faze scumpe, și oprește procesul.
+static class Diagnostic {
+    public static void Produs(IObjectSpaceProvider provider, string hexProdus, Action<string> avert) {
+        using var os = provider.CreateObjectSpace();
+        var produse = Legaturi.Incarca(os, "Nomenclator");
+        if (!produse.TryGetValue(hexProdus.ToUpperInvariant(), out var produsId)) {
+            Console.WriteLine($"Produsul 1C {hexProdus} nu are legătură în Atlas (n-a fost importat).");
+            return;
+        }
+        var produs = os.GetObjectByKey<Produs>(produsId);
+        Console.WriteLine($"Produs 1C {hexProdus} → Atlas {produsId} „{produs?.Denumire}” "
+            + $"(cod {produs?.Cod}, tip {produs?.TipMaterial?.Cod}).");
+
+        var loturi = os.GetObjectsQuery<Lot>()
+            .Where(l => l.ProdusId == produsId)
+            .Select(l => new { l.ID, l.Data, l.PretUnitar, Gestiune = l.Gestiune.Denumire })
+            .ToList();
+        var cheiLot = Reconciliere.Inverseaza(os, "Lot", avert);
+        Console.WriteLine($"Loturi: {loturi.Count}");
+        foreach (var l in loturi)
+            Console.WriteLine($"   {l.ID} {l.Data:yyyy-MM-dd} preț {l.PretUnitar,12:N4} "
+                + $"gestiune-naștere „{l.Gestiune}” cheie 1C {cheiLot.GetValueOrDefault(l.ID) ?? "(fără)"}");
+
+        var ids = loturi.Select(l => l.ID).ToList();
+        var randuri = os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => ids.Contains(r.LotId))
+            .Select(r => new {
+                r.Data, r.TipStoc, r.LotId, Gestiune = r.Repartitor.Denumire, r.Cantitate, r.Valoare,
+                r.Storno, Document = r.Document.Numar, r.DocumentId,
+            })
+            .ToList()
+            .OrderBy(r => r.Data).ThenBy(r => r.Document)
+            .ToList();
+        // Tipul documentului se citește separat (baza `Document` nu poartă
+        // navigația spre `TipDocument` — ancora e a politicilor, nu a documentului).
+        var tipuri = os.GetObjectsQuery<Document>()
+            .Where(d => randuri.Select(x => x.DocumentId).Contains(d.ID))
+            .Select(d => new { d.ID, Tip = d.GetType().Name })
+            .ToList()
+            .ToDictionary(d => d.ID, d => d.Tip);
+        Console.WriteLine($"Rânduri de registru de stoc: {randuri.Count}");
+        foreach (var r in randuri)
+            Console.WriteLine($"   {r.Data:yyyy-MM-dd} {r.TipStoc,-8} {r.Cantitate,10:N3} buc "
+                + $"{r.Valoare,14:N2} lei  gestiune „{r.Gestiune}”  "
+                + $"{(r.DocumentId is { } id2 ? tipuri.GetValueOrDefault(id2, "?") : "deschidere")} {r.Document}"
+                + (r.Storno ? "  [STORNO]" : ""));
+        Console.WriteLine($"Sold pe gestiune: " + string.Join("; ", randuri
+            .GroupBy(r => r.Gestiune)
+            .Select(g => $"„{g.Key}” {g.Sum(r => r.Cantitate):N3} buc / {g.Sum(r => r.Valoare):N2} lei")));
+    }
+}

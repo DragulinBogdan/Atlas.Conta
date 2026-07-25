@@ -35,6 +35,34 @@ sealed class AlocareIesire {
     public int PinuriGoale { get; private set; }
     public decimal Nedescarcat { get; private set; }
 
+    // Produsele pe care supapa chiar le-a ATINS: pinul a fost înlocuit cu FIFO,
+    // sau ieșirea n-a avut acoperire. Amândouă schimbă costul cu care Atlas
+    // descarcă față de 1C, deci sunt exact mulțimea în care contractul lunar are
+    // voie să vadă o diferență de VALOARE la cantitate exactă (§8.3). E o
+    // evidență a ceea ce s-a întâmplat, nu o categorie presupusă.
+    //
+    // Se PERSISTĂ (tabela de legături „1C:ProdusRealocat", cheia = id-ul Atlas al
+    // produsului): altfel verdictul contractului ar depinde de faptul că rularea
+    // curentă a importat sau a sărit documentele — o reluare care sare tot n-ar
+    // mai ști ce a atins supapa și ar raporta drept nejustificate exact
+    // diferențele pe care ea le-a produs.
+    public HashSet<Guid> ProduseRealocate { get; } = [];
+
+    public const string ViewRealocate = "ProdusRealocat";
+
+    public void Incarca(IObjectSpace os) {
+        foreach (var tinta in Legaturi.Incarca(os, ViewRealocate).Values)
+            ProduseRealocate.Add(tinta);
+    }
+
+    // Marchează produsul, în ObjectSpace-ul documentului curent: legătura se
+    // comite odată cu el, deci o rulare întreruptă nu lasă evidența în urma
+    // faptelor.
+    void Marcheaza(IObjectSpace os, Guid produsId) {
+        if (ProduseRealocate.Add(produsId))
+            Legaturi.Leaga(os, ViewRealocate, produsId.ToString(), produsId);
+    }
+
     int realocariLaStart;
     decimal cantitateLaStart;
 
@@ -109,7 +137,14 @@ sealed class AlocareIesire {
         if (lotDoritId != null && inainteDeFifo > ramas) {
             Realocari++;
             CantitateRealocata += inainteDeFifo - ramas;
+            Marcheaza(os, produsId);
         }
+        // Ieșirea neacoperită (returul fără marfă în stoc) atinge la fel evaluarea
+        // produsului: 1C a scos marfa la costul lotului lui, Atlas n-a scos-o
+        // deloc. Contractul lunar are nevoie de mulțimea asta ca să poată numi
+        // diferența, nu s-o presupună.
+        if (ramas > 0)
+            Marcheaza(os, produsId);
 
         Nedescarcat += ramas;
         return (alocari, ramas);

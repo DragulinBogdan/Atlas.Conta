@@ -40,6 +40,7 @@ static class HandlerFactura {
     public static int NumereLipsa { get; private set; }
     public static int LiniiCantitateNepozitiva { get; private set; }
     public static int LiniiFuzionate { get; private set; }
+    public static int LiniiMarfaDejaReceptionata { get; private set; }
     public static int LiniiTvaZeroFaraTip { get; private set; }
 
     sealed record LinieMarfa(Guid ProdusId, TipInfo Tip, string CheieLot,
@@ -131,6 +132,25 @@ static class HandlerFactura {
             ?? throw new InvalidOperationException(
                 $"Partenerul 1C {h.PartenerId} al facturii nu s-a putut importa.");
 
+        // MARFA DEJA RECEPȚIONATĂ PE AVIZ (decizia lead-ului, varianta a-2 din
+        // diagnosticul pasului 6). Când 1C închide un aviz de intrare, factura
+        // postează `408 = 401` (+ TVA) și NU atinge niciun cont de stoc: marfa a
+        // intrat în gestiune pe aviz, eventual în luna precedentă. Atlas, care
+        // construiește factura din SECȚIUNEA de mărfuri, ar naște lot și NIR
+        // conex — adică stoc pe care sursa nu-l are (măsurat pe 2025: 17 facturi,
+        // 835.488,22 lei; contabil se ascundea în punte, stocul rămânea umflat).
+        //
+        // Discriminatorul e al DOCUMENTULUI, nu al liniei, și e verificat pe tot
+        // anul: toate cele 17 sunt „doar 408", niciuna mixtă cu 3xx. Liniile de
+        // marfă ale unei asemenea facturi devin linii NE-STOC pe Tipul contului
+        // 408: factura există (rămâne țintă de imperechere pentru extras),
+        // postează exact rândurile 1C prin regula generică, iar stocul nu se mișcă.
+        var conturiDebit = (bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [])
+            .Select(r => cat.Mapeaza(r.ContDebit)).Where(c => c != null).ToList();
+        var simbolFacturiNesosite = conturiDebit.FirstOrDefault(c => c.StartsWith("408"));
+        var marfaDejaReceptionata = simbolFacturiNesosite != null
+            && !conturiDebit.Any(c => c.StartsWith('3'));
+
         // Liniile de marfă se FUZIONEAZĂ pe (nomenclator × cont): lotul 1C e
         // tripletul (document, produs, cont), deci două linii pe aceeași pereche
         // sunt un singur lot în sursă — 102 grupuri pe tot anul, TOATE cu aceeași
@@ -142,6 +162,20 @@ static class HandlerFactura {
             if (linii.Count > 1)
                 LiniiFuzionate += linii.Count - 1;
             var simbol = grup.Key.Simbol;
+            if (marfaDejaReceptionata) {
+                var tipNesosite = cat.TipNestocPentru(simbolFacturiNesosite)
+                    ?? throw new InvalidOperationException(
+                        $"Contul „{simbolFacturiNesosite}” (facturi nesosite) n-are TipMaterial "
+                        + "în profil și nu s-a putut crea.");
+                var tvaNesosite = linii.Sum(l => h.InLei(l.SumaTva));
+                var brutNesosite = linii.Sum(l => h.InLei(l.Suma));
+                plan.Servicii.Add(new LinieServiciu(tipNesosite,
+                    Math.Max(1m, Math.Abs(linii.Sum(l => l.Cantitate))),
+                    h.SumaIncludeTva ? brutNesosite - tvaNesosite : brutNesosite,
+                    tvaNesosite, TipTvaLinie(cat, linii[0].CotaTva, tvaNesosite)));
+                LiniiMarfaDejaReceptionata++;
+                continue;
+            }
             var tip = cat.TipStocPentru(simbol)
                 ?? throw new InvalidOperationException(
                     $"Contul de stoc 1C „{linii[0].ContEvidenta}” (→ {simbol ?? "nemapat"}) "
@@ -280,6 +314,7 @@ static class HandlerFactura {
             + $"{NumereLipsa} facturi fără număr de furnizor (s-a folosit numărul 1C), "
             + $"{LiniiFuzionate} linii fuzionate pe lot, {LiniiCantitateNepozitiva} linii de marfă "
             + $"cu cantitate ≤ 0 sărite, {LiniiTvaZeroFaraTip} linii cu regim de TVA dar TVA zero "
-            + "(lăsate fără TipTva).");
+            + $"(lăsate fără TipTva), {LiniiMarfaDejaReceptionata} linii de marfă deja recepționată "
+            + "pe aviz (importate ca linii ne-stoc pe 408 — factura postează, stocul nu se mișcă).");
     }
 }

@@ -202,7 +202,14 @@ static partial class Deschidere {
         decimal CantitateSarita, decimal ValoareSarita,
         int CeluleDegenerate, int DateNeparsate,
         decimal CantitateScrisa, decimal ValoareScrisa,
-        IReadOnlyList<DiferentaSursa> DiferenteJustificate);
+        IReadOnlyList<DiferentaSursa> DiferenteJustificate,
+        // Produsele ale căror loturi au fost REARANJATE de netare (pasul 6):
+        // prețul per lot al lor nu mai e cel din 1C, deci orice ieșire ulterioară
+        // descarcă la alt cost — sursa diferențelor JUSTIFICATE ale reconcilierii
+        // lunare (§8.3 amendat). Granularitatea e produsul, nu grupa produs ×
+        // depozit: un transfer duce lotul netat în altă gestiune, iar prețul
+        // călătorește cu el.
+        IReadOnlySet<string> ProduseNetate);
 
     public static RezultatStoc Stoc(
             IObjectSpaceProvider provider, ImportLaCerere laCerere,
@@ -271,6 +278,9 @@ static partial class Deschidere {
         // ---- 3. Netarea negativelor, per produs × depozit ----
         var grupeSarite = new List<DiferentaSursa>();
         var sariteHex = new HashSet<(string, string)>();
+        // Produsele atinse de netare — inclusiv cele din grupele SĂRITE: și acolo
+        // prețurile Atlas diferă de 1C (grupa n-are deloc loturi în Atlas).
+        var produseNetate = new HashSet<string>(StringComparer.Ordinal);
         var grupeDezechilibrate = 0;
         foreach (var grup in celule.GroupBy(c => (c.ProdusHex, c.DepozitHex))) {
             var lot = grup
@@ -290,8 +300,10 @@ static partial class Deschidere {
                     lot[0].ProdusDesc, lot[0].DepozitDesc, qInainte, vInainte,
                     "grupă produs × depozit cu TOTAL negativ"));
                 sariteHex.Add(grup.Key);
+                produseNetate.Add(grup.Key.ProdusHex);
                 continue;
             }
+            produseNetate.Add(grup.Key.ProdusHex);
             Neteaza(lot);
             var qDupa = lot.Sum(c => c.Cantitate);
             var vDupa = lot.Sum(c => c.Valoare);
@@ -515,7 +527,7 @@ static partial class Deschidere {
             grupeSarite.Sum(g => g.Cantitate), grupeSarite.Sum(g => g.Valoare),
             degenerate, descriptori.Values.Count(d => !d.DataParsata),
             deScris.Sum(c => c.Cantitate), deScris.Sum(c => c.Valoare),
-            grupeSarite);
+            grupeSarite, produseNetate);
     }
 
     // Netarea unei grupe produs × depozit. Negativul se consumă din loturile

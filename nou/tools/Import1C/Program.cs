@@ -55,6 +55,9 @@ var smokeCititori = false;
 // corectează — cum a fost conversia valutară a facturilor — singura cale onestă
 // spre un import curat e reconstrucția, nu peticirea rândurilor scrise.
 var recreeaza = false;
+// `--diag=<hexProdus>` = interogare de diagnostic pe baza existentă (nu importă
+// nimic): mișcările de stoc ale unui produs 1C, cu documentul și gestiunea.
+string diagProdus = null;
 for (var i = 0; i < args.Length; i++) {
     var arg = args[i];
     if (!arg.StartsWith("--")) {
@@ -74,6 +77,13 @@ for (var i = 0; i < args.Length; i++) {
             break;
         case "--recreeaza":
             recreeaza = true;
+            break;
+        case "--diag":
+            diagProdus = valoare ?? (i + 1 < args.Length ? args[++i] : null);
+            if (string.IsNullOrWhiteSpace(diagProdus)) {
+                Console.Error.WriteLine("--diag cere hex-ul 1C al unui produs.");
+                return 2;
+            }
             break;
         case "--pana-la":
             valoare ??= i + 1 < args.Length ? args[++i] : null;
@@ -186,6 +196,14 @@ using (var os = provider.CreateObjectSpace()) {
         .ToDictionary(g => g.Key, g => g.Select(c => c.Simbol).ToList());
 }
 string Mapeaza(string cod1C) => MapeazaCont(cod1C, planAtlas);
+
+// `--diag=<hexProdus>`: interogarea țintită de diagnostic (Diagnostic.cs), pe
+// baza deja importată. Rulează aici — după seed, înaintea fazelor scumpe — și
+// oprește procesul: e o întrebare pusă bazei, nu o rulare de import.
+if (diagProdus != null) {
+    Diagnostic.Produs(provider, diagProdus, Avert);
+    return 0;
+}
 
 // ======================= Faza PRE-FLIGHT (decizia 48c) =======================
 // Rulează după seed și ÎNAINTEA oricărui import: triajul conturilor și
@@ -514,20 +532,31 @@ Console.WriteLine($"Catalog: {catalog.Gestiuni.Count} gestiuni legate, "
     + $"plusul de inventar contează pe {catalog.ContPlusInventar}.");
 
 var bucla = new BuclaImport(provider, flax, laCerere, new AlocareIesire(), catalog, Avert, Check);
+// Intrarea contractului lunar (pasul 6): ce a lăsat deschiderea în urmă —
+// produsele ale căror prețuri per lot le-a rearanjat netarea, diferențele deja
+// raportate ale sursei și clasa 8 a planului 1C (nu intră în bilanț).
+bucla.StareContract.ProduseNetate = rezStoc.ProduseNetate;
+bucla.StareContract.JustificateDeschidere = rezStoc.DiferenteJustificate;
+bucla.StareContract.Extrabilantiere1C = extrabilantiere1C;
+if (sabotaj)
+    bucla.ActiveazaSabotajLuna();
 var luni = new List<RezultatLuna>();
 var lunaPicata = 0;
 var cronometruDocumente = System.Diagnostics.Stopwatch.StartNew();
 for (var luna = 1; luna <= panaLa; luna++) {
     var rez = bucla.ImportaLuna(anImport, luna);
     luni.Add(rez);
-    if (rez.Esecuri == 0)
+    // Verdictul lunii = importul ȘI contractul (§12.4, pasul 6): o lună în care
+    // toate documentele au intrat, dar soldurile nu bat, e tot o lună picată.
+    if (rez.Esecuri == 0 && rez.ContractePicate == 0)
         continue;
     // Stop dur implicit (§12.4): o lună picată oprește rularea cu raportul
     // complet; `--continua` o transformă în recoltare de găuri, cu diferențele
     // purtate înainte.
     lunaPicata = luna;
     if (!continua) {
-        Avert($"Luna {luna:00}/{anImport} a picat cu {rez.Esecuri} eșecuri — rularea se oprește "
+        Avert($"Luna {luna:00}/{anImport} a picat cu {rez.Esecuri} eșecuri de import și "
+            + $"{rez.ContractePicate} contracte de reconciliere picate — rularea se oprește "
             + "(stop dur implicit, §12.4). Rulează cu --continua pentru a recolta găurile "
             + "din toate lunile.");
         break;
@@ -608,6 +637,11 @@ Console.WriteLine($"""
     ║   importate / sărite      {luni.Sum(l => l.Documente),10} / {luni.Sum(l => l.Sarite)} ({luni.Sum(l => l.Copii)} copii autogenerați operați)
     ║   eșecuri de operare      {luni.Sum(l => l.Esecuri),10} pe {luni.Count(l => l.Esecuri > 0)} luni
     ║   realocări de lot (48a)  {luni.Sum(l => l.Realocari),10} (Σ {luni.Sum(l => l.CantitateRealocata):N3} buc mutate de pe pin pe FIFO)
+    ║ CONTRACTUL LUNAR (design §8 per lună — pasul 6)
+    ║   contracte picate        {luni.Sum(l => l.ContractePicate),10} pe {luni.Count(l => l.ContractePicate > 0)} luni (3 contracte × {luni.Count} luni)
+    ║   TVA de plată (4423)     {luni.Sum(l => l.TvaDePlata),10:N2} lei pe închiderile Atlas ale lunilor rulate ({bucla.ItvSarite} luni fără ITV nou — deja închise sau fără sold)
+    ║   plafonul netării        {bucla.StareContract.PlafonStoc,10:N2} lei (valoarea de stoc justificată, cumulată)
+    ║   durata contractelor     {TimeSpan.FromTicks(luni.Sum(l => l.DurataContract.Ticks)),10:hh\:mm\:ss}
     ║ REZULTAT: {(esecuri == 0 ? "CONTRACT ÎNDEPLINIT" : $"{esecuri} VERIFICĂRI PICATE")}, {avertismente.Count} avertismente, deschidere {durataDeschidere:hh\:mm\:ss} / documente {durataDocumente:hh\:mm\:ss} / total {cronometru.Elapsed:hh\:mm\:ss}
     ╚═══════════════════════════════════════════════════════════════════════════════
     """);

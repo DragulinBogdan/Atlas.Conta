@@ -131,7 +131,11 @@ static class Perioade {
 enum StareImport { Importat, Reoperat, Sarit, Esec }
 
 sealed record RezultatLuna(int An, int Luna, int Documente, int Sarite, int Copii, int Esecuri,
-    int Realocari, decimal CantitateRealocata, TimeSpan Durata);
+    int Realocari, decimal CantitateRealocata, TimeSpan Durata,
+    // Verdictul contractului lunii (pasul 6), ținut SEPARAT de eșecurile de
+    // import: un import fără eșecuri și o reconciliere picată sunt două
+    // diagnostice diferite, iar ambele opresc rularea (§12.4).
+    int ContractePicate, decimal TvaDePlata, TimeSpan DurataContract);
 
 sealed class BuclaImport {
     readonly IObjectSpaceProvider provider;
@@ -217,6 +221,9 @@ sealed class BuclaImport {
         Catalog = catalog;
 
         using var os = provider.CreateObjectSpace();
+        // Evidența supapei de alocare (48a), din rulările anterioare: contractul
+        // lunar o citește ca să poată NUMI diferențele de cost pe care le-a produs.
+        Alocare.Incarca(os);
         foreach (var l in os.GetObjectsQuery<MigrareLegatura>()
                      .Select(m => new { m.Tabela, m.CheieLegacy, m.TintaId }).ToList())
             legaturi[(l.Tabela, l.CheieLegacy)] = l.TintaId;
@@ -259,11 +266,16 @@ sealed class BuclaImport {
 
         Imperecheri(ctx);
         InchidereTva(ctx);
-        ReconciliereLunara(ctx);
+        if (sabotajLuna && !sabotajFacut)
+            SaboteazaLuna(ctx);
+        var cronometruContract = Stopwatch.StartNew();
+        var contract = ReconciliereLunara(ctx);
+        var durataContract = cronometruContract.Elapsed;
 
         var (realocari, cantitate) = Alocare.DeltaLunii();
         var rez = new RezultatLuna(an, luna, documente, sarite, copii, esecuri,
-            realocari, cantitate, cronometruLuna.Elapsed);
+            realocari, cantitate, cronometruLuna.Elapsed,
+            contract.Picate, contract.TvaDePlata, durataContract);
         Handlere.Raporteaza();
         ContorPunti.Raporteaza();
         if (SurseFaraCorespondent > 0)
@@ -271,7 +283,8 @@ sealed class BuclaImport {
                 + "(nici document, nici punte) — se replanifică la fiecare rulare, fără efect.");
         Console.WriteLine($"  Luna {luna:00}/{an}: {documente} documente importate, {sarite} sărite, "
             + $"{copii} copii autogenerați operați, {esecuri} eșecuri, {realocari} realocări de lot "
-            + $"({cantitate:N3} buc) — {rez.Durata:hh\\:mm\\:ss}.");
+            + $"({cantitate:N3} buc) — {rez.Durata:hh\\:mm\\:ss} "
+            + $"(din care contractul {durataContract:hh\\:mm\\:ss}).");
         check($"Luna {luna:00}/{an}: importul documentelor fără eșecuri "
             + $"({documente} importate, {esecuri} eșuate)", esecuri == 0);
         return rez;
@@ -285,12 +298,74 @@ sealed class BuclaImport {
     // PASUL 6: `InchidereTvaService.Genereaza` + operarea ei, la fine de lună
     // (§12.4 — fără ea, contractul de sold ar pica lunar pe 4426/4427/4423,
     // fiindcă Balanța 1C ARE închiderea în ea).
-    void InchidereTva(ContextLuna ctx) { }
+    //
+    // Trece prin `ImportaDocument` ca orice document 1C, deși sursa nu e un
+    // document 1C, și e deliberat: închiderea Atlas capătă astfel legătură (deci
+    // idempotență la reluare ȘI o poziție corectă în invariantul „orice document
+    // fără legătură e autogenerat de motor" din Program.cs), iar un eșec al ei
+    // pică luna ca oricare altul. Cheia e luna însăși — o închidere per lună.
+    //
+    // Serviciul ÎȘI FACE singur idempotența (închidere vie ⇒ null) și cere
+    // cronologie; aici nu se ocolește niciunul: gardienii lui sunt ai modelului,
+    // nu ai importului.
+    void InchidereTva(ContextLuna ctx) {
+        var stare = ImportaDocument("InchidereTva", $"{ctx.An:0000}-{ctx.Luna:00}",
+            os => InchidereTvaService.Genereaza(os, ctx.An, ctx.Luna, Catalog.SediuId));
+        if (stare == StareImport.Sarit)
+            itvSarite++;
+    }
+
+    int itvSarite;
 
     // PASUL 6: contractul design §8 per lună — sold per cont OMFP, 4423/4424,
     // stoc per produs × gestiune; diferențele justificate se poartă înainte
     // dintr-o lună în alta (§12.4).
-    void ReconciliereLunara(ContextLuna ctx) { }
+    ReconciliereLuna.Rezultat ReconciliereLunara(ContextLuna ctx) =>
+        ReconciliereLuna.Executa(ctx, StareContract, avert, check);
+
+    // Starea purtată între luni (plafonul netării, abaterile deja raportate);
+    // Program.cs îi pune datele deschiderii înainte de prima lună.
+    public ReconciliereLuna.Stare StareContract { get; } = new();
+
+    // Auto-testul contractului LUNAR (`--sabotaj`, partea a doua): +1 leu pe un
+    // rând de registru al unui DOCUMENT din prima lună procesată, după import și
+    // înaintea reconcilierii. Contul se alege din AFARA bucket-ului netării —
+    // altfel diferența ar fi (corect) declarată justificată, iar proba n-ar
+    // dovedi nimic.
+    //
+    // Spre deosebire de sabotajul deschiderii, ăsta NU se vindecă: deschiderea se
+    // rescrie la fiecare rulare, documentele nu. Baza rămâne alterată, deci o
+    // rulare de sabotaj e o probă, nu un import.
+    bool sabotajLuna;
+    bool sabotajFacut;
+
+    public void ActiveazaSabotajLuna() => sabotajLuna = true;
+
+    void SaboteazaLuna(ContextLuna ctx) {
+        sabotajFacut = true;
+        using var os = provider.CreateObjectSpace();
+        var candidat = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId != null && r.Data >= ctx.Prima && r.Data <= ctx.Ultima)
+            .Select(r => new { r.ID, Debit = r.ContDebit.Simbol, Credit = r.ContCredit.Simbol, r.Valoare })
+            .ToList()
+            .Where(r => !ReconciliereLuna.EsteInBucketNetare(r.Debit)
+                && !ReconciliereLuna.EsteInBucketNetare(r.Credit))
+            .OrderBy(r => r.ID)
+            .FirstOrDefault();
+        if (candidat == null) {
+            avert($"--sabotaj: luna {ctx.Luna:00}/{ctx.An} n-are niciun rând de document în afara "
+                + "bucket-ului netării — proba contractului lunar nu s-a putut face.");
+            return;
+        }
+        var rand = os.GetObjectByKey<RegistruContabil>(candidat.ID);
+        rand.Valoare += 1m;
+        os.CommitChanges();
+        Console.WriteLine($"\n*** SABOTAJ (--sabotaj): +1 leu pe rândul contabil {candidat.ID} "
+            + $"({candidat.Debit} = {candidat.Credit}, {candidat.Valoare:N2}) al lunii "
+            + $"{ctx.Luna:00}/{ctx.An}. Contractul (1) al lunii TREBUIE să pice pe ambele conturi. ***");
+    }
+
+    public int ItvSarite => itvSarite;
 
     // ======================= Un document =======================
 
