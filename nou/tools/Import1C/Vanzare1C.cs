@@ -1,0 +1,364 @@
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using DevExpress.ExpressApp;
+
+namespace Import1C;
+
+// PASUL 4 al feliei 1C-c: mecanismele COMUNE ale ieșirilor de marfă — liniile de
+// venit ale facturii, descărcarea de gestiune construită din rândurile de cost și
+// clasificarea rândurilor 1C față de forma tipizată Atlas.
+//
+// Toate cele trei familii de ieșire (factura de ieșire, raportul de vânzări cu
+// amănuntul, avizul de ieșire) au aceeași anatomie în 1C: rânduri de VENIT
+// (creanță/casă = 7xx), rânduri de TVA și rânduri de COST (6xx = 3xx, cu lotul în
+// subconto). Diferă doar latura care încasează și documentul purtător — deci
+// mecanismele stau aici, iar handlerele rămân politică.
+
+// ======================= Liniile de venit =======================
+//
+// **Decizia de formă a pasului 4** (raportată explicit): factura de ieșire de
+// import poartă DOAR linii de venit (natura Serviciu, Tipul = contul de venit al
+// liniei 1C), NICIODATĂ linii de stoc. Motivele sunt de model, nu de comoditate:
+//
+//  1. `FacturaIesire.ValideazaOperare` cere `GestiuneDescarcare` pe orice factură
+//     cu linii de stoc, iar cu ea setată motorul generează SINGUR descărcarea, la
+//     picking FIFO (`DescarcareService.Genereaza`). Designul fazei (§4) spune
+//     explicit contrariul: „descărcarea NU se re-pichează — liniile DSC se
+//     construiesc din rândurile 607 = 371 ale 1C cu lotul explicit ca pin".
+//     Cele două nu pot coexista pe același document: ori generăm noi DSC-ul din
+//     sursă, ori îl generează motorul din produse.
+//  2. Contul de venit REAL al liniei 1C (707.1 la marfă, dar și 418 la factura
+//     după aviz, 419.1 la avansul consumat, 767.1 la sconto) e purtat de linie,
+//     nu derivat din Tipul de stoc. Derivarea de vânzare a profilului (37e:
+//     371→707, 345→701, 381→708) ar posta ALT cont pe pozițiile care nu sunt
+//     mărfuri — o diferență de formă inventată de import, nu de sursă.
+//
+// Consecința e curată: creanța și veniturile ies EXACT ca în 1C (contract §8.1),
+// iar mișcarea de stoc trăiește integral pe DSC, cu loturile sursei (contract
+// §8.3). Identitatea produs/lot nu se pierde — e pe descărcare, unde contează.
+// `Simbol` e contul OMFP al venitului, ținut SEPARAT de `Tip.Cod`: Tipul creat la
+// cerere primește codul „S<simbol>" când simbolul are deja un Tip de STOC în
+// profil (mecanismul geamănului din Catalog), iar puntea lucrează pe conturi.
+sealed record LinieVenit(TipInfo Tip, string Simbol, Guid? TipTvaId, decimal Net, decimal Tva);
+
+static class Venituri1C {
+    public static int TvaLivrareTaxareInversa { get; private set; }
+
+    // Agregarea pe (cont de venit × cotă de TVA): 1C postează un rând de notă per
+    // linie de secțiune, dar factura Atlas n-are nevoie de granularitatea aia —
+    // contul și cota sunt tot ce decide postarea. Agregarea taie liniile la
+    // jumătate pe facturile mari și nu pierde nimic reconciliabil.
+    public static List<LinieVenit> Aduna(Catalog cat, IDocumentCuValuta doc, bool sumaIncludeTva,
+            IEnumerable<(string ContVenituri, string CotaTva, decimal Suma, decimal SumaTva)> linii) {
+        var pe = new Dictionary<(string Cont, string Cota), (decimal Net, decimal Tva)>();
+        var ordine = new List<(string Cont, string Cota)>();
+        foreach (var l in linii) {
+            var simbol = cat.Mapeaza(l.ContVenituri);
+            if (simbol == null)
+                throw new InvalidOperationException(
+                    $"Contul de venit 1C „{l.ContVenituri}” nu se mapează pe planul OMFP.");
+            var cheie = (simbol, l.CotaTva ?? "");
+            var (net, tva) = doc.NetSiTva(l.Suma, l.SumaTva, sumaIncludeTva);
+            if (!pe.TryGetValue(cheie, out var acum))
+                ordine.Add(cheie);
+            pe[cheie] = (acum.Net + net, acum.Tva + tva);
+        }
+
+        var rezultat = new List<LinieVenit>();
+        foreach (var cheie in ordine) {
+            var (net, tva) = pe[cheie];
+            if (net == 0m && tva == 0m)
+                continue;
+            var tip = cat.TipVenitPentru(cheie.Cont)
+                ?? throw new InvalidOperationException(
+                    $"Contul de venit {cheie.Cont} n-are TipMaterial în profil și nu s-a putut crea.");
+            var tipTva = cat.TipTvaCules(cheie.Cota, tva);
+            // **Taxarea inversă pe latura de LIVRARE nu postează nimic**: taxa o
+            // autolichidează cumpărătorul, iar `SumaTVA` a secțiunii e informativă
+            // (verificat pe rândurile sursei — 1C nu scrie niciun rând de TVA
+            // pentru liniile astea, doar venitul net). Regimul din motor e cel al
+            // ACHIZIȚIEI (4426 = 4427, autolichidare), deci linia rămâne FĂRĂ
+            // TipTva — nu doar cu valoare zero: `PregatesteOperare` recalculează
+            // TVA-ul din cotă exact când valoarea culeasă e zero (36a păstrează
+            // doar un ValoareTva NENUL), iar linia ar reînvia rândul inexistent.
+            // Măsurat pe ianuarie: 70.964,55 lei de 4426 = 4427 inventați așa.
+            if (cat.EsteTaxareInversa(tipTva)) {
+                TvaLivrareTaxareInversa++;
+                tipTva = null;
+                tva = 0m;
+            }
+            rezultat.Add(new LinieVenit(tip, cheie.Cont, tipTva, net, tva));
+        }
+        return rezultat;
+    }
+
+    // Linia de factură de ieșire: cantitatea e pro-forma (identitatea liniei e
+    // contul de venit, nu produsul — vezi nota de sus), prețul unitar poartă
+    // netul, iar TVA-ul cules NU se recalculează (36a uniformizat — decizia 48b).
+    public static void Materializeaza(IObjectSpace os, FacturaIesire fcl, IEnumerable<LinieVenit> venituri) {
+        foreach (var v in venituri) {
+            var d = os.CreateObject<FacturaIesireDetaliu>();
+            d.Document = fcl;
+            d.TipMaterialId = v.Tip.Id;
+            d.Cantitate = 1m;
+            d.PretUnitar = v.Net;
+            d.TipTvaId = v.TipTvaId;
+            d.ValoareTva = v.Tva;
+        }
+    }
+
+    // Ce postează Atlas pentru liniile de venit + TVA — se declară în punte ca să
+    // se anuleze cu rândurile 1C corespondente (mecanica deltei, Punte.cs).
+    // `semn` = −1 la retur (returul de la client postează aceeași corespondență cu
+    // valori NEGATIVE — rezoluția spike-ului storno, decizia 46a).
+    public static void DeclaraInPunte(Punte punte, IEnumerable<LinieVenit> venituri, int semn = 1) {
+        foreach (var v in venituri) {
+            punte.ActualAtlas(Catalog.ContCreantaImplicit, v.Simbol, semn * v.Net);
+            if (v.TipTvaId != null && v.Tva != 0m)
+                punte.ActualAtlas(Catalog.ContCreantaImplicit, "4427", semn * v.Tva);
+        }
+    }
+}
+
+// ======================= Descărcarea de gestiune =======================
+//
+// Rândurile 6xx = 3xx ale documentului de vânzare sunt costul mărfii ieșite, cu
+// LOTUL în subconto — exact materia primă a unui DSC (design §4: „liniile DSC se
+// construiesc din rândurile 607 = 371 ale 1C cu lotul explicit ca pin"). Valoarea
+// NU se preia din 1C: o pune motorul din prețul lotului Atlas (`PregatesteOperare`),
+// iar diferența rămasă din netarea deschiderii e diferență justificată (§8.3) —
+// de aceea rândurile de cost nu se declară deloc în punte (nici țintă, nici
+// actual): o punte pe ele ar „repara" o VALOARE, ceea ce e interzis.
+static class Descarcare1C {
+    public sealed record Grup(string DepozitHex, Guid GestiuneId, List<LiniePeLot> Linii);
+
+    public static int RanduriNerezolvate { get; private set; }
+    public static int LiniiDescarcate { get; private set; }
+    public static int DocumenteSparte { get; private set; }
+    public static int NeacoperitTranscris { get; private set; }
+
+    // Rândul de COST: cheltuială pe debit, cont de stoc al profilului pe credit.
+    // Clasificarea se face pe simbolurile MAPATE (fără avertismente — absența
+    // Tipului e informație aici, nu gaură de profil).
+    public static bool EsteRandDeCost(Catalog cat, FlaxRandNota r) {
+        var debit = cat.Mapeaza(r.ContDebit);
+        return debit != null && debit.StartsWith('6') && cat.EsteContDeStoc(cat.Mapeaza(r.ContCredit));
+    }
+
+    // Planificarea descărcării: un grup per gestiune (sursa n-are documente
+    // multi-gestiune pe 2025 — verificat — dar cheia poartă gestiunea când sunt
+    // mai multe, ca reluarea să rămână exactă, mecanica bonului de consum).
+    public static List<Grup> Planifica(ContextLuna ctx, string view, string docId, DateOnly data,
+            IReadOnlyList<FlaxRandNota> randuri,
+            Dictionary<(int, int), Dictionary<string, FlaxRef>> index, string depozitImplicit,
+            Punte punte) {
+        var bucla = ctx.Bucla;
+        var cat = bucla.Catalog;
+        var grupuri = new List<Grup>();
+        var dejaAlocat = new Dictionary<Guid, decimal>();
+        using var os = bucla.CreeazaObjectSpace();
+
+        foreach (var r in randuri) {
+            if (!EsteRandDeCost(cat, r))
+                continue;
+            var context = $"1C:{view}/{docId} rândul {r.Linie}";
+            var rezolvat = MiscareStoc1C.Rezolva(bucla,
+                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi),
+                index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator),
+                cat.Mapeaza(r.ContCredit), context);
+            if (rezolvat is not var (lot, tipCont, produsId)) {
+                // Rând de cost pe care nu-l putem duce în stoc (lot/produs
+                // nerezolvabil): la fel ca partea neacoperită, se transcrie
+                // contabil — altfel ar dispărea tăcut din solduri.
+                RanduriNerezolvate++;
+                punte.Categoria("Ieșire de marfă cu lot nerezolvabil — costul se transcrie contabil")
+                    .Tinta1C(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit), r.Suma);
+                continue;
+            }
+            // Tipul REAL al liniei (și registrul de stoc în care se caută soldul)
+            // e al produsului, nu al contului rândului — vezi Catalog.
+            var tip = cat.TipAlProdusului(os, produsId, tipCont);
+            var depozitHex = index.Ia(r.Linie, Subconto.Credit, Subconto.Depozite)?.Id
+                ?? depozitImplicit ?? "";
+            var gestiuneId = cat.Gestiuni.TryGetValue(depozitHex, out var g)
+                ? g
+                : throw new InvalidOperationException(
+                    $"Depozitul 1C {depozitHex} al rândului de cost nu e legat de o Gestiune.");
+            var grup = grupuri.FirstOrDefault(x => x.GestiuneId == gestiuneId);
+            if (grup == null)
+                grupuri.Add(grup = new Grup(depozitHex, gestiuneId, []));
+
+            var cantitate = Math.Abs(r.CantitateCredit);
+            var (alocari, ramas) = bucla.Alocare.Aloca(os, lot?.Id, produsId, gestiuneId,
+                tip.Registru, data, cantitate, dejaAlocat);
+            foreach (var (lotId, q) in alocari) {
+                grup.Linii.Add(new LiniePeLot(lotId, tip.Id, q));
+                LiniiDescarcate++;
+            }
+            if (ramas > 0) {
+                bucla.Avert($"{context}: {ramas:N3} din {cantitate:N3} n-au acoperire în gestiunea "
+                    + "care descarcă — marfa se descarcă parțial (diferență de stoc raportată).");
+                // Partea NEACOPERITĂ nu produce linie, deci Atlas nu postează
+                // costul ei: rândul 1C ar rămâne fără corespondent tăcut, iar
+                // soldurile 6xx/3xx ar diverge fără urmă. Se transcrie proporțional
+                // în punte — contabilitatea rămâne a sursei, stocul e cel pe care
+                // Atlas chiar îl are (diferența de stoc se raportează separat).
+                NeacoperitTranscris++;
+                punte.Categoria("Ieșire de marfă fără acoperire în stoc — costul se transcrie contabil")
+                    .Tinta1C(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit),
+                        cantitate == 0 ? r.Suma : r.Suma * ramas / cantitate);
+            }
+        }
+        if (grupuri.Count > 1)
+            DocumenteSparte++;
+        return grupuri.Where(g => g.Linii.Count > 0).ToList();
+    }
+
+    // Cheia de idempotență a descărcării: „#dsc@<depozit>" pe cheia documentului
+    // sursă. Sufixul poartă ÎNTOTDEAUNA depozitul (nu doar la documentele
+    // multi-gestiune) fiindcă e derivabil din sursă FĂRĂ planificare — de el
+    // atârnă gardul de replanificare al reluării: a doua rulare trebuie să știe
+    // ce chei ar fi trebuit să existe înainte de a re-aloca vreun lot.
+    public static string Cheie(string docId, string depozitHex) => $"{docId}#dsc@{depozitHex}";
+
+    // Depozitele atinse de rândurile de cost, în ordinea apariției — sursa
+    // cheilor așteptate. Nu atinge baza: doar subconto-ul lunii, deja în memorie.
+    public static List<string> Depozite(Catalog cat, IEnumerable<FlaxRandNota> randuri,
+            Dictionary<(int, int), Dictionary<string, FlaxRef>> index, string depozitImplicit) {
+        var depozite = new List<string>();
+        foreach (var r in randuri) {
+            if (!EsteRandDeCost(cat, r))
+                continue;
+            var depozitHex = index.Ia(r.Linie, Subconto.Credit, Subconto.Depozite)?.Id
+                ?? depozitImplicit ?? "";
+            if (!depozite.Contains(depozitHex))
+                depozite.Add(depozitHex);
+        }
+        return depozite;
+    }
+
+    // `sursaId` = documentul Atlas care a produs descărcarea (factura de ieșire /
+    // FCL-ul surogat al raportului de amănunt). Cu el, DSC-ul e marcat
+    // `Autogenerat` + `DocumentSursa` și intră natural în gardianul de grup al
+    // motorului (copiii operați blochează anularea sursei). Avizul de ieșire n-are
+    // document purtător ⇒ descărcare de sine stătătoare, legală prin construcție
+    // (DSC-ul cules manual e document normal de ieșire din gestiune).
+    // `grup == null` = planul lipsește (documentul e deja importat) sau toate
+    // rândurile lui de cost au rămas nerezolvate: „sursa n-are ce importa".
+    public static Document Materializeaza(IObjectSpace os, Grup grup, DateOnly data, string numar,
+            Guid primitorId, Guid? sursaId) {
+        if (grup == null || grup.Linii.Count == 0)
+            return null;
+        var dsc = os.CreateObject<DescarcareGestiune>();
+        dsc.Data = data;
+        dsc.Numar = numar;
+        dsc.PredatorId = grup.GestiuneId;
+        dsc.PrimitorId = primitorId;
+        if (sursaId is { } sursa) {
+            dsc.DocumentSursaId = sursa;
+            dsc.Autogenerat = true;
+        }
+        foreach (var l in grup.Linii) {
+            var d = os.CreateObject<DescarcareGestiuneDetaliu>();
+            d.Document = dsc;
+            d.TipMaterialId = l.TipMaterialId;
+            d.LotId = l.LotId;
+            d.Cantitate = l.Cantitate;
+        }
+        return dsc;
+    }
+
+    public static void Raporteaza() =>
+        Console.WriteLine($"  DSC: {LiniiDescarcate} linii de descărcare pe lot, "
+            + $"{DocumenteSparte} documente cu mai multe gestiuni, "
+            + $"{RanduriNerezolvate} rânduri de cost nerezolvate, {NeacoperitTranscris} rânduri "
+            + "cu marfă fără acoperire (costul transcris în punte).");
+}
+
+// ======================= Gardianul reluării =======================
+//
+// Consecința transcrierii părții neacoperite (mai sus): puntea unei rulări
+// ANTERIOARE conține deja costul mărfii pe care documentul de stoc nu l-a putut
+// mișca atunci. Dacă o rulare ulterioară găsește între timp acoperire (stocul s-a
+// schimbat fiindcă tipurile se importă grupat, nu strict cronologic) și
+// materializează documentul acum, costul s-ar posta A DOUA OARĂ — puntea veche nu
+// se rescrie (cheia ei e deja legată).
+//
+// Ordinea handlerelor (intrările înaintea ieșirilor — Bucla.cs) face cazul să nu
+// mai apară pe datele reale; gardianul rămâne fiindcă „nu mai apare pe ianuarie"
+// nu e o garanție, iar simptomul ar fi o dublare TĂCUTĂ de cost.
+static class Reluare1C {
+    public static int DocumenteBlocate { get; private set; }
+
+    public static bool Blocheaza(BuclaImport bucla, string view, bool punteVeche, string cheieDocument) {
+        if (!punteVeche || bucla.EsteCunoscut(view, cheieDocument))
+            return false;
+        DocumenteBlocate++;
+        bucla.Avert($"1C:{view}/{cheieDocument}: documentul de stoc lipsește, dar puntea sursei a fost "
+            + "scrisă de o rulare ANTERIOARĂ (partea neacoperită e deja transcrisă contabil acolo) — "
+            + "nu se materializează acum, ca să nu se posteze costul de două ori. Dacă mișcarea de "
+            + "stoc e necesară, reimportă luna cu --recreeaza.");
+        return true;
+    }
+
+    public static void Raporteaza() {
+        if (DocumenteBlocate > 0)
+            Console.WriteLine($"  {DocumenteBlocate} documente de stoc blocate de puntea unei rulări "
+                + "anterioare (vezi avertismentele) — luna se reimportă cu --recreeaza.");
+    }
+}
+
+// ======================= Clasificarea rândurilor 1C =======================
+//
+// Regula feliei (contractul pasului 4): fiecare rând al documentului 1C trebuie
+// să aibă un rost DECLARAT. Ori Atlas îl postează (și atunci se declară în punte
+// pe ambele laturi, ca delta să se anuleze), ori Atlas îl postează la valoarea LUI
+// (cost din lot — nu se declară nimic, diferența e justificată), ori nu-l poate
+// exprima și se transcrie în nota-punte. Un rând care nu intră în niciuna dintre
+// categorii NU se ignoră tăcut: documentul eșuează zgomotos, cu perechea de
+// conturi în mesaj — descoperirea unei forme noi e o decizie de luat, nu un
+// accident de rulare (decizia 21).
+enum FelRand {
+    // Atlas postează același rând, la aceeași valoare (venit, TVA, trezorerie).
+    Acoperit,
+    // Atlas postează aceeași corespondență, dar evaluată din prețul lotului lui
+    // (cost de descărcare, retur pe lot) — diferența e a netării, se raportează.
+    Evaluat,
+    // Nu se poate exprima în forma tipizată — se transcrie în punte.
+    Punte,
+}
+
+// Perechea de conturi MAPATE a unui rând + clasificarea ei; ține și eticheta de
+// raport a punții, ca handlerul să spună O DATĂ ce înseamnă fiecare formă.
+sealed record RandClasificat(FlaxRandNota Rand, string Debit, string Credit, FelRand Fel, string Eticheta);
+
+static class Clasificare1C {
+    // Aplică lista de reguli (prima care se potrivește câștigă) și aruncă la
+    // primul rând necunoscut — eșecul e per DOCUMENT (îl prinde `EsecPlanificare`).
+    public static List<RandClasificat> Clasifica(Catalog cat, string view, string docId,
+            IEnumerable<FlaxRandNota> randuri,
+            Func<FlaxRandNota, string, string, (FelRand Fel, string Eticheta)?> regula) {
+        var rezultat = new List<RandClasificat>();
+        foreach (var r in randuri) {
+            var debit = cat.Mapeaza(r.ContDebit);
+            var credit = cat.Mapeaza(r.ContCredit);
+            var fel = regula(r, debit, credit)
+                ?? throw new InvalidOperationException(
+                    $"Rândul {r.Linie} ({r.ContDebit} = {r.ContCredit} → {debit} = {credit}, "
+                    + $"{r.Suma:N2} lei) n-are corespondent declarat în handlerul {view} — "
+                    + "formă nouă a sursei, de tranșat explicit (decizia 21).");
+            rezultat.Add(new RandClasificat(r, debit, credit, fel.Fel, fel.Eticheta));
+        }
+        return rezultat;
+    }
+
+    // Ținta 1C a rândurilor care NU sunt evaluate de Atlas: cele acoperite se vor
+    // anula cu declarațiile `ActualAtlas` ale handlerului, cele de punte rămân și
+    // devin nota. Rândurile `Evaluat` nu se declară deloc.
+    public static void DeclaraTinte(Punte punte, IEnumerable<RandClasificat> randuri) {
+        foreach (var r in randuri) {
+            if (r.Fel == FelRand.Evaluat)
+                continue;
+            punte.Categoria(r.Eticheta).Tinta1C(r.Debit, r.Credit, r.Rand.Suma);
+        }
+    }
+}

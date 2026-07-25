@@ -19,6 +19,15 @@ namespace Import1C;
 // Restul rămas după FIFO NU e excepție aici: se întoarce apelantului, care
 // decide (backorder, raport, refuz). Gardianul de sold al motorului rămâne
 // autoritatea finală la operare.
+//
+// **Disponibilul e cel al ÎNTREGII linii de timp, nu soldul la dată** (pasul 4):
+// gardianul motorului cere sold ≥ 0 la sfârșitul FIECĂREI zile de la data
+// documentului încolo (25d), iar importul scrie documentele grupate pe TIP, nu
+// strict cronologic — deci în momentul în care se planifică o vânzare de pe 9
+// ianuarie, registrul poate conține deja transferul de pe 20. Un „sold la dată"
+// ar spune că lotul are marfă, iar operarea ar pica pe ziua de 20. Disponibilul
+// real e MINIMUL sumelor cumulate pe zilele ≥ data — exact mărimea pe care o poți
+// scoate fără să duci vreo zi ulterioară sub zero.
 sealed class AlocareIesire {
     // Diagnostic, nu eșec (§12.1): se raportează per lună.
     public int Realocari { get; private set; }
@@ -38,7 +47,7 @@ sealed class AlocareIesire {
         (Realocari - realocariLaStart, CantitateRealocata - cantitateLaStart);
 
     // `dejaAlocat` = alocările deja făcute în ACELAȘI document, încă necomise
-    // (`Sold` nu le vede — pattern-ul DescarcareService, 38b). Se ACTUALIZEAZĂ
+    // (registrul nu le vede — pattern-ul DescarcareService, 38b). Se ACTUALIZEAZĂ
     // aici: apelantul îl ține per document și îl transmite la fiecare linie.
     public (IReadOnlyList<(Guid LotId, decimal Cantitate)> Alocari, decimal Ramas) Aloca(
             IObjectSpace os, Guid? lotDoritId, Guid produsId, Guid gestiuneId, TipStoc tipStoc,
@@ -48,42 +57,83 @@ sealed class AlocareIesire {
         if (cantitate <= 0)
             return (alocari, 0m);
 
-        // 1. Pinul, cât acoperă. Soldul se citește LA DATĂ (gardianul motorului
-        //    verifică prefix-sum pe zile — 25d), minus ce a prins deja o linie
-        //    anterioară a aceluiași document.
+        // O singură interogare per cerere, pentru toată grupa produs × gestiune ×
+        // registru: pinul și FIFO-ul se servesc din aceleași rânduri (înainte era
+        // un `Sold` per lot).
+        var randuri = os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.Lot.ProdusId == produsId && r.RepartitorId == gestiuneId
+                && r.TipStoc == tipStoc)
+            .Select(r => new { r.LotId, r.Data, r.Cantitate, DataLot = r.Lot.Data })
+            .ToList();
+        var loturi = randuri.GroupBy(r => r.LotId)
+            .Select(g => new {
+                LotId = g.Key,
+                DataLot = g.Min(x => x.DataLot),
+                Disponibil = Disponibil(g.Select(x => (x.Data, x.Cantitate)), data),
+            })
+            .ToDictionary(x => x.LotId);
+
+        decimal Liber(Guid lotId) => loturi.TryGetValue(lotId, out var l)
+            ? Math.Max(0m, l.Disponibil - dejaAlocat.GetValueOrDefault(lotId))
+            : 0m;
+
+        void Ia(Guid lotId, decimal cantitateLuata) {
+            alocari.Add((lotId, cantitateLuata));
+            dejaAlocat[lotId] = dejaAlocat.GetValueOrDefault(lotId) + cantitateLuata;
+            ramas -= cantitateLuata;
+        }
+
+        // 1. Pinul, cât acoperă.
         if (lotDoritId is { } pin) {
-            var sold = StocService.Sold(os, new CheieStoc(pin, gestiuneId, tipStoc), data)
-                - dejaAlocat.GetValueOrDefault(pin);
-            var iaDePePin = Math.Min(ramas, Math.Max(0m, sold));
-            if (iaDePePin > 0) {
-                alocari.Add((pin, iaDePePin));
-                dejaAlocat[pin] = dejaAlocat.GetValueOrDefault(pin) + iaDePePin;
-                ramas -= iaDePePin;
-            }
+            var iaDePePin = Math.Min(ramas, Liber(pin));
+            if (iaDePePin > 0)
+                Ia(pin, iaDePePin);
             else
                 PinuriGoale++;
         }
 
-        // 2. Deficitul, FIFO în produs × gestiune. `dejaAlocat` e la zi (pasul 1
-        //    l-a actualizat), deci FIFO nu re-alocă ce a prins pinul.
-        if (ramas > 0) {
-            var (fifo, rest) = StocService.AlocaFifoTolerant(os, produsId, gestiuneId, tipStoc,
-                data, ramas, dejaAlocat);
-            foreach (var (lotId, q) in fifo) {
-                alocari.Add((lotId, q));
-                dejaAlocat[lotId] = dejaAlocat.GetValueOrDefault(lotId) + q;
-            }
-            var realocat = ramas - rest;
-            // Realocare = doar deplasarea cerută de netare: fără pin, FIFO e
-            // pickingul normal al modelului, nu o supapă.
-            if (lotDoritId != null && realocat > 0) {
-                Realocari++;
-                CantitateRealocata += realocat;
-            }
-            ramas = rest;
+        // 2. Deficitul, FIFO în produs × gestiune (vechimea lotului, apoi ID-ul —
+        //    aceeași ordine ca `StocService.AlocaFifoTolerant`).
+        var inainteDeFifo = ramas;
+        foreach (var lot in loturi.Values.OrderBy(l => l.DataLot).ThenBy(l => l.LotId)) {
+            if (ramas <= 0)
+                break;
+            if (lotDoritId == lot.LotId)
+                continue;
+            var liber = Liber(lot.LotId);
+            if (liber > 0)
+                Ia(lot.LotId, Math.Min(ramas, liber));
+        }
+        // Realocare = doar deplasarea cerută de netare: fără pin, FIFO e pickingul
+        // normal al modelului, nu o supapă.
+        if (lotDoritId != null && inainteDeFifo > ramas) {
+            Realocari++;
+            CantitateRealocata += inainteDeFifo - ramas;
         }
 
         Nedescarcat += ramas;
         return (alocari, ramas);
+    }
+
+    // Cantitatea maximă care poate ieși la `data` fără ca soldul cumulat să scadă
+    // sub zero la sfârșitul vreunei zile ≥ `data` (gardianul 25d, în oglindă).
+    static decimal Disponibil(IEnumerable<(DateOnly Data, decimal Cantitate)> miscari, DateOnly data) {
+        decimal cumulat = 0, minim = decimal.MaxValue;
+        var punctat = false;
+        foreach (var zi in miscari.GroupBy(m => m.Data).OrderBy(g => g.Key)) {
+            // Punctul de control al zilei documentului: ce era în stoc ÎNAINTE de
+            // prima zi ulterioară (marfa care intră mai târziu nu se poate vinde
+            // acum).
+            if (zi.Key > data && !punctat) {
+                minim = Math.Min(minim, cumulat);
+                punctat = true;
+            }
+            cumulat += zi.Sum(m => m.Cantitate);
+            if (zi.Key >= data) {
+                minim = Math.Min(minim, cumulat);
+                punctat = true;
+            }
+        }
+        return minim == decimal.MaxValue ? cumulat : minim;
     }
 }

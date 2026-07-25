@@ -36,21 +36,35 @@ static class Handlere {
         "Operatia", "Salarii", "CasareMF", "InchidereLunaDeExercitiu", "Import", "ReevaluareMF",
     };
 
-    // Pașii 3–5 adaugă aici câte o înregistrare per tip. Ordinea din listă e
-    // ordinea în care se importă tipurile ÎN INTERIORUL lunii — contează pentru
-    // existența loturilor (intrarea înaintea ieșirii care o pin-uiește), nu
-    // pentru solduri (gardianul e prefix-sum pe zile, §12.4).
+    // Pașii 3–5 adaugă aici câte o înregistrare per tip.
+    // Ordinea din listă = ordinea ÎN INTERIORUL lunii, iar criteriul e unul
+    // singur: **tot ce ADAUGĂ stoc înaintea a tot ce CONSUMĂ stoc.** Gardianul de
+    // sold e prefix-sum pe zile (25d), deci datele nu contează pentru solduri —
+    // dar o ieșire planificată înainte ca intrarea ei să existe în registru nu-și
+    // găsește acoperirea și cade în supapa 48a, cu tot cortegiul de realocări și
+    // transcrieri. Măsurat pe ianuarie: ordinea greșită lăsa 190 de documente
+    // nematerializate la prima trecere (le prindea a doua rulare).
     public static readonly IReadOnlyList<HandlerTip> Toate = [
-        // PASUL 3: intrările înaintea mișcărilor care le pin-uiesc loturile —
-        // ordinea din listă e ordinea din interiorul lunii (o factură de pe 3 ale
-        // lunii trebuie să-și fi născut lotul înainte ca un transfer de pe 5 să-l
-        // ceară). Restul e treaba gardianului de sold, care e prefix-sum pe zile.
+        // 1. INTRĂRILE — nasc loturi: factura (cu NIR-ul conex), avizul de intrare
+        //    (plus de inventar), returul de la client (marfa revine în gestiune).
         HandlerFactura.Handler,
+        HandlerAvizIntrare.Handler,
+        HandlerReturClient.Handler,
+        // 2. MUTĂRILE — duc marfa în gestiunea în care se lucrează cu ea.
         HandlerTransfer.Handler,
+        // 3. TRANSFORMĂRILE — consumă din gestiunea de lucru și produc loturi noi
+        //    (măsurat: înaintea transferurilor, asamblarea nu-și găsea consumurile;
+        //    după ele, se recuperează integral).
+        HandlerAsamblare.HandlerAsm,
+        HandlerAsamblare.HandlerDez,
+        // 4. IEȘIRILE — consumă tot ce s-a creat mai sus.
         HandlerConsum.Handler,
         HandlerDiferente.HandlerPlus,
         HandlerDiferente.HandlerMinus,
-        // PASUL 4: FCL+DSC, RVA, RLF/RDC, ASM, avize
+        HandlerVanzare.Handler,
+        HandlerAmanunt.Handler,
+        HandlerAvizIesire.Handler,
+        HandlerReturFurnizor.Handler,
         // PASUL 5: PLT/INC, Compensare, familia NTC
     ];
 
@@ -60,6 +74,15 @@ static class Handlere {
         HandlerTransfer.Raporteaza();
         HandlerConsum.Raporteaza();
         HandlerDiferente.Raporteaza();
+        HandlerVanzare.Raporteaza();
+        Descarcare1C.Raporteaza();
+        HandlerAmanunt.Raporteaza();
+        HandlerAvizIesire.Raporteaza();
+        HandlerAvizIntrare.Raporteaza();
+        HandlerReturFurnizor.Raporteaza();
+        HandlerReturClient.Raporteaza();
+        HandlerAsamblare.Raporteaza();
+        Reluare1C.Raporteaza();
     }
 
     public static IReadOnlySet<string> Implementate =>
@@ -153,6 +176,13 @@ sealed class BuclaImport {
     // să existe — altfel reluarea ar intra în materializare cu mâna goală.
     public bool EsteCunoscut(string view, string cheie) =>
         legaturi.TryGetValue((Legaturi.Tabela(view), cheie), out var tinta) && stari.ContainsKey(tinta);
+
+    // Documentul Atlas al unei chei deja importate — pasul 4 are nevoie de el ca
+    // FK (descărcarea de gestiune poartă `DocumentSursa` = factura de ieșire,
+    // creată de un apel `ImportaDocument` anterior, în alt ObjectSpace).
+    public Guid? Tinta(string view, string cheie) =>
+        legaturi.TryGetValue((Legaturi.Tabela(view), cheie), out var tinta) && stari.ContainsKey(tinta)
+            ? tinta : null;
 
     public BuclaImport(IObjectSpaceProvider provider, FlaxDb flax, ImportLaCerere laCerere,
             AlocareIesire alocare, Catalog catalog, Action<string> avert, Action<string, bool> check) {
@@ -396,7 +426,13 @@ sealed class BuclaImport {
 
     StareImport Esec(string view, string cheieHex, string faza, Exception ex) {
         esecuri++;
-        var mesaj = $"1C:{view}/{cheieHex} ({luna:00}/{an}) — {faza} a eșuat: {ex.Message}";
+        // Excepțiile de persistență (EF) își țin cauza REALĂ în inner exception
+        // („An error occurred while saving the entity changes" nu spune nimic):
+        // se desfășoară tot lanțul, altfel diagnosticul cere un debugger.
+        var cauze = new List<string>();
+        for (var e = ex; e != null; e = e.InnerException)
+            cauze.Add(e.Message);
+        var mesaj = $"1C:{view}/{cheieHex} ({luna:00}/{an}) — {faza} a eșuat: {string.Join(" ← ", cauze)}";
         if (esecuri <= DetaliiEsecPeLuna) {
             Console.WriteLine($"  EȘEC {mesaj}");
             avert(mesaj);

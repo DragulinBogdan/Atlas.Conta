@@ -32,12 +32,19 @@ sealed class Catalog {
     public Func<string, string> Mapeaza { get; }
     public IReadOnlyDictionary<string, Guid> Plan { get; }
     public IReadOnlyDictionary<string, Guid> Gestiuni { get; }
+    // Conturile proprii importate (casierii + conturi bancare, 47b): laturile
+    // încasărilor generate de import (cardul retailului, încasarea în numerar).
+    public IReadOnlyDictionary<string, Guid> ConturiProprii { get; }
     public Guid SediuId { get; }
     public Guid ComisieId { get; }
     public Guid TipTrezorerieId { get; }
+    // Partenerul generic de retail (seed privat, decizia 48b): latura FCL-ului
+    // surogat al raportului de vânzări cu amănuntul.
+    public Guid ConsumatorFinalId { get; }
 
     readonly Dictionary<string, TipInfo> tipuri = new(StringComparer.Ordinal);
     readonly Dictionary<string, Guid> tipuriTva = new(StringComparer.Ordinal);
+    readonly Dictionary<Guid, string> simboluriContPropriu = [];
     readonly Dictionary<string, string> tipRefPeNume = new(StringComparer.Ordinal);
 
     // Indexul de loturi: cheia canonică (convenția `Deschidere.CheieLot`) →
@@ -65,8 +72,13 @@ sealed class Catalog {
 
         using var os = provider.CreateObjectSpace();
         Gestiuni = Legaturi.Incarca(os, "Depozite");
+        var proprii = new Dictionary<string, Guid>(Legaturi.Incarca(os, "Casierii"), StringComparer.Ordinal);
+        foreach (var (cheie, id) in Legaturi.Incarca(os, "ConturiBancare"))
+            proprii[cheie] = id;
+        ConturiProprii = proprii;
         SediuId = CereRepartitor(os, "SEDIU");
         ComisieId = CereRepartitor(os, "COMISIE");
+        ConsumatorFinalId = CereRepartitor(os, "CF");
         foreach (var t in os.GetObjectsQuery<TipMaterial>()
                      .Select(t => new { t.ID, t.Cod, ClasaCod = t.Clasa.Cod, t.Clasa.Natura }).ToList())
             tipuri[t.Cod] = new TipInfo(t.ID, t.Cod, t.ClasaCod, t.Natura);
@@ -75,6 +87,11 @@ sealed class Catalog {
             : throw new InvalidOperationException("Profilul privat nu are Tipul tehnic TRZ (seed).");
         foreach (var t in os.GetObjectsQuery<TipTva>().Select(t => new { t.ID, t.Cod }).ToList())
             tipuriTva[t.Cod] = t.ID;
+        // Simbolul contului propriu (5311/5121/5125…): handlerele au nevoie de el
+        // ca să declare în punte CE postează Atlas pe latura de trezorerie.
+        foreach (var c in os.GetObjectsQuery<ContPropriu>()
+                     .Select(c => new { c.ID, Simbol = c.ContImplicit.Simbol }).ToList())
+            simboluriContPropriu[c.ID] = c.Simbol;
 
         // Identitatea 1C a tipurilor de document (TypeRef) — intră în cheia de
         // lot. Se ia din recensământul Recorder al anului, adică din DATE: un
@@ -96,6 +113,44 @@ sealed class Catalog {
             loturi.TryAdd(cheie, canonicePeId.TryGetValue(id, out var canonic)
                 ? canonic : new LotImport(id, Simbol(cheie)));
     }
+
+    // Contul propriu al ÎNCASĂRILOR PE CARD (5125 „Sume în curs de decontare"):
+    // 1C nu-l ține ca nomenclator — e doar un cont de evidență pe rândurile
+    // 512.5 = 411.1 — dar latura încasării Atlas cere un `ContPropriu`. Se
+    // creează la prima cerere, cheiat pe cod natural (recuperabil la reluare, ca
+    // nomenclatoarele mici — 47b), și rămâne în cache pe durata rulării.
+    public Guid ContPropriuCard() {
+        if (contCard is { } id)
+            return id;
+        using var os = provider.CreateObjectSpace();
+        var cont = os.FirstOrDefault<ContPropriu>(c => c.Cod == "5125");
+        if (cont == null) {
+            cont = os.CreateObject<ContPropriu>();
+            cont.Cod = "5125";
+            cont.Denumire = "Sume în curs de decontare (card)";
+            cont.EsteBanca = true;
+            avert("Cont propriu creat de import: „5125” (sume în curs de decontare) — "
+                + "latura încasărilor pe card, pe care 1C le ține doar ca simbol de cont.");
+        }
+        cont.ContImplicitId = Plan.TryGetValue("5125", out var simbol) ? simbol : null;
+        os.CommitChanges();
+        contCard = cont.ID;
+        simboluriContPropriu[cont.ID] = "5125";
+        return cont.ID;
+    }
+
+    Guid? contCard;
+
+    // Contul de evidență al unui cont propriu (latura de trezorerie pe care o
+    // postează motorul prin `SursaCont.Repartitor*`).
+    public string SimbolContPropriu(Guid id) => simboluriContPropriu.GetValueOrDefault(id);
+
+    // Contul pe care motorul îl pune pe latura de CREANȚĂ a facturii de ieșire /
+    // încasării: `SursaCont.Repartitor*` citește `ContImplicit`-ul partenerului,
+    // iar partenerii importați din 1C nu au unul (47b) ⇒ fallback-ul regulii.
+    // Constantă, nu interogare per document: dacă vreodată importul va seta
+    // conturi implicite pe parteneri, aici e locul care trebuie să afle.
+    public const string ContCreantaImplicit = "4111";
 
     static Guid CereRepartitor(IObjectSpace os, string cod) =>
         os.FirstOrDefault<Repartitor>(r => r.Cod == cod)?.ID
@@ -126,7 +181,20 @@ sealed class Catalog {
     // profil (ex. o linie de servicii pe contul de marfă) primește un geamăn
     // „S<simbol>" — altfel linia ar intra în filtrul de natură al conexului NIR
     // și ar cere lot pe care nu-l are.
-    public TipInfo TipCheltuialaPentru(string simbol) {
+    public TipInfo TipCheltuialaPentru(string simbol) => TipNestocPentru(simbol);
+
+    // Același mecanism, pe latura de VENIT (pasul 4): contul de venit al liniei
+    // 1C (707.1/704.x/418/419.1…) devine Cod-ul unui TipMaterial de natură
+    // Serviciu, iar regula generică de facturare îl postează pe credit
+    // (`SursaCont.TipMaterial`). Tipurile de venit ale profilului (704/706/707/
+    // 708 — clasa VEN) sunt deja în seed și se refolosesc ca atare.
+    public TipInfo TipVenitPentru(string simbol) => TipNestocPentru(simbol);
+
+    // Contul e de STOC în profil? (fără avertisment — se folosește la
+    // CLASIFICAREA rândurilor 1C, unde absența e informație, nu gaură.)
+    public bool EsteContDeStoc(string simbol) => Tip(simbol)?.Natura == NaturaClasa.Stoc;
+
+    public TipInfo TipNestocPentru(string simbol) {
         if (simbol == null)
             return null;
         var existent = Tip(simbol);
@@ -230,6 +298,20 @@ sealed class Catalog {
         ["Neimpozabile"] = "NIM", ["ScutiteTVAFara"] = "SFD", ["ScutiteTVACu"] = "SDD",
     };
 
+    // Cota liniei → TipTva, cu regula 36a a importului (pasul 3, ridicată aici ca
+    // s-o folosească toate handlerele): un regim care POSTEAZĂ dar cu TVA zero în
+    // sursă ar face motorul să recalculeze TVA-ul din cotă și să inventeze un rând
+    // 4426/4427 pe care 1C nu-l are — acolo linia rămâne fără TipTva.
+    public Guid? TipTvaCules(string cota1C, decimal tva) {
+        var tip = TipTvaPentru(cota1C);
+        if (tip == null || tva != 0m)
+            return tip;
+        LiniiTvaZeroFaraTip++;
+        return null;
+    }
+
+    public int LiniiTvaZeroFaraTip { get; private set; }
+
     public Guid? TipTvaPentru(string cota1C) {
         if (string.IsNullOrEmpty(cota1C))
             return null;
@@ -290,6 +372,31 @@ sealed class Catalog {
         LoturiNerezolvate++;
         return null;
     }
+
+    // TipMaterial-ul cu care se culege o linie de STOC: cel al PRODUSULUI, nu cel
+    // derivat din contul rândului 1C. Două motive, amândouă scoase la iveală de
+    // prima rulare a pasului 4:
+    //  * produsul se creează la prima referință, cu Tipul de atunci
+    //    (`AsiguraProdus`), iar o referință ulterioară de pe alt cont — o
+    //    reclasificare 1C — ar da alt Tip; tipurile P2/1C-a validează coerența
+    //    linie ↔ produsul lotului (38c/46d), deci sursa de adevăr e produsul;
+    //  * Tipul decide și REGISTRUL de stoc (Magazie/Mărfuri): dacă alocarea
+    //    verifică soldul într-un registru și motorul scrie mișcarea în celălalt,
+    //    gardianul de sold pică pe bună dreptate.
+    // Memo pe produs (produsele se repetă masiv între documente).
+    public TipInfo TipAlProdusului(IObjectSpace os, Guid produsId, TipInfo implicit_) {
+        if (tipuriPeProdus.TryGetValue(produsId, out var cunoscut))
+            return cunoscut ?? implicit_;
+        var tipId = os.GetObjectsQuery<Produs>()
+            .Where(p => p.ID == produsId)
+            .Select(p => p.TipMaterialId)
+            .FirstOrDefault();
+        var tip = tipId == null ? null : tipuri.Values.FirstOrDefault(t => t.Id == tipId);
+        tipuriPeProdus[produsId] = tip;
+        return tip ?? implicit_;
+    }
+
+    readonly Dictionary<Guid, TipInfo> tipuriPeProdus = [];
 
     // Lotul născut de o linie de import (factură de intrare, plus de inventar):
     // legătura se scrie în ACELAȘI ObjectSpace cu documentul, deci în același

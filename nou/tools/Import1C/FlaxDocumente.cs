@@ -67,10 +67,35 @@ record FlaxAprovizionareServiciu(string DocumentId, int Linie, string Nomenclato
     string Explicatie, decimal Cantitate, decimal Pret, decimal Suma, string CotaTva,
     decimal SumaTva, string ContCheltuieli, string PartenerDimensiuneId);
 
+// Conversia valutară a sumelor din SECȚIUNI (verificată la pasul 3 pe facturi și
+// re-verificată la pasul 4 pe vânzări/retururi/avize): 1C ține sumele de secțiune
+// în VALUTA documentului, iar registrul contabil e în lei. Cursul iese 0 sau 1 la
+// documentele în lei. Conversia se face PER LINIE-SURSĂ, apoi se însumează —
+// altfel rotunjirea diferă de rândul de notă (1C postează un rând per linie).
+interface IDocumentCuValuta {
+    string Valuta { get; }
+    decimal Curs { get; }
+}
+
+static class Valuta1C {
+    public static decimal InLei(this IDocumentCuValuta doc, decimal suma) =>
+        Math.Round(suma * (doc.Curs <= 0m ? 1m : doc.Curs), 2);
+
+    // Netul liniei: `SumaIncludeTVA` (adevărat pe majoritatea vânzărilor — 3.127
+    // din 3.235 de facturi de ieșire pe ianuarie) spune că `Suma` e BRUTĂ.
+    public static (decimal Net, decimal Tva) NetSiTva(this IDocumentCuValuta doc,
+            decimal suma, decimal sumaTva, bool includeTva) {
+        var tva = doc.InLei(sumaTva);
+        var valoare = doc.InLei(suma);
+        return (includeTva ? valoare - tva : valoare, tva);
+    }
+}
+
 // -- VanzareMarfuriSiServiciiPrestate → FCL + DSC (§4) --
 record FlaxVanzare(string Id, string Numar, DateTime Data, string PartenerId,
     string NumarFactura, string SeriaFactura, DateTime? DataScadenta, string DepozitId,
-    decimal SumaDocument, bool SumaIncludeTva, string TipOperatiune);
+    decimal SumaDocument, bool SumaIncludeTva, string TipOperatiune, string Valuta,
+    decimal Curs) : IDocumentCuValuta;
 
 record FlaxVanzareMarfa(string DocumentId, int Linie, string NomenclatorId, string ContEvidenta,
     string ContVenituri, string CotaTva, decimal Cantitate, decimal Pret, decimal Suma,
@@ -107,7 +132,8 @@ record FlaxAjustareStocMarfa(string DocumentId, int Linie, string NomenclatorId,
 // -- ReturDeLaClient → RDC --
 record FlaxReturClient(string Id, string Numar, DateTime Data, string PartenerId,
     string NumarFactura, string SeriaFactura, DateTime? DataScadenta, string DepozitId,
-    decimal SumaDocument, bool SumaIncludeTva, string TipOperatiune, FlaxRef DocumentBaza);
+    decimal SumaDocument, bool SumaIncludeTva, string TipOperatiune, FlaxRef DocumentBaza,
+    string Valuta, decimal Curs) : IDocumentCuValuta;
 
 record FlaxReturClientMarfa(string DocumentId, int Linie, string NomenclatorId,
     string ContEvidenta, string ContVenituri, string CotaTva, decimal Cantitate, decimal Pret,
@@ -122,7 +148,7 @@ record FlaxReturClientServiciu(string DocumentId, int Linie, string NomenclatorI
 // original (46e); antetul are și un `DocBaza` NEpolimorf (nvarchar + _ID), sărit.
 record FlaxReturFurnizor(string Id, string Numar, DateTime Data, string PartenerId,
     string NumarFactura, string SeriaFactura, string DepozitId, decimal SumaDocument,
-    string TipDeRetur, string TipOperatiune);
+    string TipDeRetur, string TipOperatiune, string Valuta, decimal Curs) : IDocumentCuValuta;
 
 record FlaxReturFurnizorMarfa(string DocumentId, int Linie, string NomenclatorId,
     string ContEvidenta, string CotaTva, decimal Cantitate, decimal Pret, decimal Suma,
@@ -152,10 +178,14 @@ record FlaxAsamblareLinie(string DocumentId, int Linie, string NomenclatorId,
     decimal CotaDeValoare);
 
 // -- RaportDeVanzariCuAmanunt → surogat FCL + DSC (§12.2) --
+// `RaportDeVanzariCuAmanunt` n-are coloană de curs (retailul e integral în lei —
+// verificat pe 2025): `Curs = 1` prin construcție, ca interfața să rămână una.
 record FlaxRaportAmanunt(string Id, string Numar, DateTime Data, string DepozitId,
     string CasierieId, string ContCasa, decimal SumaDocument, bool SumaIncludeTva,
     decimal SumaNumerar, decimal SumaCard, decimal SumaCec, decimal SumaTichete,
-    decimal SumaVirament, string TipOperatiune);
+    decimal SumaVirament, string TipOperatiune, string Valuta) : IDocumentCuValuta {
+    public decimal Curs => 1m;
+}
 
 record FlaxRaportAmanuntMarfa(string DocumentId, int Linie, string NomenclatorId,
     string ContEvidenta, string ContVenituri, string CotaTva, decimal Cantitate, decimal Pret,
@@ -175,7 +205,7 @@ record FlaxRaportAmanuntInchidere(string DocumentId, int Linie, string TipDePlat
 // Liniile avizelor NU au depozit propriu: gestiunea e a antetului.
 record FlaxAvizIesire(string Id, string Numar, DateTime Data, string PartenerId,
     string DepozitId, string NumarFactura, string SeriaFactura, decimal SumaDocument,
-    bool SumaIncludeTva, string TipOperatiune);
+    bool SumaIncludeTva, string TipOperatiune, string Valuta, decimal Curs) : IDocumentCuValuta;
 
 record FlaxAvizIesireMarfa(string DocumentId, int Linie, string NomenclatorId,
     string ContEvidenta, string ContVenituri, string ContCheltuieli, string CotaTva,
@@ -183,7 +213,7 @@ record FlaxAvizIesireMarfa(string DocumentId, int Linie, string NomenclatorId,
 
 record FlaxAvizIntrare(string Id, string Numar, DateTime Data, string PartenerId,
     string DepozitId, string NumarFactura, string SeriaFactura, decimal SumaDocument,
-    string TipOperatiune);
+    string TipOperatiune, string Valuta, decimal Curs) : IDocumentCuValuta;
 
 record FlaxAvizIntrareMarfa(string DocumentId, int Linie, string NomenclatorId,
     string ContEvidenta, string CotaTva, decimal Cantitate, decimal Pret, decimal Suma,
@@ -353,10 +383,12 @@ partial class FlaxDb {
     public List<FlaxVanzare> Vanzari(int an, int luna) =>
         Query($@"select h.KeyField, h.Number, h.DateTime, h.Partener_ID, h.NumarFactura,
                         h.SeriaFactura, h.DataScadenta, h.Depozit_ID, h.SumaDocument,
-                        h.SumaIncludeTVA, h.TipOperatiune
+                        h.SumaIncludeTVA, h.TipOperatiune, ltrim(rtrim(h.ValutaDoc)),
+                        h.CursDeDecontari
                  from flax.VanzareMarfuriSiServiciiPrestate h {FiltruLuna} {OrdineAntete}",
             r => new FlaxVanzare(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3), Text(r, 4),
-                Text(r, 5), DataOpt(r, 6), Hex(r, 7), Dec(r, 8), Bit(r, 9), Text(r, 10)),
+                Text(r, 5), DataOpt(r, 6), Hex(r, 7), Dec(r, 8), Bit(r, 9), Text(r, 10),
+                Text(r, 11), Dec(r, 12)),
             Fereastra(an, luna));
 
     public List<FlaxVanzareMarfa> VanzariMarfuri(int an, int luna) =>
@@ -463,11 +495,12 @@ partial class FlaxDb {
         Query($@"select h.KeyField, h.Number, h.DateTime, h.Partener_ID, h.NumarFactura,
                         h.SeriaFactura, h.DataScadenta, h.Depozit_ID, h.SumaDocument,
                         h.SumaIncludeTVA, h.TipOperatiune,
-                        {ColoaneRef("h.DocBaza", ["VanzareMarfuriSiServiciiPrestate"])}
+                        {ColoaneRef("h.DocBaza", ["VanzareMarfuriSiServiciiPrestate"])},
+                        ltrim(rtrim(h.ValutaDoc)), h.CursDeDecontari
                  from flax.ReturDeLaClient h {FiltruLuna} {OrdineAntete}",
             r => new FlaxReturClient(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3), Text(r, 4),
                 Text(r, 5), DataOpt(r, 6), Hex(r, 7), Dec(r, 8), Bit(r, 9), Text(r, 10),
-                Referinta(r, 11)),
+                Referinta(r, 11), Text(r, 15), Dec(r, 16)),
             Fereastra(an, luna));
 
     public List<FlaxReturClientMarfa> RetururiClientMarfuri(int an, int luna) =>
@@ -500,10 +533,10 @@ partial class FlaxDb {
     public List<FlaxReturFurnizor> RetururiFurnizor(int an, int luna) =>
         Query($@"select h.KeyField, h.Number, h.DateTime, h.Partener_ID, h.NumarFactura,
                         h.SeriaFactura, h.Depozit_ID, h.SumaDocument, h.TipDeRetur,
-                        h.TipOperatiune
+                        h.TipOperatiune, ltrim(rtrim(h.ValutaDoc)), h.CursDeDecontari
                  from flax.ReturLaFurnizor h {FiltruLuna} {OrdineAntete}",
             r => new FlaxReturFurnizor(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3), Text(r, 4),
-                Text(r, 5), Hex(r, 6), Dec(r, 7), Text(r, 8), Text(r, 9)),
+                Text(r, 5), Hex(r, 6), Dec(r, 7), Text(r, 8), Text(r, 9), Text(r, 10), Dec(r, 11)),
             Fereastra(an, luna));
 
     public List<FlaxReturFurnizorMarfa> RetururiFurnizorMarfuri(int an, int luna) =>
@@ -577,11 +610,11 @@ partial class FlaxDb {
         Query($@"select h.KeyField, h.Number, h.DateTime, h.Depozit_ID, h.Casierie_ID,
                         ltrim(rtrim(h.ContCasa)), h.SumaDocument, h.SumaIncludeTVA,
                         h.SumaNumerar, h.SumaCard, h.SumaCec, h.SumaTichetelorDeMasa,
-                        h.SumaVirament, h.TipOperatiune
+                        h.SumaVirament, h.TipOperatiune, ltrim(rtrim(h.ValutaDoc))
                  from flax.RaportDeVanzariCuAmanunt h {FiltruLuna} {OrdineAntete}",
             r => new FlaxRaportAmanunt(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3), Hex(r, 4),
                 Text(r, 5), Dec(r, 6), Bit(r, 7), Dec(r, 8), Dec(r, 9), Dec(r, 10), Dec(r, 11),
-                Dec(r, 12), Text(r, 13)),
+                Dec(r, 12), Text(r, 13), Text(r, 14)),
             Fereastra(an, luna));
 
     public List<FlaxRaportAmanuntMarfa> RapoarteAmanuntMarfuri(int an, int luna) =>
@@ -632,10 +665,10 @@ partial class FlaxDb {
     public List<FlaxAvizIesire> AvizeIesire(int an, int luna) =>
         Query($@"select h.KeyField, h.Number, h.DateTime, h.Partener_ID, h.Depozit_ID,
                         h.NumarFactura, h.SeriaFactura, h.SumaDocument, h.SumaIncludeTVA,
-                        h.TipOperatiune
+                        h.TipOperatiune, ltrim(rtrim(h.ValutaDoc)), h.CursDeDecontari
                  from flax.AvizDeIesire h {FiltruLuna} {OrdineAntete}",
             r => new FlaxAvizIesire(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3), Hex(r, 4),
-                Text(r, 5), Text(r, 6), Dec(r, 7), Bit(r, 8), Text(r, 9)),
+                Text(r, 5), Text(r, 6), Dec(r, 7), Bit(r, 8), Text(r, 9), Text(r, 10), Dec(r, 11)),
             Fereastra(an, luna));
 
     public List<FlaxAvizIesireMarfa> AvizeIesireMarfuri(int an, int luna) =>
@@ -651,10 +684,11 @@ partial class FlaxDb {
 
     public List<FlaxAvizIntrare> AvizeIntrare(int an, int luna) =>
         Query($@"select h.KeyField, h.Number, h.DateTime, h.Partener_ID, h.Depozit_ID,
-                        h.NumarFactura, h.SeriaFactura, h.SumaDocument, h.TipOperatiune
+                        h.NumarFactura, h.SeriaFactura, h.SumaDocument, h.TipOperatiune,
+                        ltrim(rtrim(h.ValutaDoc)), h.CursDeDecontari
                  from flax.AvizDeIntrare h {FiltruLuna} {OrdineAntete}",
             r => new FlaxAvizIntrare(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3), Hex(r, 4),
-                Text(r, 5), Text(r, 6), Dec(r, 7), Text(r, 8)),
+                Text(r, 5), Text(r, 6), Dec(r, 7), Text(r, 8), Text(r, 9), Dec(r, 10)),
             Fereastra(an, luna));
 
     public List<FlaxAvizIntrareMarfa> AvizeIntrareMarfuri(int an, int luna) =>

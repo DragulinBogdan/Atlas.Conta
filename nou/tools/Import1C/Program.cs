@@ -537,9 +537,14 @@ var durataDocumente = cronometruDocumente.Elapsed;
 
 // Invariantul de IDEMPOTENȚĂ al importului de documente, verificabil pe ORICE
 // rulare (contorul „importate" nu e: e 0 la a doua rulare prin construcție).
-// Fiecare document care nu e autogenerat de motor trebuie să aibă exact o
-// legătură 1C, și fiecare legătură exact un document: un import care dublează
-// sparge egalitatea, indiferent câte rulări s-au succedat.
+// Formularea: fiecare legătură 1C trimite la un document DISTINCT, iar
+// documentele FĂRĂ legătură sunt exact cele născute de motor (conexul NIR, plata
+// secundară) — un import care dublează sparge una dintre cele două.
+//
+// De ce nu „documente ne-autogenerate = legături" (forma pasului 3): pasul 4
+// creează documente care sunt AMÂNDOUĂ — descărcarea de gestiune a unei facturi
+// de ieșire e marcată `Autogenerat` + `DocumentSursa` (ca să intre în gardianul
+// de grup al motorului), dar e construită de import și are legătura ei.
 using (var os = provider.CreateObjectSpace()) {
     var documente = os.GetObjectsQuery<Document>()
         .Select(d => new { d.ID, d.Autogenerat }).ToList();
@@ -547,15 +552,17 @@ using (var os = provider.CreateObjectSpace()) {
         .Where(m => m.Tabela.StartsWith("1C:")).Select(m => m.TintaId).ToList();
     var idsDocumente = documente.Select(d => d.ID).ToHashSet();
     var legateDocumente = legate.Where(idsDocumente.Contains).ToList();
-    var proprii = documente.Count(d => !d.Autogenerat);
+    var idsLegate = legateDocumente.ToHashSet();
+    var faraLegatura = documente.Where(d => !idsLegate.Contains(d.ID)).ToList();
+    var orfaneNeautogenerate = faraLegatura.Count(d => !d.Autogenerat);
     Console.WriteLine($"\nDocumente în bază: {documente.Count} "
-        + $"({documente.Count - proprii} autogenerate de motor); legături 1C către documente: "
-        + $"{legateDocumente.Count}.");
-    Check($"Idempotență: {proprii} documente proprii = {legateDocumente.Count} legături 1C "
-        + "(niciun document dublat, nicio legătură orfană)", proprii == legateDocumente.Count);
+        + $"({faraLegatura.Count} fără legătură 1C — copii autogenerați de motor); "
+        + $"legături 1C către documente: {legateDocumente.Count}.");
     Check($"Idempotență: {legateDocumente.Distinct().Count()} ținte distincte pe "
         + $"{legateDocumente.Count} legături (o legătură per document)",
         legateDocumente.Distinct().Count() == legateDocumente.Count);
+    Check($"Idempotență: {orfaneNeautogenerate} documente fără legătură 1C și fără marcaj "
+        + "de autogenerare (0 = niciun document dublat)", orfaneNeautogenerate == 0);
 }
 Console.WriteLine($"\nDocumente {anImport}: {luni.Sum(l => l.Documente)} importate, "
     + $"{luni.Sum(l => l.Sarite)} sărite, {luni.Sum(l => l.Copii)} copii autogenerați, "
