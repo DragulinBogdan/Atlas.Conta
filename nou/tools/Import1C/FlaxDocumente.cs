@@ -939,13 +939,38 @@ partial class FlaxDb {
         "VanzareMarfuriSiServiciiPrestate", "Asamblare", "Dezasamblare",
     ];
 
-    static string SqlSubconto(string cheie, string filtru) => $@"
+    // Expansiunea tipizată a subconto-ului se INTERSECTEAZĂ cu ce expune baza
+    // (aceeași regulă ca `TipuriCuColoana` — generatorul view-urilor adaugă doar
+    // tipurile cu referințe, iar enum-urile CoteTVA/Impozite au dispărut la
+    // regenerarea din 26.07.2026). `ValoareText` (col. 8) rămâne în contract, dar
+    // fără coloane-sursă iese null — azi nu-l consumă nimeni, e acolo pentru
+    // simetria contractului §2. Diferența se strigă o dată, la prima interogare.
+    string[] subcontoTipuri, subcontoEnumuri;
+    string SqlSubconto(string cheie, string filtru) {
+        if (subcontoTipuri == null) {
+            subcontoTipuri = TipuriSubconto
+                .Where(t => AreColoana("DefalcareNote", $"Value_{t}_ID")).ToArray();
+            subcontoEnumuri = new[] { "CoteTVA", "Impozite" }
+                .Where(e => AreColoana("DefalcareNote", $"Value_{e}")).ToArray();
+            var lipsa = TipuriSubconto.Length - subcontoTipuri.Length
+                + 2 - subcontoEnumuri.Length;
+            if (lipsa > 0)
+                Console.WriteLine($"  (DefalcareNote nu expune {lipsa} coloane tipizate de subconto "
+                    + "declarate în contract — se citesc doar cele prezente.)");
+        }
+        var valoareText = subcontoEnumuri.Length == 0
+            ? "null"
+            : subcontoEnumuri.Length == 1
+                ? $"d.Value_{subcontoEnumuri[0]}"
+                : "coalesce(" + string.Join(", ", subcontoEnumuri.Select(e => $"d.Value_{e}")) + ")";
+        return $@"
         select {cheie}, d.[LineNo], d.Correspond, ltrim(rtrim(d.KindRef)),
-               {ColoaneRef("d.Value", TipuriSubconto, ["CoteTVA", "Impozite"])},
-               coalesce(d.Value_CoteTVA, d.Value_Impozite)
+               {ColoaneRef("d.Value", subcontoTipuri, subcontoEnumuri)},
+               {valoareText}
         from flax.DefalcareNote d
         {filtru}
         order by d.[LineNo], d.Correspond, d.KindRef, d.Value_Id";
+    }
 
     static FlaxSubcontoNota CitesteSubconto(SqlDataReader r) =>
         new(Int(r, 1), Int(r, 2), Text(r, 3), Referinta(r, 4), Text(r, 8));
