@@ -304,8 +304,14 @@ static class Deblocare {
             var doc = os.GetObjectByKey<Document>(documentId);
             if (doc == null)
                 return "legătură orfană (documentul lipsește)";
-            if (doc.Stare == StareDocument.Stornat)
-                return "deja stornat";
+            if (doc.Stare == StareDocument.Stornat) {
+                // Stornat de o sesiune anterioară: n-avem ce mai da înapoi, dar
+                // cheile lui de lot tot trebuie eliberate — altfel reimportul ar
+                // pica pe indexul unic exact ca la stornarea făcută de noi.
+                var cheiVechi = Drafturi.EliberaCheileLoturilor(provider, documentId);
+                return "deja stornat"
+                    + (cheiVechi > 0 ? $", {cheiVechi} chei de lot eliberate" : "");
+            }
             if (doc.Stare == StareDocument.Operat) {
                 var data = doc.Data;
                 try {
@@ -334,6 +340,10 @@ static class Deblocare {
 
     // „<view>:<cheie>" — cheia 1C e hex, deci fără „:" în ea; separatorul e primul.
     public static bool Parseaza(string valoare, List<(string View, string Cheie)> tinta) {
+        // Contorul e de dinaintea apelului, nu de la zero: flag-ul e REPETABIL, deci
+        // `tinta` poate fi deja plină de la un `--deblocheaza` anterior, iar un
+        // „> 0" naiv ar accepta tăcut o valoare goală pe al doilea flag.
+        var inainte = tinta.Count;
         foreach (var bucata in valoare.Split(',', StringSplitOptions.RemoveEmptyEntries
                 | StringSplitOptions.TrimEntries)) {
             var i = bucata.IndexOf(':');
@@ -341,6 +351,6 @@ static class Deblocare {
                 return false;
             tinta.Add((bucata[..i], bucata[(i + 1)..]));
         }
-        return tinta.Count > 0;
+        return tinta.Count > inainte;
     }
 }
