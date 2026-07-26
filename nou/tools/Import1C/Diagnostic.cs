@@ -69,5 +69,27 @@ static class Diagnostic {
         Console.WriteLine($"Sold pe gestiune: " + string.Join("; ", randuri
             .GroupBy(r => r.Gestiune)
             .Select(g => $"„{g.Key}” {g.Sum(r => r.Cantitate):N3} buc / {g.Sum(r => r.Valoare):N2} lei")));
+
+        // Ce a ARUNCAT unealta pe produsul ăsta: registrul divergențelor, adică
+        // exact ce folosește contractul lunar ca să justifice (sau nu) diferența.
+        // Fără el, diagnosticul unei chei picate ar rămâne la „Atlas are mai mult,
+        // nu se știe de ce".
+        var registru = new RegistruDivergente();
+        registru.Incarca(os, avert);
+        var ale = registru.PanaLa(9999, 12).Where(d => d.ProdusHex == hex)
+            .OrderBy(d => d.An).ThenBy(d => d.Luna).ThenBy(d => d.Sursa, StringComparer.Ordinal)
+            .ToList();
+        Console.WriteLine($"Divergențe înregistrate pe produs: {ale.Count}");
+        foreach (var d in ale)
+            Console.WriteLine($"   {d.An}-{d.Luna:00} gestiune {d.DepozitHex} "
+                + $"{d.Cantitate,10:N3} buc {d.Valoare,14:N2} lei  {d.Sursa}"
+                + (d.ValoareNepostata != 0m
+                    ? $"  nepostat {d.ValoareNepostata:N2} pe {d.ContDebit} = {d.ContCredit}" : "")
+                + $"  — {d.Categorie}");
+        foreach (var g in ale.GroupBy(d => (d.An, d.Luna, d.DepozitHex))
+                     .OrderBy(g => g.Key.An).ThenBy(g => g.Key.Luna))
+            Console.WriteLine($"   Σ {g.Key.An}-{g.Key.Luna:00} gestiune {g.Key.DepozitHex}: "
+                + $"{g.Sum(d => d.Cantitate):N3} buc / {g.Sum(d => d.Valoare):N2} lei "
+                + $"(cumulat la lună, contractul le adună de la începutul anului)");
     }
 }

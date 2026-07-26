@@ -281,6 +281,17 @@ sealed class Catalog {
     public (string Debit, string Credit)? ContareMinusInventar(Guid tipMaterialId) =>
         contareMinusInventar.TryGetValue(tipMaterialId, out var c) ? c : null;
 
+    // Conturile de CHELTUIALĂ pe care profilul le pune în oglinda unui cont de
+    // stoc (371 → 607, 345 → 711, …), citite din aceleași reguli. Contractul de
+    // sold are nevoie de ele ca să știe unde ajunge, în contabilitate, o
+    // diferență de evaluare măsurată în registrul de stoc: ieșirea descarcă
+    // stocul la prețul lotului ATLAS, iar 1C la al lui — abaterea apare pe
+    // perechea asta, și numai pe ea.
+    readonly Dictionary<string, HashSet<string>> costuriPeContStoc = new(StringComparer.Ordinal);
+
+    public IReadOnlySet<string> CosturiPentruContStoc(string contStoc) =>
+        contStoc != null && costuriPeContStoc.TryGetValue(contStoc, out var c) ? c : null;
+
     // Rândurile derivate 6xx = 3xx au toate aceeași formă (debit Explicit, credit
     // din contul Tipului); ce iese din formă nu se pretinde cunoscut — handlerul
     // tratează absența ca „Atlas nu postează nimic" și transcrie integral.
@@ -295,6 +306,9 @@ sealed class Catalog {
                      }).ToList()) {
             if (r.Debit == null || r.Credit == null)
                 continue;
+            if (!costuriPeContStoc.TryGetValue(r.Credit, out var costuri))
+                costuriPeContStoc[r.Credit] = costuri = new HashSet<string>(StringComparer.Ordinal);
+            costuri.Add(r.Debit);
             if (r.Tip == "BCS")
                 contareConsum[r.TipMaterialId.Value] = (r.Debit, r.Credit);
             else if (r.Tip == "LDI" && r.SemnFiltru == -1)

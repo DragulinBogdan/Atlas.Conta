@@ -157,13 +157,16 @@ static class Descarcare1C {
         var dejaAlocat = new Dictionary<Guid, decimal>();
         using var os = bucla.CreeazaObjectSpace();
 
+        var sursa = $"{view}/{docId}";
         foreach (var r in randuri) {
             if (!EsteRandDeCost(cat, r))
                 continue;
             var context = $"1C:{view}/{docId} rândul {r.Linie}";
+            var nomRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator);
+            var depozitHex = index.Ia(r.Linie, Subconto.Credit, Subconto.Depozite)?.Id
+                ?? depozitImplicit ?? "";
             var rezolvat = MiscareStoc1C.Rezolva(bucla,
-                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi),
-                index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator),
+                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi), nomRef,
                 cat.Mapeaza(r.ContCredit), context);
             if (rezolvat is not var (lot, tip, produsId)) {
                 // Rând de cost pe care nu-l putem duce în stoc (lot/produs
@@ -172,10 +175,16 @@ static class Descarcare1C {
                 RanduriNerezolvate++;
                 punte.Categoria("Ieșire de marfă cu lot nerezolvabil — costul se transcrie contabil")
                     .Tinta1C(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit), r.Suma);
+                // Contabil nu divergem (puntea a transcris rândul), dar marfa RĂMÂNE
+                // în stocul Atlas: se măsoară, ca să nu se ceară mai târziu unei
+                // euristici s-o ghicească.
+                bucla.Divergenta(sursa,
+                    "DSC: rând de cost cu lot nerezolvabil — marfa rămâne în stocul Atlas",
+                    nomRef == null ? null
+                        : [new EfectStoc(nomRef.Id, depozitHex, Math.Abs(r.CantitateCredit), r.Suma)],
+                    cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit));
                 continue;
             }
-            var depozitHex = index.Ia(r.Linie, Subconto.Credit, Subconto.Depozite)?.Id
-                ?? depozitImplicit ?? "";
             var gestiuneId = cat.Gestiuni.TryGetValue(depozitHex, out var g)
                 ? g
                 : throw new InvalidOperationException(
@@ -200,9 +209,16 @@ static class Descarcare1C {
                 // în punte — contabilitatea rămâne a sursei, stocul e cel pe care
                 // Atlas chiar îl are (diferența de stoc se raportează separat).
                 NeacoperitTranscris++;
+                var valoareRamas = cantitate == 0 ? r.Suma : r.Suma * ramas / cantitate;
                 punte.Categoria("Ieșire de marfă fără acoperire în stoc — costul se transcrie contabil")
-                    .Tinta1C(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit),
-                        cantitate == 0 ? r.Suma : r.Suma * ramas / cantitate);
+                    .Tinta1C(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit), valoareRamas);
+                // Măsurătoarea: marfa neieșită rămâne în stocul Atlas exact cu
+                // `ramas` bucăți. Contabil nu divergem (puntea a transcris partea
+                // neacoperită), deci `valoareNepostata` rămâne 0.
+                bucla.Divergenta(sursa,
+                    "DSC: ieșire fără acoperire în stoc — marfa rămâne în stocul Atlas",
+                    nomRef == null ? null : [new EfectStoc(nomRef.Id, depozitHex, ramas, valoareRamas)],
+                    cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit));
             }
         }
         if (grupuri.Count > 1)

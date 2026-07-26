@@ -288,6 +288,17 @@ static class Deblocare {
                 .Where(m => m.Tabela == tabela && chei.Contains(m.CheieLegacy)).ToList();
             sterse = moarte.Count;
             os.Delete(moarte);
+            // Divergențele înregistrate de rularea deblocată pleacă odată cu
+            // artefactele ei: documentul se replanifică de la zero, deci le
+            // rescrie. Sursa e al 4-lea câmp al cheii sintetice (vezi
+            // `RegistruDivergente`), de aici căutarea pe conținut — e o comandă de
+            // operator, nu o cale caldă.
+            var tabelaDivergente = Legaturi.Tabela(RegistruDivergente.View);
+            var fragment = $"|{RegistruDivergente.Sursa(view, cheie)}|";
+            var divergente = os.GetObjectsQuery<MigrareLegatura>()
+                .Where(m => m.Tabela == tabelaDivergente && m.CheieLegacy.Contains(fragment)).ToList();
+            sterse += divergente.Count;
+            os.Delete(divergente);
             os.CommitChanges();
         }
         check($"--deblocheaza {view}:{cheie}: {artefacte.Count} artefacte date înapoi, {sterse} legături "

@@ -163,13 +163,19 @@ static class HandlerReturFurnizor {
             var context = $"1C:{View}/{h.Id} rândul {r.Linie}";
             var lotRef = index.Ia(r.Linie, Subconto.Debit, Subconto.Loturi);
             var nomRef = index.Ia(r.Linie, Subconto.Debit, Subconto.Nomenclator);
-            var rezolvat = MiscareStoc1C.Rezolva(bucla, lotRef, nomRef, simbolDebit, context);
-            if (rezolvat is not var (lot, tip, produsId)) {
-                RanduriNerezolvate++;
-                continue;
-            }
             var depozitHex = index.Ia(r.Linie, Subconto.Debit, Subconto.Depozite)?.Id
                 ?? h.DepozitId ?? "";
+            var rezolvat = MiscareStoc1C.Rezolva(bucla, lotRef, nomRef, simbolDebit, context);
+            if (rezolvat is not var (lot, tip, produsId)) {
+                // Nici stoc, nici contabilitate: se măsoară, ca rândul să nu fie
+                // singura mișcare a sursei invizibilă în ambele contracte.
+                RanduriNerezolvate++;
+                bucla.Divergenta($"{View}/{h.Id}", "RLF: rând cu lot/produs nerezolvabil — nereturnat",
+                    nomRef == null ? null
+                        : [new EfectStoc(nomRef.Id, depozitHex, Math.Abs(r.CantitateDebit), -r.Suma)],
+                    simbolDebit, cat.Mapeaza(r.ContCredit), r.Suma);
+                continue;
+            }
             var gestiuneId = cat.Gestiuni.TryGetValue(depozitHex, out var g)
                 ? g
                 : throw new InvalidOperationException(
@@ -206,9 +212,17 @@ static class HandlerReturFurnizor {
                 // din rândurile de retur n-au marfa în stocul Atlas, fiindcă 1C le
                 // ține pe loturi-retur pe care netarea deschiderii nu le are).
                 LiniiNeacoperite++;
+                var valoareRamas = cantitate == 0 ? r.Suma : r.Suma * ramas / cantitate;
                 plan.Punte.Categoria("RLF: retur fără acoperire în stoc — stornarea se transcrie contabil")
-                    .Tinta1C(simbolDebit, cat.Mapeaza(r.ContCredit),
-                        cantitate == 0 ? r.Suma : r.Suma * ramas / cantitate);
+                    .Tinta1C(simbolDebit, cat.Mapeaza(r.ContCredit), valoareRamas);
+                // Măsurătoarea: 1C a scos marfa (mișcare de debit NEGATIVĂ pe contul
+                // de stoc — storno), Atlas n-a scos-o, deci Atlas are în plus exact
+                // opusul mișcării sursei. Contabil nu divergem: puntea de mai sus a
+                // transcris partea neacoperită la valoarea ei din sursă.
+                bucla.Divergenta($"{View}/{h.Id}",
+                    "RLF: retur fără acoperire în stoc — marfa rămâne în stocul Atlas",
+                    [new EfectStoc(nomRef.Id, depozitHex, ramas, -valoareRamas)],
+                    simbolDebit, cat.Mapeaza(r.ContCredit));
             }
         }
 

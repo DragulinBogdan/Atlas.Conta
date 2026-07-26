@@ -673,7 +673,8 @@ Console.WriteLine($"""
     ║ CONTRACTUL LUNAR (design §8 per lună — pasul 6)
     ║   contracte picate        {luni.Sum(l => l.ContractePicate),10} pe {luni.Count(l => l.ContractePicate > 0)} luni (3 contracte × {luni.Count} luni)
     ║   TVA de plată (4423)     {luni.Sum(l => l.TvaDePlata),10:N2} lei pe închiderile Atlas ale lunilor rulate ({bucla.ItvSarite} luni fără ITV nou — deja închise sau fără sold)
-    ║   plafonul netării        {bucla.StareContract.PlafonStoc,10:N2} lei (valoarea de stoc justificată, cumulată)
+    ║   efectul netării         {bucla.StareContract.PlafonStoc,10:N2} lei (valoarea de stoc justificată, cumulată — raport, nu plafon)
+    ║   divergențe înregistrate {bucla.Divergente.Inregistrari,10} (registrul măsurat, persistat; {bucla.Divergente.Abandonate} marcaje abandonate)
     ║   durata contractelor     {TimeSpan.FromTicks(luni.Sum(l => l.DurataContract.Ticks)),10:hh\:mm\:ss}
     ║ REZULTAT: {(esecuri == 0 ? "CONTRACT ÎNDEPLINIT" : $"{esecuri} VERIFICĂRI PICATE")}, {avertismente.Count} avertismente, deschidere {durataDeschidere:hh\:mm\:ss} / documente {durataDocumente:hh\:mm\:ss} / total {cronometru.Elapsed:hh\:mm\:ss}
     ╚═══════════════════════════════════════════════════════════════════════════════

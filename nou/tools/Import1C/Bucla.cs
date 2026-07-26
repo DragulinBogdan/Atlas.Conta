@@ -198,6 +198,18 @@ sealed class BuclaImport {
     public ContorPunti ContorPunti { get; } = new();
     public Action<string> Avert => avert;
 
+    // Registrul divergențelor cunoscute (pasul 4 al lotului de robustețe): tot ce
+    // unealta ARUNCĂ sau nu poate posta se înregistrează la locul faptei, ca
+    // justificarea contractului lunar să fie o măsurătoare, nu o euristică.
+    public RegistruDivergente Divergente { get; } = new();
+
+    // Înregistrarea, stampilată cu luna în curs de import — handlerele n-au de ce
+    // să care contextul lunii până la fiecare avertisment.
+    public void Divergenta(string sursa, string categorie, IEnumerable<EfectStoc> stoc = null,
+            string contDebit = null, string contCredit = null, decimal valoareNepostata = 0m) =>
+        Divergente.Inregistreaza(an, luna, sursa, categorie, stoc,
+            contDebit, contCredit, valoareNepostata);
+
     // Registrul contabil 1C al lunii, indexat pe document: sursa identității de
     // LOT pentru tipurile ale căror secțiuni n-o poartă (BTR/BCS/LDI). Se citește
     // O DATĂ per lună, nu per document — măsurat la pasul 2, diferența e 0,8 s
@@ -264,9 +276,20 @@ sealed class BuclaImport {
         // Evidența supapei de alocare (48a), din rulările anterioare: contractul
         // lunar o citește ca să poată NUMI diferențele de cost pe care le-a produs.
         Alocare.Incarca(os);
+        // Registrul divergențelor, din rulările anterioare: fără el, o reluare care
+        // sare documentele n-ar mai ști ce a aruncat rularea care le-a importat, iar
+        // contractul ar declara nejustificate exact diferențele produse deliberat
+        // (cerința de determinism, D).
+        Divergente.Incarca(os, avert);
+        var tabelaDivergente = Legaturi.Tabela(RegistruDivergente.View);
         foreach (var l in os.GetObjectsQuery<MigrareLegatura>()
-                     .Select(m => new { m.Tabela, m.CheieLegacy, m.TintaId }).ToList())
+                     .Select(m => new { m.Tabela, m.CheieLegacy, m.TintaId }).ToList()) {
+            // Rândurile registrului nu sunt legături (țintă goală, cheie sintetică
+            // lungă): și-au găsit locul mai sus, aici ar umple degeaba indexul.
+            if (l.Tabela == tabelaDivergente)
+                continue;
             legaturi[(l.Tabela, l.CheieLegacy)] = l.TintaId;
+        }
         foreach (var d in os.GetObjectsQuery<Document>()
                      .Select(d => new { d.ID, d.Stare, d.Autogenerat, d.DocumentSursaId }).ToList()) {
             stari[d.ID] = d.Stare;
@@ -326,6 +349,11 @@ sealed class BuclaImport {
         foreach (var u in planificate) {
             try {
                 u.Executa();
+                // Unitatea s-a executat până la capăt, dar poate să nu fi
+                // materializat nimic (linie aruncată integral ⇒ document fără
+                // linii ⇒ niciun commit în care să se strecoare evidența). Ce a
+                // rămas în așteptare se scrie acum, în ObjectSpace propriu.
+                Divergente.PersistaRamase(provider);
             }
             catch (Exception ex) {
                 // Eșecul UNEI unități e diagnostic, ca eșecul unui document
@@ -339,6 +367,7 @@ sealed class BuclaImport {
                 // evidența să nu treacă ÎNAINTEA faptelor și nici să nu se lipească
                 // de commit-ul unității următoare.
                 Alocare.RenuntaLaNepersistate();
+                Divergente.RenuntaLaNepersistate();
             }
         }
 
@@ -593,15 +622,18 @@ sealed class BuclaImport {
                 + "poate scrie în același commit cu draftul (§12.4).");
         try {
             Legaturi.Leaga(os, view, cheieHex, doc.ID);
-            // Evidența supapei de alocare merge în ACELAȘI commit cu documentul
-            // (altfel n-ajunge nicăieri — ObjectSpace-ul de planificare se aruncă).
+            // Evidența supapei de alocare și registrul divergențelor merg în ACELAȘI
+            // commit cu documentul (altfel n-ajung nicăieri — ObjectSpace-ul de
+            // planificare se aruncă).
             Alocare.Persista(os);
+            Divergente.Persista(os);
             os.CommitChanges();
         }
         catch (Exception ex) {
             return Esec(view, cheieHex, "commit-ul draftului + legăturii", ex);
         }
         Alocare.Confirma();
+        Divergente.Confirma();
         legaturi[cheie] = doc.ID;
         stari[doc.ID] = StareDocument.Draft;
 
@@ -628,6 +660,11 @@ sealed class BuclaImport {
             return false;
         }
         DrafturiSterse++;
+        // Divergențele înregistrate de rularea care a produs draftul pleacă odată cu
+        // el: planificarea nouă le rescrie pe ale ei, iar un rând rămas ar explica o
+        // diferență care nu mai există.
+        using (var os = provider.CreateObjectSpace())
+            Divergente.UitaSursa(os, RegistruDivergente.Sursa(view, cheieHex));
         avert($"1C:{view}/{cheieHex}: draft rămas de la o rulare anterioară (alocare învechită) — "
             + $"șters și reimportat: {rezultat.Documente} documente, {rezultat.Linii} linii, "
             + $"{rezultat.Loturi} loturi, {rezultat.Registre} rânduri de registru, "

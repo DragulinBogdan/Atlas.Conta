@@ -186,11 +186,20 @@ static class HandlerTransfer {
             var simbolCredit = cat.Mapeaza(r.ContCredit);
             var simbolDebit = cat.Mapeaza(r.ContDebit);
             var context = $"1C:{View}/{h.Id} rândul {r.Linie}";
+            var nomRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator);
             var rezolvat = MiscareStoc1C.Rezolva(bucla,
-                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi),
-                index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator), simbolCredit, context);
+                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi), nomRef, simbolCredit, context);
             if (rezolvat is not var (lot, tip, produsId)) {
+                // Rând pe care nu-l putem duce nici în stoc, nici în contabilitate:
+                // se măsoară, altfel ar fi singura mișcare a sursei complet
+                // invizibilă în ambele contracte.
                 RanduriNerezolvate++;
+                bucla.Divergenta($"{View}/{h.Id}", "BTR: rând cu lot/produs nerezolvabil — netransferat",
+                    nomRef == null ? null : [
+                        new EfectStoc(nomRef.Id, h.DepozitExpeditorId, r.CantitateCredit, r.Suma),
+                        new EfectStoc(nomRef.Id, h.DepozitDestinatarId, -r.CantitateCredit, -r.Suma),
+                    ],
+                    simbolDebit, simbolCredit, simbolDebit == simbolCredit ? 0m : r.Suma);
                 continue;
             }
 
@@ -202,9 +211,25 @@ static class HandlerTransfer {
                     plan.Linii.Add(new LiniePeLot(lotId, tip.Id, cantitate));
                     valoareAtlas += cantitate * PretLot(os, lotId);
                 }
-                if (ramas > 0)
+                if (ramas > 0) {
                     bucla.Avert($"{context}: {ramas:N3} din {r.CantitateCredit:N3} n-au acoperire "
                         + "în gestiunea expeditoare — linia se transferă parțial.");
+                    // Măsurătoarea, pe DOUĂ chei: marfa netransferată rămâne la
+                    // expeditor ȘI lipsește de la destinatar. Contabil, un transfer
+                    // nu postează nimic — mai puțin reclasificarea de mai jos, a
+                    // cărei punte transcrie doar partea transferată, deci restul e
+                    // exact ce nu se postează (când conturile coincid se anulează
+                    // singur în agregarea contractului).
+                    var valoareRamas = r.CantitateCredit == 0m
+                        ? r.Suma : r.Suma * ramas / r.CantitateCredit;
+                    bucla.Divergenta($"{View}/{h.Id}",
+                        "BTR: linie transferată parțial (lipsă acoperire la expeditor)",
+                        nomRef == null ? null : [
+                            new EfectStoc(nomRef.Id, h.DepozitExpeditorId, ramas, valoareRamas),
+                            new EfectStoc(nomRef.Id, h.DepozitDestinatarId, -ramas, -valoareRamas),
+                        ],
+                        simbolDebit, simbolCredit, simbolDebit == simbolCredit ? 0m : valoareRamas);
+                }
             }
             else if (lot != null)
                 valoareAtlas = r.CantitateCredit * PretLot(os, lot.Id);
@@ -219,7 +244,6 @@ static class HandlerTransfer {
                     .Tinta1C(simbolDebit, simbolCredit, valoareAtlas);
                 if (lot != null && simbolDebit != null) {
                     var lotRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi);
-                    var nomRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator);
                     if (cat.LeagaAliasLot(Catalog.CheieLot(lotRef.TipRef, lotRef.Id, nomRef.Id, simbolDebit), lot))
                         AliasuriLot++;
                 }
@@ -367,11 +391,15 @@ static class HandlerConsum {
                 continue;
             }
 
+            var nomRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator);
             var rezolvat = MiscareStoc1C.Rezolva(bucla,
-                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi),
-                index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator), simbolCredit, context);
+                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi), nomRef, simbolCredit, context);
             if (rezolvat is not var (lot, tip, produsId)) {
                 RanduriNerezolvate++;
+                bucla.Divergenta($"{View}/{h.Id}", "BCS: rând cu lot/produs nerezolvabil — neconsumat",
+                    nomRef == null ? null
+                        : [new EfectStoc(nomRef.Id, depozitHex, r.CantitateCredit, r.Suma)],
+                    simbolDebit, simbolCredit, r.Suma);
                 continue;
             }
 
@@ -382,9 +410,19 @@ static class HandlerConsum {
                 plan.Linii.Add(new LiniePeLot(lotId, tip.Id, cantitate));
                 valoareAtlas += cantitate * HandlerTransfer.PretLot(os, lotId);
             }
-            if (ramas > 0)
+            if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {r.CantitateCredit:N3} n-au acoperire în "
                     + "gestiunea predatoare — consumul se descarcă parțial.");
+                // Măsurătoarea: marfa neconsumată rămâne în gestiune, iar cheltuiala
+                // ei nu se postează nicăieri (puntea de mai jos transcrie DOAR
+                // partea consumată, la valoarea Atlas).
+                var valoareRamas = r.CantitateCredit == 0m
+                    ? r.Suma : r.Suma * ramas / r.CantitateCredit;
+                bucla.Divergenta($"{View}/{h.Id}",
+                    "BCS: consum fără acoperire — marfa rămâne în stocul Atlas",
+                    nomRef == null ? null : [new EfectStoc(nomRef.Id, depozitHex, ramas, valoareRamas)],
+                    simbolDebit, simbolCredit, valoareRamas);
+            }
 
             // Puntea de cheltuială: contarea Atlas e derivarea 6xx = 3xx per Tip
             // (politică-DATE, citită din RegulaContare, nu re-derivată aici). Când
@@ -581,9 +619,9 @@ static class HandlerDiferente {
             var simbolCredit = cat.Mapeaza(r.ContCredit);
             var simbolDebit = cat.Mapeaza(r.ContDebit);
             var context = $"1C:{ViewMinus}/{h.Id} rândul {r.Linie}";
+            var nomRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator);
             var rezolvat = MiscareStoc1C.Rezolva(bucla,
-                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi),
-                index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator), simbolCredit, context);
+                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi), nomRef, simbolCredit, context);
             if (rezolvat is not var (lot, tip, produsId))
                 continue;
             var (alocari, ramas) = bucla.Alocare.Aloca(os, lot?.Id, produsId, plan.PredatorId,
@@ -594,8 +632,16 @@ static class HandlerDiferente {
                 valoareAtlas += cantitate * HandlerTransfer.PretLot(os, lotId);
                 Minusuri++;
             }
-            if (ramas > 0)
+            if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {r.CantitateCredit:N3} n-au acoperire.");
+                var valoareRamas = r.CantitateCredit == 0m
+                    ? r.Suma : r.Suma * ramas / r.CantitateCredit;
+                bucla.Divergenta($"{ViewMinus}/{h.Id}",
+                    "LDI−: minus fără acoperire — marfa rămâne în stocul Atlas",
+                    nomRef == null ? null
+                        : [new EfectStoc(nomRef.Id, h.DepozitId ?? "", ramas, valoareRamas)],
+                    simbolDebit, simbolCredit, valoareRamas);
+            }
             var contare = cat.ContareMinusInventar(tip.Id);
             if (contare == null)
                 plan.Punte.Categoria("LDI−: Tip fără regulă de contare în profil")

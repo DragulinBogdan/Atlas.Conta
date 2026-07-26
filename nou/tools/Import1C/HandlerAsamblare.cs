@@ -144,7 +144,10 @@ static class HandlerAsamblare {
 
         // Latura CREDIT = consumurile (loturi existente); latura DEBIT = produsele
         // (loturi noi, create de documentul curent).
-        var consumuri = new Dictionary<string, (FlaxRef Lot, FlaxRef Nom, string Simbol, decimal Cantitate)>(StringComparer.Ordinal);
+        // `Valoare` și `DepozitHex` nu intră în plan: sunt materia primă a
+        // registrului de divergențe (cât și de unde n-a putut consuma asamblarea).
+        var consumuri = new Dictionary<string, (FlaxRef Lot, FlaxRef Nom, string Simbol,
+            decimal Cantitate, decimal Valoare, string DepozitHex)>(StringComparer.Ordinal);
         var produse = new Dictionary<string, (FlaxRef Nom, string Simbol, decimal Cantitate, decimal Valoare)>(StringComparer.Ordinal);
 
         foreach (var r in randuri) {
@@ -165,8 +168,11 @@ static class HandlerAsamblare {
                     $"{context}: rândul de asamblare n-are subconto de lot/nomenclator pe ambele laturi.");
 
             var cheieConsum = $"{lotCredit.TipRef}:{lotCredit.Id}:{nomCredit.Id}:{simbolCredit}";
-            var (lc, nc, sc, qc) = consumuri.GetValueOrDefault(cheieConsum);
-            consumuri[cheieConsum] = (lotCredit, nomCredit, simbolCredit, qc + Math.Abs(r.CantitateCredit));
+            var acumConsum = consumuri.GetValueOrDefault(cheieConsum);
+            consumuri[cheieConsum] = (lotCredit, nomCredit, simbolCredit,
+                acumConsum.Cantitate + Math.Abs(r.CantitateCredit),
+                acumConsum.Valoare + Math.Abs(r.Suma),
+                index.Ia(r.Linie, Subconto.Credit, Subconto.Depozite)?.Id ?? h.DepozitSubasambleId);
 
             var cheieProdus = Catalog.CheieLot(tipRef, h.Id, nomDebit.Id, simbolDebit);
             var (np, sp, qp, vp) = produse.GetValueOrDefault(cheieProdus);
@@ -204,6 +210,12 @@ static class HandlerAsamblare {
             var rezolvat = MiscareStoc1C.Rezolva(bucla, c.Lot, c.Nom, c.Simbol, context);
             if (rezolvat is not var (lot, tip, produsId)) {
                 RanduriNerezolvate++;
+                // Contabil nu divergem (3xx = 3xx pe același simbol), dar marfa
+                // neconsumată rămâne în stocul Atlas — se măsoară.
+                bucla.Divergenta($"{view}/{h.Id}",
+                    "ASM: consum cu lot/produs nerezolvabil — marfa rămâne în stocul Atlas",
+                    c.Nom == null ? null
+                        : [new EfectStoc(c.Nom.Id, c.DepozitHex ?? "", c.Cantitate, c.Valoare)]);
                 continue;
             }
             var pin = lot != null && !string.Equals(c.Lot.Id, h.Id, StringComparison.Ordinal)
@@ -223,9 +235,17 @@ static class HandlerAsamblare {
                 valoareConsum += Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId));
                 LiniiConsum++;
             }
-            if (ramas > 0)
+            if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {c.Cantitate:N3} n-au acoperire în gestiune — "
                     + "asamblarea consumă parțial (diferență de stoc raportată).");
+                // Măsurătoarea: marfa neconsumată rămâne în gestiunea de consum.
+                // Contabil nu divergem — rândurile asamblării sunt 3xx = 3xx pe
+                // ACELAȘI simbol prin construcție (46d), deci se anulează singure.
+                bucla.Divergenta($"{view}/{h.Id}",
+                    "ASM: consum fără acoperire — marfa rămâne în stocul Atlas",
+                    [new EfectStoc(c.Nom.Id, c.DepozitHex ?? "", ramas,
+                        c.Cantitate == 0m ? c.Valoare : c.Valoare * ramas / c.Cantitate)]);
+            }
         }
 
         foreach (var (cheie, p) in produse) {

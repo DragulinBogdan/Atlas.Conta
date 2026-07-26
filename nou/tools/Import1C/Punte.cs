@@ -59,6 +59,13 @@ sealed class Punte {
 
     public bool AreCeva => delta.Values.Any(v => Math.Abs(v) >= Eps);
 
+    // Restul per cont, ca mișcare de DEBIT semnată: „cât ar mai fi de postat ca să
+    // ajungem la sursă". O punte care se echilibrează îl scrie ca notă; una care nu
+    // se echilibrează îl lasă nepostat — și atunci exact cifrele astea sunt
+    // divergența pe care contractul lunar trebuie s-o cunoască (registrul
+    // divergențelor, `Punti.Scrie`).
+    public IReadOnlyDictionary<string, decimal> Rest => delta;
+
     // Împerecherea: conturile rămase în debit se sting cu cele rămase în credit,
     // lacom, în ordine stabilă. Reziduul (o punte care nu se echilibrează) NU se
     // scrie: ar fi o notă cu debit ≠ credit, adică o eroare de raportat, nu de
@@ -126,6 +133,7 @@ sealed class ContorPunti {
 }
 
 static class Punti {
+
     // Nota-punte a unui document 1C: `NotaContabila` cu postare explicită pe
     // linie (46b), laturi interne, numerotare proprie derivată din numărul 1C.
     // Se importă ca document de sine stătător, deci idempotentă și re-operabilă
@@ -146,6 +154,14 @@ static class Punti {
             contor.NumaraNedeclarata();
             avert($"1C:{view}/{cheie}: puntea NTC nu se echilibrează (reziduu {reziduu:N2}) "
                 + "— nu se scrie. Diferența rămâne vizibilă în reconciliere.");
+            // „Vizibilă în reconciliere" nu mai e destul: se ÎNREGISTREAZĂ, per cont,
+            // cât rămâne nepostat — altfel contractul de sold ar vedea o diferență
+            // pe care unealta o cunoștea și n-a spus-o.
+            foreach (var (cont, rest) in punte.Rest)
+                if (Math.Abs(rest) >= 0.005m)
+                    bucla.Divergenta(RegistruDivergente.Sursa(view, cheie),
+                        "Punte NTC dezechilibrată — rândurile sursei rămân nepostate",
+                        contDebit: cont, valoareNepostata: rest);
             return;
         }
         var stare = bucla.ImportaDocument(view, cheie, os => {
