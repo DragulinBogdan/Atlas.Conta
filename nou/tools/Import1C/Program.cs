@@ -609,14 +609,20 @@ var durataDocumente = cronometruDocumente.Elapsed;
 // de grup al motorului), dar e construită de import și are legătura ei.
 using (var os = provider.CreateObjectSpace()) {
     var documente = os.GetObjectsQuery<Document>()
-        .Select(d => new { d.ID, d.Autogenerat }).ToList();
+        .Select(d => new { d.ID, d.Autogenerat, d.Stare }).ToList();
     var legate = os.GetObjectsQuery<MigrareLegatura>()
         .Where(m => m.Tabela.StartsWith("1C:")).Select(m => m.TintaId).ToList();
     var idsDocumente = documente.Select(d => d.ID).ToHashSet();
     var legateDocumente = legate.Where(idsDocumente.Contains).ToList();
     var idsLegate = legateDocumente.ToHashSet();
     var faraLegatura = documente.Where(d => !idsLegate.Contains(d.ID)).ToList();
-    var orfaneNeautogenerate = faraLegatura.Count(d => !d.Autogenerat);
+    // Documentele STORNATE fără legătură sunt reziduul legitim al deblocării
+    // țintite (--deblocheaza): registrele sunt append-only, deci documentul dat
+    // înapoi rămâne în bază (net zero), iar legăturile lui se șterg tocmai ca
+    // reimportul să poată replanifica. Un stornat nu poate dubla nimic — nu
+    // intră în verdictul de idempotență, dar se numără la afișare.
+    var orfaneNeautogenerate = faraLegatura.Count(d => !d.Autogenerat
+        && d.Stare != StareDocument.Stornat);
     Console.WriteLine($"\nDocumente în bază: {documente.Count} "
         + $"({faraLegatura.Count} fără legătură 1C — copii autogenerați de motor); "
         + $"legături 1C către documente: {legateDocumente.Count}.");
