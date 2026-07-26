@@ -149,6 +149,10 @@ static class Punti {
             DateOnly data, Punte punte, ContorPunti contor, Action<string> avert) {
         if (!punte.AreCeva)
             return;
+        // Sursa are un corespondent declarat (nota, sau — dacă nu se echilibrează —
+        // rândurile din registrul divergențelor): unitatea nu mai poate fi „fără
+        // acțiune" în aritmetica de închidere.
+        bucla.MarcheazaPunte();
         var randuri = punte.Randuri(out var reziduu);
         if (randuri.Count == 0) {
             contor.NumaraNedeclarata();
@@ -181,7 +185,7 @@ static class Punti {
                 linie.Descriere = $"Punte import 1C {numar1C}";
             }
             return nota;
-        });
+        }, punte: true);
         // Contorizarea vine DUPĂ import, nu înainte: o punte deja scrisă de o
         // rulare anterioară nu e o diferență găsită acum.
         if (stare == StareImport.Importat)

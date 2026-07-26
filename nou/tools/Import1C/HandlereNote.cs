@@ -153,7 +153,8 @@ static class HandlerCompensare {
                     return;
                 if (bucla.ImportaDocument(View, h.Id,
                         os => NoteComune.Materializeaza(os, bucla.Catalog, DateOnly.FromDateTime(h.Data),
-                            h.Numar, linii)) == StareImport.Importat)
+                            h.Numar, linii),
+                        motivFaraDraft: Motive.FaraPlanLaReluare) == StareImport.Importat)
                     Note++;
             });
     }
@@ -305,7 +306,8 @@ static class HandlereNoteSimple {
                     return;
                 if (bucla.ImportaDocument(sursa.View, h.Id,
                         os => NoteComune.Materializeaza(os, bucla.Catalog, DateOnly.FromDateTime(h.Data),
-                            h.Numar, linii)) == StareImport.Importat)
+                            h.Numar, linii),
+                        motivFaraDraft: Motive.FaraPlanLaReluare) == StareImport.Importat)
                     note[sursa.View] = note.GetValueOrDefault(sursa.View) + 1;
             });
     }

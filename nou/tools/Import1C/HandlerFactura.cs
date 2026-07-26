@@ -42,6 +42,7 @@ static class HandlerFactura {
     public static int LiniiFuzionate { get; private set; }
     public static int LiniiMarfaDejaReceptionata { get; private set; }
     public static int LiniiTvaZeroFaraTip { get; private set; }
+    public static int FaraGestiune { get; private set; }
 
     sealed record LinieMarfa(Guid ProdusId, TipInfo Tip, string CheieLot,
         decimal Cantitate, decimal Net, decimal Tva, Guid? TipTvaId);
@@ -57,9 +58,11 @@ static class HandlerFactura {
         public List<LinieMarfa> Marfuri = [];
         public List<LinieServiciu> Servicii = [];
         public Punte Punte;
+        // Factura fără gestiune (F2): nu se poate reprezenta ca FCT, se transcrie.
+        public bool DoarPunte;
 
         // Oglinda condiției din `Materializeaza` — de ea atârnă cheia punții.
-        public bool AreDocument => Marfuri.Count > 0 || Servicii.Count > 0;
+        public bool AreDocument => !DoarPunte && (Marfuri.Count > 0 || Servicii.Count > 0);
     }
 
     static void Importa(ContextLuna ctx) {
@@ -104,7 +107,8 @@ static class HandlerFactura {
                         bucla.NumaraSursaFaraCorespondent();
                 }
                 if (plan == null || plan.AreDocument)
-                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan),
+                        motivFaraDraft: Motive.FaraPlan(plan, "factura n-are nicio linie importabilă"));
             });
     }
 
@@ -125,10 +129,13 @@ static class HandlerFactura {
         }
         plan.Numar = numar;
 
-        plan.GestiuneId = cat.Gestiuni.TryGetValue(h.DepozitId ?? "", out var g)
-            ? g
-            : throw new InvalidOperationException(
-                $"Depozitul 1C {h.DepozitId} al facturii nu e legat de o Gestiune.");
+        // Gestiunea se cere DOAR când documentul chiar mișcă stoc (F2). Două note
+        // de credit pe an (servicii pure, sconturi) vin cu `Depozit_ID` NULL, iar
+        // aici picau la planificare. Nu se inventează o gestiune: FCT-ul Atlas cere
+        // primitor Gestiune prin model (26f), deci documentul fără gestiune se
+        // transcrie INTEGRAL pe puntea NTC — reprezentarea corectă, nu cea comodă.
+        var areGestiune = cat.Gestiuni.TryGetValue(h.DepozitId ?? "", out var g);
+        plan.GestiuneId = areGestiune ? g : Guid.Empty;
         plan.PartenerId = bucla.LaCerere.AsiguraPartener(h.PartenerId)
             ?? throw new InvalidOperationException(
                 $"Partenerul 1C {h.PartenerId} al facturii nu s-a putut importa.");
@@ -151,6 +158,20 @@ static class HandlerFactura {
         var simbolFacturiNesosite = conturiDebit.FirstOrDefault(c => c.StartsWith("408"));
         var marfaDejaReceptionata = simbolFacturiNesosite != null
             && !conturiDebit.Any(c => c.StartsWith('3'));
+
+        // Fără gestiune (F2): documentul nu poate purta nicio linie în Atlas, deci
+        // ori are stoc — și atunci lipsa gestiunii e o gaură reală, care pică
+        // zgomotos — ori e o notă de credit de servicii și pleacă integral pe punte.
+        if (!areGestiune) {
+            if (marfuri.Count > 0 && !marfaDejaReceptionata)
+                throw new InvalidOperationException(
+                    $"Depozitul 1C „{h.DepozitId}” al facturii nu e legat de o Gestiune, iar factura "
+                    + $"are {marfuri.Count} linii de marfă — recepția n-are unde intra.");
+            plan.DoarPunte = true;
+            FaraGestiune++;
+            ConstruiestePunte(ctx, h, plan);
+            return plan;
+        }
 
         // Liniile de marfă se FUZIONEAZĂ pe (nomenclator × cont): lotul 1C e
         // tripletul (document, produs, cont), deci două linii pe aceeași pereche
@@ -314,7 +335,8 @@ static class HandlerFactura {
         Console.WriteLine($"  FCT: {NepostateSarite} antete Posted care NU postează în 1C (sărite), "
             + $"{NumereLipsa} facturi fără număr de furnizor (s-a folosit numărul 1C), "
             + $"{LiniiFuzionate} linii fuzionate pe lot, {LiniiCantitateNepozitiva} linii de marfă "
-            + $"cu cantitate ≤ 0 sărite, {LiniiTvaZeroFaraTip} linii cu regim de TVA dar TVA zero "
+            + $"cu cantitate ≤ 0 sărite, {FaraGestiune} facturi fără gestiune (transcrise integral "
+            + $"pe punte — F2), {LiniiTvaZeroFaraTip} linii cu regim de TVA dar TVA zero "
             + $"(lăsate fără TipTva), {LiniiMarfaDejaReceptionata} linii de marfă deja recepționată "
             + "pe aviz (importate ca linii ne-stoc pe 408 — factura postează, stocul nu se mișcă).");
     }

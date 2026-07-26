@@ -98,14 +98,18 @@ static class HandlerAsamblare {
                         bucla.NumaraSursaFaraCorespondent();
                 }
                 if (plan == null || plan.AreDocument) {
-                    bucla.ImportaDocument(view, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+                    bucla.ImportaDocument(view, h.Id, os => Materializeaza(os, bucla.Catalog, plan),
+                        motivFaraDraft: Motive.FaraPlan(plan,
+                            "asamblarea n-a rămas cu nicio linie importabilă"));
                     // Transferul produselor în depozitul lor: document propriu, DUPĂ
                     // asamblare (loturile există abia acum — se caută în index pe cheia
                     // lor 1C, exact ca orice pin ulterior). Rămâne în ACEEAȘI unitate:
                     // ordinea asamblare → transfer e internă, nu cronologică.
                     if (plan == null || plan.CereTransfer)
                         bucla.ImportaDocument(view, h.Id + "#btr",
-                            os => TransferaProduse(os, bucla.Catalog, plan, h.Numar));
+                            os => TransferaProduse(os, bucla.Catalog, plan, h.Numar),
+                            motivFaraDraft: Motive.FaraPlan(plan,
+                                "niciun produs de transferat în alt depozit"));
                 }
             });
     }

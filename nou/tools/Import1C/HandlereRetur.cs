@@ -103,7 +103,9 @@ static class HandlerReturFurnizor {
                         continue;
                     bucla.ImportaDocument(View, cheie,
                         os => plan == null ? null
-                            : Materializeaza(os, plan, plan.Grupuri.FirstOrDefault(g => g.DepozitHex == depozit)));
+                            : Materializeaza(os, plan, plan.Grupuri.FirstOrDefault(g => g.DepozitHex == depozit)),
+                        motivFaraDraft: Motive.FaraPlan(plan,
+                            "grupul de retur al depozitului n-a rămas cu nicio linie"));
                 }
             });
     }
@@ -262,28 +264,37 @@ static class HandlerReturFurnizor {
 
     static void ConstruiestePunte(Catalog cat, Plan plan, string docId,
             IReadOnlyList<FlaxRandNota> randuri) {
-        var clasificate = Clasificare1C.Clasifica(cat, View, docId, randuri, (rand, debit, credit) => {
+        // Pasul TVA al motorului postează doar dacă returul are linii CU regim de
+        // TVA: fără ele, rândul 4426 al sursei n-are cine să-l acopere (aserțiunea
+        // F1c) și se transcrie.
+        var acoperitori = plan.Grupuri.SelectMany(g => g.Linii)
+                .Any(l => l.TipTvaId != null && l.Tva != 0m)
+            ? new HashSet<string>(StringComparer.Ordinal) { "tva" }
+            : Clasificare1C.Niciunul;
+
+        Clasificare1C.Declara(plan.Punte, cat, View, docId, randuri, acoperitori,
+            (rand, debit, credit) => {
             if (debit == null || credit == null)
                 return null;
             // Stornarea achiziției: Atlas o postează la costul LOTULUI lui.
             if (cat.EsteContDeStoc(debit) && !cat.EsteContDeStoc(credit))
-                return (FelRand.Evaluat, null);
+                return Rand.Evaluat;
             // TVA-ul stornat (4426 = 401 la regim normal, 4426 = 4427 la taxare
             // inversă) — îl generează pasul TVA din motor, din liniile de mai sus.
             if (debit == "4426")
-                return (FelRand.Acoperit, null);
+                return Rand.Acoperit("tva",
+                    "RLF: TVA stornat fără linie de retur în Atlas, transcris");
             // Ajustarea de cost pe care 1C o postează pe retur (6xx = 3xx): Atlas
             // n-are regulă pentru ea. Se transcrie — MIȘCAREA DE STOC pe care o
             // însoțește în 1C NU se preia (raportată aici, nu inventată).
             if (debit.StartsWith('6') && cat.EsteContDeStoc(credit))
-                return (FelRand.Punte, "RLF: ajustare de cost pe retur (6xx = 3xx), fără mișcare de stoc în Atlas");
+                return Rand.Punte("RLF: ajustare de cost pe retur (6xx = 3xx), fără mișcare de stoc în Atlas");
             // Serviciile returnate (transport, comisioane) n-au lot ⇒ nu pot sta
             // pe un retur Atlas (fiecare linie descarcă un lot).
             if (debit.StartsWith('6'))
-                return (FelRand.Punte, "RLF: linie de serviciu returnată (fără lot)");
+                return Rand.Punte("RLF: linie de serviciu returnată (fără lot)");
             return null;
         });
-        Clasificare1C.DeclaraTinte(plan.Punte, clasificate);
 
         // Ce postează Atlas pe TVA: 4426 = 401 (fallback-ul politicii pe latura
         // primitorului — furnizorul importat n-are cont implicit), cu semnul
@@ -395,7 +406,9 @@ static class HandlerReturClient {
                         bucla.NumaraSursaFaraCorespondent();
                 }
                 if (plan == null || plan.AreDocument)
-                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan),
+                        motivFaraDraft: Motive.FaraPlan(plan,
+                            "returul n-a rămas nici cu venit, nici cu cost"));
             });
     }
 
@@ -517,22 +530,27 @@ static class HandlerReturClient {
 
     static void ConstruiestePunte(Catalog cat, Plan plan, string docId,
             IReadOnlyList<FlaxRandNota> randuri) {
-        var clasificate = Clasificare1C.Clasifica(cat, View, docId, randuri, (rand, debit, credit) => {
+        var acoperitori = plan.Venituri.Count > 0
+            ? new HashSet<string>(StringComparer.Ordinal) { "venit" }
+            : Clasificare1C.Niciunul;
+
+        Clasificare1C.Declara(plan.Punte, cat, View, docId, randuri, acoperitori,
+            (rand, debit, credit) => {
             if (debit == null || credit == null)
                 return null;
             // Costul care revine: Atlas îl postează la prețul lotului lui.
             if (debit.StartsWith('6') && cat.EsteContDeStoc(credit))
-                return (FelRand.Evaluat, null);
+                return Rand.Evaluat;
             // Venitul stornat + TVA-ul colectat stornat.
             if (debit.StartsWith("411"))
-                return (FelRand.Acoperit, null);
+                return Rand.Acoperit("venit",
+                    "RDC: venit/TVA stornat fără secțiune de venit, transcris");
             // Sconturile acordate, stornate odată cu returul: n-au linie proprie
             // pe un retur Atlas (nici venit, nici marfă).
             if (debit.StartsWith("667"))
-                return (FelRand.Punte, "RDC: sconto acordat, stornat pe retur (667 = 411)");
+                return Rand.Punte("RDC: sconto acordat, stornat pe retur (667 = 411)");
             return null;
         });
-        Clasificare1C.DeclaraTinte(plan.Punte, clasificate);
         // Semnul storno: Atlas postează 4111 = 70x și 4111 = 4427 cu MINUS.
         Venituri1C.DeclaraInPunte(plan.Punte, plan.Venituri, semn: -1);
     }

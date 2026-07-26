@@ -106,6 +106,12 @@ static class ReconciliereLuna {
         // abaterea per cont și per cheie de stoc, din luna precedentă.
         public readonly Dictionary<string, decimal> AbateriConturi = new(StringComparer.Ordinal);
         public readonly Dictionary<(string P, string D), (decimal Q, decimal V)> AbateriStoc = [];
+
+        // Raportul integral pe disc (JurnalContract.cs): consola e plafonată, aici
+        // intră TOATE diferențele. Poate lipsi (rulările de diagnostic).
+        public JurnalContract Jurnal;
+
+        public void Jurnalizeaza(string linie) => Jurnal?.Scrie(linie);
     }
 
     public record Rezultat(int Contracte, int Picate, int AbateriJustificate,
@@ -119,6 +125,8 @@ static class ReconciliereLuna {
 
         Console.WriteLine($"  --- Reconcilierea lunii {ctx.Luna:00}/{ctx.An} "
             + $"(la {ctx.Ultima:yyyy-MM-dd}) ---");
+        stare.Jurnalizeaza($"\n=============== Luna {ctx.Luna:00}/{ctx.An} "
+            + $"(la {ctx.Ultima:yyyy-MM-dd}) ===============");
 
         // Registrul divergențelor CUNOSCUTE, cumulat la zi: intrarea amânduror
         // contractelor. E persistat, deci identic la o rulare care nu mai importă
@@ -138,8 +146,10 @@ static class ReconciliereLuna {
         }
 
         Contabil(os, ctx, stare, cat, registru, stoc, avert, Contract);
-        var (dePlata, deRecuperat) = Tva(os, ctx, cat, avert, Contract);
+        var (dePlata, deRecuperat) = Tva(os, ctx, cat, stare, avert, Contract);
         RaporteazaStoc(stoc, ctx, stare, avert, Contract);
+        if (stare.Jurnal != null)
+            Console.WriteLine($"     raport integral al lunii (toate diferențele): {stare.Jurnal.Cale}");
 
         return new Rezultat(3, picate, stoc.Justificate, stare.PlafonStoc, dePlata, deRecuperat);
     }
@@ -267,6 +277,14 @@ static class ReconciliereLuna {
             contract($"  cont {x.Simbol}: bază {x.Db:N2} = sursă 1C {x.Sursa:N2} (Δ {x.Delta:N2}) "
                 + $"— {x.Motiv}", false);
 
+        stare.Jurnalizeaza($"\n[1] Sold per cont OMFP — {picate.Count} conturi fără explicație, "
+            + $"{justificate.Count} explicate:");
+        foreach (var x in picate)
+            stare.Jurnalizeaza($"  FAIL cont {x.Simbol}: bază {x.Db:N2} = sursă 1C {x.Sursa:N2} "
+                + $"(Δ {x.Delta:N2}) — {x.Motiv}");
+        foreach (var x in justificate.OrderByDescending(x => Math.Abs(x.Delta)))
+            stare.Jurnalizeaza($"  ok   cont {x.Simbol}: Δ {x.Delta:N2} — {x.Motiv}");
+
         // Suma abaterilor justificate: banii nu se pierd, se mută între stoc și
         // cost. Nu mai e CONDIȚIE (se satisfăcea trivial — D6), dar rămâne
         // semnal: o sumă care nu se închide arată o diferență reală strecurată
@@ -299,7 +317,7 @@ static class ReconciliereLuna {
     // ==================== 2. Închiderea de TVA (4423/4424) ====================
 
     static (decimal DePlata, decimal DeRecuperat) Tva(IObjectSpace os, ContextLuna ctx, Catalog cat,
-            Action<string> avert, Action<string, bool> contract) {
+            Stare stare, Action<string> avert, Action<string, bool> contract) {
         var simbolPeId = cat.Plan.ToDictionary(x => x.Value, x => x.Key);
 
         // ---- Baza: rândurile documentelor ITV ale lunii (recitite din registru,
@@ -331,14 +349,17 @@ static class ReconciliereLuna {
 
         var perechi = db.Keys.Union(sursa.Keys).OrderBy(k => k.D).ThenBy(k => k.C).ToList();
         var diferente = 0;
+        stare.Jurnalizeaza($"\n[2] Închiderea de TVA — {perechi.Count} corespondențe:");
         foreach (var k in perechi) {
             var vDb = db.GetValueOrDefault(k);
             var vSursa = sursa.GetValueOrDefault(k);
             var ok = Math.Abs(vDb - vSursa) < EpsV;
             if (!ok)
                 diferente++;
-            Console.WriteLine($"     {(ok ? "  " : "!!")} {k.D} = {k.C,-6} Atlas {vDb,15:N2}   1C {vSursa,15:N2}"
-                + (ok ? "" : $"   Δ {vDb - vSursa:N2}"));
+            var linie = $"{(ok ? "  " : "!!")} {k.D} = {k.C,-6} Atlas {vDb,15:N2}   1C {vSursa,15:N2}"
+                + (ok ? "" : $"   Δ {vDb - vSursa:N2}");
+            Console.WriteLine($"     {linie}");
+            stare.Jurnalizeaza($"  {linie}");
         }
         contract($"2. Închiderea de TVA: {perechi.Count} corespondențe comparate, {diferente} diferențe "
             + $"(ITV generate: {itv.Count})", diferente == 0);
@@ -592,17 +613,35 @@ static class ReconciliereLuna {
             cheiRotunjire, rotunjireAbs, rotunjireAlg);
     }
 
-    // Câte chei justificate se detaliază per lună: raportul trebuie să rămână
-    // citibil (sute de grupe netate), iar cifra agregată nu se pierde.
+    // Câte chei se detaliază per lună PE CONSOLĂ: raportul trebuie să rămână
+    // citibil (sute de grupe netate), iar cifra agregată nu se pierde. Plafonul e
+    // doar al consolei — raportul integral al rulării (`Stare.Jurnal`) le are pe
+    // toate, iar consola spune câte a ascuns și unde sunt.
     const int DetaliiJustificate = 15;
+    const int DetaliiNejustificate = 30;
 
     static void RaporteazaStoc(RezultatStoc stoc, ContextLuna ctx, Stare stare,
             Action<string> avert, Action<string, bool> contract) {
-        foreach (var d in stoc.Detalii.Where(d => d.Motiv == null)
-                     .OrderByDescending(d => Math.Abs(d.VDb - d.VSursa)).Take(30))
+        var nejustificate = stoc.Detalii.Where(d => d.Motiv == null)
+            .OrderByDescending(d => Math.Abs(d.VDb - d.VSursa)).ToList();
+        foreach (var d in nejustificate.Take(DetaliiNejustificate))
             contract($"  stoc produs {d.P} × gestiune {d.D}: bază {d.QDb:N3} buc / {d.VDb:N2} lei "
                 + $"= sursă {d.QSursa:N3} buc / {d.VSursa:N2} lei "
                 + $"(Δ {d.QDb - d.QSursa:N3} buc / {d.VDb - d.VSursa:N2} lei)", false);
+        // Verdictul e al contractului (mai jos), dar plafonul consolei nu poate
+        // ascunde restul: o listă fără cap nu se poate diagnostica.
+        if (nejustificate.Count > DetaliiNejustificate)
+            avert($"[{ctx.Luna:00}/{ctx.An}] încă {nejustificate.Count - DetaliiNejustificate} chei de "
+                + "stoc NEJUSTIFICATE, nedetaliate pe consolă — lista completă e în raportul integral "
+                + "al rulării.");
+
+        // Raportul integral: TOATE cheile nejustificate, în ordinea valorii.
+        stare.Jurnalizeaza($"\n[3] Stoc per produs × gestiune — {nejustificate.Count} chei "
+            + $"NEJUSTIFICATE (din {stoc.Chei} comparate):");
+        foreach (var d in nejustificate)
+            stare.Jurnalizeaza($"  FAIL produs {d.P} × gestiune {d.D}: "
+                + $"bază {d.QDb:N3} buc / {d.VDb:N2} lei = sursă {d.QSursa:N3} buc / {d.VSursa:N2} lei "
+                + $"(Δ {d.QDb - d.QSursa:N3} buc / {d.VDb - d.VSursa:N2} lei)");
 
         // Purtarea înainte: se detaliază doar cheile NOI sau schimbate față de
         // luna trecută; restul se numără. Cheile de rotunjire nu se detaliază
@@ -634,10 +673,15 @@ static class ReconciliereLuna {
         // Triajul pe categorii: „câte sunt" nu spune nimic, „de ce sunt" spune tot.
         // Categoriile măsurate poartă cifrele lor în motiv, deci se grupează pe
         // prima propoziție.
+        stare.Jurnalizeaza($"\n[3] Justificate, agregat pe categorii ({stoc.Justificate} chei, "
+            + $"{noi} noi / {purtate} purtate):");
         foreach (var g in stoc.Detalii.Where(d => d.Motiv != null)
-                     .GroupBy(d => Familie(d.Motiv)).OrderByDescending(g => g.Count()))
-            Console.WriteLine($"     {g.Count(),6} chei justificate — {g.Key} "
-                + $"(Σ |Δ| {g.Sum(d => Math.Abs(d.VDb - d.VSursa)):N2} lei)");
+                     .GroupBy(d => Familie(d.Motiv)).OrderByDescending(g => g.Count())) {
+            var linie = $"{g.Count(),6} chei justificate — {g.Key} "
+                + $"(Σ |Δ| {g.Sum(d => Math.Abs(d.VDb - d.VSursa)):N2} lei)";
+            Console.WriteLine($"     {linie}");
+            stare.Jurnalizeaza($"  {linie}");
+        }
         if (stoc.CheiRotunjire > 0)
             Console.WriteLine($"     din care rotunjire: {stoc.CheiRotunjire} chei, "
                 + $"Σ |Δ| {stoc.RotunjireAbsoluta:N2} lei, Σ algebrică {stoc.RotunjireAlgebrica:N2} lei "

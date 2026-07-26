@@ -158,7 +158,9 @@ static class HandlerTransfer {
                         bucla.NumaraSursaFaraCorespondent();
                 }
                 if (plan == null || plan.AreDocument)
-                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, plan));
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, plan),
+                        motivFaraDraft: Motive.FaraPlan(plan,
+                            "transferul n-a rămas cu nicio linie de stoc"));
             });
     }
 
@@ -330,7 +332,9 @@ static class HandlerConsum {
                     if (plan is { AreDocument: false } && !plan.Punte.AreCeva)
                         bucla.NumaraSursaFaraCorespondent();
                     if (plan == null || plan.AreDocument)
-                        bucla.ImportaDocument(View, cheie, os => Materializeaza(os, bucla.Catalog, plan));
+                        bucla.ImportaDocument(View, cheie, os => Materializeaza(os, bucla.Catalog, plan),
+                            motivFaraDraft: Motive.FaraPlan(plan,
+                                "bonul de consum n-a rămas cu nicio linie de stoc"));
                 }
             });
     }
@@ -531,7 +535,8 @@ static class HandlerDiferente {
                         bucla.NumaraSursaFaraCorespondent();
                 }
                 if (plan == null || plan.AreDocument)
-                    bucla.ImportaDocument(ViewPlus, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+                    bucla.ImportaDocument(ViewPlus, h.Id, os => Materializeaza(os, bucla.Catalog, plan),
+                        motivFaraDraft: Motive.FaraPlan(plan, "plusul n-a rămas cu nicio linie"));
             });
     }
 
@@ -596,7 +601,8 @@ static class HandlerDiferente {
                         bucla.NumaraSursaFaraCorespondent();
                 }
                 if (plan == null || plan.AreDocument)
-                    bucla.ImportaDocument(ViewMinus, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+                    bucla.ImportaDocument(ViewMinus, h.Id, os => Materializeaza(os, bucla.Catalog, plan),
+                        motivFaraDraft: Motive.FaraPlan(plan, "minusul n-a rămas cu nicio linie"));
             });
     }
 

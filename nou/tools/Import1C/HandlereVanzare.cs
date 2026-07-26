@@ -26,6 +26,7 @@ static class HandlerVanzare {
     public static int NumereLipsa { get; private set; }
     public static int IncasariCard { get; private set; }
     public static int FaraVenit { get; private set; }
+    public static int TranscriseIntegral { get; private set; }
 
     sealed class Plan {
         public Guid PartenerId;
@@ -66,14 +67,30 @@ static class HandlerVanzare {
                 // fără planificare (gardul reluării).
                 var areVenit = marfuri.ContainsKey(h.Id) || servicii.ContainsKey(h.Id);
                 var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
-                var areCard = randuri.Any(r => EsteIncasareCard(cat, r));
+                // Cardul intră în gard doar cu sumă POZITIVĂ: `Trezorerie1C.Incasare`
+                // refuză restul (o încasare negativă n-are reprezentare — 31a), deci
+                // o cheie așteptată pentru un document care nu se poate naște ar fi
+                // un skip mut la fiecare rulare (F4).
+                var areCard = randuri.Where(r => EsteIncasareCard(cat, r)).Sum(r => r.Suma) > 0;
                 // Se citește ÎNAINTE de planificare: `Punti.Scrie` leagă cheia punții
                 // în aceeași trecere, deci după ea n-am mai putea distinge „puntea e a
                 // rulării de acum" de „puntea e a unei rulări anterioare".
                 var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
-                var cunoscut = (!areVenit || bucla.EsteCunoscut(View, h.Id))
-                    && depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
-                    && (!areCard || bucla.EsteCunoscut(View, h.Id + "#card"));
+                // Gardul NU poate fi vacuu (F1a): un document Posted care nu produce
+                // NICIO cheie de plan (factura de imobilizări, cu liniile în secțiuni
+                // pe care nu le citim; storno de comision fără secțiuni) trecea prin
+                // conjuncția asta ca „deja cunoscut" și dispărea complet — nici
+                // document, nici punte, nici contor. Când nu există chei de plan,
+                // cheia sursei e cea a PUNȚII (rețeta avizului de ieșire).
+                var chei = new List<string>();
+                if (areVenit)
+                    chei.Add(h.Id);
+                chei.AddRange(depozite.Select(d => Descarcare1C.Cheie(h.Id, d)));
+                if (areCard)
+                    chei.Add(h.Id + "#card");
+                var cunoscut = chei.Count > 0
+                    ? chei.All(c => bucla.EsteCunoscut(View, c))
+                    : bucla.EsteCunoscut(View, h.Id);
 
                 Plan plan = null;
                 if (!cunoscut) {
@@ -85,10 +102,13 @@ static class HandlerVanzare {
                         bucla.EsecPlanificare(View, h.Id, ex);
                         return;
                     }
-                    Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                    Punti.Scrie(bucla, View, chei.Count > 0 ? h.Id + "#punte" : h.Id,
                         plan.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                    if (!plan.AreDocument && !plan.Punte.AreCeva && depozite.Count == 0)
-                        bucla.NumaraSursaFaraCorespondent();
+                    if (chei.Count == 0) {
+                        TranscriseIntegral++;
+                        if (!plan.Punte.AreCeva)
+                            bucla.NumaraSursaFaraCorespondent();
+                    }
                 }
 
                 // Fabricile de mai jos primesc `plan == null` pe două căi: documentul
@@ -97,7 +117,8 @@ static class HandlerVanzare {
                 // nu-l putem construi fără plan, deci întoarcem null (se raportează ca
                 // sărit, iar rularea următoare replanifică pe legătura ștearsă).
                 if (areVenit)
-                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan));
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan),
+                        motivFaraDraft: Motive.FaraPlan(plan, "factura n-are linii de venit"));
                 foreach (var depozit in depozite) {
                     var cheie = Descarcare1C.Cheie(h.Id, depozit);
                     if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheie))
@@ -105,7 +126,9 @@ static class HandlerVanzare {
                     bucla.ImportaDocument(View, cheie,
                         os => plan == null ? null
                             : Descarcare1C.Materializeaza(os, Grup(plan, depozit), plan.Data,
-                                $"{h.Numar}-D", plan.PartenerId, bucla.Tinta(View, h.Id)));
+                                $"{h.Numar}-D", plan.PartenerId, bucla.Tinta(View, h.Id)),
+                        motivFaraDraft: Motive.FaraPlan(plan,
+                            "grupul de descărcare al depozitului n-a rămas cu nicio linie"));
                 }
                 if (areCard)
                     bucla.ImportaDocument(View, h.Id + "#card", os => {
@@ -114,7 +137,7 @@ static class HandlerVanzare {
                         IncasariCard++;
                         return Trezorerie1C.Incasare(os, cat, plan.Data, $"{h.Numar}-C",
                             plan.PartenerId, cat.ContPropriuCard(), plan.SumaCard);
-                    });
+                    }, motivFaraDraft: Motive.FaraPlan(plan, "încasarea pe card n-are sumă pozitivă"));
             });
     }
 
@@ -168,39 +191,56 @@ static class HandlerVanzare {
     // Clasificarea rândurilor facturii de ieșire (regula feliei — Vanzare1C.cs).
     static void ConstruiestePunte(Catalog cat, Plan plan, string docId,
             IReadOnlyList<FlaxRandNota> randuri) {
-        var clasificate = Clasificare1C.Clasifica(cat, View, docId, randuri, (rand, debit, credit) => {
+        // Ce postează CHIAR planul: creanța (liniile de venit + pasul TVA) și
+        // încasarea pe card. Fără ele, rândurile care se declarau acoperite prin
+        // ele trec pe punte (aserțiunea F1c din `Clasificare1C.Declara`).
+        var acoperitori = new HashSet<string>(StringComparer.Ordinal);
+        if (plan.Venituri.Count > 0)
+            acoperitori.Add("venit");
+        if (plan.SumaCard > 0)
+            acoperitori.Add("card");
+
+        Clasificare1C.Declara(plan.Punte, cat, View, docId, randuri, acoperitori,
+            (rand, debit, credit) => {
             if (debit == null || credit == null)
                 return null;
             if (debit.StartsWith('6') && cat.EsteContDeStoc(credit))
-                return (FelRand.Evaluat, null);
+                return Rand.Evaluat;
             // Regularizarea TVA-ului avansului consumat: 1C stornează pe factură
             // TVA-ul colectat la încasarea avansului (rând 411 = 4427 NEGATIV),
             // iar factura Atlas n-are linie pentru el (avansul consumat e oricum
             // punte, mai jos) — se transcrie.
             if (debit.StartsWith("411") && credit == "4427" && rand.Suma < 0)
-                return (FelRand.Punte, "FCL: stornarea TVA colectată a avansului consumat");
+                return Rand.Punte("FCL: stornarea TVA colectată a avansului consumat");
             // Creanța: venitul liniei, TVA-ul colectat, avansul facturat (419) —
-            // tot ce postează Atlas prin liniile de venit + pasul TVA.
+            // tot ce postează Atlas prin liniile de venit + pasul TVA. Fără nicio
+            // linie de venit (3 facturi de imobilizări + 14 storno de comision pe
+            // an, cu liniile în secțiuni pe care unealta nu le citește), creanța
+            // Atlas nu există și rândul se transcrie integral.
             if (debit.StartsWith("411"))
-                return (FelRand.Acoperit, null);
+                return Rand.Acoperit("venit", rand.Suma >= 0
+                    ? "FCL fără secțiune de venit: venitul/TVA cesiunii de imobilizări, transcris"
+                    : "FCL fără secțiune de venit: stornarea venitului/TVA (comision, avans), transcrisă");
             if (debit == "5125" && credit.StartsWith("411"))
-                return (FelRand.Acoperit, null);
+                return Rand.Acoperit("card",
+                    "FCL: storno de încasare pe card (512.5 = 411.1), transcris");
             // Consumul avansului încasat: mișcare 419 = 411 fără linie proprie pe
             // factură (nici venit, nici TVA) — inexprimabilă pe factura Atlas.
             if (debit == "419" && credit.StartsWith("411"))
-                return (FelRand.Punte, "FCL: consumul avansului facturat (419 = 411)");
+                return Rand.Punte("FCL: consumul avansului facturat (419 = 411)");
             // Regularizarea TVA-ului neexigibil al avizului facturat.
             if (debit == "4428" && credit == "4427")
-                return (FelRand.Punte, "FCL: regularizarea TVA neexigibilă a avizului (4428 = 4427)");
+                return Rand.Punte("FCL: regularizarea TVA neexigibilă a avizului (4428 = 4427)");
             // Cesiuni/casări de imobilizări strecurate pe factură.
             if (debit.StartsWith('2') || credit.StartsWith('2'))
-                return (FelRand.Punte, "FCL: rând de imobilizări pe factura de ieșire");
+                return Rand.Punte("FCL: rând de imobilizări pe factura de ieșire");
             return null;
         });
-        Clasificare1C.DeclaraTinte(plan.Punte, clasificate);
 
         Venituri1C.DeclaraInPunte(plan.Punte, plan.Venituri);
-        if (plan.SumaCard != 0m)
+        // Doar încasarea care se NAȘTE se declară postată (F4): suma ne-pozitivă
+        // rămâne pe punte, unde clasificarea de mai sus a trimis-o.
+        if (plan.SumaCard > 0)
             plan.Punte.ActualAtlas("5125", Catalog.ContCreantaImplicit, plan.SumaCard);
     }
 
@@ -223,7 +263,9 @@ static class HandlerVanzare {
     public static void Raporteaza() {
         Console.WriteLine($"  FCL: {NepostateSarite} antete Posted care NU postează în 1C (sărite), "
             + $"{LiniiVenit} linii de venit (cont × cotă), {FaraVenit} documente fără linie de venit "
-            + $"(doar punte), {NumereLipsa} facturi fără serie/număr, {IncasariCard} încasări pe card.");
+            + $"(doar punte), {TranscriseIntegral} documente fără NICIO cheie de plan (transcrise "
+            + $"integral pe punte — F1), {NumereLipsa} facturi fără serie/număr, {IncasariCard} "
+            + "încasări pe card.");
         Console.WriteLine($"  Venituri: {Venituri1C.TvaLivrareTaxareInversa} linii de livrare cu taxare "
             + "inversă (TVA informativ, fără rând contabil — ca în sursă).");
     }
@@ -310,14 +352,21 @@ static class HandlerAmanunt {
                 var areVenit = marfuri.ContainsKey(h.Id) || servicii.ContainsKey(h.Id);
                 var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
                 // Cheile încasărilor sunt derivabile din rândurile de trezorerie, deci
-                // intră și ele în gardul reluării (ca descărcările).
+                // intră și ele în gardul reluării (ca descărcările). Doar cele cu sumă
+                // POZITIVĂ: restul n-are document (F4, ca la cardul facturii).
                 var cheiIncasari = randuri.Where(r => (cat.Mapeaza(r.ContCredit)?.StartsWith("411") ?? false)
-                        && (cat.Mapeaza(r.ContDebit)?.StartsWith('5') ?? false))
+                        && (cat.Mapeaza(r.ContDebit)?.StartsWith('5') ?? false) && r.Suma > 0)
                     .Select(r => $"{h.Id}#inc{r.Linie}").ToList();
                 var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
-                var cunoscut = (!areVenit || bucla.EsteCunoscut(View, h.Id))
-                    && depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
-                    && cheiIncasari.All(c => bucla.EsteCunoscut(View, c));
+                // Gardul nu poate fi vacuu (F1a) — vezi nota de la factura de ieșire.
+                var chei = new List<string>();
+                if (areVenit)
+                    chei.Add(h.Id);
+                chei.AddRange(depozite.Select(d => Descarcare1C.Cheie(h.Id, d)));
+                chei.AddRange(cheiIncasari);
+                var cunoscut = chei.Count > 0
+                    ? chei.All(c => bucla.EsteCunoscut(View, c))
+                    : bucla.EsteCunoscut(View, h.Id);
 
                 Plan plan = null;
                 if (!cunoscut) {
@@ -329,14 +378,15 @@ static class HandlerAmanunt {
                         bucla.EsecPlanificare(View, h.Id, ex);
                         return;
                     }
-                    Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                    Punti.Scrie(bucla, View, chei.Count > 0 ? h.Id + "#punte" : h.Id,
                         h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                    if (!plan.AreDocument && !plan.Punte.AreCeva && depozite.Count == 0)
+                    if (chei.Count == 0 && !plan.Punte.AreCeva)
                         bucla.NumaraSursaFaraCorespondent();
                 }
 
                 if (areVenit)
-                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan));
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan),
+                        motivFaraDraft: Motive.FaraPlan(plan, "raportul n-are linii de venit"));
                 var sursaId = bucla.Tinta(View, h.Id);
                 foreach (var depozit in depozite) {
                     var cheieDsc = Descarcare1C.Cheie(h.Id, depozit);
@@ -346,24 +396,30 @@ static class HandlerAmanunt {
                         os => plan == null ? null
                             : Descarcare1C.Materializeaza(os,
                                 plan.Descarcari.FirstOrDefault(g => g.DepozitHex == depozit), plan.Data,
-                                $"{h.Numar}-D", cat.ConsumatorFinalId, sursaId));
+                                $"{h.Numar}-D", cat.ConsumatorFinalId, sursaId),
+                        motivFaraDraft: Motive.FaraPlan(plan,
+                            "grupul de descărcare al depozitului n-a rămas cu nicio linie"));
                 }
                 // Încasarea retailului: una per formă de plată, pe consumatorul final.
                 if (plan is { RetailNumerar: > 0 })
                     bucla.ImportaDocument(View, h.Id + "#numerar", os => Trezorerie1C.Incasare(os, cat,
                         plan.Data, $"{h.Numar}-N", cat.ConsumatorFinalId, plan.ContCasaId, plan.RetailNumerar));
                 else if (plan == null)
-                    bucla.ImportaDocument(View, h.Id + "#numerar", _ => null);
+                    bucla.ImportaDocument(View, h.Id + "#numerar", _ => null,
+                        motivFaraDraft: Motive.FaraPlanLaReluare);
                 if (plan is { RetailCard: > 0 })
                     bucla.ImportaDocument(View, h.Id + "#card", os => Trezorerie1C.Incasare(os, cat,
                         plan.Data, $"{h.Numar}-C", cat.ConsumatorFinalId, cat.ContPropriuCard(), plan.RetailCard));
                 else if (plan == null)
-                    bucla.ImportaDocument(View, h.Id + "#card", _ => null);
+                    bucla.ImportaDocument(View, h.Id + "#card", _ => null,
+                        motivFaraDraft: Motive.FaraPlanLaReluare);
                 foreach (var cheie in cheiIncasari) {
                     var inc = plan?.PeFacturi.FirstOrDefault(x => $"{h.Id}#inc{x.Linie}" == cheie);
                     bucla.ImportaDocument(View, cheie, os => inc == null ? null
                         : Trezorerie1C.Incasare(os, cat, plan.Data, $"{h.Numar}-{inc.Linie}",
-                            inc.PartenerId, inc.ContPropriuId, inc.Suma));
+                            inc.PartenerId, inc.ContPropriuId, inc.Suma),
+                        motivFaraDraft: Motive.FaraPlan(plan,
+                            "încasarea pe factură nominală n-a rămas în plan"));
                 }
             });
     }
@@ -432,20 +488,37 @@ static class HandlerAmanunt {
 
     static void ConstruiestePunte(Catalog cat, Plan plan, string docId,
             IReadOnlyList<FlaxRandNota> randuri) {
-        var clasificate = Clasificare1C.Clasifica(cat, View, docId, randuri, (rand, debit, credit) => {
+        // Acoperitorii banilor, unul per document care se NAȘTE: încasarea de
+        // retail per formă de plată (agregată) și câte una per factură nominală
+        // (per rând). Sumele ne-pozitive nu produc document (31a), deci nu declară
+        // nici acoperire — rândurile lor pleacă pe punte (F4).
+        var acoperitori = new HashSet<string>(StringComparer.Ordinal);
+        if (plan.RetailNumerar > 0)
+            acoperitori.Add("numerar");
+        if (plan.RetailCard > 0)
+            acoperitori.Add("card");
+        foreach (var inc in plan.PeFacturi.Where(x => x.Suma > 0))
+            acoperitori.Add($"inc{inc.Linie}");
+
+        Clasificare1C.Declara(plan.Punte, cat, View, docId, randuri, acoperitori,
+            (rand, debit, credit) => {
             if (debit == null || credit == null)
                 return null;
             if (debit.StartsWith('6') && cat.EsteContDeStoc(credit))
-                return (FelRand.Evaluat, null);
+                return Rand.Evaluat;
             if (debit == plan.SimbolCasa || debit == plan.SimbolCard)
-                return (FelRand.Acoperit, null);
+                return Rand.Acoperit(
+                    credit.StartsWith("411") ? $"inc{rand.Linie}"
+                        : debit == plan.SimbolCasa ? "numerar" : "card",
+                    "RVA: încasare fără sumă pozitivă (storno de retail), transcrisă");
             return null;
         });
-        Clasificare1C.DeclaraTinte(plan.Punte, clasificate);
 
         Venituri1C.DeclaraInPunte(plan.Punte, plan.Venituri);
-        plan.Punte.ActualAtlas(plan.SimbolCasa, Catalog.ContCreantaImplicit, plan.RetailNumerar);
-        plan.Punte.ActualAtlas(plan.SimbolCard, Catalog.ContCreantaImplicit, plan.RetailCard);
+        if (plan.RetailNumerar > 0)
+            plan.Punte.ActualAtlas(plan.SimbolCasa, Catalog.ContCreantaImplicit, plan.RetailNumerar);
+        if (plan.RetailCard > 0)
+            plan.Punte.ActualAtlas(plan.SimbolCard, Catalog.ContCreantaImplicit, plan.RetailCard);
         foreach (var inc in plan.PeFacturi.Where(x => x.Suma > 0))
             plan.Punte.ActualAtlas(cat.SimbolContPropriu(inc.ContPropriuId),
                 Catalog.ContCreantaImplicit, inc.Suma);
@@ -536,7 +609,9 @@ static class HandlerAvizIesire {
                         os => plan == null ? null
                             : Descarcare1C.Materializeaza(os,
                                 plan.Descarcari.FirstOrDefault(g => g.DepozitHex == depozit),
-                                plan.Data, h.Numar, plan.PartenerId, null));
+                                plan.Data, h.Numar, plan.PartenerId, null),
+                        motivFaraDraft: Motive.FaraPlan(plan,
+                            "grupul de descărcare al depozitului n-a rămas cu nicio linie"));
                 }
             });
     }
@@ -554,16 +629,16 @@ static class HandlerAvizIesire {
                 $"Partenerul 1C {h.PartenerId} al avizului de ieșire nu s-a putut importa.");
         plan.Descarcari = Descarcare1C.Planifica(ctx, View, h.Id, plan.Data, randuri, index, h.DepozitId, plan.Punte);
 
-        var clasificate = Clasificare1C.Clasifica(cat, View, h.Id, randuri, (rand, debit, credit) => {
+        Clasificare1C.Declara(plan.Punte, cat, View, h.Id, randuri, Clasificare1C.Niciunul,
+            (rand, debit, credit) => {
             if (debit == null || credit == null)
                 return null;
             if (debit.StartsWith('6') && cat.EsteContDeStoc(credit))
-                return (FelRand.Evaluat, null);
+                return Rand.Evaluat;
             if (debit == "418")
-                return (FelRand.Punte, "AVE: creanța de facturat a avizului (418 = venit / TVA neexigibilă)");
+                return Rand.Punte("AVE: creanța de facturat a avizului (418 = venit / TVA neexigibilă)");
             return null;
         });
-        Clasificare1C.DeclaraTinte(plan.Punte, clasificate);
         return plan;
     }
 
@@ -623,7 +698,9 @@ static class HandlerAvizIntrare {
                         bucla.NumaraSursaFaraCorespondent();
                 }
                 if (plan == null || plan.AreDocument)
-                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan));
+                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan),
+                        motivFaraDraft: Motive.FaraPlan(plan,
+                            "avizul de intrare n-a rămas cu nicio linie de plus"));
             });
     }
 
@@ -674,14 +751,14 @@ static class HandlerAvizIntrare {
             plan.Punte.ActualAtlas(debit, cat.ContPlusInventar, valoare);
         }
 
-        var clasificate = Clasificare1C.Clasifica(cat, View, h.Id, randuri, (rand, debit, credit) => {
+        Clasificare1C.Declara(plan.Punte, cat, View, h.Id, randuri, Clasificare1C.Niciunul,
+            (rand, debit, credit) => {
             if (debit == null || credit == null)
                 return null;
             if (cat.EsteContDeStoc(debit))
-                return (FelRand.Punte, "AVI: intrarea fără factură (408) contra plusului de inventar");
+                return Rand.Punte("AVI: intrarea fără factură (408) contra plusului de inventar");
             return null;
         });
-        Clasificare1C.DeclaraTinte(plan.Punte, clasificate);
         return plan;
     }
 

@@ -568,6 +568,11 @@ var bucla = new BuclaImport(provider, flax, laCerere, new AlocareIesire(), catal
 // Intrarea contractului lunar (pasul 6): ce a lăsat deschiderea în urmă —
 // produsele ale căror prețuri per lot le-a rearanjat netarea, diferențele deja
 // raportate ale sursei și clasa 8 a planului 1C (nu intră în bilanț).
+// Raportul integral al contractului (JurnalContract.cs): consola rămâne plafonată,
+// fișierul ține TOATE diferențele lunii. Un fișier per rulare, în directorul curent.
+using var jurnal = new JurnalContract(Environment.CurrentDirectory);
+Console.WriteLine($"Raportul integral al contractului lunar se scrie în „{jurnal.Cale}”.");
+bucla.StareContract.Jurnal = jurnal;
 bucla.StareContract.ProduseNetate = rezStoc.ProduseNetate;
 bucla.StareContract.JustificateDeschidere = rezStoc.DiferenteJustificate;
 bucla.StareContract.Extrabilantiere1C = extrabilantiere1C;
@@ -636,6 +641,26 @@ Console.WriteLine($"\nDocumente {anImport}: {luni.Sum(l => l.Documente)} importa
     + $"{luni.Sum(l => l.Sarite)} sărite, {luni.Sum(l => l.Copii)} copii autogenerați, "
     + $"{luni.Sum(l => l.Esecuri)} eșecuri, {luni.Sum(l => l.Realocari)} realocări de lot "
     + $"(supapa 48a) în {luni.Count} luni — {durataDocumente:hh\\:mm\\:ss}.");
+
+// Aritmetica de închidere a RULĂRII: soarta fiecărei unități-sursă, cumulată, +
+// motivele TUTUROR skip-urilor. „N sărite" fără itemizare nu e o cifră, e o
+// întrebare fără răspuns (cerința de observabilitate a gate-ului).
+{
+    int Cate(SoartaUnitate s) => bucla.Soarte.Where(x => x.Key.Soarta == s).Sum(x => x.Value);
+    var totalUnitati = bucla.Soarte.Values.Sum();
+    Console.WriteLine($"Închiderea documentelor-sursă pe rulare: {totalUnitati} unități = "
+        + $"{Cate(SoartaUnitate.Document)} cu document + {Cate(SoartaUnitate.DoarPunte)} doar punte + "
+        + $"{Cate(SoartaUnitate.FaraCorespondent)} fără corespondent + "
+        + $"{Cate(SoartaUnitate.Sarita)} sărite cu motiv + "
+        + $"{Cate(SoartaUnitate.FaraActiune)} fără acțiune (antet care nu postează) + "
+        + $"{Cate(SoartaUnitate.Esec)} eșuate.");
+    var motive = bucla.MotiveSkip.Values.Sum();
+    Console.WriteLine($"Motivele celor {motive} skip-uri ale rulării (toate, per tip × motiv):");
+    foreach (var m in bucla.MotiveSkip.OrderByDescending(x => x.Value))
+        Console.WriteLine($"    {m.Value,8} × {m.Key.Tip}: {m.Key.Motiv}");
+    Check($"Skip-uri integral itemizate: {motive} motive pentru {luni.Sum(l => l.Sarite)} sărite",
+        motive == luni.Sum(l => l.Sarite));
+}
 
 // ==================== Sumarul rulării ====================
 // Raportul pe care îl citește omul la fiecare rulare a deschiderii: cifrele-cheie

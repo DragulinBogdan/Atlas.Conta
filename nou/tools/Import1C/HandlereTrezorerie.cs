@@ -237,7 +237,10 @@ static class MotorTrezorerie {
             var contrapartidaId = contrapartide.GetValueOrDefault(g.Cheie);
             var stare = bucla.ImportaDocument(view, g.Cheie, os => contrapartidaId == Guid.Empty
                 ? null
-                : Materializeaza(os, cat, h, g, contrapartidaId, numar));
+                : Materializeaza(os, cat, h, g, contrapartidaId, numar),
+                motivFaraDraft: contrapartide.Count == 0 && contrapartidaId == Guid.Empty
+                    ? Motive.FaraPlanLaReluare
+                    : "contrapartida grupului de decontare nu s-a putut rezolva");
             if (stare != StareImport.Importat)
                 continue;
             Documente++;

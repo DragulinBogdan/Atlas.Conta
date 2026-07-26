@@ -157,6 +157,37 @@ static class Perioade {
 
 enum StareImport { Importat, Reoperat, Sarit, Esec }
 
+// Motivele de skip pe care le declară APELANTUL: fabrica de draft întoarce null
+// din două feluri de cauze, iar diferența dintre ele e diagnostic, nu detaliu.
+static class Motive {
+    public const string FaraPlanLaReluare =
+        "reluare fără plan (cheia nu intră în gardul handlerului — se replanifică la rularea următoare)";
+
+    public static string FaraPlan(object plan, string motivSursa) =>
+        plan == null ? FaraPlanLaReluare : motivSursa;
+}
+
+// Soarta unei unități de import (= un document-sursă 1C, cu tot ce naște el în
+// Atlas). Fiecare unitate se termină în EXACT una dintre categoriile de mai jos,
+// iar suma lor trebuie să dea numărul de unități planificate: aritmetica asta e
+// singura probă că niciun document Posted nu dispare fără urmă.
+enum SoartaUnitate {
+    // A produs sau a confirmat cel puțin un document tipizat în Atlas.
+    Document,
+    // Singurul corespondent e nota-punte (forma sursei nu încape în niciun tip).
+    DoarPunte,
+    // Nu produce nimic în Atlas și se știe de ce (antete goale, transferuri în
+    // aceeași gestiune) — se replanifică la fiecare rulare, fără efect.
+    FaraCorespondent,
+    // Sărită, cu motiv declarat (vezi contorul de motive).
+    Sarita,
+    // Handlerul a ieșit înainte de orice acțiune — practic „antet Posted care nu
+    // postează în 1C" (garda per tip). Se numără per tip, ca să se poată pune
+    // față în față cu contorul propriu al handlerului.
+    FaraActiune,
+    Esec,
+}
+
 sealed record RezultatLuna(int An, int Luna, int Documente, int Sarite, int Copii, int Esecuri,
     int Realocari, decimal CantitateRealocata, TimeSpan Durata,
     // Verdictul contractului lunii (pasul 6), ținut SEPARAT de eșecurile de
@@ -182,6 +213,21 @@ sealed class BuclaImport {
     int documente, sarite, copii, esecuri;
     int an, luna;
     Stopwatch cronometruLuna;
+
+    // Motivul FIECĂRUI skip, agregat pe (tip × motiv): un `sarite++` mut e o
+    // gaură de observabilitate — cifra din raport („188 sărite pe an") nu spune
+    // nimic dacă nu poate fi itemizată la ultimul document.
+    readonly Dictionary<(string Tip, string Motiv), int> motiveLuna = [];
+    readonly Dictionary<(string Tip, string Motiv), int> motiveRulare = [];
+    public IReadOnlyDictionary<(string Tip, string Motiv), int> MotiveSkip => motiveRulare;
+
+    // Soarta unităților, per lună și cumulat pe rulare (vezi `SoartaUnitate`).
+    readonly Dictionary<(string Tip, SoartaUnitate Soarta), int> soarteLuna = [];
+    readonly Dictionary<(string Tip, SoartaUnitate Soarta), int> soarteRulare = [];
+    public IReadOnlyDictionary<(string Tip, SoartaUnitate Soarta), int> Soarte => soarteRulare;
+
+    // Ce a observat unitatea în curs de execuție (se resetează la fiecare unitate).
+    int unitDocumente, unitPunti, unitSkipuri, unitEsecuri, unitFaraCorespondent;
 
     // Unitățile lunii, colectate de handlere și executate cronologic.
     readonly List<UnitateImport> unitati = [];
@@ -226,7 +272,28 @@ sealed class BuclaImport {
     // un răspuns scris.
     public int SurseFaraCorespondent { get; private set; }
 
-    public void NumaraSursaFaraCorespondent() => SurseFaraCorespondent++;
+    public void NumaraSursaFaraCorespondent() {
+        SurseFaraCorespondent++;
+        unitFaraCorespondent++;
+    }
+
+    // Puntea unității: marcată la locul faptei (`Punti.Scrie`), fiindcă o punte
+    // dezechilibrată NU se scrie ca document, dar tot e un corespondent declarat
+    // al sursei (se înregistrează în registrul divergențelor).
+    public void MarcheazaPunte() => unitPunti++;
+
+    // Skip-ul, cu motiv OBLIGATORIU. `documentExista` = documentul e deja în bază
+    // (operat sau stornat de o rulare anterioară): pentru aritmetica de închidere
+    // unitatea are document, chiar dacă rularea de acum n-a mai scris nimic.
+    void Sare(string view, string motiv, bool documentExista = false) {
+        sarite++;
+        unitSkipuri++;
+        if (documentExista)
+            unitDocumente++;
+        var cheie = (view, motiv);
+        motiveLuna[cheie] = motiveLuna.GetValueOrDefault(cheie) + 1;
+        motiveRulare[cheie] = motiveRulare.GetValueOrDefault(cheie) + 1;
+    }
 
     // Eșecul de PLANIFICARE (handlerele pasului 3 planifică înaintea lui
     // `ImportaDocument`, ca puntea să se poată scrie prima). Fără el, o excepție
@@ -306,6 +373,8 @@ sealed class BuclaImport {
         this.luna = luna;
         documente = sarite = copii = esecuri = 0;
         peTip.Clear();
+        motiveLuna.Clear();
+        soarteLuna.Clear();
         Alocare.IncepeLuna();
         cronometruLuna = Stopwatch.StartNew();
         var prima = new DateOnly(an, luna, 1);
@@ -347,6 +416,7 @@ sealed class BuclaImport {
         unitati.Clear();
         Console.WriteLine($"  {planificate.Count} unități de import, executate cronologic.");
         foreach (var u in planificate) {
+            unitDocumente = unitPunti = unitSkipuri = unitEsecuri = unitFaraCorespondent = 0;
             try {
                 u.Executa();
                 // Unitatea s-a executat până la capăt, dar poate să nu fi
@@ -368,6 +438,7 @@ sealed class BuclaImport {
                 // de commit-ul unității următoare.
                 Alocare.RenuntaLaNepersistate();
                 Divergente.RenuntaLaNepersistate();
+                NoteazaSoarta(u.Tip);
             }
         }
 
@@ -393,6 +464,7 @@ sealed class BuclaImport {
         if (SurseFaraCorespondent > 0)
             Console.WriteLine($"  {SurseFaraCorespondent} documente-sursă fără corespondent în Atlas "
                 + "(nici document, nici punte) — se replanifică la fiecare rulare, fără efect.");
+        RaporteazaInchidere(planificate.Count);
         Console.WriteLine($"  Luna {luna:00}/{an}: {documente} documente importate, {sarite} sărite, "
             + $"{copii} copii autogenerați operați, {esecuri} eșecuri, {realocari} realocări de lot "
             + $"({cantitate:N3} buc) — {rez.Durata:hh\\:mm\\:ss} "
@@ -400,6 +472,47 @@ sealed class BuclaImport {
         check($"Luna {luna:00}/{an}: importul documentelor fără eșecuri "
             + $"({documente} importate, {esecuri} eșuate)", esecuri == 0);
         return rez;
+    }
+
+    // Clasificarea unei unități executate, din ce s-a OBSERVAT (nu din ce declară
+    // handlerele): un handler care iese devreme fără nicio acțiune cade în
+    // `FaraActiune` și devine vizibil, în loc să dispară din aritmetică.
+    void NoteazaSoarta(string tip) {
+        var soarta = unitEsecuri > 0 ? SoartaUnitate.Esec
+            : unitDocumente > 0 ? SoartaUnitate.Document
+            : unitPunti > 0 ? SoartaUnitate.DoarPunte
+            : unitFaraCorespondent > 0 ? SoartaUnitate.FaraCorespondent
+            : unitSkipuri > 0 ? SoartaUnitate.Sarita
+            : SoartaUnitate.FaraActiune;
+        var cheie = (tip, soarta);
+        soarteLuna[cheie] = soarteLuna.GetValueOrDefault(cheie) + 1;
+        soarteRulare[cheie] = soarteRulare.GetValueOrDefault(cheie) + 1;
+    }
+
+    // Aritmetica de închidere a lunii (§12.4, cerința de observabilitate): unitățile
+    // planificate se despart în categorii disjuncte, iar identitatea se VERIFICĂ —
+    // o unitate neclasificată ar însemna un document-sursă pierdut pe drum.
+    void RaporteazaInchidere(int planificate) {
+        int Cate(SoartaUnitate s) => soarteLuna.Where(x => x.Key.Soarta == s).Sum(x => x.Value);
+        var total = soarteLuna.Values.Sum();
+        Console.WriteLine($"  Închiderea documentelor-sursă: {planificate} unități planificate = "
+            + $"{Cate(SoartaUnitate.Document)} cu document + {Cate(SoartaUnitate.DoarPunte)} doar punte + "
+            + $"{Cate(SoartaUnitate.FaraCorespondent)} fără corespondent + "
+            + $"{Cate(SoartaUnitate.Sarita)} sărite cu motiv + "
+            + $"{Cate(SoartaUnitate.FaraActiune)} fără acțiune (antet care nu postează) + "
+            + $"{Cate(SoartaUnitate.Esec)} eșuate.");
+        foreach (var g in soarteLuna.Where(x => x.Key.Soarta is SoartaUnitate.FaraActiune
+                    or SoartaUnitate.Sarita or SoartaUnitate.FaraCorespondent)
+                .OrderByDescending(x => x.Value))
+            Console.WriteLine($"    {g.Value,8} × {g.Key.Tip} — {g.Key.Soarta}");
+        if (motiveLuna.Count > 0) {
+            Console.WriteLine($"  Motivele celor {sarite} skip-uri ale lunii "
+                + "(toate, per tip × motiv):");
+            foreach (var m in motiveLuna.OrderByDescending(x => x.Value))
+                Console.WriteLine($"    {m.Value,8} × {m.Key.Tip}: {m.Key.Motiv}");
+        }
+        check($"Luna {luna:00}/{an}: aritmetica documentelor-sursă se închide "
+            + $"({total} unități clasificate din {planificate} planificate)", total == planificate);
     }
 
     // Stingerile din subconto → `Imperechere`, trecerea 2 a lunii (§12.2 —
@@ -433,7 +546,8 @@ sealed class BuclaImport {
         }
         var stare = ImportaDocument("InchidereTva", $"{ctx.An:0000}-{ctx.Luna:00}",
             os => InchidereTvaService.Genereaza(os, ctx.An, ctx.Luna, Catalog.SediuId),
-            regenerabilLaStorno: true);
+            regenerabilLaStorno: true,
+            motivFaraDraft: "luna n-are ce închide (fără sold de TVA sau închidere deja vie)");
         if (stare == StareImport.Sarit)
             itvSarite++;
     }
@@ -507,15 +621,27 @@ sealed class BuclaImport {
     // reluare legătura moartă se șterge și documentul se regenerează, altfel
     // luna ar rămâne închisă pe cifre vechi pentru totdeauna. Documentele SURSEI
     // rămân la comportamentul conservator (stornat = sărit).
+    //
+    // `motivFaraDraft` = motivul de skip pe care îl declară APELANTUL pentru cazul
+    // în care fabrica întoarce null (fără el, cazul ăsta incrementa `sarite` mut).
+    // `punte` = documentul e o notă-punte, nu un tip al sursei: contează separat în
+    // aritmetica de închidere („doar punte" ≠ „are document").
     public StareImport ImportaDocument(string view, string cheieHex,
-            Func<IObjectSpace, Document> construiesteDraft, bool regenerabilLaStorno = false) {
-        var rezultat = Executa(view, cheieHex, construiesteDraft, regenerabilLaStorno);
+            Func<IObjectSpace, Document> construiesteDraft, bool regenerabilLaStorno = false,
+            string motivFaraDraft = null, bool punte = false) {
+        var rezultat = Executa(view, cheieHex, construiesteDraft, regenerabilLaStorno, motivFaraDraft);
+        if (rezultat is StareImport.Importat or StareImport.Reoperat) {
+            if (punte)
+                unitPunti++;
+            else
+                unitDocumente++;
+        }
         Numara(view);
         return rezultat;
     }
 
     StareImport Executa(string view, string cheieHex, Func<IObjectSpace, Document> construiesteDraft,
-            bool regenerabilLaStorno = false) {
+            bool regenerabilLaStorno, string motivFaraDraft) {
         var cheie = (Legaturi.Tabela(view), cheieHex);
         // Draftul rămas de la o rulare anterioară, de dat înapoi înaintea
         // reimportului (D4). Se ține până DUPĂ construcția draftului nou: dacă
@@ -536,7 +662,8 @@ sealed class BuclaImport {
                 // Crash între operarea documentului și cea a copilului autogenerat:
                 // părintele e Operat, copilul a rămas Draft. Se termină lanțul.
                 copii += OpereazaCopiiRamasi(tinta, view, cheieHex);
-                sarite++;
+                Sare(view, "document deja importat de o rulare anterioară (operat)",
+                    documentExista: true);
                 return StareImport.Sarit;
             }
             else if (stare == StareDocument.Draft) {
@@ -548,7 +675,7 @@ sealed class BuclaImport {
                 // jos): dacă handlerul n-a planificat, nu se pierde nimic.
                 if (regenerabilLaStorno) {
                     if (!StergeDraftVechi(tinta, view, cheieHex)) {
-                        sarite++;
+                        Sare(view, "draftul uneltei rămas de la o rulare anterioară nu s-a putut șterge");
                         return StareImport.Sarit;
                     }
                     legaturi.Remove(cheie);
@@ -563,7 +690,7 @@ sealed class BuclaImport {
                         avert($"1C:{view}/{cheieHex}: draft rămas de la o rulare anterioară care NU se "
                             + $"poate șterge ({refuz}) — se lasă neatins, documentul rămâne neimportat. "
                             + "Rezolvă dependența și reia.");
-                        sarite++;
+                        Sare(view, "draft al unei rulări anterioare cu dependențe (nu se poate reface)");
                         return StareImport.Sarit;
                     }
                     draftVechi = tinta;
@@ -573,7 +700,8 @@ sealed class BuclaImport {
                 if (!regenerabilLaStorno) {
                     avert($"1C:{view}/{cheieHex}: documentul din bază e {stare} — sărit "
                         + "(importul nu re-operează un document stornat).");
-                    sarite++;
+                    Sare(view, "document stornat în bază (importul nu re-operează un stornat)",
+                        documentExista: true);
                     return StareImport.Sarit;
                 }
                 // Documentul uneltei, stornat deliberat (regenerarea 46f): legătura
@@ -599,7 +727,7 @@ sealed class BuclaImport {
             // mai bine decât să-l ștergem fără să-l putem înlocui.
             if (draftVechi != Guid.Empty)
                 return ReOpereaza(draftVechi, view, cheieHex);
-            sarite++;
+            Sare(view, motivFaraDraft ?? "sursa n-are ce importa pe cheia asta (motiv NEDECLARAT de handler)");
             return StareImport.Sarit;
         }
         // Draftul vechi pleacă abia acum, când înlocuitorul lui e construit (dar
@@ -607,7 +735,7 @@ sealed class BuclaImport {
         // nicio decizie.
         if (draftVechi != Guid.Empty) {
             if (!StergeDraftVechi(draftVechi, view, cheieHex)) {
-                sarite++;
+                Sare(view, "draftul rămas de la o rulare anterioară nu s-a putut șterge");
                 return StareImport.Sarit;
             }
             legaturi.Remove(cheie);
@@ -683,7 +811,7 @@ sealed class BuclaImport {
         var doc = os.GetObjectByKey<Document>(id);
         if (doc == null) {
             avert($"Legătură 1C:{view}/{cheieHex} către documentul {id}, negăsit la re-operare.");
-            sarite++;
+            Sare(view, "documentul legăturii nu s-a găsit la re-operare");
             return StareImport.Sarit;
         }
         var rezultat = Opereaza(os, doc, view, cheieHex);
@@ -751,6 +879,7 @@ sealed class BuclaImport {
 
     StareImport Esec(string view, string cheieHex, string faza, Exception ex) {
         esecuri++;
+        unitEsecuri++;
         // Excepțiile de persistență (EF) își țin cauza REALĂ în inner exception
         // („An error occurred while saving the entity changes" nu spune nimic):
         // se desfășoară tot lanțul, altfel diagnosticul cere un debugger.

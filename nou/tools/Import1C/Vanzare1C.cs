@@ -358,16 +358,80 @@ enum FelRand {
     Punte,
 }
 
+// Verdictul unei reguli de clasificare. `Acoperit` NU mai e o afirmație liberă:
+// poartă NUMELE acoperitorului (ce anume din planul Atlas postează rândul) și
+// eticheta de punte pe care handlerul o declară pentru cazul în care acoperitorul
+// LIPSEȘTE — vezi `Declara` pentru de ce.
+readonly record struct Verdict(FelRand Fel, string Eticheta, string Acoperitor);
+
+// Fabricile de verdicte: numele lor e contractul pe care îl citește handlerul.
+static class Rand {
+    // „Atlas postează rândul ăsta prin <acoperitor>". Dacă acoperitorul nu ajunge
+    // în planul care se materializează, rândul merge pe punte cu eticheta dată —
+    // deci fiecare afirmație de acoperire vine cu planul B declarat.
+    public static Verdict Acoperit(string acoperitor, string etichetaFaraAcoperitor) =>
+        new(FelRand.Acoperit, etichetaFaraAcoperitor, acoperitor);
+
+    public static Verdict Evaluat => new(FelRand.Evaluat, null, null);
+
+    public static Verdict Punte(string eticheta) => new(FelRand.Punte, eticheta, null);
+}
+
 // Perechea de conturi MAPATE a unui rând + clasificarea ei; ține și eticheta de
 // raport a punții, ca handlerul să spună O DATĂ ce înseamnă fiecare formă.
-sealed record RandClasificat(FlaxRandNota Rand, string Debit, string Credit, FelRand Fel, string Eticheta);
+sealed record RandClasificat(FlaxRandNota Rand, string Debit, string Credit, FelRand Fel,
+    string Eticheta, string Acoperitor);
 
 static class Clasificare1C {
+    public static readonly IReadOnlySet<string> Niciunul =
+        new HashSet<string>(StringComparer.Ordinal);
+
+    // Clasifică rândurile documentului și declară în punte ce trebuie declarat, în
+    // aceeași trecere (handlerele nu aveau niciodată ce face între cele două).
+    //
+    // `acoperitori` = acoperitorii pe care planul îi produce CHIAR — se calculează
+    // după planificare, din planul gata făcut. Aserțiunea sistemică (F1c): un rând
+    // declarat `Acoperit` printr-un acoperitor ABSENT nu mai e acoperit de nimeni,
+    // iar tăcerea de acolo e exact felul în care 17 facturi de ieșire pe an au
+    // dispărut fără urmă (nici document, nici punte, nici avertisment). Rândul
+    // trece pe punte cu eticheta declarată de handler; un handler care n-a declarat
+    // nici eticheta pică zgomotos — descoperirea unei forme noi rămâne decizie
+    // explicită (decizia 21), niciodată accident.
+    public static void Declara(Punte punte, Catalog cat, string view, string docId,
+            IEnumerable<FlaxRandNota> randuri, IReadOnlySet<string> acoperitori,
+            Func<FlaxRandNota, string, string, Verdict?> regula) {
+        foreach (var r in Clasifica(cat, view, docId, randuri, regula)) {
+            if (r.Fel == FelRand.Evaluat)
+                continue;
+            var eticheta = r.Eticheta;
+            if (r.Fel == FelRand.Acoperit) {
+                if (r.Acoperitor == null)
+                    throw new InvalidOperationException(
+                        $"Rândul {r.Rand.Linie} ({r.Debit} = {r.Credit}) al documentului "
+                        + $"{view}/{docId} e declarat acoperit fără să spună de CE — "
+                        + "regula trebuie să numească acoperitorul (Rand.Acoperit).");
+                if (acoperitori.Contains(r.Acoperitor)) {
+                    // Acoperit cu adevărat: ținta se declară fără etichetă, ca să se
+                    // anuleze în deltă cu `ActualAtlas` al handlerului.
+                    punte.Categoria(null).Tinta1C(r.Debit, r.Credit, r.Rand.Suma);
+                    continue;
+                }
+                if (eticheta == null)
+                    throw new InvalidOperationException(
+                        $"Rândul {r.Rand.Linie} ({r.Debit} = {r.Credit}, {r.Rand.Suma:N2} lei) al "
+                        + $"documentului {view}/{docId} se declara acoperit prin „{r.Acoperitor}”, "
+                        + "dar planul nu-l produce — iar handlerul n-a declarat nicio categorie de "
+                        + "punte pentru cazul ăsta (decizia 21: forma nouă se tranșează explicit).");
+            }
+            punte.Categoria(eticheta).Tinta1C(r.Debit, r.Credit, r.Rand.Suma);
+        }
+    }
+
     // Aplică lista de reguli (prima care se potrivește câștigă) și aruncă la
     // primul rând necunoscut — eșecul e per DOCUMENT (îl prinde `EsecPlanificare`).
-    public static List<RandClasificat> Clasifica(Catalog cat, string view, string docId,
+    static List<RandClasificat> Clasifica(Catalog cat, string view, string docId,
             IEnumerable<FlaxRandNota> randuri,
-            Func<FlaxRandNota, string, string, (FelRand Fel, string Eticheta)?> regula) {
+            Func<FlaxRandNota, string, string, Verdict?> regula) {
         var rezultat = new List<RandClasificat>();
         foreach (var r in randuri) {
             var debit = cat.Mapeaza(r.ContDebit);
@@ -377,19 +441,8 @@ static class Clasificare1C {
                     $"Rândul {r.Linie} ({r.ContDebit} = {r.ContCredit} → {debit} = {credit}, "
                     + $"{r.Suma:N2} lei) n-are corespondent declarat în handlerul {view} — "
                     + "formă nouă a sursei, de tranșat explicit (decizia 21).");
-            rezultat.Add(new RandClasificat(r, debit, credit, fel.Fel, fel.Eticheta));
+            rezultat.Add(new RandClasificat(r, debit, credit, fel.Fel, fel.Eticheta, fel.Acoperitor));
         }
         return rezultat;
-    }
-
-    // Ținta 1C a rândurilor care NU sunt evaluate de Atlas: cele acoperite se vor
-    // anula cu declarațiile `ActualAtlas` ale handlerului, cele de punte rămân și
-    // devin nota. Rândurile `Evaluat` nu se declară deloc.
-    public static void DeclaraTinte(Punte punte, IEnumerable<RandClasificat> randuri) {
-        foreach (var r in randuri) {
-            if (r.Fel == FelRand.Evaluat)
-                continue;
-            punte.Categoria(r.Eticheta).Tinta1C(r.Debit, r.Credit, r.Rand.Suma);
-        }
     }
 }
