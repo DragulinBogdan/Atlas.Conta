@@ -58,6 +58,12 @@ var recreeaza = false;
 // `--diag=<hexProdus>` = interogare de diagnostic pe baza existentă (nu importă
 // nimic): mișcările de stoc ale unui produs 1C, cu documentul și gestiunea.
 string diagProdus = null;
+// `--deblocheaza <view>:<cheieHex>[,…]` (repetabil) = comanda de OPERATOR care dă
+// înapoi artefactele unei rulări anterioare pentru un document-sursă anume (D3):
+// puntea operată se stornează, drafturile se șterg, legăturile pleacă, iar
+// rularea următoare replanifică documentul integral. Nu se face automat:
+// dezlegarea unei punți vechi înseamnă riscul dublei postări, deci cere o decizie.
+var deblocari = new List<(string View, string Cheie)>();
 for (var i = 0; i < args.Length; i++) {
     var arg = args[i];
     if (!arg.StartsWith("--")) {
@@ -85,6 +91,14 @@ for (var i = 0; i < args.Length; i++) {
                 return 2;
             }
             break;
+        case "--deblocheaza":
+            valoare ??= i + 1 < args.Length ? args[++i] : null;
+            if (valoare == null || !Deblocare.Parseaza(valoare, deblocari)) {
+                Console.Error.WriteLine("--deblocheaza cere <view>:<cheieHex> (repetabil sau "
+                    + $"separat prin virgulă); primit „{valoare}”.");
+                return 2;
+            }
+            break;
         case "--pana-la":
             valoare ??= i + 1 < args.Length ? args[++i] : null;
             if (!int.TryParse(valoare, out panaLa) || panaLa is < 1 or > 12) {
@@ -94,7 +108,8 @@ for (var i = 0; i < args.Length; i++) {
             break;
         default:
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
-                + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--recreeaza]");
+                + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--recreeaza] "
+                + "[--deblocheaza <view>:<cheie>]");
             return 2;
     }
 }
@@ -222,6 +237,18 @@ var preflight = PreFlight.Executa(flax, dataDeschidere.Year, panaLa, mapari, pla
 
 if (smokeCititori)
     SmokeCititori.Executa(flax, dataDeschidere.Year, 1, Check);
+
+// ======================= Faza DEBLOCARE (D3, opt-in) =======================
+// Rulează după pre-flight și ÎNAINTEA oricărei faze care citește baza în memorie
+// (catalogul de loturi, indexurile buclei): artefactele date înapoi trebuie să
+// dispară înainte ca cineva să le indexeze. Un refuz oprește rularea — nu se
+// importă peste o deblocare pe jumătate făcută.
+if (deblocari.Count > 0 && !Deblocare.Executa(provider, dataDeschidere.Year, deblocari, Avert, Check)) {
+    foreach (var a in avertismente)
+        Console.WriteLine($"AVERT {a}");
+    Console.Error.WriteLine("\nDeblocarea a eșuat — importul nu pornește.");
+    return 1;
+}
 
 // ======================= Faza Nomenclatoare (pasul 2) =======================
 // Nomenclatoarele MICI se importă integral: sunt laturi de document (gestiuni,

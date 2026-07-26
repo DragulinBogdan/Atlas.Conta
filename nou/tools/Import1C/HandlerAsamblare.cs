@@ -74,8 +74,17 @@ static class HandlerAsamblare {
                 var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
                 if (randuri.Count == 0)
                     return;
+                // Gardul reluării se calculează DIN SURSĂ, ca la vânzare: asamblarea
+                // poate produce DOUĂ documente (ASM + transferul produselor), iar o
+                // rulare întreruptă între ele lăsa transferul pierdut pe veci —
+                // cheia lui nu intra în gard, deci a doua rulare nu mai planifica și
+                // materializarea rămânea fără plan. Depozitul produselor față de cel
+                // al consumurilor e derivabil fără planificare.
+                var cereTransfer = CereTransfer(bucla.Catalog, h, randuri,
+                    Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []));
                 Plan plan = null;
-                if (!bucla.EsteCunoscut(view, h.Id)) {
+                if (!bucla.EsteCunoscut(view, h.Id)
+                        || (cereTransfer && !bucla.EsteCunoscut(view, h.Id + "#btr"))) {
                     try {
                         plan = Planifica(ctx, view, h, randuri);
                     }
@@ -99,6 +108,26 @@ static class HandlerAsamblare {
                             os => TransferaProduse(os, bucla.Catalog, plan, h.Numar));
                 }
             });
+    }
+
+    // Produsele se nasc în gestiunea consumurilor (regula ASM) și pleacă cu un
+    // transfer când sursa le pune în alt depozit — vezi `Plan.CereTransfer`. Aici
+    // se răspunde la aceeași întrebare FĂRĂ planificare, doar din rândurile-sursă:
+    // un depozit nelegat de o gestiune întoarce „da" (conservator), fiindcă
+    // planificarea e cea care are dreptul să eșueze zgomotos pe el.
+    static bool CereTransfer(Catalog cat, FlaxAsamblare h, IReadOnlyList<FlaxRandNota> randuri,
+            Dictionary<(int, int), Dictionary<string, FlaxRef>> index) {
+        foreach (var r in randuri) {
+            var consum = index.Ia(r.Linie, Subconto.Credit, Subconto.Depozite)?.Id
+                ?? h.DepozitSubasambleId ?? "";
+            var produse = index.Ia(r.Linie, Subconto.Debit, Subconto.Depozite)?.Id
+                ?? h.DepozitArticoleId ?? "";
+            if (!cat.Gestiuni.TryGetValue(consum, out var gc) || !cat.Gestiuni.TryGetValue(produse, out var gp))
+                return true;
+            if (gc != gp)
+                return true;
+        }
+        return false;
     }
 
     static Plan Planifica(ContextLuna ctx, string view, FlaxAsamblare h,

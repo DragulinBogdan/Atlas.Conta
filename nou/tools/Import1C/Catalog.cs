@@ -406,6 +406,21 @@ sealed class Catalog {
     // lotului: Tipul rezolvat de `MiscareStoc1C.Rezolva` E cel al produsului,
     // deci fallback-ul n-are ce corecta și ar putea doar să mintă.
 
+    // Lotul a dispărut din bază (draftul care l-a născut s-a șters la reluare —
+    // D4): indexul din memorie trebuie să-l uite pe loc, altfel un pin de mai
+    // târziu l-ar rezolva și operarea ar pica pe un lot inexistent. Se curăță
+    // toate intrările care trimit la el — cheia canonică ȘI aliasurile.
+    public void UitaLot(Guid lotId) {
+        foreach (var cheie in loturi.Where(x => x.Value.Id == lotId).Select(x => x.Key).ToList())
+            loturi.Remove(cheie);
+        foreach (var (prefix, lista) in loturiPePrefix.ToList()) {
+            lista.RemoveAll(l => l.Id == lotId);
+            if (lista.Count == 0)
+                loturiPePrefix.Remove(prefix);
+        }
+        loturiPeId.Remove(lotId);
+    }
+
     // Lotul născut de o linie de import (factură de intrare, plus de inventar):
     // legătura se scrie în ACELAȘI ObjectSpace cu documentul, deci în același
     // commit — ca legătura documentului (§12.4).

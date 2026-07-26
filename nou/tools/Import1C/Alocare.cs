@@ -52,6 +52,20 @@ sealed class AlocareIesire {
     // diferențele pe care ea le-a produs.
     public HashSet<Guid> ProduseRealocate { get; } = [];
 
+    // Marcajele DECISE, dar încă nescrise. Alocarea se calculează în
+    // ObjectSpace-ul de PLANIFICARE, care se aruncă fără commit (e o interogare de
+    // solduri, nu o scriere) — o legătură scrisă acolo n-ajungea niciodată în bază
+    // (măsurat: 0 rânduri „1C:ProdusRealocat" după rulări care chiar realocaseră).
+    // Deci marcajul se AMÂNĂ aici și se scrie în ObjectSpace-ul care se comite —
+    // al documentului, odată cu draftul și legătura lui (§12.4).
+    readonly HashSet<Guid> inAsteptare = [];
+
+    // Marcaje rămase nescrise fiindcă unitatea de import n-a materializat nimic
+    // (planificare urmată de eșec sau de skip): se abandonează la finalul unității,
+    // ca evidența să nu rămână ÎNAINTEA faptelor. Se numără — o cifră mare
+    // înseamnă că se planifică mult și se scrie puțin.
+    public int MarcajeAbandonate { get; private set; }
+
     public const string ViewRealocate = "ProdusRealocat";
 
     public void Incarca(IObjectSpace os) {
@@ -59,12 +73,29 @@ sealed class AlocareIesire {
             ProduseRealocate.Add(tinta);
     }
 
-    // Marchează produsul, în ObjectSpace-ul documentului curent: legătura se
-    // comite odată cu el, deci o rulare întreruptă nu lasă evidența în urma
-    // faptelor.
-    void Marcheaza(IObjectSpace os, Guid produsId) {
-        if (ProduseRealocate.Add(produsId))
-            Legaturi.Leaga(os, ViewRealocate, produsId.ToString(), produsId);
+    // Marchează produsul — decizia se ia la alocare, scrierea se amână.
+    void Marcheaza(Guid produsId) {
+        if (!ProduseRealocate.Contains(produsId))
+            inAsteptare.Add(produsId);
+    }
+
+    // Scrie marcajele amânate în ObjectSpace-ul documentului, ÎNAINTEA commit-ului
+    // lui. Setul din memorie se actualizează abia la `Confirma` (după commit): un
+    // commit picat nu are voie să lase evidența „scrisă" doar în RAM.
+    public void Persista(IObjectSpace os) {
+        foreach (var produsId in inAsteptare)
+            if (!ProduseRealocate.Contains(produsId))
+                Legaturi.Leaga(os, ViewRealocate, produsId.ToString(), produsId);
+    }
+
+    public void Confirma() {
+        ProduseRealocate.UnionWith(inAsteptare);
+        inAsteptare.Clear();
+    }
+
+    public void RenuntaLaNepersistate() {
+        MarcajeAbandonate += inAsteptare.Count;
+        inAsteptare.Clear();
     }
 
     int realocariLaStart;
@@ -141,14 +172,14 @@ sealed class AlocareIesire {
         if (lotDoritId != null && inainteDeFifo > ramas) {
             Realocari++;
             CantitateRealocata += inainteDeFifo - ramas;
-            Marcheaza(os, produsId);
+            Marcheaza(produsId);
         }
         // Ieșirea neacoperită (returul fără marfă în stoc) atinge la fel evaluarea
         // produsului: 1C a scos marfa la costul lotului lui, Atlas n-a scos-o
         // deloc. Contractul lunar are nevoie de mulțimea asta ca să poată numi
         // diferența, nu s-o presupună.
         if (ramas > 0)
-            Marcheaza(os, produsId);
+            Marcheaza(produsId);
 
         Nedescarcat += ramas;
         return (alocari, ramas);

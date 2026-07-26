@@ -283,6 +283,19 @@ static class Descarcare1C {
 // Ordinea handlerelor (intrările înaintea ieșirilor — Bucla.cs) face cazul să nu
 // mai apară pe datele reale; gardianul rămâne fiindcă „nu mai apare pe ianuarie"
 // nu e o garanție, iar simptomul ar fi o dublare TĂCUTĂ de cost.
+//
+// UNDE SE APLICĂ (verificat la lotul de robustețe, pasul 3): exact acolo unde o
+// punte poate purta costul unei mișcări de stoc nematerializate — descărcarea
+// (`Descarcare1C.Planifica`: rând de cost nerezolvabil / fără acoperire) și
+// returul la furnizor. Bonul de consum și transferul doar AVERTIZEAZĂ la lipsa de
+// acoperire (nu transcriu nimic), iar asamblarea nu scrie punte deloc: rândurile
+// ei sunt 371 = 371 pe același simbol prin construcție, orice altă formă e eșec
+// zgomotos la planificare. Deci gardianul n-are ce apăra acolo — nu se „aplică
+// pentru simetrie", s-ar bloca documente fără motiv.
+//
+// Ieșirea din blocaj nu mai e reconstrucția întregii baze: `--deblocheaza
+// <view>:<cheie>` (Reluare.cs) dă înapoi artefactele rulării anterioare pentru
+// documentul-sursă și îl lasă să se replanifice integral.
 static class Reluare1C {
     public static int DocumenteBlocate { get; private set; }
 
@@ -292,15 +305,20 @@ static class Reluare1C {
         DocumenteBlocate++;
         bucla.Avert($"1C:{view}/{cheieDocument}: documentul de stoc lipsește, dar puntea sursei a fost "
             + "scrisă de o rulare ANTERIOARĂ (partea neacoperită e deja transcrisă contabil acolo) — "
-            + "nu se materializează acum, ca să nu se posteze costul de două ori. Dacă mișcarea de "
-            + "stoc e necesară, reimportă luna cu --recreeaza.");
+            + "nu se materializează acum, ca să nu se posteze costul de două ori. Deblocare țintită: "
+            + $"--deblocheaza {view}:{CheieSursa(cheieDocument)}");
         return true;
     }
+
+    // Cheia documentului de stoc poartă sufixele handlerului („#dsc@…", „@…");
+    // deblocarea lucrează pe cheia SURSEI, care le adună pe toate.
+    static string CheieSursa(string cheieDocument) =>
+        cheieDocument.IndexOfAny(['#', '@']) is var i && i > 0 ? cheieDocument[..i] : cheieDocument;
 
     public static void Raporteaza() {
         if (DocumenteBlocate > 0)
             Console.WriteLine($"  {DocumenteBlocate} documente de stoc blocate de puntea unei rulări "
-                + "anterioare (vezi avertismentele) — luna se reimportă cu --recreeaza.");
+                + "anterioare (vezi avertismentele) — deblocare țintită cu --deblocheaza <view>:<cheie>.");
     }
 }
 

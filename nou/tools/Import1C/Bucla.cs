@@ -224,14 +224,19 @@ sealed class BuclaImport {
     public void EsecPlanificare(string view, string cheie, Exception ex) =>
         Esec(view, cheie, "planificarea", ex);
 
-    // Documentul e deja cunoscut (importat sau lăsat Draft de o rulare
-    // întreruptă)? Handlerele o întreabă ca să NU replanifice degeaba la reluare;
-    // decizia propriu-zisă (skip / re-operare) rămâne a lui `ImportaDocument`.
-    // O legătură ORFANĂ (documentul a dispărut din bază) nu contează ca
-    // „cunoscut": `Executa` o șterge și cere draftul din nou, deci planul trebuie
-    // să existe — altfel reluarea ar intra în materializare cu mâna goală.
+    // Documentul e deja AȘEZAT (operat sau stornat)? Handlerele o întreabă ca să
+    // NU replanifice degeaba la reluare; decizia propriu-zisă (skip / ștergere +
+    // reimport) rămâne a lui `ImportaDocument`.
+    //
+    // Un DRAFT nu contează ca așezat (defectul D4 al lotului de robustețe): draftul
+    // rămas de la o operare eșuată poartă alocarea de atunci, iar re-operarea lui ar
+    // rula-o peste o stare de stoc schimbată. Se replanifică, iar `Executa` șterge
+    // draftul vechi și îl reimportă întreg. Același răspuns îl cere și o legătură
+    // ORFANĂ (documentul a dispărut din bază): planul trebuie să existe, altfel
+    // reluarea ar intra în materializare cu mâna goală.
     public bool EsteCunoscut(string view, string cheie) =>
-        legaturi.TryGetValue((Legaturi.Tabela(view), cheie), out var tinta) && stari.ContainsKey(tinta);
+        legaturi.TryGetValue((Legaturi.Tabela(view), cheie), out var tinta)
+            && stari.TryGetValue(tinta, out var stare) && stare != StareDocument.Draft;
 
     // Documentul Atlas al unei chei deja importate — pasul 4 are nevoie de el ca
     // FK (descărcarea de gestiune poartă `DocumentSursa` = factura de ieșire,
@@ -328,6 +333,13 @@ sealed class BuclaImport {
                 // verdictul rămâne al lunii.
                 Esec(u.Tip, u.Numar, "importul documentului", ex);
             }
+            finally {
+                // Marcajele supapei decise în planificarea unității, dar rămase
+                // nescrise (nimic nu s-a materializat): se abandonează aici, ca
+                // evidența să nu treacă ÎNAINTEA faptelor și nici să nu se lipească
+                // de commit-ul unității următoare.
+                Alocare.RenuntaLaNepersistate();
+            }
         }
 
         Imperecheri(ctx);
@@ -344,6 +356,11 @@ sealed class BuclaImport {
             contract.Picate, contract.TvaDePlata, durataContract);
         Handlere.Raporteaza();
         ContorPunti.Raporteaza();
+        if (DrafturiSterse > 0 || DrafturiRefuzate > 0 || Alocare.MarcajeAbandonate > 0)
+            Console.WriteLine($"  Reluare (cumulat pe rulare): {DrafturiSterse} drafturi ale rulărilor "
+                + $"anterioare șterse și reimportate, {DrafturiRefuzate} refuzate, "
+                + $"{Alocare.MarcajeAbandonate} marcaje de realocare abandonate (planificare fără "
+                + "materializare).");
         if (SurseFaraCorespondent > 0)
             Console.WriteLine($"  {SurseFaraCorespondent} documente-sursă fără corespondent în Atlas "
                 + "(nici document, nici punte) — se replanifică la fiecare rulare, fără efect.");
@@ -471,6 +488,12 @@ sealed class BuclaImport {
     StareImport Executa(string view, string cheieHex, Func<IObjectSpace, Document> construiesteDraft,
             bool regenerabilLaStorno = false) {
         var cheie = (Legaturi.Tabela(view), cheieHex);
+        // Draftul rămas de la o rulare anterioară, de dat înapoi înaintea
+        // reimportului (D4). Se ține până DUPĂ construcția draftului nou: dacă
+        // apelantul nu poate reconstrui (n-a planificat — cheia lui nu intră în
+        // gardul de replanificare al handlerului), nu se șterge nimic și rămâne
+        // comportamentul de până acum, re-operarea.
+        var draftVechi = Guid.Empty;
         if (legaturi.TryGetValue(cheie, out var tinta)) {
             if (!stari.TryGetValue(tinta, out var stare)) {
                 // Legătură fără document: baza a fost golită parțial. Se șterge
@@ -487,8 +510,36 @@ sealed class BuclaImport {
                 sarite++;
                 return StareImport.Sarit;
             }
-            else if (stare == StareDocument.Draft)
-                return ReOpereaza(tinta, view, cheieHex);
+            else if (stare == StareDocument.Draft) {
+                // D4: alocarea draftului e învechită. Documentele UNELTEI (ITV) se
+                // dau înapoi ÎNAINTE de reconstrucție — generatorul lor își face
+                // idempotența pe închiderea VIE a lunii (46c), deci un draft
+                // existent l-ar face să întoarcă null și luna ar rămâne pe cifrele
+                // rulării eșuate. Documentele SURSEI se reconstruiesc întâi (mai
+                // jos): dacă handlerul n-a planificat, nu se pierde nimic.
+                if (regenerabilLaStorno) {
+                    if (!StergeDraftVechi(tinta, view, cheieHex)) {
+                        sarite++;
+                        return StareImport.Sarit;
+                    }
+                    legaturi.Remove(cheie);
+                }
+                else {
+                    // Gardianul se întreabă ÎNAINTE de reconstrucție (interogare
+                    // read-only): un refuz de aici ar lăsa altfel în urmă un draft
+                    // nou pe jumătate construit și loturi indexate care n-ajung
+                    // niciodată în bază.
+                    var refuz = Drafturi.Refuz(provider, tinta);
+                    if (refuz != null) {
+                        avert($"1C:{view}/{cheieHex}: draft rămas de la o rulare anterioară care NU se "
+                            + $"poate șterge ({refuz}) — se lasă neatins, documentul rămâne neimportat. "
+                            + "Rezolvă dependența și reia.");
+                        sarite++;
+                        return StareImport.Sarit;
+                    }
+                    draftVechi = tinta;
+                }
+            }
             else {
                 if (!regenerabilLaStorno) {
                     avert($"1C:{view}/{cheieHex}: documentul din bază e {stare} — sărit "
@@ -513,8 +564,24 @@ sealed class BuclaImport {
             return Esec(view, cheieHex, "construcția draftului", ex);
         }
         if (doc == null) {
+            // Apelantul n-a putut reconstrui (handlerul n-a planificat pentru cheia
+            // asta — cazul cheilor secundare care nu intră în gardul lui). Draftul
+            // vechi rămâne cum era și se re-operează: nu e ce vrea D4, dar e strict
+            // mai bine decât să-l ștergem fără să-l putem înlocui.
+            if (draftVechi != Guid.Empty)
+                return ReOpereaza(draftVechi, view, cheieHex);
             sarite++;
             return StareImport.Sarit;
+        }
+        // Draftul vechi pleacă abia acum, când înlocuitorul lui e construit (dar
+        // încă necomis): între ștergere și commit-ul de mai jos nu mai poate cădea
+        // nicio decizie.
+        if (draftVechi != Guid.Empty) {
+            if (!StergeDraftVechi(draftVechi, view, cheieHex)) {
+                sarite++;
+                return StareImport.Sarit;
+            }
+            legaturi.Remove(cheie);
         }
         // Cheia scrisă în legătură e ID-ul obiectului ÎNAINTE de commit: EF îl
         // generează la `Add` (valoare reală, nu temporară, pentru chei Guid), iar
@@ -526,11 +593,15 @@ sealed class BuclaImport {
                 + "poate scrie în același commit cu draftul (§12.4).");
         try {
             Legaturi.Leaga(os, view, cheieHex, doc.ID);
+            // Evidența supapei de alocare merge în ACELAȘI commit cu documentul
+            // (altfel n-ajunge nicăieri — ObjectSpace-ul de planificare se aruncă).
+            Alocare.Persista(os);
             os.CommitChanges();
         }
         catch (Exception ex) {
             return Esec(view, cheieHex, "commit-ul draftului + legăturii", ex);
         }
+        Alocare.Confirma();
         legaturi[cheie] = doc.ID;
         stari[doc.ID] = StareDocument.Draft;
 
@@ -538,6 +609,36 @@ sealed class BuclaImport {
         if (rezultat == StareImport.Importat)
             documente++;
         return rezultat;
+    }
+
+    // D4: draftul unei rulări eșuate se dă înapoi INTEGRAL (documentul, liniile,
+    // loturile născute de ele, legăturile lor) — vezi `Drafturi`. Indexurile din
+    // memorie se curăță odată cu baza: `stari`/`copiiAutogenerati` (altfel copilul
+    // șters ar fi „operat" mai târziu) și indexul de loturi al catalogului (altfel
+    // un pin de mai târziu ar rezolva pe un lot inexistent).
+    public int DrafturiSterse { get; private set; }
+    public int DrafturiRefuzate { get; private set; }
+
+    bool StergeDraftVechi(Guid id, string view, string cheieHex) {
+        var rezultat = Drafturi.Sterge(provider, id, out var refuz);
+        if (rezultat == null) {
+            DrafturiRefuzate++;
+            avert($"1C:{view}/{cheieHex}: draftul rămas de la o rulare anterioară NU s-a putut șterge "
+                + $"({refuz}) — documentul rămâne neimportat.");
+            return false;
+        }
+        DrafturiSterse++;
+        avert($"1C:{view}/{cheieHex}: draft rămas de la o rulare anterioară (alocare învechită) — "
+            + $"șters și reimportat: {rezultat.Documente} documente, {rezultat.Linii} linii, "
+            + $"{rezultat.Loturi} loturi, {rezultat.Registre} rânduri de registru, "
+            + $"{rezultat.Legaturi} legături.");
+        foreach (var lotId in rezultat.LoturiSterse)
+            Catalog.UitaLot(lotId);
+        foreach (var copil in copiiAutogenerati.GetValueOrDefault(id) ?? new List<Guid>())
+            stari.Remove(copil);
+        copiiAutogenerati.Remove(id);
+        stari.Remove(id);
+        return true;
     }
 
     StareImport ReOpereaza(Guid id, string view, string cheieHex) {
