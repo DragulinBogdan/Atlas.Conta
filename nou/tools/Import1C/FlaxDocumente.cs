@@ -851,12 +851,13 @@ partial class FlaxDb {
             Fereastra(an, luna));
 
     // ---- Antete din tabelele GENERICE 1C (pasul 5) ----
-    // Două tipuri care POSTEAZĂ n-au niciun view generat (`TipuriFaraColoana`):
+    // Două tipuri care POSTEAZĂ n-aveau niciun view generat (`TipuriFaraColoana`):
     // încasarea pe card (7633, 1.137 documente pe 2025) și reevaluarea de
-    // imobilizări (6336, 1 document). Contractul de coloane (§2) nu are ce oferi
-    // acolo, așa că se citește structura generică — dar NUMAI antetul (id, număr,
-    // dată): tot restul (rândurile contabile, subconto-ul) vine din aceleași
-    // view-uri ca la orice alt tip, deci excepția rămâne cât se poate de mică.
+    // imobilizări (6336, 1 document). Generația de view-uri din 26.07.2026 le-a
+    // adăugat pe amândouă — antetul se citește tipizat când view-ul există cu
+    // flag de postare, iar structura generică rămâne DOAR fallback pentru o bază
+    // cu view-uri vechi. Restul (rândurile contabile, subconto-ul) venea oricum
+    // din aceleași view-uri ca la orice alt tip, deci excepția era doar antetul.
     //
     // Două capcane ale stratului raw, ambele verificate pe date:
     //  * `_Date_Time` NU are corecția de an aplicată (view-urile o fac) — anii
@@ -868,6 +869,9 @@ partial class FlaxDb {
     // Baza fizică (`flax`) e ALTA decât cea a view-urilor (`EServicesFlx`), pe
     // același server; referința cross-database e deliberată și izolată aici.
     const string BazaRaw = "flax.dbo";
+
+    public List<FlaxDocumentSimplu> AnteteFostRaw(string view, int numarTabela, int an, int luna) =>
+        ViewPostabil(view) ? Antet(view, an, luna) : AnteteRaw(numarTabela, an, luna);
 
     public List<FlaxDocumentSimplu> AnteteRaw(int numarTabela, int an, int luna) {
         var data = $"case when year(h._Date_Time) > 3000 then dateadd(year, -2000, h._Date_Time) "
@@ -1007,6 +1011,7 @@ partial class FlaxDb {
         "RaportDeVanzariCuAmanunt", "AvizDeIesire", "AvizDeIntrare",
         "ExtrasDeCont", "Plata", "Incasare", "Compensare",
         "Operatia", "Salarii", "CasareMF", "InchidereLunaDeExercitiu",
+        "IncasareCard", "ReevaluareMF",
     ];
 
     public List<FlaxVolumAntet> VolumeAntete(int an) {

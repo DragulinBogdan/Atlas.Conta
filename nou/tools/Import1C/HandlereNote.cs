@@ -262,7 +262,7 @@ static class HandlereNoteSimple {
             ctx => ctx.Bucla.Flax.Importuri(ctx.An, ctx.Luna)),
         // Fără view generat: TypeRef 0x18C0 ⇒ tabela generică `_Document6336`.
         new("ReevaluareMF", "Reevaluare de imobilizări (notă contabilă)", false, false,
-            ctx => ctx.Bucla.Flax.AnteteRaw(6336, ctx.An, ctx.Luna)),
+            ctx => ctx.Bucla.Flax.AnteteFostRaw("ReevaluareMF", 6336, ctx.An, ctx.Luna)),
     ];
 
     public static IEnumerable<HandlerTip> Handlere =>

@@ -467,7 +467,7 @@ static class HandlerCard {
         var cat = ctx.Bucla.Catalog;
         var contPropriuId = cat.ContPropriuCard();
         var simbol = cat.SimbolContPropriu(contPropriuId);
-        return ctx.Bucla.Flax.AnteteRaw(Tabela, ctx.An, ctx.Luna)
+        return ctx.Bucla.Flax.AnteteFostRaw(View, Tabela, ctx.An, ctx.Luna)
             .Select(h => new AntetTrezorerie(h.Id, h.Numar, DateOnly.FromDateTime(h.Data),
                 contPropriuId, simbol, TipInstrumentPlata.OrdinPlata, null, h.Data))
             .ToList();

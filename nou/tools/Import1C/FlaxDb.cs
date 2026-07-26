@@ -267,13 +267,15 @@ partial class FlaxDb(string connectionString) : IDisposable {
         "RaportDeVanzariCuAmanunt", "AvizDeIesire", "AvizDeIntrare",
         "Operatia", "Salarii", "CasareMF", "InchidereLunaDeExercitiu", "Import",
         "BonFiscal", "Stornare", "IntroducereaSoldurilor", "IntroducereSolduriInitialeMF",
+        "IncasareCard", "ReevaluareMF",
     ];
 
-    // Tipurile pe care view-urile NU le expun deloc (nici coloană tipizată, nici
-    // view propriu), dar care POSTEAZĂ — se citesc din tabelele generice 1C
-    // (`AnteteRaw`, pasul 5). Numele e al nostru, nu al sursei: contractul de
-    // coloane (§2) nu are ce oferi aici, deci identitatea rămâne TypeRef-ul, iar
-    // numele e doar eticheta sub care handlerul se înregistrează în buclă.
+    // Tipurile pe care view-urile VECHI nu le expuneau deloc (nici coloană
+    // tipizată, nici view propriu), dar care POSTEAZĂ. Generația 26.07.2026 le-a
+    // adăugat (view + coloană tipizată — sunt acum și în `TipuriCuColoana`, iar
+    // antetul se citește tipizat prin `AnteteFostRaw`); dicționarul rămâne DOAR
+    // fallback pe o bază cu view-uri vechi: un TypeRef fără coloană tipizată își
+    // ia numele de aici, iar antetul cade pe structura generică (`AnteteRaw`).
     // Convenția 1C care le leagă (verificată empiric): TypeRef-ul E numărul
     // tabelei — 0x1DD1 = 7633 ⇒ `_Document7633`, 0x18C0 = 6336 ⇒ `_Document6336`.
     public static readonly IReadOnlyDictionary<string, (string Nume, int Tabela)> TipuriFaraColoana =
