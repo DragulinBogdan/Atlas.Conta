@@ -324,7 +324,7 @@ static class ReconciliereLuna {
             Console.WriteLine($"     registre fără corespondent în BalantaNivel3, excluse din contract: "
                 + string.Join(", ", altRegistru.Select(x => $"{x.Registru} {x.Q:N3} buc / {x.V:N2} lei")));
 
-        var produsHex = Reconciliere.Inverseaza(os, "Nomenclator", avert);
+        var produsHex = Reconciliere.InverseazaProduse(os, avert);
         var depozitHex = Reconciliere.Inverseaza(os, "Depozite", avert);
 
         var db = new Dictionary<(string P, string D), (decimal Q, decimal V)>();

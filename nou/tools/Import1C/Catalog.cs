@@ -63,6 +63,12 @@ sealed class Catalog {
     // Prefixul (document creator × nomenclator) → loturile lui, pentru pin-urile
     // care vin cu ALT cont decât cel de naștere (reclasificările BTR).
     readonly Dictionary<string, List<LotImport>> loturiPePrefix = new(StringComparer.Ordinal);
+    // Lotul după ID-ul Atlas: aliasurile trebuie să trimită la simbolul CANONIC,
+    // nu la cel din cheia lor. De când produsul e (nomenclator × cont), simbolul
+    // lotului determină și Tipul liniei de ieșire — un alias care ar raporta
+    // simbolul lui ar trimite linia pe produsul geamăn greșit, iar motorul ar
+    // refuza-o („Lotul liniei aparține unui produs cu alt Tip decât Tipul liniei").
+    readonly Dictionary<Guid, LotImport> loturiPeId = [];
 
     public int TipuriMaterialNoi { get; private set; }
     public int LoturiRezolvatePePrefix { get; private set; }
@@ -114,13 +120,17 @@ sealed class Catalog {
         foreach (var (cheie, id) in Legaturi.Incarca(os, "Lot"))
             IndexeazaLot(cheie, id);
         // Aliasurile de reclasificare NU intră în index cu simbolul lor (ar minți
-        // despre registrul în care stă lotul): trimit la lotul canonic, cu
-        // simbolul LUI. Un alias fără canonic încărcat (lot creat de altă rulare)
-        // rămâne pe simbolul din cheie — cazul degenerat, contorizat mai jos.
-        var canonicePeId = loturi.Values.GroupBy(l => l.Id).ToDictionary(g => g.Key, g => g.First());
-        foreach (var (cheie, id) in Legaturi.Incarca(os, "LotAlias"))
-            loturi.TryAdd(cheie, canonicePeId.TryGetValue(id, out var canonic)
-                ? canonic : new LotImport(id, Simbol(cheie)));
+        // despre registrul în care stă lotul ȘI despre produsul lui): trimit la
+        // lotul canonic, cu simbolul LUI. Un alias al cărui canonic lipsește n-ar
+        // trebui să existe (aliasurile se scriu doar pentru loturi deja legate),
+        // deci nu se inventează un simbol — se raportează și se sare.
+        foreach (var (cheie, id) in Legaturi.Incarca(os, "LotAlias")) {
+            if (loturiPeId.TryGetValue(id, out var canonic))
+                loturi.TryAdd(cheie, canonic);
+            else
+                avert($"Alias de lot 1C:LotAlias/{cheie} → {id} fără lot canonic în index — "
+                    + "ignorat (simbolul lui nu se poate deduce din cheia aliasului).");
+        }
     }
 
     // Contul propriu al ÎNCASĂRILOR PE CARD (5125 „Sume în curs de decontare"):
@@ -363,6 +373,7 @@ sealed class Catalog {
     void IndexeazaLot(string cheie, Guid id) {
         var lot = new LotImport(id, Simbol(cheie));
         loturi[cheie] = lot;
+        loturiPeId[id] = lot;
         var prefix = Prefix(cheie);
         if (!loturiPePrefix.TryGetValue(prefix, out var lista))
             loturiPePrefix[prefix] = lista = [];
@@ -387,30 +398,13 @@ sealed class Catalog {
         return null;
     }
 
-    // TipMaterial-ul cu care se culege o linie de STOC: cel al PRODUSULUI, nu cel
-    // derivat din contul rândului 1C. Două motive, amândouă scoase la iveală de
-    // prima rulare a pasului 4:
-    //  * produsul se creează la prima referință, cu Tipul de atunci
-    //    (`AsiguraProdus`), iar o referință ulterioară de pe alt cont — o
-    //    reclasificare 1C — ar da alt Tip; tipurile P2/1C-a validează coerența
-    //    linie ↔ produsul lotului (38c/46d), deci sursa de adevăr e produsul;
-    //  * Tipul decide și REGISTRUL de stoc (Magazie/Mărfuri): dacă alocarea
-    //    verifică soldul într-un registru și motorul scrie mișcarea în celălalt,
-    //    gardianul de sold pică pe bună dreptate.
-    // Memo pe produs (produsele se repetă masiv între documente).
-    public TipInfo TipAlProdusului(IObjectSpace os, Guid produsId, TipInfo implicit_) {
-        if (tipuriPeProdus.TryGetValue(produsId, out var cunoscut))
-            return cunoscut ?? implicit_;
-        var tipId = os.GetObjectsQuery<Produs>()
-            .Where(p => p.ID == produsId)
-            .Select(p => p.TipMaterialId)
-            .FirstOrDefault();
-        var tip = tipId == null ? null : tipuri.Values.FirstOrDefault(t => t.Id == tipId);
-        tipuriPeProdus[produsId] = tip;
-        return tip ?? implicit_;
-    }
-
-    readonly Dictionary<Guid, TipInfo> tipuriPeProdus = [];
+    // NOTĂ (amendament la 47d, vezi `ImportLaCerere`): aici a stat
+    // `TipAlProdusului` — fallback-ul care lua Tipul liniei de STOC din produs,
+    // fiindcă un produs multi-cont purta Tipul contului dominant și nu putea
+    // corespunde tuturor loturilor lui. De când identitatea produsului include
+    // simbolul de cont, produsul lotului are ÎNTOTDEAUNA Tipul simbolului
+    // lotului: Tipul rezolvat de `MiscareStoc1C.Rezolva` E cel al produsului,
+    // deci fallback-ul n-are ce corecta și ar putea doar să mintă.
 
     // Lotul născut de o linie de import (factură de intrare, plus de inventar):
     // legătura se scrie în ACELAȘI ObjectSpace cu documentul, deci în același
@@ -440,9 +434,14 @@ sealed class Catalog {
     // ObjectSpace-ul documentului, deci în ACELAȘI commit cu lotul — altfel o
     // rulare întreruptă între cele două ar lăsa un alias către un lot inexistent,
     // pe care pin-urile ulterioare l-ar rezolva și operarea l-ar refuza.
-    // Simbolul lotului e cel din cheia aliasului (ultimul segment, convenția 47d).
+    // Simbolul rămâne cel CANONIC al lotului (apelantul îl leagă cu `LeagaLotNou`
+    // înainte), nu cel din cheia aliasului: pin-urile care ajung aici trebuie să
+    // cadă pe produsul geamăn al lotului, nu pe cel al contului 1C de pe rând.
     public bool LeagaAliasLot(IObjectSpace os, string cheie, Guid lotId) {
-        if (!loturi.TryAdd(cheie, new LotImport(lotId, Simbol(cheie))))
+        if (!loturiPeId.TryGetValue(lotId, out var canonic))
+            throw new InvalidOperationException(
+                $"Alias de lot {cheie} → {lotId} cerut înaintea legăturii canonice a lotului.");
+        if (!loturi.TryAdd(cheie, canonic))
             return false;
         Legaturi.Leaga(os, "LotAlias", cheie, lotId);
         return true;

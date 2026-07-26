@@ -164,12 +164,10 @@ static class HandlerReturFurnizor {
             var lotRef = index.Ia(r.Linie, Subconto.Debit, Subconto.Loturi);
             var nomRef = index.Ia(r.Linie, Subconto.Debit, Subconto.Nomenclator);
             var rezolvat = MiscareStoc1C.Rezolva(bucla, lotRef, nomRef, simbolDebit, context);
-            if (rezolvat is not var (lot, tipCont, produsId)) {
+            if (rezolvat is not var (lot, tip, produsId)) {
                 RanduriNerezolvate++;
                 continue;
             }
-            // Tipul liniei ȘI registrul de căutare vin din PRODUS (vezi Catalog).
-            var tip = cat.TipAlProdusului(os, produsId, tipCont);
             var depozitHex = index.Ia(r.Linie, Subconto.Debit, Subconto.Depozite)?.Id
                 ?? h.DepozitId ?? "";
             var gestiuneId = cat.Gestiuni.TryGetValue(depozitHex, out var g)
@@ -410,8 +408,10 @@ static class HandlerReturClient {
                 .Concat(servicii.Select(s => (s.ContVenituri, s.CotaTva, s.Suma, s.SumaTva))));
         LiniiVenit += plan.Venituri.Count;
 
+        // Fără ObjectSpace aici: RDC-ul nu alocă din stoc (linia de cost revine pe
+        // lotul original sau îl recreează), iar Tipul liniei vine din rezolvarea
+        // lotului — nu mai e nimic de citit din bază la planificare.
         var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
-        using var os = bucla.CreeazaObjectSpace();
         foreach (var r in randuri) {
             if (!Descarcare1C.EsteRandDeCost(cat, r))
                 continue;
@@ -420,7 +420,7 @@ static class HandlerReturClient {
             var lotRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi);
             var nomRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator);
             var rezolvat = MiscareStoc1C.Rezolva(bucla, lotRef, nomRef, simbolCredit, context);
-            if (rezolvat is not var (lot, tipCont, produsId)) {
+            if (rezolvat is not var (lot, tip, produsId)) {
                 RanduriNerezolvate++;
                 continue;
             }
@@ -433,7 +433,6 @@ static class HandlerReturClient {
                 plan.GestiuneId = gestiuneRand;
             }
 
-            var tip = cat.TipAlProdusului(os, produsId, tipCont);
             var cantitate = Math.Abs(r.CantitateCredit);
 
             // Marfa REVINE pe lotul original — dar în 1C returul își creează
@@ -465,9 +464,12 @@ static class HandlerReturClient {
             // ancorată în sursă. Ancorarea pe retur e și fidelă lui 1C, care ține
             // exact așa lotul de retur (retur-ca-lot, unde `lotRef.Id == h.Id`).
             // Ultimul segment rămâne SIMBOLUL contului (convenția 47d, din care
-            // indexul citește registrul de stoc al lotului).
+            // indexul citește registrul de stoc al lotului) — și anume simbolul
+            // TIPULUI rezolvat, nu contul rândului 1C: lotul creat aici primește
+            // produsul geamăn al acelui Tip, iar cele două trebuie să spună
+            // același lucru (altfel un pin ulterior ar cădea pe celălalt geamăn).
             var cheieLot = Catalog.CheieLot(cat.TipRef(View), $"{h.Id}#retur{r.Linie}",
-                nomRef?.Id ?? produsId.ToString(), simbolCredit);
+                nomRef?.Id ?? produsId.ToString(), tip.Cod);
             if (lotId != null && EsteLotPropriu(lotRef, h.Id))
                 lotId = null;
             // Aliasul identității 1C a lotului-sursă → lotul creat de retur

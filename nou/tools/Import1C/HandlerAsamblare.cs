@@ -173,14 +173,10 @@ static class HandlerAsamblare {
         foreach (var (cheie, c) in consumuri) {
             var context = $"1C:{view}/{h.Id} lotul {cheie}";
             var rezolvat = MiscareStoc1C.Rezolva(bucla, c.Lot, c.Nom, c.Simbol, context);
-            if (rezolvat is not var (lot, tipCont, produsId)) {
+            if (rezolvat is not var (lot, tip, produsId)) {
                 RanduriNerezolvate++;
                 continue;
             }
-            // Tipul liniei ȘI registrul de căutare vin din PRODUS (vezi Catalog):
-            // altfel alocarea verifică soldul într-un registru și motorul scrie
-            // mișcarea în celălalt — prima rulare a picat exact aici.
-            var tip = cat.TipAlProdusului(os, produsId, tipCont);
             var pin = lot != null && !string.Equals(c.Lot.Id, h.Id, StringComparison.Ordinal)
                 ? lot.Id : (Guid?)null;
             var (alocari, ramas) = bucla.Alocare.Aloca(os, pin, produsId, plan.GestiuneConsum,

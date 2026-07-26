@@ -14,17 +14,27 @@ namespace Import1C;
 static class Diagnostic {
     public static void Produs(IObjectSpaceProvider provider, string hexProdus, Action<string> avert) {
         using var os = provider.CreateObjectSpace();
-        var produse = Legaturi.Incarca(os, "Nomenclator");
-        if (!produse.TryGetValue(hexProdus.ToUpperInvariant(), out var produsId)) {
+        var hex = hexProdus.ToUpperInvariant();
+        // Un nomenclator 1C poate avea MAI MULTE produse Atlas — câte unul per
+        // cont de stoc pe care sursa îl ține (`ImportLaCerere`). Diagnosticul le
+        // arată pe toate: exact contradicția dintre gemeni e ce se caută aici.
+        var produseId = Legaturi.Incarca(os, ImportLaCerere.ViewProduse)
+            .Where(x => ImportLaCerere.NomenclatorDinCheie(x.Key) == hex)
+            .OrderBy(x => x.Key, StringComparer.Ordinal)
+            .Select(x => x.Value)
+            .ToList();
+        if (produseId.Count == 0) {
             Console.WriteLine($"Produsul 1C {hexProdus} nu are legătură în Atlas (n-a fost importat).");
             return;
         }
-        var produs = os.GetObjectByKey<Produs>(produsId);
-        Console.WriteLine($"Produs 1C {hexProdus} → Atlas {produsId} „{produs?.Denumire}” "
-            + $"(cod {produs?.Cod}, tip {produs?.TipMaterial?.Cod}).");
+        foreach (var produsId in produseId) {
+            var produs = os.GetObjectByKey<Produs>(produsId);
+            Console.WriteLine($"Produs 1C {hexProdus} → Atlas {produsId} „{produs?.Denumire}” "
+                + $"(cod {produs?.Cod}, tip {produs?.TipMaterial?.Cod}).");
+        }
 
         var loturi = os.GetObjectsQuery<Lot>()
-            .Where(l => l.ProdusId == produsId)
+            .Where(l => produseId.Contains(l.ProdusId))
             .Select(l => new { l.ID, l.Data, l.PretUnitar, Gestiune = l.Gestiune.Denumire })
             .ToList();
         var cheiLot = Reconciliere.Inverseaza(os, "Lot", avert);

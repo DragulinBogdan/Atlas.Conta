@@ -165,7 +165,7 @@ static class Descarcare1C {
                 index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi),
                 index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator),
                 cat.Mapeaza(r.ContCredit), context);
-            if (rezolvat is not var (lot, tipCont, produsId)) {
+            if (rezolvat is not var (lot, tip, produsId)) {
                 // Rând de cost pe care nu-l putem duce în stoc (lot/produs
                 // nerezolvabil): la fel ca partea neacoperită, se transcrie
                 // contabil — altfel ar dispărea tăcut din solduri.
@@ -174,9 +174,6 @@ static class Descarcare1C {
                     .Tinta1C(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit), r.Suma);
                 continue;
             }
-            // Tipul REAL al liniei (și registrul de stoc în care se caută soldul)
-            // e al produsului, nu al contului rândului — vezi Catalog.
-            var tip = cat.TipAlProdusului(os, produsId, tipCont);
             var depozitHex = index.Ia(r.Linie, Subconto.Credit, Subconto.Depozite)?.Id
                 ?? depozitImplicit ?? "";
             var gestiuneId = cat.Gestiuni.TryGetValue(depozitHex, out var g)

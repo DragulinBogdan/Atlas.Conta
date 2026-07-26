@@ -83,11 +83,22 @@ sealed record LiniePeLot(Guid LotId, Guid TipMaterialId, decimal Cantitate);
 // Rezolvarea unui rând de notă 1C care mișcă stoc: lotul Atlas, Tipul care îi dă
 // registrul, produsul și cantitatea. Aici trăiește regula care ține importul
 // coerent: **Tipul liniei vine din simbolul de NAȘTERE al lotului, nu din contul
-// rândului 1C.** Registrul de stoc în care stă soldul a fost fixat la deschidere
-// din simbolul lotului (47d); dacă 1C a reclasificat lotul între timp (BTR cu
-// NewContEvidenta), contul rândului ar trimite ieșirea în altă cutie decât cea în
-// care e marfa, iar gardianul de sold ar refuza-o pe bună dreptate. Divergența de
-// cont rămâne o diferență de FORMĂ și se transcrie în puntea NTC.
+// rândului 1C** — contul rândului rămâne sursa DOAR unde nu există lot (intrări,
+// plusuri, produse de asamblare, care își nasc lotul pe linia proprie).
+//
+// Două motive, amândouă tari. Registrul de stoc în care stă soldul a fost fixat
+// la deschidere din simbolul lotului (47d); dacă 1C a reclasificat lotul între
+// timp (BTR cu NewContEvidenta), contul rândului ar trimite ieșirea în altă cutie
+// decât cea în care e marfa, iar gardianul de sold ar refuza-o pe bună dreptate.
+// Și, de la amendamentul „produs = nomenclator × cont" (`ImportLaCerere`),
+// simbolul alege și PRODUSUL geamăn: un Tip luat din contul rândului ar cere
+// produsul altui geamăn decât cel al lotului, iar motorul refuză linia explicit
+// („Lotul liniei aparține unui produs cu alt Tip decât Tipul liniei" — validare
+// de model pe ASM/DSC/RLF/RDC). Divergența de cont rămâne o diferență de FORMĂ
+// și se transcrie în puntea NTC.
+//
+// Consecința pentru apelanți: `Tip` de aici E Tipul produsului întors alături —
+// nu mai există niciun fallback „Tipul produsului" de aplicat peste el.
 static class MiscareStoc1C {
     public static (LotImport Lot, TipInfo Tip, Guid ProdusId)? Rezolva(BuclaImport bucla,
             FlaxRef lotRef, FlaxRef nomRef, string simbolCont1C, string context) {

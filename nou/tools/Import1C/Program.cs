@@ -480,8 +480,14 @@ using (var os = provider.CreateObjectSpace()) {
     Check($"Toate conturile proprii au cont implicit",
         conturiProprii.All(c => c.ContImplicitId != null));
 
+    // Produsele se numără și pe nomenclatoare distincte: identitatea de import e
+    // (nomenclator × cont), deci diferența dintre cele două cifre = gemenii.
+    var produseLegate = Legaturi.Incarca(os, ImportLaCerere.ViewProduse);
+    var nomenclatoare = produseLegate.Keys
+        .Select(ImportLaCerere.NomenclatorDinCheie).Distinct().Count();
     Console.WriteLine($"Legături la cerere: parteneri {Legaturi.Incarca(os, "Partenerii").Count}, "
-        + $"nomenclator {Legaturi.Incarca(os, "Nomenclator").Count}.");
+        + $"produse {produseLegate.Count} pe {nomenclatoare} nomenclatoare 1C "
+        + $"({produseLegate.Count - nomenclatoare} gemeni pe conturi separate).");
 }
 
 // ==================== Faza RECONCILIERE (pasul 4) ====================

@@ -336,31 +336,26 @@ static partial class Deschidere {
             + $"{vNet:N2} = {vBrut:N2}", Math.Abs(vBrut - vNet) < EpsV);
 
         // ---- 4. Produsele (la cerere) ----
-        // Produsul are UN TipMaterial, dar 74 de nomenclatoare stau pe mai multe
-        // conturi la deschidere (fix review 1C-b): Tipul se alege pe contul
-        // DOMINANT pe valoare absolută, nu pe primul întâlnit (ordinea hex e
-        // arbitrară, iar „primul" putea fi contul rezidual negativ). Cazurile
-        // multi-cont se raportează — la 1C-c pot cere Tip per linie, nu per produs.
-        var simbolDominant = descriptori.Values
-            .GroupBy(d => d.ProdusHex, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g
-                .GroupBy(d => d.SimbolCont)
-                .OrderByDescending(sg => sg.Sum(d => Math.Abs(d.ValoareBruta)))
-                .ThenBy(sg => sg.Key, StringComparer.Ordinal)
-                .First().Key, StringComparer.Ordinal);
+        // Identitatea produsului de import e (nomenclator × SIMBOL DE CONT) —
+        // vezi nota din `ImportLaCerere`. Un nomenclator ținut de 1C pe mai multe
+        // conturi de stoc dă produse-gemene, fiecare cu Tipul contului lui, deci
+        // lotul primește ÎNTOTDEAUNA produsul propriului simbol: registrul scris
+        // mai jos (din simbolul lotului) și registrul Tipului produsului coincid
+        // prin construcție. Alegerea „contului dominant pe valoare" din 1C-b a
+        // dispărut odată cu premisa ei (un singur produs pentru toate conturile).
         var multiCont = descriptori.Values
             .GroupBy(d => d.ProdusHex, StringComparer.Ordinal)
             .Count(g => g.Select(d => d.SimbolCont).Distinct().Count() > 1);
         if (multiCont > 0)
-            avert($"{multiCont} produse stau pe MAI MULTE conturi de stoc la deschidere — "
-                + "TipMaterial-ul s-a ales pe contul dominant pe valoare; loturile rămân "
-                + "separate per cont (cheia include simbolul).");
+            avert($"{multiCont} nomenclatoare stau pe MAI MULTE conturi de stoc la deschidere — "
+                + "fiecare pereche (nomenclator × cont) devine un produs propriu, cu Tipul "
+                + "contului ei (identitatea de stoc a sursei).");
 
         var produsPerLot = new Dictionary<string, Guid>(StringComparer.Ordinal);
         var faraTip = new HashSet<string>(StringComparer.Ordinal);
         var procesate = 0;
         foreach (var d in descriptori.Values.OrderBy(d => d.Cheie, StringComparer.Ordinal)) {
-            var id = laCerere.AsiguraProdus(d.ProdusHex, simbolDominant[d.ProdusHex]);
+            var id = laCerere.AsiguraProdus(d.ProdusHex, d.SimbolCont);
             if (id != null)
                 produsPerLot[d.Cheie] = id.Value;
             else
@@ -464,9 +459,10 @@ static partial class Deschidere {
             // TipStoc-ul oglindește regulile de stoc private (NIR/LDI/DSC, decizia
             // 37a): marfa merge în registrul Marfuri, restul în Magazie —
             // reconcilierea pasului 1C-c citește aceleași chei. Se derivă din
-            // SIMBOLUL lotului (fix review 1C-b), nu din Tipul produsului: un
-            // produs multi-cont poartă Tipul contului dominant, dar lotul lui de
-            // pe 3028 tot în Magazie trebuie să stea, nu în Marfuri.
+            // SIMBOLUL lotului (fix review 1C-b), care de la amendamentul
+            // „produs = nomenclator × cont" E și simbolul Tipului produsului:
+            // registrul în care stă soldul și registrul pe care îl va ținti orice
+            // linie de ieșire coincid, prin construcție.
             var tipStocPerSimbol = os.GetObjectsQuery<TipMaterial>()
                 .Select(t => new { t.Cod, Clasa = t.Clasa.Cod })
                 .ToList()

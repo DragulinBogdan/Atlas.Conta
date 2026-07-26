@@ -206,6 +206,35 @@ static class Nomenclatoare {
 // coduri distincte): două poziții de catalog pot purta același cod. De aceea
 // candidatul la recuperare trebuie să fie NELEGAT — o entitate deja legată de
 // alt KeyField e un omonim legitim, nu un rest de rulare întreruptă.
+//
+// ======================================================================
+// IDENTITATEA PRODUSULUI DE IMPORT = NOMENCLATOR 1C × SIMBOL DE CONT
+// ======================================================================
+// Amendament la 47d („Tipul produsului multi-cont = contul DOMINANT pe
+// valoare"), scos de contradicția de registru diagnosticată înainte de 1C-d:
+// deschiderea crea loturile per (document × nomenclator × SIMBOL) și le scria
+// soldul în registrul simbolului, dar produsul primea UN singur Tip — cel
+// dominant. Pentru cele 17 nomenclatoare ținute de 1C pe mai multe conturi de
+// stoc, cele două reguli se contraziceau prin construcție: ieșirea căuta soldul
+// în registrul Tipului produsului, marfa stătea în registrul lotului, iar
+// cantitatea rămânea blocată (35 de loturi / 16 produse, ex. asamblarea
+// SED00000002 cu 400 buc neconsumate).
+//
+// Rezolvarea NU e o a treia regulă în unealtă, ci identitatea corectă: în 1C
+// identitatea de stoc E (nomenclator × cont) — exact ce dovedește subconto-ul
+// `BalantaNivel3`, unde aceeași poziție de catalog ține solduri separate per
+// cont. Modelul Atlas cere un `TipMaterial` per `Produs` (și motorul VALIDEAZĂ
+// pe ASM/DSC/RLF/RDC că Tipul liniei = Tipul produsului lotului), deci
+// traducerea fidelă e un `Produs` per pereche. Consecințe:
+//  * fiecare geamăn are Tipul contului lui ⇒ registrul lotului = registrul
+//    Tipului produsului, prin construcție, peste tot;
+//  * decizia 47d rămâne NEATINSĂ (cheia de lot avea deja simbolul);
+//  * invariantul modelului rămâne neatins (nicio modificare în Module);
+//  * logica „contul dominant pe valoare" moare — nu mai are ce alege.
+// Grupa FIFO a supapei de import (48a) devine per geamăn: netarea deschiderii a
+// conservat sumele per (nomenclator × depozit), deci un deficit al unui geamăn
+// NU se poate acoperi din celălalt. Nu se forțează cross-geamăn — dacă apare, e
+// diferență raportată (§8.3), nu un fallback tăcut.
 class ImportLaCerere {
     readonly IObjectSpaceProvider provider;
     readonly FlaxDb flax;
@@ -221,6 +250,23 @@ class ImportLaCerere {
     // același nomenclator poate fi cerut de pe alt cont, care ARE Tip în profil.
     readonly HashSet<string> respinse = [];
 
+    // View-ul legăturilor produselor + formatul cheii compuse. Separatorul „|" e
+    // stabil: hex-urile 1C sunt [0-9A-F]{32}, iar simbolurile OMFP sunt cifre —
+    // niciunul nu-l poate conține, deci tăierea la primul „|" e neambiguă.
+    // Cheile VECHI (hex simplu, dinaintea amendamentului) nu se migrează: baza de
+    // import se reconstruiește cu `--recreeaza`; o cheie fără „|" se citește
+    // oricum ca nomenclator, deci traducerea inversă rămâne corectă pe ele.
+    public const string ViewProduse = "Nomenclator";
+
+    public static string CheieProdus(string hexId, string simbolContOmfp) =>
+        $"{hexId}|{simbolContOmfp}";
+
+    // Traducerea înapoi la identitatea 1C (reconcilierea, §8.3): geamănul se taie
+    // la nomenclator, fiindcă acolo compară sursa — `BalantaNivel3` agregat per
+    // (nomenclator × depozit), peste conturi.
+    public static string NomenclatorDinCheie(string cheie) =>
+        cheie == null ? null : cheie.IndexOf('|') is var i && i >= 0 ? cheie[..i] : cheie;
+
     public int ParteneriNoi { get; private set; }
     public int ProduseNoi { get; private set; }
     public int Recuperate { get; private set; }
@@ -233,7 +279,7 @@ class ImportLaCerere {
         this.avert = avert;
         using var os = provider.CreateObjectSpace();
         parteneri = Legaturi.Incarca(os, "Partenerii");
-        produse = Legaturi.Incarca(os, "Nomenclator");
+        produse = Legaturi.Incarca(os, ViewProduse);
         tipuriMaterial = os.GetObjectsQuery<TipMaterial>().ToDictionary(t => t.Cod, t => t.ID);
         legate = [.. parteneri.Values, .. produse.Values];
     }
@@ -273,12 +319,20 @@ class ImportLaCerere {
     // simbolul de cont (decizia 26b). Un simbol fără Tip în profil e o GAURĂ DE
     // PROFIL, nu un produs de creat mut: se raportează și se întoarce null, iar
     // apelantul decide (decizia 21 — fiecare gaură = decizie explicită).
+    //
+    // Simbolul e ACUM parte din identitate (vezi nota clasei), nu doar sursa
+    // Tipului: același nomenclator cerut de pe două conturi dă două produse.
+    // Apelanții îl aleg deja coerent cu cheia lotului — simbolul LOTULUI acolo
+    // unde linia vine cu lot (altfel produsul geamăn n-ar fi cel al lotului și
+    // motorul ar refuza linia), contul rândului/secțiunii-sursă unde nu există
+    // lot (intrări, plusuri, produse de asamblare).
     public Guid? AsiguraProdus(string hexId, string simbolContOmfp) {
         if (string.IsNullOrEmpty(hexId))
             return null;
-        if (produse.TryGetValue(hexId, out var existent))
+        var cheie = CheieProdus(hexId, simbolContOmfp);
+        if (produse.TryGetValue(cheie, out var existent))
             return existent;
-        var cheieRespins = $"N|{hexId}|{simbolContOmfp}";
+        var cheieRespins = $"N|{cheie}";
         if (respinse.Contains(cheieRespins))
             return null;
 
@@ -296,8 +350,13 @@ class ImportLaCerere {
                 + $"„{simbolContOmfp ?? "(niciun cont)"}” — produsul NU se creează (gaură de profil).");
             return null;
         }
-        var cod = n.Cod ?? hexId;
-        var (id, nou) = Materializeaza<Produs>("Nomenclator", hexId,
+        // Cod-ul poartă simbolul, la TOATE produsele importate (nu doar la gemeni):
+        // e ancora recuperării unei rulări întrerupte, iar un sufix pus abia când
+        // apare al doilea geamăn ar însemna redenumirea primului — adică exact
+        // ancora care trebuie să fie stabilă. Denumirea rămâne a nomenclatorului:
+        // gemenii se disting prin Cod și Tip, nu prin nume.
+        var cod = $"{n.Cod ?? hexId}/{simbolContOmfp}";
+        var (id, nou) = Materializeaza<Produs>(ViewProduse, cheie,
             os => os.GetObjectsQuery<Produs>().Where(x => x.Cod == cod).ToList(),
             e => {
                 e.Cod = cod;
@@ -305,7 +364,7 @@ class ImportLaCerere {
                 e.UM = n.UM;
                 e.TipMaterialId = tipId;
             });
-        produse[hexId] = id;
+        produse[cheie] = id;
         if (nou)
             ProduseNoi++;
         return id;

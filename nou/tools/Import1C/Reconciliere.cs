@@ -174,7 +174,7 @@ static class Reconciliere {
         // hex). Fără ea, comparația ar trebui să treacă prin coduri naturale —
         // care la Nomenclator NU sunt unice (250.018 coduri distincte pe 312.659
         // rânduri, vezi Nomenclatoare.cs).
-        var produsHex = Inverseaza(os, "Nomenclator", avert);
+        var produsHex = InverseazaProduse(os, avert);
         var depozitHex = Inverseaza(os, "Depozite", avert);
 
         // Denumirile 1C, adunate din ambele părți: raportul trebuie să ajungă la
@@ -280,6 +280,19 @@ static class Reconciliere {
     // nevoie de ea — deci se raportează, nu se rezolvă tăcut.
     // Partajat cu reconcilierea LUNARĂ (pasul 6): traducerea înapoi la identitatea
     // 1C e aceeași operație, iar o a doua copie ar putea diverge tăcut.
+    // Produsele, inversate ȘI reduse la identitatea 1C: cheia lor de legătură e
+    // compusă (nomenclator | simbol de cont — vezi `ImportLaCerere`), fiindcă
+    // același nomenclator ținut de 1C pe două conturi dă două produse Atlas.
+    // Sursa contractului (3) e `BalantaNivel3` agregată per (nomenclator ×
+    // depozit), peste conturi — deci gemenii se adună înapoi aici, la traducere.
+    internal static Dictionary<Guid, string> InverseazaProduse(IObjectSpace os, Action<string> avert) {
+        // Ambiguitatea de ȚINTĂ contează în continuare (un produs legat de două
+        // chei), dar două chei care diferă DOAR prin simbol nu pot exista pe
+        // aceeași țintă: cheia compusă e unică per produs prin construcție.
+        var invers = Inverseaza(os, ImportLaCerere.ViewProduse, avert);
+        return invers.ToDictionary(x => x.Key, x => ImportLaCerere.NomenclatorDinCheie(x.Value));
+    }
+
     internal static Dictionary<Guid, string> Inverseaza(IObjectSpace os, string view, Action<string> avert) {
         var directe = Legaturi.Incarca(os, view);
         var invers = new Dictionary<Guid, string>();
