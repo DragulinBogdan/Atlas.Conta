@@ -209,7 +209,17 @@ static partial class Deschidere {
         // lunare (§8.3 amendat). Granularitatea e produsul, nu grupa produs ×
         // depozit: un transfer duce lotul netat în altă gestiune, iar prețul
         // călătorește cu el.
-        IReadOnlySet<string> ProduseNetate);
+        IReadOnlySet<string> ProduseNetate,
+        // CELULELE SURSEI CU VALOARE FĂRĂ CANTITATE, per cheie a contractului.
+        // 1C ține poziții cu bani și zero bucăți; Atlas le scrie (sunt bani reali
+        // ai deschiderii), dar nu le poate stinge NICIODATĂ: fără cantitate n-are
+        // ce mișca, iar prețul unitar al lotului e zero, deci orice descărcare
+        // scoate zero valoare. Sursa își pierde celula pe parcursul anului, noi
+        // rămânem cu valoarea agățată — o diferență permanentă, cunoscută din
+        // prima zi. Se dă contractului ca MĂSURĂTOARE per cheie (nu ca justificare
+        // în alb a cheii: cantitatea rămâne verificată, doar restul ăsta de
+        // valoare e explicat).
+        IReadOnlyDictionary<(string ProdusHex, string DepozitHex), decimal> ValoriFaraCantitate);
 
     public static RezultatStoc Stoc(
             IObjectSpaceProvider provider, ImportLaCerere laCerere,
@@ -321,6 +331,15 @@ static partial class Deschidere {
             .Where(c => Math.Abs(c.Cantitate) >= EpsQ || Math.Abs(c.Valoare) >= EpsV)
             .ToList();
         var degenerate = deScris.Count(c => Math.Abs(c.Cantitate) < EpsQ || Math.Abs(c.Valoare) < EpsV);
+        // Jumătatea nestingibilă a celor degenerate: valoare fără cantitate. Se
+        // agregă pe cheia contractului (produs × depozit) — acolo o va regăsi
+        // reconcilierea lunară, ca rest explicat, lună de lună, până la finele
+        // anului. Cealaltă jumătate (cantitate fără valoare) se stinge normal:
+        // bucata există, deci poate ieși.
+        var valoriFaraCantitate = deScris
+            .Where(c => Math.Abs(c.Cantitate) < EpsQ && Math.Abs(c.Valoare) >= EpsV)
+            .GroupBy(c => (c.ProdusHex, c.DepozitHex))
+            .ToDictionary(g => g.Key, g => g.Sum(c => c.Valoare));
 
         // Invariantul DUR al fazei, pe total: netarea mută bani între loturi, nu-i
         // creează și nu-i pierde. Se compară ce se scrie cu totalul de DINAINTE de
@@ -515,6 +534,15 @@ static partial class Deschidere {
                 + $"cu TOTAL negativ ({g.Cantitate:N3} buc, {g.Valoare:N2} lei) — nereprezentabilă "
                 + "(Atlas cere sold ≥ 0 per lot); NU se scrie. Diferență a sursei.");
 
+        // Diferențele sursei se RAPORTEAZĂ, nu se ascund (34f) — inclusiv cele care
+        // se scriu, dar nu se vor putea stinge niciodată.
+        if (valoriFaraCantitate.Count > 0)
+            avert($"Deschidere: {valoriFaraCantitate.Count} chei produs × depozit au în sursă "
+                + $"VALOARE FĂRĂ CANTITATE (Σ {valoriFaraCantitate.Values.Sum():N2} lei) — se scriu "
+                + "(sunt bani reali ai deschiderii), dar nu se pot stinge niciodată: fără cantitate "
+                + "n-are ce ieși, iar prețul unitar e zero. Rămân diferență a sursei, explicată "
+                + "măsurat în fiecare lună.");
+
         return new RezultatStoc(
             descriptori.Count, loturiNoi,
             descriptori.Values.Select(d => d.ProdusHex).Distinct().Count(),
@@ -523,7 +551,7 @@ static partial class Deschidere {
             grupeSarite.Sum(g => g.Cantitate), grupeSarite.Sum(g => g.Valoare),
             degenerate, descriptori.Values.Count(d => !d.DataParsata),
             deScris.Sum(c => c.Cantitate), deScris.Sum(c => c.Valoare),
-            grupeSarite, produseNetate);
+            grupeSarite, produseNetate, valoriFaraCantitate);
     }
 
     // Netarea unei grupe produs × depozit. Negativul se consumă din loturile

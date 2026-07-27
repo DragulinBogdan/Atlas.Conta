@@ -173,6 +173,28 @@ static class HandlerFactura {
             return plan;
         }
 
+        // CE POSTEAZĂ SURSA PE STOC, per (nomenclator × cont). Sumele secțiunilor
+        // sunt în VALUTA documentului și se convertesc `round(Suma × Curs, 2)` PER
+        // LINIE-SURSĂ (49d); 1C își face propria conversie pe rândul lui de notă,
+        // iar cele două se despart cu bănuți — măsurat: factura în EUR
+        // FA/EU-25 00072678 pune 118,30 lei pe 2 bucăți acolo unde noi punem
+        // 117,61. Contabil diferența e deja acoperită (puntea compară rând cu
+        // rând), dar în STOC rămâne: lotul nostru poartă valoarea noastră. Se
+        // citește din rândurile de notă cu debit pe cont de stoc, pe cheia lor de
+        // subconto — aceeași cheie pe care se fuzionează liniile de mai jos.
+        var stocSursa = new Dictionary<(string Nom, string Simbol), decimal>();
+        var indexNota = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
+        foreach (var r in bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? []) {
+            var simbol = cat.Mapeaza(r.ContDebit);
+            if (!cat.EsteContDeStoc(simbol))
+                continue;
+            var nom = indexNota.Ia(r.Linie, Subconto.Debit, Subconto.Nomenclator);
+            if (nom == null)
+                continue;
+            var cheie = (nom.Id, simbol);
+            stocSursa[cheie] = stocSursa.GetValueOrDefault(cheie) + r.Suma;
+        }
+
         // Liniile de marfă se FUZIONEAZĂ pe (nomenclator × cont): lotul 1C e
         // tripletul (document, produs, cont), deci două linii pe aceeași pereche
         // sunt un singur lot în sursă — 102 grupuri pe tot anul, TOATE cu aceeași
@@ -220,6 +242,17 @@ static class HandlerFactura {
                 bucla.Avert($"1C:{View}/{linii[0].DocumentId}: linie de marfă cu cantitate "
                     + $"{cantitate:N3} (retur pe factură, {net:N2} lei) — sărită de pe FCT; "
                     + "rândurile ei contabile intră în puntea NTC. Reprezentarea curată e un RLF.");
+                // Contabil rândul e acoperit (puntea îl transcrie), dar STOCUL nu:
+                // sursa scoate bucata, Atlas o păstrează, iar până acum nimeni n-o
+                // spunea — cele două chei de +1 buc rămase la decembrie veneau
+                // exact de aici, fără niciun avertisment pe produsul lor. Cantitatea
+                // și valoarea sunt ale SURSEI; ce ține Atlas e evaluat la costul
+                // lotului lui, deci pe valoare poate rămâne o diferență — o arată
+                // contractul, n-o ascundem.
+                bucla.Divergenta($"{View}/{h.Id}",
+                    "FCT: linie de marfă cu cantitate ≤ 0 (retur pe factură) sărită — "
+                        + "marfa rămâne în stocul Atlas",
+                    [new EfectStoc(grup.Key.NomenclatorId, h.DepozitId ?? "", -cantitate, -net)]);
                 continue;
             }
 
@@ -229,6 +262,16 @@ static class HandlerFactura {
             plan.Marfuri.Add(new LinieMarfa(produsId, tip,
                 Catalog.CheieLot(cat.TipRef(View), h.Id, grup.Key.NomenclatorId, simbol),
                 cantitate, net, tva, tipTva));
+            // Diferența de conversie valutară, măsurată pe cheia de stoc: lotul
+            // nostru intră cu `net`, celula sursei cu cifra ei. Cantitatea e
+            // aceeași, deci e o divergență pur de VALOARE — se înregistrează cu
+            // cifra exactă, nu se lasă pe seama unei toleranțe.
+            var netSursa = stocSursa.GetValueOrDefault((grup.Key.NomenclatorId, simbol));
+            if (netSursa != 0m && Math.Abs(net - netSursa) >= 0.005m)
+                bucla.Divergenta($"{View}/{h.Id}",
+                    "FCT: conversie valutară — lotul Atlas intră cu valoarea noastră, "
+                        + "celula sursei cu a ei",
+                    [new EfectStoc(grup.Key.NomenclatorId, h.DepozitId ?? "", 0m, net - netSursa)]);
         }
 
         foreach (var serviciu in servicii) {

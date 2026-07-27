@@ -294,6 +294,7 @@ static class HandlereNoteSimple {
                     try {
                         linii = NoteComune.Transcrie(bucla.Catalog, sursa.View, h.Id, randuri, sursa.SareTva,
                             dimensiuni == null ? null : linie => Repartitori(bucla, dimensiuni, h.Id, linie));
+                        StocDinNota.Masoara(bucla, sursa.View, h.Id, randuri);
                     }
                     catch (Exception ex) {
                         bucla.EsecPlanificare(sursa.View, h.Id, ex);
@@ -331,6 +332,86 @@ static class HandlereNoteSimple {
         Console.WriteLine($"  Note transcrise: "
             + string.Join(", ", note.OrderByDescending(x => x.Value).Select(x => $"{x.Key} {x.Value}"))
             + $"; {AnteteFaraRanduri} antete fără rânduri contabile (sărite).");
+    }
+}
+
+// ======================= Stocul mișcat de o NOTĂ 1C =======================
+//
+// Familia NTC se transcrie EXACT, rând cu rând, iar nota Atlas nu mișcă stoc prin
+// construcție (46b) — ceea ce e corect atâta timp cât rândurile sursei sunt pură
+// contabilitate. Nu sunt întotdeauna: 1C folosește o operațiune manuală, cu 891 ca
+// hub tehnic, ca să RECLASIFICE marfa de pe un nomenclator pe altul, păstrând
+// lotul (măsurat pe 2025: factura DES 00081566 a intrat integral pe „ASUS A16", 16
+// buc, iar o operațiune din 20.11 a mutat 8 buc pe „ASUS F16", cu 371.1 = 891 în
+// ambele sensuri). Contabil nu se vede nimic — perechea se anulează pe fiecare
+// cont — dar stocul 1C se mută, iar Atlas rămâne cu marfa pe nomenclatorul vechi.
+//
+// Aici nu se construiește o reprezentare (niciunul din cele 12 tipuri nu poartă
+// reclasificarea de nomenclator, iar populația e de câteva rânduri pe an — decizia
+// lead-ului la F5, aplicată consecvent): se MĂSOARĂ mișcarea pe care sursa o face
+// și Atlas nu, pe cheile exacte ale contractului 3. Diferența devine justificată
+// prin egalitate și se poartă înainte, în loc să rămână o nepotrivire anonimă de
+// 71.848,80 lei pe două chei.
+static class StocDinNota {
+    public static int Randuri { get; private set; }
+
+    public static void Masoara(BuclaImport bucla, string view, string docId,
+            IReadOnlyList<FlaxRandNota> randuri) {
+        var cat = bucla.Catalog;
+        var subconto = bucla.SubcontoLuna.GetValueOrDefault(docId);
+        if (subconto == null)
+            return;
+        var index = Subconto.Indexeaza(subconto);
+        IObjectSpace os = null;
+        try {
+            foreach (var r in randuri) {
+                Masoara(bucla, cat, view, docId, index, r, Subconto.Debit,
+                    cat.Mapeaza(r.ContDebit), r.CantitateDebit, r.Suma, ref os);
+                Masoara(bucla, cat, view, docId, index, r, Subconto.Credit,
+                    cat.Mapeaza(r.ContCredit), -r.CantitateCredit, -r.Suma, ref os);
+            }
+        }
+        finally {
+            os?.Dispose();
+        }
+    }
+
+    // `cantitate1C` / `valoare1C` = mișcarea pe care sursa o face pe cheia asta, cu
+    // semnul ei (debitul crește stocul, creditul îl scade). Atlas n-o face, deci
+    // are în plus exact opusul — convenția `EfectStoc`.
+    static void Masoara(BuclaImport bucla, Catalog cat, string view, string docId,
+            Dictionary<(int, int), Dictionary<string, FlaxRef>> index, FlaxRandNota r, int latura,
+            string simbol, decimal cantitate1C, decimal valoare1C, ref IObjectSpace os) {
+        if (!cat.EsteContDeStoc(simbol) || (cantitate1C == 0m && valoare1C == 0m))
+            return;
+        var nomRef = index.Ia(r.Linie, latura, Subconto.Nomenclator);
+        var lotRef = index.Ia(r.Linie, latura, Subconto.Loturi);
+        if (nomRef == null || lotRef == null)
+            return;
+        var depozitHex = index.Ia(r.Linie, latura, Subconto.Depozite)?.Id ?? "";
+        // Valoarea cu care Atlas ține marfa rămasă: dacă lotul sursei există în
+        // Atlas, e prețul LUI (cheia contractului 3 compară valoarea Atlas cu cea a
+        // sursei, iar marfa care rămâne e evaluată de noi); dacă nu există —
+        // nomenclatorul-țintă al reclasificării nici nu ajunge produs în Atlas —
+        // singura cifră disponibilă e a sursei.
+        var lot = cat.Lot(lotRef.TipRef, lotRef.Id, nomRef.Id, simbol);
+        var valoare = -valoare1C;
+        if (lot != null) {
+            os ??= bucla.CreeazaObjectSpace();
+            valoare = -Math.Sign(cantitate1C)
+                * Scara.RotunjesteBani(Math.Abs(cantitate1C) * HandlerTransfer.PretLot(os, lot.Id));
+        }
+        Randuri++;
+        bucla.Divergenta(RegistruDivergente.Sursa(view, docId),
+            "Notă 1C care mută stoc (reclasificare de nomenclator pe același lot) — "
+                + "Atlas transcrie doar contabilitatea",
+            [new EfectStoc(nomRef.Id, depozitHex, -cantitate1C, valoare)]);
+    }
+
+    public static void Raporteaza() {
+        if (Randuri > 0)
+            Console.WriteLine($"  Note care mută stoc: {Randuri} rânduri măsurate (reclasificări de "
+                + "nomenclator pe lot — transcrise contabil, mișcarea de stoc raportată ca divergență).");
     }
 }
 

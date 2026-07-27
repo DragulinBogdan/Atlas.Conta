@@ -19,6 +19,17 @@ namespace Import1C;
 // nu declară nimic — diferența de valoare rămâne unde îi e locul, în raport.
 sealed class Punte {
     readonly Dictionary<string, decimal> delta = new(StringComparer.Ordinal);
+    // A DOUA acumulare, complet separată de prima: rândurile pe care Atlas le
+    // postează la valoarea LUI (costul lotului — `FelRand.Evaluat`). Ele NU au ce
+    // căuta în punte (o notă pe ele ar „repara" o valoare, ceea ce e interzis),
+    // dar diferența dintre cifra sursei și cifra Atlas e o divergență CUNOSCUTĂ,
+    // pe conturi cunoscute, în momentul în care se produce — deci se măsoară și se
+    // înregistrează, în locul euristicii „încape în plafonul de evaluare".
+    //
+    // De ce contează separarea: reziduul lor per cont e mereu echilibrat (ambele
+    // părți sunt corespondențe complete), deci nu poate nici să umfle, nici să
+    // stingă restul de FORMĂ al punții.
+    readonly Dictionary<string, decimal> deltaEvaluat = new(StringComparer.Ordinal);
     // Etichetele de raport se numără LOCAL și se varsă în contorul global doar
     // dacă nota chiar se scrie: altfel „am declarat o țintă" (ceea ce facem
     // pentru fiecare rând al fiecărei facturi) ar arăta ca „am găsit o
@@ -50,6 +61,34 @@ sealed class Punte {
         Adauga(debit, -valoare);
         Adauga(credit, valoare);
     }
+
+    // ---- Rândurile EVALUATE (Atlas postează la costul lotului lui) ----
+    // Perechea de declarații e obligatorie și e simetrică celei de sus: ținta e
+    // rândul sursei, actualul e ce scrie motorul. Ce rămâne între ele nu se
+    // postează NICIODATĂ — se înregistrează în registrul divergențelor, per cont.
+    // Un handler care declară ținta și uită actualul iese cu o divergență de
+    // dimensiunea întregului rând, iar contractul lunii o strigă (explicație mai
+    // mare decât abaterea = eșec) — deci omisiunea e zgomotoasă, nu tăcută.
+    public void TintaEvaluata(string debit, string credit, decimal valoare) {
+        AdaugaEvaluat(debit, valoare);
+        AdaugaEvaluat(credit, -valoare);
+    }
+
+    public void ActualEvaluat(string debit, string credit, decimal valoare) {
+        AdaugaEvaluat(debit, -valoare);
+        AdaugaEvaluat(credit, valoare);
+    }
+
+    void AdaugaEvaluat(string simbol, decimal miscareDebit) {
+        if (simbol == null)
+            return;
+        deltaEvaluat[simbol] = deltaEvaluat.GetValueOrDefault(simbol) + miscareDebit;
+    }
+
+    // Restul EVALUAT per cont, ca mișcare de debit semnată: „cât din rândul sursei
+    // nu postează Atlas pe contul ăsta". Aceeași convenție ca `Rest`.
+    public IEnumerable<(string Cont, decimal Nepostat)> RestEvaluat =>
+        deltaEvaluat.Where(x => Math.Abs(x.Value) >= Eps).Select(x => (x.Key, x.Value));
 
     void Adauga(string simbol, decimal miscareDebit) {
         if (simbol == null)
@@ -147,6 +186,12 @@ static class Punti {
     // documentul la nesfârșit — și ar rescrie puntea de fiecare dată.
     public static void Scrie(BuclaImport bucla, string view, string cheie, string numar1C,
             DateOnly data, Punte punte, ContorPunti contor, Action<string> avert) {
+        // Divergența de EVALUARE se înregistrează ÎNTOTDEAUNA, inclusiv pe
+        // documentele care nu lasă nicio punte de formă (cazul obișnuit: o
+        // descărcare curată, al cărei singur „rest" e diferența de cost dintre
+        // lotul Atlas și cifra sursei). Înainte de `AreCeva`, deci — altfel exact
+        // documentele fără punte, adică majoritatea, ar rămâne nemăsurate.
+        InregistreazaEvaluarea(bucla, view, cheie, punte);
         if (!punte.AreCeva)
             return;
         // Sursa are un corespondent declarat (nota, sau — dacă nu se echilibrează —
@@ -190,5 +235,20 @@ static class Punti {
         // rulare anterioară nu e o diferență găsită acum.
         if (stare == StareImport.Importat)
             contor.NumaraNota(randuri, punte.Categorii);
+    }
+
+    // Diferența dintre cifra sursei și cifra Atlas pe rândurile EVALUATE, per cont.
+    // E singura explicație onestă pentru abaterile de sold ale conturilor care NU
+    // sunt de stoc: descărcarea la costul lotului Atlas mută diferența pe 6xx/3xx
+    // (unde plafonul măsurat al stocului o acoperă), dar stornarea unei achiziții
+    // o mută pe 401, iar o reclasificare de cont a sursei o mută pe geamănul
+    // greșit (371 vs 381, 607 vs 608) — conturi pe care nicio măsurătoare de stoc
+    // nu le atinge. Aici sunt cifrele exacte, la locul faptei.
+    static void InregistreazaEvaluarea(BuclaImport bucla, string view, string cheie, Punte punte) {
+        var sursa = RegistruDivergente.Sursa(view, cheie);
+        foreach (var (cont, rest) in punte.RestEvaluat)
+            bucla.Divergenta(sursa,
+                "Evaluare: Atlas postează la costul lotului lui, sursa la al ei",
+                contDebit: cont, valoareNepostata: rest);
     }
 }

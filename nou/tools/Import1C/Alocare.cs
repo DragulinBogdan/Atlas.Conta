@@ -73,6 +73,24 @@ sealed class AlocareIesire {
             ProduseRealocate.Add(tinta);
     }
 
+    // Produsul NĂSCUT de o asamblare intră în aceeași mulțime, din același motiv:
+    // lotul lui poartă un preț pus de ATLAS (valoarea consumurilor noastre,
+    // distribuită de invariantul |Σ produse − Σ consumuri| ≤ 0,005), nu cifra cu
+    // care 1C își evaluează produsul. Nu e o presupunere — e construcția
+    // mecanismului, la fel ca la netarea deschiderii.
+    //
+    // De ce marcaj și nu o sumă înregistrată în registrul divergențelor: delta de
+    // evaluare a asamblării nu e o proprietate a CHEII, ci una PER BUCATĂ a
+    // lotului, și pleacă odată cu bucățile. Măsurat pe asamblarea din octombrie a
+    // produsului …A680: 8 bucăți produse cu o deltă de −719,96 (adică −89,995 pe
+    // bucată), două vândute între timp, iar pe cheie au rămas 6 × (−89,995) =
+    // −539,97 — exact abaterea observată. O sumă fixă înregistrată la producție se
+    // învechește la prima ieșire, iar dacă marfa se și mută în alt depozit
+    // înregistrarea rămâne pe cheia veche, unde nu mai e nimic de explicat.
+    // Marcajul n-are niciuna dintre cele două probleme: e pe PRODUS, nu pe cheie,
+    // și nu afirmă nicio cifră care să se poată învechi.
+    public void MarcheazaEvaluatDeAtlas(Guid produsId) => Marcheaza(produsId);
+
     // Marchează produsul — decizia se ia la alocare, scrierea se amână.
     void Marcheaza(Guid produsId) {
         if (!ProduseRealocate.Contains(produsId))

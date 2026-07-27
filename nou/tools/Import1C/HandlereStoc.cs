@@ -206,6 +206,10 @@ static class HandlerTransfer {
             }
 
             decimal valoareAtlas = 0m;
+            // Partea pe care Atlas n-o mișcă deloc: e înregistrată separat mai jos
+            // ca nepostată, deci trebuie scoasă din ținta evaluată — altfel ar fi
+            // explicată de două ori.
+            var valoareNeacoperita = 0m;
             if (!plan.FaraDocument) {
                 var (alocari, ramas) = bucla.Alocare.Aloca(os, lot?.Id, produsId, plan.PredatorId,
                     tip.Registru, plan.Data, r.CantitateCredit, dejaAlocat);
@@ -222,7 +226,7 @@ static class HandlerTransfer {
                     // cărei punte transcrie doar partea transferată, deci restul e
                     // exact ce nu se postează (când conturile coincid se anulează
                     // singur în agregarea contractului).
-                    var valoareRamas = r.CantitateCredit == 0m
+                    var valoareRamas = valoareNeacoperita = r.CantitateCredit == 0m
                         ? r.Suma : r.Suma * ramas / r.CantitateCredit;
                     bucla.Divergenta($"{View}/{h.Id}",
                         "BTR: linie transferată parțial (lipsă acoperire la expeditor)",
@@ -235,6 +239,44 @@ static class HandlerTransfer {
             }
             else if (lot != null)
                 valoareAtlas = r.CantitateCredit * PretLot(os, lot.Id);
+
+            // Diferența de EVALUARE a reclasificării, măsurată ca peste tot
+            // (Punte.cs): sursa mută lotul de pe un cont de stoc pe altul la
+            // valoarea EI, puntea de mai jos îl mută la a NOASTRĂ. Fără declarația
+            // asta diferența rămâne agățată pe cele două conturi de stoc, iar
+            // plafonul măsurat n-o mai acoperă când reclasificările se îndesesc:
+            // măsurat pe rularea integrală, contul 3028 rămânea cu 1.013,65 lei
+            // neexplicați la decembrie — singurul cont picat din tot contractul 1.
+            // Când cele două conturi coincid declarația se anulează singură (aceeași
+            // sumă pe aceeași latură), deci se face necondiționat.
+            var sursaAcoperita = r.Suma - valoareNeacoperita;
+            plan.Punte.TintaEvaluata(simbolDebit, simbolCredit, sursaAcoperita);
+            plan.Punte.ActualEvaluat(simbolDebit, simbolCredit, valoareAtlas);
+
+            // **1C ține un cost PER DEPOZIT pentru ACELAȘI lot; Atlas ține unul
+            // singur** (identificare specifică — decizia 13). Transferul e locul
+            // unde se vede: sursa scoate din expeditor și pune în destinatar o
+            // sumă care NU e cantitatea × prețul lotului, ci costul ei per depozit,
+            // iar totalul lotului rămâne exact. Măsurat pe factura în EUR
+            // FA/EU-25 00072678: 111 bucăți intrate cu 6.527,14 lei (58,803/buc),
+            // pe care 1C le ține apoi ca 100 × 58,7648 + 11 × 59,1509 = 6.527,14 —
+            // aceeași sumă, alt cost pe depozit. Cele 2 bucăți ajunse în MAGAZIN
+            // valorează 118,30 la sursă și 117,61 la noi: exact abaterea de −0,69.
+            //
+            // Nu e rotunjire de conversie valutară (acolo secțiunea și rândul de
+            // notă dau aceeași cifră — verificat pe factura asta), și nu e ceva de
+            // reparat: e diferența dintre două modele de evaluare. Se măsoară pe
+            // AMBELE chei, cu semne opuse — valoarea doar se rearanjează între
+            // gestiuni, nu se creează și nu se pierde.
+            if (!plan.FaraDocument && nomRef != null
+                    && Math.Abs(valoareAtlas - sursaAcoperita) >= 0.005m) {
+                var delta = valoareAtlas - sursaAcoperita;
+                bucla.Divergenta($"{View}/{h.Id}",
+                    "BTR: 1C mută lotul la alt cost unitar decât al lotului — "
+                        + "valoarea se rearanjează între gestiuni",
+                    [new EfectStoc(nomRef.Id, h.DepozitExpeditorId, 0m, -delta),
+                        new EfectStoc(nomRef.Id, h.DepozitDestinatarId, 0m, delta)]);
+            }
 
             // Reclasificarea (556 de rânduri pe an): 1C mută lotul pe alt cont
             // fără să-i schimbe identitatea. Atlas nu contează transferul deloc
@@ -412,16 +454,33 @@ static class HandlerConsum {
             var valoareAtlas = 0m;
             foreach (var (lotId, cantitate) in alocari) {
                 plan.Linii.Add(new LiniePeLot(lotId, tip.Id, cantitate));
-                valoareAtlas += cantitate * HandlerTransfer.PretLot(os, lotId);
+                // Rotunjirea e PER LINIE, ca la materializare: motorul postează un
+                // rând per linie, rotunjit la bani. O sumă nerotunjită aici ar
+                // declara în punte altceva decât postează motorul, iar reziduul de
+                // sub-ban s-ar acumula pe contul de cheltuială.
+                valoareAtlas += Scara.RotunjesteBani(cantitate * HandlerTransfer.PretLot(os, lotId));
             }
+            // Diferența de EVALUARE a consumului, măsurată ca peste tot (Punte.cs):
+            // sursa își descarcă marfa la costul ei, Atlas la costul lotului lui.
+            // Fără declarația asta diferența rămânea agățată pe contul de cheltuială
+            // al SURSEI (603, 6584, 6588…): puntea de mai jos mută pe perechea Atlas
+            // valoarea NOASTRĂ, iar închiderea lunară a lui 1C stinge cifra LUI —
+            // reziduul nu mai pleacă de acolo niciodată (măsurat: 603 rămânea cu
+            // 23,97 lei din aprilie până la finele anului, singurul cont fără
+            // explicație din tot contractul 1).
+            var valoareNeacoperita = ramas <= 0 ? 0m
+                : r.CantitateCredit == 0m ? r.Suma : r.Suma * ramas / r.CantitateCredit;
+            plan.Punte.TintaEvaluata(simbolDebit, simbolCredit, r.Suma - valoareNeacoperita);
+            plan.Punte.ActualEvaluat(simbolDebit, simbolCredit, valoareAtlas);
             if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {r.CantitateCredit:N3} n-au acoperire în "
                     + "gestiunea predatoare — consumul se descarcă parțial.");
                 // Măsurătoarea: marfa neconsumată rămâne în gestiune, iar cheltuiala
                 // ei nu se postează nicăieri (puntea de mai jos transcrie DOAR
-                // partea consumată, la valoarea Atlas).
-                var valoareRamas = r.CantitateCredit == 0m
-                    ? r.Suma : r.Suma * ramas / r.CantitateCredit;
+                // partea consumată, la valoarea Atlas). Aceeași cifră intră și în
+                // ținta evaluată de mai sus, ca partea neacoperită să fie explicată
+                // O SINGURĂ dată — aici.
+                var valoareRamas = valoareNeacoperita;
                 bucla.Divergenta($"{View}/{h.Id}",
                     "BCS: consum fără acoperire — marfa rămâne în stocul Atlas",
                     nomRef == null ? null : [new EfectStoc(nomRef.Id, depozitHex, ramas, valoareRamas)],
@@ -638,9 +697,10 @@ static class HandlerDiferente {
                 valoareAtlas += cantitate * HandlerTransfer.PretLot(os, lotId);
                 Minusuri++;
             }
+            var valoareNeacoperita = 0m;
             if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {r.CantitateCredit:N3} n-au acoperire.");
-                var valoareRamas = r.CantitateCredit == 0m
+                var valoareRamas = valoareNeacoperita = r.CantitateCredit == 0m
                     ? r.Suma : r.Suma * ramas / r.CantitateCredit;
                 bucla.Divergenta($"{ViewMinus}/{h.Id}",
                     "LDI−: minus fără acoperire — marfa rămâne în stocul Atlas",
@@ -648,6 +708,12 @@ static class HandlerDiferente {
                         : [new EfectStoc(nomRef.Id, h.DepozitId ?? "", ramas, valoareRamas)],
                     simbolDebit, simbolCredit, valoareRamas);
             }
+            // Aceeași declarație de evaluare ca la consum și la transfer (Punte.cs).
+            // Pe 2025 nu există niciun document de tipul ăsta, deci linia e
+            // netestată pe date reale — stă aici ca minusul să nu fie singurul loc
+            // în care puntea transcrie la valoarea Atlas fără s-o declare.
+            plan.Punte.TintaEvaluata(simbolDebit, simbolCredit, r.Suma - valoareNeacoperita);
+            plan.Punte.ActualEvaluat(simbolDebit, simbolCredit, valoareAtlas);
             var contare = cat.ContareMinusInventar(tip.Id);
             if (contare == null)
                 plan.Punte.Categoria("LDI−: Tip fără regulă de contare în profil")

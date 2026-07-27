@@ -292,6 +292,17 @@ sealed class Catalog {
     public IReadOnlySet<string> CosturiPentruContStoc(string contStoc) =>
         contStoc != null && costuriPeContStoc.TryGetValue(contStoc, out var c) ? c : null;
 
+    // Perechea de conturi pe care motorul o postează pentru o linie de stoc a unui
+    // tip de document anume (DSC → 607 = 371, RDC → 607 = 371 cu semn păstrat…).
+    // Handlerele au nevoie de ea ca să declare CE postează Atlas pe rândul
+    // evaluat: fără conturile exacte, diferența de evaluare n-ar putea fi
+    // atribuită contului potrivit, iar oglinda greșită a unei reclasificări
+    // (608 în loc de 607) ar rămâne invizibilă.
+    readonly Dictionary<(string TipDoc, Guid Tip), (string Debit, string Credit)> contarePeTip = [];
+
+    public (string Debit, string Credit)? Contare(string tipDocumentCod, Guid tipMaterialId) =>
+        contarePeTip.TryGetValue((tipDocumentCod, tipMaterialId), out var c) ? c : null;
+
     // Rândurile derivate 6xx = 3xx au toate aceeași formă (debit Explicit, credit
     // din contul Tipului); ce iese din formă nu se pretinde cunoscut — handlerul
     // tratează absența ca „Atlas nu postează nimic" și transcrie integral.
@@ -309,6 +320,13 @@ sealed class Catalog {
             if (!costuriPeContStoc.TryGetValue(r.Credit, out var costuri))
                 costuriPeContStoc[r.Credit] = costuri = new HashSet<string>(StringComparer.Ordinal);
             costuri.Add(r.Debit);
+            // Semnul filtrului nu intră în cheie: regulile per Tip ale unui tip de
+            // document sunt fie fără filtru (DSC/RDC/BCS), fie una singură pe semnul
+            // care ne interesează (LDI−). O a doua regulă pe același (tip document ×
+            // Tip) ar însemna că postarea depinde de semnul liniei — atunci prima
+            // câștigă aici, iar handlerul care declară evaluarea o folosește pe ea;
+            // divergența ar ieși zgomotos la contract, nu tăcut.
+            contarePeTip.TryAdd((r.Tip, r.TipMaterialId.Value), (r.Debit, r.Credit));
             if (r.Tip == "BCS")
                 contareConsum[r.TipMaterialId.Value] = (r.Debit, r.Credit);
             else if (r.Tip == "LDI" && r.SemnFiltru == -1)

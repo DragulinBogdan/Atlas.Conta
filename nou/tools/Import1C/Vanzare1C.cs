@@ -175,6 +175,10 @@ static class Descarcare1C {
                 RanduriNerezolvate++;
                 punte.Categoria("Ieșire de marfă cu lot nerezolvabil — costul se transcrie contabil")
                     .Tinta1C(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit), r.Suma);
+                // Contabil, rândul e acoperit de puntea de mai sus: se scoate din
+                // acumularea EVALUATĂ (unde clasificarea l-a pus, ca pe orice rând
+                // de cost), altfel ar fi explicat de două ori.
+                punte.ActualEvaluat(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit), r.Suma);
                 // Contabil nu divergem (puntea a transcris rândul), dar marfa RĂMÂNE
                 // în stocul Atlas: se măsoară, ca să nu se ceară mai târziu unei
                 // euristici s-o ghicească.
@@ -196,9 +200,20 @@ static class Descarcare1C {
             var cantitate = Math.Abs(r.CantitateCredit);
             var (alocari, ramas) = bucla.Alocare.Aloca(os, lot?.Id, produsId, gestiuneId,
                 tip.Registru, data, cantitate, dejaAlocat);
+            // Ce postează motorul pentru liniile care se nasc din rândul ăsta:
+            // perechea de conturi a regulii DSC pe Tipul lotului, la costul lotului
+            // ATLAS, rotunjit cum rotunjește materializarea. Declararea închide
+            // cercul deschis de `Rand.Evaluat`: diferența față de cifra sursei
+            // devine divergență MĂSURATĂ, nu „încape în plafon". Ea acoperă și
+            // cazul în care 1C a reclasificat lotul (rândul sursei spune 607 = 371,
+            // Atlas postează 608 = 381 fiindcă lotul a rămas pe geamănul lui).
+            var contare = cat.Contare("DSC", tip.Id);
             foreach (var (lotId, q) in alocari) {
                 grup.Linii.Add(new LiniePeLot(lotId, tip.Id, q));
                 LiniiDescarcate++;
+                if (contare is { } c)
+                    punte.ActualEvaluat(c.Debit, c.Credit,
+                        Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId)));
             }
             if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {cantitate:N3} n-au acoperire în gestiunea "
@@ -212,6 +227,10 @@ static class Descarcare1C {
                 var valoareRamas = cantitate == 0 ? r.Suma : r.Suma * ramas / cantitate;
                 punte.Categoria("Ieșire de marfă fără acoperire în stoc — costul se transcrie contabil")
                     .Tinta1C(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit), valoareRamas);
+                // Partea transcrisă e postată (de nota-punte), deci pleacă din
+                // acumularea evaluată: acolo rămâne exact partea pe care motorul o
+                // postează la costul lotului.
+                punte.ActualEvaluat(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit), valoareRamas);
                 // Măsurătoarea: marfa neieșită rămâne în stocul Atlas exact cu
                 // `ramas` bucăți. Contabil nu divergem (puntea a transcris partea
                 // neacoperită), deci `valoareNepostata` rămâne 0.
@@ -401,8 +420,14 @@ static class Clasificare1C {
             IEnumerable<FlaxRandNota> randuri, IReadOnlySet<string> acoperitori,
             Func<FlaxRandNota, string, string, Verdict?> regula) {
         foreach (var r in Clasifica(cat, view, docId, randuri, regula)) {
-            if (r.Fel == FelRand.Evaluat)
+            if (r.Fel == FelRand.Evaluat) {
+                // Rândul nu intră în puntea de FORMĂ (o notă pe el ar repara o
+                // valoare), dar ținta lui se declară în acumularea EVALUATĂ:
+                // handlerul declară alături ce postează Atlas, iar diferența ajunge
+                // măsurată în registrul divergențelor (Punte.cs).
+                punte.TintaEvaluata(r.Debit, r.Credit, r.Rand.Suma);
                 continue;
+            }
             var eticheta = r.Eticheta;
             if (r.Fel == FelRand.Acoperit) {
                 if (r.Acoperitor == null)

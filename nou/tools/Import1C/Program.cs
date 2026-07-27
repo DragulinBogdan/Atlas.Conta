@@ -575,6 +575,7 @@ Console.WriteLine($"Raportul integral al contractului lunar se scrie în „{jur
 bucla.StareContract.Jurnal = jurnal;
 bucla.StareContract.ProduseNetate = rezStoc.ProduseNetate;
 bucla.StareContract.JustificateDeschidere = rezStoc.DiferenteJustificate;
+bucla.StareContract.ValoriFaraCantitateDeschidere = rezStoc.ValoriFaraCantitate;
 bucla.StareContract.Extrabilantiere1C = extrabilantiere1C;
 if (sabotaj)
     bucla.ActiveazaSabotajLuna();

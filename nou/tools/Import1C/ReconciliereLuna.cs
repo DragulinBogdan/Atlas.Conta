@@ -63,7 +63,27 @@ static class ReconciliereLuna {
     // rotunjire doar dacă se compensează; dacă merg toate în același sens, nu mai
     // e rotunjire, e o eroare sistematică — și se strigă.
     const decimal EpsRotunjire = 0.03m;
-    const decimal PragRotunjireSistematica = 1m;
+
+    // Reziduul de rotunjire acceptat pe o cheie CREȘTE cu numărul ei de mișcări:
+    // fiecare rând de registru poate purta până la o jumătate de ban, iar o cheie
+    // cu sute de mișcări acumulează, printr-un mers aleator, mult peste tăietura
+    // fixă de 0,03. Numărul de mișcări se MĂSOARĂ din registrul de stoc al cheii,
+    // nu se estimează. Plafon absolut 0,25 lei: proba `--sabotaj` alterează cu
+    // 1,00 leu, deci trebuie să rămână la 4× distanță de orice toleranță, oricât
+    // de agitată ar fi cheia. Cantitatea rămâne EXACTĂ — categoria asta nu
+    // justifică niciodată o bucată lipsă, doar bani mărunți.
+    const decimal PlafonRotunjireCheie = 0.25m;
+
+    static decimal PragRotunjireCheie(int miscari) => Math.Min(PlafonRotunjireCheie,
+        Math.Max(EpsRotunjire, EpsRotunjire * (decimal)Math.Sqrt(Math.Max(1, miscari))));
+
+    // Pragul de la care „se compensează" devine „merge în același sens". Nu poate
+    // fi o cifră fixă: N reziduuri independente în ±EpsRotunjire dau o sumă
+    // algebrică ce crește cu √N (σ ≈ EpsRotunjire·√(N/3)), deci un prag de 1 leu
+    // strigă lup pe 900 de chei și tace pe 20. Se alarmează la 3σ, cu 1 leu ca
+    // plafon inferior (pe puține chei, orice prag mai mic e zgomot).
+    static decimal PragRotunjireSistematica(int chei) => Math.Max(1m,
+        3m * EpsRotunjire * (decimal)Math.Sqrt(Math.Max(1, chei) / 3.0));
 
     // Toleranța la comparațiile cu praguri EXACTE ale sursei (negativul pe
     // produs): sursa își rotunjește propriile cifre, deci un prag exact rupe
@@ -98,6 +118,13 @@ static class ReconciliereLuna {
         public IReadOnlyList<Deschidere.DiferentaSursa> JustificateDeschidere = [];
         public IReadOnlySet<string> Extrabilantiere1C = new HashSet<string>(StringComparer.Ordinal);
 
+        // Valoarea pe care deschiderea a scris-o pe chei FĂRĂ cantitate și pe care
+        // nimic n-o mai poate stinge (vezi `Deschidere.RezultatStoc`). E o
+        // măsurătoare per cheie, nu o justificare în alb: cantitatea rămâne
+        // verificată strict, se explică doar restul ăsta de valoare.
+        public IReadOnlyDictionary<(string ProdusHex, string DepozitHex), decimal>
+            ValoriFaraCantitateDeschidere = new Dictionary<(string, string), decimal>();
+
         // Doar pentru raport: valoarea de stoc justificată, cumulată la zi. NU mai
         // e plafon (D6) — a rămas cifra care spune cât de mare e efectul netării.
         public decimal PlafonStoc;
@@ -106,6 +133,22 @@ static class ReconciliereLuna {
         // abaterea per cont și per cheie de stoc, din luna precedentă.
         public readonly Dictionary<string, decimal> AbateriConturi = new(StringComparer.Ordinal);
         public readonly Dictionary<(string P, string D), (decimal Q, decimal V)> AbateriStoc = [];
+
+        // CELULELE NEGATIVE ALE SURSEI VĂZUTE VREODATĂ pe cheia asta, ca maxim al
+        // lunilor de până acum. 1C reprezintă o ieșire de pe un lot pe care
+        // depozitul nu-l are ca celulă NEGATIVĂ; Atlas nu poate ține lot negativ
+        // (decizia 13), deci poartă doar partea pozitivă și rămâne cu marfă în
+        // plus. Când perechea +/− a sursei se stinge INTRA-AN, la ziua de referință
+        // nu mai e nimic negativ de arătat — deși artefactul s-a întâmplat și încă
+        // se vede în soldul Atlas (măsurat: ~13 chei, ~4.500 lei, cazul „produsul
+        // ținut în SERVICE pe +1/50,42 și −1/−50,43, ambele stinse în aprilie").
+        // De aici categoria proprie: cheia se justifică prin cel mai mare negativ
+        // pe care sursa l-a arătat pe EA, la orice fine de lună al anului.
+        //
+        // Granularitatea e a sursei: `BalantaNivel3` are perioade LUNARE, deci un
+        // negativ născut și stins în interiorul aceleiași luni rămâne invizibil —
+        // limitarea e scrisă aici ca să nu fie redescoperită ca anomalie.
+        public readonly Dictionary<(string P, string D), (decimal Q, decimal V)> NegativeIstoric = [];
 
         // Raportul integral pe disc (JurnalContract.cs): consola e plafonată, aici
         // intră TOATE diferențele. Poate lipsi (rulările de diagnostic).
@@ -224,9 +267,22 @@ static class ReconciliereLuna {
         // (b) Plafonul MĂSURAT al contului: diferența de EVALUARE, adică exact cât
         // s-a rearanjat sub el în registrul de stoc (contul de stoc) sau sub
         // conturile de stoc a căror oglindă de cheltuială este (citite din
-        // politici, nu presupuse). Plus valoarea liniilor pe care puntea le-a
-        // transcris la valoarea SURSEI deși marfa a rămas în Atlas — acolo
-        // contabilitatea e a sursei, iar stocul e al nostru.
+        // politici, nu presupuse).
+        //
+        // ATÂT. Plafonul e o TOLERANȚĂ, nu o explicație, iar o toleranță are voie
+        // să existe doar unde puterea de discriminare stă în altă parte: pe
+        // conturile de stoc și pe oglinzile lor de cheltuială, cantitatea din
+        // contractul 3 e cea care prinde documentul pierdut, deci valoarea poate
+        // rămâne mărginită. Pe ORICE alt cont, un plafon e o scuză. Aici a stat
+        // componenta „valoarea liniilor pe care puntea le-a transcris deși marfa a
+        // rămas în Atlas", iar ea a plafonat, printre altele, contul 401 — un cont
+        // de FURNIZORI acoperit de toleranța de evaluare a stocului (semnalul cel
+        // mai serios al diagnozei pre-1C-d). Era pe deasupra o dublare: marfa
+        // rămasă în Atlas e deja în `stoc.PeCont`, măsurată din registru.
+        // Explicația conturilor din afara stocului vine de acum EXCLUSIV din
+        // registrul divergențelor, prin egalitate — vezi acumularea EVALUATĂ din
+        // `Punte`, care măsoară diferența dintre cifra sursei și cifra Atlas la
+        // locul faptei.
         var plafon = new Dictionary<string, decimal>(StringComparer.Ordinal);
         void Plafon(string cont, decimal suma) {
             if (cont != null && suma != 0m)
@@ -236,10 +292,6 @@ static class ReconciliereLuna {
             Plafon(contStoc, delta);
             foreach (var contCost in cat.CosturiPentruContStoc(contStoc) ?? (IReadOnlySet<string>)new HashSet<string>())
                 Plafon(contCost, delta);
-        }
-        foreach (var d in registru.Where(d => d.Valoare != 0m)) {
-            Plafon(d.ContDebit, d.Valoare);
-            Plafon(d.ContCredit, d.Valoare);
         }
 
         // ---- Verdictul, per cont ----
@@ -413,6 +465,8 @@ static class ReconciliereLuna {
                 g.Key.LotId, g.Key.RepartitorId,
                 Q = g.Sum(r => Math.Round(r.Cantitate, Scara)),
                 V = g.Sum(r => Math.Round(r.Valoare, Scara)),
+                // Numărul de mișcări ale cheii — intrarea pragului de rotunjire.
+                N = g.Count(),
             })
             .ToList();
         // Valoarea de stoc a Atlas-ului per CONT (prin Tipul produsului lotului):
@@ -444,6 +498,7 @@ static class ReconciliereLuna {
         var depozitHex = Reconciliere.Inverseaza(os, "Depozite", avert);
 
         var db = new Dictionary<(string P, string D), (decimal Q, decimal V)>();
+        var miscari = new Dictionary<(string P, string D), int>();
         foreach (var r in randuri) {
             var p = produsPeLot.TryGetValue(r.LotId, out var produsId)
                 ? produsHex.GetValueOrDefault(produsId) ?? $"(produs nelegat {produsId})"
@@ -451,6 +506,7 @@ static class ReconciliereLuna {
             var d = depozitHex.GetValueOrDefault(r.RepartitorId) ?? $"(gestiune nelegată {r.RepartitorId})";
             var acum = db.GetValueOrDefault((p, d));
             db[(p, d)] = (acum.Q + r.Q, acum.V + r.V);
+            miscari[(p, d)] = miscari.GetValueOrDefault((p, d)) + r.N;
         }
 
         // ---- Sursa: BalantaNivel3 la fine de lună, plus pozițiile orfane ----
@@ -507,12 +563,36 @@ static class ReconciliereLuna {
         // simplu pe minus în celula lui. Categoria rămâne pentru celulele în care
         // sursa CHIAR e negativă la ziua de referință; ieșirile pe care unealta
         // le-a aruncat au acum categoria lor măsurată, mai sus.
+        // OGLINDA SURSEI a familiei „valoare fără cantitate": 1C ține și EL celule
+        // cu bani și zero bucăți, dar TRANZITORII — avizul care lasă 84,94 lei cu
+        // 0,000 buc din septembrie și se stinge în decembrie. Atlas nu poate
+        // reprezenta o asemenea poziție (n-are cantitate din care să se nască un
+        // lot), deci cheia diferă exact cu cifra sursei, atâta timp cât sursa o
+        // ține. Se citește din aceleași celule brute ale lunii — nu e o
+        // presupunere, e valoarea pe care sursa o arată chiar la ziua de referință.
+        var valoareFaraCantitateSursa = pozitii
+            .Where(p => Math.Abs(p.Cantitate) < EpsQ && Math.Abs(p.Valoare) >= EpsV)
+            .GroupBy(p => (P: p.NomenclatorId, D: p.DepozitId))
+            .ToDictionary(g => g.Key, g => g.Sum(p => p.Valoare));
+
         var negativeSursa = pozitii
             .Where(p => p.Cantitate < -EpsQ || p.Valoare < -EpsV)
             .GroupBy(p => p.NomenclatorId, StringComparer.Ordinal)
             .ToDictionary(g => g.Key,
                 g => (Q: g.Sum(p => Math.Abs(p.Cantitate)), V: g.Sum(p => Math.Abs(p.Valoare))),
                 StringComparer.Ordinal);
+        // Istoricul negativelor pe CHEIA EXACTĂ (produs × depozit), cumulat lună de
+        // lună: se ia maximul, nu suma — aceeași celulă negativă purtată prin mai
+        // multe luni ar fi numărată de fiecare dată.
+        foreach (var g in pozitii
+                     .Where(p => p.Cantitate < -EpsQ || p.Valoare < -EpsV)
+                     .GroupBy(p => (P: p.NomenclatorId, D: p.DepozitId)))
+            stare.NegativeIstoric[g.Key] = (
+                Math.Max(stare.NegativeIstoric.GetValueOrDefault(g.Key).Q,
+                    g.Sum(p => Math.Abs(p.Cantitate))),
+                Math.Max(stare.NegativeIstoric.GetValueOrDefault(g.Key).V,
+                    g.Sum(p => Math.Abs(p.Valoare))));
+
         var totalDb = db.GroupBy(x => x.Key.P, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => (Q: g.Sum(x => x.Value.Q), V: g.Sum(x => x.Value.V)),
                 StringComparer.Ordinal);
@@ -532,6 +612,13 @@ static class ReconciliereLuna {
             // rupe pe câțiva bani (34,98 vs 35,01 — ianuarie).
             return Math.Abs(dq) <= negativ.Q + EpsQ && Math.Abs(dv) <= negativ.V + EpsPrag;
         }
+
+        // Marfa în plus la Atlas trebuie să încapă în negativul pe care sursa l-a
+        // arătat pe ACEEAȘI cheie (nu pe produs global — o celulă negativă într-un
+        // depozit n-are ce justifica în altul), pe cantitate ȘI pe valoare.
+        bool IncapeInNegativulIstoric((string P, string D) cheie, decimal dq, decimal dv) =>
+            stare.NegativeIstoric.TryGetValue(cheie, out var negativ)
+                && Math.Abs(dq) <= negativ.Q + EpsQ && Math.Abs(dv) <= negativ.V + EpsPrag;
 
         // Pozițiile ORFANE ale sursei: fără produs sau fără depozit (id-ul 1C e
         // plin de zerouri). Nu pot deveni lot în Atlas (decizia 13) — deschiderea
@@ -569,18 +656,73 @@ static class ReconciliereLuna {
                     ? $"măsurat pe cantitate ({m.N} linii aruncate, {m.Q:N3} buc); valoarea diferă de "
                         + $"cea a sursei ({m.V:N2} lei) fiindcă Atlas evaluează la costul lui — "
                         + "netarea deschiderii / supapa 48a"
-                // 3. REZIDUU DE ROTUNJIRE — cantitate exactă, bani mărunți.
-                : Math.Abs(dq) < EpsQ && Math.Abs(dv) <= EpsRotunjire
-                    ? "reziduu de rotunjire (cantitate exactă, sub un ban pe rând)"
+                // 2c. VALOARE FĂRĂ CANTITATE, moștenită din deschidere: cantitatea
+                //     trebuie să bată exact, iar restul de valoare trebuie să fie
+                //     EGAL cu cifra măsurată la deschidere — nu „sub" ea.
+                : Math.Abs(dq) < EpsQ
+                        && stare.ValoriFaraCantitateDeschidere.TryGetValue(k, out var vFaraQ)
+                        && Math.Abs(dv - vFaraQ) <= EpsPrag
+                    ? $"celulă a sursei cu valoare fără cantitate, nestingibilă ({vFaraQ:N2} lei "
+                        + "scriși la deschidere pe o poziție fără bucăți — prețul unitar e zero, "
+                        + "deci nicio ieșire nu-i poate scoate)"
+                // 2d. OGLINDA: celula SURSEI cu valoare fără cantitate la ziua de
+                //     referință. Cantitatea trebuie să bată exact, iar lipsa de
+                //     valoare din Atlas trebuie să fie EGALĂ cu cifra pe care sursa
+                //     o ține fără bucăți — mărginită de ea, per cheie, citită din
+                //     celulele brute ale lunii. Spre deosebire de perechea ei din
+                //     deschidere, asta e TRANZITORIE: sursa o stinge singură
+                //     (avizul din septembrie dispare în decembrie), iar cheia se
+                //     închide de la sine.
+                : Math.Abs(dq) < EpsQ
+                        && valoareFaraCantitateSursa.TryGetValue(k, out var vSursaFaraQ)
+                        && Math.Abs(dv + vSursaFaraQ) <= EpsPrag
+                    ? $"celulă a SURSEI cu valoare fără cantitate la ziua de referință "
+                        + $"({vSursaFaraQ:N2} lei pe 0,000 buc — nereprezentabilă ca lot în Atlas)"
+                // 3. REZIDUU DE ROTUNJIRE — cantitate exactă, bani mărunți, cu
+                //    pragul cheii dat de câte mișcări are ea în registru.
+                : Math.Abs(dq) < EpsQ
+                        && Math.Abs(dv) <= PragRotunjireCheie(miscari.GetValueOrDefault(k))
+                    ? $"reziduu de rotunjire (cantitate exactă, {miscari.GetValueOrDefault(k)} mișcări, "
+                        + $"prag {PragRotunjireCheie(miscari.GetValueOrDefault(k)):N2} lei)"
                 // 2. NEGATIVUL SURSEI la ziua de referință.
                 : IncapeInNegativulSursei(k.P)
                     ? "celulă negativă în 1C la ziua de referință; "
                         + $"abaterea pe produs ({DeltaProdus(k.P).Q:N3} buc / {DeltaProdus(k.P).V:N2} lei) "
                         + $"încape în negativul sursei ({negativeSursa[k.P].Q:N3} buc / "
                         + $"{negativeSursa[k.P].V:N2} lei)"
+                // 2b. NEGATIVUL SURSEI ORIUNDE ÎN AN pe cheia exactă, netat până la
+                //     ziua de referință (vezi `Stare.NegativeIstoric`).
+                : IncapeInNegativulIstoric(k, dq, dv)
+                    ? $"celulă negativă în 1C intra-an, netată până la ziua de referință; abaterea "
+                        + $"({dq:N3} buc / {dv:N2} lei) încape în negativul maxim al cheii "
+                        + $"({stare.NegativeIstoric[k].Q:N3} buc / {stare.NegativeIstoric[k].V:N2} lei)"
+                // 4. COST PER LOT PUS DE ATLAS, cantitate EXACTĂ. Categoria asta
+                //    justifică o diferență de VALOARE, deci își poartă apărarea:
+                //
+                //    * e PROVENIENȚĂ, nu plauzibilitate. `netat` nu întreabă „ar
+                //      putea valoarea asta să vină de la o reevaluare?", ci „am
+                //      pus NOI prețul lotului acestui produs?". Mulțimea vine din
+                //      evidența persistată a rulării — netarea deschiderii (47d),
+                //      realocarea supapei (48a) și produsele născute de asamblări
+                //      —, nu dintr-o presupunere despre ce s-ar fi putut întâmpla.
+                //      Un produs pe care nu l-am atins niciodată nu intră aici
+                //      oricât de mică ar fi diferența.
+                //    * DISCRIMINAREA STĂ ÎN CANTITATE, și rămâne strictă. Un
+                //      document de stoc pierdut lasă bucăți în plus, nu doar bani,
+                //      deci pică zgomotos indiferent de categoria asta — exact ce
+                //      scrie în capul fișierului. Aici se explică numai bani, și
+                //      numai când numărul de bucăți bate la virgulă.
+                //    * de ce NU o sumă înregistrată în registru: delta de evaluare
+                //      e per BUCATĂ și pleacă odată cu bucățile. Măsurat: 8 bucăți
+                //      produse cu −719,96 (−89,995 pe bucată), 2 vândute, pe cheie
+                //      rămân 6 × (−89,995) = −539,97. O cifră fixă se învechește la
+                //      prima ieșire; iar dacă marfa se mută în alt depozit,
+                //      înregistrarea rămâne pe cheia veche, unde nu mai e nimic de
+                //      explicat. Marcajul pe produs n-are niciuna dintre probleme.
                 : Math.Abs(dq) < EpsQ && netat
-                    ? "cost per lot rearanjat, cantitate exactă (netarea deschiderii sau "
-                        + "realocarea supapei 48a)"
+                    ? "cost per lot rearanjat, cantitate exactă (netarea deschiderii, "
+                        + "realocarea supapei 48a sau produs născut de o asamblare — "
+                        + "prețul lotului e pus de Atlas)"
                 : null;
             if (motiv == null)
                 nepotriviri++;
@@ -595,10 +737,19 @@ static class ReconciliereLuna {
             detalii.Add((k.P, k.D, qDb, vDb, qSursa, vSursa, motiv));
         }
 
-        if (cheiRotunjire > 0 && Math.Abs(rotunjireAlg) > PragRotunjireSistematica)
+        if (cheiRotunjire > 0 && Math.Abs(rotunjireAlg) > PragRotunjireSistematica(cheiRotunjire))
             avert($"[{ctx.Luna:00}/{ctx.An}] cele {cheiRotunjire} chei de stoc puse pe seama rotunjirii "
                 + $"NU se compensează (Σ algebrică {rotunjireAlg:N2} lei din {rotunjireAbs:N2} lei în "
-                + "valoare absolută) — rotunjirea care merge toată în același sens nu mai e rotunjire.");
+                + $"valoare absolută, adică {rotunjireAlg / cheiRotunjire:N4} lei pe cheie, peste pragul "
+                + $"de {PragRotunjireSistematica(cheiRotunjire):N2}). CAUZA E CUNOSCUTĂ ȘI MĂSURATĂ, "
+                + "nu e de re-diagnosticat: `Scara.RotunjesteBani` rotunjește la jumătatea de ban "
+                + "DEPĂRTÂNDU-SE DE ZERO (decizia 49e), iar ieșirile cad pe jumătatea de ban mai des "
+                + "decât intrările — ieșirea e o cantitate parțială înmulțită cu un preț de 6 zecimale, "
+                + "pe când intrarea poartă valoarea întreagă a lotului, cu 2. Măsurat pe 2025: 2.232 "
+                + "ieșiri × (−0,005) + 1.396 intrări × (+0,005) = −4,18 lei pe an, adică exact deriva "
+                + "de mai sus. E convenția de rotunjire a motorului, nu un defect de import; s-ar "
+                + "schimba doar trecând `RotunjesteBani` pe rotunjire bancară — decizie de convenție "
+                + "contabilă, în Module, nu aici.");
 
         // Cifra de raport a efectului netării (nu mai e plafon — D6): abaterea
         // NETĂ pe produs, adică ce se scurge din stoc în contabilitate. Perechile
@@ -685,7 +836,7 @@ static class ReconciliereLuna {
         if (stoc.CheiRotunjire > 0)
             Console.WriteLine($"     din care rotunjire: {stoc.CheiRotunjire} chei, "
                 + $"Σ |Δ| {stoc.RotunjireAbsoluta:N2} lei, Σ algebrică {stoc.RotunjireAlgebrica:N2} lei "
-                + $"(prag de alarmă {PragRotunjireSistematica:N2}).");
+                + $"(prag de alarmă {PragRotunjireSistematica(stoc.CheiRotunjire):N2}).");
 
         contract($"3. Stoc per produs × gestiune: {stoc.Chei} chei comparate, {stoc.Nepotriviri} "
             + $"nepotriviri nejustificate ({stoc.Justificate} justificate — Σ {stoc.Justificat:N2} lei; "

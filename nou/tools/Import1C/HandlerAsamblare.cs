@@ -268,9 +268,51 @@ static class HandlerAsamblare {
         }
 
         Scaleaza(plan, valoareConsum);
+        MasoaraProductia(bucla, view, h.Id, plan);
         if (plan.AreDocument)
             Documente++;
         return plan;
+    }
+
+    // LATURA DE PRODUCȚIE, MĂSURATĂ. Consumul era deja măsurat (ce n-a putut ieși
+    // rămâne în stoc); producția nu era deloc, și e cealaltă jumătate a aceleiași
+    // realități — cu o particularitate care o face singurul loc al importului unde
+    // Atlas rămâne SUB sursă, nu peste:
+    //
+    //  * PRODUS NENĂSCUT: fără niciun consum acoperit, documentul nu se mai
+    //    materializează (`AreDocument`), deci produsul nu se naște. Măsurat pe
+    //    2025: `Asamblare SED00000652`/16.12 e o substituție 1→1 (consumă un
+    //    procesor, produce altul); lotul de consum n-avea sold în Atlas, iar
+    //    produsul — 1 buc / 511,62 lei în 1C — n-a existat niciodată la noi.
+    //  * PRODUS EVALUAT DE NOI: când consumul iese (fie și parțial), produsul se
+    //    naște cu cantitatea sursei, dar cu valoarea SCALATĂ la consumul Atlas
+    //    (invariantul |Σ produse − Σ consumuri| ≤ 0,005 o cere), pe când 1C își
+    //    evaluează produsul independent. Aici NU se înregistrează o sumă: delta e
+    //    o proprietate PER BUCATĂ a lotului și pleacă odată cu bucățile, deci
+    //    orice cifră fixă se învechește la prima ieșire (vezi
+    //    `AlocareIesire.MarcheazaEvaluatDeAtlas`, unde stă aritmetica măsurată).
+    //    Se marchează PRODUSUL ca evaluat de Atlas — aceeași mulțime și același
+    //    temei ca la netarea deschiderii —, iar contractul îi acceptă o diferență
+    //    de VALOARE numai cu cantitatea exactă.
+    //
+    // Cheia e depozitul în care ajung produsele după transfer (acolo le compară
+    // contractul), nu cel în care se nasc.
+    static void MasoaraProductia(BuclaImport bucla, string view, string docId, Plan plan) {
+        if (plan.Produse.Count == 0)
+            return;
+        // Fără niciun consum acoperit documentul nu se materializează, deci
+        // produsul nu se naște: acolo diferă CANTITATEA, iar cantitatea se
+        // măsoară exact, întotdeauna.
+        if (plan.Consumuri.Count == 0) {
+            var depozit = plan.DepozitProduseHex ?? "";
+            foreach (var p in plan.Produse)
+                bucla.Divergenta($"{view}/{docId}",
+                    "ASM: produs nenăscut (niciun consum acoperit) — marfa sursei lipsește din Atlas",
+                    [new EfectStoc(p.NomenclatorId, depozit, -p.Cantitate, -p.Valoare1C)]);
+            return;
+        }
+        foreach (var p in plan.Produse)
+            bucla.Alocare.MarcheazaEvaluatDeAtlas(p.ProdusId);
     }
 
     static Guid Gestiune(Catalog cat, string depozitHex, Guid deja, string context, string rol) {

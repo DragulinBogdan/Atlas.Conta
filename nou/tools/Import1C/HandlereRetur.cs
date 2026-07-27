@@ -176,6 +176,10 @@ static class HandlerReturFurnizor {
                     nomRef == null ? null
                         : [new EfectStoc(nomRef.Id, depozitHex, Math.Abs(r.CantitateDebit), -r.Suma)],
                     simbolDebit, cat.Mapeaza(r.ContCredit), r.Suma);
+                // Rândul e deja înregistrat integral ca nepostat, mai sus: se scoate
+                // din acumularea evaluată (unde clasificarea îl pune ca pe orice
+                // rând de stornare), ca să nu fie explicat de două ori.
+                plan.Punte.ActualEvaluat(simbolDebit, cat.Mapeaza(r.ContCredit), r.Suma);
                 continue;
             }
             var gestiuneId = cat.Gestiuni.TryGetValue(depozitHex, out var g)
@@ -204,6 +208,14 @@ static class HandlerReturFurnizor {
                     peCheie[cheie] = lista = [];
                 lista.Add(linie);
                 Linii++;
+                // Ce postează motorul: stornarea achiziției la costul lotului ATLAS
+                // (3xx = 401, cu semn negativ — 46e). Diferența față de cifra
+                // sursei e diferența de EVALUARE, iar ea cade pe 401 — un cont pe
+                // care nicio măsurătoare de stoc nu-l atinge. Se declară aici ca să
+                // fie măsurată, nu presupusă (era singura explicație a abaterii de
+                // 401 din contractul 1, și venea din plafon).
+                plan.Punte.ActualEvaluat(tip.Simbol, Catalog.ContDatorieImplicit,
+                    -Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId)));
             }
             if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {cantitate:N3} n-au acoperire în gestiune — "
@@ -217,6 +229,9 @@ static class HandlerReturFurnizor {
                 var valoareRamas = cantitate == 0 ? r.Suma : r.Suma * ramas / cantitate;
                 plan.Punte.Categoria("RLF: retur fără acoperire în stoc — stornarea se transcrie contabil")
                     .Tinta1C(simbolDebit, cat.Mapeaza(r.ContCredit), valoareRamas);
+                // Partea transcrisă e postată (de nota-punte) ⇒ pleacă din
+                // acumularea evaluată.
+                plan.Punte.ActualEvaluat(simbolDebit, cat.Mapeaza(r.ContCredit), valoareRamas);
                 // Măsurătoarea: 1C a scos marfa (mișcare de debit NEGATIVĂ pe contul
                 // de stoc — storno), Atlas n-a scos-o, deci Atlas are în plus exact
                 // opusul mișcării sursei. Contabil nu divergem: puntea de mai sus a
@@ -435,9 +450,11 @@ static class HandlerReturClient {
                 .Concat(servicii.Select(s => (s.ContVenituri, s.CotaTva, s.Suma, s.SumaTva))));
         LiniiVenit += plan.Venituri.Count;
 
-        // Fără ObjectSpace aici: RDC-ul nu alocă din stoc (linia de cost revine pe
-        // lotul original sau îl recreează), iar Tipul liniei vine din rezolvarea
-        // lotului — nu mai e nimic de citit din bază la planificare.
+        // RDC-ul nu ALOCĂ din stoc (linia de cost revine pe lotul original sau îl
+        // recreează), dar are nevoie de PREȚUL lotului original: costul care revine
+        // e cel al lotului Atlas, iar diferența față de cifra sursei e o divergență
+        // de evaluare care trebuie măsurată (Punte.cs), nu presupusă.
+        using var os = bucla.CreeazaObjectSpace();
         var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
         foreach (var r in randuri) {
             if (!Descarcare1C.EsteRandDeCost(cat, r))
@@ -449,6 +466,17 @@ static class HandlerReturClient {
             var rezolvat = MiscareStoc1C.Rezolva(bucla, lotRef, nomRef, simbolCredit, context);
             if (rezolvat is not var (lot, tip, produsId)) {
                 RanduriNerezolvate++;
+                // Rândul nu produce nici linie, nici punte (comportamentul de azi):
+                // se înregistrează ca nepostat, altfel acumularea evaluată l-ar
+                // raporta pe conturile SURSEI, iar stocul lui n-ar fi măsurat deloc.
+                bucla.Divergenta($"{View}/{h.Id}",
+                    "RDC: rând de cost cu lot/produs nerezolvabil — marfa nu revine în stoc",
+                    nomRef == null ? null
+                        : [new EfectStoc(nomRef.Id,
+                            index.Ia(r.Linie, Subconto.Credit, Subconto.Depozite)?.Id ?? h.DepozitId ?? "",
+                            -Math.Abs(r.CantitateCredit), r.Suma)],
+                    cat.Mapeaza(r.ContDebit), simbolCredit, r.Suma);
+                plan.Punte.ActualEvaluat(cat.Mapeaza(r.ContDebit), simbolCredit, r.Suma);
                 continue;
             }
             // Depozitul rândului bate antetul (marfa revine unde spune sursa).
@@ -519,6 +547,18 @@ static class HandlerReturClient {
             plan.Costuri.Add(new LinieCost(tip.Id, cantitate, lotId, produsId, cheieLot,
                 cantitate == 0 ? 0m : Math.Abs(r.Suma) / cantitate, cheieAlias));
             LiniiCost++;
+            // Ce postează motorul: costul care revine, cu semn storno (46e). Pe lot
+            // EXISTENT e prețul lotului Atlas (poate diferi de cifra sursei — netarea
+            // deschiderii); pe lot recreat din cheia sursei e exact cifra sursei,
+            // deci declarația se anulează singură. Perechea de conturi vine din
+            // regula RDC a Tipului, nu din rândul 1C: dacă lotul a fost
+            // reclasificat, Atlas postează pe geamănul lui, iar diferența trebuie
+            // să se vadă pe conturile amândurora.
+            if (cat.Contare("RDC", tip.Id) is { } contareRdc)
+                plan.Punte.ActualEvaluat(contareRdc.Debit, contareRdc.Credit,
+                    lotId is { } existent
+                        ? -Scara.RotunjesteBani(cantitate * HandlerTransfer.PretLot(os, existent))
+                        : r.Suma);
         }
 
         ConstruiestePunte(cat, plan, h.Id, randuri);
