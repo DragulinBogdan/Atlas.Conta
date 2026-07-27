@@ -208,6 +208,7 @@ static class HandlerReturFurnizor {
             var cantitate = Math.Abs(r.CantitateDebit);
             var (alocari, ramas) = bucla.Alocare.Aloca(os, pin, produsId, gestiuneId,
                 tip.Registru, plan.Data, cantitate, dejaAlocat);
+            var valoareAtlas = 0m;
             foreach (var (lotId, q) in alocari) {
                 var linie = new LinieRetur(lotId, tip.Id, q);
                 grup.Linii.Add(linie);
@@ -216,15 +217,17 @@ static class HandlerReturFurnizor {
                     peCheie[cheie] = lista = [];
                 lista.Add(linie);
                 Linii++;
+                var cost = Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId));
+                valoareAtlas += cost;
                 // Ce postează motorul: stornarea achiziției la costul lotului ATLAS
                 // (3xx = 401, cu semn negativ — 46e). Diferența față de cifra
                 // sursei e diferența de EVALUARE, iar ea cade pe 401 — un cont pe
                 // care nicio măsurătoare de stoc nu-l atinge. Se declară aici ca să
                 // fie măsurată, nu presupusă (era singura explicație a abaterii de
                 // 401 din contractul 1, și venea din plafon).
-                plan.Punte.ActualEvaluat(tip.Simbol, Catalog.ContDatorieImplicit,
-                    -Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId)));
+                plan.Punte.ActualEvaluat(tip.Simbol, Catalog.ContDatorieImplicit, -cost);
             }
+            var valoareNeacoperita = 0m;
             if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {cantitate:N3} n-au acoperire în gestiune — "
                     + "returul iese parțial (diferență de stoc raportată).");
@@ -234,7 +237,8 @@ static class HandlerReturFurnizor {
                 // din rândurile de retur n-au marfa în stocul Atlas, fiindcă 1C le
                 // ține pe loturi-retur pe care netarea deschiderii nu le are).
                 LiniiNeacoperite++;
-                var valoareRamas = cantitate == 0 ? r.Suma : r.Suma * ramas / cantitate;
+                var valoareRamas = valoareNeacoperita = cantitate == 0
+                    ? r.Suma : r.Suma * ramas / cantitate;
                 plan.Punte.Categoria("RLF: retur fără acoperire în stoc — stornarea se transcrie contabil")
                     .Tinta1C(simbolDebit, cat.Mapeaza(r.ContCredit), valoareRamas);
                 // Partea transcrisă e postată (de nota-punte) ⇒ pleacă din
@@ -249,6 +253,13 @@ static class HandlerReturFurnizor {
                     [new EfectStoc(nomRef.Id, depozitHex, ramas, -valoareRamas)],
                     simbolDebit, cat.Mapeaza(r.ContCredit));
             }
+            // Decăderea deltei de cost per depozit (`Evaluare`): returul scoate
+            // marfa din gestiune, deci pleacă și partea ei din diferența lăsată
+            // acolo de transferuri. Atlas scoate costul lotului lui (mișcare
+            // negativă); mișcarea sursei e chiar `r.Suma` cu semnul ei — pe retur e
+            // un debit NEGATIV pe contul de stoc (storno), deci tot o ieșire.
+            Evaluare.Masoara(bucla, $"{View}/{h.Id}", "RLF", nomRef?.Id, depozitHex,
+                -valoareAtlas, r.Suma - valoareNeacoperita);
         }
 
         DistribuieTva(cat, peCheie, tvaPeCheie);
@@ -562,11 +573,20 @@ static class HandlerReturClient {
             // regula RDC a Tipului, nu din rândul 1C: dacă lotul a fost
             // reclasificat, Atlas postează pe geamănul lui, iar diferența trebuie
             // să se vadă pe conturile amândurora.
+            var valoareAtlas = lotId is { } lotExistent
+                ? Scara.RotunjesteBani(cantitate * HandlerTransfer.PretLot(os, lotExistent))
+                : -r.Suma;
             if (cat.Contare("RDC", tip.Id) is { } contareRdc)
-                plan.Punte.ActualEvaluat(contareRdc.Debit, contareRdc.Credit,
-                    lotId is { } existent
-                        ? -Scara.RotunjesteBani(cantitate * HandlerTransfer.PretLot(os, existent))
-                        : r.Suma);
+                plan.Punte.ActualEvaluat(contareRdc.Debit, contareRdc.Credit, -valoareAtlas);
+            // Decăderea deltei de cost per depozit (`Evaluare`), pe axa de STOC a
+            // aceleiași perechi evaluate — aici marfa INTRĂ, deci ambele mișcări
+            // sunt pozitive: Atlas o repune la prețul lotului lui, sursa la costul
+            // ei per depozit, iar diferența rămâne pe cheie de-atunci încolo (rândul
+            // sursei e un credit NEGATIV pe contul de stoc — storno de cost — deci
+            // mișcarea ei e `-r.Suma`). Pe lotul RECREAT din cifra sursei cele două
+            // coincid prin construcție și declarația se anulează singură.
+            Evaluare.Masoara(bucla, $"{View}/{h.Id}", "RDC", nomRef?.Id, depozitHex,
+                valoareAtlas, -r.Suma);
         }
 
         ConstruiestePunte(cat, plan, h.Id, randuri);

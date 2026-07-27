@@ -125,6 +125,7 @@ static class Handlere {
         HandlerCompensare.Raporteaza();
         HandlereNoteSimple.Raporteaza();
         StocDinNota.Raporteaza();
+        Evaluare.Raporteaza();
         NoteComune.Raporteaza();
         Imperecheri1C.Raporteaza();
         Reluare1C.Raporteaza();

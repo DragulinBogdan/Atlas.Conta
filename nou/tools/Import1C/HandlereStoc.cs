@@ -472,6 +472,13 @@ static class HandlerConsum {
                 : r.CantitateCredit == 0m ? r.Suma : r.Suma * ramas / r.CantitateCredit;
             plan.Punte.TintaEvaluata(simbolDebit, simbolCredit, r.Suma - valoareNeacoperita);
             plan.Punte.ActualEvaluat(simbolDebit, simbolCredit, valoareAtlas);
+            // Decăderea deltei de cost per depozit (`Evaluare`), pe axa de STOC a
+            // aceleiași perechi evaluate: consumul scoate marfa din gestiune, deci
+            // scoate și partea ei din diferența lăsată acolo de transferuri. Ambele
+            // mișcări sunt ieșiri (negative); partea neacoperită e măsurată separat,
+            // mai jos, cu cifra sursei.
+            Evaluare.Masoara(bucla, $"{View}/{h.Id}", "BCS", nomRef?.Id, depozitHex,
+                -valoareAtlas, -(r.Suma - valoareNeacoperita));
             if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {r.CantitateCredit:N3} n-au acoperire în "
                     + "gestiunea predatoare — consumul se descarcă parțial.");
@@ -714,6 +721,13 @@ static class HandlerDiferente {
             // în care puntea transcrie la valoarea Atlas fără s-o declare.
             plan.Punte.TintaEvaluata(simbolDebit, simbolCredit, r.Suma - valoareNeacoperita);
             plan.Punte.ActualEvaluat(simbolDebit, simbolCredit, valoareAtlas);
+            // Decăderea deltei de cost per depozit (`Evaluare`), ca la consum:
+            // minusul scoate marfa, deci pleacă și partea ei din diferență. La fel
+            // ca restul minusului, linia e netestată pe date reale (2025 n-are
+            // niciun document de tipul ăsta) — stă aici ca ieșirea asta să nu fie
+            // singura care lasă în urmă o justificare învechită.
+            Evaluare.Masoara(bucla, $"{ViewMinus}/{h.Id}", "LDI−", nomRef?.Id, h.DepozitId,
+                -valoareAtlas, -(r.Suma - valoareNeacoperita));
             var contare = cat.ContareMinusInventar(tip.Id);
             if (contare == null)
                 plan.Punte.Categoria("LDI−: Tip fără regulă de contare în profil")

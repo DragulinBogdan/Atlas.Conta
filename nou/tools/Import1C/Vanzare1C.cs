@@ -208,13 +208,16 @@ static class Descarcare1C {
             // cazul în care 1C a reclasificat lotul (rândul sursei spune 607 = 371,
             // Atlas postează 608 = 381 fiindcă lotul a rămas pe geamănul lui).
             var contare = cat.Contare("DSC", tip.Id);
+            var valoareAtlas = 0m;
             foreach (var (lotId, q) in alocari) {
                 grup.Linii.Add(new LiniePeLot(lotId, tip.Id, q));
                 LiniiDescarcate++;
+                var cost = Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId));
+                valoareAtlas += cost;
                 if (contare is { } c)
-                    punte.ActualEvaluat(c.Debit, c.Credit,
-                        Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId)));
+                    punte.ActualEvaluat(c.Debit, c.Credit, cost);
             }
+            var valoareNeacoperita = 0m;
             if (ramas > 0) {
                 bucla.Avert($"{context}: {ramas:N3} din {cantitate:N3} n-au acoperire în gestiunea "
                     + "care descarcă — marfa se descarcă parțial (diferență de stoc raportată).");
@@ -224,7 +227,8 @@ static class Descarcare1C {
                 // în punte — contabilitatea rămâne a sursei, stocul e cel pe care
                 // Atlas chiar îl are (diferența de stoc se raportează separat).
                 NeacoperitTranscris++;
-                var valoareRamas = cantitate == 0 ? r.Suma : r.Suma * ramas / cantitate;
+                var valoareRamas = valoareNeacoperita = cantitate == 0
+                    ? r.Suma : r.Suma * ramas / cantitate;
                 punte.Categoria("Ieșire de marfă fără acoperire în stoc — costul se transcrie contabil")
                     .Tinta1C(cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit), valoareRamas);
                 // Partea transcrisă e postată (de nota-punte), deci pleacă din
@@ -239,6 +243,13 @@ static class Descarcare1C {
                     nomRef == null ? null : [new EfectStoc(nomRef.Id, depozitHex, ramas, valoareRamas)],
                     cat.Mapeaza(r.ContDebit), cat.Mapeaza(r.ContCredit));
             }
+            // Decăderea deltei de cost per depozit (`Evaluare`): marfa iese, deci
+            // pleacă și partea ei din diferența pe care transferurile au lăsat-o
+            // pe cheia asta. Ambele mișcări sunt IEȘIRI, deci negative: Atlas
+            // scoate costul lotului lui, sursa scoate partea acoperită din rândul
+            // ei (restul neacoperit e deja măsurat mai sus, întreg).
+            Evaluare.Masoara(bucla, sursa, "DSC", nomRef?.Id, depozitHex,
+                -valoareAtlas, -(r.Suma - valoareNeacoperita));
         }
         if (grupuri.Count > 1)
             DocumenteSparte++;

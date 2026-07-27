@@ -394,9 +394,22 @@ static class StocDinNota {
         // sursei, iar marfa care rămâne e evaluată de noi); dacă nu există —
         // nomenclatorul-țintă al reclasificării nici nu ajunge produs în Atlas —
         // singura cifră disponibilă e a sursei.
+        //
+        // Mărimea o dă prețul lotului, dar SEMNUL aparține mișcării de VALOARE a
+        // sursei, nu celei de cantitate: cele două coincid doar când rândul mută
+        // marfa și valoarea în același sens (reclasificarea propriu-zisă). Nu
+        // coincid întotdeauna — 1C stornează valoarea lăsând bucățile în urmă
+        // (măsurat: „Operatia" din 26.03, rând 371.1 = 408 cu Suma −2.715,23 și
+        // CountDt +1: sursa PUNE o bucată și SCOATE valoarea, deci Atlas are −1
+        // bucată și +2.715,23 față de ea) și scrie rânduri de cantitate cu
+        // valoare zero. În ambele cazuri prețul lotului ar da semnul invers sau o
+        // valoare care nu s-a mișcat, iar cheia ar rămâne explicată greșit luni
+        // în șir (măsurat: aprilie→noiembrie, „închisă" în decembrie doar prin
+        // anularea a două erori egale și opuse). Ele cad pe fallback-ul de mai
+        // sus, care e negarea directă a mișcării sursei — mereu corect.
         var lot = cat.Lot(lotRef.TipRef, lotRef.Id, nomRef.Id, simbol);
         var valoare = -valoare1C;
-        if (lot != null) {
+        if (lot != null && valoare1C != 0m && Math.Sign(valoare1C) == Math.Sign(cantitate1C)) {
             os ??= bucla.CreeazaObjectSpace();
             valoare = -Math.Sign(cantitate1C)
                 * Scara.RotunjesteBani(Math.Abs(cantitate1C) * HandlerTransfer.PretLot(os, lot.Id));

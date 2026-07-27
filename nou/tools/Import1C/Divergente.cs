@@ -382,3 +382,57 @@ sealed class RegistruDivergente {
 
     static string Gol(string text) => text.Length == 0 ? null : text;
 }
+
+// ======================= Δ-ul de EVALUARE al unei mișcări de stoc =======================
+//
+// **1C ține un cost PER DEPOZIT pentru ACELAȘI lot; Atlas ține unul singur**
+// (identificare specifică — decizia 13). Transferul e locul unde se NAȘTE
+// diferența, iar `HandlerTransfer` o măsoară acolo, pe ambele gestiuni cu semne
+// opuse (valoarea doar se rearanjează). Dar delta e PER BUCATĂ și CĂLĂTOREȘTE
+// CU MARFA: cât timp bucățile trec dintr-un depozit în altul, hunk-ul de la
+// transfer se re-declanșează și registrul se auto-corectează — când însă ies din
+// sistem prin VÂNZARE / CONSUM / RETUR / minus de inventar, nimeni nu mai
+// declară nimic, iar suma înregistrată pe depozit rămâne învechită: ea explică o
+// diferență care a plecat odată cu marfa.
+//
+// Măsurat pe rularea integrală, cheia 941BD067E5E9285611E9B2EFE6CCEF46 × MAGAZIN
+// în august: registrul spunea −2,09 (numai transferuri), Δ-ul real era −0,69, iar
+// diferența de 1,40 era exact partea celor 4 bucăți ieșite prin DSC. Cu decăderea
+// declarată la ieșire, Σ cumulată converge (−2,09 + 1,39 = −0,70 ≈ −0,69).
+//
+// Convenția e a registrului, neschimbată: valoarea unui `EfectStoc` e „cât are
+// Atlas ÎN PLUS față de sursă" pe cheia aia — deci diferența celor DOUĂ mișcări
+// de stoc, fiecare cu semnul ei (negativă la ieșire, pozitivă la intrare). Apelul
+// e la locul unde perechea evaluată e deja declarată în punte (costul 1C al
+// rândului vs costul Atlas al alocării), iar rândul emis NU poartă conturi: axa
+// contabilă e deja explicată de divergența „Evaluare" per cont scrisă de
+// `Punte.cs`, iar o a doua declarație ar umfla explicațiile contractului (1).
+// O SINGURĂ cheie per rând — marfa iese din sistem, nu are perechea simetrică a
+// transferului.
+static class Evaluare {
+    // Pragul e al hunk-ului de transfer, din același motiv: sub jumătate de ban
+    // diferența e reziduul rotunjirii per rând, nu evaluare divergentă.
+    public const decimal Prag = 0.005m;
+
+    public static int Randuri { get; private set; }
+
+    public static void Masoara(BuclaImport bucla, string sursa, string tip, string produsHex,
+            string depozitHex, decimal miscareAtlas, decimal miscare1C) {
+        if (produsHex == null)
+            return;
+        var delta = miscareAtlas - miscare1C;
+        if (Math.Abs(delta) < Prag)
+            return;
+        Randuri++;
+        bucla.Divergenta(sursa,
+            $"{tip}: 1C evaluează mișcarea la alt cost unitar decât al lotului — "
+                + "diferența de evaluare pleacă odată cu marfa",
+            [new EfectStoc(produsHex, depozitHex ?? "", 0m, delta)]);
+    }
+
+    public static void Raporteaza() {
+        if (Randuri > 0)
+            Console.WriteLine($"  Evaluare: {Randuri} mișcări de stoc măsurate cu alt cost unitar "
+                + "decât al lotului Atlas (decăderea deltei de cost per depozit).");
+    }
+}
