@@ -13,11 +13,13 @@ namespace Import1C;
 // O reconciliere care ar compara importul cu el însuși ar trece și când scrierea
 // a eșuat.
 //
-// Cele trei numere care trebuie să bată la fine de lună:
+// Cele patru numere care trebuie să bată la fine de lună:
 //   1. sold per cont sintetic OMFP = Balanța 1C mapată (891 inclus, ca orice cont);
 //   2. rândurile de TVA generate de ÎNCHIDEREA Atlas = sumele închiderii 1C
 //      (rândurile pe care importul le-a sărit — forcing function-ul P1);
-//   3. stoc per produs × gestiune (cantitate + valoare) = BalantaNivel3 agregat.
+//   3. stoc per produs × gestiune (cantitate + valoare) = BalantaNivel3 agregat;
+//   4. deriva reziduurilor de rotunjire ≤ ce poate produce convenția de rotunjire
+//      a bazei, calculată din contorul motorului (D4 — vezi `Rotunjire`).
 //
 // CE S-A SCHIMBAT LA D6 — justificarea nu mai e euristică, e MĂSURATĂ.
 //
@@ -98,7 +100,17 @@ static class ReconciliereLuna {
     // reconcilierea trebuie s-o poată vedea. La 8 zecimale eroarea introdusă e
     // sub 1e-8 per rând (invizibilă la orice agregare realistă), iar scara
     // rezultatului rămâne mult sub mantisa lui `decimal`.
-    const int Scara = 8;
+    // (Numele e `ScaraAgregare`, nu `Scara`: `Scara` e clasa de model care ține
+    // convenția de rotunjire a bazei — D4 o citește chiar aici.)
+    const int ScaraAgregare = 8;
+
+    // Capetele de categorie pe care raportul le numără separat. Sunt scrise o
+    // singură dată fiindcă triajul se face pe TEXTUL motivului (categoriile își
+    // poartă cifrele în el): un literal repetat s-ar despărți tăcut de contorul
+    // lui la prima reformulare.
+    const string MotivRotunjire = "reziduu de rotunjire";
+    const string MotivCostRearanjat = "cost per lot rearanjat";
+    const string MotivMasuratCantitate = "măsurat pe cantitate";
 
     // Rămasă DOAR pentru alegerea rândului de sabotat (`--sabotaj`): proba trebuie
     // să lovească un cont care nu poate fi acoperit de nicio divergență de
@@ -191,10 +203,11 @@ static class ReconciliereLuna {
         Contabil(os, ctx, stare, cat, registru, stoc, avert, Contract);
         var (dePlata, deRecuperat) = Tva(os, ctx, cat, stare, avert, Contract);
         RaporteazaStoc(stoc, ctx, stare, avert, Contract);
+        Rotunjire(stoc, ctx, stare, MidpointCumulat(os, ctx), Contract);
         if (stare.Jurnal != null)
             Console.WriteLine($"     raport integral al lunii (toate diferențele): {stare.Jurnal.Cale}");
 
-        return new Rezultat(3, picate, stoc.Justificate, stare.PlafonStoc, dePlata, deRecuperat);
+        return new Rezultat(4, picate, stoc.Justificate, stare.PlafonStoc, dePlata, deRecuperat);
     }
 
     // ==================== 1. Sold per cont sintetic OMFP ====================
@@ -219,13 +232,13 @@ static class ReconciliereLuna {
         foreach (var g in os.GetObjectsQuery<RegistruContabil>()
                      .Where(r => r.Data <= ctx.Ultima)
                      .GroupBy(r => r.ContDebitId)
-                     .Select(g => new { Cont = g.Key, Suma = g.Sum(r => Math.Round(r.Valoare, Scara)) })
+                     .Select(g => new { Cont = g.Key, Suma = g.Sum(r => Math.Round(r.Valoare, ScaraAgregare)) })
                      .ToList())
             Acumuleaza(g.Cont, g.Suma);
         foreach (var g in os.GetObjectsQuery<RegistruContabil>()
                      .Where(r => r.Data <= ctx.Ultima)
                      .GroupBy(r => r.ContCreditId)
-                     .Select(g => new { Cont = g.Key, Suma = g.Sum(r => Math.Round(r.Valoare, Scara)) })
+                     .Select(g => new { Cont = g.Key, Suma = g.Sum(r => Math.Round(r.Valoare, ScaraAgregare)) })
                      .ToList())
             Acumuleaza(g.Cont, -g.Suma);
 
@@ -264,10 +277,18 @@ static class ReconciliereLuna {
             Explica(d.ContCredit, d.ValoareNepostata);
         }
 
-        // (b) Plafonul MĂSURAT al contului: diferența de EVALUARE, adică exact cât
-        // s-a rearanjat sub el în registrul de stoc (contul de stoc) sau sub
-        // conturile de stoc a căror oglindă de cheltuială este (citite din
+        // (b) Plafonul MĂSURAT al contului: diferența de EVALUARE JUSTIFICATĂ de
+        // contractul 3 și atribuită contului (produs → Tip → cont de stoc) sau
+        // conturilor de stoc a căror oglindă de cheltuială este (citite din
         // politici, nu presupuse).
+        //
+        // D3b: până acum plafonul era divergența BRUTĂ de stoc a contului, ceea ce
+        // făcea condiția circulară — orice diferență își era propriul permis, iar
+        // un cont de stoc putea absorbi la nesfârșit. De acum contribuie DOAR
+        // cheile pe care contractul 3 le-a justificat pe o categorie măsurată;
+        // cheile nejustificate pică contractul 3 și, de acum, pică și contul pe
+        // care îl ating. Diferența dintre cele două cifre (brut vs justificat) e
+        // exact gaura de pe axa de valoare și se raportează la contractul 3.
         //
         // ATÂT. Plafonul e o TOLERANȚĂ, nu o explicație, iar o toleranță are voie
         // să existe doar unde puterea de discriminare stă în altă parte: pe
@@ -288,10 +309,10 @@ static class ReconciliereLuna {
             if (cont != null && suma != 0m)
                 plafon[cont] = plafon.GetValueOrDefault(cont) + Math.Abs(suma);
         }
-        foreach (var (contStoc, delta) in stoc.PeCont) {
-            Plafon(contStoc, delta);
+        foreach (var (contStoc, justificatPeCont) in stoc.JustificatPeCont) {
+            Plafon(contStoc, justificatPeCont);
             foreach (var contCost in cat.CosturiPentruContStoc(contStoc) ?? (IReadOnlySet<string>)new HashSet<string>())
-                Plafon(contCost, delta);
+                Plafon(contCost, justificatPeCont);
         }
 
         // ---- Verdictul, per cont ----
@@ -316,12 +337,13 @@ static class ReconciliereLuna {
             else if (Math.Abs(rezidual) <= plafonCont + toleranta)
                 justificate.Add((x.Simbol, x.Delta,
                     $"registrul explică {explicatie:N2}, restul de {rezidual:N2} încape în diferența de "
-                    + $"EVALUARE măsurată pe contul ăsta ({plafonCont:N2}) — netarea deschiderii (§8.3)"));
+                    + $"EVALUARE JUSTIFICATĂ la contractul 3 pe contul ăsta ({plafonCont:N2}) — "
+                    + "netarea deschiderii (§8.3)"));
             else
                 picate.Add((x.Simbol, x.Db, x.Sursa, x.Delta,
                     explicatie == 0m && plafonCont == 0m
-                        ? "nicio divergență înregistrată și nicio diferență de evaluare măsurată pe contul ăsta"
-                        : $"registrul explică {explicatie:N2}, evaluarea măsurată acoperă {plafonCont:N2}, "
+                        ? "nicio divergență înregistrată și nicio diferență de evaluare JUSTIFICATĂ pe contul ăsta"
+                        : $"registrul explică {explicatie:N2}, evaluarea justificată acoperă {plafonCont:N2}, "
                             + $"rămân {rezidual:N2} fără explicație"));
         }
 
@@ -434,9 +456,17 @@ static class ReconciliereLuna {
             decimal VSursa, string Motiv)> Detalii,
         decimal ValoareAltRegistru, decimal CantitateAltRegistru,
         // Divergența de VALOARE per cont de stoc (Atlas − 1C), măsurată pe ambele
-        // părți: intrarea contractului 1.
+        // părți. Raport, NU plafon (D3b): o diferență nu-și poate fi propriul
+        // permis.
         IReadOnlyDictionary<string, decimal> PeCont,
-        int CheiRotunjire, decimal RotunjireAbsoluta, decimal RotunjireAlgebrica);
+        // Partea din ea care stă pe chei JUSTIFICATE de contractul 3, per cont:
+        // intrarea plafonului contractului 1.
+        IReadOnlyDictionary<string, decimal> JustificatPeCont,
+        int CheiRotunjire, decimal RotunjireAbsoluta, decimal RotunjireAlgebrica,
+        // Axa de VALOARE (D3a): mărimea mulțimii marcate și cât explică ea.
+        int ProduseNetate, int ProduseMarcateDeSupapa, int ProduseMarcatePeChei,
+        (int Chei, decimal Q, decimal V) MarcateCost,
+        (int Chei, decimal Q, decimal V) MarcateCantitate);
 
     // Registrele de stoc care au corespondent în sursă. `BalantaNivel3` e
     // defalcarea conturilor 3xx, deci comparabile sunt DOAR registrele care
@@ -458,24 +488,26 @@ static class ReconciliereLuna {
             .Select(l => new { l.ID, l.ProdusId })
             .ToList()
             .ToDictionary(l => l.ID, l => l.ProdusId);
+        // Contul de stoc al fiecărui produs (produs → Tip → `ContImplicit`).
+        // Contractul 1 are nevoie de el ca să atribuie pe CONTURI diferența de
+        // stoc justificată: plafonul lui nu mai e delta brută a contului (care
+        // își era propriul plafon — D3b), ci suma cheilor pe care contractul 3
+        // le-a justificat MĂSURAT și care ating contul.
+        var contPeProdus = os.GetObjectsQuery<Produs>()
+            .Select(p => new { p.ID, Simbol = p.TipMaterial.ContImplicit.Simbol })
+            .ToList()
+            .Where(x => x.Simbol != null)
+            .ToDictionary(x => x.ID, x => x.Simbol);
         var randuri = os.GetObjectsQuery<RegistruStoc>()
             .Where(r => r.Data <= ctx.Ultima && RegistreComparabile.Contains(r.TipStoc))
             .GroupBy(r => new { r.LotId, r.RepartitorId })
             .Select(g => new {
                 g.Key.LotId, g.Key.RepartitorId,
-                Q = g.Sum(r => Math.Round(r.Cantitate, Scara)),
-                V = g.Sum(r => Math.Round(r.Valoare, Scara)),
+                Q = g.Sum(r => Math.Round(r.Cantitate, ScaraAgregare)),
+                V = g.Sum(r => Math.Round(r.Valoare, ScaraAgregare)),
                 // Numărul de mișcări ale cheii — intrarea pragului de rotunjire.
                 N = g.Count(),
             })
-            .ToList();
-        // Valoarea de stoc a Atlas-ului per CONT (prin Tipul produsului lotului):
-        // contractul 1 are nevoie de ea ca să știe cât s-a rearanjat sub fiecare
-        // cont, în loc de un plafon global.
-        var peContDb = os.GetObjectsQuery<RegistruStoc>()
-            .Where(r => r.Data <= ctx.Ultima && RegistreComparabile.Contains(r.TipStoc))
-            .GroupBy(r => r.Lot.Produs.TipMaterial.ContImplicit.Simbol)
-            .Select(g => new { Simbol = g.Key, V = g.Sum(r => Math.Round(r.Valoare, Scara)) })
             .ToList();
         // Volumul EXCLUS se raportează, ca excluderea să fie o afirmație
         // verificabilă, nu o tăcere: e soldul registrului de consum, adică exact
@@ -486,8 +518,8 @@ static class ReconciliereLuna {
             .GroupBy(r => r.TipStoc)
             .Select(g => new {
                 Registru = g.Key,
-                Q = g.Sum(r => Math.Round(r.Cantitate, Scara)),
-                V = g.Sum(r => Math.Round(r.Valoare, Scara)),
+                Q = g.Sum(r => Math.Round(r.Cantitate, ScaraAgregare)),
+                V = g.Sum(r => Math.Round(r.Valoare, ScaraAgregare)),
             })
             .ToList();
         if (altRegistru.Count > 0)
@@ -496,6 +528,24 @@ static class ReconciliereLuna {
 
         var produsHex = Reconciliere.InverseazaProduse(os, avert);
         var depozitHex = Reconciliere.Inverseaza(os, "Depozite", avert);
+
+        // Defalcarea pe CONT a fiecărei chei, pe ambele părți: din ea ies și
+        // divergența per cont (raport) și plafonul MĂSURAT al contractului 1
+        // (D3b). Se ține per cheie, nu doar per cont, fiindcă plafonul are voie
+        // să numere numai cheile JUSTIFICATE — o cheie picată nu contribuie.
+        // Necesară și pentru că `produsHex` e identitatea 1C: gemenii (produs ×
+        // simbol de cont — amendamentul 50a) cad pe aceeași cheie cu conturi
+        // diferite, deci contul nu se poate deduce din cheie.
+        var dbPeCont = new Dictionary<(string P, string D), Dictionary<string, decimal>>();
+        var sursaPeCont = new Dictionary<(string P, string D), Dictionary<string, decimal>>();
+        static void AcumuleazaCont(Dictionary<(string P, string D), Dictionary<string, decimal>> tinta,
+                (string P, string D) cheie, string cont, decimal valoare) {
+            if (cont == null)
+                return;
+            if (!tinta.TryGetValue(cheie, out var peCont))
+                tinta[cheie] = peCont = new Dictionary<string, decimal>(StringComparer.Ordinal);
+            peCont[cont] = peCont.GetValueOrDefault(cont) + valoare;
+        }
 
         var db = new Dictionary<(string P, string D), (decimal Q, decimal V)>();
         var miscari = new Dictionary<(string P, string D), int>();
@@ -507,6 +557,7 @@ static class ReconciliereLuna {
             var acum = db.GetValueOrDefault((p, d));
             db[(p, d)] = (acum.Q + r.Q, acum.V + r.V);
             miscari[(p, d)] = miscari.GetValueOrDefault((p, d)) + r.N;
+            AcumuleazaCont(dbPeCont, (p, d), contPeProdus.GetValueOrDefault(produsId), r.V);
         }
 
         // ---- Sursa: BalantaNivel3 la fine de lună, plus pozițiile orfane ----
@@ -517,21 +568,35 @@ static class ReconciliereLuna {
             .Concat(ctx.Bucla.Flax.StocFaraIdentitateLaFineDeLuna(ctx.An, ctx.Luna))
             .ToList();
         var sursa = new Dictionary<(string P, string D), (decimal Q, decimal V)>();
-        var peContSursa = new Dictionary<string, decimal>(StringComparer.Ordinal);
         foreach (var p in pozitii) {
             var cheie = (p.NomenclatorId, p.DepozitId);
             var acum = sursa.GetValueOrDefault(cheie);
             sursa[cheie] = (acum.Q + p.Cantitate, acum.V + p.Valoare);
-            var simbol = ctx.Bucla.Catalog.Mapeaza(p.Cont);
-            if (simbol != null)
-                peContSursa[simbol] = peContSursa.GetValueOrDefault(simbol) + p.Valoare;
+            AcumuleazaCont(sursaPeCont, cheie, ctx.Bucla.Catalog.Mapeaza(p.Cont), p.Valoare);
+        }
+
+        // Divergența de valoare per cont și per cheie, din aceleași defalcări:
+        // `PeCont` (totalul, pentru raport) și, mai jos, partea JUSTIFICATĂ
+        // (plafonul contractului 1).
+        List<(string Cont, decimal Delta)> DeltaPeCont((string P, string D) cheie) {
+            var d = dbPeCont.GetValueOrDefault(cheie);
+            var s = sursaPeCont.GetValueOrDefault(cheie);
+            var conturi = new HashSet<string>(StringComparer.Ordinal);
+            if (d != null)
+                conturi.UnionWith(d.Keys);
+            if (s != null)
+                conturi.UnionWith(s.Keys);
+            return conturi
+                .Select(c => (c, (d?.GetValueOrDefault(c) ?? 0m) - (s?.GetValueOrDefault(c) ?? 0m)))
+                .ToList();
         }
         var peCont = new Dictionary<string, decimal>(StringComparer.Ordinal);
-        foreach (var x in peContDb)
-            if (x.Simbol != null)
-                peCont[x.Simbol] = x.V;
-        foreach (var (simbol, v) in peContSursa)
-            peCont[simbol] = peCont.GetValueOrDefault(simbol) - v;
+        foreach (var (_, peContCheie) in dbPeCont)
+            foreach (var (cont, v) in peContCheie)
+                peCont[cont] = peCont.GetValueOrDefault(cont) + v;
+        foreach (var (_, peContCheie) in sursaPeCont)
+            foreach (var (cont, v) in peContCheie)
+                peCont[cont] = peCont.GetValueOrDefault(cont) - v;
         foreach (var simbol in peCont.Where(x => Math.Abs(x.Value) < EpsV).Select(x => x.Key).ToList())
             peCont.Remove(simbol);
 
@@ -575,15 +640,26 @@ static class ReconciliereLuna {
             .GroupBy(p => (P: p.NomenclatorId, D: p.DepozitId))
             .ToDictionary(g => g.Key, g => g.Sum(p => p.Valoare));
 
-        var negativeSursa = pozitii
-            .Where(p => p.Cantitate < -EpsQ || p.Valoare < -EpsV)
-            .GroupBy(p => p.NomenclatorId, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key,
-                g => (Q: g.Sum(p => Math.Abs(p.Cantitate)), V: g.Sum(p => Math.Abs(p.Valoare))),
-                StringComparer.Ordinal);
-        // Istoricul negativelor pe CHEIA EXACTĂ (produs × depozit), cumulat lună de
+        // Negativele se măsoară pe CHEIA EXACTĂ (produs × depozit), cumulat lună de
         // lună: se ia maximul, nu suma — aceeași celulă negativă purtată prin mai
-        // multe luni ar fi numărată de fiecare dată.
+        // multe luni ar fi numărată de fiecare dată. Luna curentă intră aici
+        // înaintea buclei cheilor, deci „la ziua de referință" e inclus prin
+        // construcție și n-are nevoie de categorie proprie.
+        //
+        // D2: agregatul PE PRODUS a murit. Mărginea „abaterea produsului încape în
+        // negativele produsului" aduna celule din depozite care n-au nimic de-a
+        // face una cu alta, iar deltele de semn opus din două gestiuni se anulau
+        // în ea — un bon de consum pierdut pe un produs care are negative intra-an
+        // în ALT depozit trecea prin poartă. Artefactul e local prin construcție
+        // (1C nu poate scoate dintr-un depozit ce nu e în EL), deci mărginea e a
+        // cheii.
+        //
+        // Ce NU se poate încă neta din mărgine: partea pe care supapa 48a a
+        // absorbit-o deja. Evidența supapei (`AlocareIesire`) ține produsele
+        // atinse și cifre GLOBALE (realocări, cantitate, nedescărcat), nu cantități
+        // per cheie, deci Δ-ul așteptat nu se poate îngusta cu ele; ce e per cheie
+        // e registrul divergențelor, iar el are deja categoria lui MĂSURATĂ, mai
+        // sus (și e verificat înaintea acesteia).
         foreach (var g in pozitii
                      .Where(p => p.Cantitate < -EpsQ || p.Valoare < -EpsV)
                      .GroupBy(p => (P: p.NomenclatorId, D: p.DepozitId)))
@@ -593,30 +669,11 @@ static class ReconciliereLuna {
                 Math.Max(stare.NegativeIstoric.GetValueOrDefault(g.Key).V,
                     g.Sum(p => Math.Abs(p.Valoare))));
 
-        var totalDb = db.GroupBy(x => x.Key.P, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => (Q: g.Sum(x => x.Value.Q), V: g.Sum(x => x.Value.V)),
-                StringComparer.Ordinal);
-        var totalSursa = sursa.GroupBy(x => x.Key.P, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => (Q: g.Sum(x => x.Value.Q), V: g.Sum(x => x.Value.V)),
-                StringComparer.Ordinal);
-        (decimal Q, decimal V) DeltaProdus(string produs) {
-            var (qDb, vDb) = totalDb.GetValueOrDefault(produs);
-            var (qSursa, vSursa) = totalSursa.GetValueOrDefault(produs);
-            return (qDb - qSursa, vDb - vSursa);
-        }
-        bool IncapeInNegativulSursei(string produs) {
-            if (!negativeSursa.TryGetValue(produs, out var negativ))
-                return false;
-            var (dq, dv) = DeltaProdus(produs);
-            // Pragurile sursei sunt cifre ROTUNJITE de ea; o comparație exactă
-            // rupe pe câțiva bani (34,98 vs 35,01 — ianuarie).
-            return Math.Abs(dq) <= negativ.Q + EpsQ && Math.Abs(dv) <= negativ.V + EpsPrag;
-        }
-
         // Marfa în plus la Atlas trebuie să încapă în negativul pe care sursa l-a
-        // arătat pe ACEEAȘI cheie (nu pe produs global — o celulă negativă într-un
-        // depozit n-are ce justifica în altul), pe cantitate ȘI pe valoare.
-        bool IncapeInNegativulIstoric((string P, string D) cheie, decimal dq, decimal dv) =>
+        // arătat pe ACEEAȘI cheie, pe cantitate ȘI pe valoare. Pragurile sursei
+        // sunt cifre rotunjite de ea, deci comparația poartă `EpsPrag` (34,98 vs
+        // 35,01 — ianuarie).
+        bool IncapeInNegativulCheii((string P, string D) cheie, decimal dq, decimal dv) =>
             stare.NegativeIstoric.TryGetValue(cheie, out var negativ)
                 && Math.Abs(dq) <= negativ.Q + EpsQ && Math.Abs(dv) <= negativ.V + EpsPrag;
 
@@ -632,6 +689,9 @@ static class ReconciliereLuna {
         var cheiRotunjire = 0;
         var rotunjireAbs = 0m;
         var rotunjireAlg = 0m;
+        var justificatPeCont = new Dictionary<string, decimal>(StringComparer.Ordinal);
+        var marcateCost = (Chei: 0, Q: 0m, V: 0m);
+        var marcateCantitate = (Chei: 0, Q: 0m, V: 0m);
         foreach (var k in db.Keys.Union(sursa.Keys)) {
             var (qDb, vDb) = db.GetValueOrDefault(k);
             var (qSursa, vSursa) = sursa.GetValueOrDefault(k);
@@ -653,7 +713,7 @@ static class ReconciliereLuna {
                     ? $"măsurat: {m.N} linii aruncate/parțiale înregistrate pe cheia asta "
                         + $"({m.Q:N3} buc / {m.V:N2} lei)"
                 : cantitateMasurata && netat
-                    ? $"măsurat pe cantitate ({m.N} linii aruncate, {m.Q:N3} buc); valoarea diferă de "
+                    ? MotivMasuratCantitate + $" ({m.N} linii aruncate, {m.Q:N3} buc); valoarea diferă de "
                         + $"cea a sursei ({m.V:N2} lei) fiindcă Atlas evaluează la costul lui — "
                         + "netarea deschiderii / supapa 48a"
                 // 2c. VALOARE FĂRĂ CANTITATE, moștenită din deschidere: cantitatea
@@ -682,18 +742,15 @@ static class ReconciliereLuna {
                 //    pragul cheii dat de câte mișcări are ea în registru.
                 : Math.Abs(dq) < EpsQ
                         && Math.Abs(dv) <= PragRotunjireCheie(miscari.GetValueOrDefault(k))
-                    ? $"reziduu de rotunjire (cantitate exactă, {miscari.GetValueOrDefault(k)} mișcări, "
+                    ? MotivRotunjire + $" (cantitate exactă, {miscari.GetValueOrDefault(k)} mișcări, "
                         + $"prag {PragRotunjireCheie(miscari.GetValueOrDefault(k)):N2} lei)"
-                // 2. NEGATIVUL SURSEI la ziua de referință.
-                : IncapeInNegativulSursei(k.P)
-                    ? "celulă negativă în 1C la ziua de referință; "
-                        + $"abaterea pe produs ({DeltaProdus(k.P).Q:N3} buc / {DeltaProdus(k.P).V:N2} lei) "
-                        + $"încape în negativul sursei ({negativeSursa[k.P].Q:N3} buc / "
-                        + $"{negativeSursa[k.P].V:N2} lei)"
-                // 2b. NEGATIVUL SURSEI ORIUNDE ÎN AN pe cheia exactă, netat până la
-                //     ziua de referință (vezi `Stare.NegativeIstoric`).
-                : IncapeInNegativulIstoric(k, dq, dv)
-                    ? $"celulă negativă în 1C intra-an, netată până la ziua de referință; abaterea "
+                // 2. NEGATIVUL SURSEI PE CHEIA EXACTĂ, la ziua de referință sau
+                //    oriunde în an (maximul lunilor — vezi `Stare.NegativeIstoric`;
+                //    luna curentă e deja în el). O singură categorie de când
+                //    mărginea e a cheii (D2): „la ziua de referință" era doar cazul
+                //    în care maximul se întâmplă să fie luna curentă.
+                : IncapeInNegativulCheii(k, dq, dv)
+                    ? $"celulă negativă în 1C pe cheia asta; abaterea "
                         + $"({dq:N3} buc / {dv:N2} lei) încape în negativul maxim al cheii "
                         + $"({stare.NegativeIstoric[k].Q:N3} buc / {stare.NegativeIstoric[k].V:N2} lei)"
                 // 4. COST PER LOT PUS DE ATLAS, cantitate EXACTĂ. Categoria asta
@@ -720,7 +777,7 @@ static class ReconciliereLuna {
                 //      înregistrarea rămâne pe cheia veche, unde nu mai e nimic de
                 //      explicat. Marcajul pe produs n-are niciuna dintre probleme.
                 : Math.Abs(dq) < EpsQ && netat
-                    ? "cost per lot rearanjat, cantitate exactă (netarea deschiderii, "
+                    ? MotivCostRearanjat + ", cantitate exactă (netarea deschiderii, "
                         + "realocarea supapei 48a sau produs născut de o asamblare — "
                         + "prețul lotului e pus de Atlas)"
                 : null;
@@ -728,28 +785,36 @@ static class ReconciliereLuna {
                 nepotriviri++;
             else {
                 justificate++;
-                if (motiv.StartsWith("reziduu de rotunjire")) {
+                // Plafonul contractului 1 (D3b): cheia justificată își varsă
+                // diferența pe CONTURILE ei, defalcate pe ambele părți. O cheie
+                // picată nu contribuie — ea pică oricum contractul 3, iar de acum
+                // pică și contul pe care îl atinge.
+                foreach (var (cont, delta) in DeltaPeCont(k))
+                    if (Math.Abs(delta) >= EpsV)
+                        justificatPeCont[cont] = justificatPeCont.GetValueOrDefault(cont)
+                            + Math.Abs(delta);
+                if (motiv.StartsWith(MotivRotunjire, StringComparison.Ordinal)) {
                     cheiRotunjire++;
                     rotunjireAbs += Math.Abs(dv);
                     rotunjireAlg += dv;
                 }
+                // AXA DE VALOARE (D3a): cele două categorii care se sprijină pe
+                // MARCAJUL produsului (`netat`) explică bani fără să-i măsoare
+                // rând cu rând. Sunt legitime (proveniență, nu plauzibilitate —
+                // vezi apărarea de mai sus), dar sunt gaura contractului pe
+                // valoare, deci mărimea lor se raportează lună de lună în loc să
+                // se topească în „N chei justificate".
+                if (motiv.StartsWith(MotivCostRearanjat, StringComparison.Ordinal)) {
+                    marcateCost = (marcateCost.Chei + 1, marcateCost.Q + Math.Abs(dq),
+                        marcateCost.V + Math.Abs(dv));
+                }
+                else if (motiv.StartsWith(MotivMasuratCantitate, StringComparison.Ordinal)) {
+                    marcateCantitate = (marcateCantitate.Chei + 1, marcateCantitate.Q + Math.Abs(dq),
+                        marcateCantitate.V + Math.Abs(dv));
+                }
             }
             detalii.Add((k.P, k.D, qDb, vDb, qSursa, vSursa, motiv));
         }
-
-        if (cheiRotunjire > 0 && Math.Abs(rotunjireAlg) > PragRotunjireSistematica(cheiRotunjire))
-            avert($"[{ctx.Luna:00}/{ctx.An}] cele {cheiRotunjire} chei de stoc puse pe seama rotunjirii "
-                + $"NU se compensează (Σ algebrică {rotunjireAlg:N2} lei din {rotunjireAbs:N2} lei în "
-                + $"valoare absolută, adică {rotunjireAlg / cheiRotunjire:N4} lei pe cheie, peste pragul "
-                + $"de {PragRotunjireSistematica(cheiRotunjire):N2}). CAUZA E CUNOSCUTĂ ȘI MĂSURATĂ, "
-                + "nu e de re-diagnosticat: `Scara.RotunjesteBani` rotunjește la jumătatea de ban "
-                + "DEPĂRTÂNDU-SE DE ZERO (decizia 49e), iar ieșirile cad pe jumătatea de ban mai des "
-                + "decât intrările — ieșirea e o cantitate parțială înmulțită cu un preț de 6 zecimale, "
-                + "pe când intrarea poartă valoarea întreagă a lotului, cu 2. Măsurat pe 2025: 2.232 "
-                + "ieșiri × (−0,005) + 1.396 intrări × (+0,005) = −4,18 lei pe an, adică exact deriva "
-                + "de mai sus. E convenția de rotunjire a motorului, nu un defect de import; s-ar "
-                + "schimba doar trecând `RotunjesteBani` pe rotunjire bancară — decizie de convenție "
-                + "contabilă, în Module, nu aici.");
 
         // Cifra de raport a efectului netării (nu mai e plafon — D6): abaterea
         // NETĂ pe produs, adică ce se scurge din stoc în contabilitate. Perechile
@@ -758,10 +823,22 @@ static class ReconciliereLuna {
             .GroupBy(d => d.P, StringComparer.Ordinal)
             .Sum(g => Math.Abs(g.Sum(d => d.VDb - d.VSursa)));
 
+        // Câte dintre produsele MARCATE (netate la deschidere / atinse de supapă
+        // sau născute de asamblări) apar efectiv pe cheile comparate: mărimea
+        // mulțimii în care contractul are voie să vadă o diferență de valoare la
+        // cantitate exactă. Fără cifra asta, „marcat" e o poartă de lățime
+        // necunoscută.
+        var produseComparate = db.Keys.Union(sursa.Keys).Select(k => k.P)
+            .ToHashSet(StringComparer.Ordinal);
+        var marcatePeChei = produseComparate.Count(p =>
+            stare.ProduseNetate.Contains(p) || realocateHex.Contains(p));
+
         return new RezultatStoc(db.Keys.Union(sursa.Keys).Count(), nepotriviri, justificate,
             justificat, detalii,
-            altRegistru.Sum(x => x.V), altRegistru.Sum(x => x.Q), peCont,
-            cheiRotunjire, rotunjireAbs, rotunjireAlg);
+            altRegistru.Sum(x => x.V), altRegistru.Sum(x => x.Q), peCont, justificatPeCont,
+            cheiRotunjire, rotunjireAbs, rotunjireAlg,
+            stare.ProduseNetate.Count, realocateHex.Count, marcatePeChei,
+            marcateCost, marcateCantitate);
     }
 
     // Câte chei se detaliază per lună PE CONSOLĂ: raportul trebuie să rămână
@@ -808,7 +885,7 @@ static class ReconciliereLuna {
                 continue;
             }
             noi++;
-            if (noi <= DetaliiJustificate && !d.Motiv.StartsWith("reziduu de rotunjire"))
+            if (noi <= DetaliiJustificate && !d.Motiv.StartsWith(MotivRotunjire, StringComparison.Ordinal))
                 avert($"[{ctx.Luna:00}/{ctx.An}] stoc produs {d.P} × gestiune {d.D}: "
                     + $"bază {d.QDb:N3} buc / {d.VDb:N2} lei vs sursă {d.QSursa:N3} buc / {d.VSursa:N2} lei "
                     + $"(Δ {acum.Q:N3} buc / {acum.V:N2} lei) — {d.Motiv}.");
@@ -833,15 +910,142 @@ static class ReconciliereLuna {
             Console.WriteLine($"     {linie}");
             stare.Jurnalizeaza($"  {linie}");
         }
+        // AXA DE VALOARE (D3a): mărimea mulțimii marcate și cât explică ea, lună de
+        // lună. Cele două categorii de mai jos justifică BANI pe seama unui marcaj
+        // de proveniență (produsul a fost netat la deschidere, atins de supapa 48a
+        // sau născut de o asamblare), nu pe seama unei sume înregistrate — sunt
+        // singura poartă a contractului care nu se închide prin egalitate, deci
+        // dimensiunea ei se urmărește, nu se presupune.
+        var linieMarcate = $"axa de valoare: {stoc.ProduseNetate} produse netate la deschidere + "
+            + $"{stoc.ProduseMarcateDeSupapa} marcate de supapă/asamblare, din care "
+            + $"{stoc.ProduseMarcatePeChei} prezente pe cheile comparate; justifică "
+            + $"{stoc.MarcateCost.Chei} chei «{MotivCostRearanjat}» "
+            + $"(Σ |Δq| {stoc.MarcateCost.Q:N3} buc / Σ |Δv| {stoc.MarcateCost.V:N2} lei) + "
+            + $"{stoc.MarcateCantitate.Chei} chei «{MotivMasuratCantitate}» "
+            + $"(Σ |Δq| {stoc.MarcateCantitate.Q:N3} buc / Σ |Δv| {stoc.MarcateCantitate.V:N2} lei)";
+        Console.WriteLine($"     {linieMarcate}");
+        stare.Jurnalizeaza($"  {linieMarcate}");
+
         if (stoc.CheiRotunjire > 0)
             Console.WriteLine($"     din care rotunjire: {stoc.CheiRotunjire} chei, "
-                + $"Σ |Δ| {stoc.RotunjireAbsoluta:N2} lei, Σ algebrică {stoc.RotunjireAlgebrica:N2} lei "
-                + $"(prag de alarmă {PragRotunjireSistematica(stoc.CheiRotunjire):N2}).");
+                + $"Σ |Δ| {stoc.RotunjireAbsoluta:N2} lei, Σ algebrică {stoc.RotunjireAlgebrica:N2} lei.");
+
+        // Divergența de stoc pe conturi: totalul MĂSURAT față de partea justificată
+        // — a doua e plafonul contractului 1 (D3b), prima arată cât din el ar fi
+        // fost acoperit de vechea regulă circulară.
+        var conturi = stoc.PeCont.Keys.Union(stoc.JustificatPeCont.Keys, StringComparer.Ordinal)
+            .OrderBy(c => c, StringComparer.Ordinal).ToList();
+        stare.Jurnalizeaza($"\n[3] Divergența de stoc pe conturi ({conturi.Count} conturi) — "
+            + "total măsurat vs partea justificată (= plafonul contractului 1):");
+        foreach (var cont in conturi)
+            stare.Jurnalizeaza($"  cont {cont}: Δ total {stoc.PeCont.GetValueOrDefault(cont):N2} lei, "
+                + $"justificat {stoc.JustificatPeCont.GetValueOrDefault(cont):N2} lei");
 
         contract($"3. Stoc per produs × gestiune: {stoc.Chei} chei comparate, {stoc.Nepotriviri} "
             + $"nepotriviri nejustificate ({stoc.Justificate} justificate — Σ {stoc.Justificat:N2} lei; "
             + $"{noi} noi / {purtate} purtate; "
             + $"{stoc.ValoareAltRegistru:N2} lei în registre necomparabile)", stoc.Nepotriviri == 0);
+    }
+
+    // ==================== 4. Deriva de rotunjire ====================
+
+    // D4: alarma de rotunjire era un AVERT ne-blocant cu prag pur statistic și cu
+    // diagnosticul deja scris în text („cauza e cunoscută: AwayFromZero…"). Un
+    // avertisment care își pre-închide diagnosticul nu mai poate observa nimic:
+    // orice derivă, de orice mărime, se citea ca aceeași poveste.
+    //
+    // Acum e un CONTRACT, cu pragul derivat din CIFRA convenției. Motorul numără
+    // (`Scara.MidpointBani`) câte valori au căzut EXACT pe jumătatea de ban, adică
+    // exact acolo unde convenția decide sensul; deriva maximă pe care convenția o
+    // poate produce se calculează din numărul ăla, nu se povestește.
+    //
+    // Numărul e CUMULAT, nu al lunii: deriva comparată se citește din solduri, iar
+    // soldurile sunt cumulate de la deschidere încoace — o cheie de stoc își poartă
+    // reziduul din ianuarie până în decembrie. Un prag din midpoint-urile unei
+    // singure luni ar fi o nepotrivire de dimensiune: s-ar strânge exact pe măsură
+    // ce mărimea măsurată crește.
+    //   * AwayFromZero împinge toate jumătățile în același sens ⇒ cel mai rău caz
+    //     e chiar N × 0,005, și ăsta E pragul. Fără marjă de 3× peste el: cazul
+    //     extrem înmulțit cu trei nu mai poate fi depășit de nimic (la decembrie ar
+    //     fi ~78 lei), adică un check inert.
+    //   * ToEven (bancară) le compensează ⇒ deriva așteptată e 0, iar abaterea
+    //     crește cu √N; acolo 3σ e prag, nu caz extrem, deci multiplicatorul rămâne.
+    // Sub pragul ăsta rămâne podeaua statistică a cheilor (mersul aleator al
+    // reziduurilor per cheie): pe puține midpoint-uri ea e cea care decide.
+    //
+    // Depășirea NU mai e un avertisment: dacă deriva iese din ce poate produce
+    // convenția, nu mai e rotunjire, e altceva — și luna pică.
+    static decimal PragConventie(long midpointCumulat) =>
+        Scara.ConventieBani == MidpointRounding.AwayFromZero
+            ? midpointCumulat * 0.005m
+            : 3m * 0.005m * (decimal)Math.Sqrt(Math.Max(midpointCumulat, 1L));
+
+    static void Rotunjire(RezultatStoc stoc, ContextLuna ctx, Stare stare, long midpointCumulat,
+            Action<string, bool> contract) {
+        var pragStatistic = PragRotunjireSistematica(stoc.CheiRotunjire);
+        var pragConventie = PragConventie(midpointCumulat);
+        var prag = Math.Max(pragStatistic, pragConventie);
+        var linie = $"4. Deriva de rotunjire: Σ algebrică {stoc.RotunjireAlgebrica:N2} lei pe "
+            + $"{stoc.CheiRotunjire} chei (Σ |Δ| {stoc.RotunjireAbsoluta:N2} lei), prag {prag:N2} = "
+            + $"max(podea statistică {pragStatistic:N2}; convenție {Scara.ConventieBani} pe "
+            + $"{midpointCumulat} valori căzute pe jumătatea de ban CUMULAT până la fine de lună "
+            + $"⇒ {pragConventie:N2})";
+        stare.Jurnalizeaza($"\n[4] {linie}");
+        contract(linie, Math.Abs(stoc.RotunjireAlgebrica) <= prag);
+    }
+
+    // Câte valori a rotunjit motorul EXACT pe jumătatea de ban, CUMULAT până la
+    // fine de lună. Contorul motorului e per proces, deci luna se măsoară ca deltă
+    // (`BuclaImport.MidpointLuna`) și se PERSISTĂ per lună („1C:Midpoint", cheie
+    // sintetică `an-lună|număr`, țintă goală — ca rândurile registrului
+    // divergențelor); cumulatul e suma rândurilor lunilor de până acum inclusiv.
+    //
+    // Fără persistență, contorul ar fi 0 la orice rulare care nu mai importă nimic
+    // (reluare, `--continua`), iar pragul ar cădea pe podeaua statistică: aceeași
+    // bază, același Δ, alt verdict — exact ne-determinismul pe care registrul
+    // divergențelor a fost persistat ca să-l repare. Pe luna curentă se ține
+    // MAXIMUL: o reluare care re-importă doar câteva documente măsoară mai puține
+    // midpoint-uri decât rularea care a scris luna, iar pragul n-are voie să se
+    // strângă retroactiv sub faptele deja scrise în registre.
+    const string ViewMidpoint = "Midpoint";
+
+    static long MidpointCumulat(IObjectSpace os, ContextLuna ctx) {
+        var tabela = Legaturi.Tabela(ViewMidpoint);
+        var randuri = os.GetObjectsQuery<MigrareLegatura>()
+            .Where(m => m.Tabela == tabela)
+            .ToList();
+
+        // Cheia e `yyyy-MM|N`; ce nu se citește se ignoră tăcut aici — rândul e o
+        // măsurătoare, nu o legătură, iar un format necunoscut ar fi al unei
+        // versiuni viitoare.
+        static (int An, int Luna, long N)? Citeste(string cheie) {
+            var bara = cheie.IndexOf('|');
+            if (bara != 7 || !int.TryParse(cheie[..4], out var an)
+                    || !int.TryParse(cheie[5..7], out var luna)
+                    || !long.TryParse(cheie[(bara + 1)..], out var n))
+                return null;
+            return (an, luna, n);
+        }
+
+        // Luna curentă: maximul dintre ce s-a măsurat acum și ce e deja scris.
+        var aleLunii = randuri
+            .Select(r => (Rand: r, Citit: Citeste(r.CheieLegacy)))
+            .Where(x => x.Citit is { } c && c.An == ctx.An && c.Luna == ctx.Luna)
+            .ToList();
+        var stocat = aleLunii.Count == 0 ? 0L : aleLunii.Max(x => x.Citit.Value.N);
+        var efectiv = Math.Max(stocat, ctx.Bucla.MidpointLuna);
+        if (efectiv != stocat || aleLunii.Count > 1) {
+            os.Delete(aleLunii.Select(x => x.Rand).ToList());
+            Legaturi.Leaga(os, ViewMidpoint, $"{ctx.An:0000}-{ctx.Luna:00}|{efectiv}", Guid.Empty);
+            os.CommitChanges();
+        }
+
+        // Cumulatul: lunile de până acum (din rândurile persistate) + luna curentă
+        // cu cifra ei efectivă.
+        return efectiv + randuri
+            .Select(r => Citeste(r.CheieLegacy))
+            .Where(c => c is { } x && (x.An < ctx.An || (x.An == ctx.An && x.Luna < ctx.Luna)))
+            .Sum(c => c.Value.N);
     }
 
     // Familia unei categorii: motivele măsurate poartă cifrele cheii în text, deci

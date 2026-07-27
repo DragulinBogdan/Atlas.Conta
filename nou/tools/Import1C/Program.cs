@@ -712,7 +712,7 @@ Console.WriteLine($"""
     ║   eșecuri de operare      {luni.Sum(l => l.Esecuri),10} pe {luni.Count(l => l.Esecuri > 0)} luni
     ║   realocări de lot (48a)  {luni.Sum(l => l.Realocari),10} (Σ {luni.Sum(l => l.CantitateRealocata):N3} buc mutate de pe pin pe FIFO)
     ║ CONTRACTUL LUNAR (design §8 per lună — pasul 6)
-    ║   contracte picate        {luni.Sum(l => l.ContractePicate),10} pe {luni.Count(l => l.ContractePicate > 0)} luni (3 contracte × {luni.Count} luni)
+    ║   contracte picate        {luni.Sum(l => l.ContractePicate),10} pe {luni.Count(l => l.ContractePicate > 0)} luni (4 contracte × {luni.Count} luni)
     ║   TVA de plată (4423)     {luni.Sum(l => l.TvaDePlata),10:N2} lei pe închiderile Atlas ale lunilor rulate ({bucla.ItvSarite} luni fără ITV nou — deja închise sau fără sold)
     ║   efectul netării         {bucla.StareContract.PlafonStoc,10:N2} lei (valoarea de stoc justificată, cumulată — raport, nu plafon)
     ║   divergențe înregistrate {bucla.Divergente.Inregistrari,10} (registrul măsurat, persistat; {bucla.Divergente.Abandonate} marcaje abandonate)

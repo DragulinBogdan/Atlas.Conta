@@ -1,0 +1,37 @@
+Raportul integral al contractului de reconciliere — 2026-07-27 19:41:34
+Consola e plafonată; aici sunt TOATE diferențele, lună cu lună.
+
+=============== Luna 01/2025 (la 2025-01-31) ===============
+
+[1] Sold per cont OMFP — 0 conturi fără explicație, 7 explicate:
+  ok   cont 371: Δ 486,93 — explicată exact de registrul divergențelor (336 înregistrări, Σ 486,94; rest -0,01)
+  ok   cont 607: Δ -466,93 — explicată exact de registrul divergențelor (324 înregistrări, Σ -466,93; rest 0,00)
+  ok   cont 401: Δ -20,01 — explicată exact de registrul divergențelor (9 înregistrări, Σ -20,01; rest 0,00)
+  ok   cont 3028: Δ 9,85 — explicată exact de registrul divergențelor (6 înregistrări, Σ 9,84; rest 0,01)
+  ok   cont 6028: Δ -9,84 — explicată exact de registrul divergențelor (3 înregistrări, Σ -9,84; rest 0,00)
+  ok   cont 6024: Δ 0,03 — explicată exact de registrul divergențelor (1 înregistrări, Σ 0,03; rest 0,00)
+  ok   cont 3024: Δ -0,03 — explicată exact de registrul divergențelor (1 înregistrări, Σ -0,03; rest 0,00)
+
+[2] Închiderea de TVA — 2 corespondențe:
+     4427 = 4423   Atlas      431.791,93   1C      431.791,93
+     4427 = 4426   Atlas      977.268,92   1C      977.268,92
+
+[3] Stoc per produs × gestiune — 0 chei NEJUSTIFICATE (din 15569 comparate):
+
+[3] Justificate, agregat pe categorii (369 chei, 369 noi / 0 purtate):
+     147 chei justificate — măsurat (Σ |Δ| 17.382,45 lei)
+     123 chei justificate — diferență a sursei, raportată la deschidere (Σ |Δ| 5.247,81 lei)
+      47 chei justificate — celulă negativă în 1C pe cheia asta (Σ |Δ| 905,25 lei)
+      27 chei justificate — măsurat pe cantitate (Σ |Δ| 550,40 lei)
+      21 chei justificate — reziduu de rotunjire (Σ |Δ| 0,30 lei)
+       3 chei justificate — poziție orfană a sursei (Σ |Δ| 408,37 lei)
+       1 chei justificate — cost per lot rearanjat, cantitate exactă (Σ |Δ| 27,92 lei)
+  axa de valoare: 2209 produse netate la deschidere + 168 marcate de supapă/asamblare, din care 2309 prezente pe cheile comparate; justifică 1 chei «cost per lot rearanjat» (Σ |Δq| 0,000 buc / Σ |Δv| 27,92 lei) + 27 chei «măsurat pe cantitate» (Σ |Δq| 1,000 buc / Σ |Δv| 550,40 lei)
+
+[3] Divergența de stoc pe conturi (4 conturi) — total măsurat vs partea justificată (= plafonul contractului 1):
+  cont 3024: Δ total -0,03 lei, justificat 0,03 lei
+  cont 3028: Δ total -308,26 lei, justificat 306,02 lei
+  cont 303: Δ total -358,36 lei, justificat 0,00 lei
+  cont 371: Δ total 13.939,85 lei, justificat 24.828,49 lei
+
+[4] 4. Deriva de rotunjire: Σ algebrică -0,18 lei pe 21 chei (Σ |Δ| 0,30 lei), prag 2,16 = max(podea statistică 1,00; convenție AwayFromZero pe 432 valori căzute pe jumătatea de ban CUMULAT până la fine de lună ⇒ 2,16)

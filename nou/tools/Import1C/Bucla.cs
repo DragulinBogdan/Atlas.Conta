@@ -383,6 +383,12 @@ sealed class BuclaImport {
         motiveLuna.Clear();
         soarteLuna.Clear();
         Alocare.IncepeLuna();
+        // Câte rotunjiri au căzut EXACT pe jumătatea de ban în luna asta: cifra din
+        // care contractul 4 (D4) își derivă pragul derivei sistematice, în loc s-o
+        // presupună. Contorul motorului e global pe proces, deci se măsoară ca
+        // deltă între începutul și sfârșitul lunii.
+        midpointLaStart = Scara.MidpointBani;
+        MidpointLuna = 0;
         cronometruLuna = Stopwatch.StartNew();
         var prima = new DateOnly(an, luna, 1);
         var ctx = new ContextLuna(an, luna, prima, prima.AddMonths(1).AddDays(-1), this);
@@ -453,6 +459,10 @@ sealed class BuclaImport {
         InchidereTva(ctx);
         if (sabotajLuna && !sabotajFacut)
             SaboteazaLuna(ctx);
+        // Snapshotul de închidere: tot ce a rotunjit motorul în luna asta
+        // (documente + imperecheri + închiderea de TVA) e în deltă. Sabotajul nu
+        // trece prin motor, deci nu-l atinge.
+        MidpointLuna = Scara.MidpointBani - midpointLaStart;
         var cronometruContract = Stopwatch.StartNew();
         var contract = ReconciliereLunara(ctx);
         var durataContract = cronometruContract.Elapsed;
@@ -570,6 +580,12 @@ sealed class BuclaImport {
     // Starea purtată între luni (plafonul netării, abaterile deja raportate);
     // Program.cs îi pune datele deschiderii înainte de prima lună.
     public ReconciliereLuna.Stare StareContract { get; } = new();
+
+    // Valorile căzute pe jumătatea de ban în luna curentă (contractul 4 — D4).
+    // 0 la o reluare care nu mai importă nimic: contractul citește atunci cifra
+    // persistată a lunii, nu presupune.
+    public long MidpointLuna { get; private set; }
+    long midpointLaStart;
 
     // Auto-testul contractului LUNAR (`--sabotaj`, partea a doua): +1 leu pe un
     // rând de registru al unui DOCUMENT din prima lună procesată, după import și
