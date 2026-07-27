@@ -466,6 +466,7 @@ sealed class BuclaImport {
         var cronometruContract = Stopwatch.StartNew();
         var contract = ReconciliereLunara(ctx);
         var durataContract = cronometruContract.Elapsed;
+        VerificaSabotaj();
 
         var (realocari, cantitate) = Alocare.DeltaLunii();
         var rez = new RezultatLuna(an, luna, documente, sarite, copii, esecuri,
@@ -587,42 +588,42 @@ sealed class BuclaImport {
     public long MidpointLuna { get; private set; }
     long midpointLaStart;
 
-    // Auto-testul contractului LUNAR (`--sabotaj`, partea a doua): +1 leu pe un
-    // rând de registru al unui DOCUMENT din prima lună procesată, după import și
-    // înaintea reconcilierii. Contul se alege din AFARA bucket-ului netării —
-    // altfel diferența ar fi (corect) declarată justificată, iar proba n-ar
-    // dovedi nimic.
+    // Auto-testul contractului LUNAR (`--sabotaj`, partea a doua): două probe pe
+    // prima lună procesată — un rând contabil și un rând de stoc ale unor
+    // DOCUMENTE ale lunii, alterate după import și înaintea reconcilierii.
+    // Alegerea țintelor și verdictul stau lângă contractul pe care îl probează
+    // (Sabotaj.cs, partial din ReconciliereLuna): despărțirea lor a fost defectul
+    // D6.
     //
     // Spre deosebire de sabotajul deschiderii, ăsta NU se vindecă: deschiderea se
     // rescrie la fiecare rulare, documentele nu. Baza rămâne alterată, deci o
     // rulare de sabotaj e o probă, nu un import.
     bool sabotajLuna;
     bool sabotajFacut;
+    ReconciliereLuna.ProbeSabotaj probeSabotaj;
 
-    public void ActiveazaSabotajLuna() => sabotajLuna = true;
+    // Verdictul auto-testului, citit de Program.cs pentru codul de ieșire. Null =
+    // `--sabotaj` n-a rulat (sau n-a apucat să pună probele).
+    public ReconciliereLuna.VerdictSabotaj Sabotaj { get; private set; }
 
     void SaboteazaLuna(ContextLuna ctx) {
         sabotajFacut = true;
-        using var os = provider.CreateObjectSpace();
-        var candidat = os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => r.DocumentId != null && r.Data >= ctx.Prima && r.Data <= ctx.Ultima)
-            .Select(r => new { r.ID, Debit = r.ContDebit.Simbol, Credit = r.ContCredit.Simbol, r.Valoare })
-            .ToList()
-            .Where(r => !ReconciliereLuna.EsteInBucketNetare(r.Debit)
-                && !ReconciliereLuna.EsteInBucketNetare(r.Credit))
-            .OrderBy(r => r.ID)
-            .FirstOrDefault();
-        if (candidat == null) {
-            avert($"--sabotaj: luna {ctx.Luna:00}/{ctx.An} n-are niciun rând de document în afara "
-                + "bucket-ului netării — proba contractului lunar nu s-a putut face.");
+        probeSabotaj = ReconciliereLuna.PuneProbele(ctx, StareContract, avert);
+    }
+
+    public void ActiveazaSabotajLuna() => sabotajLuna = true;
+
+    // Verdictul se ia IMEDIAT după reconcilierea lunii sabotate: `Stare` ține
+    // conturile și cheile picate ale lunii curente, iar luna următoare le golește.
+    void VerificaSabotaj() {
+        if (probeSabotaj == null || Sabotaj != null)
             return;
-        }
-        var rand = os.GetObjectByKey<RegistruContabil>(candidat.ID);
-        rand.Valoare += 1m;
-        os.CommitChanges();
-        Console.WriteLine($"\n*** SABOTAJ (--sabotaj): +1 leu pe rândul contabil {candidat.ID} "
-            + $"({candidat.Debit} = {candidat.Credit}, {candidat.Valoare:N2}) al lunii "
-            + $"{ctx.Luna:00}/{ctx.An}. Contractul (1) al lunii TREBUIE să pice pe ambele conturi. ***");
+        Sabotaj = ReconciliereLuna.Verifica(probeSabotaj, StareContract);
+        Console.WriteLine("\n  --- Verdictul auto-testului (--sabotaj) ---");
+        foreach (var m in Sabotaj.Mesaje)
+            Console.WriteLine($"     {m}");
+        check("  sabotaj: proba CONTABILĂ detectată de contractul (1)", Sabotaj.ContabilDetectat);
+        check("  sabotaj: proba de STOC detectată de contractul (3)", Sabotaj.StocDetectat);
     }
 
     public int ItvSarite => itvSarite;

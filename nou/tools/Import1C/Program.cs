@@ -32,13 +32,19 @@ using Microsoft.EntityFrameworkCore;
 // Parsarea e explicită (nu un filtru pe prefix) fiindcă `--pana-la` are VALOARE:
 // un filtru ar lăsa „3" să treacă drept connection string.
 var pozitionale = new List<string>();
-// Auto-testul reconcilierii (`--sabotaj`): alterează cu 1 leu rânduri deja
-// SCRISE, între deschidere și reconciliere. E singura cale onestă de a dovedi
-// sensibilitatea — deschiderea se rescrie integral la fiecare rulare, deci o
-// alterare făcută înaintea ei ar fi reparată de ea însăși, iar una făcută pe
-// sursă n-ar testa citirea din bază. Flag-ul rămâne ca unealtă permanentă:
-// contractul de reconciliere e cod ca oricare altul și trebuie să poată fi
-// verificat că mai e viu, nu doar că e verde.
+// Auto-testul reconcilierii (`--sabotaj`): alterează rânduri deja SCRISE, între
+// deschidere și reconciliere. E singura cale onestă de a dovedi sensibilitatea —
+// deschiderea se rescrie integral la fiecare rulare, deci o alterare făcută
+// înaintea ei ar fi reparată de ea însăși, iar una făcută pe sursă n-ar testa
+// citirea din bază. Flag-ul rămâne ca unealtă permanentă: contractul de
+// reconciliere e cod ca oricare altul și trebuie să poată fi verificat că mai e
+// viu, nu doar că e verde.
+//
+// Două etaje: contractul DESCHIDERII (mai jos, +1 leu pe câte un rând scris de
+// ea) și contractul LUNAR (Sabotaj.cs — două probe, contabilă și de stoc, cu
+// țintele derivate din politici și verdict pe ce anume a picat). Codul de ieșire:
+// 1 = probele au fost detectate (succesul auto-testului), 3 = o probă a scăpat
+// sau n-a putut fi pusă.
 var sabotaj = false;
 // `--pana-la N` = importă lunile 1..N (măsurătoarea cerută de §12.4 pornește de
 // la ianuarie singur); `--continua` = o lună picată nu oprește rularea, se
@@ -728,4 +734,36 @@ foreach (var a in avertismente)
 Console.WriteLine(esecuri == 0
     ? "\nImport 1C (deschidere + reconciliere) încheiat fără eșecuri."
     : $"\nImport 1C (deschidere + reconciliere) încheiat cu {esecuri} eșecuri.");
+
+// CODURILE DE IEȘIRE ale auto-testului (`--sabotaj`), păstrând semantica de până
+// acum: o rulare de sabotaj TREBUIE să iasă cu eșecuri, deci `1` e SUCCESUL
+// auto-testului, nu al importului. Ce s-a adăugat e distincția pe care exit-ul
+// n-o putea face (defectul D6): două probe, iar una singură detectată dădea tot
+// `1` și trecea drept probă. De acum orice probă scăpată — sau nepusă — are codul
+// ei, `3`, ca să nu se poată ascunde în eșecurile celeilalte.
+if (sabotaj) {
+    var verdict = bucla.Sabotaj;
+    Console.WriteLine($"""
+
+        ╔══════════════════ AUTO-TESTUL CONTRACTULUI (--sabotaj) ══════════════════
+        ║ {(verdict == null ? "PICAT: probele nu s-au pus deloc (nicio lună importată)."
+            : verdict.Trecut
+                ? "TRECUT: ambele probe au fost detectate de contractele lor."
+                : "PICAT: cel puțin o probă a scăpat — contractul NU e sensibil pe ea.")}
+        {string.Join("\n", (verdict?.Mesaje ?? []).Select(m => $"║   {m}"))}
+        ║ Baza rămâne SABOTATĂ (rândurile de document nu se rescriu): rulează din nou
+        ║ cu --recreeaza înainte de orice import de lucru.
+        ╚══════════════════════════════════════════════════════════════════════════
+        """);
+    if (verdict?.Trecut != true)
+        return 3;
+    // Sabotajul detectat ⇒ contractele au picat ⇒ `esecuri > 0` prin construcție.
+    // Dacă totuși n-ar fi, verdictul ar fi mincinos și se strigă.
+    if (esecuri == 0) {
+        Console.Error.WriteLine("--sabotaj: probele au fost declarate detectate, dar rularea n-are "
+            + "niciun eșec — verdictul și contorul de verificări s-au despărțit.");
+        return 3;
+    }
+    return 1;
+}
 return esecuri == 0 ? 0 : 1;

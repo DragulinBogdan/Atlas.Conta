@@ -53,9 +53,17 @@ namespace Import1C;
 // (cantitatea măsurată), nu în contractul 1. De aceea contul rămâne justificabil
 // prin plafonul lui MĂSURAT, iar detecția documentului pierdut e treaba
 // cantității.
-static class ReconciliereLuna {
+// `partial`: auto-testul contractului (`--sabotaj`, Sabotaj.cs) își derivă
+// țintele din aceleași structuri și constante ca verdictul de aici. Despărțirea
+// lor a fost chiar defectul D6 — proba trăia pe o listă de prefixe îmbătrânită.
+static partial class ReconciliereLuna {
     const decimal EpsV = 0.005m;
     const decimal EpsQ = 0.0005m;
+
+    // Pozițiile ORFANE ale sursei: fără produs sau fără depozit (id-ul 1C e plin
+    // de zerouri). Nu pot deveni lot în Atlas (decizia 13) — deschiderea le
+    // declară deja diferență a sursei, iar în cursul anului rămân la fel.
+    internal const string IdGol = "00000000000000000000000000000000";
 
     // Reziduul de rotunjire acceptat pe o cheie de stoc cu cantitate EXACTĂ:
     // valoarea Atlas e Σ round(cantitate × preț unitar, 2) pe rândurile de
@@ -112,12 +120,6 @@ static class ReconciliereLuna {
     const string MotivCostRearanjat = "cost per lot rearanjat";
     const string MotivMasuratCantitate = "măsurat pe cantitate";
 
-    // Rămasă DOAR pentru alegerea rândului de sabotat (`--sabotaj`): proba trebuie
-    // să lovească un cont care nu poate fi acoperit de nicio divergență de
-    // evaluare. Contractul nu mai folosește prefixe — autoritatea e măsurătoarea.
-    internal static bool EsteInBucketNetare(string simbol) =>
-        simbol.StartsWith('3') || simbol.StartsWith("60") || simbol == "401";
-
     // Starea purtată de la o lună la alta (§12.4): fără ea, o diferență din
     // ianuarie ar fi raportată integral în toate lunile următoare, iar raportul
     // lui decembrie ar fi ilizibil. Purtarea CIFRELOR nu mai trece pe aici —
@@ -166,6 +168,15 @@ static class ReconciliereLuna {
         // intră TOATE diferențele. Poate lipsi (rulările de diagnostic).
         public JurnalContract Jurnal;
 
+        // CE A PICAT în luna curentă (se golesc la fiecare `Executa`): conturile
+        // fără explicație ale contractului 1 și cheile nejustificate ale
+        // contractului 3. Singurul consumator e auto-testul `--sabotaj`, care
+        // trebuie să întrebe „a picat contractul EXACT pe ce am alterat?" —
+        // altfel „rularea a ieșit cu eșecuri" ar trece drept probă, oricare ar fi
+        // fost cauza lor (fals-negativul D6).
+        public readonly HashSet<string> ConturiPicate = new(StringComparer.Ordinal);
+        public readonly HashSet<(string P, string D)> CheiStocPicate = [];
+
         public void Jurnalizeaza(string linie) => Jurnal?.Scrie(linie);
     }
 
@@ -187,6 +198,11 @@ static class ReconciliereLuna {
         // contractelor. E persistat, deci identic la o rulare care nu mai importă
         // nimic — de asta verdictul e determinist (D).
         var registru = bucla.Divergente.PanaLa(ctx.An, ctx.Luna);
+
+        // Ce a picat se strânge per lună, nu cumulat: un cont picat în ianuarie și
+        // reparat în februarie n-are ce căuta în verdictul lui februarie.
+        stare.ConturiPicate.Clear();
+        stare.CheiStocPicate.Clear();
 
         // Contractul 3 se calculează PRIMUL, deși se raportează ultimul: divergența
         // de stoc pe care o măsoară e intrarea contractului 1.
@@ -347,9 +363,11 @@ static class ReconciliereLuna {
                             + $"rămân {rezidual:N2} fără explicație"));
         }
 
-        foreach (var x in picate)
+        foreach (var x in picate) {
+            stare.ConturiPicate.Add(x.Simbol);
             contract($"  cont {x.Simbol}: bază {x.Db:N2} = sursă 1C {x.Sursa:N2} (Δ {x.Delta:N2}) "
                 + $"— {x.Motiv}", false);
+        }
 
         stare.Jurnalizeaza($"\n[1] Sold per cont OMFP — {picate.Count} conturi fără explicație, "
             + $"{justificate.Count} explicate:");
@@ -677,11 +695,6 @@ static class ReconciliereLuna {
             stare.NegativeIstoric.TryGetValue(cheie, out var negativ)
                 && Math.Abs(dq) <= negativ.Q + EpsQ && Math.Abs(dv) <= negativ.V + EpsPrag;
 
-        // Pozițiile ORFANE ale sursei: fără produs sau fără depozit (id-ul 1C e
-        // plin de zerouri). Nu pot deveni lot în Atlas (decizia 13) — deschiderea
-        // le declară deja diferență a sursei, iar în cursul anului rămân la fel.
-        const string IdGol = "00000000000000000000000000000000";
-
         var detalii = new List<(string P, string D, decimal QDb, decimal VDb, decimal QSursa,
             decimal VSursa, string Motiv)>();
         var nepotriviri = 0;
@@ -781,8 +794,10 @@ static class ReconciliereLuna {
                         + "realocarea supapei 48a sau produs născut de o asamblare — "
                         + "prețul lotului e pus de Atlas)"
                 : null;
-            if (motiv == null)
+            if (motiv == null) {
                 nepotriviri++;
+                stare.CheiStocPicate.Add(k);
+            }
             else {
                 justificate++;
                 // Plafonul contractului 1 (D3b): cheia justificată își varsă

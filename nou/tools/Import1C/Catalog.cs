@@ -292,6 +292,13 @@ sealed class Catalog {
     public IReadOnlySet<string> CosturiPentruContStoc(string contStoc) =>
         contStoc != null && costuriPeContStoc.TryGetValue(contStoc, out var c) ? c : null;
 
+    // Toate conturile care apar în oglinzile de mai sus, pe ambele laturi (stoc +
+    // cheltuială). Auto-testul `--sabotaj` are nevoie de mulțimea întreagă ca să
+    // NU-și pună proba pe un cont care poate primi plafon — derivată din aceeași
+    // mapă, ca să nu se poată despărți de ea (defectul D6).
+    public IEnumerable<string> ConturiDinOglinzi =>
+        costuriPeContStoc.SelectMany(x => x.Value.Prepend(x.Key));
+
     // Perechea de conturi pe care motorul o postează pentru o linie de stoc a unui
     // tip de document anume (DSC → 607 = 371, RDC → 607 = 371 cu semn păstrat…).
     // Handlerele au nevoie de ea ca să declare CE postează Atlas pe rândul
