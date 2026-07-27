@@ -58,3 +58,6 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Jurnale de reconciliere Import1C (artefacte de rulare)
+nou/tools/Import1C/reconciliere-*.txt
