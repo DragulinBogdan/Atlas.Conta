@@ -362,26 +362,29 @@ static class StocDinNota {
         if (subconto == null)
             return;
         var index = Subconto.Indexeaza(subconto);
-        IObjectSpace os = null;
-        try {
-            foreach (var r in randuri) {
-                Masoara(bucla, cat, view, docId, index, r, Subconto.Debit,
-                    cat.Mapeaza(r.ContDebit), r.CantitateDebit, r.Suma, ref os);
-                Masoara(bucla, cat, view, docId, index, r, Subconto.Credit,
-                    cat.Mapeaza(r.ContCredit), -r.CantitateCredit, -r.Suma, ref os);
-            }
-        }
-        finally {
-            os?.Dispose();
+        foreach (var r in randuri) {
+            Masoara(bucla, cat, view, docId, index, r, Subconto.Debit,
+                cat.Mapeaza(r.ContDebit), r.CantitateDebit, r.Suma);
+            Masoara(bucla, cat, view, docId, index, r, Subconto.Credit,
+                cat.Mapeaza(r.ContCredit), -r.CantitateCredit, -r.Suma);
         }
     }
 
     // `cantitate1C` / `valoare1C` = mișcarea pe care sursa o face pe cheia asta, cu
     // semnul ei (debitul crește stocul, creditul îl scade). Atlas n-o face, deci
-    // are în plus exact opusul — convenția `EfectStoc`.
+    // are în plus exact opusul — convenția `EfectStoc`. UNIFORM, pe ambele axe:
+    // prețul lotului Atlas e o STARE a bazei, nu o mișcare — n-are ce căuta în
+    // măsurătoare (același principiu ca la linia de factură sărită: cantitatea și
+    // valoarea sunt ale SURSEI). Ramura care evalua reclasificarea la prețul
+    // lotului Atlas a fost ștearsă cu probă pe tot anul: 1C își reconciliază
+    // SINGUR diferența de evaluare printr-un rând-pereche 607 = 371 fără
+    // cantitate, iar evaluarea noastră o număra a doua oară (326 de chei se
+    // explică exact NUMAI cu negarea directă; 0 chei numai cu prețul de lot;
+    // cele 4 chei picate ale re-validării #2 — +37.059,76, −162,88, +159,66,
+    // +46,22 — erau toate dubla numărare a acestei perechi).
     static void Masoara(BuclaImport bucla, Catalog cat, string view, string docId,
             Dictionary<(int, int), Dictionary<string, FlaxRef>> index, FlaxRandNota r, int latura,
-            string simbol, decimal cantitate1C, decimal valoare1C, ref IObjectSpace os) {
+            string simbol, decimal cantitate1C, decimal valoare1C) {
         if (!cat.EsteContDeStoc(simbol) || (cantitate1C == 0m && valoare1C == 0m))
             return;
         var nomRef = index.Ia(r.Linie, latura, Subconto.Nomenclator);
@@ -389,36 +392,11 @@ static class StocDinNota {
         if (nomRef == null || lotRef == null)
             return;
         var depozitHex = index.Ia(r.Linie, latura, Subconto.Depozite)?.Id ?? "";
-        // Valoarea cu care Atlas ține marfa rămasă: dacă lotul sursei există în
-        // Atlas, e prețul LUI (cheia contractului 3 compară valoarea Atlas cu cea a
-        // sursei, iar marfa care rămâne e evaluată de noi); dacă nu există —
-        // nomenclatorul-țintă al reclasificării nici nu ajunge produs în Atlas —
-        // singura cifră disponibilă e a sursei.
-        //
-        // Mărimea o dă prețul lotului, dar SEMNUL aparține mișcării de VALOARE a
-        // sursei, nu celei de cantitate: cele două coincid doar când rândul mută
-        // marfa și valoarea în același sens (reclasificarea propriu-zisă). Nu
-        // coincid întotdeauna — 1C stornează valoarea lăsând bucățile în urmă
-        // (măsurat: „Operatia" din 26.03, rând 371.1 = 408 cu Suma −2.715,23 și
-        // CountDt +1: sursa PUNE o bucată și SCOATE valoarea, deci Atlas are −1
-        // bucată și +2.715,23 față de ea) și scrie rânduri de cantitate cu
-        // valoare zero. În ambele cazuri prețul lotului ar da semnul invers sau o
-        // valoare care nu s-a mișcat, iar cheia ar rămâne explicată greșit luni
-        // în șir (măsurat: aprilie→noiembrie, „închisă" în decembrie doar prin
-        // anularea a două erori egale și opuse). Ele cad pe fallback-ul de mai
-        // sus, care e negarea directă a mișcării sursei — mereu corect.
-        var lot = cat.Lot(lotRef.TipRef, lotRef.Id, nomRef.Id, simbol);
-        var valoare = -valoare1C;
-        if (lot != null && valoare1C != 0m && Math.Sign(valoare1C) == Math.Sign(cantitate1C)) {
-            os ??= bucla.CreeazaObjectSpace();
-            valoare = -Math.Sign(cantitate1C)
-                * Scara.RotunjesteBani(Math.Abs(cantitate1C) * HandlerTransfer.PretLot(os, lot.Id));
-        }
         Randuri++;
         bucla.Divergenta(RegistruDivergente.Sursa(view, docId),
             "Notă 1C care mută stoc (reclasificare de nomenclator pe același lot) — "
                 + "Atlas transcrie doar contabilitatea",
-            [new EfectStoc(nomRef.Id, depozitHex, -cantitate1C, valoare)]);
+            [new EfectStoc(nomRef.Id, depozitHex, -cantitate1C, -valoare1C)]);
     }
 
     public static void Raporteaza() {
