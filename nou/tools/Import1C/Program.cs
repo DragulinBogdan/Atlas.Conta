@@ -164,6 +164,15 @@ using (var os = provider.CreateObjectSpace()) {
 }
 Console.WriteLine($"Seed profil Privat aplicat pe „{pgCs.Split("Database=")[^1]}”.");
 
+// Convenția de rotunjire a banilor e dată a bazei (decizia 51c) — seed-ul de mai
+// sus a fixat-o deja în `Scara`; re-citirea explicită ține bootstrap-ul uneltei
+// independent de ordinea internă a seed-ului, iar reconcilierea o RAPORTEAZĂ în
+// loc s-o presupună (alarma de rotunjire compară deriva cu convenția reală).
+using (var os = provider.CreateObjectSpace()) {
+    ContaSeeder.AplicaConventiaRotunjire(os);
+}
+Console.WriteLine($"Convenție rotunjire bani: {Scara.ConventieBani}.");
+
 // Amprenta seed-ului: la o a doua rulare trebuie să fie IDENTICĂ (seed-ul e
 // incremental, nu aditiv) — proba de idempotență a fazei 0.
 using (var os = provider.CreateObjectSpace()) {

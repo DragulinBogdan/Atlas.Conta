@@ -2,6 +2,7 @@
 using DevExpress.ExpressApp.Blazor.DesignTime;
 using DevExpress.ExpressApp.Design;
 using DevExpress.ExpressApp.Utils;
+using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 namespace Atlas.Conta.BackOffice.Blazor.Server {
@@ -31,10 +32,49 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
                         return serviceScope.ServiceProvider.GetRequiredService<DevExpress.ExpressApp.Utils.IDBUpdater>().Update(ContainsArgument(args, "forceUpdate"), ContainsArgument(args, "silent"));
                     }
                 } else {
+                    // Decizia 51c: convenția de rotunjire e dată a bazei, citită O
+                    // DATĂ înainte de a servi primul request (motorul rulează în
+                    // cerere și rotunjește la materializare). Pe calea
+                    // --updateDatabase o fixează seed-ul însuși.
+                    FixeazaConventiaRotunjire(host);
                     host.Run();
                 }
             }
             return 0;
+        }
+        // Citirea e best-effort (bază încă nemigrată / rând absent ⇒ warning și
+        // default-ul AwayFromZero, adică exact comportamentul de dinainte de
+        // 51c); APLICAREA stă în afara try-ului — o convenție citită și refuzată
+        // de `FixeazaConventia` e o contradicție reală, nu o problemă de acces.
+        static void FixeazaConventiaRotunjire(IHost host) {
+            var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
+            MidpointRounding? conventie = null;
+            try {
+                var connectionString = host.Services.GetRequiredService<IConfiguration>()
+                    .GetConnectionString("ConnectionString");
+                if (!string.IsNullOrEmpty(connectionString)) {
+                    var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<
+                            Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeEFCoreDbContext>()
+                        .UseNpgsql(connectionString)
+                        .UseChangeTrackingProxies()
+                        .Options;
+                    using var context = new Atlas.Conta.BackOffice.Module.BusinessObjects
+                        .BackOfficeEFCoreDbContext(options);
+                    conventie = context.SetariProfil.AsNoTracking()
+                        .Select(s => (MidpointRounding?)s.RotunjireBani).FirstOrDefault();
+                }
+            }
+            catch (Exception e) {
+                logger.LogWarning(e, "Convenția de rotunjire nu a putut fi citită din bază; "
+                    + "se folosește {Conventie}.", Atlas.Conta.BackOffice.Module.BusinessObjects.Scara.ConventieBani);
+                return;
+            }
+            if (conventie == null) {
+                logger.LogWarning("Baza nu are rând SetareProfil (încă ne-seed-uită?); convenția de "
+                    + "rotunjire rămâne {Conventie}.", Atlas.Conta.BackOffice.Module.BusinessObjects.Scara.ConventieBani);
+                return;
+            }
+            Atlas.Conta.BackOffice.Module.BusinessObjects.Scara.FixeazaConventia(conventie.Value);
         }
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)

@@ -106,6 +106,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaValidare> PoliticiValidare { get; set; }
         public DbSet<PoliticaTva> PoliticiTva { get; set; }
         public DbSet<PoliticaInchidereTva> PoliticiInchidereTva { get; set; }
+        // Setarea de profil a bazei (decizia 51c): un singur rând, scris de seed.
+        public DbSet<SetareProfil> SetariProfil { get; set; }
 
         // Infrastructura migrării (pasul 4): corelare legacy → nou.
         public DbSet<MigrareLegatura> MigrareLegaturi { get; set; }

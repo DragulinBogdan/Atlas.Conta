@@ -58,6 +58,14 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         .UseObjectSpaceLinkProxies()
         .UseLazyLoadingProxies());
 
+// Convenția de rotunjire a banilor e dată a bazei (decizia 51c): unealta lucrează
+// pe o bază deja seed-uită de updater, deci o citește și o fixează în `Scara`
+// înainte de a scrie primul rând de registru.
+using (var osConventie = provider.CreateObjectSpace()) {
+    Atlas.Conta.BackOffice.Module.DatabaseUpdate.ContaSeeder.AplicaConventiaRotunjire(osConventie);
+}
+Console.WriteLine($"Convenție rotunjire bani: {Scara.ConventieBani}.");
+
 // Corelarea legacy→nou per tabelă (idempotență): cheie = id-ul legacy ca text.
 Dictionary<string, Guid> Legaturi(IObjectSpace os, string tabela) =>
     os.GetObjectsQuery<MigrareLegatura>().Where(m => m.Tabela == tabela)

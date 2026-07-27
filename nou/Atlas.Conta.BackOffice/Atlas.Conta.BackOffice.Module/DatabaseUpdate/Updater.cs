@@ -23,7 +23,7 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
             var config = ObjectSpace.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
             var profil = Enum.TryParse<ProfilContabil>(config?["ProfilContabil"], true, out var p)
                 ? p : ProfilContabil.Bugetar;
-            ContaSeeder.Seed(ObjectSpace, profil);
+            ContaSeeder.Seed(ObjectSpace, profil, CitesteConventieRotunjire(config));
 
             // The code below creates users and roles for testing purposes only.
             // In production code, you can create users and assign roles to them automatically, as described in the following help topic:
@@ -62,6 +62,21 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
         }
         public override void UpdateDatabaseBeforeUpdateSchema() {
             base.UpdateDatabaseBeforeUpdateSchema();
+        }
+        // Convenția de rotunjire a banilor (decizia 51c) — appsettings
+        // `ConventieRotunjire` (numele unui MidpointRounding). Cheie OPȚIONALĂ:
+        // absentă ⇒ baza își păstrează convenția (AwayFromZero la bază nouă).
+        // O valoare scrisă greșit NU se ignoră: ar seed-ui tăcut cu default-ul,
+        // adică exact convenția pe care cineva a încercat s-o schimbe.
+        static MidpointRounding? CitesteConventieRotunjire(Microsoft.Extensions.Configuration.IConfiguration config) {
+            var text = config?["ConventieRotunjire"];
+            if (string.IsNullOrWhiteSpace(text))
+                return null;
+            if (!Enum.TryParse<MidpointRounding>(text, true, out var conventie))
+                throw new InvalidOperationException(
+                    $"appsettings `ConventieRotunjire` = „{text}” nu e un MidpointRounding valid "
+                    + $"({string.Join(", ", Enum.GetNames<MidpointRounding>())}).");
+            return conventie;
         }
         PermissionPolicyRole CreateAdminRole() {
             PermissionPolicyRole adminRole = ObjectSpace.FirstOrDefault<PermissionPolicyRole>(r => r.Name == "Administrators");

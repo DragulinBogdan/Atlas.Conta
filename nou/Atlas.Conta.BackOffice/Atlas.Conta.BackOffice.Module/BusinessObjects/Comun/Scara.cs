@@ -36,10 +36,51 @@ public static class Scara {
     public const int Cantitate = 3;
     public const int Procent = 4;
 
-    // AwayFromZero (rotunjirea „comercială") — nu bancherească: e ce fac și
-    // sursele de date (1C, facturile furnizorilor) și ce așteaptă reconcilierea.
-    public static decimal RotunjesteBani(decimal v) => Math.Round(v, Bani, MidpointRounding.AwayFromZero);
-    public static decimal RotunjestePret(decimal v) => Math.Round(v, Pret, MidpointRounding.AwayFromZero);
+    // CONVENȚIA DE ROTUNJIRE (decizia 51c) — dată de PROFIL, nu constantă de cod.
+    // Reziduul de reconciliere e `sum(round)` vs `round(sum)` (motorul rotunjește
+    // per rând de registru, sursa poartă valoarea întreagă a lotului): convenția
+    // nu-l face să dispară, alege doar SENSUL în care se acumulează. AwayFromZero
+    // împinge toate jumătățile de ban în același sens (deriva măsurată pe importul
+    // 1C: −4,18 lei/an pe 3.628 rânduri midpoint); ToEven (bancară) le compensează.
+    //
+    // Default AwayFromZero = comportamentul de dinainte de decizia 51c, deci
+    // orice bază neatinsă rămâne numeric identică. Se fixează O DATĂ la pornirea
+    // fiecărui host, din rândul `SetareProfil` al bazei (vezi `FixeazaConventia`)
+    // — static, nu parametru prin semnăturile motorului: e o proprietate a bazei
+    // în care rulează procesul, nu a operației.
+    static MidpointRounding conventieBani = MidpointRounding.AwayFromZero;
+    static bool conventieFixata;
+
+    public static MidpointRounding ConventieBani => conventieBani;
+
+    // Idempotentă cu aceeași valoare (mai mulți bootstrap-uri în același proces:
+    // seed + citire), zgomotoasă la valoare diferită — un proces care ar rotunji
+    // în două feluri e o bază amestecată în devenire.
+    public static void FixeazaConventia(MidpointRounding conventie) {
+        if (conventieFixata && conventie != conventieBani)
+            throw new InvalidOperationException(
+                $"Convenția de rotunjire a fost deja fixată pe {conventieBani}; nu se poate schimba pe "
+                + $"{conventie} în același proces. Convenția e ÎNGHEȚATĂ per bază (decizia 51c) — "
+                + "o bază vie nu-și schimbă regula de rotunjire fără migrare de istoric.");
+        conventieBani = conventie;
+        conventieFixata = true;
+    }
+
+    // Câte valori au căzut EXACT pe jumătatea de ban (acolo unde convenția chiar
+    // decide). Contorul e materia primă a alarmei de rotunjire din reconciliere:
+    // deriva așteptată a convenției e calculabilă din el (n × 0,005 în cel mai
+    // rău caz), deci o derivă mult peste ea nu mai e rotunjire, ci defect.
+    static long midpointBani;
+    public static long MidpointBani => Interlocked.Read(ref midpointBani);
+
+    public static decimal RotunjesteBani(decimal v) {
+        // Aritmetică decimal, nu double: restul față de banul întreg e exact.
+        if (Math.Abs(v) % 0.01m == 0.005m)
+            Interlocked.Increment(ref midpointBani);
+        return Math.Round(v, Bani, conventieBani);
+    }
+
+    public static decimal RotunjestePret(decimal v) => Math.Round(v, Pret, conventieBani);
 
     // Convenția e pe NUMELE proprietății, nu pe o listă de coloane: numele astea
     // sunt vocabular stabil al modelului (fiecare derivată nouă aduce alt

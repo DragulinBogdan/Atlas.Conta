@@ -80,6 +80,14 @@ if (profil == ProfilContabil.Privat) {
     ContaSeeder.Seed(osSeed, ProfilContabil.Privat);
 }
 
+// Convenția de rotunjire a banilor = dată a bazei (decizia 51c): pe calea privată
+// seed-ul tocmai a fixat-o, pe cea bugetară (bază deja seed-uită) se citește aici.
+using (var osConventie = provider.CreateObjectSpace()) {
+    var citita = ContaSeeder.AplicaConventiaRotunjire(osConventie);
+    Console.WriteLine($"Convenție rotunjire bani: {Scara.ConventieBani}"
+        + (citita ? " (din SetareProfil)" : " (implicit — baza nu are rând SetareProfil)"));
+}
+
 using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     Console.WriteLine($"TipuriDocument:  {await ctx.TipuriDocument.CountAsync()}");
     Console.WriteLine($"ClaseProduse:    {await ctx.ClaseProduse.CountAsync()}");
@@ -199,6 +207,40 @@ if (profil == ProfilContabil.Privat) {
             && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCL")?.NaturaInterzisa != NaturaClasa.Stoc);
         Check("Seed: plan OMFP fără defalcări obligatorii (pornesc goale — design §5)",
             !os.GetObjectsQuery<Cont>().Any(c => c.DimensiuniObligatorii != DimensiuneFlags.Niciuna));
+
+        // G3 (decizia 50f): Tipurile create ad-hoc de importul 1C sunt acum seed
+        // EXPLICIT — cod, clasă și cont implicit din profil, nu ghicite din prima
+        // cifră a simbolului. Upsert pe Cod ⇒ bazele importate se corectează.
+        (string Clasa, string[] Coduri)[] promovate = [
+            ("TER", ["408", "4091", "4092", "419", "447", "473", "5328", "S371"]),
+            ("C", ["6021", "6022", "6028", "604", "6422", "6458", "6581", "6651", "667"]),
+            ("S", ["6051", "6052", "6053", "6231", "6232", "624", "627"]),
+            ("VEN", ["767", "7581", "7588"]),
+        ];
+        var tipuriPromovate = promovate
+            .SelectMany(g => g.Coduri.Select(cod => (g.Clasa, Cod: cod)))
+            .Select(x => (x.Clasa, x.Cod, Tip: os.FirstOrDefault<TipMaterial>(t => t.Cod == x.Cod))).ToList();
+        Check($"Seed G3: toate cele {tipuriPromovate.Count} Tipuri promovate există, în clasa declarată "
+            + "(TER=terți/regularizări, C=cheltuieli, S=servicii, VEN=venituri)",
+            tipuriPromovate.Count == 27
+            && tipuriPromovate.All(x => x.Tip != null && x.Tip.Clasa?.Cod == x.Clasa));
+        Check("Seed G3: clasa nouă TER e de natură Serviciu (paritate cu clasificarea ad-hoc — "
+            + "regulile de contare se potrivesc pe natură)",
+            os.FirstOrDefault<ClasaProdus>(c => c.Cod == "TER")?.Natura == NaturaClasa.Serviciu);
+        Check("Seed G3: fiecare Tip promovat are cont implicit — cele 26 numerice pe simbolul lor, "
+            + "puntea S371 explicit pe 371 (Cod-ul ei nu e simbol de cont)",
+            tipuriPromovate.All(x => x.Tip?.ContImplicitId != null
+                && os.GetObjectByKey<Cont>(x.Tip.ContImplicitId.Value).Simbol == (x.Cod == "S371" ? "371" : x.Cod)));
+        Check("Seed G3: denumirile vin din planul OMFP, nu din import („1C: cont X”)",
+            tipuriPromovate.All(x => x.Tip?.Denumire != null && !x.Tip.Denumire.StartsWith("1C:")));
+
+        // Decizia 51c: convenția de rotunjire e dată de profil, un rând per bază.
+        var setareProfil = os.GetObjectsQuery<SetareProfil>().ToList();
+        Check("Seed 51c: un singur rând SetareProfil, pe profilul bazei, cu convenția de rotunjire "
+            + "aplicată în Scara (Flax rămâne AwayFromZero)",
+            setareProfil.Count == 1 && setareProfil[0].Profil == ProfilContabil.Privat
+            && setareProfil[0].RotunjireBani == MidpointRounding.AwayFromZero
+            && Scara.ConventieBani == MidpointRounding.AwayFromZero);
 
         var furnizor = os.CreateObject<Partener>();
         furnizor.Cod = MarcajPrv + "-FURN";

@@ -28,6 +28,7 @@ internal static class ProfilPrivat {
         // Derivările interoghează BAZA — nomenclatoarele se comit întâi (30e).
         os.CommitChanges();
         ContaSeeder.SeedContImplicitTipMaterial(os);
+        SeedContImplicitPunteStoc(os);
         SeedTipTva(os);
         SeedPoliticiNotaTransfer(os);
         SeedPoliticiFacturaIntrareNir(os);
@@ -68,6 +69,13 @@ internal static class ProfilPrivat {
             ("C", "Alte cheltuieli", NaturaClasa.Cheltuiala),
             ("F", "Imobilizări", NaturaClasa.Imobilizare),
             ("VEN", "Venituri", NaturaClasa.Serviciu),
+            // G3 (decizia 50f): clasa terților și a regularizărilor — conturile de
+            // decontare pe care cad liniile de import (avansuri, facturi nesosite,
+            // fonduri speciale, clarificări). Natura=Serviciu DELIBERAT, nu
+            // Tehnica: regulile de contare se potrivesc pe natură (FCT are un rând
+            // per Serviciu/Cheltuiala/Imobilizare), iar Tehnica le-ar scoate din
+            // joc — e paritate cu clasificarea ad-hoc pe care o promovează.
+            ("TER", "Terți și regularizări", NaturaClasa.Serviciu),
             ("T", "TVA", NaturaClasa.Tehnica),
             ("TRZ", "Trezorerie", NaturaClasa.Tehnica),
         ];
@@ -128,6 +136,73 @@ internal static class ProfilPrivat {
                 tip.Clasa = claseMap[t.Clasa];
             }
         }
+
+        // G3 (decizia 50f): Tipurile pe care importul 1C le crea AD-HOC („gaură
+        // de profil completată ad-hoc", Denumire „1C: cont X", clasa ghicită din
+        // prima cifră) devin seed EXPLICIT — profilul privat își declară singur
+        // conturile pe care cad liniile reale, iar importul nu mai inventează
+        // nomenclator (decizia 21: politicile se definesc curat, 1C e evidență).
+        // Denumirile sunt cele din planul OMFP; clasa e alegerea profilului, nu a
+        // primei cifre. UPSERT pe Cod, nu „creează dacă lipsește": bazele deja
+        // importate le au cu denumirea și clasa ad-hoc, iar seed-ul le corectează
+        // în loc să le lase divergente. Paritate de comportament verificată:
+        // Cheltuiala și Serviciu se contează identic pe FCT (rând per natură, cu
+        // același fallback 401), iar DEC/FCL au reguli generice fără filtru.
+        (string Clasa, string Cod, string Denumire)[] tipuriPromovate = [
+            // Terți și regularizări (decontări, nu consum): natura Serviciu.
+            ("TER", "408", "Furnizori - facturi nesosite"),
+            ("TER", "4091", "Furnizori-debitori pentru cumpărări de bunuri de natura stocurilor"),
+            ("TER", "4092", "Furnizori-debitori pentru prestări de servicii"),
+            ("TER", "419", "Clienţi – creditori"),
+            ("TER", "447", "Fonduri speciale - taxe şi vărsăminte asimilate"),
+            ("TER", "473", "Decontări din operaţii în curs de clarificare"),
+            ("TER", "5328", "Alte valori"),
+            // Puntea de stoc a importului: simbolul 371 e deja luat de Tipul de
+            // STOC, iar o linie de punte pe contul de marfă nu are lot — geamănul
+            // „S<simbol>" o ține în afara filtrului de natură al conexului NIR.
+            // Cod-ul nu e simbol de cont valid, deci derivarea contului implicit
+            // nu-l poate rezolva: se leagă explicit (vezi SeedContImplicitPunteStoc).
+            ("TER", "S371", "Punte de stoc 371 (tehnic import)"),
+            // Cheltuieli propriu-zise.
+            ("C", "6021", "Cheltuieli cu materialele auxiliare"),
+            ("C", "6022", "Cheltuieli privind combustibilii"),
+            ("C", "6028", "Cheltuieli privind alte materiale consumabile"),
+            ("C", "604", "Cheltuieli privind materialele nestocate"),
+            ("C", "6422", "Cheltuieli cu tichetele acordate salariaților"),
+            ("C", "6458", "Alte cheltuieli privind asigurările și protecția socială"),
+            ("C", "6581", "Despăgubiri, amenzi şi penalităţi"),
+            ("C", "6651", "Diferenţe nefavorabile de curs valutar legate de elementele monetare exprimate în valută"),
+            ("C", "667", "Cheltuieli privind sconturile acordate"),
+            // Servicii și utilități (gradul II al lui 605/623 + transport/bancă).
+            ("S", "6051", "Cheltuieli privind consumul de energie"),
+            ("S", "6052", "Cheltuieli privind consumul de apă"),
+            ("S", "6053", "Cheltuieli privind consumul de gaze naturale"),
+            ("S", "6231", "Cheltuieli de protocol"),
+            ("S", "6232", "Cheltuieli de reclamă şi publicitate"),
+            ("S", "624", "Cheltuieli cu transportul de bunuri şi personal"),
+            ("S", "627", "Cheltuieli cu serviciile bancare şi asimilate"),
+            // Venituri (7588 e și creditul plusului de inventar — aici e Tipul
+            // liniei, nu contul regulii).
+            ("VEN", "767", "Venituri din sconturi obţinute"),
+            ("VEN", "7581", "Venituri din despăgubiri, amenzi şi penalităţi"),
+            ("VEN", "7588", "Alte venituri din exploatare"),
+        ];
+        foreach (var t in tipuriPromovate) {
+            var tip = os.FirstOrDefault<TipMaterial>(x => x.Cod == t.Cod) ?? os.CreateObject<TipMaterial>();
+            tip.Cod = t.Cod;
+            tip.Denumire = t.Denumire;
+            tip.Clasa = claseMap[t.Clasa];
+        }
+    }
+
+    // Puntea de stoc (G3): Cod-ul „S371" nu e simbol de cont, deci derivarea
+    // generică (`SeedContImplicitTipMaterial`) îl lasă gol — se leagă explicit de
+    // contul 371, exact ce făcea importul când îl crea ad-hoc (Catalog citește
+    // simbolul Tipului din ContImplicit). Rulează după commit-ul planului.
+    static void SeedContImplicitPunteStoc(IObjectSpace os) {
+        var punte = os.FirstOrDefault<TipMaterial>(t => t.Cod == "S371");
+        if (punte != null && punte.ContImplicitId == null)
+            punte.ContImplicitId = os.FirstOrDefault<Cont>(c => c.Simbol == "371")?.ID;
     }
 
     // Partenerul generic de retail (decizia 48b): vânzarea cu amănuntul nu are

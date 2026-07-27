@@ -16,14 +16,56 @@ public enum ProfilContabil { Bugetar = 0, Privat = 1 }
 // nemodificat) și ProfilPrivat (OMFP 1802). Politicile se definesc pe
 // funcționalitate (decizia 21) — legacy/1C sunt direcție, nu canon.
 public static class ContaSeeder {
-    public static void Seed(IObjectSpace os, ProfilContabil profil) {
+    // `conventie` = convenția de rotunjire a banilor (decizia 51c), dată DOAR la
+    // prima seed-uire a bazei: după aceea e înghețată în rândul `SetareProfil`,
+    // iar o valoare diferită e refuzată. Null = se păstrează ce are baza (sau
+    // AwayFromZero la bază nouă — comportamentul de dinainte de 51c).
+    public static void Seed(IObjectSpace os, ProfilContabil profil, MidpointRounding? conventie = null) {
         SeedTipuriDocument(os);
         SeedPerioadeFiscale(os);
         VerificaProfil(os, profil);
+        var rotunjire = SeedSetareProfil(os, profil, conventie);
         if (profil == ProfilContabil.Bugetar)
             ProfilBugetar.Seed(os);
         else
             ProfilPrivat.Seed(os);
+        // Procesul care tocmai a seed-uit baza rotunjește după regula ei.
+        Scara.FixeazaConventia(rotunjire);
+    }
+
+    // Rândul de setare al bazei (decizia 51c). Gardian dublu: profilul (completează
+    // `VerificaProfil`, care se uită doar la ancora planului — o bază fără conturi
+    // trecea de el) și convenția de rotunjire, ÎNGHEȚATĂ după prima scriere.
+    static MidpointRounding SeedSetareProfil(IObjectSpace os, ProfilContabil profil, MidpointRounding? conventie) {
+        var setare = os.GetObjectsQuery<SetareProfil>().FirstOrDefault();
+        if (setare == null) {
+            setare = os.CreateObject<SetareProfil>();
+            setare.Profil = profil;
+            setare.RotunjireBani = conventie ?? MidpointRounding.AwayFromZero;
+            os.CommitChanges();
+            return setare.RotunjireBani;
+        }
+        if (setare.Profil != profil)
+            throw new InvalidOperationException(
+                $"Baza e seed-uită pe profilul {setare.Profil}, iar configurația cere {profil} — "
+                + "profilul contabil e per bază (decizia 35d).");
+        if (conventie != null && conventie != setare.RotunjireBani)
+            throw new InvalidOperationException(
+                $"Baza rotunjește banii cu {setare.RotunjireBani}, iar configurația cere {conventie}. "
+                + "Convenția de rotunjire e ÎNGHEȚATĂ per bază (decizia 51c): schimbarea ei pe o bază "
+                + "vie amestecă istoricul (jumătățile de ban deja postate au fost decise altfel).");
+        return setare.RotunjireBani;
+    }
+
+    // Bootstrap-ul host-urilor care NU seed-uiesc (unelte pe bază existentă,
+    // aplicația la pornire normală): convenția se citește o dată și se fixează.
+    // Fără rând (bază pre-51c, încă ne-seed-uită) rămâne default-ul AwayFromZero.
+    public static bool AplicaConventiaRotunjire(IObjectSpace os) {
+        var setare = os.GetObjectsQuery<SetareProfil>().FirstOrDefault();
+        if (setare == null)
+            return false;
+        Scara.FixeazaConventia(setare.RotunjireBani);
+        return true;
     }
 
     // Profilul e per bază: o bază seed-uită cu un plan nu se re-seed-uiește cu
