@@ -335,6 +335,22 @@ static class Reluare1C {
     public static int DocumenteBlocate { get; private set; }
     public static int UnitatiPartiale { get; private set; }
     public static int CheiRefuzate { get; private set; }
+    public static int UnitatiCuDrafturi { get; private set; }
+
+    // Verdictul lui `UnitatePartiala` (review 1C-d-final, defect 4):
+    //   * Normala — fluxul obișnuit al handlerului (planifică ce nu e cunoscut;
+    //     include D4-ul validat: legat+Draft FĂRĂ frați operați = ștergere +
+    //     reimport complet);
+    //   * DoarDrafturi — frați de stoc OPERAȚI + toate cheile lipsă legate cu
+    //     document DRAFT: NU se planifică nimic (alocarea ar rula peste mișcările
+    //     fraților), dar nici nu se refuză — importul merge cu plan NUL, iar
+    //     `Executa` cade pe re-operarea draftului existent. Nu e reconstrucția
+    //     D4, dar e strict mai bine decât blocajul: draftul își are deja liniile
+    //     și pinurile din planificarea originală;
+    //   * Refuzata — frați de stoc operați + cel puțin o cheie INEXISTENTĂ:
+    //     refuz zgomotos cu remediul `--deblocheaza` (planificarea parțială ar
+    //     produce punte parțială și divergențe fantomă).
+    public enum Partiala { Normala, DoarDrafturi, Refuzata }
 
     // ======================= D1: unitatea PARȚIAL importată =======================
     //
@@ -362,27 +378,43 @@ static class Reluare1C {
     // Reluare.cs) și documentul se replanifică integral, de la zero.
     //
     // De ce contează doar cheile de STOC: ele sunt singurele care lasă în registru
-    // mișcări pe care alocarea le citește. O factură operată fără descărcare, sau
-    // o descărcare rămasă DRAFT (draftul nu scrie registre, iar `EsteCunoscut` îl
-    // declară oricum nedezvoltat — D4), nu poluează nimic: acolo replanificarea
-    // rămâne corectă și D4 își face treaba.
-    public static bool UnitatePartiala(BuclaImport bucla, string view, string cheieSursa,
+    // mișcări pe care alocarea le citește. O factură operată fără descărcare nu
+    // poluează nimic. O componentă rămasă DRAFT lângă frați operați (cazul
+    // canonic: DSC A operat, DSC B picat la gardianul de sold) NU se refuză și
+    // NICI nu se replanifică — trece pe `DoarDrafturi`, adică re-operarea
+    // draftului existent prin fluxul normal (review 1C-d-final, defect 4:
+    // varianta veche o refuza și cerea `--deblocheaza`, care STORNEAZĂ frații
+    // operați — remediu mai greu decât defectul).
+    public static Partiala UnitatePartiala(BuclaImport bucla, string view, string cheieSursa,
             IReadOnlyList<string> chei, IReadOnlyCollection<string> cheiStoc, string motiv) {
         if (chei.Count == 0 || !cheiStoc.Any(c => bucla.EsteCunoscut(view, c)))
-            return false;
+            return Partiala.Normala;
         var lipsa = chei.Where(c => !bucla.EsteCunoscut(view, c)).ToList();
         if (lipsa.Count == 0)
-            return false;
+            return Partiala.Normala;
+        var inexistente = lipsa.Where(c => {
+            var tinta = bucla.Tinta(view, c);
+            return tinta == null || bucla.Stare(tinta.Value) != StareDocument.Draft;
+        }).ToList();
+        if (inexistente.Count == 0) {
+            UnitatiCuDrafturi++;
+            bucla.Avert($"1C:{view}/{cheieSursa}: unitate cu frați de stoc operați și "
+                + $"{lipsa.Count} componente rămase DRAFT ({string.Join(", ", lipsa)}) — nu se "
+                + "replanifică (alocarea ar rula peste mișcările fraților); drafturile se "
+                + "RE-OPEREAZĂ ca atare.");
+            return Partiala.DoarDrafturi;
+        }
         UnitatiPartiale++;
         CheiRefuzate += lipsa.Count;
         bucla.Avert($"1C:{view}/{cheieSursa}: unitate PARȚIAL importată — {chei.Count - lipsa.Count} "
             + $"din {chei.Count} chei există deja (cel puțin una de stoc, operată), {lipsa.Count} "
-            + $"lipsesc ({string.Join(", ", lipsa)}). NU se replanifică: alocarea ar rula peste "
-            + "propriile mișcări deja comise și ar produce divergențe fantomă. Deblocare țintită: "
+            + $"lipsesc ({string.Join(", ", lipsa)}, dintre care {inexistente.Count} fără nicio "
+            + "urmă). NU se replanifică: alocarea ar rula peste propriile mișcări deja comise și "
+            + "ar produce divergențe fantomă. Deblocare țintită: "
             + $"--deblocheaza {view}:{cheieSursa}");
         foreach (var _ in lipsa)
             bucla.RefuzaCuMotiv(view, motiv);
-        return true;
+        return Partiala.Refuzata;
     }
 
     public static bool Blocheaza(BuclaImport bucla, string view, bool punteVeche, string cheieDocument) {
@@ -409,6 +441,9 @@ static class Reluare1C {
             Console.WriteLine($"  {UnitatiPartiale} unități PARȚIAL importate de o rulare anterioară, "
                 + $"nereplanificate ({CheiRefuzate} chei refuzate) — deblocare țintită cu "
                 + "--deblocheaza <view>:<cheie>.");
+        if (UnitatiCuDrafturi > 0)
+            Console.WriteLine($"  {UnitatiCuDrafturi} unități cu frați operați + componente DRAFT: "
+                + "drafturile s-au RE-OPERAT ca atare (fără replanificare).");
     }
 }
 

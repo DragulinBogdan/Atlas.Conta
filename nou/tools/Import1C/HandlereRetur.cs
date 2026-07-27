@@ -84,13 +84,15 @@ static class HandlerReturFurnizor {
                 // D1: grupurile de depozit sunt de stoc, dar puntea returului e a
                 // DOCUMENTULUI (`Clasificare1C.Declara` peste toate rândurile) —
                 // deci planul nu se sparge per grup ca la bonul de consum.
-                if (Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, chei,
-                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                var partiala = Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, chei,
+                    "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)");
+                if (partiala == Reluare1C.Partiala.Refuzata)
                     return;
 
                 Plan plan = null;
-                if (!chei.All(c => bucla.EsteCunoscut(View, c))
-                        || (chei.Count == 0 && !bucla.EsteCunoscut(View, h.Id))) {
+                if (partiala != Reluare1C.Partiala.DoarDrafturi
+                        && (!chei.All(c => bucla.EsteCunoscut(View, c))
+                            || (chei.Count == 0 && !bucla.EsteCunoscut(View, h.Id)))) {
                     try {
                         plan = Planifica(ctx, h, randuri, index, sectiuni.GetValueOrDefault(h.Id) ?? []);
                     }

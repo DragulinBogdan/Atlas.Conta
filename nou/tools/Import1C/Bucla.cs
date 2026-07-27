@@ -356,11 +356,12 @@ sealed class BuclaImport {
         // (cerința de determinism, D).
         Divergente.Incarca(os, avert);
         var tabelaDivergente = Legaturi.Tabela(RegistruDivergente.View);
+        var tabelaMidpoint = Legaturi.Tabela(ReconciliereLuna.ViewMidpoint);
         foreach (var l in os.GetObjectsQuery<MigrareLegatura>()
                      .Select(m => new { m.Tabela, m.CheieLegacy, m.TintaId }).ToList()) {
-            // Rândurile registrului nu sunt legături (țintă goală, cheie sintetică
-            // lungă): și-au găsit locul mai sus, aici ar umple degeaba indexul.
-            if (l.Tabela == tabelaDivergente)
+            // Rândurile registrului și contoarele de midpoint nu sunt legături
+            // (țintă goală, cheie sintetică): aici ar umple degeaba indexul.
+            if (l.Tabela == tabelaDivergente || l.Tabela == tabelaMidpoint)
                 continue;
             legaturi[(l.Tabela, l.CheieLegacy)] = l.TintaId;
         }
@@ -385,9 +386,12 @@ sealed class BuclaImport {
         Alocare.IncepeLuna();
         // Câte rotunjiri au căzut EXACT pe jumătatea de ban în luna asta: cifra din
         // care contractul 4 (D4) își derivă pragul derivei sistematice, în loc s-o
-        // presupună. Contorul motorului e global pe proces, deci se măsoară ca
-        // deltă între începutul și sfârșitul lunii.
-        midpointLaStart = Scara.MidpointBani;
+        // presupună. Se acumulează DOAR în jurul materializării prin motor
+        // (`Opereaza` — review 1C-d-final, defect 5): rotunjirile din faza de
+        // PLANIFICARE a uneltei (evaluări de linii, inclusiv pentru documente
+        // sărite sau replanificate) nu ajung în niciun rând de registru, iar
+        // numărate ar umfla pragul — și, prin MAX-ul persistat, l-ar umfla
+        // PERMANENT: o rulare zgomotoasă ar lărgi definitiv contractul lunii.
         MidpointLuna = 0;
         cronometruLuna = Stopwatch.StartNew();
         var prima = new DateOnly(an, luna, 1);
@@ -459,10 +463,8 @@ sealed class BuclaImport {
         InchidereTva(ctx);
         if (sabotajLuna && !sabotajFacut)
             SaboteazaLuna(ctx);
-        // Snapshotul de închidere: tot ce a rotunjit motorul în luna asta
-        // (documente + imperecheri + închiderea de TVA) e în deltă. Sabotajul nu
-        // trece prin motor, deci nu-l atinge.
-        MidpointLuna = Scara.MidpointBani - midpointLaStart;
+        // `MidpointLuna` e deja acumulat de `Opereaza` (documente + copii + ITV).
+        // Sabotajul nu trece prin motor, deci nu-l atinge.
         var cronometruContract = Stopwatch.StartNew();
         var contract = ReconciliereLunara(ctx);
         var durataContract = cronometruContract.Elapsed;
@@ -582,11 +584,10 @@ sealed class BuclaImport {
     // Program.cs îi pune datele deschiderii înainte de prima lună.
     public ReconciliereLuna.Stare StareContract { get; } = new();
 
-    // Valorile căzute pe jumătatea de ban în luna curentă (contractul 4 — D4).
-    // 0 la o reluare care nu mai importă nimic: contractul citește atunci cifra
-    // persistată a lunii, nu presupune.
+    // Valorile căzute pe jumătatea de ban în luna curentă, numărate DOAR în
+    // materializarea prin motor (contractul 4 — D4/defect 5). 0 la o reluare care
+    // nu mai importă nimic: contractul citește atunci cifra persistată a lunii.
     public long MidpointLuna { get; private set; }
-    long midpointLaStart;
 
     // Auto-testul contractului LUNAR (`--sabotaj`, partea a doua): două probe pe
     // prima lună procesată — un rând contabil și un rând de stoc ale unor
@@ -607,8 +608,15 @@ sealed class BuclaImport {
     public ReconciliereLuna.VerdictSabotaj Sabotaj { get; private set; }
 
     void SaboteazaLuna(ContextLuna ctx) {
-        sabotajFacut = true;
         probeSabotaj = ReconciliereLuna.PuneProbele(ctx, StareContract, avert);
+        // O lună în care NICIO probă nu s-a putut pune nu consumă auto-testul —
+        // se încearcă luna următoare (review 1C-d-final, semnalare mică). Dacă
+        // măcar una s-a pus, baza e deja alterată: verdictul se ia pe luna asta,
+        // iar proba nepusă e raportată pe nume (exit 3).
+        if (probeSabotaj.RandContabil != null || probeSabotaj.RandStoc != null)
+            sabotajFacut = true;
+        else
+            probeSabotaj = null;
     }
 
     public void ActiveazaSabotajLuna() => sabotajLuna = true;
@@ -853,6 +861,9 @@ sealed class BuclaImport {
     // secundară — 26d/31e): `Opereaza` întoarce copilul, care poate genera la
     // rândul lui. Lanțul e scurt prin construcție; limita e o plasă de siguranță.
     StareImport Opereaza(IObjectSpace os, Document doc, string view, string cheieHex) {
+        // Fereastra de măsurare a contractului 4: doar ce rotunjește MOTORUL la
+        // materializare (aici trece tot: documentul, copiii autogenerați, ITV).
+        var midpointInainte = Scara.MidpointBani;
         try {
             var curent = doc;
             for (var pas = 0; curent != null && pas < 5; pas++) {
@@ -876,6 +887,9 @@ sealed class BuclaImport {
             // Draftul rămâne în bază, legat: la reluare intră pe calea
             // „legat + Draft → re-operare" (§12.4), fără duplicat.
             return Esec(view, cheieHex, "operarea", ex);
+        }
+        finally {
+            MidpointLuna += Scara.MidpointBani - midpointInainte;
         }
     }
 

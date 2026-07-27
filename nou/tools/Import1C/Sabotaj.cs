@@ -82,7 +82,8 @@ static partial class ReconciliereLuna {
             .ToList();
 
         var plafonabile = ConturiPlafonabile(os, bucla.Catalog, registru, pozitii);
-        var contabil = AlegeRandContabil(os, ctx, plafonabile);
+        var deltaCont = DeltaContabilaPeCont(os, ctx, stare);
+        var contabil = AlegeRandContabil(os, ctx, plafonabile, deltaCont);
         var (stoc, cheiEligibile) = AlegeRandStoc(os, ctx, stare, registru, pozitii, avert);
 
         if (contabil != null) {
@@ -102,8 +103,8 @@ static partial class ReconciliereLuna {
             plafonabile.Count, cheiEligibile,
             contabil != null ? null
                 : $"luna {ctx.Luna:00}/{ctx.An} n-are niciun rând contabil de document cu debit ≠ "
-                    + $"credit și ambele conturi în afara celor {plafonabile.Count} conturi care pot "
-                    + "primi plafon sau toleranță",
+                    + $"credit, ambele conturi CURATE (fără Δ preexistent — defect 1) și în afara "
+                    + $"celor {plafonabile.Count} conturi care pot primi plafon sau toleranță",
             stoc != null ? null
                 : $"luna {ctx.Luna:00}/{ctx.An} n-are nicio cheie de stoc care să se închidă exact "
                     + "și să fie în afara tuturor categoriilor de justificare ale contractului 3");
@@ -171,8 +172,46 @@ static partial class ReconciliereLuna {
         return set;
     }
 
+    // Δ-ul per cont ÎNAINTE de probă, cu exact construcția contractului 1
+    // (registrul cumulat la fine de lună minus Balanța 1C). Proba are voie DOAR pe
+    // conturi CURATE (|Δ| < EpsV): un cont deja spart din altă cauză ar pica
+    // contractul oricum, iar verdictul ar declara proba „detectată" pe un eșec
+    // STRĂIN — fals-pozitivul simetric lui D6 (review 1C-d-final, defect 1).
+    // Proba de stoc are aceeași cerință din prima zi („cheia se închide EXACT").
+    static IReadOnlyDictionary<string, decimal> DeltaContabilaPeCont(
+            IObjectSpace os, ContextLuna ctx, Stare stare) {
+        var cat = ctx.Bucla.Catalog;
+        var simbolPeId = cat.Plan.ToDictionary(x => x.Value, x => x.Key);
+        var delta = new Dictionary<string, decimal>(StringComparer.Ordinal);
+        void Acumuleaza(Guid contId, decimal suma) {
+            if (simbolPeId.TryGetValue(contId, out var simbol))
+                delta[simbol] = delta.GetValueOrDefault(simbol) + suma;
+        }
+        foreach (var g in os.GetObjectsQuery<RegistruContabil>()
+                     .Where(r => r.Data <= ctx.Ultima)
+                     .GroupBy(r => r.ContDebitId)
+                     .Select(g => new { Cont = g.Key, Suma = g.Sum(r => Math.Round(r.Valoare, ScaraAgregare)) })
+                     .ToList())
+            Acumuleaza(g.Cont, g.Suma);
+        foreach (var g in os.GetObjectsQuery<RegistruContabil>()
+                     .Where(r => r.Data <= ctx.Ultima)
+                     .GroupBy(r => r.ContCreditId)
+                     .Select(g => new { Cont = g.Key, Suma = g.Sum(r => Math.Round(r.Valoare, ScaraAgregare)) })
+                     .ToList())
+            Acumuleaza(g.Cont, -g.Suma);
+        foreach (var s in ctx.Bucla.Flax.SolduriLaFineDeLuna(ctx.An, ctx.Luna)) {
+            if (stare.Extrabilantiere1C.Contains(s.Cont))
+                continue;
+            var simbol = cat.Mapeaza(s.Cont);
+            if (simbol != null)
+                delta[simbol] = delta.GetValueOrDefault(simbol) - s.SoldIni;
+        }
+        return delta;
+    }
+
     static (Guid Id, string Debit, string Credit, decimal Valoare)? AlegeRandContabil(
-            IObjectSpace os, ContextLuna ctx, IReadOnlySet<string> plafonabile) =>
+            IObjectSpace os, ContextLuna ctx, IReadOnlySet<string> plafonabile,
+            IReadOnlyDictionary<string, decimal> deltaCont) =>
         os.GetObjectsQuery<RegistruContabil>()
             .Where(r => r.DocumentId != null && r.Data >= ctx.Prima && r.Data <= ctx.Ultima)
             .Select(r => new { r.ID, Debit = r.ContDebit.Simbol, Credit = r.ContCredit.Simbol, r.Valoare })
@@ -181,7 +220,10 @@ static partial class ReconciliereLuna {
             // soldul cu +1 și −1 pe același cont, deci sabotajul s-ar anula în el
             // însuși și proba ar fi invizibilă prin construcție.
             .Where(r => r.Debit != null && r.Credit != null && r.Debit != r.Credit
-                && !plafonabile.Contains(r.Debit) && !plafonabile.Contains(r.Credit))
+                && !plafonabile.Contains(r.Debit) && !plafonabile.Contains(r.Credit)
+                // Ambele conturi CURATE înainte de probă (defect 1).
+                && Math.Abs(deltaCont.GetValueOrDefault(r.Debit)) < EpsV
+                && Math.Abs(deltaCont.GetValueOrDefault(r.Credit)) < EpsV)
             .OrderBy(r => r.ID)
             .Select(r => ((Guid, string, string, decimal)?)(r.ID, r.Debit, r.Credit, r.Valoare))
             .FirstOrDefault();

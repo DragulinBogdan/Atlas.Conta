@@ -320,15 +320,21 @@ static partial class ReconciliereLuna {
         // registrul divergențelor, prin egalitate — vezi acumularea EVALUATĂ din
         // `Punte`, care măsoară diferența dintre cifra sursei și cifra Atlas la
         // locul faptei.
+        // SEMNAT (review 1C-d-final, defect 3): plafonul din |Δ| se umfla cu
+        // perechile care se anulează pe cont și se copia INTEGRAL pe fiecare
+        // oglindă. Suma semnată ține plafonul la efectul NET, iar oglinda primește
+        // CONTRAPARTIDA (semn inversat — dubla înregistrare: ce a rămas în plus pe
+        // 371 lipsește de pe 607, vezi perechea +486,93/−466,93 din ianuarie), nu
+        // o copie. Verdictul de mai jos cere și potrivirea de SEMN.
         var plafon = new Dictionary<string, decimal>(StringComparer.Ordinal);
         void Plafon(string cont, decimal suma) {
             if (cont != null && suma != 0m)
-                plafon[cont] = plafon.GetValueOrDefault(cont) + Math.Abs(suma);
+                plafon[cont] = plafon.GetValueOrDefault(cont) + suma;
         }
         foreach (var (contStoc, justificatPeCont) in stoc.JustificatPeCont) {
             Plafon(contStoc, justificatPeCont);
             foreach (var contCost in cat.CosturiPentruContStoc(contStoc) ?? (IReadOnlySet<string>)new HashSet<string>())
-                Plafon(contCost, justificatPeCont);
+                Plafon(contCost, -justificatPeCont);
         }
 
         // ---- Verdictul, per cont ----
@@ -350,16 +356,18 @@ static partial class ReconciliereLuna {
                 justificate.Add((x.Simbol, x.Delta,
                     $"explicată exact de registrul divergențelor ({inregistrari.GetValueOrDefault(x.Simbol)} "
                     + $"înregistrări, Σ {explicatie:N2}; rest {rezidual:N2})"));
-            else if (Math.Abs(rezidual) <= plafonCont + toleranta)
+            else if (Math.Sign(rezidual) == Math.Sign(plafonCont)
+                     && Math.Abs(rezidual) <= Math.Abs(plafonCont) + toleranta)
                 justificate.Add((x.Simbol, x.Delta,
                     $"registrul explică {explicatie:N2}, restul de {rezidual:N2} încape în diferența de "
-                    + $"EVALUARE JUSTIFICATĂ la contractul 3 pe contul ăsta ({plafonCont:N2}) — "
+                    + $"EVALUARE JUSTIFICATĂ la contractul 3 pe contul ăsta (Σ semnată {plafonCont:N2}) — "
                     + "netarea deschiderii (§8.3)"));
             else
                 picate.Add((x.Simbol, x.Db, x.Sursa, x.Delta,
                     explicatie == 0m && plafonCont == 0m
                         ? "nicio divergență înregistrată și nicio diferență de evaluare JUSTIFICATĂ pe contul ăsta"
-                        : $"registrul explică {explicatie:N2}, evaluarea justificată acoperă {plafonCont:N2}, "
+                        : $"registrul explică {explicatie:N2}, evaluarea justificată acoperă {plafonCont:N2} "
+                            + $"(Σ semnată, cu semnul cerut să se potrivească), "
                             + $"rămân {rezidual:N2} fără explicație"));
         }
 
@@ -480,6 +488,9 @@ static partial class ReconciliereLuna {
         // Partea din ea care stă pe chei JUSTIFICATE de contractul 3, per cont:
         // intrarea plafonului contractului 1.
         IReadOnlyDictionary<string, decimal> JustificatPeCont,
+        // Σ|Δ| a acelorași chei — doar RAPORT (defect 3: plafonul e suma SEMNATĂ;
+        // diferența dintre cele două cifre e exact cât se anulează în interior).
+        IReadOnlyDictionary<string, decimal> JustificatAbsPeCont,
         int CheiRotunjire, decimal RotunjireAbsoluta, decimal RotunjireAlgebrica,
         // Axa de VALOARE (D3a): mărimea mulțimii marcate și cât explică ea.
         int ProduseNetate, int ProduseMarcateDeSupapa, int ProduseMarcatePeChei,
@@ -678,14 +689,19 @@ static partial class ReconciliereLuna {
         // per cheie, deci Δ-ul așteptat nu se poate îngusta cu ele; ce e per cheie
         // e registrul divergențelor, iar el are deja categoria lui MĂSURATĂ, mai
         // sus (și e verificat înaintea acesteia).
+        // Fiecare AXĂ își numără DOAR celulele negative pe ea (review 1C-d-final,
+        // defect 2): filtrul de intrare e un SAU, dar o celulă cu +5 buc / −10 lei
+        // nu justifică nicio bucată — ar umfla bugetul de cantitate cu 5 deși pe
+        // cantitate sursa n-a arătat niciodată negativ, și ar ceda exact
+        // discriminantul contractului (cantitatea strictă, §8.3).
         foreach (var g in pozitii
                      .Where(p => p.Cantitate < -EpsQ || p.Valoare < -EpsV)
                      .GroupBy(p => (P: p.NomenclatorId, D: p.DepozitId)))
             stare.NegativeIstoric[g.Key] = (
                 Math.Max(stare.NegativeIstoric.GetValueOrDefault(g.Key).Q,
-                    g.Sum(p => Math.Abs(p.Cantitate))),
+                    g.Where(p => p.Cantitate < -EpsQ).Sum(p => Math.Abs(p.Cantitate))),
                 Math.Max(stare.NegativeIstoric.GetValueOrDefault(g.Key).V,
-                    g.Sum(p => Math.Abs(p.Valoare))));
+                    g.Where(p => p.Valoare < -EpsV).Sum(p => Math.Abs(p.Valoare))));
 
         // Marfa în plus la Atlas trebuie să încapă în negativul pe care sursa l-a
         // arătat pe ACEEAȘI cheie, pe cantitate ȘI pe valoare. Pragurile sursei
@@ -703,6 +719,7 @@ static partial class ReconciliereLuna {
         var rotunjireAbs = 0m;
         var rotunjireAlg = 0m;
         var justificatPeCont = new Dictionary<string, decimal>(StringComparer.Ordinal);
+        var justificatAbsPeCont = new Dictionary<string, decimal>(StringComparer.Ordinal);
         var marcateCost = (Chei: 0, Q: 0m, V: 0m);
         var marcateCantitate = (Chei: 0, Q: 0m, V: 0m);
         foreach (var k in db.Keys.Union(sursa.Keys)) {
@@ -805,9 +822,15 @@ static partial class ReconciliereLuna {
                 // picată nu contribuie — ea pică oricum contractul 3, iar de acum
                 // pică și contul pe care îl atinge.
                 foreach (var (cont, delta) in DeltaPeCont(k))
-                    if (Math.Abs(delta) >= EpsV)
-                        justificatPeCont[cont] = justificatPeCont.GetValueOrDefault(cont)
+                    if (Math.Abs(delta) >= EpsV) {
+                        // SEMNAT, nu |Δ| (review 1C-d-final, defect 3): 500 de chei
+                        // cu ±20 alternativ au efect net ~0 pe cont — un plafon din
+                        // valori absolute ar fi crescut cu fiecare pereche care se
+                        // anulează și ar fi absorbit un leak real de aceeași mărime.
+                        justificatPeCont[cont] = justificatPeCont.GetValueOrDefault(cont) + delta;
+                        justificatAbsPeCont[cont] = justificatAbsPeCont.GetValueOrDefault(cont)
                             + Math.Abs(delta);
+                    }
                 if (motiv.StartsWith(MotivRotunjire, StringComparison.Ordinal)) {
                     cheiRotunjire++;
                     rotunjireAbs += Math.Abs(dv);
@@ -851,6 +874,7 @@ static partial class ReconciliereLuna {
         return new RezultatStoc(db.Keys.Union(sursa.Keys).Count(), nepotriviri, justificate,
             justificat, detalii,
             altRegistru.Sum(x => x.V), altRegistru.Sum(x => x.Q), peCont, justificatPeCont,
+            justificatAbsPeCont,
             cheiRotunjire, rotunjireAbs, rotunjireAlg,
             stare.ProduseNetate.Count, realocateHex.Count, marcatePeChei,
             marcateCost, marcateCantitate);
@@ -951,10 +975,12 @@ static partial class ReconciliereLuna {
         var conturi = stoc.PeCont.Keys.Union(stoc.JustificatPeCont.Keys, StringComparer.Ordinal)
             .OrderBy(c => c, StringComparer.Ordinal).ToList();
         stare.Jurnalizeaza($"\n[3] Divergența de stoc pe conturi ({conturi.Count} conturi) — "
-            + "total măsurat vs partea justificată (= plafonul contractului 1):");
+            + "total măsurat vs partea justificată (Σ semnată = plafonul contractului 1; "
+            + "Σ |Δ| doar raport — diferența dintre ele e cât se anulează în interior):");
         foreach (var cont in conturi)
             stare.Jurnalizeaza($"  cont {cont}: Δ total {stoc.PeCont.GetValueOrDefault(cont):N2} lei, "
-                + $"justificat {stoc.JustificatPeCont.GetValueOrDefault(cont):N2} lei");
+                + $"justificat Σ semnată {stoc.JustificatPeCont.GetValueOrDefault(cont):N2} lei, "
+                + $"Σ |Δ| {stoc.JustificatAbsPeCont.GetValueOrDefault(cont):N2} lei");
 
         contract($"3. Stoc per produs × gestiune: {stoc.Chei} chei comparate, {stoc.Nepotriviri} "
             + $"nepotriviri nejustificate ({stoc.Justificate} justificate — Σ {stoc.Justificat:N2} lei; "
@@ -1022,7 +1048,7 @@ static partial class ReconciliereLuna {
     // MAXIMUL: o reluare care re-importă doar câteva documente măsoară mai puține
     // midpoint-uri decât rularea care a scris luna, iar pragul n-are voie să se
     // strângă retroactiv sub faptele deja scrise în registre.
-    const string ViewMidpoint = "Midpoint";
+    internal const string ViewMidpoint = "Midpoint";
 
     static long MidpointCumulat(IObjectSpace os, ContextLuna ctx) {
         var tabela = Legaturi.Tabela(ViewMidpoint);
@@ -1050,8 +1076,15 @@ static partial class ReconciliereLuna {
         var stocat = aleLunii.Count == 0 ? 0L : aleLunii.Max(x => x.Citit.Value.N);
         var efectiv = Math.Max(stocat, ctx.Bucla.MidpointLuna);
         if (efectiv != stocat || aleLunii.Count > 1) {
-            os.Delete(aleLunii.Select(x => x.Rand).ToList());
-            Legaturi.Leaga(os, ViewMidpoint, $"{ctx.An:0000}-{ctx.Luna:00}|{efectiv}", Guid.Empty);
+            // Rândul care poartă deja exact cheia țintă se PĂSTREAZĂ, nu se
+            // șterge și reinserează în același commit (capcana delete+insert pe
+            // aceeași cheie unică — vezi `RegistruDivergente.Persista`).
+            var cheiaTinta = $"{ctx.An:0000}-{ctx.Luna:00}|{efectiv}";
+            var pastrat = aleLunii.FirstOrDefault(x => x.Rand.CheieLegacy == cheiaTinta).Rand;
+            os.Delete(aleLunii.Where(x => !ReferenceEquals(x.Rand, pastrat))
+                .Select(x => x.Rand).ToList());
+            if (pastrat == null)
+                Legaturi.Leaga(os, ViewMidpoint, cheiaTinta, Guid.Empty);
             os.CommitChanges();
         }
 

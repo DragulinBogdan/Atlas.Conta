@@ -25,12 +25,14 @@ public static class ContaSeeder {
         SeedPerioadeFiscale(os);
         VerificaProfil(os, profil);
         var rotunjire = SeedSetareProfil(os, profil, conventie);
+        // Procesul care tocmai a seed-uit baza rotunjește după regula ei —
+        // fixată ÎNAINTE de pachetele de profil, ca nicio cale viitoare de seed
+        // care ar rotunji bani să nu apuce să ruleze pe default.
+        Scara.FixeazaConventia(rotunjire);
         if (profil == ProfilContabil.Bugetar)
             ProfilBugetar.Seed(os);
         else
             ProfilPrivat.Seed(os);
-        // Procesul care tocmai a seed-uit baza rotunjește după regula ei.
-        Scara.FixeazaConventia(rotunjire);
     }
 
     // Rândul de setare al bazei (decizia 51c). Gardian dublu: profilul (completează

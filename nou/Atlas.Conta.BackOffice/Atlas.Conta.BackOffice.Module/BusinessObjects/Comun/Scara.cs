@@ -80,7 +80,11 @@ public static class Scara {
         return Math.Round(v, Bani, conventieBani);
     }
 
-    public static decimal RotunjestePret(decimal v) => Math.Round(v, Pret, conventieBani);
+    // Prețul unitar NU urmează convenția: `SetareProfil.RotunjireBani` e a scării
+    // BANI (valorile postate — decizia 51c); prețul e identificare pe lot, nu
+    // postare, iar o bază pe ToEven nu are de ce să-și schimbe tăcut și
+    // EVALUAREA (preț de lot la 6 zecimale), doar sensul jumătăților de ban.
+    public static decimal RotunjestePret(decimal v) => Math.Round(v, Pret, MidpointRounding.AwayFromZero);
 
     // Convenția e pe NUMELE proprietății, nu pe o listă de coloane: numele astea
     // sunt vocabular stabil al modelului (fiecare derivată nouă aduce alt

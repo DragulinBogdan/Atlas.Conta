@@ -90,13 +90,16 @@ static class HandlerVanzare {
                 if (areCard)
                     chei.Add(h.Id + "#card");
                 // D1: componentă de stoc deja așezată + altele lipsă ⇒ nu se
-                // replanifică nimic (`Reluare1C.UnitatePartiala`).
-                if (Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, cheiStoc,
-                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                // replanifică nimic (`Reluare1C.UnitatePartiala`); componentele
+                // rămase DRAFT lângă frați operați se RE-operează (plan nul).
+                var partiala = Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, cheiStoc,
+                    "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)");
+                if (partiala == Reluare1C.Partiala.Refuzata)
                     return;
-                var cunoscut = chei.Count > 0
-                    ? chei.All(c => bucla.EsteCunoscut(View, c))
-                    : bucla.EsteCunoscut(View, h.Id);
+                var cunoscut = partiala == Reluare1C.Partiala.DoarDrafturi
+                    || (chei.Count > 0
+                        ? chei.All(c => bucla.EsteCunoscut(View, c))
+                        : bucla.EsteCunoscut(View, h.Id));
 
                 Plan plan = null;
                 if (!cunoscut) {
@@ -389,13 +392,16 @@ static class HandlerAmanunt {
                 var cheiStoc = depozite.Select(d => Descarcare1C.Cheie(h.Id, d)).ToList();
                 chei.AddRange(cheiStoc);
                 chei.AddRange(cheiIncasari);
-                // D1 — ca la factura de ieșire.
-                if (Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, cheiStoc,
-                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                // D1 — ca la factura de ieșire (drafturile lângă frați operați
+                // se re-operează, nu se refuză).
+                var partiala = Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, cheiStoc,
+                    "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)");
+                if (partiala == Reluare1C.Partiala.Refuzata)
                     return;
-                var cunoscut = chei.Count > 0
-                    ? chei.All(c => bucla.EsteCunoscut(View, c))
-                    : bucla.EsteCunoscut(View, h.Id);
+                var cunoscut = partiala == Reluare1C.Partiala.DoarDrafturi
+                    || (chei.Count > 0
+                        ? chei.All(c => bucla.EsteCunoscut(View, c))
+                        : bucla.EsteCunoscut(View, h.Id));
 
                 Plan plan = null;
                 if (!cunoscut) {
@@ -622,13 +628,16 @@ static class HandlerAvizIesire {
                 var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
                 var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
                 var cheiStoc = depozite.Select(d => Descarcare1C.Cheie(h.Id, d)).ToList();
-                // D1 — avizul e tot multi-depozit, cu punte de document.
-                if (Reluare1C.UnitatePartiala(bucla, View, h.Id, cheiStoc, cheiStoc,
-                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                // D1 — avizul e tot multi-depozit, cu punte de document
+                // (drafturile lângă frați operați se re-operează, nu se refuză).
+                var partiala = Reluare1C.UnitatePartiala(bucla, View, h.Id, cheiStoc, cheiStoc,
+                    "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)");
+                if (partiala == Reluare1C.Partiala.Refuzata)
                     return;
-                var cunoscut = depozite.Count > 0
-                    ? depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
-                    : bucla.EsteCunoscut(View, h.Id);
+                var cunoscut = partiala == Reluare1C.Partiala.DoarDrafturi
+                    || (depozite.Count > 0
+                        ? depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
+                        : bucla.EsteCunoscut(View, h.Id));
 
                 Plan plan = null;
                 if (!cunoscut) {

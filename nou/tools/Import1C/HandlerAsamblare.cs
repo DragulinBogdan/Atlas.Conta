@@ -89,12 +89,14 @@ static class HandlerAsamblare {
                 // când una e deja așezată, cealaltă se refuză ZGOMOTOS (alegerea
                 // prevăzută în spec), cu remediul `--deblocheaza`.
                 var chei = cereTransfer ? new List<string> { h.Id, h.Id + "#btr" } : [h.Id];
-                if (Reluare1C.UnitatePartiala(bucla, view, h.Id, chei, chei,
-                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                var partiala = Reluare1C.UnitatePartiala(bucla, view, h.Id, chei, chei,
+                    "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)");
+                if (partiala == Reluare1C.Partiala.Refuzata)
                     return;
                 Plan plan = null;
-                if (!bucla.EsteCunoscut(view, h.Id)
-                        || (cereTransfer && !bucla.EsteCunoscut(view, h.Id + "#btr"))) {
+                if (partiala != Reluare1C.Partiala.DoarDrafturi
+                        && (!bucla.EsteCunoscut(view, h.Id)
+                            || (cereTransfer && !bucla.EsteCunoscut(view, h.Id + "#btr")))) {
                     try {
                         plan = Planifica(ctx, view, h, randuri);
                     }
