@@ -85,9 +85,15 @@ static class HandlerVanzare {
                 var chei = new List<string>();
                 if (areVenit)
                     chei.Add(h.Id);
-                chei.AddRange(depozite.Select(d => Descarcare1C.Cheie(h.Id, d)));
+                var cheiStoc = depozite.Select(d => Descarcare1C.Cheie(h.Id, d)).ToList();
+                chei.AddRange(cheiStoc);
                 if (areCard)
                     chei.Add(h.Id + "#card");
+                // D1: componentă de stoc deja așezată + altele lipsă ⇒ nu se
+                // replanifică nimic (`Reluare1C.UnitatePartiala`).
+                if (Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, cheiStoc,
+                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                    return;
                 var cunoscut = chei.Count > 0
                     ? chei.All(c => bucla.EsteCunoscut(View, c))
                     : bucla.EsteCunoscut(View, h.Id);
@@ -119,14 +125,32 @@ static class HandlerVanzare {
                 if (areVenit)
                     bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan),
                         motivFaraDraft: Motive.FaraPlan(plan, "factura n-are linii de venit"));
+                // Gardul copilului (D1, agravantul): descărcarea e copil autogenerat
+                // al facturii (`DocumentSursa` + `Autogenerat`), deci se importă DOAR
+                // dacă factura chiar există și e OPERATĂ. Fără gard, o factură eșuată
+                // la commit lăsa DSC-ul să plece ca document de sine stătător (stocul
+                // se descarcă fără factură, iar cheia lui rămâne legată pentru
+                // totdeauna), iar una eșuată la OPERARE îl lăsa copil al unui draft —
+                // adică documentul înțepenit: `Drafturi.Sterge` refuză pe copil operat.
+                // Avizul (fără linii de venit) n-are document purtător: DSC de sine
+                // stătător, legal prin construcție (`Descarcare1C.Materializeaza`).
+                var sursaId = bucla.Tinta(View, h.Id);
+                var sursaGata = !areVenit
+                    || (sursaId is { } s && bucla.Stare(s) == StareDocument.Operat);
                 foreach (var depozit in depozite) {
                     var cheie = Descarcare1C.Cheie(h.Id, depozit);
                     if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheie))
                         continue;
+                    if (!sursaGata) {
+                        bucla.ImportaDocument(View, cheie, _ => null,
+                            motivFaraDraft: "factura-sursă a descărcării n-a ajuns operată "
+                                + "(descărcarea ar rămâne fără document purtător)");
+                        continue;
+                    }
                     bucla.ImportaDocument(View, cheie,
                         os => plan == null ? null
                             : Descarcare1C.Materializeaza(os, Grup(plan, depozit), plan.Data,
-                                $"{h.Numar}-D", plan.PartenerId, bucla.Tinta(View, h.Id)),
+                                $"{h.Numar}-D", plan.PartenerId, sursaId),
                         motivFaraDraft: Motive.FaraPlan(plan,
                             "grupul de descărcare al depozitului n-a rămas cu nicio linie"));
                 }
@@ -362,8 +386,13 @@ static class HandlerAmanunt {
                 var chei = new List<string>();
                 if (areVenit)
                     chei.Add(h.Id);
-                chei.AddRange(depozite.Select(d => Descarcare1C.Cheie(h.Id, d)));
+                var cheiStoc = depozite.Select(d => Descarcare1C.Cheie(h.Id, d)).ToList();
+                chei.AddRange(cheiStoc);
                 chei.AddRange(cheiIncasari);
+                // D1 — ca la factura de ieșire.
+                if (Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, cheiStoc,
+                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                    return;
                 var cunoscut = chei.Count > 0
                     ? chei.All(c => bucla.EsteCunoscut(View, c))
                     : bucla.EsteCunoscut(View, h.Id);
@@ -388,10 +417,19 @@ static class HandlerAmanunt {
                     bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, cat, plan),
                         motivFaraDraft: Motive.FaraPlan(plan, "raportul n-are linii de venit"));
                 var sursaId = bucla.Tinta(View, h.Id);
+                // Gardul copilului — ca la factura de ieșire.
+                var sursaGata = !areVenit
+                    || (sursaId is { } s && bucla.Stare(s) == StareDocument.Operat);
                 foreach (var depozit in depozite) {
                     var cheieDsc = Descarcare1C.Cheie(h.Id, depozit);
                     if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheieDsc))
                         continue;
+                    if (!sursaGata) {
+                        bucla.ImportaDocument(View, cheieDsc, _ => null,
+                            motivFaraDraft: "FCL-ul surogat al raportului n-a ajuns operat "
+                                + "(descărcarea ar rămâne fără document purtător)");
+                        continue;
+                    }
                     bucla.ImportaDocument(View, cheieDsc,
                         os => plan == null ? null
                             : Descarcare1C.Materializeaza(os,
@@ -583,6 +621,11 @@ static class HandlerAvizIesire {
                 var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
                 var depozite = Descarcare1C.Depozite(cat, randuri, index, h.DepozitId);
                 var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
+                var cheiStoc = depozite.Select(d => Descarcare1C.Cheie(h.Id, d)).ToList();
+                // D1 — avizul e tot multi-depozit, cu punte de document.
+                if (Reluare1C.UnitatePartiala(bucla, View, h.Id, cheiStoc, cheiStoc,
+                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                    return;
                 var cunoscut = depozite.Count > 0
                     ? depozite.All(d => bucla.EsteCunoscut(View, Descarcare1C.Cheie(h.Id, d)))
                     : bucla.EsteCunoscut(View, h.Id);

@@ -333,6 +333,57 @@ static class Descarcare1C {
 // documentul-sursă și îl lasă să se replanifice integral.
 static class Reluare1C {
     public static int DocumenteBlocate { get; private set; }
+    public static int UnitatiPartiale { get; private set; }
+    public static int CheiRefuzate { get; private set; }
+
+    // ======================= D1: unitatea PARȚIAL importată =======================
+    //
+    // Defectul: handlerele compuse planifică ÎNTREG documentul când oricare dintre
+    // cheile lui lipsește. La reluare, `Aloca` rulează atunci contra unui registru
+    // care conține DEJA mișcările componentelor importate de rularea anterioară —
+    // deci componenta aia „nu mai are acoperire", iar planificarea produce
+    // divergențe FANTOMĂ (persistate), marcaje de realocare fantomă și, când
+    // puntea nu apucase să fie scrisă, chiar o notă-punte care transcrie contabil
+    // un cost pe care Atlas îl postează deja.
+    //
+    // Șablonul BCS (`HandlereStoc.Grupeaza`) rezolvă asta planificând PER GRUP —
+    // dar el poate, fiindcă bonul de consum are punte PER GRUP. La documentele de
+    // vânzare/retur/asamblare puntea NU e separabilă: `Clasificare1C.Declara`
+    // parcurge TOATE rândurile documentului și cere fiecăruia un rost declarat
+    // (rândul de venit nu aparține niciunui depozit), iar acumularea EVALUATĂ
+    // (`Punte.RestEvaluat`, sursa divergenței de evaluare) e per document. O
+    // planificare parțială ar produce o punte parțială și ar rescrie registrul
+    // divergențelor cu jumătate din fapte.
+    //
+    // Deci regula e cea sancționată de spec pentru asamblare, generalizată: **o
+    // unitate cu componente de STOC deja așezate nu se mai replanifică**. Cheile
+    // care lipsesc se refuză ZGOMOTOS, cu motiv itemizat și cu remediul scris —
+    // `--deblocheaza` dă înapoi tot ce a produs sursa (inclusiv divergențele ei,
+    // Reluare.cs) și documentul se replanifică integral, de la zero.
+    //
+    // De ce contează doar cheile de STOC: ele sunt singurele care lasă în registru
+    // mișcări pe care alocarea le citește. O factură operată fără descărcare, sau
+    // o descărcare rămasă DRAFT (draftul nu scrie registre, iar `EsteCunoscut` îl
+    // declară oricum nedezvoltat — D4), nu poluează nimic: acolo replanificarea
+    // rămâne corectă și D4 își face treaba.
+    public static bool UnitatePartiala(BuclaImport bucla, string view, string cheieSursa,
+            IReadOnlyList<string> chei, IReadOnlyCollection<string> cheiStoc, string motiv) {
+        if (chei.Count == 0 || !cheiStoc.Any(c => bucla.EsteCunoscut(view, c)))
+            return false;
+        var lipsa = chei.Where(c => !bucla.EsteCunoscut(view, c)).ToList();
+        if (lipsa.Count == 0)
+            return false;
+        UnitatiPartiale++;
+        CheiRefuzate += lipsa.Count;
+        bucla.Avert($"1C:{view}/{cheieSursa}: unitate PARȚIAL importată — {chei.Count - lipsa.Count} "
+            + $"din {chei.Count} chei există deja (cel puțin una de stoc, operată), {lipsa.Count} "
+            + $"lipsesc ({string.Join(", ", lipsa)}). NU se replanifică: alocarea ar rula peste "
+            + "propriile mișcări deja comise și ar produce divergențe fantomă. Deblocare țintită: "
+            + $"--deblocheaza {view}:{cheieSursa}");
+        foreach (var _ in lipsa)
+            bucla.RefuzaCuMotiv(view, motiv);
+        return true;
+    }
 
     public static bool Blocheaza(BuclaImport bucla, string view, bool punteVeche, string cheieDocument) {
         if (!punteVeche || bucla.EsteCunoscut(view, cheieDocument))
@@ -354,6 +405,10 @@ static class Reluare1C {
         if (DocumenteBlocate > 0)
             Console.WriteLine($"  {DocumenteBlocate} documente de stoc blocate de puntea unei rulări "
                 + "anterioare (vezi avertismentele) — deblocare țintită cu --deblocheaza <view>:<cheie>.");
+        if (UnitatiPartiale > 0)
+            Console.WriteLine($"  {UnitatiPartiale} unități PARȚIAL importate de o rulare anterioară, "
+                + $"nereplanificate ({CheiRefuzate} chei refuzate) — deblocare țintită cu "
+                + "--deblocheaza <view>:<cheie>.");
     }
 }
 

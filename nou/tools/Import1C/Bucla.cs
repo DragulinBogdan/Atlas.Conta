@@ -296,6 +296,12 @@ sealed class BuclaImport {
         motiveRulare[cheie] = motiveRulare.GetValueOrDefault(cheie) + 1;
     }
 
+    // Refuzul EXPLICIT al unei chei, fără a trece prin `ImportaDocument`: unitatea
+    // parțial importată (D1) nu vrea nici măcar re-operarea unui draft rămas —
+    // alocarea lui e învechită, iar `Executa` ar face exact asta pentru o fabrică
+    // fără plan. Aici se refuză curat, cu motivul itemizat ca la orice skip.
+    public void RefuzaCuMotiv(string view, string motiv) => Sare(view, motiv);
+
     // Eșecul de PLANIFICARE (handlerele pasului 3 planifică înaintea lui
     // `ImportaDocument`, ca puntea să se poată scrie prima). Fără el, o excepție
     // la un document ar urca până la prinderea de la nivelul handlerului și ar
@@ -656,7 +662,7 @@ sealed class BuclaImport {
                 // legătura moartă și se reimportă — altfel fiecare rulare ar
                 // sări documentul crezând că există (mecanica 47b).
                 avert($"Legătură orfană 1C:{view}/{cheieHex} — documentul lipsește; se reimportă.");
-                StergeLegatura(view, cheieHex);
+                StergeLegatura(view, cheieHex, cuDivergente: true);
                 legaturi.Remove(cheie);
             }
             else if (stare == StareDocument.Operat) {
@@ -781,7 +787,14 @@ sealed class BuclaImport {
     public int DrafturiRefuzate { get; private set; }
 
     bool StergeDraftVechi(Guid id, string view, string cheieHex) {
-        var rezultat = Drafturi.Sterge(provider, id, out var refuz);
+        // Divergențele înregistrate de rularea care a produs draftul pleacă odată cu
+        // el: planificarea nouă le rescrie pe ale ei, iar un rând rămas ar explica o
+        // diferență care nu mai există. Merg în ACELAȘI ObjectSpace și în același
+        // commit cu ștergerea documentului (D5): două tranzacții lăsau, la un crash
+        // între ele, exact orfanii pe care mecanismul îi repară.
+        Action confirmaDivergente = null;
+        var rezultat = Drafturi.Sterge(provider, id, out var refuz,
+            os => confirmaDivergente = Divergente.UitaSursa(os, RegistruDivergente.Sursa(view, cheieHex)));
         if (rezultat == null) {
             DrafturiRefuzate++;
             avert($"1C:{view}/{cheieHex}: draftul rămas de la o rulare anterioară NU s-a putut șterge "
@@ -789,11 +802,7 @@ sealed class BuclaImport {
             return false;
         }
         DrafturiSterse++;
-        // Divergențele înregistrate de rularea care a produs draftul pleacă odată cu
-        // el: planificarea nouă le rescrie pe ale ei, iar un rând rămas ar explica o
-        // diferență care nu mai există.
-        using (var os = provider.CreateObjectSpace())
-            Divergente.UitaSursa(os, RegistruDivergente.Sursa(view, cheieHex));
+        confirmaDivergente?.Invoke();
         avert($"1C:{view}/{cheieHex}: draft rămas de la o rulare anterioară (alocare învechită) — "
             + $"șters și reimportat: {rezultat.Documente} documente, {rezultat.Linii} linii, "
             + $"{rezultat.Loturi} loturi, {rezultat.Registre} rânduri de registru, "
@@ -901,15 +910,26 @@ sealed class BuclaImport {
         return StareImport.Esec;
     }
 
-    void StergeLegatura(string view, string cheieHex) {
+    // `cuDivergente` (D5): legătura moartă înseamnă că documentul pe care îl
+    // descria nu mai există, deci nici divergențele înregistrate de rularea care
+    // l-a produs nu mai descriu un fapt — pleacă odată cu ea, în ACELAȘI commit
+    // (un commit separat ar lăsa exact orfanii pe care mecanismul îi repară).
+    // Nu pleacă la ștergerea legăturii unui document al UNELTEI stornat
+    // deliberat (ITV): acolo documentul EXISTĂ în bază, iar regenerarea lui își
+    // rescrie oricum rândurile la primul rând nou.
+    void StergeLegatura(string view, string cheieHex, bool cuDivergente = false) {
         using var os = provider.CreateObjectSpace();
         var tabela = Legaturi.Tabela(view);
         var moarta = os.FirstOrDefault<MigrareLegatura>(
             m => m.Tabela == tabela && m.CheieLegacy == cheieHex);
-        if (moarta != null) {
+        var confirmaDivergente = cuDivergente
+            ? Divergente.UitaSursa(os, RegistruDivergente.Sursa(view, cheieHex))
+            : null;
+        if (moarta != null)
             os.Delete(moarta);
+        if (moarta != null || confirmaDivergente != null)
             os.CommitChanges();
-        }
+        confirmaDivergente?.Invoke();
     }
 
     // Progresul (§12.4): contoare per tip la fiecare 1.000 de documente atinse,

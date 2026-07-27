@@ -82,6 +82,16 @@ static class HandlerAsamblare {
                 // al consumurilor e derivabil fără planificare.
                 var cereTransfer = CereTransfer(bucla.Catalog, h, randuri,
                     Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []));
+                // D1: ASM și transferul produselor sunt AMÂNDOUĂ de stoc, iar planul
+                // nu se lasă spart între ele — invariantul Σproduse = Σconsumuri e al
+                // documentului întreg, iar transferul mută exact loturile pe care
+                // asamblarea le naște. Deci: se planifică doar când lipsesc AMBELE;
+                // când una e deja așezată, cealaltă se refuză ZGOMOTOS (alegerea
+                // prevăzută în spec), cu remediul `--deblocheaza`.
+                var chei = cereTransfer ? new List<string> { h.Id, h.Id + "#btr" } : [h.Id];
+                if (Reluare1C.UnitatePartiala(bucla, view, h.Id, chei, chei,
+                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                    return;
                 Plan plan = null;
                 if (!bucla.EsteCunoscut(view, h.Id)
                         || (cereTransfer && !bucla.EsteCunoscut(view, h.Id + "#btr"))) {
@@ -105,11 +115,22 @@ static class HandlerAsamblare {
                     // asamblare (loturile există abia acum — se caută în index pe cheia
                     // lor 1C, exact ca orice pin ulterior). Rămâne în ACEEAȘI unitate:
                     // ordinea asamblare → transfer e internă, nu cronologică.
-                    if (plan == null || plan.CereTransfer)
-                        bucla.ImportaDocument(view, h.Id + "#btr",
-                            os => TransferaProduse(os, bucla.Catalog, plan, h.Numar),
-                            motivFaraDraft: Motive.FaraPlan(plan,
-                                "niciun produs de transferat în alt depozit"));
+                    if (plan == null || plan.CereTransfer) {
+                        // Gardul dependentului (D1, agravantul): transferul mută
+                        // loturile NĂSCUTE de asamblare — dacă asamblarea n-a ajuns
+                        // operată, loturile n-au sold și transferul ar pica la
+                        // gardianul de sold. Se refuză curat, cu motiv.
+                        var asamblareaId = bucla.Tinta(view, h.Id);
+                        if (asamblareaId is not { } a || bucla.Stare(a) != StareDocument.Operat)
+                            bucla.ImportaDocument(view, h.Id + "#btr", _ => null,
+                                motivFaraDraft: "asamblarea n-a ajuns operată "
+                                    + "(loturile produse n-au sold de transferat)");
+                        else
+                            bucla.ImportaDocument(view, h.Id + "#btr",
+                                os => TransferaProduse(os, bucla.Catalog, plan, h.Numar),
+                                motivFaraDraft: Motive.FaraPlan(plan,
+                                    "niciun produs de transferat în alt depozit"));
+                    }
                 }
             });
     }

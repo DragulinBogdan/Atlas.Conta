@@ -93,6 +93,30 @@ sealed class RegistruDivergente {
     // commit-uri — bonul de consum spart pe gestiuni).
     readonly HashSet<string> surseScrise = new(StringComparer.Ordinal);
 
+    // DE CE NU EXISTĂ „purjează la orice replanificare" (D5, punctul 7 al
+    // review-ului — respins pe MĂSURĂTOARE, nu pe gust):
+    //
+    // Ideea era ca planificarea să marcheze sursa ca „atinsă", iar persistarea să
+    // dea înapoi rândurile ei vechi chiar dacă planul nou nu mai produce niciunul
+    // — altfel o replanificare fără divergențe lasă în viață explicația unei
+    // diferențe care nu mai există. Premisa ei tacită e că „replanificat" = „dat
+    // înapoi și refăcut". Nu e: un document BLOCAT de puntea unei rulări
+    // anterioare (`Reluare1C.Blocheaza`) sau o sursă fără nicio cheie de legat se
+    // replanifică la FIECARE rulare, fără ca artefactele ei să plece — iar planul
+    // nou se calculează contra unui registru care între timp s-a schimbat, deci
+    // poate să nu mai găsească nicio lipsă de acoperire. Marfa tot n-a ieșit din
+    // Atlas (documentul e blocat), deci rândul vechi e FAPTUL, iar tăcerea
+    // planului nou e ipoteza.
+    //
+    // Măsurat pe ianuarie (a doua trecere peste aceeași bază): registrul pierdea
+    // exact o înregistrare (1450 → 1449) și contractul (3) pica pe o cheie
+    // adevărată — produsul BED9…159A × gestiunea 941B…FE6B, 1 buc / 4.403,15 lei.
+    //
+    // Purjarea rămâne legată de DAREA ÎNAPOI, singurul moment în care rândurile
+    // vechi chiar încetează să descrie un fapt: `UitaSursa`, apelat de ștergerea
+    // draftului (în același commit cu el), de curățarea legăturii orfane și de
+    // `--deblocheaza`. Restul e purjarea la primul rând nou, de mai jos.
+
     // Mutațiile pregătite în ObjectSpace-ul apelantului, aplicate în memorie abia
     // după commit (`Confirma`): un commit picat n-are voie să lase registrul
     // „scris" doar în RAM. `Divergenta == null` = rând care doar pleacă.
@@ -141,17 +165,25 @@ sealed class RegistruDivergente {
     // document care nu mai produce nicio divergență și-ar lăsa înregistrările în
     // urmă, iar contractul ar „explica" o diferență care nu mai există (ar pica
     // zgomotos — dar degeaba).
-    public void UitaSursa(IObjectSpace os, string sursa) {
+    //
+    // Ștergerea se STAGIAZĂ în ObjectSpace-ul apelantului și NU se comite aici:
+    // altfel purjarea ar fi o tranzacție separată de ștergerea documentului
+    // (`Drafturi.Sterge`), iar un crash între cele două ar lăsa exact orfanii pe
+    // care mecanismul îi repară. Apelantul comite, apoi invocă acțiunea întoarsă,
+    // care abia atunci curăță memoria — starea în RAM nu trece niciodată înaintea
+    // bazei.
+    public Action UitaSursa(IObjectSpace os, string sursa) {
         var identitati = (peSursa.GetValueOrDefault(sursa) ?? []).ToList();
         if (identitati.Count == 0)
-            return;
+            return null;
         var chei = identitati.Select(i => cheiPersistate[i]).ToList();
         var tabela = Legaturi.Tabela(View);
         os.Delete(os.GetObjectsQuery<MigrareLegatura>()
             .Where(m => m.Tabela == tabela && chei.Contains(m.CheieLegacy)).ToList());
-        os.CommitChanges();
-        foreach (var identitate in identitati)
-            Uita(identitate);
+        return () => {
+            foreach (var identitate in identitati)
+                Uita(identitate);
+        };
     }
 
     // ======================= Înregistrarea =======================
@@ -217,7 +249,7 @@ sealed class RegistruDivergente {
         // vechi pleacă (mai puțin cele reproduse identic — le lăsăm pe loc, ca să
         // nu ștergem și să reinserăm aceeași cheie în același commit).
         var purjate = new HashSet<string>(StringComparer.Ordinal);
-        var deSters = new List<string>();
+        var deSters = new HashSet<string>(StringComparer.Ordinal);
         foreach (var sursa in inAsteptare.Values.Select(d => d.Sursa).Distinct(StringComparer.Ordinal)) {
             if (!surseScrise.Add(sursa))
                 continue;
@@ -244,15 +276,16 @@ sealed class RegistruDivergente {
             var cheieVeche = cheiPersistate.GetValueOrDefault(identitate);
             if (cheieVeche == cheieNoua)
                 continue;
-            if (cheieVeche != null && !deSters.Contains(cheieVeche))
+            if (cheieVeche != null)
                 deSters.Add(cheieVeche);
             mutatii.Add((identitate, final, cheieNoua));
         }
 
         if (deSters.Count > 0) {
             var tabela = Legaturi.Tabela(View);
+            var lista = deSters.ToList();
             os.Delete(os.GetObjectsQuery<MigrareLegatura>()
-                .Where(m => m.Tabela == tabela && deSters.Contains(m.CheieLegacy)).ToList());
+                .Where(m => m.Tabela == tabela && lista.Contains(m.CheieLegacy)).ToList());
         }
         foreach (var (_, d, cheieNoua) in mutatii)
             if (d != null)

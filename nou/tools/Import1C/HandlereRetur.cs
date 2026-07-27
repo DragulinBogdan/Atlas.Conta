@@ -81,6 +81,12 @@ static class HandlerReturFurnizor {
                 var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
                 if (depozite.Count > 1)
                     DocumenteSparte++;
+                // D1: grupurile de depozit sunt de stoc, dar puntea returului e a
+                // DOCUMENTULUI (`Clasificare1C.Declara` peste toate rândurile) —
+                // deci planul nu se sparge per grup ca la bonul de consum.
+                if (Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, chei,
+                        "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)"))
+                    return;
 
                 Plan plan = null;
                 if (!chei.All(c => bucla.EsteCunoscut(View, c))

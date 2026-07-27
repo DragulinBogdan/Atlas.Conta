@@ -110,8 +110,11 @@ static class Drafturi {
     // are, sunt ale lui și pleacă odată cu el), liniile, documentele, loturile
     // născute de linii și TOATE legăturile care trimit la ele (documentul, lotul,
     // aliasul de lot). `null` = refuz (mesajul în `refuz`).
+    // `inainteDeCommit` (D5): apelantul își strecoară propriile ștergeri în ACEEAȘI
+    // tranzacție (registrul divergențelor — rândurile documentului care pleacă).
+    // Se invocă doar pe căile care chiar comit; la refuz nu se atinge nimic.
     public static RezultatStergere Sterge(IObjectSpaceProvider provider, Guid documentId,
-            out string refuz) {
+            out string refuz, Action<IObjectSpace> inainteDeCommit = null) {
         using var os = provider.CreateObjectSpace();
         var doc = os.GetObjectByKey<Document>(documentId);
         if (doc == null) {
@@ -119,6 +122,7 @@ static class Drafturi {
             // plece, altfel rularea următoare tot ar crede că documentul există.
             refuz = null;
             var orfane = StergeLegaturi(os, [documentId]);
+            inainteDeCommit?.Invoke(os);
             os.CommitChanges();
             return new RezultatStergere(0, 0, 0, 0, orfane, []);
         }
@@ -142,6 +146,7 @@ static class Drafturi {
             .Where(d => grup.Documente.Contains(d.ID)).ToList());
         os.Delete(os.GetObjectsQuery<Lot>().Where(l => grup.Loturi.Contains(l.ID)).ToList());
         var legaturi = StergeLegaturi(os, [.. grup.Documente, .. grup.Loturi]);
+        inainteDeCommit?.Invoke(os);
         os.CommitChanges();
 
         return new RezultatStergere(grup.Documente.Count, grup.Linii.Count, grup.Loturi.Count,
