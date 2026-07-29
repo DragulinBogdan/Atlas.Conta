@@ -69,7 +69,8 @@ public class RegulaContare : BaseObject {
     // iar contul explicit de mai jos rămâne valoare directă sau fallback.
     public virtual SursaCont SursaContDebit { get; set; }
     public virtual SursaCont SursaContCredit { get; set; }
-    // Contul explicit al regulii trăiește în planul mare: match exact pe Simbol.
+    // Contul explicit al regulii trăiește în planul mare — lookup standard
+    // (SmartLookup revertat, decizia 40d/gate).
     public virtual Guid? ContDebitId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContDebit { get; set; }

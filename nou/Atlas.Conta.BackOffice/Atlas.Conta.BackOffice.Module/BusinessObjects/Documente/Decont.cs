@@ -58,7 +58,8 @@ public class DecontDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
     // Cota și regimul vin din TipTva (bază, P1).
     public virtual decimal PretUnitar { get; set; }
 
-    // Postarea explicită pe linie alege din planul mare: match exact pe Simbol.
+    // Postarea explicită pe linie alege din planul mare (nomenclator mare —
+    // lookup standard; SmartLookup revertat, decizia 40d/gate).
     public virtual Guid? ContDebitId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContDebit { get; set; }

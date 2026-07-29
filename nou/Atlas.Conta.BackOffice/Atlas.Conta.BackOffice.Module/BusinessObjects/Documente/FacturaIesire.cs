@@ -1,14 +1,20 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
+using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // FCT IESIRE (07): pur creanță (411 = 7xx), fără registru de stoc; numerotare
 // proprie (serie fiscală) prin politică; scadența are default de politică (+30).
+// Layout-ul DetailView-ului: `[DetailViewLayout]` (GATE XAF D12), etichetele
+// grupurilor în `LayoutDocumenteUpdater`.
 [TipDetaliu(typeof(FacturaIesireDetaliu))]
 public class FacturaIesire : Document, IDocumentCuScadenta {
+    [XafDisplayName("Scadență")]
+    [DetailViewLayout(GrupLayout.Livrare, GrupLayout.OrdineLivrare)]
     public virtual DateOnly? DataScadenta { get; set; }
 
     // P2 (design §4): gestiunea din care se descarcă marfa. O singură gestiune
@@ -16,6 +22,8 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
     // există linii de stoc — validarea vine la pasul 2. Descărcarea (DSC conex)
     // se generează din acest header + loturile/produsele liniilor.
     public virtual Guid? GestiuneDescarcareId { get; set; }
+    [XafDisplayName("Gestiune de descărcare")]
+    [DetailViewLayout(GrupLayout.Livrare, GrupLayout.OrdineLivrare)]
     public virtual Gestiune GestiuneDescarcare { get; set; }
 
     // TVA-ul se calculează din cotă, DAR o `ValoareTva` nenulă culeasă se
@@ -144,6 +152,7 @@ public class FacturaIesireDetaliu : DocumentDetaliu, ILinieCuPretUnitar {
     public virtual string Descriere { get; set; }
     // Familia LIVRARE, un singur set de valori (07) — fără dubla familie legacy.
     // Cota și regimul vin din TipTva (bază, P1).
+    [XafDisplayName("Preț unitar")]
     public virtual decimal PretUnitar { get; set; }
 
     // P2 (design §4): identitatea liniei de stoc e PRODUSUL (poziția din site ↔
@@ -154,9 +163,12 @@ public class FacturaIesireDetaliu : DocumentDetaliu, ILinieCuPretUnitar {
     // prin validare — pasul 2. LotId de pe bază = rafinarea specifică opțională
     // (pin), prioritară la picking.
     public virtual Guid? ProdusId { get; set; }
-    // Catalog de produse (potențial mare): match exact pe Denumire.
+    // Catalog de produse (potențial mare): lookup standard (SmartLookup revertat,
+    // decizia 40d/gate).
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Produs Produs { get; set; }
 
-    [NotMapped] public decimal ValoareLivrare => PretUnitar * Cantitate;
+    [NotMapped]
+    [XafDisplayName("Valoare livrare")]
+    public decimal ValoareLivrare => PretUnitar * Cantitate;
 }

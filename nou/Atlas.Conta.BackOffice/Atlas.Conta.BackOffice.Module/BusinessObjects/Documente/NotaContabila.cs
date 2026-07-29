@@ -79,7 +79,8 @@ public class NotaContabila : Document, IDocumentCuPostareExplicita {
 public class NotaContabilaDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
     public virtual string Descriere { get; set; }
 
-    // Alegere din planul mare: match exact pe Simbol (ca DecontDetaliu).
+    // Alegere din planul mare, ca DecontDetaliu (nomenclator mare — lookup
+    // standard; SmartLookup revertat, decizia 40d/gate).
     public virtual Guid? ContDebitId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContDebit { get; set; }

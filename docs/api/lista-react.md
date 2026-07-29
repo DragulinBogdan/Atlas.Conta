@@ -37,4 +37,14 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
 
 ## Adăugate la GATE XAF
 
-(se completează pe parcursul feliei)
+- **Footer de sumar pe grilele de linii** (pas 3, DROP documentat):
+  `IModelColumn.Summary` e citit doar de grila WinForms (docs DevExpress);
+  în Blazor sumarul cere ViewController pe `DxGridListEditor.GridSummary`
+  (`ViewSummaryController` din Atlas.DXF e acțiune interactivă, gated pe
+  extender din assembly-ul Blazor). Nevoia gate-ului e acoperită de `Total`
+  pe DetailView; în React: footer de agregate nativ în DataGrid (43c).
+- **Total pe ListView-urile root** (pas 3): `Total` e `[NotMapped]` peste
+  `Detalii` ⇒ N+1 per rând; ascuns din listele FCT/FCL prin baseline (celelalte
+  10 tipuri îl mai au — o linie per tip la nevoie). Soluția corectă = coloană
+  calculată server-side (proiecție), adică exact modelul de citire al pasului 5
+  (42c); nu se cârpește în XAF.

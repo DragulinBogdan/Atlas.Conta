@@ -1,30 +1,59 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
+using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // FCT (01): predator = Partener (furnizor), primitor = Gestiune; nu mișcă stoc —
 // intrarea o face NIR-ul conex. Import extern (Tethys) = cale de primă clasă.
+//
+// Layout-ul DetailView-ului (GATE XAF D12) se declară cu `[DetailViewLayout]` pe
+// proprietăți; etichetele grupurilor stau în `LayoutDocumenteUpdater`.
+// `TethysId` (id de import) și grupul CHITANTA_* (câmpuri moarte — 31e) se
+// ascund din view-uri prin baseline; rămân în schemă (reactivarea la fluxul BF
+// e aditivă), deci nu primesc grup de layout.
 [TipDetaliu(typeof(FacturaIntrareDetaliu))]
 public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
+    [XafDisplayName("Scadență")]
+    [DetailViewLayout(GrupLayout.Scadenta, GrupLayout.OrdineScadenta)]
     public virtual DateOnly? DataScadenta { get; set; }
+    [XafDisplayName("Număr PV")]
+    [DetailViewLayout(GrupLayout.Scadenta, GrupLayout.OrdineScadenta)]
     public virtual string NumarPV { get; set; }
+    [XafDisplayName("Dată PV")]
+    [DetailViewLayout(GrupLayout.Scadenta, GrupLayout.OrdineScadenta)]
     public virtual DateOnly? DataPV { get; set; }
+    [XafDisplayName("Cod CPV")]
+    [DetailViewLayout(GrupLayout.Altele, GrupLayout.OrdineAltele)]
     public virtual string CodCpv { get; set; }
     public virtual string TethysId { get; set; }
 
+    [XafDisplayName("Valută")]
+    [DetailViewLayout(GrupLayout.Altele, GrupLayout.OrdineAltele)]
     public virtual string Valuta { get; set; }
+    [DetailViewLayout(GrupLayout.Altele, GrupLayout.OrdineAltele)]
     public virtual decimal? Curs { get; set; }
 
     // Fostul grup DECONT_* — parametrii generării documentului conex Plata;
     // câmpuri persistate (testul bazei §7.3).
+    [XafDisplayName("Generează plata")]
+    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual bool GenereazaPlata { get; set; }
     public virtual Guid? PlataContPropriuId { get; set; }
+    [XafDisplayName("Cont propriu (din care se plătește)")]
+    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual ContPropriu PlataContPropriu { get; set; }
+    [XafDisplayName("Număr plată")]
+    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual string PlataNumar { get; set; }
+    [XafDisplayName("Dată plată")]
+    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual DateOnly? PlataData { get; set; }
+    [XafDisplayName("Instrument de plată")]
+    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual TipInstrumentPlata? PlataTipInstrument { get; set; }
     public virtual bool GenereazaChitanta { get; set; }
     public virtual string ChitantaNumar { get; set; }
@@ -134,10 +163,14 @@ public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILini
     // Lanțul de valori trăiește pe derivată (testul bazei §3); capetele lui
     // (Valoare + ValoareTva din bază) intră în registre. Cota și regimul vin
     // din TipTva (bază, P1) — fosta CotaTva de pe derivată era redundantă.
+    [XafDisplayName("Preț unitar")]
     public virtual decimal PretUnitar { get; set; }
 
-    [NotMapped] public decimal ValoareReceptie => PretUnitar * Cantitate;
+    [NotMapped]
+    [XafDisplayName("Valoare recepție")]
+    public decimal ValoareReceptie => PretUnitar * Cantitate;
 
+    [XafDisplayName("Cod CPV")]
     public virtual string CodCpv { get; set; }
 
     // GATE XAF (D1): produsul liniei de STOC — mecanismul prin care lotul se naște
@@ -153,6 +186,8 @@ public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILini
     public virtual Produs Produs { get; set; }
 
     // Atribute de lot culese la intrare; motorul le copiază pe Lot la operare.
+    [XafDisplayName("Dată expirare")]
     public virtual DateOnly? DataExpirare { get; set; }
+    [XafDisplayName("Lot fabricație")]
     public virtual string LotFabricatie { get; set; }
 }

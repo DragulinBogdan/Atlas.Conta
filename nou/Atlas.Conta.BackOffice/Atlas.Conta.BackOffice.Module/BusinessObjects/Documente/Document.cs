@@ -1,4 +1,8 @@
+using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.ConditionalAppearance;
+using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
+using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.Validation;
@@ -11,9 +15,21 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Nucleul generic (deciziile 1, 2, 22). Motoarele de stoc și contare consumă
 // DOAR această clasă și DocumentDetaliu — orice câmp de aici e justificat de o
 // formulă de stoc, o regulă contabilă sau un motor transversal (testul bazei).
+//
+// Ciclul de viață se distinge VIZUAL (GATE XAF D12): Draft = neutru (starea de
+// lucru), Operat = verde bold (registrele există), Stornat = gri tăiat (rândurile
+// au fost inversate). Roșul rămâne al erorilor de validare, nu al stornării.
 [NavigationItem("Documente")]
+[Appearance("Document_Stare_Operat", AppearanceItemType.ViewItem, "Stare = 'Operat'",
+    TargetItems = nameof(Stare), FontColor = "Green", FontStyle = DevExpress.Drawing.DXFontStyle.Bold)]
+[Appearance("Document_Stare_Stornat", AppearanceItemType.ViewItem, "Stare = 'Stornat'",
+    TargetItems = nameof(Stare), FontColor = "Gray", FontStyle = DevExpress.Drawing.DXFontStyle.Strikeout)]
 public abstract class Document : BaseObject {
+    [XafDisplayName("Număr")]
+    [DetailViewLayout(GrupLayout.Document, GrupLayout.OrdineDocument)]
     public virtual string Numar { get; set; }
+    [XafDisplayName("Dată")]
+    [DetailViewLayout(GrupLayout.Document, GrupLayout.OrdineDocument)]
     public virtual DateOnly Data { get; set; }
 
     // Validare de CULEGERE (context Save al pipeline-ului UI XAF): FK-urile
@@ -26,26 +42,44 @@ public abstract class Document : BaseObject {
     // se comite separat, ÎNAINTE de motor (DocumentOperareController.Executa).
     // Doar căile standalone (ModelCheck/Migrare/seed — EFCoreObjectSpaceProvider
     // fără controllere) sunt în afara regulilor.
-    // Repartitori (sute la migrare): match exact pe Denumire în locul lookup-ului standard.
+    // Repartitori (sute la migrare) — nomenclator mare: lookup standard
+    // (SmartLookup revertat, decizia 40d/gate).
     public virtual Guid PredatorId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Predator (de la)")]
+    [DetailViewLayout(GrupLayout.Document, GrupLayout.OrdineDocument)]
     [RuleRequiredField("Document_Predator_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Predatorul (de la cine) este obligatoriu.")]
     public virtual Repartitor Predator { get; set; }
     public virtual Guid PrimitorId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Primitor (către)")]
+    [DetailViewLayout(GrupLayout.Document, GrupLayout.OrdineDocument)]
     [RuleRequiredField("Document_Primitor_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Primitorul (către cine) este obligatoriu.")]
     public virtual Repartitor Primitor { get; set; }
 
     // Decizia 14: Draft → Operat → (Stornat); la operare motorul scrie registrele.
+    // Cele patru câmpuri de mai jos sunt ALE MOTORULUI (GATE XAF D8): read-only în
+    // UI ÎNTOTDEAUNA, pe orice cale (DetailView + editare inline în ListView) —
+    // altfel operatorul putea trece un draft pe „Operat" cu mâna, fără registre.
+    [ModelDefault("AllowEdit", "False")]
+    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual StareDocument Stare { get; set; }
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Data operării")]
+    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual DateTime? DataOperare { get; set; }
 
     // Decizia 17: legătura conex sursă→generat (ex. FacturaIntrare → NIR);
     // anularea operează pe tot grupul (00 §8).
     public virtual Guid? DocumentSursaId { get; set; }
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Document sursă")]
+    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual Document DocumentSursa { get; set; }
+    [ModelDefault("AllowEdit", "False")]
+    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual bool Autogenerat { get; set; }
 
     [DevExpress.ExpressApp.DC.Aggregated]
@@ -57,7 +91,14 @@ public abstract class Document : BaseObject {
     // VIRTUAL (FAZA 1C §7): ReturClient poartă linii pe două roluri (venit +
     // cost) și totalul lui = doar liniile de venit — brutul care ajustează
     // creanța; costul e mișcare internă venit↔stoc, nu creanță.
+    //
+    // Pe DetailView e câmpul cu care operatorul confruntă hârtia ÎNAINTE de
+    // operare (GATE XAF D5); în ListView-urile root al celor două ecrane de
+    // felie e ascuns prin baseline — enumerarea Detalii per rând = N+1
+    // (disciplina de hot-path, 35d).
     [NotMapped]
+    [XafDisplayName("Total (brut)")]
+    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual decimal Total => Detalii.Sum(d => d.Valoare + d.ValoareTva);
 
     // Geamănul SERVER-SIDE al lui Total (review advers 1C-a): liniile care
@@ -131,8 +172,10 @@ public class DocumentDetaliu : BaseObject {
     // vezi nota de acolo despre calea Operează): TipMaterialId e NOT NULL,
     // iar o linie culeasă fără tip ar produce un INSERT cu FK invalid.
     public virtual Guid TipMaterialId { get; set; }
-    // Nomenclator mare de tipuri: match exact pe Denumire în locul lookup-ului standard.
+    // Nomenclator mare de tipuri: lookup standard (SmartLookup revertat,
+    // decizia 40d/gate).
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip (cont/clasă)")]
     [RuleRequiredField("DocumentDetaliu_TipMaterial_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Tipul (contul/clasa) liniei este obligatoriu.")]
     public virtual TipMaterial TipMaterial { get; set; }
@@ -154,9 +197,11 @@ public class DocumentDetaliu : BaseObject {
     // apartenenței (decizia 2) pune TVA-ul pe BAZĂ, nu pe interfață. Null =
     // linie fără semantică de TVA (BTR/BCS/LDI/NIR/PLT/INC — neschimbate).
     public virtual Guid? TipTvaId { get; set; }
+    [XafDisplayName("Tip TVA")]
     public virtual TipTva TipTva { get; set; }
     // A doua valoare de postare, cu destinație fixă (conturile de TVA din
     // TipTva + PoliticaTva); 0 la regimurile care nu postează separat.
+    [XafDisplayName("Valoare TVA")]
     public virtual decimal ValoareTva { get; set; }
 
     // Ancoră spre execuția bugetară (modul separat) — testul bazei §7.1.

@@ -17,7 +17,8 @@ public class TipTva : BaseObject {
     public virtual decimal Cota { get; set; }
     public virtual RegimTva Regim { get; set; }
 
-    // Conturile de TVA (4426/4427/4428) trăiesc în planul mare: match exact pe Simbol.
+    // Conturile de TVA (4426/4427/4428) trăiesc în planul mare — lookup standard
+    // (SmartLookup revertat, decizia 40d/gate).
     public virtual Guid? ContTvaDeductibilId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContTvaDeductibil { get; set; }

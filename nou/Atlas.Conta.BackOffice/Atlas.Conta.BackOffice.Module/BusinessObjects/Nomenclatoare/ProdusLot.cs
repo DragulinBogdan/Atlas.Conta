@@ -29,8 +29,19 @@ public class Lot : BaseObject {
     // Navigația Produs se citește lazy, cu guard — pe lookup-uri și grile de
     // nomenclator; DELIBERAT fără AutoInclude (loturile trec prin hot-path-ul
     // pickingului, unde eticheta nu se afișează niciodată).
+    //
+    // Lotul NĂSCUT LA CULEGERE (25c/26e) n-are încă nici dată, nici preț — le pune
+    // motorul la operarea documentului-mamă. Până atunci eticheta ar arăta
+    // „01.01.0001 · 0": pe draft se spune explicit că e în curs de culegere.
     [NotMapped]
-    public string Eticheta => $"{Produs?.Denumire} · {Data:dd.MM.yyyy} · {PretUnitar:0.####}";
+    public string Eticheta {
+        get {
+            var produs = Produs?.Denumire ?? "(produs nedefinit)";
+            return Data == default && PretUnitar == 0
+                ? $"{produs} (în culegere)"
+                : $"{produs} · {Data:dd.MM.yyyy} · {PretUnitar:0.####}";
+        }
+    }
 
     public virtual Guid ProdusId { get; set; }
     public virtual Produs Produs { get; set; }
