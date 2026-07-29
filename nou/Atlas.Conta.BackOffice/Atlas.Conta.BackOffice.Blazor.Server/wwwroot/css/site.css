@@ -20,6 +20,15 @@ app {
     height: 24px;
 }
 
+/* GATE XAF (D11): erorile motorului sunt MULTI-LINIE (gardienii cumulează toate
+   refuzurile și le unesc cu „\n" — o singură sursă de reguli, aceeași și pentru
+   consolă/API). XAF Blazor randează mesajul alertei într-un
+   <span class="xaf-alert-message"> (AlertTemplate.CreateDefaultTextContent), unde
+   white-space implicit colapsa liniile într-un paragraf continuu. */
+.xaf-alert-message {
+    white-space: pre-line;
+}
+
 #blazor-error-ui {
     background: inherit;
     bottom: 0;

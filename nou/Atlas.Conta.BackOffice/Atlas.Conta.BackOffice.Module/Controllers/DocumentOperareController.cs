@@ -12,7 +12,7 @@ namespace Atlas.Conta.BackOffice.Module.Controllers;
 public class DocumentOperareController : ObjectViewController<DetailView, Document> {
     readonly SimpleAction opereaza;
     readonly SimpleAction anuleaza;
-    readonly SimpleAction storneaza;
+    readonly ParametrizedAction storneaza;
 
     public DocumentOperareController() {
         opereaza = new SimpleAction(this, "Document.Opereaza", PredefinedCategory.RecordEdit) {
@@ -28,32 +28,55 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
                 e.ShowViewParameters.CreatedView = Application.CreateDetailView(os, os.GetObject(conex));
                 e.ShowViewParameters.TargetWindow = TargetWindow.Default;
             }
-            // P2 (design §5): restul nedescărcat se raportează și pe mesajul
-            // operării — pozițiile fără stoc rămân backorder, interogabile.
-            if (ViewCurrentObject is FacturaIesire fcl) {
+            // GATE XAF (D11): feedback la SUCCES — până acum operarea reușită nu
+            // spunea nimic, iar numărul asignat de politică (seria fiscală) rămânea
+            // invizibil până la un refresh. Mesajul e UNUL singur: restul
+            // nedescărcat al FCL (P2, design §5 — pozițiile fără stoc rămân
+            // backorder, interogabile per linie) se COMBINĂ în el, nu mai deschide
+            // al doilea toast.
+            var parti = new List<string>();
+            var doc = ViewCurrentObject;
+            if (doc?.Stare == StareDocument.Operat)
+                parti.Add($"Operat. Nr. {doc.Numar}.");
+            if (doc is FacturaIesire fcl) {
                 var resturi = DescarcareService.RestNedescarcat(ObjectSpace, fcl)
                     .Where(x => x.RestNeacoperit > 0).ToList();
                 if (resturi.Count > 0)
-                    Application.ShowViewStrategy.ShowMessage(new MessageOptions {
-                        Message = "Rest nedescărcat (backorder): "
-                            + FacturaIesireDescarcareController.RezumaResturi(ObjectSpace, resturi),
-                        Type = InformationType.Info,
-                        Duration = 6000,
-                    });
+                    parti.Add("Rest nedescărcat (backorder): "
+                        + FacturaIesireDescarcareController.RezumaResturi(ObjectSpace, resturi));
             }
+            Informeaza(parti);
         };
 
         anuleaza = new SimpleAction(this, "Document.AnuleazaOperarea", PredefinedCategory.RecordEdit) {
             Caption = "Anulează operarea",
             ConfirmationMessage = "Anulați operarea? Rândurile de registru ale documentului se șterg (corecție directă).",
         };
-        anuleaza.Execute += (s, e) => Executa(MotorOperare.AnuleazaOperarea);
-
-        storneaza = new SimpleAction(this, "Document.Storneaza", PredefinedCategory.RecordEdit) {
-            Caption = "Stornează", ConfirmationMessage = "Stornați documentul la data de azi?",
+        anuleaza.Execute += (s, e) => {
+            Executa(MotorOperare.AnuleazaOperarea);
+            Informeaza(new List<string> { "Operarea anulată." });
         };
-        storneaza.Execute += (s, e) => Executa((os, doc)
-            => MotorOperare.Storneaza(os, doc, DateOnly.FromDateTime(DateTime.Today)));
+
+        // GATE XAF (D10): data stornării se CULEGE (motorul o primea deja ca
+        // parametru, controllerul o hardcoda pe azi — corecția peste graniță de
+        // perioadă era imposibilă din UI). Precedentul: „Generează descărcarea"
+        // (FacturaIesireDescarcareController) — editor de dată în toolbar, default
+        // azi, gol/neschimbat → azi. Confirmarea NU se pierde: verificat pe surse
+        // (26.1.3, `ActionControlBase.InvokeActionExecuteAsync` → `Confirm()`),
+        // ParametrizedAction trece prin exact același dialog ca SimpleAction.
+        storneaza = new ParametrizedAction(this, "Document.Storneaza",
+            PredefinedCategory.RecordEdit, typeof(DateTime)) {
+            Caption = "Stornează",
+            ToolTip = "Stornează documentul la data indicată (rânduri inverse de registru).",
+            NullValuePrompt = "Data stornării",
+            ConfirmationMessage = "Stornați documentul la data indicată?",
+        };
+        storneaza.Execute += (s, e) => {
+            var aleasa = e.ParameterCurrentValue is DateTime dt && dt != default ? dt : DateTime.Today;
+            var data = DateOnly.FromDateTime(aleasa);
+            Executa((os, doc) => MotorOperare.Storneaza(os, doc, data));
+            Informeaza(new List<string> { $"Stornat la {data:dd.MM.yyyy}." });
+        };
     }
 
     void Executa(Action<IObjectSpace, Document> operatie) {
@@ -62,14 +85,49 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
         // materializat registrele/numărul/Stare=Operat în același ObjectSpace —
         // o regulă picată atunci ar lăsa o „operare-fantomă" în OS-ul viu, pe
         // care un Save ulterior ar comite-o fără re-rularea motorului.
-        if (ObjectSpace.IsModified)
-            ObjectSpace.CommitChanges();
-        operatie(ObjectSpace, ViewCurrentObject);
+        //
+        // Commit NECONDIȚIONAT (GATE XAF D2): pe un draft deschis și neatins
+        // `IsModified` e false, iar seam-ul de culegere din `Committing`
+        // (FacturaIntrareLoturiController — nașterea lotului) n-ar mai rula
+        // niciodată pe calea „butonul direct", pe care contractul D2 o declară
+        // acoperită. Un commit fără modificări e inofensiv (SaveChanges pe zero
+        // entries), dar dă seam-urilor de Committing ultima șansă.
+        ObjectSpace.CommitChanges();
+        try {
+            operatie(ObjectSpace, ViewCurrentObject);
+        }
+        catch (OperareException ex) {
+            // Motorul cumulează erorile cu „\n" (o singură sursă de reguli — și
+            // pentru consolă/API). În Blazor mesajul ajunge într-un
+            // `<span class="xaf-alert-message">` (verificat pe surse:
+            // AlertsHandlerServiceExceptionsExtensions → AlertTemplate), unde
+            // `white-space` implicit ar colapsa liniile într-un paragraf continuu.
+            // `site.css` cere acum `pre-line` pe clasa aceea; bulinele rămân ca
+            // plasă (dacă CSS-ul nu se aplică, liniile rămân totuși distinguibile).
+            var linii = ex.Message.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            if (linii.Length <= 1)
+                throw;
+            throw new UserFriendlyException(
+                string.Join("\n", linii.Select(l => "• " + l.Trim())), ex);
+        }
         ActualizeazaDisponibilitatea();
+    }
+
+    void Informeaza(List<string> parti) {
+        if (parti.Count == 0)
+            return;
+        Application.ShowViewStrategy.ShowMessage(new MessageOptions {
+            Message = string.Join(" ", parti),
+            Type = InformationType.Success,
+            Duration = 6000,
+        });
     }
 
     protected override void OnActivated() {
         base.OnActivated();
+        // Default azi în editorul din toolbar (cosmetic; coalesce-ul din Execute
+        // rămâne autoritatea pe gol/MinValue) — ca la „Generează descărcarea".
+        storneaza.Value = DateTime.Today;
         ActualizeazaDisponibilitatea();
         View.CurrentObjectChanged += OnCurrentObjectChanged;
     }
