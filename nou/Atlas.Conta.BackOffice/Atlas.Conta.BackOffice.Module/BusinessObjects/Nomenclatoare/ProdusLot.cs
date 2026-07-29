@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
@@ -18,7 +19,19 @@ public class Produs : BaseObject {
 }
 
 [NavigationItem("Nomenclatoare")]
+[XafDefaultProperty(nameof(Eticheta))]
 public class Lot : BaseObject {
+    // GATE XAF (D4): identitatea lizibilă a lotului — singurul tip țintă de lookup
+    // care nu avea DefaultProperty, deci apărea „Castle.Proxies.LotProxy" pe
+    // FCT/FCL/DSC/LDI/ASM (restanța 40d). Cele trei atribute care distING loturile
+    // aceluiași produs: proveniența (data) și prețul de intrare (identificarea
+    // specifică — decizia 13). NotMapped: nu e stare, e o proiecție de afișare.
+    // Navigația Produs se citește lazy, cu guard — pe lookup-uri și grile de
+    // nomenclator; DELIBERAT fără AutoInclude (loturile trec prin hot-path-ul
+    // pickingului, unde eticheta nu se afișează niciodată).
+    [NotMapped]
+    public string Eticheta => $"{Produs?.Denumire} · {Data:dd.MM.yyyy} · {PretUnitar:0.####}";
+
     public virtual Guid ProdusId { get; set; }
     public virtual Produs Produs { get; set; }
     // Preț fix la creare = Valoare/Cantitate de pe linia de intrare (testul bazei §3).

@@ -42,7 +42,6 @@ public static class MotorOperare {
         if (erori.Count > 0)
             throw new OperareException(string.Join("\n", erori));
 
-        AsignaNumar(os, doc, tipDoc);
         AplicaScadenta(os, doc, tipDoc);
 
         // 1. Mișcările de stoc se CALCULEAZĂ întâi (delta), gardianul de sold
@@ -216,12 +215,24 @@ public static class MotorOperare {
         // latură — abia aici se știe și contul, și rezultatul coalesce-ului.
         VerificaDimensiuniObligatorii(os, note, claseTip);
 
-        // 3. Materializarea — toți gardienii au trecut. Întâi finalizarea
-        //    loturilor născute de liniile documentului (NIR manual, FacturaIntrare
-        //    pentru lanțul conex, plus de inventar, producție): lotul e creat la
-        //    culegere de linia de intrare (baza nu poartă ProdusId — testul bazei
-        //    §2); motorul îi fixează prețul (= Valoare/Cantitate, decizia 13),
-        //    data și atributele culese.
+        // 3. Materializarea — toți gardienii au trecut.
+        //
+        //    Numărul se consumă ABIA ACUM (GATE XAF D6, alinierea cu propriul
+        //    principiu 33d): asignat înaintea gardienilor, un refuz lăsa
+        //    `doc.Numar` completat și `PoliticaNumerotare.UrmatorulNumar`
+        //    incrementat în ObjectSpace-ul VIU al apelantului — necomise, dar un
+        //    Save ulterior (UI-ul rulează motorul în OS-ul View-ului) le
+        //    persista și rupea seria fiscală cu un gol. Ordinea față de
+        //    conex/secundar e neschimbată: niciunul nu citește `Numar` (clona
+        //    header-ului copiază doar data și laturile, iar plata automată își
+        //    ia numărul din câmpul cules `PlataNumar`).
+        AsignaNumar(os, doc, tipDoc);
+
+        //    Întâi finalizarea loturilor născute de liniile documentului (NIR
+        //    manual, FacturaIntrare pentru lanțul conex, plus de inventar,
+        //    producție): lotul e creat la culegere de linia de intrare (baza nu
+        //    poartă ProdusId — testul bazei §2); motorul îi fixează prețul
+        //    (= Valoare/Cantitate, decizia 13), data și atributele culese.
         var idsDetalii = doc.Detalii.Select(d => d.ID).ToList();
         foreach (var lot in os.GetObjectsQuery<Lot>().Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
             var linie = doc.Detalii.First(d => d.ID == lot.LinieIntrareId);

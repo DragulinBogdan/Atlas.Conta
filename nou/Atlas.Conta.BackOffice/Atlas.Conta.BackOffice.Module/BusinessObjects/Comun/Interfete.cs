@@ -20,6 +20,20 @@ public interface ILinieCuAtributeLot {
     string LotFabricatie { get; set; }
 }
 
+// Linia care culege un PREȚ UNITAR — baza calculului de TVA la culegere
+// (GATE XAF D5). Lanțul de valori trăiește pe derivate (testul bazei §3), dar
+// capătul lui de intrare are aceeași formă pe toate liniile care se culeg
+// financiar: baza = PretUnitar × Cantitate. Contract read-only: seam-ul de
+// recalcul (TvaService.CalculeazaLaCulegere) doar CITEȘTE prețul; scrierea
+// rămâne a proprietății virtuale de pe derivată.
+// Implementat azi de FacturaIntrareDetaliu + FacturaIesireDetaliu — exact cele
+// două ecrane ale gate-ului. DecontDetaliu are aceeași formă de bază, dar nu are
+// ecran în felie (și își normalizează cantitatea 0→1 la operare — 32d, ce
+// culegerea ar trebui să facă vizibil, nu în spate); aderarea lui e aditivă.
+public interface ILinieCuPretUnitar {
+    decimal PretUnitar { get; }
+}
+
 // Trăsătura PROPRIE a Decontului (inventar 06, nuanța deciziei 15): linia
 // poartă postarea explicită — cont și repartitor, per latură — ca date de
 // primă clasă. Motorul o consultă înaintea rezolvării declarative (SursaCont)

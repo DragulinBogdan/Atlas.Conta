@@ -140,7 +140,7 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
     }
 }
 
-public class FacturaIesireDetaliu : DocumentDetaliu {
+public class FacturaIesireDetaliu : DocumentDetaliu, ILinieCuPretUnitar {
     public virtual string Descriere { get; set; }
     // Familia LIVRARE, un singur set de valori (07) — fără dubla familie legacy.
     // Cota și regimul vin din TipTva (bază, P1).

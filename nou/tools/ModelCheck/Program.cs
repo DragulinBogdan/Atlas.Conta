@@ -2027,8 +2027,18 @@ using (var os = provider.CreateObjectSpace()) {
     CheckRefuza("Re-operarea unui document Operat e refuzată", () => MotorOperare.Opereaza(os, btr1));
 
     // --- Gardianul de sold: cerere peste disponibil ---
+    // BTR are politică de numerotare (BTR-), deci documentul ăsta e sonda pentru
+    // GATE XAF D6: numărul se consumă în faza de MATERIALIZARE, după toți
+    // gardienii. Înainte, `AsignaNumar` rula între validare și gardianul de sold —
+    // un refuz lăsa numărul pe document ȘI incrementul pe politică în
+    // ObjectSpace-ul VIU al apelantului (UI-ul rulează motorul în OS-ul
+    // View-ului), iar orice Save ulterior le persista: gol în seria fiscală.
+    var politicaBtr = os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "BTR");
+    var numarInainte = politicaBtr.UrmatorulNumar;
     var insuficient = Transfer(mag2, mag1, 100m, new DateOnly(2026, 3, 10));
     CheckRefuza("Sold insuficient → operare refuzată", () => MotorOperare.Opereaza(os, insuficient));
+    Check("Refuzul unui gardian NU consumă număr (D6): document fără Numar, politica neatinsă",
+        string.IsNullOrWhiteSpace(insuficient.Numar) && politicaBtr.UrmatorulNumar == numarInainte);
     os.Delete(insuficient.Detalii.ToList());
     os.Delete(insuficient);
 

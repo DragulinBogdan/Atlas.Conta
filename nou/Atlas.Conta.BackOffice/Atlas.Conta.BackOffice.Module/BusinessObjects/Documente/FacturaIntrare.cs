@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.Editors;
+using DevExpress.Persistent.Base;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -81,6 +83,15 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
         if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)
             erori.Add("Primitorul facturii de intrare trebuie să fie o gestiune.");
 
+        // Liniile FCT se culeg pe tipul derivat — o linie de bază DocumentDetaliu
+        // ar ocoli lanțul de valori (fără PretUnitar, Valoare culeasă direct, fără
+        // recalcul de TVA) și mecanismul lotului (fără Produs). Oglinda refuzului
+        // de pe FCL (review P2 defect 7), devenită necesară odată cu ProdusId pe
+        // derivată (GATE XAF D1).
+        foreach (var d in Detalii)
+            if (d is not FacturaIntrareDetaliu)
+                erori.Add("Linia facturii de intrare trebuie culeasă ca linie de factură de intrare, nu ca detaliu generic.");
+
         var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
         var naturi = os.GetObjectsQuery<TipMaterial>()
             .Where(t => idsTip.Contains(t.ID))
@@ -97,10 +108,29 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
             if (naturi.GetValueOrDefault(d.TipMaterialId) == NaturaClasa.Stoc && d.LotId == null)
                 erori.Add("Liniile de stoc ale facturii își creează lotul la culegere (alegeți produsul).");
         }
+
+        // Identitatea dublă a liniei (Tip + Produs) trebuie să fie coerentă —
+        // oglinda validării de pe FCL (review P2 defect 4): un produs de alt Tip
+        // ar conta pe conturile Tipului greșit, iar lotul născut de linie ar
+        // ajunge în registrul altui Tip decât cel postat. Totul pe proiecții
+        // (25b): navigațiile nu se ating în enumerare.
+        var idsProdus = Detalii.OfType<FacturaIntrareDetaliu>()
+            .Where(d => d.ProdusId != null).Select(d => d.ProdusId.Value).Distinct().ToList();
+        if (idsProdus.Count > 0) {
+            var tipPerProdus = os.GetObjectsQuery<Produs>()
+                .Where(p => idsProdus.Contains(p.ID))
+                .Select(p => new { p.ID, p.TipMaterialId })
+                .ToDictionary(p => p.ID, p => p.TipMaterialId);
+            foreach (var d in Detalii.OfType<FacturaIntrareDetaliu>()) {
+                if (d.ProdusId != null && tipPerProdus.TryGetValue(d.ProdusId.Value, out var tipProdus)
+                        && tipProdus != null && tipProdus != d.TipMaterialId)
+                    erori.Add("Produsul liniei aparține altui Tip decât Tipul liniei — corectați Tipul sau produsul.");
+            }
+        }
     }
 }
 
-public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot {
+public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCuPretUnitar {
     // Lanțul de valori trăiește pe derivată (testul bazei §3); capetele lui
     // (Valoare + ValoareTva din bază) intră în registre. Cota și regimul vin
     // din TipTva (bază, P1) — fosta CotaTva de pe derivată era redundantă.
@@ -109,6 +139,18 @@ public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot {
     [NotMapped] public decimal ValoareReceptie => PretUnitar * Cantitate;
 
     public virtual string CodCpv { get; set; }
+
+    // GATE XAF (D1): produsul liniei de STOC — mecanismul prin care lotul se naște
+    // la culegere (decizia 25c: baza nu poartă ProdusId, deci produsul ales de
+    // operator intră direct pe Lot prin CreeazaLot). Oglinda lui
+    // FacturaIesireDetaliu.ProdusId (37d): identitatea liniei de stoc e produsul;
+    // testul apartenenței (decizia 2) îl ține pe derivată — stocul lucrează pe Lot.
+    // Schema rămâne nullable (aceeași derivată poartă și liniile de servicii);
+    // obligatoriu pe liniile de stoc prin validare.
+    public virtual Guid? ProdusId { get; set; }
+    // Catalog de produse (potențial mare).
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    public virtual Produs Produs { get; set; }
 
     // Atribute de lot culese la intrare; motorul le copiază pe Lot la operare.
     public virtual DateOnly? DataExpirare { get; set; }

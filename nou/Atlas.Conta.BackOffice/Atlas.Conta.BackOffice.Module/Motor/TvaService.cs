@@ -54,6 +54,21 @@ public static class TvaService {
         d.ValoareTva = Scara.RotunjesteBani(d.ValoareTva);
     }
 
+    // GATE XAF (D5): calculul la CULEGERE — aceeași formulă, un singur apelant
+    // nou. Operatorul trebuie să vadă `Valoare`/`ValoareTva`/`Total` înainte de
+    // operare (confruntarea cu hârtia), nu abia după ce registrele s-au scris.
+    //
+    // Semantica diferă de a motorului într-un singur punct, deliberat:
+    // `pastreazaTvaCules: false`. La culegere BAZA S-A SCHIMBAT (cantitate, preț
+    // sau tip de TVA), deci un ValoareTva rămas de la baza precedentă e stale și
+    // se recalculează; regula 36a („TVA-ul cules bate rotunjirea noastră") e
+    // regula OPERĂRII și rămâne neatinsă — un override manual introdus DUPĂ
+    // ultima schimbare de bază supraviețuiește până la operare, fiindcă
+    // apelantul (controllerul de culegere) invocă seam-ul doar la schimbarea
+    // bazei. Lucrează pe FK-uri + IObjectSpace (25b), ca restul motorului.
+    public static void CalculeazaLaCulegere(IObjectSpace os, DocumentDetaliu linie, decimal baza) =>
+        CalculeazaValori(linie, baza, IncarcaTipuri(os, new[] { linie }));
+
     // Datoria P1 (design §8): default TipTva per tip de document, aplicat la
     // CULEGERE (nu în motor) — TipDocument.TipTvaImplicit. No-op dacă linia are
     // deja un TipTva cules (culegerea explicită bate default-ul). Apelantul:
