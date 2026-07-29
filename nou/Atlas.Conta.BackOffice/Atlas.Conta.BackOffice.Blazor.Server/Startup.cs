@@ -54,7 +54,20 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
             services.AddXaf(Configuration, builder => {
                 builder.UseApplication<BackOfficeBlazorApplication>();
                 builder.Modules
-                    .AddAuditTrailEFCore()
+                    // AuditTrail (EF Core) e DEZACTIVAT — incompatibil cu owned
+                    // types (deciziile 15/24: `Dimensiuni` e owned pe fiecare linie
+                    // de document și pe fiecare rând de registru). Găsit la smoke-ul
+                    // UI al gate-ului: salvarea unei linii noi arunca NRE în
+                    // `AuditTrailService.GetKeyAsObject` — el citește PK-ul prin
+                    // reflecție CLR (`entityType.GetProperty(keyProperties[0].Name)`,
+                    // surse 26.1.3 AuditTrailService.cs:505-517), iar owned entity
+                    // types au PK SHADOW (FK-ul owner-ului), deci GetProperty
+                    // întoarce null. Apelul e înaintea oricărei filtrări pe tip
+                    // (`IsAuditedType`/DeclaredTypes, :490-501), deci nu există
+                    // configurație care să-l ocolească.
+                    // Istoricul contabil nu depinde de el: registrele sunt
+                    // append-only, corecția e anulare/storno (decizia 14).
+                    //.AddAuditTrailEFCore()
                     .AddCloning()
                     .AddConditionalAppearance()
                     .AddDashboards(options => {
@@ -111,39 +124,26 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
                         // ar intra în conflict cu ele.
                         options.SchemaUpdateOptions.DisableUpdateSchema = true;
                     })
-                    .WithAuditedDbContext(contexts => {
-                        contexts.Configure<Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeEFCoreDbContext, Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeAuditingDbContext>(
-                            (serviceProvider, businessObjectDbContextOptions) => {
-                                // Uncomment this code to use an in-memory database. This database is recreated each time the server starts. With the in-memory database, you don't need to make a migration when the data model is changed.
-                                // Do not use this code in production environment to avoid data loss.
-                                // We recommend that you refer to the following help topic before you use an in-memory database: https://docs.microsoft.com/en-us/ef/core/testing/in-memory
-                                //businessObjectDbContextOptions.UseInMemoryDatabase();
-                                string connectionString = null;
-                                if (Configuration.GetConnectionString("ConnectionString") != null) {
-                                    connectionString = Configuration.GetConnectionString("ConnectionString");
-                                }
+                    // Context SIMPLU, nu `WithAuditedDbContext`: acela înregistrează
+                    // hook-ul `AuditTrailService.AuditedDbContext_SavingChanges`
+                    // (independent de modulul de audit), care aruncă pe owned types
+                    // — vezi nota de la `AddAuditTrailEFCore` mai sus. Tabelele de
+                    // audit rămân în schemă (DbSet-urile din context), doar
+                    // colectarea e oprită.
+                    .WithDbContext<Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeEFCoreDbContext>(
+                        (serviceProvider, businessObjectDbContextOptions) => {
+                            string connectionString = null;
+                            if (Configuration.GetConnectionString("ConnectionString") != null) {
+                                connectionString = Configuration.GetConnectionString("ConnectionString");
+                            }
 #if EASYTEST
-                                if(Configuration.GetConnectionString("EasyTestConnectionString") != null) {
-                                    connectionString = Configuration.GetConnectionString("EasyTestConnectionString");
-                                }
+                            if(Configuration.GetConnectionString("EasyTestConnectionString") != null) {
+                                connectionString = Configuration.GetConnectionString("EasyTestConnectionString");
+                            }
 #endif
-                                ArgumentNullException.ThrowIfNull(connectionString);
-                                businessObjectDbContextOptions.UseConnectionString(connectionString);
-                            },
-                            (serviceProvider, auditHistoryDbContextOptions) => {
-                                string connectionString = null;
-                                if (Configuration.GetConnectionString("ConnectionString") != null) {
-                                    connectionString = Configuration.GetConnectionString("ConnectionString");
-                                }
-#if EASYTEST
-                                if(Configuration.GetConnectionString("EasyTestConnectionString") != null) {
-                                    connectionString = Configuration.GetConnectionString("EasyTestConnectionString");
-                                }
-#endif
-                                ArgumentNullException.ThrowIfNull(connectionString);
-                                auditHistoryDbContextOptions.UseConnectionString(connectionString);
-                            });
-                    })
+                            ArgumentNullException.ThrowIfNull(connectionString);
+                            businessObjectDbContextOptions.UseConnectionString(connectionString);
+                        })
                     .AddNonPersistent();
                 builder.Security
                     .UseIntegratedMode(options => {

@@ -48,3 +48,19 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
   10 tipuri îl mai au — o linie per tip la nevoie). Soluția corectă = coloană
   calculată server-side (proiecție), adică exact modelul de citire al pasului 5
   (42c); nu se cârpește în XAF.
+- **`Total` pe DetailView nu se reîmprospătează după salvarea unei linii**
+  (smoke pas 4): rămâne 0 până la o re-citire a documentului (după operare apare
+  corect: 1.210). Cauza e structurală — proprietatea `[NotMapped]` nu notifică,
+  iar XAF nu re-evaluează editorul la commit-ul colecției nested; „fix"-ul în
+  Blazor ar fi un refresh manual de ViewItem la fiecare commit de linie (fragil,
+  și tot nu acoperă editarea inline). În React: totalul e stare derivată din
+  agregatul de formular, recalculată la fiecare schimbare (43c). Workaround
+  acceptat pentru gate: valorile per linie (Valoare / Valoare TVA) SE văd live,
+  iar totalul e corect imediat după operare.
+- **AuditTrail EF Core e incompatibil cu owned types** (smoke pas 4, dezactivat
+  în `Startup.cs`): `AuditTrailService.GetKeyAsObject` citește PK-ul prin
+  reflecție CLR, iar owned entity types au PK shadow ⇒ NRE la orice SaveChanges
+  care atinge o linie de document (surse 26.1.3, AuditTrailService.cs:505-517;
+  apelul precede filtrarea pe tip, deci nu e configurabil). Dacă apare cerință
+  reală de audit: fie ticket la DevExpress, fie audit propriu pe registre
+  (append-only, deja istoricul contabil), fie la pasul 5 în tierul API.

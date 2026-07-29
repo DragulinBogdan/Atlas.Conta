@@ -79,6 +79,12 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder => {
+                    // GATE XAF (D13): sub `dotnet run`, static web assets sunt
+                    // activate implicit DOAR pe env Development — pe un env custom
+                    // (Privat) blazor.server.js și tot /_content/* dau 404, iar
+                    // pagina rămâne albă. La publish e no-op (manifestul runtime
+                    // nu există; asset-urile sunt copiate fizic în wwwroot).
+                    webBuilder.UseStaticWebAssets();
                     webBuilder.UseStartup<Startup>();
                 });
         XafApplication IDesignTimeApplicationFactory.Create() {

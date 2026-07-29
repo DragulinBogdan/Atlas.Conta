@@ -108,7 +108,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         // dispar din view-uri, rămân în schemă (GATE XAF D12).
         registry.For<FacturaIntrare>()
             .HideMembers(d => d.GenereazaChitanta, d => d.ChitantaNumar, d => d.ChitantaData, d => d.TethysId);
-        AscundeTotalInLista<FacturaIntrare>(registry);
+        ListaRoot<FacturaIntrare>(registry);
 
         var entitate = registry.For<FacturaIntrareDetaliu>();
         entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
@@ -145,7 +145,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     }
 
     static void FacturaIesire(UiBaselineRegistry registry) {
-        AscundeTotalInLista<FacturaIesire>(registry);
+        ListaRoot<FacturaIesire>(registry);
 
         var entitate = registry.For<FacturaIesireDetaliu>();
         entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
@@ -165,14 +165,25 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.ValoareLivrare, c => c.Index = -1);
     }
 
-    // `Document.Total` e [NotMapped] și enumerează Detalii ⇒ o coloană în
-    // ListView-ul ROOT = N+1 pe fiecare pagină (disciplina de hot-path, 35d;
-    // baza de smoke are 187k documente). Se ascunde view-scoped (Index = -1, ca
-    // la coloanele de TVA fără semantică) — pe DetailView rămâne, e câmpul cu
-    // care operatorul confruntă hârtia înainte de operare (D5).
-    static void AscundeTotalInLista<T>(UiBaselineRegistry registry) where T : Document {
+    // ListView-ul ROOT al unui tip de document: identificarea documentului ÎNTÂI.
+    // Găsit la smoke-ul UI al gate-ului: generatorul XAF așază coloanele derivatei
+    // înaintea celor moștenite, deci lista de facturi începea cu Scadență / PV /
+    // Cod CPV / grupul de plată, iar `Numar`, `Data`, `Predator`, `Primitor` erau
+    // împinse în dreapta, în afara ecranului — un contabil nu-și găsea factura.
+    //
+    // `Document.Total` e [NotMapped] și enumerează Detalii ⇒ o coloană aici =
+    // N+1 pe fiecare pagină (disciplina de hot-path, 35d; baza de smoke are 187k
+    // documente). Se ascunde view-scoped (Index = -1, ca la coloanele de TVA fără
+    // semantică) — pe DetailView rămâne, e câmpul cu care operatorul confruntă
+    // hârtia înainte de operare (D5).
+    static void ListaRoot<T>(UiBaselineRegistry registry) where T : Document {
         registry.For<T>()
             .ListView(typeof(T).Name + ListView, _ => { })
+            .Column(d => d.Numar, c => c.Index = 0)
+            .Column(d => d.Data, c => c.Index = 1)
+            .Column(d => d.Predator, c => c.Index = 2)
+            .Column(d => d.Primitor, c => c.Index = 3)
+            .Column(d => d.Stare, c => c.Index = 4)
             .Column(d => d.Total, c => c.Index = -1);
     }
 
