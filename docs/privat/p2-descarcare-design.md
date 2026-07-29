@@ -231,6 +231,12 @@ Bloc e2e nou pe baza privată (suita bugetară rămâne verde nemodificată):
 
 ## 10. Amânate, documentate
 
+> **28.07.2026**: comenzile, rezervarea de stoc și declanșarea la recepția NIR
+> au primit direcție fixată în sesiunea de arhitectură
+> `docs/architecture-notes-2026-07-28.md` (rezervare hard prin gestiune tampon,
+> picking cu substituție de lot, alocare automată la sosire); design-doc-ul
+> comenzilor urmează.
+
 - **Comenzile** (sales order din magazin, PO spre furnizori) și importul FCL
   din site — documente fără registre + API, la pasul 5; P2 lasă cusătura:
   restul per linie FCL interogabil, identificarea produs/lot pe linie.
