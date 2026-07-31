@@ -126,8 +126,31 @@ public class RecalculValoriCulegereController : ObjectViewController<DetailView,
         base.OnDeactivated();
     }
 
-    void OnObjectChanged(object sender, ObjectChangedEventArgs e) =>
+    void OnObjectChanged(object sender, ObjectChangedEventArgs e) {
         RecalculCulegere.Reactioneaza(ObjectSpace, e, Gazda, ref inRecalcul);
+        ReimprospateazaTotal(e);
+    }
+
+    // Review advers D3: `Document.Total` e getter calculat, fără notificare de
+    // proprietate, iar schimbarea unei LINII nu-l atinge — XAF reîmprospătează la
+    // `ObjectChanged` doar item-urile al căror `ControlValue` E obiectul schimbat
+    // (ObjectView.RefreshViewItemByChangedObject), iar ramura pe nume se aplică
+    // exclusiv lui CurrentObject. Fără asta, „confruntarea cu hârtia ÎNAINTE de
+    // operare" (motivul lui D5 și criteriu de gate) nu funcționa: totalul rămânea
+    // 0 până la reîncărcarea ecranului sau până la operare.
+    //
+    // Controllerul e abonat pe ObjectSpace-ul View-ului, care e ACELAȘI și când
+    // linia se culege în dialogul propriu (colecție agregată) ⇒ o singură cale
+    // acoperă și grila nested și dialogul.
+    void ReimprospateazaTotal(ObjectChangedEventArgs e) {
+        if (e.Object is not DocumentDetaliu linie)
+            return;
+        var doc = ViewCurrentObject;
+        if (doc == null || !doc.Detalii.Contains(linie))
+            return;
+        if (View?.FindItem(nameof(Document.Total)) is DevExpress.ExpressApp.Editors.PropertyEditor editor)
+            editor.Refresh();
+    }
 
     Document Gazda(DocumentDetaliu linie) {
         var doc = ViewCurrentObject;

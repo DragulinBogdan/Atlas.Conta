@@ -66,6 +66,18 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
 
         // Tipuri în afara ierarhiei de documente:
         registry.For<RegistruStoc>().HideForeignKeys();             // LotId/RepartitorId/DocumentId/DetaliuId
+        // Coloana `Lot` iese din ListView-ul registrului de stoc (review advers
+        // D6): de când `Lot` are DefaultProperty, afișarea ei evaluează
+        // `Eticheta`, care citește `Produs` LAZY — pe 282k rânduri asta e N+1 per
+        // pagină randată, exact tiparul pentru care s-a introdus
+        // `ConfigureDimensiuniEager` la 41c. Registrul rămâne complet (produs,
+        // gestiune, cantitate, valoare); identitatea lotului se citește pe
+        // documentul sursă sau, la pasul 5, în proiecții (42c). Nomenclatorul de
+        // Loturi și lookup-urile păstrează eticheta — acolo e chiar rostul ei, iar
+        // seturile sunt mărginite de căutare.
+        registry.For<RegistruStoc>()
+            .ListView(nameof(RegistruStoc) + ListView, _ => { })
+            .Column(r => r.Lot, c => c.Index = -1);
         registry.For<RegistruContabil>().HideForeignKeys();         // ContDebitId/ContCreditId/DocumentId/DetaliuId
         registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
         registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId
@@ -127,7 +139,13 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.PretUnitar, c => c.Index = 4)
             .Column(d => d.TipTva, c => c.Index = 5)
             .Column(d => d.ValoareTva, c => c.Index = 6)
-            .Column(d => d.Valoare, c => c.Index = 7)
+            // `Valoare` e REZULTAT (preț × cantitate, prin regimul TipTva) — se
+            // recalculează la culegere (D5) și `PregatesteOperare` o rescrie
+            // necondiționat la operare. Editabilă, ar invita operatorul s-o
+            // „corecteze", iar valoarea tastată s-ar pierde fără mesaj (review
+            // advers D7). `ValoareTva` RĂMÂNE editabilă — acolo overrideul e
+            // deliberat păstrat de motor (36a: factura bate rotunjirea noastră).
+            .Column(d => d.Valoare, c => { c.Index = 7; c.AllowEdit = false; })
             .Column(d => d.DataExpirare, c => c.Index = 8)
             .Column(d => d.LotFabricatie, c => c.Index = 9)
             .Column(d => d.CodCpv, c => c.Index = 10)
@@ -141,6 +159,9 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         entitate.DetailView(nameof(FacturaIntrareDetaliu) + "_DetailView", dv => {
             if (dv.Items[nameof(FacturaIntrareDetaliu.Lot)] is IModelCommonMemberViewItem lot)
                 lot.AllowEdit = false;
+            // Idem `Valoare` (review advers D7): rezultat, nu culegere.
+            if (dv.Items[nameof(DocumentDetaliu.Valoare)] is IModelCommonMemberViewItem valoare)
+                valoare.AllowEdit = false;
         });
     }
 
@@ -158,7 +179,8 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.PretUnitar, c => c.Index = 4)
             .Column(d => d.TipTva, c => c.Index = 5)
             .Column(d => d.ValoareTva, c => c.Index = 6)
-            .Column(d => d.Valoare, c => c.Index = 7)
+            // Rezultat, nu culegere — vezi nota de pe FCT (review advers D7).
+            .Column(d => d.Valoare, c => { c.Index = 7; c.AllowEdit = false; })
             .Column(d => d.Descriere, c => c.Index = 8)
             // Ca la FCT: preț × cantitate e un al treilea număr redundant lângă
             // Valoare / Valoare TVA.

@@ -80,9 +80,25 @@ public class FacturaIntrareLoturiController : ObjectViewController<DetailView, F
                 continue;
 
             // Produsul golit sau Tipul mutat pe ne-stoc = decizie explicită a
-            // operatorului ⇒ lotul PROPRIU al liniei dispare.
+            // operatorului ⇒ lotul PROPRIU al liniei dispare — DAR numai dacă e
+            // un lot pe care culegerea l-a născut și motorul nu l-a atins încă.
+            //
+            // Review advers D1: `ProdusId` e coloană NOUĂ (migrația
+            // FacturaIntrareProdus), deci pe TOATE liniile preexistente (34.289
+            // în baza de import) e null deși linia are lot FINALIZAT. Fără
+            // distincția de mai jos, orice commit pe un astfel de draft — inclusiv
+            // cel pe care `Opereaza` îl face necondiționat, sau tranziția
+            // Operat→Draft a anulării — ștergea lotul istoric (ID, dată reală,
+            // preț, poziție FIFO) fără nicio eroare, iar documentul rămânea
+            // neoperabil.
+            if (linie.ProdusId == null && lot != null && Finalizat(lot)) {
+                // Self-healing: lotul finalizat E sursa de adevăr; linia își ia
+                // produsul de la el (culegerea veche nu-l avea).
+                linie.ProdusId = lot.ProdusId;
+                continue;
+            }
             if (linie.ProdusId == null || natura != NaturaClasa.Stoc) {
-                if (lot != null)
+                if (lot != null && !Finalizat(lot))
                     LoturiLiniiSterse.StergeLot(os, linie, lot);
                 continue;
             }
@@ -120,6 +136,12 @@ public class FacturaIntrareLoturiController : ObjectViewController<DetailView, F
         LoturiLiniiSterse.Curata(os, idsSterse, loturiProprii);
     }
 
+    // Lotul FINALIZAT a trecut prin motor (26e: `PretUnitar = Valoare/Cantitate`,
+    // `Data` = data documentului), deci e stare contabilă — un seam de UI nu are
+    // voie să-l șteargă. Lotul născut la culegere și încă neoperat e recunoscibil
+    // exact prin lipsa acestor două (vezi și `Lot.Eticheta`: „(în culegere)").
+    static bool Finalizat(Lot lot) => lot.Data != default || lot.PretUnitar != 0;
+
     static List<Lot> LoturiProprii(IObjectSpace os, List<Guid> idsLinii) {
         if (idsLinii.Count == 0)
             return new List<Lot>();
@@ -149,10 +171,13 @@ static class LoturiLiniiSterse {
 
     public static void Curata(IObjectSpace os, List<Guid> idsSterse, List<Lot> candidati) {
         // NUMAI loturile PROPRII ale liniilor șterse (`LinieIntrareId`), niciodată
-        // un lot străin (un lot pinuit pe linie prin LotId rămâne al altcuiva).
+        // un lot străin (un lot pinuit pe linie prin LotId rămâne al altcuiva) și
+        // niciodată un lot FINALIZAT de motor (review advers D1): ștergerea unui
+        // document Draft nu are voie să ia cu ea un lot cu istorie — el a intrat
+        // prin import sau prin operarea unui document anterior.
         foreach (var id in idsSterse)
             foreach (var lot in candidati.Where(l => l.LinieIntrareId == id).ToList())
-                if (!os.IsObjectToDelete(lot))
+                if (!os.IsObjectToDelete(lot) && lot.Data == default && lot.PretUnitar == 0)
                     os.Delete(lot);
     }
 
@@ -188,7 +213,19 @@ public class DocumenteLoturiCuratenieController : ObjectViewController<ListView,
 
     void OnCommitting(object sender, CancelEventArgs e) {
         var os = ObjectSpace;
+        // Review advers D5: în ListView colecția `Detalii` NU e încărcată, iar
+        // EF Core NU marchează dependenții `Deleted` la `Remove` (cascada se face
+        // în Postgres, la SaveChanges) — deci `GetObjectsToDelete` întoarce listă
+        // goală și controllerul era no-op exact pe calea pentru care a fost scris.
+        // Liniile se citesc explicit după documentele marcate spre ștergere.
+        var idsDocumente = os.GetObjectsToDelete(true).OfType<Document>().Select(d => d.ID).ToList();
         var idsSterse = LoturiLiniiSterse.Ids(os);
+        if (idsDocumente.Count > 0)
+            idsSterse.AddRange(os.GetObjectsQuery<FacturaIntrareDetaliu>()
+                .Where(d => idsDocumente.Contains(d.DocumentId))
+                .Select(d => d.ID)
+                .ToList());
+        idsSterse = idsSterse.Distinct().ToList();
         if (idsSterse.Count == 0)
             return;
         var loturi = os.GetObjectsQuery<Lot>()

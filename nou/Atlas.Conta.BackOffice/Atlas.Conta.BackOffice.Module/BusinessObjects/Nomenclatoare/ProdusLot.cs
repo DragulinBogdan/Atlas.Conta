@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Filtering;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -33,7 +34,17 @@ public class Lot : BaseObject {
     // Lotul NĂSCUT LA CULEGERE (25c/26e) n-are încă nici dată, nici preț — le pune
     // motorul la operarea documentului-mamă. Până atunci eticheta ar arăta
     // „01.01.0001 · 0": pe draft se spune explicit că e în curs de culegere.
+    //
+    // EXCLUS din căutarea full-text (review advers D4): `FilterController` include
+    // membrii NEpersistenți în criteriu (`IncludeNonPersistentMembers = true`, mod
+    // implicit AllSearchableMembers), iar criteriul ajunge pe colecția EF Core, care
+    // nu poate traduce un membru nemapat — orice literă tastată în caseta de
+    // căutare a Loturilor sau în lookup-ul de lot (care pe colecții mari PORNEȘTE
+    // gol, deci căutarea e singura cale) ar arunca. Numericele nemapate
+    // preexistente (Total/ValoareReceptie) cad doar pe text convertibil la număr;
+    // Eticheta e primul string nemapat, de aceea lovește la orice text.
     [NotMapped]
+    [SearchMemberOptions(SearchMemberMode.Exclude)]
     public string Eticheta {
         get {
             var produs = Produs?.Denumire ?? "(produs nedefinit)";

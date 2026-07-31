@@ -42,8 +42,6 @@ public static class MotorOperare {
         if (erori.Count > 0)
             throw new OperareException(string.Join("\n", erori));
 
-        AplicaScadenta(os, doc, tipDoc);
-
         // 1. Mișcările de stoc se CALCULEAZĂ întâi (delta), gardianul de sold
         //    le verifică, abia apoi se materializează rândurile. Per latură,
         //    regula specifică pe Clasa liniei bate regula generică (Clasa=null =
@@ -227,6 +225,11 @@ public static class MotorOperare {
         //    header-ului copiază doar data și laturile, iar plata automată își
         //    ia numărul din câmpul cules `PlataNumar`).
         AsignaNumar(os, doc, tipDoc);
+        //    Scadența default (PoliticaScadenta, 30c) e tot o SCRIERE pe document,
+        //    deci aparține aceleiași faze (review advers D8): înaintea gardienilor,
+        //    un refuz o lăsa scrisă în ObjectSpace-ul viu al apelantului, pe care
+        //    un Save ulterior o persista pe un document rămas Draft.
+        AplicaScadenta(os, doc, tipDoc);
 
         //    Întâi finalizarea loturilor născute de liniile documentului (NIR
         //    manual, FacturaIntrare pentru lanțul conex, plus de inventar,

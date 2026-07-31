@@ -28,6 +28,14 @@ public class NumarPoliticaController : ObjectViewController<DetailView, Document
 
     protected override void OnDeactivated() {
         View.CurrentObjectChanged -= OnCurrentObjectChanged;
+        // Review advers D2: instanțele de ViewController se REFOLOSESC între
+        // view-uri (Frame.SetView doar dezactivează/activează aceleași obiecte, iar
+        // în Blazor toate view-urile rădăcină trec prin MainWindow), deci un cache
+        // nereseta se lipea de tipul următor: FCL→FCT lăsa `Numar` read-only pe o
+        // factură care își CULEGE numărul (blocaj: operarea îl cere, UI-ul nu-l
+        // dă), iar FCT→FCL îl lăsa editabil pe seria fiscală (`AsignaNumar` iese pe
+        // număr nenul ⇒ seria ocolită, exact ce D7 trebuia să prevină).
+        areNumerotare = null;
         base.OnDeactivated();
     }
 
