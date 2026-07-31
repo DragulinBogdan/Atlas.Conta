@@ -858,6 +858,11 @@ Raport de producție.
     altfel popup pre-filtrat. `Lot` sărit — nu are DefaultProperty (de decis).
     La orice problemă de componentă: revert per proprietate la lookup-ul
     standard (scoți `[EditorAlias]`), repararea se face în Atlas.DXF.
+    **[STARE ACTUALĂ, decizia 53h] SmartLookup a fost REVERTAT integral** la
+    lookup-ul standard DevExpress (commit `98ce1d0`, memoria
+    „smartlookup-fallback-standard"): toate cele ~20 de `[EditorAlias]` folosesc
+    `EditorAliases.LookupPropertyEditor`; paragraful de mai sus descrie starea
+    de dinaintea revert-ului. `Lot` ARE acum DefaultProperty (`Eticheta`, 53).
     (e) **Semnalate, netranșate**: `Imperechere` creabilă din UI prin New
     generic — ocolește invarianții `ImperechereService` (31d); de tranșat
     (probabil ForbidCRUD + acțiune dedicată, cel târziu la pasul 5). Drafturile
@@ -865,6 +870,12 @@ Raport de producție.
     (cosmetic; operarea oricum le refuză — 38c). FK-urile brute rămân vizibile
     pe tipurile ne-anotate (NIR/BTR/BCS/PLT/INC). `Dimensiuni` se afișează ca
     „Castle.Proxies.DimensiuniProxy" pe registre (ToString de adăugat).
+    **[CORECȚII, decizia 53h]** `Imperechere` — tranșat la 41d (validare la
+    commit); `Dimensiuni.ToString()` — rezolvat la 41c; **FK-urile brute pe
+    tipurile ne-anotate erau de fapt DEJA ascunse** de
+    `ForHierarchy<Document>()/<DocumentDetaliu>().HideForeignKeys()` (41b) —
+    doar FK-urile PROPRII derivatelor cereau declarație per tip; nota era
+    inexactă.
 
 41. **Felia „restanțele 40e → Atlas.DXF 26.1.3.6" — executată; genericul
     promovat în bibliotecă, consumul în Conta; smoke UI browser + review advers
@@ -917,7 +928,9 @@ Raport de producție.
     (e) Proces: pachetele ies prin `build\pack-and-push.ps1` (bump automat din
     tag-uri git; push-ul îl rulează utilizatorul — clasificatorul de permisiuni
     blochează push-ul extern); Conta referă flotant `26.1.3.*` ⇒ consumul =
-    restore. Testul ToString din bibliotecă simulează proxy-ul cu
+    restore (**[CORECȚIE 53h]** azi e PINNAT `26.1.3.7` în
+    `Directory.Packages.props` — un upgrade cere bump explicit). Testul ToString
+    din bibliotecă simulează proxy-ul cu
     Reflection.Emit (Proxies tranzitiv e 8.x vs EF 10 — pariu de versiune
     refuzat); calea reală EF e acoperită de ModelCheck + smoke UI în Conta.
 
@@ -1529,6 +1542,77 @@ Raport de producție.
     Persista — fixat doar HashSet-ul). Următorul pas al roadmap-ului:
     GATE XAF (44.2).
 
+53. **GATE XAF — executat; gate TRECUT** (contractul feliei:
+    `docs/gate-xaf-contract.md`, 15 decizii pin-uite D1–D15). Criteriul 44.2
+    („un contabil tolerant le operează zilnic", explicit NU product-grade) e
+    îndeplinit pe FCT: culegere completă → Save → OPERARE, validat în browser pe
+    **clona bazei de import** (187k documente, 129k parteneri, 312k produse;
+    originalul, harness-ul de reconciliere, neatins) cu registrele corecte
+    (628=401 1.000, 4426=401 210). Tranșările:
+    (a) **Golul de flux al FCT era de MODEL, nu de finisaj**: `CreeazaLot`
+    (25c/26e) nu avea NICIUN apelant din UI, iar `FacturaIntrareDetaliu` n-avea
+    `ProdusId` — validarea „liniile de stoc își creează lotul la culegere
+    (alegeți produsul)" era neîndeplinibilă, iar ocolirea (Lot ales din
+    Nomenclatoare) rupea TVA-ul de cost (două prețuri independente). Fix:
+    `ProdusId` pe DERIVATĂ (testul bazei ține — baza nu-l poartă) + seam de
+    culegere în `Committing` (`FacturaIntrareLoturiController`): naște,
+    sincronizează (produs/gestiune) și curăță lotul propriu; `Lot` devine
+    read-only pe FCT (bypass-ul divergent se închide), coerența Tip↔Produs =
+    oglinda 38c.
+    (b) **`AsignaNumar` mutat în faza de materializare** — alinierea cu propriul
+    principiu 33d: asignat înaintea gardienilor, un refuz lăsa numărul consumat
+    și `UrmatorulNumar` incrementat în OS-ul viu (UI-ul rulează motorul în OS-ul
+    View-ului), iar un Save ulterior le persista = gol în seria fiscală. Check
+    ModelCheck dedicat, probat prin sabotaj. Idem `AplicaScadenta` (review D8).
+    (c) **Calculul la culegere refolosește ACELAȘI helper**
+    (`TvaService.CalculeazaLaCulegere`): operatorul culegea financiar orb —
+    `Valoare`/`ValoareTva`/`Total` rămâneau 0 până la operare. Semantica diferă
+    într-un punct, deliberat: la culegere baza s-a schimbat ⇒ TVA-ul se
+    recalculează; regula 36a (TVA-ul cules bate rotunjirea) rămâne a OPERĂRII.
+    `Valoare` devine read-only în UI (e rezultat — `PregatesteOperare` o
+    rescrie); `ValoareTva` rămâne editabilă.
+    (d) **Layout-ul DetailView NU se poate face cu EntityFluent**: `.Section()`/
+    `.Group()` doar ADAUGĂ item-uri lipsă, iar la momentul customizer-ului
+    layout-ul auto-generat conține deja toți membrii ⇒ grupurile ar ieși goale.
+    Mecanismul corect e cel NATIV: `[DetailViewLayout(grup, index)]` pe
+    proprietăți + updater propriu DOAR pentru etichetele grupurilor
+    (`LayoutDocumenteUpdater`). Captions RO pe proprietăți
+    (`[XafDisplayName]`) ⇒ identice în ListView și DetailView.
+    (e) **AuditTrail EF Core e incompatibil cu owned types** — descoperit la
+    smoke: `AuditTrailService.GetKeyAsObject` citește PK-ul prin reflecție CLR,
+    owned au PK SHADOW ⇒ NRE la ORICE SaveChanges care atinge o linie de
+    document (apelul precede filtrarea pe tip ⇒ neconfigurabil). Dezactivat
+    modulul ȘI hook-ul (`WithAuditedDbContext` → context simplu); tabelele rămân
+    în schemă. Istoricul contabil nu depinde de el (registre append-only,
+    corecția = anulare/storno — decizia 14).
+    (f) **Review advers: 8 defecte, toate fixate**, cel critic fiind ștergerea
+    silențioasă de loturi ISTORICE: `ProdusId` e coloană nouă, deci pe cele
+    34.289 de linii importate e null deși lotul e finalizat — ramura „produsul
+    a fost golit" le ștergea (ID, dată reală, preț, poziție FIFO) la orice
+    commit, inclusiv cel pe care `Opereaza` îl face necondiționat. Fix:
+    distincția lot FINALIZAT (trecut prin motor) vs născut la culegere +
+    self-healing. Restul: cache de controller care traversa view-urile (blocaj
+    pe FCT / serie ocolită pe FCL — instanțele de ViewController se REFOLOSESC),
+    `Total` fără refresh, `Eticheta` nemapată în full-text search (excepție EF),
+    curățenia no-op pe ListView (EF nu marchează dependenții la cascadă DB),
+    N+1 pe eticheta de lot în registrul de stoc.
+    (g) **Lista React deschisă** (`docs/api/lista-react.md`, artefactul cerut de
+    44.2): itemii structurali (ObjectSpace sincron, dialoguri, feedback),
+    restanțele moștenite (multi-tab staleness, SmartLookup revertat,
+    localizarea shell-ului) + cei găsiți în felie (sumar de grilă — model
+    WinForms-only; `Total` în liste = N+1; `Total` pe DetailView fără
+    notificare; AuditTrail × owned).
+    (h) **Corecții de stare** față de deciziile anterioare, verificate în cod:
+    **SmartLookup e REVERTAT** la lookup standard din commit `98ce1d0` (decizia
+    40d descria starea de dinaintea revert-ului); **FK-urile brute pe
+    NIR/BTR/BCS/PLT/INC erau deja rezolvate** de
+    `ForHierarchy<Document>().HideForeignKeys()` (nota 40e inexactă); Atlas.DXF
+    e **pinnat 26.1.3.7**, nu flotant (contra 41e).
+    (i) Rămase, ne-blocante: culegerea de produs pe NIR manual / LDI+ / ASM
+    (mecanismul D2 e extensibil, wiring-ul n-a intrat în felie); localizarea
+    shell-ului; perioadele fiscale ≠ 2026 se adaugă manual; `Data` pe
+    documentele conexe rămâne a sursei.
+
 ```
 /legacy   → surse Delphi (.pas, .dfm) + scripturi SQL vechi
 /db       → se poate export schemă (CREATE) + CONȚINUTUL tabelelor de configurare
@@ -1641,7 +1725,16 @@ per felie):
   defecte de măsurătoare găsite și închise de re-validare; anul 2025 =
   CONTRACT ÎNDEPLINIT pe 4 contracte × 12 luni, 0 chei nejustificate.
   FAZA 1C ÎNCHISĂ.
-- Apoi: GATE XAF (polish FCT+FCL, decizia 44.2), abia apoi pasul 5.
+- **GATE XAF** (EXECUTAT, decizia 53; contract: `docs/gate-xaf-contract.md`):
+  polish FCT+FCL până la pragul „un contabil tolerant le operează zilnic" —
+  `ProdusId` + nașterea lotului la culegere (golul de flux al FCT era de model),
+  numărul consumat abia la materializare, calculul TVA la culegere, layout +
+  captions RO, câmpurile motorului read-only; smoke UI real pe clona bazei de
+  import + review advers cu 8 defecte fixate (cel critic: ștergerea loturilor
+  istorice). Gate TRECUT. Lista React deschisă (`docs/api/lista-react.md`).
+- Apoi: **pasul 5** (API+React, deciziile 42/43) pe model călit, SAU felia C1a
+  a comenzilor (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă,
+  la presiune de client).
 
 ## Reguli de lucru pentru Claude Code
 
