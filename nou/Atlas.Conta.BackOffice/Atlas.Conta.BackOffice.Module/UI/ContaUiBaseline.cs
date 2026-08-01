@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.DXF.Core.Views;
 using Atlas.DXF.Core.Views.Discovery;
+using Atlas.DXF.Core.Views.Fluent;
 using DevExpress.ExpressApp.Model;
 
 namespace Atlas.Conta.BackOffice.Module.UI;
@@ -14,11 +15,14 @@ namespace Atlas.Conta.BackOffice.Module.UI;
 // Coloanele de TVA se ascund view-scoped (Index = -1) pe tipurile fără semantică
 // de TVA (LDI/DSC) — membrul rămâne vizibil pe tipurile care îl folosesc.
 //
-// Layout-ul DetailView-urilor NU e aici: `[DetailViewLayout]` pe proprietăți +
-// `LayoutDocumenteUpdater` pentru etichete (vezi comentariul din LayoutDocumente.cs
-// pentru motivul de fond — `.Section()/.Group()` din EntityFluent nu poate
-// re-aranja un layout deja generat). Captions-urile câmpurilor stau pe
-// proprietăți ([XafDisplayName]) ca să fie identice în ListView și DetailView.
+// Layout-ul DetailView-urilor de document e TOT aici, declarativ: `.Layout(...)`
+// (Atlas.DXF 26.1.3.9) — API AUTORITAR, aplicat de `UiLayoutUpdater` chiar în
+// generatorul de layout, deci grupurile declarate ÎNLOCUIESC arborele generat.
+// A înlocuit `[DetailViewLayout]` pe proprietăți + `LayoutDocumenteUpdater`
+// (GATE XAF D12). ATENȚIE la confuzia clasică: `.Section()/.Group()/.Tabs()` de
+// pe `DetailView(...)` rămân ADITIVE (adaugă doar ce lipsește din arbore) —
+// pe un view real sunt no-op. Captions-urile câmpurilor stau tot pe proprietăți
+// ([XafDisplayName]), ca să fie identice în ListView și DetailView.
 //
 // SUMAR de grilă (sumă pe Valoare/ValoareTva) — NEIMPLEMENTAT deliberat:
 // `IModelColumn.Summary` e citit doar de grila WinForms (docs DevExpress), iar în
@@ -32,6 +36,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
 
     public void Register(UiBaselineRegistry registry) {
         AscundeFkuriBrute(registry);
+        LayoutDocumente(registry);
         DetaliuGeneric(registry);
         FacturaIntrare(registry);
         FacturaIesire(registry);
@@ -99,6 +104,70 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
                 .HideMembers(fkDimensiuni.Select(fk => $"{latura}.{fk}").ToArray());
     }
 
+    // Layout-ul DetailView-urilor de document (GATE XAF D12), declarat autoritar.
+    //
+    // Compunerea e BAZĂ-ÎNTÂI: grupurile declarate pe `Document` vin primele,
+    // cele ale derivatei se adaugă DUPĂ. De aici containerul `Antet`: grupurile
+    // proprii facturii (Scadență/Plată/Altele, Livrare) se declară NESTED în el,
+    // cu același id, deci se concatenează ÎNĂUNTRU — între identificarea
+    // documentului și grid, unde le voia ordinea de culegere. Fără el ar fi
+    // aterizat după „Stare & totaluri". `Antet` n-are caption (e doar ordine).
+    //
+    // Ordinea de pe ecran: identificare → câmpuri proprii tipului → liniile →
+    // stare & totaluri (`Total` e confruntarea cu hârtia înainte de operare, D5,
+    // deci stă sub grid). Membrii nedeclarați (proprietățile celorlalte 10 tipuri
+    // de document) NU dispar: `UiLayoutUpdater` îi mătură într-un grup final —
+    // exact plasa de siguranță pentru „am adăugat o proprietate și am uitat-o".
+    // Membrii ascunși (HideMembers/HideForeignKeys) declarați aici s-ar sări cu
+    // log; nu declarăm niciunul (TethysId, CHITANTA_* — 31e — rămân în schemă).
+    static void LayoutDocumente(UiBaselineRegistry registry) {
+        registry.ForHierarchy<Document>()
+            .Layout(l => l
+                .Group("Antet", null, g => g
+                    .Group("GrupDocument", "Document", d => d
+                        .Item(x => x.Numar)
+                        .Item(x => x.Data)
+                        .Item(x => x.Predator)
+                        .Item(x => x.Primitor)))
+                .Group("GrupDetalii", "Detalii", g => g
+                    // Colecția se plasează pe NUME (selectorul tipizat nu exprimă
+                    // membrii de colecție); grupul propriu oglindește convenția
+                    // XAF `{item}_Group` — un grid într-o cutie comună citește prost.
+                    .Item(nameof(Document.Detalii)))
+                .Group("GrupStare", "Stare & totaluri", g => g
+                    .Item(x => x.Stare)
+                    .Item(x => x.DataOperare)
+                    .Item(x => x.DocumentSursa)
+                    .Item(x => x.Autogenerat)
+                    .Item(x => x.Total)));
+
+        registry.For<FacturaIntrare>()
+            .Layout(l => l
+                .Group("Antet", null, g => g
+                    .Group("GrupScadenta", "Scadență & PV", d => d
+                        .Item(x => x.DataScadenta)
+                        .Item(x => x.NumarPV)
+                        .Item(x => x.DataPV))
+                    // Fostul grup DECONT_* — parametrii plății autogenerate (31e).
+                    .Group("GrupPlata", "Plată", d => d
+                        .Item(x => x.GenereazaPlata)
+                        .Item(x => x.PlataContPropriu)
+                        .Item(x => x.PlataNumar)
+                        .Item(x => x.PlataData)
+                        .Item(x => x.PlataTipInstrument))
+                    .Group("GrupAltele", "Altele", d => d
+                        .Item(x => x.CodCpv)
+                        .Item(x => x.Valuta)
+                        .Item(x => x.Curs))));
+
+        registry.For<FacturaIesire>()
+            .Layout(l => l
+                .Group("Antet", null, g => g
+                    .Group("GrupLivrare", "Livrare", d => d
+                        .Item(x => x.DataScadenta)
+                        .Item(x => x.GestiuneDescarcare))));
+    }
+
     // ListView-ul GENERIC al colecției `Detalii` (id-ul nested generat de XAF din
     // clasa care DECLARĂ membrul: `Document_Detalii_ListView`, unul singur pentru
     // toată ierarhia). Îl folosesc tipurile fără detaliu derivat: NIR (conexul
@@ -120,7 +189,20 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         // dispar din view-uri, rămân în schemă (GATE XAF D12).
         registry.For<FacturaIntrare>()
             .HideMembers(d => d.GenereazaChitanta, d => d.ChitantaNumar, d => d.ChitantaData, d => d.TethysId);
-        ListaRoot<FacturaIntrare>(registry);
+        // Coloanele proprii, după identificarea documentului (vezi ListaRoot):
+        // scadența/PV întâi, apoi câmpurile de curs și grupul plății.
+        ListaRoot<FacturaIntrare>(registry)
+            .Column(d => d.DataScadenta, c => c.Index = 10)
+            .Column(d => d.NumarPV, c => c.Index = 11)
+            .Column(d => d.DataPV, c => c.Index = 12)
+            .Column(d => d.CodCpv, c => c.Index = 13)
+            .Column(d => d.Valuta, c => c.Index = 14)
+            .Column(d => d.Curs, c => c.Index = 15)
+            .Column(d => d.GenereazaPlata, c => c.Index = 16)
+            .Column(d => d.PlataContPropriu, c => c.Index = 17)
+            .Column(d => d.PlataNumar, c => c.Index = 18)
+            .Column(d => d.PlataData, c => c.Index = 19)
+            .Column(d => d.PlataTipInstrument, c => c.Index = 20);
 
         var entitate = registry.For<FacturaIntrareDetaliu>();
         entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
@@ -166,7 +248,9 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     }
 
     static void FacturaIesire(UiBaselineRegistry registry) {
-        ListaRoot<FacturaIesire>(registry);
+        ListaRoot<FacturaIesire>(registry)
+            .Column(d => d.DataScadenta, c => c.Index = 10)
+            .Column(d => d.GestiuneDescarcare, c => c.Index = 11);
 
         var entitate = registry.For<FacturaIesireDetaliu>();
         entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
@@ -198,8 +282,15 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     // documente). Se ascunde view-scoped (Index = -1, ca la coloanele de TVA fără
     // semantică) — pe DetailView rămâne, e câmpul cu care operatorul confruntă
     // hârtia înainte de operare (D5).
-    static void ListaRoot<T>(UiBaselineRegistry registry) where T : Document {
-        registry.For<T>()
+    //
+    // Indicii bazei sunt 0–4 și NU ajung singuri: coloanele proprii derivatei
+    // păstrează indicii generați (tot 0..n), iar grila le sortează INTERCALAT
+    // (Scadență, Număr, Dată, Număr PV, Dată PV, Predator, …) — găsit la smoke-ul
+    // migrării de layout, cu simptomul din nota de mai sus doar pe jumătate
+    // rezolvat. De aceea apelantul continuă lanțul cu propriile coloane, de la
+    // 10 în sus; „gaura" 5–9 lasă loc unor coloane comune viitoare.
+    static ListViewFluent<T> ListaRoot<T>(UiBaselineRegistry registry) where T : Document
+        => registry.For<T>()
             .ListView(typeof(T).Name + ListView, _ => { })
             .Column(d => d.Numar, c => c.Index = 0)
             .Column(d => d.Data, c => c.Index = 1)
@@ -207,7 +298,6 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.Primitor, c => c.Index = 3)
             .Column(d => d.Stare, c => c.Index = 4)
             .Column(d => d.Total, c => c.Index = -1);
-    }
 
     static void ListaDiferenteInventar(UiBaselineRegistry registry) {
         var entitate = registry.For<ListaDiferenteInventarDetaliu>();

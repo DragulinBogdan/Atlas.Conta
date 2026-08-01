@@ -1,4 +1,3 @@
-using Atlas.Conta.BackOffice.Module.UI;
 using DevExpress.ExpressApp.ConditionalAppearance;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
@@ -26,10 +25,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
     TargetItems = nameof(Stare), FontColor = "Gray", FontStyle = DevExpress.Drawing.DXFontStyle.Strikeout)]
 public abstract class Document : BaseObject {
     [XafDisplayName("Număr")]
-    [DetailViewLayout(GrupLayout.Document, GrupLayout.OrdineDocument)]
     public virtual string Numar { get; set; }
     [XafDisplayName("Dată")]
-    [DetailViewLayout(GrupLayout.Document, GrupLayout.OrdineDocument)]
     public virtual DateOnly Data { get; set; }
 
     // Validare de CULEGERE (context Save al pipeline-ului UI XAF): FK-urile
@@ -47,14 +44,12 @@ public abstract class Document : BaseObject {
     public virtual Guid PredatorId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Predator (de la)")]
-    [DetailViewLayout(GrupLayout.Document, GrupLayout.OrdineDocument)]
     [RuleRequiredField("Document_Predator_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Predatorul (de la cine) este obligatoriu.")]
     public virtual Repartitor Predator { get; set; }
     public virtual Guid PrimitorId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Primitor (către)")]
-    [DetailViewLayout(GrupLayout.Document, GrupLayout.OrdineDocument)]
     [RuleRequiredField("Document_Primitor_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Primitorul (către cine) este obligatoriu.")]
     public virtual Repartitor Primitor { get; set; }
@@ -64,11 +59,9 @@ public abstract class Document : BaseObject {
     // UI ÎNTOTDEAUNA, pe orice cale (DetailView + editare inline în ListView) —
     // altfel operatorul putea trece un draft pe „Operat" cu mâna, fără registre.
     [ModelDefault("AllowEdit", "False")]
-    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual StareDocument Stare { get; set; }
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Data operării")]
-    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual DateTime? DataOperare { get; set; }
 
     // Decizia 17: legătura conex sursă→generat (ex. FacturaIntrare → NIR);
@@ -76,10 +69,8 @@ public abstract class Document : BaseObject {
     public virtual Guid? DocumentSursaId { get; set; }
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Document sursă")]
-    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual Document DocumentSursa { get; set; }
     [ModelDefault("AllowEdit", "False")]
-    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual bool Autogenerat { get; set; }
 
     [DevExpress.ExpressApp.DC.Aggregated]
@@ -98,7 +89,6 @@ public abstract class Document : BaseObject {
     // (disciplina de hot-path, 35d).
     [NotMapped]
     [XafDisplayName("Total (brut)")]
-    [DetailViewLayout(GrupLayout.Stare, GrupLayout.OrdineStare)]
     public virtual decimal Total => Detalii.Sum(d => d.Valoare + d.ValoareTva);
 
     // Geamănul SERVER-SIDE al lui Total (review advers 1C-a): liniile care

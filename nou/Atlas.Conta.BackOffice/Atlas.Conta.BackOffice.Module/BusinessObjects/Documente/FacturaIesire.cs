@@ -9,12 +9,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // FCT IESIRE (07): pur creanță (411 = 7xx), fără registru de stoc; numerotare
 // proprie (serie fiscală) prin politică; scadența are default de politică (+30).
-// Layout-ul DetailView-ului: `[DetailViewLayout]` (GATE XAF D12), etichetele
-// grupurilor în `LayoutDocumenteUpdater`.
+// Layout-ul DetailView-ului: declarat în `ContaUiBaseline` cu `.Layout(...)`
+// (GATE XAF D12), grupul propriu nested în containerul `Antet`.
 [TipDetaliu(typeof(FacturaIesireDetaliu))]
 public class FacturaIesire : Document, IDocumentCuScadenta {
     [XafDisplayName("Scadență")]
-    [DetailViewLayout(GrupLayout.Livrare, GrupLayout.OrdineLivrare)]
     public virtual DateOnly? DataScadenta { get; set; }
 
     // P2 (design §4): gestiunea din care se descarcă marfa. O singură gestiune
@@ -23,7 +22,6 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
     // se generează din acest header + loturile/produsele liniilor.
     public virtual Guid? GestiuneDescarcareId { get; set; }
     [XafDisplayName("Gestiune de descărcare")]
-    [DetailViewLayout(GrupLayout.Livrare, GrupLayout.OrdineLivrare)]
     public virtual Gestiune GestiuneDescarcare { get; set; }
 
     // TVA-ul se calculează din cotă, DAR o `ValoareTva` nenulă culeasă se

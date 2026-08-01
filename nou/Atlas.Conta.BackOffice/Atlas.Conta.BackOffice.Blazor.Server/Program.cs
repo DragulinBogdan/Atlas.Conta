@@ -53,13 +53,17 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
                 var connectionString = host.Services.GetRequiredService<IConfiguration>()
                     .GetConnectionString("ConnectionString");
                 if (!string.IsNullOrEmpty(connectionString)) {
-                    var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<
-                            Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeEFCoreDbContext>()
-                        .UseNpgsql(connectionString)
-                        .UseChangeTrackingProxies()
-                        .Options;
+                    // `UseConnectionString` (extensia XAF), NU `UseNpgsql`:
+                    // connection string-ul din appsettings poartă prefixul
+                    // `EFCoreProvider=Postgres;`, pe care Npgsql îl refuză —
+                    // citirea pica în catch, iar convenția rămânea tăcut pe
+                    // default. Extensia scoate prefixul, alege providerul din el
+                    // și pune aceleași proxy-uri ca restul aplicației.
+                    var builder = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<
+                        Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeEFCoreDbContext>();
+                    builder.UseConnectionString(connectionString);
                     using var context = new Atlas.Conta.BackOffice.Module.BusinessObjects
-                        .BackOfficeEFCoreDbContext(options);
+                        .BackOfficeEFCoreDbContext(builder.Options);
                     conventie = context.SetariProfil.AsNoTracking()
                         .Select(s => (MidpointRounding?)s.RotunjireBani).FirstOrDefault();
                 }

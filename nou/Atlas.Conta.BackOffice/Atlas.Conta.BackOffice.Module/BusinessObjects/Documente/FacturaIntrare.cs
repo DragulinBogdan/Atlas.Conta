@@ -10,50 +10,39 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // FCT (01): predator = Partener (furnizor), primitor = Gestiune; nu mișcă stoc —
 // intrarea o face NIR-ul conex. Import extern (Tethys) = cale de primă clasă.
 //
-// Layout-ul DetailView-ului (GATE XAF D12) se declară cu `[DetailViewLayout]` pe
-// proprietăți; etichetele grupurilor stau în `LayoutDocumenteUpdater`.
+// Layout-ul DetailView-ului (GATE XAF D12) se declară în `ContaUiBaseline`
+// (`.Layout(...)`, grupurile proprii nested în containerul `Antet`).
 // `TethysId` (id de import) și grupul CHITANTA_* (câmpuri moarte — 31e) se
 // ascund din view-uri prin baseline; rămân în schemă (reactivarea la fluxul BF
 // e aditivă), deci nu primesc grup de layout.
 [TipDetaliu(typeof(FacturaIntrareDetaliu))]
 public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
     [XafDisplayName("Scadență")]
-    [DetailViewLayout(GrupLayout.Scadenta, GrupLayout.OrdineScadenta)]
     public virtual DateOnly? DataScadenta { get; set; }
     [XafDisplayName("Număr PV")]
-    [DetailViewLayout(GrupLayout.Scadenta, GrupLayout.OrdineScadenta)]
     public virtual string NumarPV { get; set; }
     [XafDisplayName("Dată PV")]
-    [DetailViewLayout(GrupLayout.Scadenta, GrupLayout.OrdineScadenta)]
     public virtual DateOnly? DataPV { get; set; }
     [XafDisplayName("Cod CPV")]
-    [DetailViewLayout(GrupLayout.Altele, GrupLayout.OrdineAltele)]
     public virtual string CodCpv { get; set; }
     public virtual string TethysId { get; set; }
 
     [XafDisplayName("Valută")]
-    [DetailViewLayout(GrupLayout.Altele, GrupLayout.OrdineAltele)]
     public virtual string Valuta { get; set; }
-    [DetailViewLayout(GrupLayout.Altele, GrupLayout.OrdineAltele)]
     public virtual decimal? Curs { get; set; }
 
     // Fostul grup DECONT_* — parametrii generării documentului conex Plata;
     // câmpuri persistate (testul bazei §7.3).
     [XafDisplayName("Generează plata")]
-    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual bool GenereazaPlata { get; set; }
     public virtual Guid? PlataContPropriuId { get; set; }
     [XafDisplayName("Cont propriu (din care se plătește)")]
-    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual ContPropriu PlataContPropriu { get; set; }
     [XafDisplayName("Număr plată")]
-    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual string PlataNumar { get; set; }
     [XafDisplayName("Dată plată")]
-    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual DateOnly? PlataData { get; set; }
     [XafDisplayName("Instrument de plată")]
-    [DetailViewLayout(GrupLayout.Plata, GrupLayout.OrdinePlata)]
     public virtual TipInstrumentPlata? PlataTipInstrument { get; set; }
     public virtual bool GenereazaChitanta { get; set; }
     public virtual string ChitantaNumar { get; set; }

@@ -66,9 +66,10 @@ namespace Atlas.Conta.BackOffice.Module {
             // Comutarea ListView-ului colecției nested `Detalii` pe tipul de detaliu
             // derivat declarat cu [TipDetaliu].
             updaters.Add(new TipDetaliuViewUpdater());
-            // Etichetele RO ale grupurilor de layout declarate cu [DetailViewLayout]
-            // pe proprietățile documentelor (GATE XAF D12).
-            updaters.Add(new LayoutDocumenteUpdater());
+            // Layout-ul AUTORITAR al DetailView-urilor, declarat în ContaUiBaseline
+            // cu `.Layout(...)`: rulează în generatorul de layout și înlocuiește
+            // arborele generat de XAF (GATE XAF D12; înainte: [DetailViewLayout]).
+            updaters.Add(new UiLayoutUpdater(registry));
         }
     }
 }
