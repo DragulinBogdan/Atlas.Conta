@@ -1,5 +1,10 @@
 # CLAUDE.md — Migrare aplicație contabilitate (Delphi + SQL → XAF + React)
 
+> **Constituția proiectului: `docs/invarianti.md`** — cei 6 invarianți agreați
+> (2026-08-02), fiecare cu clauzele lui de interdicție. Jurnalul de decizii de
+> mai jos răspunde la „de ce e așa"; invarianții răspund la „ce trebuie să
+> rămână adevărat". Orice propunere arhitecturală se testează întâi contra lor.
+
 ## Context general
 
 Rescriem o aplicație de contabilitate/gestiune scrisă în Delphi + SQL Server.
@@ -1613,6 +1618,49 @@ Raport de producție.
     shell-ului; perioadele fiscale ≠ 2026 se adaugă manual; `Data` pe
     documentele conexe rămâne a sursei.
 
+54. **Sesiunea de arhitectură 2026-08-02 („owned vs relational") →
+    constituția invarianților + dimensiunile coboară pe frunze.** Tranșările:
+    (a) **`docs/invarianti.md` = constituția proiectului**: cei 6 invarianți
+    agreați (operația intră ca document; baza=identitate / frunza=culegere /
+    motorul nu cunoaște frunzele; registrele = singurul adevăr al agregării;
+    structura cod / politica date / politica nu inventează comportament;
+    sursele externe = evidență, niciodată canonic; evaluarea = motorul),
+    fiecare cu clauze de interdicție. Orice propunere arhitecturală se
+    testează întâi contra lor; jurnalul de față rămâne „de ce e așa".
+    (b) **Stocarea dimensiunilor rămâne inline** pe tabelele owner-ilor —
+    normalizarea (tabelă separată / combinații deduplicate) analizată și
+    RESPINSĂ: join obligatoriu înaintea oricărui GROUP BY de balanță,
+    lookup-or-create în tranzacția operării (hot path), câștig de spațiu
+    iluzoriu (NULL-uri = bitmap pe Postgres, volum de sute de mii de
+    rânduri/an, nu miliarde).
+    (c) **Maparea owned MOARE; dimensiunile devin caracteristică de frunză**
+    — amendament la testul bazei (22b): „motorul are nevoie de VALOARE, nu de
+    coloană"; pe bază intră un câmp doar dacă (1) semantica lui e identică
+    pentru orice tip purtător și (2) motorul îl consumă direct la postare.
+    Concret: FK-uri explicite pe detaliile derivatelor care culeg dimensiuni
+    (reuniunea câmpurilor per TIP, nu per profil), baza expune contractul
+    `DimensiuniCulese()` → `Dimensiuni` ca value object NE-persistat, consumat
+    de DimensiuniResolver/motor (idiomul ILinieCu* existent, 32a);
+    `RegistruContabil` păstrează cele 2×8 coloane ca proprietăți PLATE
+    (read-only, `HasColumnName` conservă schema), `RegulaContare` cele 3
+    seturi plate → editarea politicilor devine XAF-nativă. Câștiguri:
+    UI per tip natural (lookup standard exact pe câmpurile tipului),
+    AuditTrail redevine posibil (53e — owned-ul era blocajul), DTO-urile
+    pasului 5 sunt deja plate (aliniere 6/42d), moare regula `CreateProxy`
+    și dependența de OwnedObjectBase în Conta.
+    (d) **Clasele per profil (`FacturaIntrarePrivat`) RESPINSE definitiv**
+    (invariant IV.3): diferența privat/bugetar la dimensiuni e politică +
+    vizibilitate, nu schemă — reuniunea pe frunză + layout per profil
+    (`SetareProfil`); profilul rămâne pachet de seed, niciodată ierarhie.
+    (e) **Consecință de scop asumată**: tipurile care azi culeg dimensiuni pe
+    detaliul de BAZĂ (NIR — prin clona conexă din FCT; PLT/INC — defalcarea
+    31a) primesc detaliu derivat propriu cu câmpurile lor; clona conexă și
+    plata autogenerată copiază prin contract, frunză→frunză. Inventarul
+    exact „ce dimensiuni culege fiecare tip" (probe: validări, politici seed,
+    handler-ele Import1C) e primul pas al implementării, nu se ghicește.
+    (f) Implementarea = feliile DIM-1…DIM-4 (în plan); DIM-2 e candidatul de
+    re-apropriere: o conduce utilizatorul, linie cu linie.
+
 ```
 /legacy   → surse Delphi (.pas, .dfm) + scripturi SQL vechi
 /db       → se poate export schemă (CREATE) + CONȚINUTUL tabelelor de configurare
@@ -1732,6 +1780,32 @@ per felie):
   captions RO, câmpurile motorului read-only; smoke UI real pe clona bazei de
   import + review advers cu 8 defecte fixate (cel critic: ștergerea loturilor
   istorice). Gate TRECUT. Lista React deschisă (`docs/api/lista-react.md`).
+### Feliile DIM — dimensiunile pe frunze (decizia 54; înaintea pasului 5)
+
+- **DIM-1. Contractul** (zero schimbare de schemă): `Dimensiuni` devine value
+  object ne-persistat pentru motor; baza expune `DimensiuniCulese()` virtual
+  (implementarea interimară citește owned-ul existent); motorul, gardianul de
+  dimensiuni, clona conexă și plata autogenerată trec integral pe contract.
+  ModelCheck verde ambele profiluri — validează forma contractului înainte de
+  orice mutare de date.
+- **DIM-2. Frunzele + migrația** (felia de re-apropriere — o conduce
+  utilizatorul): inventarul dimensiunilor culese per tip (probe: validări,
+  politici seed, handler-ele Import1C — decizia 54e) → FK-uri explicite pe
+  detaliile derivatelor, cu detalii derivate NOI unde azi se folosea baza
+  (NIR, PLT/INC); override `DimensiuniCulese()`; migrație cu mutare de date
+  bază→frunze (TPT); owned-ul dispare de pe `DocumentDetaliu`; refactor
+  punctual în Import1C/Migrare/ModelCheck pe setteri.
+- **DIM-3. Registrul + regula, plate**: `DimensiuniDebit/Credit` și cele 3
+  seturi ale `RegulaContare` → proprietăți plate (`HasColumnName` — schemă
+  identică, migrație zero/rename); editarea regulilor de contare XAF-nativă
+  în back-office; OwnedObjectBase/CreateProxy ies din Conta; re-evaluarea
+  AuditTrail (53e — de verificat că owned-ul era singurul blocaj).
+- **DIM-4. UI + re-validarea totală**: layout per tip (câmpurile de dimensiuni
+  apar natural pe frunze) + vizibilitate per profil (`SetareProfil`); smoke UI
+  pe clona bazei de import; **re-rularea integrală Import1C = testul suprem**
+  (contractul 4×12 verde re-confirmă refactorul pe anul real); ModelCheck
+  ambele profiluri.
+
 - Apoi: **pasul 5** (API+React, deciziile 42/43) pe model călit, SAU felia C1a
   a comenzilor (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă,
   la presiune de client).
