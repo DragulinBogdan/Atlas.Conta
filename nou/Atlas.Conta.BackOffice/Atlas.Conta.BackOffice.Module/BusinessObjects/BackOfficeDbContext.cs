@@ -67,6 +67,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<FacturaIesire> FacturiIesire { get; set; }
         public DbSet<FacturaIesireDetaliu> FacturiIesireDetalii { get; set; }
         public DbSet<NIR> NIRuri { get; set; }
+        public DbSet<NirDetaliu> NIRDetalii { get; set; }
         public DbSet<BonConsum> BonuriConsum { get; set; }
         public DbSet<NotaTransfer> NoteTransfer { get; set; }
         public DbSet<ListaDiferenteInventar> ListeDiferenteInventar { get; set; }
@@ -75,6 +76,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<DecontDetaliu> DecontDetalii { get; set; }
         public DbSet<Plata> Plati { get; set; }
         public DbSet<Incasare> Incasari { get; set; }
+        public DbSet<DocumentTrezorerieDetaliu> TrezorerieDetalii { get; set; }
         public DbSet<RaportProductie> RapoarteProductie { get; set; }
         public DbSet<DescarcareGestiune> DescarcariGestiune { get; set; }
         public DbSet<DescarcareGestiuneDetaliu> DescarcariGestiuneDetalii { get; set; }
@@ -177,12 +179,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasOne(d => d.LinieSursa).WithMany().HasForeignKey(d => d.LinieSursaId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Owned type Dimensiuni (decizia 15) — pe linia de document, pe rândul
-            // de registru contabil și pe cele trei seturi ale regulii de contare.
+            // Owned type Dimensiuni (decizia 15) — pe rândul de registru contabil
+            // și pe cele trei seturi ale regulii de contare. Linia de document NU
+            // mai poartă owned (DIM-2, decizia 54c): dimensiunile culese sunt
+            // FK-uri pe frunzele derivate, motorul primește valoarea prin
+            // contractul DimensiuniCulese(). Owned-urile rămase pleacă la DIM-3.
             // OwnsOneRequired (Atlas.DXF): navigație REQUIRED, altfel la table sharing
             // un rând complet null s-ar materializa ca Dimensiuni=null (nu obiect gol)
             // și ar sparge coalesce-ul motorului cu NRE.
-            modelBuilder.Entity<DocumentDetaliu>().OwnsOneRequired(d => d.Dimensiuni, ConfigureDimensiuni);
             // Pe registru navigațiile interne se încarcă EAGER (AutoInclude):
             // grid-urile și Dimensiuni.ToString le citesc pe fiecare rând — lazy
             // ar însemna N+1 per instanță de owned (identity map-ul nu ajută,

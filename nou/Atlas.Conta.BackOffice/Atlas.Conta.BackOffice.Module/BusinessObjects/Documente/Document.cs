@@ -198,17 +198,15 @@ public class DocumentDetaliu : BaseObject {
     public virtual Guid? AngajamentId { get; set; }
     public virtual Angajament Angajament { get; set; }
 
-    // Set parțial; rezolvarea completă se face la generarea registrelor (decizia 15).
-    public virtual Dimensiuni Dimensiuni { get; set; } = new();
-
-    // DIM-1 (decizia 54c): contractul motorului — dimensiunile CULESE ale liniei,
-    // ca value object detașat. Interimar citește owned-ul existent; la DIM-2
-    // fiecare frunză își construiește setul din FK-urile proprii.
-    public virtual Dimensiuni DimensiuniCulese() => Dimensiuni.Copie();
+    // DIM-2 (decizia 54c): dimensiunile sunt caracteristică de FRUNZĂ — baza nu
+    // culege nimic, contractul întoarce value object-ul gol. Frunzele care culeg
+    // (FCT, FCL, LDI, DEC, NTC, NIR, DSC, trezoreria) fac override pe pereche;
+    // motorul consumă doar contractul (valoarea, nu coloana).
+    public virtual Dimensiuni DimensiuniCulese() => new();
 
     // Perechea de scriere — folosită DOAR de clonările motorului (conexul,
     // plata autogenerată, descărcarea): copiere frunză→frunză prin contract.
-    public virtual void PreiaDimensiuni(Dimensiuni sursa) => Dimensiuni.CopiazaDin(sursa);
+    public virtual void PreiaDimensiuni(Dimensiuni sursa) { }
 
     // Decizia 25c: lotul se naște LA CULEGERE pe linia de intrare (NIR manual,
     // FacturaIntrare pentru lanțul conex, plus de inventar, producție) — baza nu

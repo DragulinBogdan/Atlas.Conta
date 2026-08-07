@@ -1,3 +1,5 @@
+using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
@@ -37,6 +39,8 @@ public abstract class DocumentTrezorerie : Document {
 }
 
 // Predator = ContPropriu (sursa banilor), primitor = beneficiarul.
+// [TipDetaliu] se declară pe fiecare derivată (atributul e Inherited=false).
+[TipDetaliu(typeof(DocumentTrezorerieDetaliu))]
 public class Plata : DocumentTrezorerie {
     public override Guid GetContrapartidaId() => PrimitorId;
 
@@ -50,6 +54,7 @@ public class Plata : DocumentTrezorerie {
 }
 
 // Predator = plătitorul, primitor = ContPropriu (destinația banilor).
+[TipDetaliu(typeof(DocumentTrezorerieDetaliu))]
 public class Incasare : DocumentTrezorerie {
     public override Guid GetContrapartidaId() => PredatorId;
 
@@ -59,6 +64,38 @@ public class Incasare : DocumentTrezorerie {
             erori.Add("Predatorul încasării este plătitorul — un partener sau un angajat.");
         if (os.GetObjectByKey<Repartitor>(PrimitorId) is not ContPropriu)
             erori.Add("Primitorul încasării este contul propriu (casă/bancă) în care se încasează.");
+    }
+}
+
+// DIM-2 (decizia 54e, inventar §2, Î1/Î2): frunza UNICĂ a defalcării PLT+INC —
+// semantica liniei e identică (defalcarea sumei, 31a), iar plata autogenerată
+// clonează dimensiunile liniilor FCT, deci frunza poartă reuniunea FCT.
+// Obligativitatea e politică per profil (PoliticaValidare/DimensiuniObligatorii,
+// decizia 54d): la bugetar cerute ca date, la privat opționale — nimic hardcodat.
+public class DocumentTrezorerieDetaliu : DocumentDetaliu {
+    public virtual Guid? CodEconomicId { get; set; }
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
+    public virtual Guid? SursaFinantareId { get; set; }
+    [XafDisplayName("Sursă de finanțare")]
+    public virtual SursaFinantare SursaFinantare { get; set; }
+
+    public virtual Guid? CodFunctionalId { get; set; }
+    [XafDisplayName("Cod funcțional")]
+    public virtual CodFunctional CodFunctional { get; set; }
+
+    public virtual Guid? ProiectId { get; set; }
+    [XafDisplayName("Proiect")]
+    public virtual Proiect Proiect { get; set; }
+
+    public override Dimensiuni DimensiuniCulese() => new() {
+        CodEconomicId = CodEconomicId, SursaFinantareId = SursaFinantareId,
+        CodFunctionalId = CodFunctionalId, ProiectId = ProiectId
+    };
+    public override void PreiaDimensiuni(Dimensiuni s) {
+        CodEconomicId = s.CodEconomicId; SursaFinantareId = s.SursaFinantareId;
+        CodFunctionalId = s.CodFunctionalId; ProiectId = s.ProiectId;
     }
 }
 

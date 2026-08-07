@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
 
@@ -91,4 +92,13 @@ public class NotaContabilaDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
     public virtual Repartitor RepartitorDebit { get; set; }
     public virtual Guid? RepartitorCreditId { get; set; }
     public virtual Repartitor RepartitorCredit { get; set; }
+
+    // DIM-2 (decizia 54c, inventar §2): defalcarea E pe conturile care o cer
+    // (trezorerie/venituri) — nota de import/manuală o poartă pe linie.
+    public virtual Guid? CodEconomicId { get; set; }
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
+    public override Dimensiuni DimensiuniCulese() => new() { CodEconomicId = CodEconomicId };
+    public override void PreiaDimensiuni(Dimensiuni s) => CodEconomicId = s.CodEconomicId;
 }

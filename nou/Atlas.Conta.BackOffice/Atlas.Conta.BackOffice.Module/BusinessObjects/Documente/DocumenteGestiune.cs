@@ -1,12 +1,17 @@
+using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.DC;
+
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// Detaliul acestor trei tipuri = baza pură + validare (testul bazei §6).
+// Detaliul BCS/BTR = baza pură + validare (testul bazei §6); NIR are frunză
+// proprie din DIM-2 (dimensiunile primite prin clona conexă din FCT).
 
 // NIR (02): singura intrare în stoc a lanțului de cumpărare (+1 primitor).
 // De regulă autogenerat din FacturaIntrare (conex) — liniile clonate referă
 // loturile născute la culegerea facturii; NIR-ul cules manual își creează
 // loturile pe propriile linii (CreeazaLot). Recepția CONTEAZĂ aici (3xx = 401,
 // închiderea întrebării 00 §13.1) — factura postează doar liniile non-stoc.
+[TipDetaliu(typeof(NirDetaliu))]
 public class NIR : Document {
     // Liniile care referă un lot străin (născut pe altă linie — cazul conex) își
     // iau valoarea din prețul finalizat al lotului; liniile care și-au creat
@@ -33,6 +38,36 @@ public class NIR : Document {
             if (d.Cantitate <= 0)
                 erori.Add("Cantitatea recepționată trebuie să fie pozitivă.");
         }
+    }
+}
+
+// DIM-2 (decizia 54e, inventar §2): NIR primește prin clona conexă tot ce
+// culege FCT — frunza poartă reuniunea FCT, culegibilă și pe NIR manual (Î3):
+// fără ea, NIR-ul manual n-ar putea satisface defalcarea conturilor 3xx.
+public class NirDetaliu : DocumentDetaliu {
+    public virtual Guid? CodEconomicId { get; set; }
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
+    public virtual Guid? SursaFinantareId { get; set; }
+    [XafDisplayName("Sursă de finanțare")]
+    public virtual SursaFinantare SursaFinantare { get; set; }
+
+    public virtual Guid? CodFunctionalId { get; set; }
+    [XafDisplayName("Cod funcțional")]
+    public virtual CodFunctional CodFunctional { get; set; }
+
+    public virtual Guid? ProiectId { get; set; }
+    [XafDisplayName("Proiect")]
+    public virtual Proiect Proiect { get; set; }
+
+    public override Dimensiuni DimensiuniCulese() => new() {
+        CodEconomicId = CodEconomicId, SursaFinantareId = SursaFinantareId,
+        CodFunctionalId = CodFunctionalId, ProiectId = ProiectId
+    };
+    public override void PreiaDimensiuni(Dimensiuni s) {
+        CodEconomicId = s.CodEconomicId; SursaFinantareId = s.SursaFinantareId;
+        CodFunctionalId = s.CodFunctionalId; ProiectId = s.ProiectId;
     }
 }
 

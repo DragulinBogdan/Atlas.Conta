@@ -1795,13 +1795,30 @@ per felie):
   (UI/Import1C/ModelCheck) — exact ce mută DIM-2. ModelCheck verde ambele
   profiluri. Lucrat în modul „main-ul spune, utilizatorul implementează,
   main-ul verifică" — mod de re-apropriere, continuă la DIM-2.
-- **DIM-2. Frunzele + migrația** (felia de re-apropriere — o conduce
-  utilizatorul): inventarul dimensiunilor culese per tip (probe: validări,
-  politici seed, handler-ele Import1C — decizia 54e) → FK-uri explicite pe
-  detaliile derivatelor, cu detalii derivate NOI unde azi se folosea baza
-  (NIR, PLT/INC); override `DimensiuniCulese()`; migrație cu mutare de date
-  bază→frunze (TPT); owned-ul dispare de pe `DocumentDetaliu`; refactor
-  punctual în Import1C/Migrare/ModelCheck pe setteri.
+- **DIM-2. Frunzele + migrația** (EXECUTAT, 2026-08-07; inventarul pe probe:
+  `docs/dim/dim-2-inventar.md`, cele 3 întrebări tranșate de utilizator).
+  Faptele care au dictat forma: Import1C nu atinge owned-ul DELOC (anul 2025
+  a trecut fără nicio dimensiune pe linie — postarea explicită NTC + Material
+  din lot + default header); UI-ul actual nu culege nicio dimensiune (owned
+  read-only) — DIM-2 face culegerea POSIBILĂ prima dată; R/M nu se culeg pe
+  linie nicăieri, U/CC n-au nicio probă (rămân doar în value object +
+  registru). Rezultatul: FCT + cine primește clona ei (NIR, trezoreria) = 4
+  FK-uri (E/F/CF/P); FCL/DSC/LDI/DEC/NTC = doar E; BTR/BCS/ASM/RLF/RDC =
+  nimic. Frunze NOI: `NirDetaliu` (culegibilă și manual — Î3) și
+  `DocumentTrezorerieDetaliu` UNIC pe PLT+INC (Î1; obligativitatea = politică
+  per profil, la privat opționale — Î2/54d). Clonările instanțiază frunza din
+  `[TipDetaliu]` (GenereazaConex generic prin atribut — declarația UI 40a
+  devine sursa unică; plata autogenerată direct tipizat). Migrația
+  `DimensiuniPeFrunze`: gard SQL zgomotos anti-pierdere (refuz pe orice
+  valoare fără destinație — R/M/U/CC oriunde, F/CF/P în afara FCT, E în afara
+  celor 6 frunze) → coloane noi → UPDATE de mutare → abia apoi DROP
+  `Dimensiuni_*` de pe bază; Down cu copiere inversă. Owned-ul a dispărut de
+  pe `DocumentDetaliu` (proprietate + mapare); baza întoarce value object gol
+  / no-op. Import1C/Migrare: ZERO schimbări (doar recompilare). ModelCheck:
+  setterii pe FK-urile frunzelor, liniile PLT/INC pe frunza nouă, asserțiile
+  clonelor prin contract; VERDE ambele profiluri, migrația aplicată curat pe
+  baza aplicației. Registrul/RegulaContare rămân owned până la DIM-3; smoke
+  UI la DIM-4.
 - **DIM-3. Registrul + regula, plate**: `DimensiuniDebit/Credit` și cele 3
   seturi ale `RegulaContare` → proprietăți plate (`HasColumnName` — schemă
   identică, migrație zero/rename); editarea regulilor de contare XAF-nativă

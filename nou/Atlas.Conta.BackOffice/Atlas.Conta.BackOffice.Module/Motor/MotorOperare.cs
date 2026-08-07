@@ -1,3 +1,4 @@
+using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 
@@ -429,8 +430,13 @@ public static class MotorOperare {
         conex.PrimitorId = politica.InverseazaLaturi ? sursa.PredatorId : sursa.PrimitorId;
         conex.DocumentSursa = sursa;
         conex.Autogenerat = true;
+        // DIM-2: liniile clonei se nasc pe FRUNZA declarată a țintei ([TipDetaliu]
+        // — aceeași declarație pe care o consumă UI-ul, 40a); o linie de bază ar
+        // face PreiaDimensiuni no-op și clona ar pierde dimensiunile culese.
+        var tipDetaliu = tipClr.GetCustomAttribute<UI.TipDetaliuAttribute>(inherit: false)?.TipDetaliu
+            ?? typeof(DocumentDetaliu);
         foreach (var s in linii) {
-            var d = os.CreateObject<DocumentDetaliu>();
+            var d = (DocumentDetaliu)os.CreateObject(tipDetaliu);
             d.Document = conex;
             d.TipMaterialId = s.TipMaterialId;
             d.LotId = s.LotId;

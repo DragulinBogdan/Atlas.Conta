@@ -169,4 +169,13 @@ public class FacturaIesireDetaliu : DocumentDetaliu, ILinieCuPretUnitar {
     [NotMapped]
     [XafDisplayName("Valoare livrare")]
     public decimal ValoareLivrare => PretUnitar * Cantitate;
+
+    // DIM-2 (decizia 54c, inventar §2): dimensiunea culeasă pe linia FCL
+    // (veniturile 751/750 cer E la bugetar); DSC o primește prin clonă.
+    public virtual Guid? CodEconomicId { get; set; }
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
+    public override Dimensiuni DimensiuniCulese() => new() { CodEconomicId = CodEconomicId };
+    public override void PreiaDimensiuni(Dimensiuni s) => CodEconomicId = s.CodEconomicId;
 }

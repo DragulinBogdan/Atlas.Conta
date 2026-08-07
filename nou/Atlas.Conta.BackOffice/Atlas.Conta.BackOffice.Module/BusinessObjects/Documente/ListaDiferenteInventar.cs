@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.DC;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -69,4 +70,12 @@ public class ListaDiferenteInventarDetaliu : DocumentDetaliu, ILinieCuAtributeLo
     // Atribute de lot culese pe plus (inventar 05); motorul le copiază pe Lot.
     public virtual DateOnly? DataExpirare { get; set; }
     public virtual string LotFabricatie { get; set; }
+
+    // DIM-2 (decizia 54c, inventar §2): plusul de inventar (791/7588) cere E.
+    public virtual Guid? CodEconomicId { get; set; }
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
+    public override Dimensiuni DimensiuniCulese() => new() { CodEconomicId = CodEconomicId };
+    public override void PreiaDimensiuni(Dimensiuni s) => CodEconomicId = s.CodEconomicId;
 }

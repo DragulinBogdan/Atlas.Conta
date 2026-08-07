@@ -2214,8 +2214,8 @@ using (var os = provider.CreateObjectSpace()) {
     // Validările proprii FCT: număr furnizor, clasificație bugetară, lot pe stoc.
     CheckRefuza("FCT fără număr/clasificație/lot → refuz", () => MotorOperare.Opereaza(os, fct));
     fct.Numar = "E2E-FF1";
-    linieStoc.Dimensiuni.CodEconomicId = codEc.ID;
-    linieServiciu.Dimensiuni.CodEconomicId = codEc.ID;
+    linieStoc.CodEconomicId = codEc.ID;
+    linieServiciu.CodEconomicId = codEc.ID;
     var lot = linieStoc.CreeazaLot(os, produs, mag1);
     os.CommitChanges();
 
@@ -2244,7 +2244,7 @@ using (var os = provider.CreateObjectSpace()) {
     Check("NIR-ul preia DOAR linia de stoc, cu lot, cantitate, valoare, dimensiuni",
         conex.Detalii.Count == 1 && conex.Detalii[0].TipMaterialId == tipMateriale.ID
         && conex.Detalii[0].LotId == lot.ID && conex.Detalii[0].Cantitate == 5m
-        && conex.Detalii[0].Valoare == 59.5m && conex.Detalii[0].Dimensiuni.CodEconomicId == codEc.ID);
+        && conex.Detalii[0].Valoare == 59.5m && conex.Detalii[0].DimensiuniCulese().CodEconomicId == codEc.ID);
 
     // --- Operare NIR: singurul +1 al lanțului + contarea recepției ---
     var nir = (NIR)conex;
@@ -2325,9 +2325,9 @@ using (var os = provider.CreateObjectSpace()) {
     proiect.Cod = "E2E-PR";
     proiect.Denumire = "Proiect probă e2e";
     os.CommitChanges();
-    linie2.Dimensiuni.SursaFinantareId = sursaFin.ID;
-    linie2.Dimensiuni.CodFunctionalId = codFn.ID;
-    linie2.Dimensiuni.ProiectId = proiect.ID;
+    linie2.SursaFinantareId = sursaFin.ID;
+    linie2.CodFunctionalId = codFn.ID;
+    linie2.ProiectId = proiect.ID;
     os.CommitChanges();
     Check("FCT doar cu servicii NU generează NIR", MotorOperare.Opereaza(os, fct2) == null);
     var nota404 = os.GetObjectsQuery<RegistruContabil>().Single(r => r.DocumentId == fct2.ID);
@@ -2583,7 +2583,7 @@ using (var os = provider.CreateObjectSpace()) {
     // Venitul plusului (791) poartă defalcarea E — cerută pe nota rezolvată (3d);
     // minusul (602 = 302, ambele S) nu cere nimic.
     CheckRefuza("Plus fără cod economic (791 cere E) → refuz", () => MotorOperare.Opereaza(os, ldi));
-    liniePlus.Dimensiuni.CodEconomicId = codEc.ID;
+    liniePlus.CodEconomicId = codEc.ID;
     os.CommitChanges();
 
     // --- Operare: direcția materializată în semn, două rânduri ± pe predator ---
@@ -2741,8 +2741,8 @@ using (var os = provider.CreateObjectSpace()) {
     // e cerută la nivel de CONT (3d), nu de tip (FCL nu are rând de politică).
     CheckRefuza("Venituri fără cod economic (751/750 cer E) → refuz",
         () => MotorOperare.Opereaza(os, fcl));
-    foreach (var d in fcl.Detalii)
-        d.Dimensiuni.CodEconomicId = codEc.ID;
+    foreach (var d in fcl.Detalii.OfType<FacturaIesireDetaliu>())
+        d.CodEconomicId = codEc.ID;
     os.CommitChanges();
 
     // --- Operare: serie fiscală + scadență default + o notă per linie ---
@@ -2775,7 +2775,7 @@ using (var os = provider.CreateObjectSpace()) {
     fcl2.Predator = sediu;
     fcl2.Primitor = clientDebitor;
     fcl2.DataScadenta = new DateOnly(2026, 12, 31); // culeasă manual
-    Linie(fcl2, tipServiciiVenit, 1m, 100m, cap19Fcl).Dimensiuni.CodEconomicId = codEc.ID;
+    Linie(fcl2, tipServiciiVenit, 1m, 100m, cap19Fcl).CodEconomicId = codEc.ID;
     os.CommitChanges();
     MotorOperare.Opereaza(os, fcl2);
     Check("Debitul din ContImplicit al clientului (461, nu fallback 411)",
@@ -2903,14 +2903,14 @@ using (var os = provider.CreateObjectSpace()) {
     linieStoc.Cantitate = 5m;
     linieStoc.PretUnitar = 10m;
     linieStoc.TipTva = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP19");
-    linieStoc.Dimensiuni.CodEconomicId = codEc.ID;
+    linieStoc.CodEconomicId = codEc.ID;
     linieStoc.CreeazaLot(os, produs, mag1);
     var linieServiciu = os.CreateObject<FacturaIntrareDetaliu>();
     linieServiciu.Document = fct;
     linieServiciu.TipMaterial = tipServicii;
     linieServiciu.Cantitate = 1m;
     linieServiciu.PretUnitar = 100m;
-    linieServiciu.Dimensiuni.CodEconomicId = codEc.ID;
+    linieServiciu.CodEconomicId = codEc.ID;
     os.CommitChanges();
 
     CheckRefuza("GenereazaPlata fără cont propriu cules → refuz", () => MotorOperare.Opereaza(os, fct));
@@ -2930,7 +2930,7 @@ using (var os = provider.CreateObjectSpace()) {
         && plataAuto.Data == new DateOnly(2026, 3, 4));
     Check("Plata draft: liniile clonează defalcarea facturii (2 linii, 159,5, dimensiuni, fără lot)",
         plataAuto.Detalii.Count == 2 && plataAuto.Detalii.Sum(d => d.Valoare) == 159.5m
-        && plataAuto.Detalii.All(d => d.Dimensiuni.CodEconomicId == codEc.ID && d.LotId == null));
+        && plataAuto.Detalii.All(d => d.DimensiuniCulese().CodEconomicId == codEc.ID && d.LotId == null));
 
     // --- Operarea plății: contare din laturi + imperecherea automată ---
     Check("Plata autogenerată nu generează alt conex", MotorOperare.Opereaza(os, plataAuto) == null);
@@ -2967,7 +2967,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieVenit.TipMaterial = tipVenit;
     linieVenit.Cantitate = 1m;
     linieVenit.PretUnitar = 119m;
-    linieVenit.Dimensiuni.CodEconomicId = codEc.ID; // 751 cere E (3d)
+    linieVenit.CodEconomicId = codEc.ID; // 751 cere E (3d)
     os.CommitChanges();
     MotorOperare.Opereaza(os, fcl);
 
@@ -2976,7 +2976,7 @@ using (var os = provider.CreateObjectSpace()) {
     inc.Predator = casa; // intenționat greșit — plătitorul nu poate fi cont propriu
     inc.Primitor = casa;
     inc.TipInstrument = TipInstrumentPlata.Chitanta;
-    var linieInc = os.CreateObject<DocumentDetaliu>();
+    var linieInc = os.CreateObject<DocumentTrezorerieDetaliu>();
     linieInc.Document = inc;
     linieInc.TipMaterial = tipTrz;
     CheckRefuza("Laturi greșite + linie fără valoare → refuz", () => MotorOperare.Opereaza(os, inc));
@@ -2986,7 +2986,7 @@ using (var os = provider.CreateObjectSpace()) {
     // Casa (531) poartă defalcarea E — INC nu are politică de tip, dar contul
     // cere codul economic pe nota rezolvată (3d).
     CheckRefuza("Încasare fără cod economic (531 cere E) → refuz", () => MotorOperare.Opereaza(os, inc));
-    linieInc.Dimensiuni.CodEconomicId = codEc.ID;
+    linieInc.CodEconomicId = codEc.ID;
     os.CommitChanges();
     Check("Încasarea nu generează conex", MotorOperare.Opereaza(os, inc) == null);
     Check("Încasare operată cu număr din politică", inc.Numar?.StartsWith("INC-") == true);
@@ -3018,7 +3018,7 @@ using (var os = provider.CreateObjectSpace()) {
     avans.Predator = casa;
     avans.Primitor = angajat;
     avans.TipInstrument = TipInstrumentPlata.DispozitieCasa;
-    var linieAvans = os.CreateObject<DocumentDetaliu>();
+    var linieAvans = os.CreateObject<DocumentTrezorerieDetaliu>();
     linieAvans.Document = avans;
     linieAvans.TipMaterial = tipTrz;
     linieAvans.Valoare = 50m;
@@ -3026,7 +3026,7 @@ using (var os = provider.CreateObjectSpace()) {
     // 31f închis: obligativitatea clasificației pe liniile de plată = politică.
     CheckRefuza("Plată fără clasificație bugetară (politica PLT) → refuz",
         () => MotorOperare.Opereaza(os, avans));
-    linieAvans.Dimensiuni.CodEconomicId = codEc.ID;
+    linieAvans.CodEconomicId = codEc.ID;
     os.CommitChanges();
     MotorOperare.Opereaza(os, avans);
     var noteAvans = Note(avans);
@@ -3120,11 +3120,11 @@ using (var os = provider.CreateObjectSpace()) {
     avans.Predator = casa;
     avans.Primitor = angajat;
     avans.TipInstrument = TipInstrumentPlata.DispozitieCasa;
-    var linieAvans = os.CreateObject<DocumentDetaliu>();
+    var linieAvans = os.CreateObject<DocumentTrezorerieDetaliu>();
     linieAvans.Document = avans;
     linieAvans.TipMaterial = tipTrz;
     linieAvans.Valoare = 100m;
-    linieAvans.Dimensiuni.CodEconomicId = codEc.ID; // politica PLT + defalcarea E (531/542)
+    linieAvans.CodEconomicId = codEc.ID; // politica PLT + defalcarea E (531/542)
     os.CommitChanges();
     MotorOperare.Opereaza(os, avans);
     Check("Avansul operat (100, casa → angajat)", avans.Stare == StareDocument.Operat);
@@ -3143,7 +3143,7 @@ using (var os = provider.CreateObjectSpace()) {
     dec.Predator = angajat;
     dec.Primitor = sediu;
     linieDeplasare.PretUnitar = 30m; // cantitatea rămâne 0 — pro-forma → 1
-    linieDeplasare.Dimensiuni.CodEconomicId = codEc.ID;
+    linieDeplasare.CodEconomicId = codEc.ID;
     // Postarea explicită pe linie (trăsătura DEC): cont + repartitor de cost.
     var linieProtocol = os.CreateObject<DecontDetaliu>();
     linieProtocol.Document = dec;
@@ -3154,7 +3154,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieProtocol.PretUnitar = 10m;
     linieProtocol.Cantitate = 2m;
     linieProtocol.TipTva = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP19");
-    linieProtocol.Dimensiuni.CodEconomicId = codEc.ID;
+    linieProtocol.CodEconomicId = codEc.ID;
     os.CommitChanges();
 
     Check("Decontul nu generează conex", MotorOperare.Opereaza(os, dec) == null);
@@ -3189,7 +3189,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieTehnica.Document = dec2;
     linieTehnica.TipMaterial = tipTrz; // TRZ nu are ContImplicit
     linieTehnica.PretUnitar = 20m;
-    linieTehnica.Dimensiuni.CodEconomicId = codEc.ID;
+    linieTehnica.CodEconomicId = codEc.ID;
     os.CommitChanges();
     CheckRefuza("Tip fără cont implicit și linie fără cont explicit → refuz",
         () => MotorOperare.Opereaza(os, dec2));
@@ -3209,11 +3209,11 @@ using (var os = provider.CreateObjectSpace()) {
     regularizare.Predator = angajat;
     regularizare.Primitor = casa;
     regularizare.TipInstrument = TipInstrumentPlata.DispozitieCasa;
-    var linieReg = os.CreateObject<DocumentDetaliu>();
+    var linieReg = os.CreateObject<DocumentTrezorerieDetaliu>();
     linieReg.Document = regularizare;
     linieReg.TipMaterial = tipTrz;
     linieReg.Valoare = 46.2m;
-    linieReg.Dimensiuni.CodEconomicId = codEc.ID; // casa (531) cere E
+    linieReg.CodEconomicId = codEc.ID; // casa (531) cere E
     os.CommitChanges();
     MotorOperare.Opereaza(os, regularizare);
     ImperechereService.Imperecheaza(os, regularizare, avans, 46.2m);
@@ -3406,7 +3406,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieDefalcare.ContDebit = cont628;
     linieDefalcare.ContCredit = cont581a;
     linieDefalcare.Valoare = 55m;
-    linieDefalcare.Dimensiuni.CodEconomicId = codEc.ID;
+    linieDefalcare.CodEconomicId = codEc.ID;
     os.CommitChanges();
     MotorOperare.Opereaza(os, ntcDefalcare);
     Check("628 cu cod economic cules pe linie → operare acceptată, dimensiunea pe latura contului",

@@ -75,7 +75,9 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
         plata.PredatorId = PlataContPropriuId ?? Guid.Empty;
         plata.PrimitorId = PredatorId;
         foreach (var s in Detalii) {
-            var d = os.CreateObject<DocumentDetaliu>();
+            // DIM-2: defalcarea se naște pe frunza trezoreriei — altfel
+            // PreiaDimensiuni ar fi no-op și plata ar pierde dimensiunile.
+            var d = os.CreateObject<DocumentTrezorerieDetaliu>();
             d.Document = plata;
             d.TipMaterialId = s.TipMaterialId;
             // Plata stinge BRUTUL (design §3): defalcarea clonată per linie e
@@ -179,4 +181,32 @@ public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILini
     public virtual DateOnly? DataExpirare { get; set; }
     [XafDisplayName("Lot fabricație")]
     public virtual string LotFabricatie { get; set; }
+
+    // DIM-2 (decizia 54c, inventar §2): dimensiunile culese pe linia FCT —
+    // FK-uri explicite pe frunză; NIR (clona conexă) și plata autogenerată
+    // le primesc prin contractul DimensiuniCulese/PreiaDimensiuni.
+    public virtual Guid? CodEconomicId { get; set; }
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
+    public virtual Guid? SursaFinantareId { get; set; }
+    [XafDisplayName("Sursă de finanțare")]
+    public virtual SursaFinantare SursaFinantare { get; set; }
+
+    public virtual Guid? CodFunctionalId { get; set; }
+    [XafDisplayName("Cod funcțional")]
+    public virtual CodFunctional CodFunctional { get; set; }
+
+    public virtual Guid? ProiectId { get; set; }
+    [XafDisplayName("Proiect")]
+    public virtual Proiect Proiect { get; set; }
+
+    public override Dimensiuni DimensiuniCulese() => new() {
+        CodEconomicId = CodEconomicId, SursaFinantareId = SursaFinantareId,
+        CodFunctionalId = CodFunctionalId, ProiectId = ProiectId
+    };
+    public override void PreiaDimensiuni(Dimensiuni s) {
+        CodEconomicId = s.CodEconomicId; SursaFinantareId = s.SursaFinantareId;
+        CodFunctionalId = s.CodFunctionalId; ProiectId = s.ProiectId;
+    }
 }

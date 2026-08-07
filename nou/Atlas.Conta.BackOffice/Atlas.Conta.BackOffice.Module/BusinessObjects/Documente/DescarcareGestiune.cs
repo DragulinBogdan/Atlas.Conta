@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.DC;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -95,4 +96,12 @@ public class DescarcareGestiuneDetaliu : DocumentDetaliu {
     // pură (lot, cantitate, valoare).
     public virtual Guid? LinieSursaId { get; set; }
     public virtual DocumentDetaliu LinieSursa { get; set; }
+
+    // DIM-2 (decizia 54c, inventar §2): primită prin clonă din linia FCL sursă.
+    public virtual Guid? CodEconomicId { get; set; }
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
+    public override Dimensiuni DimensiuniCulese() => new() { CodEconomicId = CodEconomicId };
+    public override void PreiaDimensiuni(Dimensiuni s) => CodEconomicId = s.CodEconomicId;
 }
