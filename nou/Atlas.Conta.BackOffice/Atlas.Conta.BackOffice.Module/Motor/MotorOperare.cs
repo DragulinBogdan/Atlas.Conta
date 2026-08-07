@@ -132,16 +132,19 @@ public static class MotorOperare {
             // Decont mută creditul pe titular) + Materialul din lot.
             var materialImplicit = d.LotId != null && produsPerLot.TryGetValue(d.LotId.Value, out var produsId)
                 ? produsId : (Guid?)null;
+
             // Fără regulă (NTC) coalesce-ul sare peste nivelurile ei de
             // override/comun — Rezolva ignoră sursele null.
+            var dimensiuniLinie = d.DimensiuniCulese();
             var dimensiuniDebit = DimensiuniResolver.Rezolva(
                 new Dimensiuni { RepartitorId = explicita?.RepartitorDebitId },
-                d.Dimensiuni, regula?.DimensiuniOverrideDebit, regula?.DimensiuniComun,
+                dimensiuniLinie, regula?.DimensiuniOverrideDebit, regula?.DimensiuniComun,
                 new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit(), MaterialId = materialImplicit });
             var dimensiuniCredit = DimensiuniResolver.Rezolva(
                 new Dimensiuni { RepartitorId = explicita?.RepartitorCreditId },
-                d.Dimensiuni, regula?.DimensiuniOverrideCredit, regula?.DimensiuniComun,
+                dimensiuniLinie, regula?.DimensiuniOverrideCredit, regula?.DimensiuniComun,
                 new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit(), MaterialId = materialImplicit });
+
             // Normalizarea cu semnul filtrului: valoarea liniei poartă semnul
             // cantității (LDI minus = negativă), dar conturile regulii deja
             // codifică direcția — nota se postează pozitivă. Fără regulă nu
@@ -200,10 +203,13 @@ public static class MotorOperare {
                 }
                 var materialTva = d.LotId != null && produsPerLot.TryGetValue(d.LotId.Value, out var produsTva)
                     ? produsTva : (Guid?)null;
+
+                var dimensiuniLinie = d.DimensiuniCulese();
+
                 note.Add((d, contDebit, contCredit, d.ValoareTva,
-                    DimensiuniResolver.Rezolva(d.Dimensiuni,
+                    DimensiuniResolver.Rezolva(dimensiuniLinie,
                         new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit(), MaterialId = materialTva }),
-                    DimensiuniResolver.Rezolva(d.Dimensiuni,
+                    DimensiuniResolver.Rezolva(dimensiuniLinie,
                         new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit(), MaterialId = materialTva })));
             }
         }
@@ -329,7 +335,7 @@ public static class MotorOperare {
             return;
         foreach (var d in doc.Detalii) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
-            if (politica.CereClasificatieBugetara && d.AngajamentId == null && d.Dimensiuni.CodEconomicId == null)
+            if (politica.CereClasificatieBugetara && d.AngajamentId == null && d.DimensiuniCulese().CodEconomicId == null)
                 erori.Add($"Linia cu {info.Denumire} cere clasificație bugetară: angajament sau cod economic.");
             if (politica.NaturaInterzisa != null && info.Natura == politica.NaturaInterzisa)
                 erori.Add($"Liniile cu natura {politica.NaturaInterzisa} nu sunt permise pe {tipDoc.Cod} (linia cu {info.Denumire}).");
@@ -435,7 +441,7 @@ public static class MotorOperare {
             // netul, factura duce rândurile 4426).
             d.TipTvaId = s.TipTvaId;
             d.AngajamentId = s.AngajamentId;
-            d.Dimensiuni = DimensiuniResolver.Rezolva(s.Dimensiuni);
+            d.PreiaDimensiuni(s.DimensiuniCulese());
         }
         return conex;
     }

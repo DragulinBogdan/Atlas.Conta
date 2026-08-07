@@ -72,6 +72,27 @@ public class Dimensiuni : OwnedObjectBase {
         return string.Join("; ", parti);
     }
 
+    // DIM-1 (decizia 54c): copie detașată ca VALUE OBJECT pentru motor — POCO
+    // simplu, fără legătură cu instanța owned persistată. Doar FK-urile scalare;
+    // navigațiile nu se ating (ar declanșa lazy-load).
+    public Dimensiuni Copie() => new() {
+        RepartitorId = RepartitorId,
+        MaterialId = MaterialId,
+        CodFunctionalId = CodFunctionalId,
+        CodEconomicId = CodEconomicId,
+        SursaFinantareId = SursaFinantareId,
+        UnitateId = UnitateId,
+        ProiectId = ProiectId,
+        CentruCostId = CentruCostId
+    };
+
+    public void CopiazaDin(Dimensiuni s) {
+        RepartitorId = s.RepartitorId; MaterialId = s.MaterialId;
+        CodFunctionalId = s.CodFunctionalId; CodEconomicId = s.CodEconomicId;
+        SursaFinantareId = s.SursaFinantareId; UnitateId = s.UnitateId;
+        ProiectId = s.ProiectId; CentruCostId = s.CentruCostId;
+    }
+
     // Toate țintele au un `Cod` scurt natural; cădem pe ToString() dacă lipsește
     // (nav nerezolvat sau cod gol).
     static string Eticheta(Repartitor r) => !string.IsNullOrWhiteSpace(r?.Cod) ? r.Cod : r?.ToString() ?? "";

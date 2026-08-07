@@ -83,7 +83,7 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
             // TVA (TipTva rămâne null).
             d.Valoare = s.Valoare + s.ValoareTva;
             d.AngajamentId = s.AngajamentId;
-            d.Dimensiuni = Motor.DimensiuniResolver.Rezolva(s.Dimensiuni);
+            d.PreiaDimensiuni(s.DimensiuniCulese());
         }
         return plata;
     }

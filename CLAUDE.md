@@ -1782,12 +1782,19 @@ per felie):
   istorice). Gate TRECUT. Lista React deschisă (`docs/api/lista-react.md`).
 ### Feliile DIM — dimensiunile pe frunze (decizia 54; înaintea pasului 5)
 
-- **DIM-1. Contractul** (zero schimbare de schemă): `Dimensiuni` devine value
-  object ne-persistat pentru motor; baza expune `DimensiuniCulese()` virtual
-  (implementarea interimară citește owned-ul existent); motorul, gardianul de
-  dimensiuni, clona conexă și plata autogenerată trec integral pe contract.
-  ModelCheck verde ambele profiluri — validează forma contractului înainte de
-  orice mutare de date.
+- **DIM-1. Contractul** (EXECUTAT, 2026-08-07; zero schimbare de schemă):
+  perechea de contract pe `DocumentDetaliu` — `DimensiuniCulese()` (citire:
+  copie detașată ca value object, interimar din owned) + `PreiaDimensiuni()`
+  (scriere: folosită DOAR de clonări) — cu helper-ele `Dimensiuni.Copie()/
+  CopiazaDin()` (doar FK-uri scalare, navigațiile nu se ating). Pe contract au
+  trecut: coalesce-ul notelor + rândurile TVA + gardianul de clasificație
+  bugetară din `ValideazaDeclarativ` (MotorOperare), clona conexă
+  (`GenereazaConex`), plata autogenerată (FacturaIntrare) și descărcarea
+  (DescarcareService) — trucul `d.Dimensiuni = Rezolva(s.Dimensiuni)` a murit.
+  Owned-ul mai e atins doar de mapare (DbContext) și de culegere
+  (UI/Import1C/ModelCheck) — exact ce mută DIM-2. ModelCheck verde ambele
+  profiluri. Lucrat în modul „main-ul spune, utilizatorul implementează,
+  main-ul verifică" — mod de re-apropriere, continuă la DIM-2.
 - **DIM-2. Frunzele + migrația** (felia de re-apropriere — o conduce
   utilizatorul): inventarul dimensiunilor culese per tip (probe: validări,
   politici seed, handler-ele Import1C — decizia 54e) → FK-uri explicite pe

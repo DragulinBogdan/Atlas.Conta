@@ -150,7 +150,7 @@ public static class DescarcareService {
             d.LinieSursaId = a.LinieId;
             // Dimensiuni clonate de pe linia FCL (mecanismul din GenereazaConex);
             // NU se clonează TipTva/ValoareTva/Angajament (TVA rămâne pe FCL).
-            d.Dimensiuni = DimensiuniResolver.Rezolva(liniiSursa[a.LinieId].Dimensiuni);
+            d.PreiaDimensiuni(liniiSursa[a.LinieId].DimensiuniCulese());
             d.Valoare = Scara.RotunjesteBani(a.Cantitate * pretPerLot.GetValueOrDefault(a.LotId));
         }
         return dsc;
