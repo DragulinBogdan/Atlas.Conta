@@ -375,7 +375,7 @@ using (var os = provider.CreateObjectSpace()) {
             r.ContDebitId = plan[simbol];
             r.ContCreditId = cont891;
             r.Valoare = sold.Debitor;
-            r.DimensiuniDebit = Dims(sold);
+            r.AplicaDimensiuniDebit(Dims(sold));
             randuri++;
         }
         if (sold.Creditor != 0) {
@@ -385,7 +385,7 @@ using (var os = provider.CreateObjectSpace()) {
             r.ContDebitId = cont891;
             r.ContCreditId = plan[simbol];
             r.Valoare = sold.Creditor;
-            r.DimensiuniCredit = Dims(sold);
+            r.AplicaDimensiuniCredit(Dims(sold));
             randuri++;
         }
     }

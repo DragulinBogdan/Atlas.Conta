@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
@@ -77,9 +78,127 @@ public class RegulaContare : BaseObject {
     public virtual Guid? ContCreditId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContCredit { get; set; }
-    public virtual Dimensiuni DimensiuniComun { get; set; } = new();
-    public virtual Dimensiuni DimensiuniOverrideDebit { get; set; } = new();
-    public virtual Dimensiuni DimensiuniOverrideCredit { get; set; } = new();
+    // DIM-3 (decizia 54c): cele trei seturi de dimensiuni ale regulii = coloane
+    // PLATE ([Column] conservă schema owned-ului) — editarea politicilor devine
+    // XAF-nativă (FK-uri normale cu lookup). Motorul le citește ca value
+    // object prin metodele Dimensiuni*() de la final.
+    [Column("DimensiuniComun_RepartitorId")]
+    public virtual Guid? ComunRepartitorId { get; set; }
+    [XafDisplayName("Repartitor comun")]
+    public virtual Repartitor ComunRepartitor { get; set; }
+    [Column("DimensiuniComun_MaterialId")]
+    public virtual Guid? ComunMaterialId { get; set; }
+    [XafDisplayName("Material comun")]
+    public virtual Produs ComunMaterial { get; set; }
+    [Column("DimensiuniComun_CodFunctionalId")]
+    public virtual Guid? ComunCodFunctionalId { get; set; }
+    [XafDisplayName("Cod funcțional comun")]
+    public virtual CodFunctional ComunCodFunctional { get; set; }
+    [Column("DimensiuniComun_CodEconomicId")]
+    public virtual Guid? ComunCodEconomicId { get; set; }
+    [XafDisplayName("Cod economic comun")]
+    public virtual CodEconomic ComunCodEconomic { get; set; }
+    [Column("DimensiuniComun_SursaFinantareId")]
+    public virtual Guid? ComunSursaFinantareId { get; set; }
+    [XafDisplayName("Sursă finanțare comun")]
+    public virtual SursaFinantare ComunSursaFinantare { get; set; }
+    [Column("DimensiuniComun_UnitateId")]
+    public virtual Guid? ComunUnitateId { get; set; }
+    [XafDisplayName("Unitate comun")]
+    public virtual Unitate ComunUnitate { get; set; }
+    [Column("DimensiuniComun_ProiectId")]
+    public virtual Guid? ComunProiectId { get; set; }
+    [XafDisplayName("Proiect comun")]
+    public virtual Proiect ComunProiect { get; set; }
+    [Column("DimensiuniComun_CentruCostId")]
+    public virtual Guid? ComunCentruCostId { get; set; }
+    [XafDisplayName("Centru cost comun")]
+    public virtual Repartitor ComunCentruCost { get; set; }
+
+    [Column("DimensiuniOverrideDebit_RepartitorId")]
+    public virtual Guid? OverrideDebitRepartitorId { get; set; }
+    [XafDisplayName("Repartitor override debit")]
+    public virtual Repartitor OverrideDebitRepartitor { get; set; }
+    [Column("DimensiuniOverrideDebit_MaterialId")]
+    public virtual Guid? OverrideDebitMaterialId { get; set; }
+    [XafDisplayName("Material override debit")]
+    public virtual Produs OverrideDebitMaterial { get; set; }
+    [Column("DimensiuniOverrideDebit_CodFunctionalId")]
+    public virtual Guid? OverrideDebitCodFunctionalId { get; set; }
+    [XafDisplayName("Cod funcțional override debit")]
+    public virtual CodFunctional OverrideDebitCodFunctional { get; set; }
+    [Column("DimensiuniOverrideDebit_CodEconomicId")]
+    public virtual Guid? OverrideDebitCodEconomicId { get; set; }
+    [XafDisplayName("Cod economic override debit")]
+    public virtual CodEconomic OverrideDebitCodEconomic { get; set; }
+    [Column("DimensiuniOverrideDebit_SursaFinantareId")]
+    public virtual Guid? OverrideDebitSursaFinantareId { get; set; }
+    [XafDisplayName("Sursă finanțare override debit")]
+    public virtual SursaFinantare OverrideDebitSursaFinantare { get; set; }
+    [Column("DimensiuniOverrideDebit_UnitateId")]
+    public virtual Guid? OverrideDebitUnitateId { get; set; }
+    [XafDisplayName("Unitate override debit")]
+    public virtual Unitate OverrideDebitUnitate { get; set; }
+    [Column("DimensiuniOverrideDebit_ProiectId")]
+    public virtual Guid? OverrideDebitProiectId { get; set; }
+    [XafDisplayName("Proiect override debit")]
+    public virtual Proiect OverrideDebitProiect { get; set; }
+    [Column("DimensiuniOverrideDebit_CentruCostId")]
+    public virtual Guid? OverrideDebitCentruCostId { get; set; }
+    [XafDisplayName("Centru cost override debit")]
+    public virtual Repartitor OverrideDebitCentruCost { get; set; }
+
+    [Column("DimensiuniOverrideCredit_RepartitorId")]
+    public virtual Guid? OverrideCreditRepartitorId { get; set; }
+    [XafDisplayName("Repartitor override credit")]
+    public virtual Repartitor OverrideCreditRepartitor { get; set; }
+    [Column("DimensiuniOverrideCredit_MaterialId")]
+    public virtual Guid? OverrideCreditMaterialId { get; set; }
+    [XafDisplayName("Material override credit")]
+    public virtual Produs OverrideCreditMaterial { get; set; }
+    [Column("DimensiuniOverrideCredit_CodFunctionalId")]
+    public virtual Guid? OverrideCreditCodFunctionalId { get; set; }
+    [XafDisplayName("Cod funcțional override credit")]
+    public virtual CodFunctional OverrideCreditCodFunctional { get; set; }
+    [Column("DimensiuniOverrideCredit_CodEconomicId")]
+    public virtual Guid? OverrideCreditCodEconomicId { get; set; }
+    [XafDisplayName("Cod economic override credit")]
+    public virtual CodEconomic OverrideCreditCodEconomic { get; set; }
+    [Column("DimensiuniOverrideCredit_SursaFinantareId")]
+    public virtual Guid? OverrideCreditSursaFinantareId { get; set; }
+    [XafDisplayName("Sursă finanțare override credit")]
+    public virtual SursaFinantare OverrideCreditSursaFinantare { get; set; }
+    [Column("DimensiuniOverrideCredit_UnitateId")]
+    public virtual Guid? OverrideCreditUnitateId { get; set; }
+    [XafDisplayName("Unitate override credit")]
+    public virtual Unitate OverrideCreditUnitate { get; set; }
+    [Column("DimensiuniOverrideCredit_ProiectId")]
+    public virtual Guid? OverrideCreditProiectId { get; set; }
+    [XafDisplayName("Proiect override credit")]
+    public virtual Proiect OverrideCreditProiect { get; set; }
+    [Column("DimensiuniOverrideCredit_CentruCostId")]
+    public virtual Guid? OverrideCreditCentruCostId { get; set; }
+    [XafDisplayName("Centru cost override credit")]
+    public virtual Repartitor OverrideCreditCentruCost { get; set; }
+
+    public Dimensiuni DimensiuniComun() => new() {
+        RepartitorId = ComunRepartitorId, MaterialId = ComunMaterialId,
+        CodFunctionalId = ComunCodFunctionalId, CodEconomicId = ComunCodEconomicId,
+        SursaFinantareId = ComunSursaFinantareId, UnitateId = ComunUnitateId,
+        ProiectId = ComunProiectId, CentruCostId = ComunCentruCostId
+    };
+    public Dimensiuni DimensiuniOverrideDebit() => new() {
+        RepartitorId = OverrideDebitRepartitorId, MaterialId = OverrideDebitMaterialId,
+        CodFunctionalId = OverrideDebitCodFunctionalId, CodEconomicId = OverrideDebitCodEconomicId,
+        SursaFinantareId = OverrideDebitSursaFinantareId, UnitateId = OverrideDebitUnitateId,
+        ProiectId = OverrideDebitProiectId, CentruCostId = OverrideDebitCentruCostId
+    };
+    public Dimensiuni DimensiuniOverrideCredit() => new() {
+        RepartitorId = OverrideCreditRepartitorId, MaterialId = OverrideCreditMaterialId,
+        CodFunctionalId = OverrideCreditCodFunctionalId, CodEconomicId = OverrideCreditCodEconomicId,
+        SursaFinantareId = OverrideCreditSursaFinantareId, UnitateId = OverrideCreditUnitateId,
+        ProiectId = OverrideCreditProiectId, CentruCostId = OverrideCreditCentruCostId
+    };
 }
 
 // Documentul conex (decizia 17, 00 §6): sursă → țintă + filtrul de conținut

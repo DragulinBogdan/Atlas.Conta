@@ -1819,11 +1819,27 @@ per felie):
   clonelor prin contract; VERDE ambele profiluri, migrația aplicată curat pe
   baza aplicației. Registrul/RegulaContare rămân owned până la DIM-3; smoke
   UI la DIM-4.
-- **DIM-3. Registrul + regula, plate**: `DimensiuniDebit/Credit` și cele 3
-  seturi ale `RegulaContare` → proprietăți plate (`HasColumnName` — schemă
-  identică, migrație zero/rename); editarea regulilor de contare XAF-nativă
-  în back-office; OwnedObjectBase/CreateProxy ies din Conta; re-evaluarea
-  AuditTrail (53e — de verificat că owned-ul era singurul blocaj).
+- **DIM-3. Registrul + regula, plate** (EXECUTAT, 2026-08-07):
+  `RegistruContabil` = 2×8 perechi FK+navigație plate (`[Column]` conservă
+  numele coloanelor owned — `DimensiuniDebit_*`/`DimensiuniCredit_*`) + puntea
+  spre value object (`DimensiuniDebit()/Credit()` la citire — storno,
+  `AplicaDimensiuniDebit/Credit()` la materializare); `RegulaContare` = 3×8
+  plate + metodele `DimensiuniComun()/OverrideDebit()/OverrideCredit()` —
+  editarea politicilor devine XAF-nativă (FK-uri normale, HideForeignKeys
+  declarat). `Dimensiuni` = POCO pur (8 scalari nullable): OwnedObjectBase,
+  navigațiile, ToString-ul cu etichete și regula CreateProxy au MURIT — ultima
+  referință `Atlas.DXF.EfCore.Owned` a ieșit din Conta. DbContext: maparea
+  owned + ConfigureDimensiuni(Eager) șterse; motivul 41c păstrat ca AutoInclude
+  pe cele 16 navigații ale registrului (alias `RegistruContabilEntitate` —
+  DbSet-ul omonim umbrea tipul în nameof). **Migrația `DimensiuniPlate` e
+  GOALĂ** — maparea plată produce schemă relațională identică byte-cu-byte
+  (proba directă a lui 54c „schemă identică, migrație zero"); există doar
+  pentru snapshot. ModelCheck: round-trip-ul owned (decizia 24) devine garda
+  mapării plate (o nepotrivire de nume de coloană pică acolo); asserțiile pe
+  registru prin metodele value object; VERDE ambele profiluri. **AuditTrail
+  REACTIVAT** (53e închis: owned-ul era singurul blocaj) — `AddAuditTrailEFCore`
+  + `WithAuditedDbContext` (pattern-ul WebApi, care îl avea deja); updater-ul
+  rulează curat prin contextul auditat; verificarea pe fluxul UI la DIM-4.
 - **DIM-4. UI + re-validarea totală**: layout per tip (câmpurile de dimensiuni
   apar natural pe frunze) + vizibilitate per profil (`SetareProfil`); smoke UI
   pe clona bazei de import; **re-rularea integrală Import1C = testul suprem**

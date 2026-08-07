@@ -83,25 +83,13 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<RegistruStoc>()
             .ListView(nameof(RegistruStoc) + ListView, _ => { })
             .Column(r => r.Lot, c => c.Index = -1);
-        registry.For<RegistruContabil>().HideForeignKeys();         // ContDebitId/ContCreditId/DocumentId/DetaliuId
+        // DIM-3: dimensiunile registrului și ale regulii de contare sunt FK-uri
+        // PLATE cu navigație pereche — convenția HideForeignKeys le acoperă pe
+        // toate (fostul bloc de path-uri nested ale owned-ului a murit).
+        registry.For<RegistruContabil>().HideForeignKeys();         // ContDebitId/ContCreditId/DocumentId/DetaliuId + Debit*/Credit*
+        registry.For<RegulaContare>().HideForeignKeys();            // TipDocumentId/TipMaterialId/Cont* + Comun*/Override*
         registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
         registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId
-
-        // Expansiunea InDetailView a owned-urilor (Registre.cs) generează item-uri
-        // și pentru scalarii FK INTERNI ai owned-ului, cu path nested
-        // (DimensiuniDebit.RepartitorId) — HideForeignKeys pe owner nu-i vede
-        // (descoperirea e pe membrii direcți), deci se ascund explicit.
-        string[] fkDimensiuni = [
-            nameof(Dimensiuni.RepartitorId), nameof(Dimensiuni.MaterialId),
-            nameof(Dimensiuni.CodFunctionalId), nameof(Dimensiuni.CodEconomicId),
-            nameof(Dimensiuni.SursaFinantareId), nameof(Dimensiuni.UnitateId),
-            nameof(Dimensiuni.ProiectId), nameof(Dimensiuni.CentruCostId),
-        ];
-        foreach (var latura in new[] {
-                     nameof(RegistruContabil.DimensiuniDebit),
-                     nameof(RegistruContabil.DimensiuniCredit) })
-            registry.For<RegistruContabil>()
-                .HideMembers(fkDimensiuni.Select(fk => $"{latura}.{fk}").ToArray());
     }
 
     // Layout-ul DetailView-urilor de document (GATE XAF D12), declarat autoritar.

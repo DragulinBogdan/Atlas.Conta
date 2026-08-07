@@ -99,26 +99,27 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     Console.WriteLine($"ReguliStoc:      {await ctx.ReguliStoc.CountAsync()}");
     Console.WriteLine($"ReguliContare:   {await ctx.ReguliContare.CountAsync()}");
 
-    // Garda pentru limitarea owned + table sharing: cu navigația REQUIRED, un rând
-    // cu toate dimensiunile null trebuie să materializeze obiect gol, nu null.
+    // DIM-3: garda mapării PLATE — [Column] trebuie să conserve schema fostului
+    // owned (round-trip insert/reread/update pe FK-ul plat al regulii de contare;
+    // o nepotrivire de nume de coloană ar pica aici, nu în producție).
     var tipDoc = await ctx.TipuriDocument.FirstAsync();
     var repartitor = await ctx.Repartitori.FirstAsync();
-    var proba = ctx.CreateProxy<RegulaContare>(); // owner-ul TREBUIE proxy (ca în XAF)
+    var proba = ctx.CreateProxy<RegulaContare>(); // XAF creează entitățile proxy — proba la fel
     proba.TipDocumentId = tipDoc.ID;
-    proba.DimensiuniComun = new Dimensiuni { RepartitorId = repartitor.ID };
+    proba.ComunRepartitorId = repartitor.ID;
     ctx.ReguliContare.Add(proba);
     await ctx.SaveChangesAsync();
     ctx.ChangeTracker.Clear();
 
     var recitita = await ctx.ReguliContare.SingleAsync(r => r.ID == proba.ID);
-    Check("Owned insert → FK persistat", recitita.DimensiuniComun.RepartitorId == repartitor.ID);
-    Check("Owned all-null → instanță, nu null", recitita.DimensiuniOverrideDebit != null);
+    Check("Coloana plată (DimensiuniComun_RepartitorId) → FK persistat și recitit", recitita.ComunRepartitorId == repartitor.ID);
+    Check("Value object construit din coloanele plate", recitita.DimensiuniComun().RepartitorId == repartitor.ID);
 
-    recitita.DimensiuniComun.RepartitorId = null;
+    recitita.ComunRepartitorId = null;
     await ctx.SaveChangesAsync();
     ctx.ChangeTracker.Clear();
     recitita = await ctx.ReguliContare.SingleAsync(r => r.ID == proba.ID);
-    Check("Owned update → schimbare detectată", recitita.DimensiuniComun.RepartitorId == null);
+    Check("Update pe coloana plată → schimbare detectată", recitita.ComunRepartitorId == null);
 
     ctx.ReguliContare.Remove(recitita);
     await ctx.SaveChangesAsync();
@@ -303,7 +304,7 @@ if (profil == ProfilContabil.Privat) {
             noteFct.Any(n => n.DetaliuId == linieStoc.ID && n.ContDebitId == cont4426.ID && n.Valoare == 10.5m));
         Check("Rândul 4426 al serviciului: 21; dimensiunile din default-ul polimorf al header-ului",
             noteFct.Any(n => n.DetaliuId == linieServiciu.ID && n.ContDebitId == cont4426.ID && n.Valoare == 21m
-                && n.DimensiuniDebit.RepartitorId == furnizor.ID && n.DimensiuniCredit.RepartitorId == mag1.ID));
+                && n.DimensiuniDebit().RepartitorId == furnizor.ID && n.DimensiuniCredit().RepartitorId == mag1.ID));
 
         // --- NIR conex: netul, fără TVA ---
         Check("Conex: NIR draft cu linia de stoc la NET, TipTva clonat ca informație, ValoareTva 0",
@@ -369,7 +370,7 @@ if (profil == ProfilContabil.Privat) {
             noteDec.Count == 2
             && noteDec.Any(n => n.ContDebitId == tip628.ContImplicitId && n.ContCreditId == cont542.ID && n.Valoare == 30m)
             && noteDec.Any(n => n.ContDebitId == cont4426.ID && n.ContCreditId == cont542.ID && n.Valoare == 6.3m)
-            && noteDec.All(n => n.DimensiuniCredit.RepartitorId == angajat.ID));
+            && noteDec.All(n => n.DimensiuniCredit().RepartitorId == angajat.ID));
 
         // --- Taxare inversă: 4426 = 4427, apoi storno cu rândurile TVA inverse ---
         var fctTi = os.CreateObject<FacturaIntrare>();
@@ -696,9 +697,9 @@ if (profil == ProfilContabil.Privat) {
         Check("Cost produs finit: 711 = 345, 24; exact 4 note pe DSC",
             notaPf.ContCreditId == tip345.ContImplicitId && notaPf.Valoare == 24m && noteDsc.Count == 4);
         Check("DSC dimensiuni: AMBELE laturi Repartitor=gestiunea (override polimorf), Material din lot",
-            noteDsc.All(n => n.DimensiuniDebit.RepartitorId == mag1.ID && n.DimensiuniCredit.RepartitorId == mag1.ID)
-            && noteDsc.Where(n => n.ContDebitId == cont607.ID).All(n => n.DimensiuniDebit.MaterialId == produsA.ID)
-            && notaPf.DimensiuniDebit.MaterialId == produsC.ID);
+            noteDsc.All(n => n.DimensiuniDebit().RepartitorId == mag1.ID && n.DimensiuniCredit().RepartitorId == mag1.ID)
+            && noteDsc.Where(n => n.ContDebitId == cont607.ID).All(n => n.DimensiuniDebit().MaterialId == produsA.ID)
+            && notaPf.DimensiuniDebit().MaterialId == produsC.ID);
         var stocDsc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == dsc.ID).ToList();
         Check("DSC stoc: −10 A1, −7 A2 (Marfuri), −3 C1 (Magazie), toate pe gestiune",
             stocDsc.Where(r => r.LotId == lotA1.ID).Sum(r => r.Cantitate) == -10m
@@ -930,8 +931,8 @@ if (profil == ProfilContabil.Privat) {
             Check("Privat: valorile CA ATARE (300 / −50)",
                 notePrv.Any(n => n.Valoare == 300m) && notePrv.Any(n => n.Valoare == -50m));
             Check("Privat: dimensiunile din default-ul polimorf (debit←predator, credit←primitor)",
-                notePrv.All(n => n.DimensiuniDebit.RepartitorId == sediu.ID
-                    && n.DimensiuniCredit.RepartitorId == unitate.ID));
+                notePrv.All(n => n.DimensiuniDebit().RepartitorId == sediu.ID
+                    && n.DimensiuniCredit().RepartitorId == unitate.ID));
             Check("Privat: nota nu postează TVA (fără TipTva pe linii) și nu mișcă stoc",
                 notePrv.All(n => n.DetaliuId != null)
                 && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == ntc.ID));
@@ -2233,9 +2234,9 @@ using (var os = provider.CreateObjectSpace()) {
         noteFct.Count == 1 && noteFct[0].ContDebitId == tipServicii.ContImplicitId
         && noteFct[0].ContCreditId == cont401.ID && noteFct[0].Valoare == 100m);
     Check("Nota FCT: dimensiuni rezolvate (cod economic + repartitori laturi)",
-        noteFct[0].DimensiuniDebit.CodEconomicId == codEc.ID
-        && noteFct[0].DimensiuniDebit.RepartitorId == furnizor.ID
-        && noteFct[0].DimensiuniCredit.RepartitorId == mag1.ID);
+        noteFct[0].DimensiuniDebit().CodEconomicId == codEc.ID
+        && noteFct[0].DimensiuniDebit().RepartitorId == furnizor.ID
+        && noteFct[0].DimensiuniCredit().RepartitorId == mag1.ID);
 
     Check("Conex generat: NIR draft autogenerat, aceleași laturi",
         conex is NIR { Stare: StareDocument.Draft, Autogenerat: true }
@@ -2259,8 +2260,8 @@ using (var os = provider.CreateObjectSpace()) {
         noteNir.Count == 1 && noteNir[0].ContDebitId == tipMateriale.ContImplicitId
         && noteNir[0].ContCreditId == cont401.ID && noteNir[0].Valoare == 59.5m);
     Check("Nota NIR: Materialul implicit din lot (produsul) pe ambele laturi (3d)",
-        noteNir[0].DimensiuniDebit.MaterialId == produs.ID
-        && noteNir[0].DimensiuniCredit.MaterialId == produs.ID);
+        noteNir[0].DimensiuniDebit().MaterialId == produs.ID
+        && noteNir[0].DimensiuniCredit().MaterialId == produs.ID);
     Check("Sold lot după recepție: 5 pe MAG1",
         StocService.Sold(os, new CheieStoc(lot.ID, mag1.ID, TipStoc.Magazie)) == 5m);
 
@@ -2334,10 +2335,10 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Creditul vine din ContImplicit al partenerului (404, nu fallback 401)",
         nota404.ContCreditId == cont404.ID);
     Check("Puntea angajamentului: E pe 404 satisfăcut fără cod economic; B/F/P rezolvate pe notă",
-        nota404.DimensiuniCredit.CodEconomicId == null
-        && nota404.DimensiuniCredit.SursaFinantareId == sursaFin.ID
-        && nota404.DimensiuniCredit.CodFunctionalId == codFn.ID
-        && nota404.DimensiuniCredit.ProiectId == proiect.ID);
+        nota404.DimensiuniCredit().CodEconomicId == null
+        && nota404.DimensiuniCredit().SursaFinantareId == sursaFin.ID
+        && nota404.DimensiuniCredit().CodFunctionalId == codFn.ID
+        && nota404.DimensiuniCredit().ProiectId == proiect.ID);
     MotorOperare.Storneaza(os, fct2, new DateOnly(2026, 7, 22));
 
     CurataFct(os);
@@ -2448,7 +2449,7 @@ using (var os = provider.CreateObjectSpace()) {
         note.Count == 1 && note[0].ContDebitId == regulaMat.ContDebitId
         && note[0].ContCreditId == tipMaterial.ContImplicitId && note[0].Valoare == 40m);
     Check("Nota BCS: repartitori din laturi (debit←predator, credit←primitor — 00 §5)",
-        note[0].DimensiuniDebit.RepartitorId == mag1.ID && note[0].DimensiuniCredit.RepartitorId == loc.ID);
+        note[0].DimensiuniDebit().RepartitorId == mag1.ID && note[0].DimensiuniCredit().RepartitorId == loc.ID);
 
     // --- Gardianul de sold: consum peste disponibil ---
     var pesteDisponibil = Consum(mag1, loc, 100m, new DateOnly(2026, 3, 10));
@@ -2762,8 +2763,8 @@ using (var os = provider.CreateObjectSpace()) {
             && n.ContCreditId == tipChirii.ContImplicitId && n.Valoare == 50m));
     Check("Exact 2 note (una per linie)", note.Count == 2);
     Check("Nota FCL: repartitori din laturi (debit←emitent, credit←client — 00 §5)",
-        note.All(n => n.DimensiuniDebit.RepartitorId == sediu.ID
-            && n.DimensiuniCredit.RepartitorId == client.ID));
+        note.All(n => n.DimensiuniDebit().RepartitorId == sediu.ID
+            && n.DimensiuniCredit().RepartitorId == client.ID));
 
     // --- Debit particularizat (461) + scadență culeasă + TVA în valoare ---
     var clientDebitor = os.CreateObject<Partener>();
@@ -3035,8 +3036,8 @@ using (var os = provider.CreateObjectSpace()) {
         noteAvans.Count == 1 && noteAvans[0].ContDebitId == cont542.ID
         && noteAvans[0].ContCreditId == cont531.ID && noteAvans[0].Valoare == 50m);
     Check("Nota avansului: repartitori din laturi (debit←casă, credit←angajat — 00 §5)",
-        noteAvans[0].DimensiuniDebit.RepartitorId == casa.ID
-        && noteAvans[0].DimensiuniCredit.RepartitorId == angajat.ID);
+        noteAvans[0].DimensiuniDebit().RepartitorId == casa.ID
+        && noteAvans[0].DimensiuniCredit().RepartitorId == angajat.ID);
 
     // --- Storno: refuzat cât există stingerea, curat după ștergerea ei ---
     CheckRefuza("Stornarea încasării cu imperechere → refuz", () =>
@@ -3174,11 +3175,11 @@ using (var os = provider.CreateObjectSpace()) {
     var notaDeplasare = note.Single(n => n.Valoare == 30m);
     var notaProtocol = note.Single(n => n.Valoare == 23.8m);
     Check("Dimensiuni debit: default←titular la deplasare, repartitorul EXPLICIT (MAG1) la protocol",
-        notaDeplasare.DimensiuniDebit.RepartitorId == angajat.ID
-        && notaDeplasare.DimensiuniDebit.CodEconomicId == codEc.ID
-        && notaProtocol.DimensiuniDebit.RepartitorId == mag1.ID);
+        notaDeplasare.DimensiuniDebit().RepartitorId == angajat.ID
+        && notaDeplasare.DimensiuniDebit().CodEconomicId == codEc.ID
+        && notaProtocol.DimensiuniDebit().RepartitorId == mag1.ID);
     Check("Dimensiuni credit: 542 pe TITULAR (default polimorf, nu primitorul SEDIU)",
-        note.All(n => n.DimensiuniCredit.RepartitorId == angajat.ID));
+        note.All(n => n.DimensiuniCredit().RepartitorId == angajat.ID));
 
     // --- Tip fără cont și fără postare explicită = refuz clar; fallback 542 ---
     var dec2 = os.CreateObject<Decont>();
@@ -3198,7 +3199,7 @@ using (var os = provider.CreateObjectSpace()) {
     MotorOperare.Opereaza(os, dec2);
     Check("Angajat fără ContImplicit → creditul cade pe fallback-ul 542.01.00",
         Note(dec2).Single().ContCreditId == cont542.ID
-        && Note(dec2).Single().DimensiuniCredit.RepartitorId == angajat2.ID);
+        && Note(dec2).Single().DimensiuniCredit().RepartitorId == angajat2.ID);
 
     // --- Lanțul avans ↔ decont ↔ regularizare prin imperechere (31d) ---
     var impDecont = ImperechereService.Imperecheaza(os, avans, dec, 53.8m);
@@ -3345,10 +3346,10 @@ using (var os = provider.CreateObjectSpace()) {
         randViramente.Valoare == 100m && randStorno.Valoare == -40m
         && !randViramente.Storno && !randStorno.Storno);
     Check("Dimensiuni debit: repartitorul EXPLICIT (MAG1) pe prima linie, default polimorf (predator SEDIU) pe a doua",
-        randViramente.DimensiuniDebit.RepartitorId == mag1.ID
-        && randStorno.DimensiuniDebit.RepartitorId == sediu.ID);
+        randViramente.DimensiuniDebit().RepartitorId == mag1.ID
+        && randStorno.DimensiuniDebit().RepartitorId == sediu.ID);
     Check("Dimensiuni credit: default polimorf (primitor) pe ambele linii",
-        noteNtc.All(n => n.DimensiuniCredit.RepartitorId == unitate.ID));
+        noteNtc.All(n => n.DimensiuniCredit().RepartitorId == unitate.ID));
 
     // --- Refuzurile: invarianții tipului + gardianul generic de dimensiuni ---
     void RefuzNtc(string nume, Repartitor predator, Repartitor primitor, Action<NotaContabilaDetaliu> configurare) {
@@ -3411,7 +3412,7 @@ using (var os = provider.CreateObjectSpace()) {
     MotorOperare.Opereaza(os, ntcDefalcare);
     Check("628 cu cod economic cules pe linie → operare acceptată, dimensiunea pe latura contului",
         ntcDefalcare.Stare == StareDocument.Operat
-        && Note(ntcDefalcare).Single().DimensiuniDebit.CodEconomicId == codEc.ID);
+        && Note(ntcDefalcare).Single().DimensiuniDebit().CodEconomicId == codEc.ID);
 
     // --- Corecție directă → re-operare → storno ---
     var numarNtc = ntc.Numar;

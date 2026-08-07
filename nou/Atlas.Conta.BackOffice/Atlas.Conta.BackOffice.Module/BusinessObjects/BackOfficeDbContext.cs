@@ -1,11 +1,13 @@
-﻿using Atlas.DXF.EfCore.Owned;
-using DevExpress.ExpressApp.Design;
+﻿using DevExpress.ExpressApp.Design;
 using DevExpress.ExpressApp.EFCore.DesignTime;
 using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.BaseImpl.EF.PermissionPolicy;
 using DevExpress.Persistent.BaseImpl.EF.StateMachine;
 using DevExpress.Persistent.BaseImpl.EFCore.AuditTrail;
 using Microsoft.EntityFrameworkCore;
+// Numele DbSet-ului `RegistruContabil` umbrește tipul în interiorul contextului —
+// alias pentru nameof-urile de mai jos (AutoInclude pe navigațiile plate).
+using RegistruContabilEntitate = Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruContabil;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
     // Factory pentru design-time (dotnet ef migrations/database) — schema e
@@ -179,26 +181,23 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasOne(d => d.LinieSursa).WithMany().HasForeignKey(d => d.LinieSursaId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Owned type Dimensiuni (decizia 15) — pe rândul de registru contabil
-            // și pe cele trei seturi ale regulii de contare. Linia de document NU
-            // mai poartă owned (DIM-2, decizia 54c): dimensiunile culese sunt
-            // FK-uri pe frunzele derivate, motorul primește valoarea prin
-            // contractul DimensiuniCulese(). Owned-urile rămase pleacă la DIM-3.
-            // OwnsOneRequired (Atlas.DXF): navigație REQUIRED, altfel la table sharing
-            // un rând complet null s-ar materializa ca Dimensiuni=null (nu obiect gol)
-            // și ar sparge coalesce-ul motorului cu NRE.
-            // Pe registru navigațiile interne se încarcă EAGER (AutoInclude):
-            // grid-urile și Dimensiuni.ToString le citesc pe fiecare rând — lazy
-            // ar însemna N+1 per instanță de owned (identity map-ul nu ajută,
-            // fiecare rând are instanța lui) plus lazy-load pe OS disposed la
-            // render târziu. Doar aici — liniile de document și regulile de
-            // contare rămân lazy (motorul le interoghează în hot-path fără să
-            // afișeze etichete).
-            modelBuilder.Entity<RegistruContabil>().OwnsOneRequired(r => r.DimensiuniDebit, ConfigureDimensiuniEager);
-            modelBuilder.Entity<RegistruContabil>().OwnsOneRequired(r => r.DimensiuniCredit, ConfigureDimensiuniEager);
-            modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniComun, ConfigureDimensiuni);
-            modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniOverrideDebit, ConfigureDimensiuni);
-            modelBuilder.Entity<RegulaContare>().OwnsOneRequired(r => r.DimensiuniOverrideCredit, ConfigureDimensiuni);
+            // DIM-3 (decizia 54c): maparea owned Dimensiuni a MURIT — registrul și
+            // regula de contare poartă coloane plate ([Column] pe entități conservă
+            // schema); `Dimensiuni` e value object ne-persistat al motorului.
+            // Navigațiile dimensiunilor registrului se încarcă EAGER (motivul 41c,
+            // neschimbat): grid-urile le afișează pe fiecare rând — lazy ar fi N+1
+            // per rând plus lazy-load pe OS disposed la render târziu. Doar
+            // registrul — regulile de contare rămân lazy (motorul citește scalari).
+            foreach (var nav in new[] {
+                         nameof(RegistruContabilEntitate.DebitRepartitor), nameof(RegistruContabilEntitate.DebitMaterial),
+                         nameof(RegistruContabilEntitate.DebitCodFunctional), nameof(RegistruContabilEntitate.DebitCodEconomic),
+                         nameof(RegistruContabilEntitate.DebitSursaFinantare), nameof(RegistruContabilEntitate.DebitUnitate),
+                         nameof(RegistruContabilEntitate.DebitProiect), nameof(RegistruContabilEntitate.DebitCentruCost),
+                         nameof(RegistruContabilEntitate.CreditRepartitor), nameof(RegistruContabilEntitate.CreditMaterial),
+                         nameof(RegistruContabilEntitate.CreditCodFunctional), nameof(RegistruContabilEntitate.CreditCodEconomic),
+                         nameof(RegistruContabilEntitate.CreditSursaFinantare), nameof(RegistruContabilEntitate.CreditUnitate),
+                         nameof(RegistruContabilEntitate.CreditProiect), nameof(RegistruContabilEntitate.CreditCentruCost) })
+                modelBuilder.Entity<RegistruContabilEntitate>().Navigation(nav).AutoInclude();
 
             modelBuilder.Entity<MigrareLegatura>()
                 .HasIndex(m => new { m.Tabela, m.CheieLegacy }).IsUnique();
@@ -241,28 +240,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             }
         }
 
-        private static void ConfigureDimensiuni<T>(Microsoft.EntityFrameworkCore.Metadata.Builders.OwnedNavigationBuilder<T, Dimensiuni> b) where T : class {
-            b.HasOne(d => d.Repartitor).WithMany().HasForeignKey(d => d.RepartitorId);
-            b.HasOne(d => d.Material).WithMany().HasForeignKey(d => d.MaterialId);
-            b.HasOne(d => d.CodFunctional).WithMany().HasForeignKey(d => d.CodFunctionalId);
-            b.HasOne(d => d.CodEconomic).WithMany().HasForeignKey(d => d.CodEconomicId);
-            b.HasOne(d => d.SursaFinantare).WithMany().HasForeignKey(d => d.SursaFinantareId);
-            b.HasOne(d => d.Unitate).WithMany().HasForeignKey(d => d.UnitateId);
-            b.HasOne(d => d.Proiect).WithMany().HasForeignKey(d => d.ProiectId);
-            b.HasOne(d => d.CentruCost).WithMany().HasForeignKey(d => d.CentruCostId);
-        }
-
-        private static void ConfigureDimensiuniEager<T>(Microsoft.EntityFrameworkCore.Metadata.Builders.OwnedNavigationBuilder<T, Dimensiuni> b) where T : class {
-            ConfigureDimensiuni(b);
-            b.Navigation(d => d.Repartitor).AutoInclude();
-            b.Navigation(d => d.Material).AutoInclude();
-            b.Navigation(d => d.CodFunctional).AutoInclude();
-            b.Navigation(d => d.CodEconomic).AutoInclude();
-            b.Navigation(d => d.SursaFinantare).AutoInclude();
-            b.Navigation(d => d.Unitate).AutoInclude();
-            b.Navigation(d => d.Proiect).AutoInclude();
-            b.Navigation(d => d.CentruCost).AutoInclude();
-        }
     }
 
     public class BackOfficeAuditingDbContext : DbContext {

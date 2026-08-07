@@ -139,11 +139,11 @@ public static class MotorOperare {
             var dimensiuniLinie = d.DimensiuniCulese();
             var dimensiuniDebit = DimensiuniResolver.Rezolva(
                 new Dimensiuni { RepartitorId = explicita?.RepartitorDebitId },
-                dimensiuniLinie, regula?.DimensiuniOverrideDebit, regula?.DimensiuniComun,
+                dimensiuniLinie, regula?.DimensiuniOverrideDebit(), regula?.DimensiuniComun(),
                 new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit(), MaterialId = materialImplicit });
             var dimensiuniCredit = DimensiuniResolver.Rezolva(
                 new Dimensiuni { RepartitorId = explicita?.RepartitorCreditId },
-                dimensiuniLinie, regula?.DimensiuniOverrideCredit, regula?.DimensiuniComun,
+                dimensiuniLinie, regula?.DimensiuniOverrideCredit(), regula?.DimensiuniComun(),
                 new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit(), MaterialId = materialImplicit });
 
             // Normalizarea cu semnul filtrului: valoarea liniei poartă semnul
@@ -280,8 +280,8 @@ public static class MotorOperare {
             rand.ContDebitId = n.ContDebit;
             rand.ContCreditId = n.ContCredit;
             rand.Valoare = n.Valoare;
-            rand.DimensiuniDebit = n.DimensiuniDebit;
-            rand.DimensiuniCredit = n.DimensiuniCredit;
+            rand.AplicaDimensiuniDebit(n.DimensiuniDebit);
+            rand.AplicaDimensiuniCredit(n.DimensiuniCredit);
             rand.Document = doc;
             rand.Detaliu = n.Detaliu;
         }
@@ -533,8 +533,8 @@ public static class MotorOperare {
             invers.ContDebitId = r.ContDebitId;
             invers.ContCreditId = r.ContCreditId;
             invers.Valoare = -r.Valoare;
-            invers.DimensiuniDebit = DimensiuniResolver.Rezolva(r.DimensiuniDebit);
-            invers.DimensiuniCredit = DimensiuniResolver.Rezolva(r.DimensiuniCredit);
+            invers.AplicaDimensiuniDebit(r.DimensiuniDebit());
+            invers.AplicaDimensiuniCredit(r.DimensiuniCredit());
             invers.Storno = true;
             invers.Document = doc;
             invers.DetaliuId = r.DetaliuId;
