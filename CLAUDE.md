@@ -1840,11 +1840,24 @@ per felie):
   REACTIVAT** (53e închis: owned-ul era singurul blocaj) — `AddAuditTrailEFCore`
   + `WithAuditedDbContext` (pattern-ul WebApi, care îl avea deja); updater-ul
   rulează curat prin contextul auditat; verificarea pe fluxul UI la DIM-4.
-- **DIM-4. UI + re-validarea totală**: layout per tip (câmpurile de dimensiuni
-  apar natural pe frunze) + vizibilitate per profil (`SetareProfil`); smoke UI
-  pe clona bazei de import; **re-rularea integrală Import1C = testul suprem**
-  (contractul 4×12 verde re-confirmă refactorul pe anul real); ModelCheck
-  ambele profiluri.
+- **DIM-4. UI + re-validarea totală** (EXECUTAT MINIMAL, 2026-08-07; smoke-ul
+  complet se reia în faza următoare — decizia utilizatorului, „oricum avem
+  modificări de integrat"). **Testul suprem TRECUT**: re-rularea integrală
+  Import1C (`--recreeaza`, anul 2025 prin motor pe codul DIM-1..3) —
+  CONTRACT ÎNDEPLINIT, 02:33:51 total, iar raportul integral de reconciliere
+  e **IDENTIC BYTE-CU-BYTE** cu baseline-ul pre-DIM (28.07, decizia 52), mai
+  puțin antetul cu timestamp: anul real se reproduce exact — dovada finală a
+  echivalenței refactorului. Smoke UI minimal (browser, pe clona de import
+  migrată — gardul migrației validat pe cele 187k documente reale): aplicația
+  pornește cu modelul DIM + AuditTrail; FCT list/detail funcționale, layout-ul
+  GATE intact; linia FCT afișează cele 4 FK-uri noi cu captions RO, FK-urile
+  brute ascunse, read-only-ul post-Draft (40c) acoperă și câmpurile noi;
+  salvare auditată prin UI (create+delete nomenclator) fără NRE. **Rămase la
+  reluarea smoke-ului**: ListView-ul RegistruContabil nu s-a încărcat în ~60s
+  (rulat concurent cu importul — posibil doar contenție, posibil modul de
+  acces pe ~600k rânduri; de diagnosticat); curatoria celor 16 coloane de
+  navigații plate din grila registrului; layout-ul fin per tip + vizibilitatea
+  per profil (`SetareProfil`). Feliile DIM-1…DIM-4 ÎNCHISE.
 
 - Apoi: **pasul 5** (API+React, deciziile 42/43) pe model călit, SAU felia C1a
   a comenzilor (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă,
