@@ -93,6 +93,16 @@ public static class LoturiCulegereService {
             if (linie.ProdusId == null || natura != NaturaClasa.Stoc) {
                 if (lot != null && !Finalizat(lot))
                     LoturiLiniiSterse.StergeLot(os, linie, lot);
+                else if (lot != null && linie.LotId == lot.ID) {
+                    // Review advers F2-D3: Tipul mutat pe NE-stoc pe un draft
+                    // re-deschis (post-anulare) — lotul FINALIZAT nu se șterge
+                    // (are istorie), dar linia devenită de serviciu nu are voie
+                    // să-l mai refere: dimensiunea Material s-ar rezolva din
+                    // lotul irelevant (33b), iar lotul ar rămâne legat de o
+                    // linie ne-stoc. Referința se rupe, lotul rămâne.
+                    linie.Lot = null;
+                    linie.LotId = null;
+                }
                 continue;
             }
 
@@ -188,14 +198,33 @@ static class LoturiLiniiSterse {
 
     public static void Curata(IObjectSpace os, List<Guid> idsSterse, List<Lot> candidati) {
         // NUMAI loturile PROPRII ale liniilor șterse (`LinieIntrareId`), niciodată
-        // un lot străin (un lot pinuit pe linie prin LotId rămâne al altcuiva) și
-        // niciodată un lot FINALIZAT de motor (review advers D1): ștergerea unui
-        // document Draft nu are voie să ia cu ea un lot cu istorie — el a intrat
-        // prin import sau prin operarea unui document anterior.
+        // un lot străin (un lot pinuit pe linie prin LotId rămâne al altcuiva).
+        // Lotul FINALIZAT de motor (review GATE D1) nu moare cu draftul — DAR
+        // (review advers F2-D4) dacă a rămas FĂRĂ NICIO URMĂ (anularea i-a șters
+        // rândurile de registru, nicio linie vie nu-l mai referă), păstrarea lui
+        // ar fi zgomot ireversibil în nomenclator, exact ce curățenia există să
+        // prevină. Query-urile văd doar rândurile vii (filtrul deferred deletion);
+        // liniile în curs de ștergere din ACEST commit se exclud explicit.
+        var spreStergere = new HashSet<Guid>(idsSterse);
+        foreach (var linie in os.GetObjectsToDelete(true).OfType<DocumentDetaliu>())
+            spreStergere.Add(linie.ID);
         foreach (var id in idsSterse)
-            foreach (var lot in candidati.Where(l => l.LinieIntrareId == id).ToList())
-                if (!os.IsObjectToDelete(lot) && lot.Data == default && lot.PretUnitar == 0)
+            foreach (var lot in candidati.Where(l => l.LinieIntrareId == id).ToList()) {
+                if (os.IsObjectToDelete(lot))
+                    continue;
+                if (lot.Data == default && lot.PretUnitar == 0) {
                     os.Delete(lot);
+                    continue;
+                }
+                if (os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == lot.ID))
+                    continue;
+                var referinte = os.GetObjectsQuery<DocumentDetaliu>()
+                    .Where(d => d.LotId == lot.ID)
+                    .Select(d => d.ID)
+                    .ToList();
+                if (referinte.All(spreStergere.Contains))
+                    os.Delete(lot);
+            }
     }
 
     public static void StergeLot(IObjectSpace os, DocumentDetaliu linie, Lot lot) {

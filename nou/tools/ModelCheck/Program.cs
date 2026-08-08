@@ -1975,6 +1975,69 @@ if (profil == ProfilContabil.Privat) {
         }
     }
 
+    // ============ Felia Api FCT — semantica override-ului de TVA (privat) ============
+    // Complementul blocului bugetar (review advers F2-D1): pe regimul Normal
+    // override-ul e LEGITIM (36a — factura furnizorului bate rotunjirea), iar
+    // recalculul e CONDIȚIONAT de declanșatorii din UI — un PUT care nu atinge
+    // baza/TipTva nu pierde override-ul (clientul nu retrimite ValoareTva).
+    {
+        const string MarcajApiPrv = "E2E-APIPRV";
+        using var os = provider.CreateObjectSpace();
+        void CurataApiPrv(IObjectSpace o) {
+            foreach (var d in o.GetObjectsQuery<FacturaIntrare>()
+                    .Where(x => x.Numar.StartsWith(MarcajApiPrv)).ToList()) {
+                o.Delete(o.GetObjectsQuery<DocumentDetaliu>().Where(l => l.DocumentId == d.ID).ToList());
+                o.Delete(d);
+            }
+            foreach (var r in o.GetObjectsQuery<Repartitor>()
+                    .Where(x => x.Cod.StartsWith(MarcajApiPrv)).ToList())
+                o.Delete(r);
+            o.CommitChanges();
+        }
+        CurataApiPrv(os);
+        var n21Api = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        var sddApi = os.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
+        var tipServApi = os.GetObjectsQuery<TipMaterial>()
+            .First(t => t.Clasa.Natura == NaturaClasa.Serviciu);
+        var furnizorApi = os.CreateObject<Partener>();
+        furnizorApi.Cod = MarcajApiPrv + "-F"; furnizorApi.Denumire = "Furnizor Api Privat";
+        var gestiuneApi = os.CreateObject<Gestiune>();
+        gestiuneApi.Cod = MarcajApiPrv + "-G"; gestiuneApi.Denumire = "Gestiune Api Privat";
+        os.CommitChanges();
+
+        var w = new FacturaIntrareWriteDto {
+            Numar = MarcajApiPrv + "-1", Data = new DateOnly(2026, 3, 10),
+            PredatorId = furnizorApi.ID, PrimitorId = gestiuneApi.ID,
+            Linii = { new FacturaIntrareLinieWriteDto {
+                TipMaterialId = tipServApi.ID, Cantitate = 1m, PretUnitar = 100m,
+                TipTvaId = n21Api.ID } }
+        };
+        var idFctPrv = FacturaIntrareApply.Aplica(os, null, w);
+        var liniePrv = FacturaIntrareApply.Citeste(os, idFctPrv).Linii[0];
+        Check("Api privat/N21: calculul la culegere — net 100 + TVA 21",
+            liniePrv is { Valoare: 100m, ValoareTva: 21m });
+        w.Linii[0].Id = liniePrv.Id;
+        w.Linii[0].ValoareTva = 21.37m;
+        FacturaIntrareApply.Aplica(os, idFctPrv, w);
+        Check("Override pe regim Normal → acceptat, aplicat DUPĂ calcul (36a)",
+            FacturaIntrareApply.Citeste(os, idFctPrv).Linii[0].ValoareTva == 21.37m);
+        w.Linii[0].ValoareTva = null;
+        FacturaIntrareApply.Aplica(os, idFctPrv, w);
+        Check("PUT ulterior FĂRĂ declanșatori (baza/TipTva neatinse) → override-ul PĂSTRAT",
+            FacturaIntrareApply.Citeste(os, idFctPrv).Linii[0].ValoareTva == 21.37m);
+        w.Linii[0].PretUnitar = 200m;
+        FacturaIntrareApply.Aplica(os, idFctPrv, w);
+        Check("Schimbarea BAZEI redeclanșează calculul standard → override-ul cedează (200 + 42)",
+            FacturaIntrareApply.Citeste(os, idFctPrv).Linii[0] is { Valoare: 200m, ValoareTva: 42m });
+        if (sddApi != null) {
+            w.Linii[0].TipTvaId = sddApi.ID;
+            w.Linii[0].ValoareTva = 5m;
+            CheckRefuza("Override pe regim Scutit (SDD) → refuz (F2-D1: regimul nu poartă TVA separat)",
+                () => FacturaIntrareApply.Aplica(os, idFctPrv, w));
+        }
+        CurataApiPrv(os);
+    }
+
     Rezumat();
     return;
 }
@@ -2729,39 +2792,26 @@ using (var os = provider.CreateObjectSpace()) {
         && linieStoc.ProdusDenumire == produs.Denumire
         && linieStoc.Cantitate == 5m && linieStoc.PretUnitar == 10m);
 
-    // --- Override-ul manual de ValoareTva: ORDINEA (după calcul), nu semantica ---
-    // La bugetar toate regimurile sunt Capitalizat (TVA-ul stă în preț ⇒ calculul
-    // dă 0), deci proba arată exact ce trebuie: override-ul se aplică DUPĂ
-    // `CalculeazaLaCulegere` și supraviețuiește lui. Supraviețuirea la OPERARE
-    // (`pastreazaTvaCules`, regula 36a) e a regimurilor cu TVA separat — o probează
-    // blocul privat, unde nomenclatorul are Normal/TaxareInversă.
+    // --- Override-ul manual de ValoareTva: refuzat pe regimuri fără TVA separat ---
+    // Review advers F2-D1/D7: la bugetar toate regimurile sunt Capitalizat
+    // (TVA-ul stă în preț) — un override acceptat aici ar fi numărat TVA-ul de
+    // două ori în Total și ar fi murit tăcut la operare. Semantica POZITIVĂ a
+    // override-ului (păstrare + recalcul condiționat de declanșatori) se probează
+    // în blocul privat, pe regimul Normal.
     write.Linii[0].Id = linieStoc.Id;
     write.Linii[0].TipTvaId = linieStoc.TipTvaId;
     write.Linii[1].Id = linieServ.Id;
     // ROUND-TRIP: clientul retrimite agregatul ÎNTREG, inclusiv TipTva-ul primit
     // la citire (pus de default). Pe o linie EXISTENTĂ absența lui nu e „n-am
-    // apucat să-l trimit", ci golire deliberată — probată imediat sub override.
+    // apucat să-l trimit", ci golire deliberată — probată imediat mai jos.
     write.Linii[1].TipTvaId = linieServ.TipTvaId;
     write.Linii[1].ValoareTva = 3.33m;
-    FacturaIntrareApply.Aplica(os, idFct, write);
-    Check("Override `ValoareTva` din payload → aplicat DUPĂ calcul (oglinda fluxului UI), fără să atingă `Valoare`",
-        FacturaIntrareApply.Citeste(os, idFct).Linii.Single(l => l.Id == linieServ.Id)
-            is { Valoare: 121m, ValoareTva: 3.33m });
-    // Semantica recalculului CONDIȚIONAT (reziduul pasului 4 al feliei):
-    // clientul nu poate distinge „valoarea citită e override" de „e calculată",
-    // deci NU retrimite ValoareTva pe salvările ulterioare — recalculul rulează
-    // doar pe declanșatorii din UI (baza sau TipTva schimbate), altfel
-    // override-ul salvat ar muri tăcut la orice PUT de header.
+    CheckRefuza("Override ValoareTva pe regim Capitalizat → refuz (F2-D1: regimul nu poartă TVA separat)",
+        () => FacturaIntrareApply.Aplica(os, idFct, write));
+    write.Linii[1].ValoareTva = -5m;
+    CheckRefuza("Override ValoareTva NEGATIV → refuz (F2-D7)",
+        () => FacturaIntrareApply.Aplica(os, idFct, write));
     write.Linii[1].ValoareTva = null;
-    FacturaIntrareApply.Aplica(os, idFct, write);
-    Check("PUT ulterior FĂRĂ declanșatori (baza/TipTva neatinse) → override-ul de ValoareTva PĂSTRAT",
-        FacturaIntrareApply.Citeste(os, idFct).Linii.Single(l => l.Id == linieServ.Id).ValoareTva == 3.33m);
-    var cantitateServ = write.Linii[1].Cantitate;
-    write.Linii[1].Cantitate = cantitateServ * 2;
-    FacturaIntrareApply.Aplica(os, idFct, write);
-    Check("Schimbarea BAZEI redeclanșează calculul standard → override-ul cedează (0 la Capitalizat)",
-        FacturaIntrareApply.Citeste(os, idFct).Linii.Single(l => l.Id == linieServ.Id).ValoareTva == 0m);
-    write.Linii[1].Cantitate = cantitateServ;
     FacturaIntrareApply.Aplica(os, idFct, write);
 
     write.Linii[1].TipTvaId = null;
@@ -2859,7 +2909,9 @@ using (var os = provider.CreateObjectSpace()) {
         && nirDto.DocumentSursaId == idFct && nirDto.DocumentSursaNumar == "E2E-AF1"
         && nirDto.PredatorDenumire == furnizor.Denumire && nirDto.PrimitorDenumire == mag1.Denumire
         && nirDto.Total == 59.5m
-        && nirDto.PoateEdita && nirDto.PoateOpera && !nirDto.PoateAnula && !nirDto.PoateStorna);
+        // PoateEdita e FALS prin construcție (F2-D5): tierul n-are nicio cale de
+        // scriere pe NIR — affordance-ul nu minte contractul.
+        && !nirDto.PoateEdita && nirDto.PoateOpera && !nirDto.PoateAnula && !nirDto.PoateStorna);
     Check("NIR-ul preia DOAR linia de stoc: lotul finalizat (eticheta nu mai spune „în culegere”), valoarea și dimensiunea clonată prin contract",
         nirDto.Linii.Count == 1 && nirDto.Linii[0].LotId == lotFinal.ID
         && nirDto.Linii[0].LotEticheta == lotFinal.Eticheta
@@ -2928,11 +2980,16 @@ using (var os = provider.CreateObjectSpace()) {
         && !os.GetObjectsQuery<FacturaIntrareDetaliu>().Any(l => l.DocumentId == idFct2)
         && !os.GetObjectsQuery<Lot>().Any(l => l.ID == idLotDraft));
 
+    // Review advers F2-D4: lotul FINALIZAT al draftului anulat moare la Sterge
+    // DOAR fără nicio urmă (anularea i-a șters rândurile de registru, nicio
+    // linie vie nu-l mai referă) — altfel ar fi rămas pe viață în nomenclator.
+    // Protecția GATE D1 (loturile cu istorie reală) ține prin gardele de
+    // registre/referințe, nu prin refuzul global de dinainte.
     var idLotFinal = lotFinal.ID;
     FacturaIntrareApply.Sterge(os, idFct);
-    Check("Sterge pe draftul anulat NU ia cu el lotul FINALIZAT de motor (protecția loturilor cu istorie — review GATE D1)",
+    Check("Sterge pe draftul anulat: lotul FINALIZAT rămas FĂRĂ URME (zero registre, zero referințe vii) moare cu documentul (F2-D4)",
         FacturaIntrareApply.Citeste(os, idFct) == null
-        && os.GetObjectsQuery<Lot>().Any(l => l.ID == idLotFinal));
+        && !os.GetObjectsQuery<Lot>().Any(l => l.ID == idLotFinal));
 
     CurataApiFct(os);
     Check("Curățenie finală felia Api FCT (fără reziduuri e2e)",

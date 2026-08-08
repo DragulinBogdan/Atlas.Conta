@@ -76,8 +76,14 @@ export function FctEditorLinie(props: {
             afisare={codSiDenumire}
             cauta={['Cod', 'Denumire']}
             laSelectie={(p) => {
-              const tip = p?.TipMaterialId;
-              return typeof tip === 'string' && !linie.TipMaterialId ? { TipMaterialId: tip } : undefined;
+              // ODataStore deserializează Edm.Guid ca OBIECT `Guid` DevExtreme,
+              // nu ca string (bug găsit la smoke: `typeof === 'string'` pica
+              // mereu) — `String()` îl aduce la forma de sârmă. Aplicarea e
+              // UPDATE FUNCȚIONAL pe starea liniei: `seteaza`-ul valorii a rulat
+              // deja în același event, iar un patch din closure l-ar fi pierdut.
+              const tip = p?.TipMaterialId == null ? undefined : String(p.TipMaterialId);
+              if (tip)
+                setLinie((prev) => prev.TipMaterialId ? prev : { ...prev, TipMaterialId: tip });
             }}
           />
           <Lookup<FctLinieWrite>

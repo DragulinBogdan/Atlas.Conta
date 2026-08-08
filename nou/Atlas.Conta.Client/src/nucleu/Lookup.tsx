@@ -35,10 +35,12 @@ export type PropsLookup<T extends object> = PropsCamp<T> & {
   cauta?: string | string[];
   expand?: string[];
   sortare?: string;
-  // Câmpuri DERIVATE din selecție, aplicate ÎN ACEEAȘI actualizare cu valoarea
-  // (de aceea `seteazaMulte`, nu un al doilea `seteaza`). Rulează doar la
-  // selecție inițiată de operator.
-  laSelectie?: (element: ElementNomenclator | null) => Record<string, unknown> | undefined;
+  // NOTIFICAREA selecției inițiate de operator: felia aplică datele derivate
+  // (Produs → Tip) pe propria stare, cu UPDATE FUNCȚIONAL (`set(prev => …)`) —
+  // nu prin starea formularului din closure. (Prima formă — patch întors aici
+  // și aplicat cu `seteazaMulte` — interfera cu rezolvarea afișării
+  // widget-ului; bug găsit la smoke F2.)
+  laSelectie?: (element: ElementNomenclator | null) => void;
 };
 
 export function Lookup<T extends object>(props: PropsLookup<T>) {
@@ -79,14 +81,22 @@ export function Lookup<T extends object>(props: PropsLookup<T>) {
         showClearButton={!c.meta.obligatoriu}
         noDataText="Nimic găsit"
         onValueChanged={(e) => {
+          // DOAR schimbările OPERATORULUI se propagă în formular (bug găsit la
+          // smoke F2): widget-ul ridică `onValueChanged` și la schimbarea
+          // PROGRAMATICĂ a `value` (starea a pus câmpul), iar un `seteaza` din
+          // acel apel pleacă din closure-ul VECHI al contextului și ȘTERGE
+          // celelalte câmpuri abia scrise (ProdusId murea când precompletarea
+          // punea TipMaterialId). Formularul e sursa de adevăr; widget-ul
+          // raportează exclusiv acțiunile omului (`e.event`).
+          if (!e.event)
+            return;
+          // ODataStore livrează cheile Edm.Guid ca OBIECTE `Guid` DevExtreme —
+          // pe sârmă serializează corect prin propriul `toJSON`; comparațiile
+          // se normalizează cu `String()` (`elementSelectat`, `laSelectie`).
           const valoare = (e.value as string) ?? undefined;
-          // Numai selecția OMULUI propagă derivate: `e.event` lipsește când
-          // valoarea vine din re-seed-ul agregatului după salvare.
-          const extra = laSelectie && e.event ? laSelectie(elementSelectat(e, valoare)) : undefined;
-          if (extra && Object.keys(extra).length > 0)
-            c.seteazaMulte({ [camp]: valoare, ...extra });
-          else
-            c.seteaza(valoare);
+          c.seteaza(valoare);
+          if (laSelectie)
+            laSelectie(elementSelectat(e, valoare));
         }}
       />
     </CampShell>
@@ -100,8 +110,12 @@ export function Lookup<T extends object>(props: PropsLookup<T>) {
 // simplu nu se întâmplă.
 function elementSelectat(e: ValueChangedEvent, valoare: string | undefined): ElementNomenclator | null {
   if (valoare == null) return null;
+  // `ID`-ul item-ului e obiect `Guid` DevExtreme, `valoare` e string normalizat —
+  // comparația trece prin `String()` pe ambele părți (bug găsit la smoke F2:
+  // `===` pe forme diferite nu găsea niciodată elementul).
+  const cheie = String(valoare);
   const selectat = e.component.option('selectedItem') as ElementNomenclator | null | undefined;
-  if (selectat && selectat.ID === valoare) return selectat;
+  if (selectat && String(selectat.ID) === cheie) return selectat;
   const incarcate = e.component.getDataSource()?.items() as ElementNomenclator[] | undefined;
-  return incarcate?.find((i) => i.ID === valoare) ?? null;
+  return incarcate?.find((i) => String(i.ID) === cheie) ?? null;
 }

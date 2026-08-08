@@ -56,7 +56,16 @@ public sealed class FacturaIntrareLinieWriteDto {
     public decimal PretUnitar { get; set; }
     public Guid? TipTvaId { get; set; }
     // null = calculul standard din regim × cotă; valoare = override-ul
-    // operatorului, aplicat DUPĂ `CalculeazaLaCulegere`.
+    // operatorului (36a — factura furnizorului bate rotunjirea), aplicat DUPĂ
+    // `CalculeazaLaCulegere`; acceptat DOAR pe regimurile cu TVA separat
+    // (Normal/TaxareInversă — review F2-D1) și niciodată negativ (F2-D7).
+    // LIMITE ASUMATE ALE SEMANTICII (review F2-D2/D6, documentate nu fixate):
+    // (a) override-ul EXPLICIT 0 nu supraviețuiește operării — condiția 36a din
+    // motor e `ValoareTva != 0`, deci 0 se recalculează la operare; (b) singura
+    // cale de a RENUNȚA la un override salvat e re-atingerea unui declanșator
+    // (baza sau TipTva) — recalculul nu rulează fără ei. Fix-ul de fond pentru
+    // ambele ar fi un flag persistat `TvaSuprascris` pe frunză — aditiv, dacă
+    // nevoia devine reală.
     public decimal? ValoareTva { get; set; }
     // Atributele lotului, culese pe linie; motorul le copiază pe Lot la operare.
     public DateOnly? DataExpirare { get; set; }

@@ -219,6 +219,23 @@ public static class FacturaIntrareApply {
             // separat; regimul Capitalizat îl normalizează la 0 (TVA-ul e în preț).
             if (l.ValoareTva is decimal valoareTva) {
                 VerificaScara(valoareTva, Scara.Bani, "Valoarea TVA");
+                // Review advers F2-D1/D7: override-ul are sens DOAR pe regimurile
+                // care postează TVA separat (Normal/TaxareInversă). Pe Capitalizat
+                // TVA-ul e deja în `Valoare` (l-ar număra de două ori în Total);
+                // pe Scutit/Neimpozabil/fără TipTva, `PregatesteOperare` l-ar
+                // șterge oricum la operare — acceptarea lui ar minți operatorul.
+                // Negativul nu e TVA de intrare (stornarea are documentele ei).
+                if (valoareTva < 0)
+                    throw new OperareException("Valoarea TVA nu poate fi negativă.");
+                // Prin FK, nu prin navigație: `AplicaTipTvaImplicit` setează doar
+                // `TipTvaId`, iar navigația lazy nu e garantată pe toate căile (25b).
+                var regim = detaliu.TipTvaId is Guid tipTvaLinieId
+                    ? os.GetObjectByKey<TipTva>(tipTvaLinieId)?.Regim
+                    : null;
+                if (valoareTva != 0 && regim is not (RegimTva.Normal or RegimTva.TaxareInversa))
+                    throw new OperareException(
+                        "Valoarea TVA se completează manual doar pe un tip de TVA cu regim "
+                        + "Normal sau Taxare inversă — regimul liniei nu poartă TVA separat.");
                 detaliu.ValoareTva = valoareTva;
             }
         }
@@ -313,6 +330,13 @@ public static class FacturaIntrareApply {
             .Where(l => l.DocumentId == id)
             .Sum(l => (decimal?)(l.Valoare + l.ValoareTva)) ?? 0m;
 
+        // Affordance ONESTĂ (review advers F2-D5): gardianul de grup refuză
+        // anularea/stornarea cât timp există un copil OPERAT — iar copiii sunt
+        // deja calculați pentru DTO, deci consecința se arată, nu se descoperă
+        // la refuz. (Imperecherile rămân neacoperite — felia trezoreriei.)
+        var copii = Copii(os, id);
+        var faraCopiiOperati = copii.All(c => c.Stare != nameof(StareDocument.Operat));
+
         return new FacturaIntrareReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
@@ -325,9 +349,9 @@ public static class FacturaIntrareApply {
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
-            PoateAnula = h.Stare == StareDocument.Operat,
-            PoateStorna = h.Stare == StareDocument.Operat,
-            Copii = Copii(os, id),
+            PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati,
+            PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati,
+            Copii = copii,
             Linii = linii.Select(l => new FacturaIntrareLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,

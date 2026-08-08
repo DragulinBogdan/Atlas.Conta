@@ -75,7 +75,9 @@ public static class NirApply {
             Total = total,
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             DocumentSursaNumar = h.DocumentSursaNumar,
-            PoateEdita = h.Stare == StareDocument.Draft,
+            // Review advers F2-D5: pe acest tier NIR-ul nu are NICIO cale de
+            // scriere (F2-D3) — o affordance de editare ar minți contractul.
+            PoateEdita = false,
             PoateOpera = h.Stare == StareDocument.Draft,
             PoateAnula = h.Stare == StareDocument.Operat,
             PoateStorna = h.Stare == StareDocument.Operat,
