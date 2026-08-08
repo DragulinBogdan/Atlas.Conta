@@ -133,6 +133,13 @@ public static class FacturaIntrareApply {
                 noua = true;
             }
 
+            // Starea DE DINAINTEA mapării, pentru semantica recalculului de mai
+            // jos: în UI recalculul TVA se declanșează DOAR la schimbarea bazei
+            // (Cantitate/PretUnitar) sau a TipTva (`RecalculValoriCulegere`) —
+            // un Save care nu le atinge NU pierde override-ul de ValoareTva.
+            var bazaVeche = noua ? 0m : detaliu.PretUnitar * detaliu.Cantitate;
+            Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
+
             detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
                 ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
 
@@ -198,7 +205,14 @@ public static class FacturaIntrareApply {
             // Lanțul de valori, materializat LA CULEGERE (GATE 53c): operatorul
             // confruntă hârtia înainte de operare. `PregatesteOperare` îl rescrie
             // la operare din aceeași formulă — de aceea `Valoare` nu e în WriteDto.
-            TvaService.CalculeazaLaCulegere(os, detaliu, detaliu.PretUnitar * detaliu.Cantitate);
+            // Recalculul e CONDIȚIONAT de declanșatorii din UI (baza sau TipTva
+            // schimbate) — altfel un PUT care editează doar header-ul ar pierde
+            // tăcut override-ul de ValoareTva salvat anterior (clientul nu poate
+            // distinge „valoarea citită e override" de „e calculată", deci nu o
+            // retrimite — reziduul semnalat la pasul 4 al feliei).
+            var bazaNoua = detaliu.PretUnitar * detaliu.Cantitate;
+            if (noua || bazaNoua != bazaVeche || detaliu.TipTvaId != tipTvaVechi)
+                TvaService.CalculeazaLaCulegere(os, detaliu, bazaNoua);
             // Override-ul operatorului, DUPĂ calcul (oglinda fluxului UI): factura
             // furnizorului bate rotunjirea noastră (regula 36a). La operare îl
             // păstrează `pastreazaTvaCules: true` — pe regimurile care postează TVA

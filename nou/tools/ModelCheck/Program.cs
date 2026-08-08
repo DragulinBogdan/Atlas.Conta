@@ -2747,10 +2747,22 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Override `ValoareTva` din payload → aplicat DUPĂ calcul (oglinda fluxului UI), fără să atingă `Valoare`",
         FacturaIntrareApply.Citeste(os, idFct).Linii.Single(l => l.Id == linieServ.Id)
             is { Valoare: 121m, ValoareTva: 3.33m });
+    // Semantica recalculului CONDIȚIONAT (reziduul pasului 4 al feliei):
+    // clientul nu poate distinge „valoarea citită e override" de „e calculată",
+    // deci NU retrimite ValoareTva pe salvările ulterioare — recalculul rulează
+    // doar pe declanșatorii din UI (baza sau TipTva schimbate), altfel
+    // override-ul salvat ar muri tăcut la orice PUT de header.
     write.Linii[1].ValoareTva = null;
     FacturaIntrareApply.Aplica(os, idFct, write);
-    Check("Fără override, calculul standard îl readuce la 0 (nu rămâne valoare stale de la baza precedentă)",
+    Check("PUT ulterior FĂRĂ declanșatori (baza/TipTva neatinse) → override-ul de ValoareTva PĂSTRAT",
+        FacturaIntrareApply.Citeste(os, idFct).Linii.Single(l => l.Id == linieServ.Id).ValoareTva == 3.33m);
+    var cantitateServ = write.Linii[1].Cantitate;
+    write.Linii[1].Cantitate = cantitateServ * 2;
+    FacturaIntrareApply.Aplica(os, idFct, write);
+    Check("Schimbarea BAZEI redeclanșează calculul standard → override-ul cedează (0 la Capitalizat)",
         FacturaIntrareApply.Citeste(os, idFct).Linii.Single(l => l.Id == linieServ.Id).ValoareTva == 0m);
+    write.Linii[1].Cantitate = cantitateServ;
+    FacturaIntrareApply.Aplica(os, idFct, write);
 
     write.Linii[1].TipTvaId = null;
     FacturaIntrareApply.Aplica(os, idFct, write);
