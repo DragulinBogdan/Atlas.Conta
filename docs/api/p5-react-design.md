@@ -148,6 +148,12 @@ componente compuse în cod, nu limbaj de descriptori interpretat.
 - **Biblioteca de formular** (React Hook Form vs hand-rolled peste context)
   — nedecisă; se alege la primul spike al `DocumentShell`/`CampShell`, cu
   criteriul: array-ul de linii + `useCampMeta` trebuie să rămână naturale.
+  *DECISĂ la spike 1 (2026-08-08, `p5-spike1-contract.md`): hand-rolled pe
+  context. Motivele: validarea autoritară vine ca `Erori[]` neatașate de câmp
+  (nimic pentru resolverele RHF), agregatul WriteDto e „o singură valoare
+  locală" (RHF ar fi un al doilea model al aceleiași stări), liniile nu-s
+  field array (editor propriu + grilă readonly). Criteriile de răsturnare în
+  `Client/README.md`.*
 - **`Lot.DefaultProperty`/ToString** — de tranșat în model (restanța 40d).
 - Detalii standard neatinse deliberat (nu structurează): routing library,
   stocarea/refresh-ul JWT în SPA, theming DevExtreme, structura exactă a

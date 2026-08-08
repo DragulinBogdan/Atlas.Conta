@@ -1,10 +1,12 @@
 # Pasul 5 — Spike 1: fir complet subțire API+React pe NotaTransfer (contract)
 
-Stare: **ÎN LUCRU (2026-08-08)**. Scope confirmat de utilizator: fir complet
-subțire (host WebApi + gardian + felie verticală BTR + client React minimal cu
-codegen), tip pilot **NotaTransfer** (cel mai simplu — focusul rămâne pe
-plumbing, nu pe specificul tipului). Designurile de bază: `p5-api-design.md`
-(decizia 42), `p5-react-design.md` (decizia 43) — neatinse; spike-ul le probează.
+Stare: **EXECUTAT (2026-08-08)** — toate cele 5 pași + review advers cu
+fix-urile aplicate; rezumatul închiderii în §Închidere, la final. Scope
+confirmat de utilizator: fir complet subțire (host WebApi + gardian + felie
+verticală BTR + client React minimal cu codegen), tip pilot **NotaTransfer**
+(cel mai simplu — focusul rămâne pe plumbing, nu pe specificul tipului).
+Designurile de bază: `p5-api-design.md` (decizia 42), `p5-react-design.md`
+(decizia 43) — neatinse; spike-ul le-a probat.
 
 ## Decizii pin-uite (D1–D12)
 
@@ -104,3 +106,62 @@ Restul tipurilor de document; captions prin CaptionHelper/XafApplication;
 assembly `Api` separat; CORS/deploy static (prod same-host vine la felia de
 release); concurența multi-operator (parcată, 42 §8); MultiTenancy; importul ca
 API; localizarea completă a clientului.
+
+## Închidere (2026-08-08)
+
+**Firul complet funcționează end-to-end, verificat în browser pe baza Privat
+(clona de import, 45k BTR-uri reale)**: login JWT → listă remote → draft nou cu
+lookup-uri (Gestiune local, Lot remote cu eticheta compusă din `$expand=Produs`)
+→ PUT agregat → dry-run verde → operare (număr din serie, Total server-side) →
+proiecția sold-stoc corectă → anulare → ștergere. ModelCheck: bugetar 236 /
+privat 185, verzi, inclusiv driftul metadata.
+
+**Verificările empirice §8 — AMBELE ÎNCHISE**: (1) formatul
+`UserFriendlyExceptionFilter` = `ContentResult` text brut 400/403 (din surse) —
+inutilizabil; contractul nostru `422 {Erori[]}` se traduce în controller, ÎNAINTE
+de filtru. (2) atribuirea auditului sub OS non-secured: DA — rândurile
+`AuditData` scrise de motor (registre, tranziții) poartă utilizatorul din
+scope-ul request-ului JWT (`ISecurityStrategyBase` scoped), verificat pe baza
+vie.
+
+**Constatare de fond a spike-ului (probă pe surse + empiric): validarea XAF NU
+rulează pe tierul API** — `PersistenceValidationController` e per-View; regulile
+`RuleRequiredField` sunt inerte pe OS-urile din `IObjectSpaceFactory`.
+Consecință de proiectare pentru TOATE feliile: `Aplica` rezolvă FK-urile cu
+mesaje de domeniu, gardianul de Committing e plasa de fond. (Închide nota 40b.)
+
+**Review advers — 3 defecte de FOND, toate fixate**, tema comună: gardianul
+acoperea „ce" se scrie, nu „cine" comandă și „de unde vine" entitatea:
+F1 comenzile = ușă non-secured fără autorizare → gate pe secured
+(404/403/CanWrite) în ambele host-uri; F2 re-parentarea liniilor scăpa →
+refuz pe `OriginalValues[DocumentId]`; F3 `Numar`/`Autogenerat`/
+`DocumentSursaId`/`DataOperare` nepăzite → păzite pe originale (Numar doar la
+tipurile cu PoliticaNumerotare — `AsignaNumar` onorează numărul pre-completat,
+legitim DOAR la re-operare în OS-ul motorului). Medii fixate: Lot read-only
+prin OData; validare de scară pe Cantitate; handler JSON de producție;
+`PermissionsReloadMode` aliniat; plafon `take`.
+
+**Datorii asumate, documentate (nu blochează):**
+- **Driftul `openapi.json` NU e verificat de nimeni** (doar `metadata.json` e
+  sub ModelCheck) — dump-ul e manual (`scripts/dump-openapi.mjs` pe host viu);
+  fix-ul corect = generare Swagger la build (Swashbuckle CLI) + comparație.
+  Se tranșează când feliile se înmulțesc.
+- **Finisaj client** (lista feliei, nu a XAF-ului): liniile nesalvate se văd
+  fără Tip/Lot în grilă (afișarea e pe câmpurile ReadDto); stare tranzitorie la
+  navigarea directă pe URL (primul click de comandă poate fi ignorat, lookup
+  scurt gol); `window.prompt` la data stornării → `CampData`; 401 în
+  grile/ODataStore nu redirecționează la login; cheia de licență DevExtreme
+  (`devextreme-license` → `config({licenseKey})`); captions RO pe
+  NumarPV/DataPV (de pus `[XafDisplayName]` în model).
+- **JWT**: cheia simetrică e în `appsettings.json` (dev); înainte de orice
+  deploy: user-secrets/env + `ValidateIssuer/Audience`.
+- Overload-urile OData cu `tenantName` NU trec prin `IObjectSpaceCustomizer`
+  (irelevant fără MultiTenancy — de re-verificat dacă MT devine real).
+- `$metadata` OData expune FORMA întregului model (EntityType-uri fără rute,
+  inclusiv Document/Registre) — scurgere de formă, nu de acces; de tranșat cu
+  un EdmModel customizer dacă deranjează.
+
+**Verdictul D11 pin-uit**: formular **hand-rolled pe context** (nu React Hook
+Form) — validarea autoritară vine ca `Erori[]` neatașate de câmp, agregatul e „o
+singură valoare locală", liniile nu-s field array; criteriile de răsturnare în
+`Client/README.md`.

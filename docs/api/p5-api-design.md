@@ -187,6 +187,17 @@ resursă**. Decizia 8 veche se sparge în:
 - **Verificări empirice la primul spike**: atribuirea auditului sub OS
   non-secured (§3); formatul `UserFriendlyExceptionFilter` (`erori[]` vs
   string concatenat).
+  *Anotare 2026-08-08 (spike 1 — `p5-spike1-contract.md`): AMBELE ÎNCHISE.
+  Auditul sub OS non-secured atribuie corect utilizatorul din scope-ul
+  request-ului (verificat pe baza vie). Filtrul DX = text brut 400/403 —
+  traducerea `422 {Erori[]}` se face în controllerele noastre, înaintea lui.
+  Constatare nouă de fond: validarea XAF (RuleRequiredField) NU rulează pe
+  acest tier (PersistenceValidationController e per-View) — apply-ul fiecărei
+  felii rezolvă FK-urile cu mesaje de domeniu, gardianul de Committing e plasa.
+  Amendament la §2/§3 din review-ul advers al spike-ului: distincția
+  secured/non-secured răspunde la „cum scrie motorul", NU la „cine are voie să-l
+  cheme" — comenzile poartă gate de autorizare (CanWrite pe documentul rezolvat
+  prin OS secured) înaintea ușii non-secured, în ambele host-uri.*
 - **Datoria dublă parcată împreună**: concurență multi-operator + acoperirea
   rest per linie (advisory lock per cheie — 25f; optimistic concurrency pe
   draft aditiv).
