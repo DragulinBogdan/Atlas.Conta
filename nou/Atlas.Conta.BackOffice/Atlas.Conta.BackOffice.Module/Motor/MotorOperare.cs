@@ -18,8 +18,44 @@ public class OperareException : UserFriendlyException {
 // commit-ul nu sunt serializate între utilizatori concurenți; la nevoie se
 // adaugă advisory lock Postgres per cheie de stoc — aditiv, doar aici.
 public static class MotorOperare {
-    // Întoarce documentul conex generat (draft autogenerat, decizia 17) sau null.
-    public static Document Opereaza(IObjectSpace os, Document doc) {
+    // Rezultatul fazelor „calculează + validează" (33d) — tot ce materializarea
+    // are nevoie, fără ca nimic să fi fost scris în registre. Extras ca să existe
+    // O SINGURĂ cale de reguli pentru operare și pentru dry-run (`Valideaza`,
+    // spike pasul 5 / D3): ordinea fazelor și comportamentul lui `Opereaza` sunt
+    // NESCHIMBATE — codul e mutat, nu rescris.
+    sealed class PlanOperare {
+        public TipDocument TipDoc;
+        public Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> ClaseTip;
+        public List<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)> Miscari;
+        public List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
+            decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)> Note;
+    }
+
+    // Dry-run-ul comenzii de operare (D3): rulează EXACT fazele de calcul și
+    // validare ale lui `Opereaza` (gard stare/perioadă → PregatesteOperare →
+    // validare declarativă + hook-ul tipului → mișcări de stoc + gardianul de
+    // sold → note → pasul TVA → dimensiuni obligatorii) și se oprește ÎNAINTE de
+    // materializare. Listă goală = documentul trece toți gardienii.
+    //
+    // ATENȚIE (contract de apelant): dry-run-ul NU e read-only pe ObjectSpace-ul
+    // primit — `PregatesteOperare` scrie `Valoare`/`Cantitate` pe linii, iar
+    // gardienii pot lăsa alte instanțe atinse. Nimic nu se comite aici, dar
+    // apelantul trebuie să folosească un ObjectSpace PROPRIU, aruncat după apel
+    // (calea vie: OS non-secured creat de adaptorul `OperareApi`).
+    public static IReadOnlyList<string> Valideaza(IObjectSpace os, Document doc) {
+        try {
+            CalculeazaSiValideaza(os, doc);
+            return Array.Empty<string>();
+        }
+        catch (OperareException ex) {
+            return ex.Message
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(l => l.Trim())
+                .ToList();
+        }
+    }
+
+    static PlanOperare CalculeazaSiValideaza(IObjectSpace os, Document doc) {
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException("Doar un document în starea Draft poate fi operat.");
         GardianPerioada.VerificaDeschisa(os, doc.Data);
@@ -219,6 +255,17 @@ public static class MotorOperare {
         // din plan = date de validare) se verifică pe seturile REZOLVATE, per
         // latură — abia aici se știe și contul, și rezultatul coalesce-ului.
         VerificaDimensiuniObligatorii(os, note, claseTip);
+
+        return new PlanOperare { TipDoc = tipDoc, ClaseTip = claseTip, Miscari = miscari, Note = note };
+    }
+
+    // Întoarce documentul conex generat (draft autogenerat, decizia 17) sau null.
+    public static Document Opereaza(IObjectSpace os, Document doc) {
+        var plan = CalculeazaSiValideaza(os, doc);
+        var tipDoc = plan.TipDoc;
+        var claseTip = plan.ClaseTip;
+        var miscari = plan.Miscari;
+        var note = plan.Note;
 
         // 3. Materializarea — toți gardienii au trecut.
         //

@@ -15,11 +15,18 @@ public class DocumentEditareController : ObjectViewController<DetailView, Docume
         Aplica();
         View.CurrentObjectChanged += OnSchimbare;
         ObjectSpace.Committed += OnSchimbare;
+        // Spike pasul 5 (D5): motorul nu mai comite în OS-ul View-ului (rulează
+        // în OS-ul lui non-secured), deci `Committed` NU se mai declanșează la
+        // operare — starea nouă vine prin `ObjectSpace.Refresh()`, adică prin
+        // `Reloaded`. Fără abonarea asta, un document abia operat rămânea
+        // editabil în ecran până la re-deschidere.
+        ObjectSpace.Reloaded += OnSchimbare;
     }
 
     protected override void OnDeactivated() {
         View.CurrentObjectChanged -= OnSchimbare;
         ObjectSpace.Committed -= OnSchimbare;
+        ObjectSpace.Reloaded -= OnSchimbare;
         base.OnDeactivated();
     }
 

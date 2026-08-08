@@ -24,14 +24,18 @@ public class DocumentDetaliiEditareController : ObjectViewController<ListView, D
     protected override void OnActivated() {
         base.OnActivated();
         Aplica();
-        // Post-operare: MotorOperare comite pe OS-ul master-ului (același OS ca
-        // lista nested — colecție agregată), deci Committed re-evaluează starea
-        // fără reconstrucția view-ului. Același mecanism ca DocumentEditareController.
+        // Post-operare: starea se re-evaluează fără reconstrucția view-ului.
+        // Spike pasul 5 (D5): motorul rulează acum într-un OS non-secured
+        // propriu, deci semnalul de după operare e `Reloaded`
+        // (DocumentOperareController face `ObjectSpace.Refresh()`), nu
+        // `Committed`; ambele rămân abonate — Committed acoperă Save-ul din ecran.
         ObjectSpace.Committed += OnSchimbare;
+        ObjectSpace.Reloaded += OnSchimbare;
     }
 
     protected override void OnDeactivated() {
         ObjectSpace.Committed -= OnSchimbare;
+        ObjectSpace.Reloaded -= OnSchimbare;
         base.OnDeactivated();
     }
 
@@ -61,10 +65,13 @@ public class DocumentDetaliuDetailEditareController : ObjectViewController<Detai
         base.OnActivated();
         Aplica();
         ObjectSpace.Committed += OnSchimbare;
+        // Ca mai sus (D5): după operare semnalul e `Reloaded`, nu `Committed`.
+        ObjectSpace.Reloaded += OnSchimbare;
     }
 
     protected override void OnDeactivated() {
         ObjectSpace.Committed -= OnSchimbare;
+        ObjectSpace.Reloaded -= OnSchimbare;
         base.OnDeactivated();
     }
 

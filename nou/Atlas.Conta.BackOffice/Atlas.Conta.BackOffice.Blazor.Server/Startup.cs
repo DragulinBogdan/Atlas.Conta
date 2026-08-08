@@ -1,4 +1,5 @@
 ﻿using Atlas.Conta.BackOffice.Blazor.Server.Services;
+using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.DXF.Blazor.Application.Extensions;
 using Atlas.DXF.EfCore.Database.Exceptions;
 using Azure.AI.OpenAI;
@@ -176,6 +177,11 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
                         options.IsSupportChangePassword = true;
                     });
             });
+            // Gardianul transversal de scriere (spike pasul 5 / D4, decizia 42a):
+            // se înregistrează în FIECARE host, fiindcă modulele XAF nu pot adăuga
+            // servicii în DI. Seam-ul (`IObjectSpaceCustomizer`) prinde EXACT
+            // ObjectSpace-urile secured — vezi probele din `GardianEditare`.
+            services.AddContaGardianEditare();
             // După AddXaf: AtlasDxfExceptionService câștigă rezoluția IExceptionHandlerService,
             // iar violările de constraint DB apar în UI ca mesaje prietenoase.
             services.AddAtlasDxfServices();

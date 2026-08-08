@@ -1,6 +1,4 @@
-using System.ComponentModel;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Controllers;
@@ -10,9 +8,12 @@ namespace Atlas.Conta.BackOffice.Module.Controllers;
 // generic prin UI îi ocolea. Decizia: New rămâne
 // PERMIS, dar validat la commit; Edit blocat (șterge + recreează); Delete liber
 // (link-ul se desface fără registre proprii — gardianul de anulare/storno există
-// deja în motor). Calea nu se suprapune cu motorul: controller-ul se activează
-// DOAR pe view-urile de Imperechere; imperecherea automată a plății se creează în
-// OS-ul documentului (view de Document), unde acest controller nu e activ.
+// deja în motor).
+//
+// Spike pasul 5 (D4): partea de ENFORCEMENT a migrat în `GardianEditare` —
+// gardian generic pe `Committing`-ul ORICĂRUI ObjectSpace secured, deci aceleași
+// invariante și pe calea Web API, unde nu există controllere de view. Aici rămân
+// doar CAPABILITĂȚILE de UX (ce e editabil în ecran).
 public sealed class ImperechereController : ViewController {
     public ImperechereController() {
         TargetObjectType = typeof(Imperechere);
@@ -23,16 +24,14 @@ public sealed class ImperechereController : ViewController {
         base.OnActivated();
         AplicaCapabilitati();
         View.CurrentObjectChanged += OnCurrentObjectChanged;
-        View.ObjectSpace.Committing += OnCommitting;
         // După Save-ul unui obiect NOU, CurrentObjectChanged nu se declanșează —
         // fără re-evaluare pe Committed view-ul ar rămâne editabil (backstop-ul
-        // din OnCommitting refuza abia la commit); pattern-ul 40c.
+        // din gardian refuză abia la commit); pattern-ul 40c.
         View.ObjectSpace.Committed += OnCommitted;
     }
 
     protected override void OnDeactivated() {
         View.CurrentObjectChanged -= OnCurrentObjectChanged;
-        View.ObjectSpace.Committing -= OnCommitting;
         View.ObjectSpace.Committed -= OnCommitted;
         base.OnDeactivated();
     }
@@ -47,21 +46,5 @@ public sealed class ImperechereController : ViewController {
     void AplicaCapabilitati() {
         View.AllowEdit["Invarianti"] = View is DetailView
             && View.ObjectSpace.IsNewObject(View.CurrentObject);
-    }
-
-    void OnCommitting(object sender, CancelEventArgs e) {
-        var os = View.ObjectSpace;
-        foreach (var imp in os.ModifiedObjects.OfType<Imperechere>()) {
-            if (os.IsDeletedObject(imp))
-                continue; // ștergerea e liberă (decizia 31d)
-            if (os.IsNewObject(imp))
-                // Limitare asumată (ca gardianul de sold, decizia 25f): două
-                // link-uri NOI în același commit nu se văd reciproc la Σ≤rest —
-                // niciunul nu e încă persistat, deci fiecare se validează contra
-                // restului din baza de date (back-office cu operator unic).
-                ImperechereService.ValideazaCreare(os, imp.DocumentStingator, imp.Document, imp.Suma);
-            else
-                throw new OperareException("Imperecherea nu se editează — șterge-o și creeaz-o din nou.");
-        }
     }
 }

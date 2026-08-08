@@ -1,4 +1,5 @@
 ﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.WebApi.JWT;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.ApplicationBuilder;
@@ -29,6 +30,14 @@ namespace Atlas.Conta.BackOffice.WebApi {
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
             services.AddScoped<IAuthenticationTokenProvider, JwtTokenProviderService>();
+
+            // Gardianul transversal de scriere (spike pasul 5 / D4, decizia 42a):
+            // aceeași înregistrare ca în Blazor.Server — modulele XAF nu pot adăuga
+            // servicii în DI, iar seam-ul (`IObjectSpaceCustomizer`) e singurul care
+            // acoperă ȘI OS-urile secured din `IObjectSpaceFactory` (DataService /
+            // OData / endpoint-urile feliei), nu doar View-urile Blazor. Probele pe
+            // surse: `Atlas.Conta.BackOffice.Module/Motor/GardianEditare.cs`.
+            services.AddContaGardianEditare();
 
             services.AddXafWebApi(builder => {
                 builder.ConfigureOptions(options => {
