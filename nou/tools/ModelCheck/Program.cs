@@ -1,6 +1,9 @@
+using Atlas.Conta.BackOffice.Module.Api;
+using Atlas.Conta.BackOffice.Module.Api.Btr;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
@@ -2099,6 +2102,205 @@ using (var os = provider.CreateObjectSpace()) {
     Curata(os);
     Check("Curățenie finală (fără reziduuri e2e)",
         !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajProdus));
+}
+
+// =============== Scenariul e2e pasul 5 / spike 1: felia BTR (D1/D8/D9) ===============
+// Același obiect de studiu ca 3b (transferul), dar parcurs prin CONTRACTUL
+// feliei, nu prin entități: WriteDto → `NotaTransferApply.Aplica` → `Citeste` /
+// `Lista` → dry-run `OperareApi.Valideaza` → comenzile `OperareApi`. Endpoint-urile
+// din host sunt transport peste EXACT acest cod (D1: DTO-uri + Apply în Module,
+// fără ASP.NET), deci ce e verde aici e verde și pe sârmă — controllerul nu mai
+// poate ascunde o regulă.
+//
+// Reciclează marcajele lui 3b (produs `E2E-PRB`, `NumarPV = "E2E"`), deci `Curata`
+// de mai sus acoperă și reziduurile acestui bloc.
+using (var os = provider.CreateObjectSpace()) {
+    Curata(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var mag2 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG2");
+    var tipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302.01.00");
+
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = MarcajProdus;
+    produs.Denumire = "Produs probă felia BTR";
+    produs.UM = "BUC";
+    produs.TipMaterial = tipMaterial;
+
+    var lot = os.CreateObject<Lot>();
+    lot.Produs = produs;
+    lot.PretUnitar = 10m;
+    lot.Gestiune = mag1;
+    lot.Data = new DateOnly(2026, 1, 10);
+    var deschidere = os.CreateObject<RegistruStoc>();
+    deschidere.Data = lot.Data;
+    deschidere.TipStoc = TipStoc.Magazie;
+    deschidere.Lot = lot;
+    deschidere.Repartitor = mag1;
+    deschidere.Cantitate = 10m;
+    deschidere.Valoare = 100m;
+    os.CommitChanges();
+
+    // Dry-run-ul își cere ObjectSpace-ul PROPRIU, aruncat după apel: `Valideaza`
+    // rulează `PregatesteOperare`, care SCRIE pe linii (contractul lui
+    // MotorOperare.Valideaza). Pe calea vie, OS-ul ăsta e cel non-secured al
+    // endpoint-ului `POST .../valideaza`.
+    IReadOnlyList<string> DryRun(Guid docId) {
+        using var osDry = provider.CreateObjectSpace();
+        return OperareApi.Valideaza(osDry, docId);
+    }
+
+    // --- Apply: creare din WriteDto (fără Stare/Numar/Valoare — server-owned) ---
+    var write = new NotaTransferWriteDto {
+        Data = new DateOnly(2026, 3, 5),
+        PredatorId = mag1.ID,
+        PrimitorId = mag2.ID,
+        NumarPV = "E2E",
+        DataPV = new DateOnly(2026, 3, 4),
+        Linii = { new NotaTransferLinieWriteDto { TipMaterialId = tipMaterial.ID, LotId = lot.ID, Cantitate = 4m } }
+    };
+    var idBtr = NotaTransferApply.Aplica(os, null, write);
+    var citit = NotaTransferApply.Citeste(os, idBtr);
+    Check("Apply creare → header proiectat plat (laturi cu denumiri, PV, sursă) + affordances de Draft",
+        citit != null && citit.Id == idBtr && citit.Stare == "Draft" && citit.Numar == null
+        && citit.Data == new DateOnly(2026, 3, 5) && citit.DataPV == new DateOnly(2026, 3, 4)
+        && citit.NumarPV == "E2E"
+        && citit.PredatorId == mag1.ID && citit.PredatorDenumire == mag1.Denumire
+        && citit.PrimitorId == mag2.ID && citit.PrimitorDenumire == mag2.Denumire
+        && !citit.Autogenerat && citit.DocumentSursaId == null
+        && citit.PoateEdita && citit.PoateOpera && !citit.PoateAnula && !citit.PoateStorna);
+    Check("Apply creare → o linie, cu eticheta lotului identică celei din model (oglinda lui Lot.Eticheta)",
+        citit.Linii.Count == 1 && citit.Linii[0].LotId == lot.ID
+        && citit.Linii[0].LotEticheta == lot.Eticheta
+        && citit.Linii[0].TipMaterialCod == tipMaterial.Cod
+        && citit.Linii[0].Cantitate == 4m);
+    Check("Apply NU scrie `Valoare` pe linie (o materializează motorul la operare)",
+        citit.Linii[0].Valoare == 0m && citit.Total == 0m);
+
+    // --- Apply: reconcilierea colecției (update + insert, apoi delete) ---
+    var idLinie = citit.Linii[0].Id;
+    write.Linii[0].Id = idLinie;
+    write.Linii[0].Cantitate = 3m;
+    write.Linii.Add(new NotaTransferLinieWriteDto { TipMaterialId = tipMaterial.ID, LotId = lot.ID, Cantitate = 1m });
+    NotaTransferApply.Aplica(os, idBtr, write);
+    citit = NotaTransferApply.Citeste(os, idBtr);
+    Check("Apply update → linia cu Id se actualizează, linia fără Id se adaugă",
+        citit.Linii.Count == 2
+        && citit.Linii.Single(l => l.Id == idLinie).Cantitate == 3m
+        && citit.Linii.Sum(l => l.Cantitate) == 4m);
+
+    write.Linii.RemoveAt(1);
+    write.Linii[0].Cantitate = 4m;
+    NotaTransferApply.Aplica(os, idBtr, write);
+    citit = NotaTransferApply.Citeste(os, idBtr);
+    Check("Apply → linia absentă din payload se ȘTERGE (reconciliere server-side, nu CRUD per linie)",
+        citit.Linii.Count == 1 && citit.Linii[0].Id == idLinie && citit.Linii[0].Cantitate == 4m
+        && os.GetObjectsQuery<DocumentDetaliu>().Count(l => l.DocumentId == idBtr) == 1);
+
+    CheckRefuza("Apply cu Id de linie străin → refuz (agregatul nu adoptă linii din alt document)", () =>
+        NotaTransferApply.Aplica(os, idBtr, new NotaTransferWriteDto {
+            Data = write.Data, PredatorId = mag1.ID, PrimitorId = mag2.ID, NumarPV = "E2E",
+            Linii = { new NotaTransferLinieWriteDto {
+                Id = Guid.NewGuid(), TipMaterialId = tipMaterial.ID, LotId = lot.ID, Cantitate = 1m } }
+        }));
+
+    // --- Dry-run: valid, apoi stricat deliberat ---
+    var politicaBtrApi = os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "BTR");
+    var numarInainteApi = politicaBtrApi.UrmatorulNumar;
+
+    Check("Dry-run (Valideaza) pe draft valid → listă goală", DryRun(idBtr).Count == 0);
+
+    write.PrimitorId = mag1.ID; // aceeași gestiune pe ambele laturi
+    NotaTransferApply.Aplica(os, idBtr, write);
+    var eroriDry = DryRun(idBtr);
+    Check("Dry-run pe draft stricat → eroarea de domeniu a tipului, ca DATE",
+        eroriDry.Count > 0 && eroriDry.Any(e => e.Contains("difere")));
+
+    // Proba că dry-run-ul e chiar DRY: nimic materializat, nici măcar numărul
+    // (care în `Opereaza` se consumă abia în faza de materializare — GATE XAF D6).
+    using (var osVerif = provider.CreateObjectSpace()) {
+        var docVerif = osVerif.GetObjectByKey<NotaTransfer>(idBtr);
+        var polVerif = osVerif.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "BTR");
+        Check("Dry-run NU materializează nimic: zero rânduri de registru, număr neconsumat, stare Draft",
+            !osVerif.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idBtr)
+            && !osVerif.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idBtr)
+            && string.IsNullOrWhiteSpace(docVerif.Numar)
+            && docVerif.Stare == StareDocument.Draft
+            && polVerif.UrmatorulNumar == numarInainteApi);
+    }
+
+    write.PrimitorId = mag2.ID;
+    NotaTransferApply.Aplica(os, idBtr, write);
+    Check("Dry-run pe draftul reparat → din nou listă goală", DryRun(idBtr).Count == 0);
+
+    // --- Comenzile prin adaptor: rezultatul e DATE, nu entitate ---
+    var rezultatOperare = OperareApi.Opereaza(os, idBtr);
+    Check("OperareApi.Opereaza → OperareRezultat cu StareNoua=Operat, fără conex (BTR n-are politică)",
+        rezultatOperare.DocumentId == idBtr && rezultatOperare.StareNoua == StareDocument.Operat
+        && rezultatOperare.ConexId == null && rezultatOperare.Mesaje.Count == 0);
+    Check("OperareRezultatDto → starea traversează sârma ca TEXT",
+        OperareRezultatDto.Din(rezultatOperare).StareNoua == "Operat");
+
+    citit = NotaTransferApply.Citeste(os, idBtr);
+    Check("Citeste după operare → Numar din politică, Total și Valoare materializate de motor, affordances inversate",
+        citit.Stare == "Operat" && citit.Numar?.StartsWith("BTR-") == true && citit.DataOperare != null
+        && citit.Total == 40m && citit.Linii[0].Valoare == 40m
+        && !citit.PoateEdita && !citit.PoateOpera && citit.PoateAnula && citit.PoateStorna);
+
+    CheckRefuza("Apply peste un document Operat → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
+        () => NotaTransferApply.Aplica(os, idBtr, write));
+
+    // --- Lista: proiecție IQueryable, traductibilă integral în SQL ---
+    var randuriLista = NotaTransferApply.Lista(os).Where(x => x.Id == idBtr).ToList();
+    Check("Lista → un rând, cu Stare ca text (CASE în SQL) și Total din agregatul liniilor",
+        randuriLista.Count == 1 && randuriLista[0].Stare == "Operat" && randuriLista[0].Total == 40m
+        && randuriLista[0].Numar == citit.Numar
+        && randuriLista[0].PredatorDenumire == mag1.Denumire
+        && randuriLista[0].PrimitorDenumire == mag2.Denumire);
+
+    var idGol = NotaTransferApply.Aplica(os, null, new NotaTransferWriteDto {
+        Data = new DateOnly(2026, 3, 6), PredatorId = mag1.ID, PrimitorId = mag2.ID, NumarPV = "E2E"
+    });
+    Check("Lista → draftul FĂRĂ linii apare cu Total 0 (LEFT JOIN pe agregat, nu subquery corelat)",
+        NotaTransferApply.Lista(os).Any(x => x.Id == idGol && x.Total == 0m));
+    Check("Lista → filtrarea/sortarea se traduc în SQL peste proiecție (sondă: sort + take)",
+        NotaTransferApply.Lista(os).Where(x => x.Stare == "Draft")
+            .OrderByDescending(x => x.Data).Take(1).ToList().Count == 1);
+
+    // --- D9: proiecția de sold == StocService, per cheie ---
+    var proiectie = StocProiectii.SoldStoc(os).Where(r => r.LotId == lot.ID).ToList();
+    Check("Proiecția SoldStoc → exact cheile mișcate de scenariu (MAG1 6, MAG2 4), cu valoarea agregată",
+        proiectie.Count == 2
+        && proiectie.Single(r => r.RepartitorId == mag1.ID) is { Cantitate: 6m, Valoare: 60m, TipStoc: "Magazie" }
+        && proiectie.Single(r => r.RepartitorId == mag2.ID) is { Cantitate: 4m, Valoare: 40m, TipStoc: "Magazie" });
+    Check("Proiecția poartă etichetele plate ale lotului și ale gestiunii (fără navigație lazy per rând)",
+        proiectie.All(r => r.ProdusCod == MarcajProdus && r.ProdusDenumire == produs.Denumire
+            && r.ProdusUM == "BUC" && r.LotData == lot.Data && r.LotPretUnitar == 10m)
+        && proiectie.Single(r => r.RepartitorId == mag1.ID).GestiuneDenumire == mag1.Denumire);
+    Check("D9: proiecția == StocService.Sold pe FIECARE cheie (un al doilea adevăr ar fi un defect)",
+        proiectie.All(r => r.Cantitate
+            == StocService.Sold(os, new CheieStoc(r.LotId, r.RepartitorId, Enum.Parse<TipStoc>(r.TipStoc)))));
+
+    // --- Anulare → re-operare → storno, tot prin adaptor ---
+    var rezultatAnulare = OperareApi.AnuleazaOperarea(os, idBtr);
+    Check("OperareApi.AnuleazaOperarea → Draft, registrele proprii șterse, affordances de Draft",
+        rezultatAnulare.StareNoua == StareDocument.Draft
+        && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idBtr)
+        && NotaTransferApply.Citeste(os, idBtr).PoateEdita);
+    OperareApi.Opereaza(os, idBtr);
+    var rezultatStorno = OperareApi.Storneaza(os, idBtr, new DateOnly(2026, 7, 22));
+    Check("OperareApi.Storneaza → Stornat + rânduri inverse la data cerută; nicio afordanță rămasă",
+        rezultatStorno.StareNoua == StareDocument.Stornat
+        && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idBtr && r.Storno) == 2
+        && os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == idBtr && r.Storno)
+            .All(r => r.Data == new DateOnly(2026, 7, 22))
+        && NotaTransferApply.Citeste(os, idBtr) is
+            { Stare: "Stornat", PoateEdita: false, PoateOpera: false, PoateAnula: false, PoateStorna: false });
+
+    Curata(os);
+    Check("Curățenie finală felia BTR (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajProdus)
+        && !os.GetObjectsQuery<NotaTransfer>().Any(d => d.NumarPV == "E2E"));
 }
 
 // ========================= Scenariul e2e 3c: FCT → NIR =========================

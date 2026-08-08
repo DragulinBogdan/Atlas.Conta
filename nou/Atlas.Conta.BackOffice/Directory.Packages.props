@@ -10,6 +10,11 @@
     <PackageVersion Include="DevExpress.AIIntegration.AspNetCore.Reporting" Version="26.1.*" />
     <PackageVersion Include="DevExpress.AIIntegration.Blazor.Reporting.Viewer" Version="26.1.*" />
     <PackageVersion Include="DevExpress.Drawing.Skia" Version="26.1.*" />
+    <!-- Motorul de load options al grilelor DevExtreme (spike pasul 5 / D9):
+         traduce `filter/sort/skip/take/group/summary` din query string în
+         expresii peste `IQueryable`, deci filtrarea rămâne în SQL. Versionat
+         independent de DevExpress (5.x). -->
+    <PackageVersion Include="DevExtreme.AspNet.Data" Version="5.1.0" />
     <PackageVersion Include="DevExpress.ExpressApp" Version="26.1.*" />
     <PackageVersion Include="DevExpress.ExpressApp.AI" Version="26.1.*" />
     <PackageVersion Include="DevExpress.ExpressApp.AI.Blazor" Version="26.1.*" />

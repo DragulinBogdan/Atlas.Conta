@@ -14,6 +14,7 @@
     <PackageReference Include="DevExpress.ExpressApp.CodeAnalysis" />
     <PackageReference Include="DevExpress.ExpressApp.ReportsV2" />
     <PackageReference Include="DevExpress.ExpressApp.Validation" />
+    <PackageReference Include="DevExtreme.AspNet.Data" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild">
       <ExcludeAssets>contentFiles</ExcludeAssets>
     </PackageReference>
