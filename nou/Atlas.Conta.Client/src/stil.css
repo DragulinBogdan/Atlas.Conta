@@ -1,0 +1,131 @@
+/* Minim și curat: tema DevExtreme duce greul, aici stă doar layout-ul
+   shell-ului și al vocabularului de câmpuri. Fără investiție de design. */
+
+:root {
+  --gol: 12px;
+  --linie: #d8dde3;
+  --accent: #1f6feb;
+  --rosu: #b42318;
+  --verde: #0a7c42;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 14px/1.45 "Segoe UI", Roboto, system-ui, sans-serif;
+  color: #1c2430;
+  background: #f5f7fa;
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; }
+
+/* ── cadru ───────────────────────────────────────────────────────────── */
+.cadru__meniu {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 18px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--linie);
+}
+.cadru__marca { font-weight: 700; margin-right: 10px; }
+.cadru__meniu a { color: #35404e; text-decoration: none; padding: 4px 2px; }
+.cadru__meniu a.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+.cadru__meniu > button { margin-left: auto; }
+.cadru__continut { padding: 16px 18px; }
+
+/* ── ecrane de listă ─────────────────────────────────────────────────── */
+.ecran__bara { display: flex; align-items: center; gap: 12px; margin-bottom: var(--gol); }
+.ecran__bara > h2 { margin-right: auto; }
+.indiciu { color: #6b7683; font-size: 12px; margin-top: 6px; }
+
+/* ── document ────────────────────────────────────────────────────────── */
+.document__bara {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: var(--gol);
+}
+.document__titlu { margin-right: 6px; }
+.document__comenzi { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.document__antet, .document__linii {
+  background: #ffffff;
+  border: 1px solid var(--linie);
+  border-radius: 6px;
+  padding: var(--gol);
+  margin-bottom: var(--gol);
+}
+.linii__bara { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.linii__bara > h3 { margin-right: auto; }
+
+.sumar { display: flex; gap: 16px; align-items: baseline; color: #46525f; }
+.sumar__stare { font-weight: 600; }
+
+/* ── câmpuri ─────────────────────────────────────────────────────────── */
+.grila-campuri {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px 16px;
+}
+.camp__eticheta { display: block; font-size: 12px; color: #55616f; margin-bottom: 3px; }
+.camp__obligatoriu { color: var(--rosu); }
+.camp__eroare { min-height: 15px; font-size: 12px; color: var(--rosu); }
+.camp--eroare .dx-texteditor { border-color: var(--rosu); }
+
+.editor-linie {
+  margin-top: var(--gol);
+  padding: var(--gol);
+  border: 1px dashed var(--linie);
+  border-radius: 6px;
+  background: #fbfcfd;
+}
+.editor-linie__comenzi { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ── panouri de erori ────────────────────────────────────────────────── */
+.panou {
+  border: 1px solid var(--rosu);
+  border-left-width: 4px;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: var(--gol);
+  background: #fff5f4;
+}
+.panou--succes { border-color: var(--verde); background: #f2fbf6; }
+.panou__titlu { font-weight: 600; margin-bottom: 4px; }
+.panou__lista { margin: 0; padding-left: 18px; }
+
+/* ── butoane ─────────────────────────────────────────────────────────── */
+.buton {
+  border: 1px solid var(--linie);
+  background: #ffffff;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+.buton:hover:not(:disabled) { border-color: #b3bcc6; }
+.buton:disabled { opacity: .45; cursor: default; }
+.buton--primar { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+.buton--mic { padding: 2px 8px; font-size: 12px; }
+
+/* ── login ───────────────────────────────────────────────────────────── */
+.login { display: flex; align-items: center; justify-content: center; height: 100vh; }
+.login__card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 320px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid var(--linie);
+  border-radius: 8px;
+}
+.login__card label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #55616f; }
+.login__card input {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--linie);
+  border-radius: 4px;
+}

@@ -1,3 +1,4 @@
+﻿using Atlas.Conta.BackOffice.ModelCheck;
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Btr;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -16,6 +17,21 @@ using Microsoft.EntityFrameworkCore;
 // baza aplicației (aceeași țintă ca appsettings.json); `ModelCheck privat`
 // rulează blocul e2e privat pe o bază DEDICATĂ (profil-per-bază — 35d), pe
 // care unealta o migrează și o seed-uiește singură (ContaSeeder, Privat).
+// D10 — emitorul de metadata pentru clientul React. Rulează pe REFLECȚIE pură
+// (fără bază, fără XafApplication) și iese imediat: `ModelCheck --dump-metadata
+// [cale]`. Fără argument scrie la calea implicită documentată în MetadataDump.
+{
+    var indexDump = Array.FindIndex(args, a => a.Equals("--dump-metadata", StringComparison.OrdinalIgnoreCase));
+    if (indexDump >= 0) {
+        var caleDump = args.Length > indexDump + 1 && !args[indexDump + 1].StartsWith('-')
+            ? Path.GetFullPath(args[indexDump + 1])
+            : MetadataDump.CaleImplicita();
+        MetadataDump.Scrie(caleDump);
+        Console.WriteLine($"Metadata scrisă: {caleDump}");
+        return;
+    }
+}
+
 var profil = args.Any(a => a.Contains("privat", StringComparison.OrdinalIgnoreCase))
     ? ProfilContabil.Privat : ProfilContabil.Bugetar;
 var connectionString = "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database="
@@ -41,6 +57,19 @@ void Rezumat() {
     Environment.ExitCode = esecuri == 0 ? 0 : 1;
 }
 
+// D10 — disciplina migrațiilor aplicată codegen-ului (43d): canonic e artefactul
+// COMIS, unealta doar verifică. Dacă `metadata.json` există și nu mai corespunde
+// modelului (caption adăugat, enum extins, DefaultProperty mutat), rularea
+// normală PICĂ — clientul nu are voie să se compileze pe captions fantomă.
+{
+    var caleMetadata = MetadataDump.CaleImplicita();
+    var (exista, identic) = MetadataDump.VerificaDrift(caleMetadata);
+    if (!exista)
+        Console.WriteLine($"Metadata client: absentă ({caleMetadata}) — sări verificarea de drift.");
+    else
+        Check("Metadata clientului e la zi (altfel: rulați ModelCheck --dump-metadata)", identic);
+}
+
 var opts = new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
     .UseNpgsql(connectionString)
     .UseChangeTrackingProxies()
@@ -56,6 +85,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     else {
         if (!await ctx.Database.CanConnectAsync()) {
             Console.WriteLine("Baza nu există încă — doar validare de model.");
+            Rezumat();
             return;
         }
         var pending = (await ctx.Database.GetPendingMigrationsAsync()).ToList();
@@ -64,6 +94,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
             + (pending.Count > 0 ? $" ({string.Join(", ", pending)})" : ""));
         if (pending.Count > 0) {
             Console.WriteLine("Aplicați migrațiile înainte de scenariul e2e (dotnet ef database update).");
+            Rezumat();
             return;
         }
     }

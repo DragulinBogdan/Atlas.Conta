@@ -1,0 +1,1200 @@
+{
+  "Enumuri": {
+    "CalitateRepartitor": {
+      "CentruCost": "CentruCost",
+      "Comisie": "Comisie",
+      "Cursant": "Cursant",
+      "Delegat": "Delegat",
+      "Departament": "Departament",
+      "Gestionar": "Gestionar",
+      "LocConsum": "LocConsum",
+      "Niciuna": "Niciuna"
+    },
+    "DimensiuneFlags": {
+      "CentruCost": "CentruCost",
+      "CodEconomic": "CodEconomic",
+      "CodFunctional": "CodFunctional",
+      "Material": "Material",
+      "Niciuna": "Niciuna",
+      "Proiect": "Proiect",
+      "Repartitor": "Repartitor",
+      "SursaFinantare": "SursaFinantare",
+      "Unitate": "Unitate"
+    },
+    "DirectieAsamblare": {
+      "Consum": "Consum",
+      "Produs": "Produs"
+    },
+    "DirectieDiferenta": {
+      "Minus": "Minus",
+      "Plus": "Plus"
+    },
+    "DirectieTva": {
+      "Colectat": "Colectat",
+      "Deductibil": "Deductibil"
+    },
+    "LaturaDocument": {
+      "Predator": "Predator",
+      "Primitor": "Primitor"
+    },
+    "NaturaClasa": {
+      "Cheltuiala": "Cheltuiala",
+      "Imobilizare": "Imobilizare",
+      "Serviciu": "Serviciu",
+      "Stoc": "Stoc",
+      "Tehnica": "Tehnica"
+    },
+    "RegimTva": {
+      "Capitalizat": "Capitalizat",
+      "Neimpozabil": "Neimpozabil",
+      "Normal": "Normal",
+      "Scutit": "Scutit",
+      "TaxareInversa": "TaxareInversa"
+    },
+    "StareDocument": {
+      "Draft": "Draft",
+      "Operat": "Operat",
+      "Stornat": "Stornat"
+    },
+    "SursaCont": {
+      "Explicit": "Explicit",
+      "RepartitorPredator": "RepartitorPredator",
+      "RepartitorPrimitor": "RepartitorPrimitor",
+      "TipMaterial": "TipMaterial"
+    },
+    "TipInstrumentPlata": {
+      "Cec": "Cec",
+      "Chitanta": "Chitanta",
+      "DispozitieCasa": "DispozitieCasa",
+      "OrdinPlata": "OrdinPlata"
+    },
+    "TipStoc": {
+      "Consum": "Consum",
+      "Custodie": "Custodie",
+      "Folosinta": "Folosinta",
+      "Gratuit": "Gratuit",
+      "Magazie": "Magazie",
+      "Marfuri": "Marfuri",
+      "ProductieNeterminata": "ProductieNeterminata"
+    }
+  },
+  "Tipuri": {
+    "Angajament": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "Angajat": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Activ": "Activ",
+        "Calitati": "Calitati",
+        "Cod": "Cod",
+        "ContImplicit": "ContImplicit",
+        "ContImplicitId": "ContImplicit",
+        "Denumire": "Denumire",
+        "ID": "ID",
+        "Marca": "Marca"
+      }
+    },
+    "ApplicationUser": {
+      "DefaultProperty": "UserName",
+      "Membri": {
+        "AccessFailedCount": "AccessFailedCount",
+        "ActiveAdminExists": "ActiveAdminExists",
+        "ChangePasswordOnFirstLogon": "ChangePasswordOnFirstLogon",
+        "ID": "ID",
+        "IsActive": "IsActive",
+        "LockoutEnd": "LockoutEnd",
+        "StoredPassword": "StoredPassword",
+        "UserName": "UserName"
+      }
+    },
+    "ApplicationUserLoginInfo": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ID": "ID",
+        "LoginProviderName": "LoginProviderName",
+        "ProviderUserKey": "ProviderUserKey",
+        "User": "User",
+        "UserForeignKey": "UserForeignKey"
+      }
+    },
+    "Asamblare": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "AsamblareDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "DataExpirare": "DataExpirare",
+        "Directie": "Directie",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotFabricatie": "LotFabricatie",
+        "LotId": "Lot",
+        "PretEvaluare": "PretEvaluare",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "BonConsum": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "ClasaProdus": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID",
+        "Natura": "Natura"
+      }
+    },
+    "CodEconomic": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "CodFunctional": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "Cont": {
+      "DefaultProperty": "Simbol",
+      "Membri": {
+        "Denumire": "Denumire",
+        "DimensiuniObligatorii": "DimensiuniObligatorii",
+        "Functie": "Functie",
+        "ID": "ID",
+        "Parinte": "Parinte",
+        "ParinteId": "Parinte",
+        "Simbol": "Simbol",
+        "Sumator": "Sumator"
+      }
+    },
+    "ContPropriu": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Activ": "Activ",
+        "Calitati": "Calitati",
+        "Cod": "Cod",
+        "ContImplicit": "ContImplicit",
+        "ContImplicitId": "ContImplicit",
+        "Denumire": "Denumire",
+        "EsteBanca": "EsteBanca",
+        "ID": "ID",
+        "Iban": "Iban"
+      }
+    },
+    "Decont": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DataPV": "DataPV",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "NumarPV": "NumarPV",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "DecontDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "ContCredit": "ContCredit",
+        "ContCreditId": "ContCredit",
+        "ContDebit": "ContDebit",
+        "ContDebitId": "ContDebit",
+        "Descriere": "Descriere",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "PretUnitar": "PretUnitar",
+        "RepartitorCredit": "RepartitorCredit",
+        "RepartitorCreditId": "RepartitorCredit",
+        "RepartitorDebit": "RepartitorDebit",
+        "RepartitorDebitId": "RepartitorDebit",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "DescarcareGestiune": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "DescarcareGestiuneDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "LinieSursa": "LinieSursa",
+        "LinieSursaId": "LinieSursa",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "Document": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "DocumentDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "DocumentTrezorerie": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataExtras": "DataExtras",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "NumarExtras": "NumarExtras",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "TipInstrument": "TipInstrument",
+        "Total": "Total (brut)"
+      }
+    },
+    "DocumentTrezorerieDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "CodFunctional": "Cod funcțional",
+        "CodFunctionalId": "Cod funcțional",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "Proiect": "Proiect",
+        "ProiectId": "Proiect",
+        "SursaFinantare": "Sursă de finanțare",
+        "SursaFinantareId": "Sursă de finanțare",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "FacturaIesire": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DataScadenta": "Scadență",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "GestiuneDescarcare": "Gestiune de descărcare",
+        "GestiuneDescarcareId": "Gestiune de descărcare",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "FacturaIesireDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "Descriere": "Descriere",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "PretUnitar": "Preț unitar",
+        "Produs": "Produs",
+        "ProdusId": "Produs",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareLivrare": "Valoare livrare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "FacturaIntrare": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "ChitantaData": "ChitantaData",
+        "ChitantaNumar": "ChitantaNumar",
+        "CodCpv": "Cod CPV",
+        "Curs": "Curs",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DataPV": "Dată PV",
+        "DataScadenta": "Scadență",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "GenereazaChitanta": "GenereazaChitanta",
+        "GenereazaPlata": "Generează plata",
+        "ID": "ID",
+        "Numar": "Număr",
+        "NumarPV": "Număr PV",
+        "PlataContPropriu": "Cont propriu (din care se plătește)",
+        "PlataContPropriuId": "Cont propriu (din care se plătește)",
+        "PlataData": "Dată plată",
+        "PlataNumar": "Număr plată",
+        "PlataTipInstrument": "Instrument de plată",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "TethysId": "TethysId",
+        "Total": "Total (brut)",
+        "Valuta": "Valută"
+      }
+    },
+    "FacturaIntrareDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "CodCpv": "Cod CPV",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "CodFunctional": "Cod funcțional",
+        "CodFunctionalId": "Cod funcțional",
+        "DataExpirare": "Dată expirare",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotFabricatie": "Lot fabricație",
+        "LotId": "Lot",
+        "PretUnitar": "Preț unitar",
+        "Produs": "Produs",
+        "ProdusId": "Produs",
+        "Proiect": "Proiect",
+        "ProiectId": "Proiect",
+        "SursaFinantare": "Sursă de finanțare",
+        "SursaFinantareId": "Sursă de finanțare",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareReceptie": "Valoare recepție",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "Gestiune": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Activ": "Activ",
+        "Calitati": "Calitati",
+        "Cod": "Cod",
+        "ContImplicit": "ContImplicit",
+        "ContImplicitId": "ContImplicit",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "Imperechere": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "DocumentStingator": "DocumentStingator",
+        "DocumentStingatorId": "DocumentStingator",
+        "ID": "ID",
+        "Suma": "Suma"
+      }
+    },
+    "Incasare": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataExtras": "DataExtras",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "NumarExtras": "NumarExtras",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "TipInstrument": "TipInstrument",
+        "Total": "Total (brut)"
+      }
+    },
+    "InchidereTva": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "ListaDiferenteInventar": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "ListaDiferenteInventarDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "DataExpirare": "DataExpirare",
+        "Directie": "Directie",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotFabricatie": "LotFabricatie",
+        "LotId": "Lot",
+        "PretEvaluare": "PretEvaluare",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "Lot": {
+      "DefaultProperty": "Eticheta",
+      "Membri": {
+        "Data": "Data",
+        "DataExpirare": "DataExpirare",
+        "Eticheta": "Eticheta",
+        "Gestiune": "Gestiune",
+        "GestiuneId": "Gestiune",
+        "ID": "ID",
+        "LinieIntrareId": "LinieIntrareId",
+        "LotFabricatie": "LotFabricatie",
+        "PretUnitar": "PretUnitar",
+        "Produs": "Produs",
+        "ProdusId": "Produs"
+      }
+    },
+    "MigrareLegatura": {
+      "DefaultProperty": null,
+      "Membri": {
+        "CheieLegacy": "CheieLegacy",
+        "ID": "ID",
+        "Tabela": "Tabela",
+        "TintaId": "TintaId"
+      }
+    },
+    "NIR": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "NirDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "CodFunctional": "Cod funcțional",
+        "CodFunctionalId": "Cod funcțional",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "Proiect": "Proiect",
+        "ProiectId": "Proiect",
+        "SursaFinantare": "Sursă de finanțare",
+        "SursaFinantareId": "Sursă de finanțare",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "NotaContabila": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "NotaContabilaDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "ContCredit": "ContCredit",
+        "ContCreditId": "ContCredit",
+        "ContDebit": "ContDebit",
+        "ContDebitId": "ContDebit",
+        "Descriere": "Descriere",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "RepartitorCredit": "RepartitorCredit",
+        "RepartitorCreditId": "RepartitorCredit",
+        "RepartitorDebit": "RepartitorDebit",
+        "RepartitorDebitId": "RepartitorDebit",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Valoare": "Valoare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
+    "NotaTransfer": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DataPV": "DataPV",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "NumarPV": "NumarPV",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "Partener": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Activ": "Activ",
+        "Calitati": "Calitati",
+        "Cod": "Cod",
+        "CodFiscal": "CodFiscal",
+        "ContImplicit": "ContImplicit",
+        "ContImplicitId": "ContImplicit",
+        "Denumire": "Denumire",
+        "ID": "ID",
+        "RegistruComert": "RegistruComert"
+      }
+    },
+    "PerioadaFiscala": {
+      "DefaultProperty": null,
+      "Membri": {
+        "An": "An",
+        "ID": "ID",
+        "Inchisa": "Inchisa",
+        "Luna": "Luna"
+      }
+    },
+    "Plata": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataExtras": "DataExtras",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "NumarExtras": "NumarExtras",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "TipInstrument": "TipInstrument",
+        "Total": "Total (brut)"
+      }
+    },
+    "PoliticaConex": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ID": "ID",
+        "InverseazaLaturi": "InverseazaLaturi",
+        "NaturaFiltru": "NaturaFiltru",
+        "TipDocumentSursa": "TipDocumentSursa",
+        "TipDocumentSursaId": "TipDocumentSursa",
+        "TipDocumentTinta": "TipDocumentTinta",
+        "TipDocumentTintaId": "TipDocumentTinta"
+      }
+    },
+    "PoliticaInchidereTva": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ContColectata": "ContColectata",
+        "ContColectataId": "ContColectata",
+        "ContDePlata": "ContDePlata",
+        "ContDePlataId": "ContDePlata",
+        "ContDeRecuperat": "ContDeRecuperat",
+        "ContDeRecuperatId": "ContDeRecuperat",
+        "ContDeductibila": "ContDeductibila",
+        "ContDeductibilaId": "ContDeductibila",
+        "ID": "ID",
+        "TipDocument": "TipDocument",
+        "TipDocumentId": "TipDocument"
+      }
+    },
+    "PoliticaNumerotare": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Format": "Format",
+        "ID": "ID",
+        "Serie": "Serie",
+        "TipDocument": "TipDocument",
+        "TipDocumentId": "TipDocument",
+        "UrmatorulNumar": "UrmatorulNumar"
+      }
+    },
+    "PoliticaScadenta": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ID": "ID",
+        "TipDocument": "TipDocument",
+        "TipDocumentId": "TipDocument",
+        "ZileDefault": "ZileDefault"
+      }
+    },
+    "PoliticaTva": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ContrapartidaFallback": "ContrapartidaFallback",
+        "ContrapartidaFallbackId": "ContrapartidaFallback",
+        "Directie": "Directie",
+        "ID": "ID",
+        "SursaContrapartida": "SursaContrapartida",
+        "TipDocument": "TipDocument",
+        "TipDocumentId": "TipDocument"
+      }
+    },
+    "PoliticaValidare": {
+      "DefaultProperty": null,
+      "Membri": {
+        "CereClasificatieBugetara": "CereClasificatieBugetara",
+        "ID": "ID",
+        "NaturaInterzisa": "NaturaInterzisa",
+        "TipDocument": "TipDocument",
+        "TipDocumentId": "TipDocument"
+      }
+    },
+    "Produs": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID",
+        "TipMaterial": "TipMaterial",
+        "TipMaterialId": "TipMaterial",
+        "UM": "UM"
+      }
+    },
+    "Proiect": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "RaportProductie": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "RegistruContabil": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ContCredit": "ContCredit",
+        "ContCreditId": "ContCredit",
+        "ContDebit": "ContDebit",
+        "ContDebitId": "ContDebit",
+        "CreditCentruCost": "Centru cost credit",
+        "CreditCentruCostId": "Centru cost credit",
+        "CreditCodEconomic": "Cod economic credit",
+        "CreditCodEconomicId": "Cod economic credit",
+        "CreditCodFunctional": "Cod funcțional credit",
+        "CreditCodFunctionalId": "Cod funcțional credit",
+        "CreditMaterial": "Material credit",
+        "CreditMaterialId": "Material credit",
+        "CreditProiect": "Proiect credit",
+        "CreditProiectId": "Proiect credit",
+        "CreditRepartitor": "Repartitor credit",
+        "CreditRepartitorId": "Repartitor credit",
+        "CreditSursaFinantare": "Sursă finanțare credit",
+        "CreditSursaFinantareId": "Sursă finanțare credit",
+        "CreditUnitate": "Unitate credit",
+        "CreditUnitateId": "Unitate credit",
+        "Data": "Data",
+        "DebitCentruCost": "Centru cost debit",
+        "DebitCentruCostId": "Centru cost debit",
+        "DebitCodEconomic": "Cod economic debit",
+        "DebitCodEconomicId": "Cod economic debit",
+        "DebitCodFunctional": "Cod funcțional debit",
+        "DebitCodFunctionalId": "Cod funcțional debit",
+        "DebitMaterial": "Material debit",
+        "DebitMaterialId": "Material debit",
+        "DebitProiect": "Proiect debit",
+        "DebitProiectId": "Proiect debit",
+        "DebitRepartitor": "Repartitor debit",
+        "DebitRepartitorId": "Repartitor debit",
+        "DebitSursaFinantare": "Sursă finanțare debit",
+        "DebitSursaFinantareId": "Sursă finanțare debit",
+        "DebitUnitate": "Unitate debit",
+        "DebitUnitateId": "Unitate debit",
+        "Detaliu": "Detaliu",
+        "DetaliuId": "Detaliu",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "NumarNota": "NumarNota",
+        "Storno": "Storno",
+        "Valoare": "Valoare"
+      }
+    },
+    "RegistruStoc": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Cantitate": "Cantitate",
+        "Data": "Data",
+        "Detaliu": "Detaliu",
+        "DetaliuId": "Detaliu",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "Repartitor": "Repartitor",
+        "RepartitorId": "Repartitor",
+        "Storno": "Storno",
+        "TipStoc": "TipStoc",
+        "Valoare": "Valoare"
+      }
+    },
+    "RegulaContare": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ComunCentruCost": "Centru cost comun",
+        "ComunCentruCostId": "Centru cost comun",
+        "ComunCodEconomic": "Cod economic comun",
+        "ComunCodEconomicId": "Cod economic comun",
+        "ComunCodFunctional": "Cod funcțional comun",
+        "ComunCodFunctionalId": "Cod funcțional comun",
+        "ComunMaterial": "Material comun",
+        "ComunMaterialId": "Material comun",
+        "ComunProiect": "Proiect comun",
+        "ComunProiectId": "Proiect comun",
+        "ComunRepartitor": "Repartitor comun",
+        "ComunRepartitorId": "Repartitor comun",
+        "ComunSursaFinantare": "Sursă finanțare comun",
+        "ComunSursaFinantareId": "Sursă finanțare comun",
+        "ComunUnitate": "Unitate comun",
+        "ComunUnitateId": "Unitate comun",
+        "ContCredit": "ContCredit",
+        "ContCreditId": "ContCredit",
+        "ContDebit": "ContDebit",
+        "ContDebitId": "ContDebit",
+        "ID": "ID",
+        "NaturaFiltru": "NaturaFiltru",
+        "OverrideCreditCentruCost": "Centru cost override credit",
+        "OverrideCreditCentruCostId": "Centru cost override credit",
+        "OverrideCreditCodEconomic": "Cod economic override credit",
+        "OverrideCreditCodEconomicId": "Cod economic override credit",
+        "OverrideCreditCodFunctional": "Cod funcțional override credit",
+        "OverrideCreditCodFunctionalId": "Cod funcțional override credit",
+        "OverrideCreditMaterial": "Material override credit",
+        "OverrideCreditMaterialId": "Material override credit",
+        "OverrideCreditProiect": "Proiect override credit",
+        "OverrideCreditProiectId": "Proiect override credit",
+        "OverrideCreditRepartitor": "Repartitor override credit",
+        "OverrideCreditRepartitorId": "Repartitor override credit",
+        "OverrideCreditSursaFinantare": "Sursă finanțare override credit",
+        "OverrideCreditSursaFinantareId": "Sursă finanțare override credit",
+        "OverrideCreditUnitate": "Unitate override credit",
+        "OverrideCreditUnitateId": "Unitate override credit",
+        "OverrideDebitCentruCost": "Centru cost override debit",
+        "OverrideDebitCentruCostId": "Centru cost override debit",
+        "OverrideDebitCodEconomic": "Cod economic override debit",
+        "OverrideDebitCodEconomicId": "Cod economic override debit",
+        "OverrideDebitCodFunctional": "Cod funcțional override debit",
+        "OverrideDebitCodFunctionalId": "Cod funcțional override debit",
+        "OverrideDebitMaterial": "Material override debit",
+        "OverrideDebitMaterialId": "Material override debit",
+        "OverrideDebitProiect": "Proiect override debit",
+        "OverrideDebitProiectId": "Proiect override debit",
+        "OverrideDebitRepartitor": "Repartitor override debit",
+        "OverrideDebitRepartitorId": "Repartitor override debit",
+        "OverrideDebitSursaFinantare": "Sursă finanțare override debit",
+        "OverrideDebitSursaFinantareId": "Sursă finanțare override debit",
+        "OverrideDebitUnitate": "Unitate override debit",
+        "OverrideDebitUnitateId": "Unitate override debit",
+        "PastreazaSemn": "PastreazaSemn",
+        "SemnFiltru": "SemnFiltru",
+        "SursaContCredit": "SursaContCredit",
+        "SursaContDebit": "SursaContDebit",
+        "TipDocument": "TipDocument",
+        "TipDocumentId": "TipDocument",
+        "TipMaterial": "TipMaterial",
+        "TipMaterialId": "TipMaterial"
+      }
+    },
+    "RegulaStoc": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Clasa": "Clasa",
+        "ClasaId": "Clasa",
+        "ID": "ID",
+        "Latura": "Latura",
+        "Semn": "Semn",
+        "TipDocument": "TipDocument",
+        "TipDocumentId": "TipDocument",
+        "TipStoc": "TipStoc"
+      }
+    },
+    "Repartitor": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Activ": "Activ",
+        "Calitati": "Calitati",
+        "Cod": "Cod",
+        "ContImplicit": "ContImplicit",
+        "ContImplicitId": "ContImplicit",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "ReturClient": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "ReturFurnizor": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "SetareProfil": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ID": "ID",
+        "Profil": "Profil",
+        "RotunjireBani": "RotunjireBani"
+      }
+    },
+    "SursaFinantare": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "TipDocument": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "ClrType": "ClrType",
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID",
+        "TipTvaImplicit": "TipTvaImplicit",
+        "TipTvaImplicitId": "TipTvaImplicit"
+      }
+    },
+    "TipMaterial": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Clasa": "Clasa",
+        "ClasaId": "Clasa",
+        "Cod": "Cod",
+        "ContImplicit": "ContImplicit",
+        "ContImplicitId": "ContImplicit",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "TipTva": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "CategorieD394": "CategorieD394",
+        "Cod": "Cod",
+        "CodSafTAchizitie": "CodSafTAchizitie",
+        "CodSafTLivrare": "CodSafTLivrare",
+        "ContTvaColectat": "ContTvaColectat",
+        "ContTvaColectatId": "ContTvaColectat",
+        "ContTvaDeductibil": "ContTvaDeductibil",
+        "ContTvaDeductibilId": "ContTvaDeductibil",
+        "ContTvaNeexigibil": "ContTvaNeexigibil",
+        "ContTvaNeexigibilId": "ContTvaNeexigibil",
+        "Cota": "Cota",
+        "Denumire": "Denumire",
+        "ID": "ID",
+        "Regim": "Regim"
+      }
+    },
+    "Unitate": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "UnitateInterna": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Activ": "Activ",
+        "Calitati": "Calitati",
+        "Cod": "Cod",
+        "ContImplicit": "ContImplicit",
+        "ContImplicitId": "ContImplicit",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    }
+  }
+}

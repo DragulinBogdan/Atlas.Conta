@@ -1,0 +1,30 @@
+{
+  "name": "atlas-conta-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "gen:openapi": "node scripts/dump-openapi.mjs",
+    "gen:types": "openapi-typescript src/generated/openapi.json -o src/generated/api-types.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.101.4",
+    "devextreme": "26.1.4",
+    "devextreme-aspnet-data-nojquery": "5.1.0",
+    "devextreme-react": "26.1.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-router": "8.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.0.5",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
+    "vite": "8.2.1"
+  }
+}
