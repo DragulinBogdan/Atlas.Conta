@@ -13,8 +13,9 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 // e transport sau traducere de erori.
 [Route("api/btr")]
 public class NotaTransferController : ContaApiController {
-    public NotaTransferController(IObjectSpaceFactory secured, INonSecuredObjectSpaceFactory nonSecured)
-        : base(secured, nonSecured) { }
+    public NotaTransferController(IObjectSpaceFactory secured, INonSecuredObjectSpaceFactory nonSecured,
+        DevExpress.ExpressApp.Security.ISecurityStrategyBase securitate)
+        : base(secured, nonSecured, securitate) { }
 
     // ── Citire ────────────────────────────────────────────────────────────
     // Grila e REMOTE (43c): filtrarea/sortarea/paginarea vin în query string,
@@ -73,21 +74,24 @@ public class NotaTransferController : ContaApiController {
     });
 
     // ── Comenzi: OS NON-SECURED, tranzacția integral a motorului (42b) ─────
+    // Toate trec prin `ComandaAutorizata` (review advers F1): documentul se
+    // rezolvă întâi prin securitate (404 pe inexistent/invizibil, 403 fără
+    // Write) și abia apoi comanda primește ușa non-secured.
     [HttpPost("{id:guid}/opereaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Opereaza(Guid id) => Comanda(os => OperareApi.Opereaza(os, id));
+    public IActionResult Opereaza(Guid id) => Comanda(id, os => OperareApi.Opereaza(os, id));
 
     [HttpPost("{id:guid}/anuleaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Anuleaza(Guid id) => Comanda(os => OperareApi.AnuleazaOperarea(os, id));
+    public IActionResult Anuleaza(Guid id) => Comanda(id, os => OperareApi.AnuleazaOperarea(os, id));
 
     [HttpPost("{id:guid}/storneaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Storneaza(Guid id, [FromBody] StornoRequestDto cerere) =>
-        Comanda(os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
+        Comanda(id, os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
 
     // Dry-run (D3): fazele „calculează + validează" ale operării, fără
     // materializare și fără commit — ObjectSpace-ul e PROPRIU și se ARUNCĂ
@@ -96,13 +100,14 @@ public class NotaTransferController : ContaApiController {
     // erori NU e un eșec de cerere, e răspunsul întrebării.
     [HttpPost("{id:guid}/valideaza")]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
-    public IActionResult Valideaza(Guid id) => Domeniu(() => {
+    public IActionResult Valideaza(Guid id) => ComandaAutorizata(id, () => Domeniu(() => {
         using var os = NonSecured(typeof(NotaTransfer));
         return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
-    });
+    }));
 
-    IActionResult Comanda(Func<IObjectSpace, OperareRezultat> comanda) => Domeniu(() => {
-        using var os = NonSecured(typeof(NotaTransfer));
-        return Ok(OperareRezultatDto.Din(comanda(os)));
-    });
+    IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
+        ComandaAutorizata(id, () => Domeniu(() => {
+            using var os = NonSecured(typeof(NotaTransfer));
+            return Ok(OperareRezultatDto.Din(comanda(os)));
+        }));
 }

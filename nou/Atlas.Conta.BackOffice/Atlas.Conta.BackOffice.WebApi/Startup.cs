@@ -48,7 +48,13 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // polimorf (decizia 6).
                     options.BusinessObject<Gestiune>();
                     options.BusinessObject<TipMaterial>();
-                    options.BusinessObject<Lot>();
+                    // `Lot` NU e nomenclator obișnuit (review advers M1): PretUnitar/
+                    // Data/Gestiune sunt load-bearing pentru evaluare și FIFO —
+                    // loturile se nasc la culegere și se finalizează de motor
+                    // (deciziile 13/25c). Prin OData rămâne DOAR de citit
+                    // (lookup-ul de pin — 37d); scrierea, când va fi nevoie, vine
+                    // prin felia documentului care îl creează.
+                    options.BusinessObject<Lot>().ConfigureController(c => c.ReadOnly());
                 });
 
                 // Paritate de configurare cu `Blazor.Server/Startup.cs` (aceeași
@@ -137,7 +143,12 @@ namespace Atlas.Conta.BackOffice.WebApi {
                         // If you use PermissionPolicyUser or a custom user type, comment out the following line:
                         options.UserLoginInfoType = typeof(Atlas.Conta.BackOffice.Module.BusinessObjects.ApplicationUserLoginInfo);
                         options.Events.OnSecurityStrategyCreated += securityStrategy => {
-                            ((SecurityStrategy)securityStrategy).PermissionsReloadMode = PermissionsReloadMode.CacheOnFirstAccess;
+                            // Aliniat cu Blazor.Server (review advers M4): ambele
+                            // host-uri servesc ACEEAȘI bază — cache-ul per proces al
+                            // scaffold-ului (CacheOnFirstAccess) ar fi făcut ca o
+                            // retrogradare de rol să se aplice pe Blazor imediat și
+                            // pe API abia la restart.
+                            ((SecurityStrategy)securityStrategy).PermissionsReloadMode = PermissionsReloadMode.NoCache;
                         };
                     })
                     .AddPasswordAuthentication(options => {
@@ -238,7 +249,16 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Atlas.Conta.BackOffice WebApi v1");
                 });
             } else {
-                app.UseExceptionHandler("/Error");
+                // Scaffold-ul trimitea spre o rută „/Error" care nu există în acest
+                // host (review advers M3) — răspunsul de producție pe excepții
+                // ne-domeniu (DbUpdateException, parse-uri DataSourceLoader) e un
+                // 500 JSON generic, fără detalii de server.
+                app.UseExceptionHandler(handler => handler.Run(async context => {
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    await context.Response.WriteAsync(
+                        "{\"Erori\":[\"Eroare internă de server. Reîncercați sau contactați administratorul.\"]}");
+                }));
                 // The default HSTS value is 30 days. To change this for production scenarios, see: https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }

@@ -110,28 +110,67 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     }
 
     // (a) Documentul: se culege cât e Draft. Starea e SERVER-OWNED — tranzițiile
-    // le face doar motorul, în ObjectSpace-ul lui non-secured.
+    // le face doar motorul, în ObjectSpace-ul lui non-secured. Review-ul advers
+    // al spike-ului (F3) a lărgit paza pe TOATE câmpurile stăpânite de motor:
+    // `DataOperare`/`Autogenerat`/`DocumentSursaId` (mecanismul grupului conex —
+    // un draft care „se declară" copil al altui document i-ar manipula anularea),
+    // iar `Numar` la tipurile cu PoliticaNumerotare (`AsignaNumar` ONOREAZĂ un
+    // număr pre-completat — corect la re-operare, în OS-ul motorului, dar din
+    // secured ar ocoli seria). La tipurile FĂRĂ politică (FCT) numărul rămâne
+    // culegere liberă.
     static void VerificaDocument(IObjectSpace os, Document doc, ICollection<string> erori) {
         if (os.IsNewObject(doc)) {
             if (doc.Stare != StareDocument.Draft)
                 erori.Add($"Un document nou se creează în starea Draft, nu „{doc.Stare}” "
                     + "— operarea îi schimbă starea.");
+            if (doc.Autogenerat || doc.DocumentSursaId != null || doc.DataOperare != null)
+                erori.Add("Legătura de grup conex (Autogenerat/DocumentSursa) și DataOperare "
+                    + "le scrie doar motorul.");
+            if (!string.IsNullOrEmpty(doc.Numar) && AreNumerotare(os, doc))
+                erori.Add($"Numărul documentului vine din seria tipului (PoliticaNumerotare) "
+                    + "— nu se culege.");
             return;
         }
-        var originala = StareOriginala(os, doc) ?? doc.Stare;
-        if (originala != StareDocument.Draft) {
-            erori.Add($"Documentul {Eticheta(doc)} nu mai e Draft (starea „{originala}”) — "
+        var originale = Originale(os, doc);
+        var stareOriginala = (originale?[nameof(Document.Stare)] as StareDocument?) ?? doc.Stare;
+        if (stareOriginala != StareDocument.Draft) {
+            erori.Add($"Documentul {Eticheta(doc)} nu mai e Draft (starea „{stareOriginala}”) — "
                 + "nu se mai modifică și nu se șterge. Anulați operarea sau stornați-l.");
             return;
         }
-        if (!os.IsDeletedObject(doc) && doc.Stare != originala)
+        if (os.IsDeletedObject(doc) || originale == null)
+            return;
+        if (doc.Stare != stareOriginala)
             erori.Add($"Starea documentului {Eticheta(doc)} o schimbă doar motorul "
                 + "(Operează / Anulează operarea / Stornează).");
+        if (!Equals(originale[nameof(Document.DataOperare)], doc.DataOperare)
+                || !Equals(originale[nameof(Document.Autogenerat)], doc.Autogenerat)
+                || !Equals(originale[nameof(Document.DocumentSursaId)], doc.DocumentSursaId))
+            erori.Add($"Câmpurile de operare și de grup conex ale documentului {Eticheta(doc)} "
+                + "(DataOperare, Autogenerat, DocumentSursa) le scrie doar motorul.");
+        var numarOriginal = originale[nameof(Document.Numar)] as string;
+        if (!string.Equals(numarOriginal ?? "", doc.Numar ?? "", StringComparison.Ordinal)
+                && AreNumerotare(os, doc))
+            erori.Add($"Numărul documentului {Eticheta(doc)} vine din seria tipului "
+                + "(PoliticaNumerotare) — nu se editează.");
     }
 
     // (a) Liniile urmează starea documentului-gazdă (registrele s-au scris din
     // ele — gardianul de UI din 40c, aici de FOND, pe orice cale de scriere).
+    // Review-ul advers (F2): gazda se verifică pe AMBELE capete — o linie nu se
+    // mută între documente (re-parentarea unei linii de pe un Operat pe un Draft
+    // ar lăsa registrele fără liniile-sursă, iar verificarea doar a gazdei NOI
+    // ar fi lăsat-o să treacă).
     static void VerificaLinie(IObjectSpace os, DocumentDetaliu linie, ICollection<string> erori) {
+        if (!os.IsNewObject(linie) && !os.IsDeletedObject(linie)) {
+            var documentIdOriginal = Originale(os, linie)?[nameof(DocumentDetaliu.DocumentId)] as Guid?;
+            if (documentIdOriginal is Guid gazdaVeche && gazdaVeche != Guid.Empty
+                    && gazdaVeche != linie.DocumentId) {
+                erori.Add("O linie nu se mută între documente — ștergeți-o și "
+                    + "creați-o pe documentul țintă.");
+                return;
+            }
+        }
         // FK-ul scalar nu e încă fixat pe liniile noi (se completează la
         // SaveChanges), deci navigația e sursa primară; documentul lipsă =
         // linie nouă pe un draft nou, care se validează pe cont propriu.
@@ -143,6 +182,19 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (stare != StareDocument.Draft)
             erori.Add($"Liniile documentului {Eticheta(parinte)} nu se mai modifică "
                 + $"(starea „{stare}”) — anulați operarea sau stornați-l.");
+    }
+
+    // Tipul documentului are rând `PoliticaNumerotare`? — exact criteriul
+    // `NumarPoliticaController` (numărul e al seriei, nu al culegerii). Tipurile
+    // fără ancoră `TipDocument` (n-ar trebui să existe pe căile vii) nu blochează.
+    static bool AreNumerotare(IObjectSpace os, Document doc) {
+        try {
+            var tip = MotorOperare.GasesteTipDocument(os, doc);
+            return os.GetObjectsQuery<PoliticaNumerotare>().Any(p => p.TipDocumentId == tip.ID);
+        }
+        catch (OperareException) {
+            return false;
+        }
     }
 
     // (c) Imperecherea: logica migrată din `ImperechereController.OnCommitting`
@@ -168,18 +220,23 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     }
 
     // Starea de dinaintea modificării, din evidența EF (OriginalValues) — o
-    // scriere pe `Stare` nu-și poate ascunde propria urmă. `SecuredEFCoreObjectSpace`
+    // scriere pe `Stare` nu-și poate ascunde propria urmă.
+    static StareDocument? StareOriginala(IObjectSpace os, Document doc) =>
+        Originale(os, doc)?[nameof(Document.Stare)] as StareDocument?;
+
+    // Valorile ORIGINALE ale entității, din evidența EF. `SecuredEFCoreObjectSpace`
     // derivă din `EFCoreObjectSpace` (DevExpress.EntityFrameworkCore.Security\
     // Security\SecuredEFCoreObjectSpace.cs:57), deci `DbContext` e disponibil pe
-    // ambele. Null = nu se poate determina (alt provider) — apelantul cade pe
-    // valoarea curentă.
-    static StareDocument? StareOriginala(IObjectSpace os, Document doc) {
+    // ambele. Null = nu se poate determina (alt provider / Detached / Added) —
+    // apelantul cade pe valorile curente.
+    static Microsoft.EntityFrameworkCore.ChangeTracking.PropertyValues Originale(
+            IObjectSpace os, object obj) {
         if (os is not EFCoreObjectSpace efCore)
             return null;
-        var entry = efCore.DbContext.Entry(doc);
+        var entry = efCore.DbContext.Entry(obj);
         if (entry.State is EntityState.Detached or EntityState.Added)
             return null;
-        return entry.OriginalValues[nameof(Document.Stare)] as StareDocument?;
+        return entry.OriginalValues;
     }
 
     static string Eticheta(Document doc) =>

@@ -11,8 +11,9 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 // le refuză oricum, pe orice cale secured).
 [Route("api/proiectii/sold-stoc")]
 public class SoldStocController : ContaApiController {
-    public SoldStocController(IObjectSpaceFactory secured, INonSecuredObjectSpaceFactory nonSecured)
-        : base(secured, nonSecured) { }
+    public SoldStocController(IObjectSpaceFactory secured, INonSecuredObjectSpaceFactory nonSecured,
+        DevExpress.ExpressApp.Security.ISecurityStrategyBase securitate)
+        : base(secured, nonSecured, securitate) { }
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginaDto<SoldStocRand>), StatusCodes.Status200OK)]

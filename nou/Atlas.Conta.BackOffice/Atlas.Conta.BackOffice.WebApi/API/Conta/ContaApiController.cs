@@ -1,6 +1,8 @@
 using Atlas.Conta.BackOffice.Module.Api;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.Security;
 using DevExtreme.AspNet.Data;
 using DevExtreme.AspNet.Data.ResponseModel;
 using Microsoft.AspNetCore.Authorization;
@@ -64,17 +66,39 @@ public abstract class ContaApiController : ControllerBase {
 
     readonly IObjectSpaceFactory securedFactory;
     readonly INonSecuredObjectSpaceFactory nonSecuredFactory;
+    readonly ISecurityStrategyBase securitate;
 
     protected ContaApiController(IObjectSpaceFactory securedFactory,
-        INonSecuredObjectSpaceFactory nonSecuredFactory) {
+        INonSecuredObjectSpaceFactory nonSecuredFactory, ISecurityStrategyBase securitate) {
         this.securedFactory = securedFactory;
         this.nonSecuredFactory = nonSecuredFactory;
+        this.securitate = securitate;
     }
 
     protected IObjectSpace Secured(Type objectType) => securedFactory.CreateObjectSpace(objectType);
 
     protected IObjectSpace NonSecured(Type objectType) =>
         nonSecuredFactory.CreateNonSecuredObjectSpace(objectType);
+
+    // ═══ Gate-ul de autorizare al COMENZILOR (review advers F1) ═══
+    // Ușa non-secured răspunde la „CUM scrie motorul" (42b), nu la „CINE are voie
+    // să-l cheme": fără gate, orice utilizator autentificat — inclusiv unul fără
+    // niciun drept pe documente — ar opera/storna/anula prin simpla cunoaștere a
+    // unui GUID. Autorizarea se decide AICI, prin securitatea XAF, pe documentul
+    // rezolvat printr-un ObjectSpace SECURED: inexistent SAU invizibil pentru
+    // user → 404 (fără sondare de existență); vizibil dar fără Write → 403;
+    // abia apoi comanda primește ușa non-secured.
+    protected IActionResult ComandaAutorizata(Guid documentId, Func<IActionResult> comanda) {
+        using (var os = Secured(typeof(Document))) {
+            var doc = os.GetObjectByKey<Document>(documentId);
+            if (doc == null)
+                return NotFound();
+            if (securitate is not IRequestSecurityStrategy cerinte
+                    || !cerinte.CanWrite(os, doc))
+                return Forbid();
+        }
+        return comanda();
+    }
 
     // Încărcarea unei proiecții prin `DataSourceLoader`, cu MATERIALIZARE
     // explicită înainte de întoarcere.
@@ -89,6 +113,13 @@ public abstract class ContaApiController : ControllerBase {
     // scoped (trăiește până la finalul cererii); aici ObjectSpace-ul e AL NOSTRU
     // și trebuie eliberat deterministic — deci enumerăm cât e viu.
     protected static object Incarca<T>(IQueryable<T> sursa, DataSourceLoadOptions loadOptions) {
+        // Plafon pe pagină (review advers, minor 1): fără `take`, DataSourceLoader
+        // ar materializa TOATE rândurile (pe clona de import: sute de mii).
+        const int TakeImplicit = 100, TakeMaxim = 500;
+        if (loadOptions.Take <= 0)
+            loadOptions.Take = TakeImplicit;
+        else if (loadOptions.Take > TakeMaxim)
+            loadOptions.Take = TakeMaxim;
         var rezultat = DataSourceLoader.Load(sursa, loadOptions);
         // Cu `requireTotalCount`/`group`/`totalSummary` întoarce `LoadResult`;
         // altfel, direct secvența. Grupurile („Group.items") sunt construite deja

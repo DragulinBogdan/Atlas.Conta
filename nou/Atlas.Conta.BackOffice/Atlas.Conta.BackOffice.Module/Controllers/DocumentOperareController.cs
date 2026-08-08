@@ -112,6 +112,16 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
         ObjectSpace.CommitChanges();
         var documentId = ViewCurrentObject.ID;
 
+        // Gate de autorizare (review advers F1): ușa non-secured de mai jos e a
+        // MOTORULUI, nu a utilizatorului — cine nu are Write pe document prin
+        // securitatea XAF nu comandă operarea/anularea/stornarea. Pre-migrare
+        // refuzul venea implicit din commit-ul motorului în OS-ul secured al
+        // View-ului; acum se decide explicit, înaintea ușii.
+        if (Application.Security is not DevExpress.ExpressApp.Security.IRequestSecurityStrategy cerinte
+                || !DevExpress.ExpressApp.Security.IsGrantedExtensions.CanWrite(
+                        cerinte, ObjectSpace, (object)ViewCurrentObject))
+            throw new UserFriendlyException("Nu aveți dreptul de scriere necesar pentru comenzile de operare pe acest document.");
+
         // Faza 2 (D5/42b): comanda rulează în ObjectSpace-ul NON-SECURED al
         // motorului, nu în cel al View-ului. `INonSecuredObjectSpaceFactory` e
         // scoped în DI-ul oricărui host AddXaf (DevExpress.ExpressApp\Services\

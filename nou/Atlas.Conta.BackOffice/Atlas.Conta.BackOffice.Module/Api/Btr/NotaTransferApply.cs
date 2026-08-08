@@ -90,6 +90,13 @@ public static class NotaTransferApply {
                 detaliu.Lot = null;
                 detaliu.LotId = null;
             }
+            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
+            // o cantitate în afara lui numeric(18,3) ar ieși ca DbUpdateException
+            // brută din Postgres (review advers M3). Refuzăm cu mesaj de domeniu.
+            if (Math.Abs(l.Cantitate) >= 1_000_000_000_000_000m)
+                throw new OperareException("Cantitatea depășește intervalul suportat (15 cifre întregi).");
+            if (decimal.Round(l.Cantitate, 3) != l.Cantitate)
+                throw new OperareException("Cantitatea acceptă cel mult 3 zecimale.");
             detaliu.Cantitate = l.Cantitate;
             // `Valoare` NU se atinge: o materializează `PregatesteOperare`
             // (preț lot × cantitate) la operare — server-owned (D8).
