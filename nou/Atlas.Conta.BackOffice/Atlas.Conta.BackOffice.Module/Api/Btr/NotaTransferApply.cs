@@ -167,7 +167,7 @@ public static class NotaTransferApply {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,
                 LotId = l.LotId,
-                LotEticheta = EtichetaLot(l.LotProdus, l.LotData, l.LotPret),
+                LotEticheta = ApiProiectii.EtichetaLot(l.LotProdus, l.LotData, l.LotPret),
                 Cantitate = l.Cantitate, Valoare = l.Valoare
             }).ToList()
         };
@@ -201,18 +201,5 @@ public static class NotaTransferApply {
                    PrimitorDenumire = d.Primitor.Denumire,
                    Total = (decimal?)t.Total ?? 0m
                };
-    }
-
-    // Oglinda lui `Lot.Eticheta` (care e [NotMapped], deci inaccesibil în SQL):
-    // aceleași reguli, compuse în memorie după materializarea câmpurilor plate.
-    // Orice schimbare acolo se reflectă aici — cusătura e documentată în ambele.
-    static string EtichetaLot(string produs, DateOnly? data, decimal? pretUnitar) {
-        if (data == null)
-            return null;
-        var denumire = produs ?? "(produs nedefinit)";
-        var pret = pretUnitar ?? 0m;
-        return data == default(DateOnly) && pret == 0m
-            ? $"{denumire} (în culegere)"
-            : $"{denumire} · {data:dd.MM.yyyy} · {pret:0.####}";
     }
 }
