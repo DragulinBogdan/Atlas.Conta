@@ -105,7 +105,9 @@ public class BonConsum : Document {
 // BTR (04): −predator/+primitor pe același tip de stoc; lotul își schimbă
 // gestiunea, prețul rămâne al lotului. Primul vertical slice al motorului.
 public class NotaTransfer : Document, IDocumentCuPV {
+    [XafDisplayName("Număr PV")]
     public virtual string NumarPV { get; set; }
+    [XafDisplayName("Dată PV")]
     public virtual DateOnly? DataPV { get; set; }
 
     // Valoarea liniei = prețul lotului × cantitate (04: formulă fără re-aplicare
