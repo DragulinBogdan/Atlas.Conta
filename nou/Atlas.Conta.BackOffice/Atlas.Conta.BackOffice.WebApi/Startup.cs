@@ -1,4 +1,5 @@
-﻿using Atlas.Conta.BackOffice.WebApi.JWT;
+﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.WebApi.JWT;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.ApplicationBuilder;
 using DevExpress.ExpressApp.Security;
@@ -31,20 +32,64 @@ namespace Atlas.Conta.BackOffice.WebApi {
 
             services.AddXafWebApi(builder => {
                 builder.ConfigureOptions(options => {
-                    // Make your business objects available in the Web API and generate the GET, POST, PUT, and DELETE HTTP methods for it.
-                    // options.BusinessObject<YourBusinessObject>();
+                    // OData OPT-IN (decizia 42f, spike 1 / D7): DOAR nomenclatoarele
+                    // consumate de lookup-urile clientului React. NIMIC din
+                    // `Document*`/`Registru*` — scrierea trece prin agregatul per
+                    // document, citirea prin proiecții; ierarhia nu se expune
+                    // polimorf (decizia 6).
+                    options.BusinessObject<Gestiune>();
+                    options.BusinessObject<TipMaterial>();
+                    options.BusinessObject<Lot>();
                 });
 
+                // Paritate de configurare cu `Blazor.Server/Startup.cs` (aceeași
+                // ordine): modulele de mai jos intră oricum în aplicație prin
+                // `BackOfficeModule.RequiredModuleTypes`, deci fără liniile astea
+                // ar intra NECONFIGURATE (ex. `DashboardDataType` null → excepție
+                // la warmup).
+                //
+                // Formele diferă de Blazor pentru că extensiile `AddCloning`,
+                // `AddConditionalAppearance`, `AddStateMachine`, `AddViewVariants`
+                // sunt constrânse pe `IApplicationBuilder<TBuilder>` (doar
+                // Blazor/Win), iar `AddDashboards`/`AddNotifications`/`AddOffice`/
+                // `AddScheduler`/`AddFileAttachments` există DOAR în pachetele de
+                // platformă UI (înregistrează servicii și endpoint-uri de UI).
+                // Aici folosim `Add<TModule>(setup)` — exact ce fac extensiile
+                // acelea în interior, minus partea de UI.
+                //
+                // Lipsesc deliberat față de Blazor: FileAttachments (nici nu e în
+                // RequiredModuleTypes — n-ar avea ce configura), Notifications /
+                // Office / Scheduler (Blazor le adaugă fără opțiuni; modulele
+                // platform-agnostice vin din RequiredModuleTypes cu default-uri),
+                // AddAI și AddAtlasDxf (module de UI Blazor).
                 builder.Modules
-                    .AddReports(options => {
-                        options.ReportDataType = typeof(DevExpress.Persistent.BaseImpl.EF.ReportDataV2);
+                    .AddAuditTrailEFCore()
+                    .Add<DevExpress.ExpressApp.CloneObject.CloneObjectModule>()
+                    .Add<DevExpress.ExpressApp.ConditionalAppearance.ConditionalAppearanceModule>()
+                    .Add<DevExpress.ExpressApp.Dashboards.DashboardsModule>(module => {
+                        module.DashboardDataType = typeof(DevExpress.Persistent.BaseImpl.EF.DashboardData);
                     })
-                    .AddValidation()
+                    .AddReports(options => {
+                        options.EnableInplaceReports = true;
+                        options.ReportDataType = typeof(DevExpress.Persistent.BaseImpl.EF.ReportDataV2);
+                        options.ReportStoreMode = DevExpress.ExpressApp.ReportsV2.ReportStoreModes.XML;
+                    })
+                    .Add<DevExpress.ExpressApp.StateMachine.StateMachineModule>(module => {
+                        module.StateMachineStorageType = typeof(DevExpress.Persistent.BaseImpl.EF.StateMachine.StateMachine);
+                    })
+                    .AddValidation(options => {
+                        options.AllowValidationDetailsAccess = false;
+                    })
+                    .Add<DevExpress.ExpressApp.ViewVariantsModule.ViewVariantsModule>()
                     .Add<Atlas.Conta.BackOffice.Module.BackOfficeModule>();
 
                 builder.ObjectSpaceProviders
                     .AddSecuredEFCore(options => {
                         options.PreFetchReferenceProperties();
+                        // Schema e gestionată prin migrații EF Core (vezi
+                        // BackOfficeDesignTimeDbContextFactory); update-ul automat
+                        // ar intra în conflict cu ele.
+                        options.SchemaUpdateOptions.DisableUpdateSchema = true;
                     })
                         .WithAuditedDbContext(contexts => {
                             contexts.Configure<Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeEFCoreDbContext, Atlas.Conta.BackOffice.Module.BusinessObjects.BackOfficeAuditingDbContext>(
@@ -92,16 +137,18 @@ namespace Atlas.Conta.BackOffice.WebApi {
 
                 builder.AddBuildStep(application => {
                     application.ApplicationName = "SetupApplication.Atlas.Conta.BackOffice";
+                    // Host-ul API VERIFICĂ, nu updatează NICIODATĂ (decizia 42f):
+                    // `CheckCompatibilityType.DatabaseSchema` + `DatabaseUpdateMode`
+                    // pe default (`UpdateOldDatabase`) înseamnă că
+                    // `CheckCompatibilityCore` rulează verificarea, iar la
+                    // nepotrivire ridică `DatabaseVersionMismatch`; fără handler
+                    // (spre deosebire de Blazor, care apelează `e.Updater.Update()`)
+                    // aruncă `CompatibilityException` — exact ce vrem.
+                    // Blocul DEBUG al scaffold-ului (`UpdateDatabaseAlways` +
+                    // handler care rulează updater-ul) a fost ȘTERS: seed-ul și
+                    // migrațiile rămân exclusiv pe calea Blazor `--updateDatabase`,
+                    // iar `DisableUpdateSchema` de mai sus ține schema neatinsă.
                     application.CheckCompatibilityType = DevExpress.ExpressApp.CheckCompatibilityType.DatabaseSchema;
-#if DEBUG
-                    if(System.Diagnostics.Debugger.IsAttached && application.CheckCompatibilityType == CheckCompatibilityType.DatabaseSchema) {
-                        application.DatabaseUpdateMode = DatabaseUpdateMode.UpdateDatabaseAlways;
-                        application.DatabaseVersionMismatch += (s, e) => {
-                            e.Updater.Update();
-                            e.Handled = true;
-                        };
-                    }
-#endif
                 });
             }, Configuration);
 

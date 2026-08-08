@@ -1,8 +1,6 @@
 ﻿using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.AspNetCore.DesignTime;
 using DevExpress.ExpressApp.Design;
-using DevExpress.ExpressApp.Utils;
-using System.Reflection;
 
 namespace Atlas.Conta.BackOffice.WebApi {
     public class Program : IDesignTimeApplicationFactory {
@@ -11,29 +9,33 @@ namespace Atlas.Conta.BackOffice.WebApi {
         }
         public static int Main(string[] args) {
             if (ContainsArgument(args, "help") || ContainsArgument(args, "h")) {
-                Console.WriteLine("Updates the database when its version does not match the application's version.");
+                // Host-ul API nu updatează NICIODATĂ baza (decizia 42f): schema vine
+                // din migrațiile EF Core, seed-ul din ModuleUpdater — ambele rulate
+                // exclusiv prin `Atlas.Conta.BackOffice.Blazor.Server --updateDatabase`.
+                // Ramura `--updateDatabase` a scaffold-ului a fost ȘTEARSĂ: acest host
+                // nu citește `ProfilContabil` ca autoritate și ar seed-ui greșit.
+                Console.WriteLine("Atlas.Conta.BackOffice Web API host.");
                 Console.WriteLine();
-                Console.WriteLine($"    {Assembly.GetExecutingAssembly().GetName().Name}.exe --updateDatabase [--forceUpdate --silent]");
-                Console.WriteLine();
-                Console.WriteLine("--forceUpdate - Marks that the database must be updated whether its version matches the application's version or not.");
-                Console.WriteLine("--silent - Marks that database update proceeds automatically and does not require any interaction with the user.");
-                Console.WriteLine();
-                Console.WriteLine($"Exit codes: 0 - {DBUpdaterStatus.UpdateCompleted}");
-                Console.WriteLine($"            1 - {DBUpdaterStatus.UpdateError}");
-                Console.WriteLine($"            2 - {DBUpdaterStatus.UpdateNotNeeded}");
+                Console.WriteLine("Nu actualizează baza de date. Pentru migrații + seed folosiți:");
+                Console.WriteLine("    Atlas.Conta.BackOffice.Blazor.Server.exe --updateDatabase [--forceUpdate --silent]");
             } else {
                 DevExpress.ExpressApp.FrameworkSettings.DefaultSettingsCompatibilityMode = DevExpress.ExpressApp.FrameworkSettingsCompatibilityMode.Latest;
                 DevExpress.ExpressApp.Security.SecurityStrategy.AutoAssociationReferencePropertyMode = DevExpress.ExpressApp.Security.ReferenceWithoutAssociationPermissionsMode.AllMembers;
                 IHost host = CreateHostBuilder(args).Build();
-                if (ContainsArgument(args, "updateDatabase")) {
-                    using (var serviceScope = host.Services.CreateScope()) {
-                        return serviceScope.ServiceProvider.GetRequiredService<DevExpress.ExpressApp.Utils.IDBUpdater>().Update(ContainsArgument(args, "forceUpdate"), ContainsArgument(args, "silent"));
-                    }
-                } else {
-                    host.Run();
-                }
+                // Decizia 51c: convenția de rotunjire e dată a bazei, citită O DATĂ
+                // înainte de a servi primul request (motorul rulează în cerere și
+                // rotunjește la materializare). Același helper ca în Blazor.Server.
+                FixeazaConventiaRotunjire(host);
+                host.Run();
             }
             return 0;
+        }
+        static void FixeazaConventiaRotunjire(IHost host) {
+            var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
+            Atlas.Conta.BackOffice.Module.DatabaseUpdate.ScaraBootstrap.FixeazaConventia(
+                host.Services.GetRequiredService<IConfiguration>().GetConnectionString("ConnectionString"),
+                (mesaj, exceptie) => logger.LogWarning(exceptie, "{Mesaj}", mesaj),
+                mesaj => logger.LogInformation("{Mesaj}", mesaj));
         }
         XafApplication IDesignTimeApplicationFactory.Create() {
             IHostBuilder hostBuilder = CreateHostBuilder(Array.Empty<string>());
