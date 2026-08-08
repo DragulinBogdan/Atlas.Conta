@@ -30,9 +30,13 @@ public static class NirApply {
         if (h == null)
             return null;
 
-        // Frunza NIR (DIM-2) poartă cele patru dimensiuni; liniile clonei conexe
-        // se nasc pe ea (`[TipDetaliu]`), deci citirea pe tipul derivat e completă.
-        var linii = os.GetObjectsQuery<NirDetaliu>()
+        // Citirea liniilor merge pe BAZA detaliului, cu frunza NIR (DIM-2) adusă
+        // prin `as` (TPT ⇒ LEFT JOIN în SQL): clona conexă generată azi se naște
+        // pe `NirDetaliu` ([TipDetaliu]), dar NIR-urile ISTORICE (importul/clonele
+        // pre-DIM-2) poartă linii de tip BAZĂ — pe frunză singură ar fi ieșit
+        // `Linii: []` cu `Total` nenul (constatarea pasului 3 al feliei).
+        // Dimensiunile sunt null pe liniile de bază — exact ce poartă.
+        var linii = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => l.DocumentId == id)
             .OrderBy(l => l.ID)
             .Select(l => new {
@@ -45,10 +49,14 @@ public static class NirApply {
                 LotPret = (decimal?)l.Lot.PretUnitar,
                 l.Cantitate, l.Valoare, l.ValoareTva,
                 l.TipTvaId, TipTvaCod = l.TipTva.Cod,
-                l.CodEconomicId, CodEconomicCod = l.CodEconomic.Cod,
-                l.SursaFinantareId, SursaFinantareCod = l.SursaFinantare.Cod,
-                l.CodFunctionalId, CodFunctionalCod = l.CodFunctional.Cod,
-                l.ProiectId, ProiectCod = l.Proiect.Cod
+                CodEconomicId = (l as NirDetaliu).CodEconomicId,
+                CodEconomicCod = (l as NirDetaliu).CodEconomic.Cod,
+                SursaFinantareId = (l as NirDetaliu).SursaFinantareId,
+                SursaFinantareCod = (l as NirDetaliu).SursaFinantare.Cod,
+                CodFunctionalId = (l as NirDetaliu).CodFunctionalId,
+                CodFunctionalCod = (l as NirDetaliu).CodFunctional.Cod,
+                ProiectId = (l as NirDetaliu).ProiectId,
+                ProiectCod = (l as NirDetaliu).Proiect.Cod
             })
             .ToList();
 

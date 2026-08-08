@@ -29,9 +29,32 @@ Canonic e ce e **comis**; uneltele doar reproduc — disciplina migrațiilor EF.
 
 | artefact                     | generator                                  | sursă                     |
 |------------------------------|--------------------------------------------|---------------------------|
-| `src/generated/openapi.json` | `pnpm gen:openapi`                          | host-ul VIU (Swagger)     |
+| `src/generated/openapi.json` | `pnpm gen:openapi`                          | assembly-ul WebApi (OFFLINE) |
 | `src/generated/api-types.ts` | `pnpm gen:types` (openapi-typescript)       | `openapi.json` (offline)  |
 | `src/generated/metadata.json`| `dotnet run --project ../tools/ModelCheck -- --dump-metadata` | reflecție pe Module |
+
+### Driftul openapi, verificabil fără host viu (F2-D7)
+
+```
+pnpm verifica:drift        # regenerează openapi.json + api-types.ts și cere `git diff` gol
+```
+
+`gen:openapi` rulează `scripts/gen-openapi.ps1`: build WebApi + `dotnet swagger
+tofile` (Swashbuckle CLI, **dotnet local tool** din `nou/dotnet-tools.json` —
+`dotnet tool restore` e făcut de script). CLI-ul construiește host-ul exact ca la
+pornire, dar nu pornește pipeline-ul HTTP: `IHostedService`-urile nu rulează,
+deci **warmup-ul XAF nu pornește și baza nu e atinsă** — comanda merge pe o
+mașină fără Postgres. Ieșirea brută trece prin `dump-openapi.mjs`, care e acum
+DOAR normalizarea + scrierea (aceeași serializare pentru ambele surse, altfel
+„driftul" ar semnala diferența dintre generatoare).
+
+Plasa rămâne: `pnpm gen:openapi:host` citește Swagger-ul din host-ul viu
+(`SWAGGER_URL`, implicit `https://localhost:5001`), pentru cazul în care CLI-ul
+offline s-ar rupe la o versiune viitoare.
+
+Driftul lui `metadata.json` e verificat separat, de rularea normală a ModelCheck
+(vezi mai jos); `git diff -- src/generated/` din `verifica:drift` îl prinde și
+pe acela dacă a fost regenerat și necomis.
 
 `metadata.json` = captions (`[XafDisplayName]`, fallback numele; FK-ul `{Nav}Id`
 moștenește caption-ul navigației), `DefaultProperty` per tip (display-ul

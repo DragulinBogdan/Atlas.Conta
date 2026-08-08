@@ -48,6 +48,23 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // polimorf (decizia 6).
                     options.BusinessObject<Gestiune>();
                     options.BusinessObject<TipMaterial>();
+                    // Nomenclatoare VII, întreținute din fluxul operațional
+                    // (F2-D4): furnizorul nou și produsul nou apar la culegerea
+                    // facturii, deci CRUD-ul implicit rămâne — securitatea XAF
+                    // decide cine are voie, ca peste tot.
+                    options.BusinessObject<Partener>();
+                    options.BusinessObject<Produs>();
+                    // Restul e READ-ONLY prin construcție: sunt nomenclatoare de
+                    // POLITICĂ, administrate în back-office (planul de conturi,
+                    // regimurile de TVA cu conturile lor, clasificația bugetară).
+                    // Clientul le citește pentru lookup-uri; a le lăsa scriibile
+                    // prin OData ar însemna politică editată pe ușa din dos, în
+                    // afara oricărei validări de profil (deciziile 4/29).
+                    options.BusinessObject<TipTva>().ConfigureController(c => c.ReadOnly());
+                    options.BusinessObject<CodEconomic>().ConfigureController(c => c.ReadOnly());
+                    options.BusinessObject<SursaFinantare>().ConfigureController(c => c.ReadOnly());
+                    options.BusinessObject<CodFunctional>().ConfigureController(c => c.ReadOnly());
+                    options.BusinessObject<Proiect>().ConfigureController(c => c.ReadOnly());
                     // `Lot` NU e nomenclator obișnuit (review advers M1): PretUnitar/
                     // Data/Gestiune sunt load-bearing pentru evaluare și FIFO —
                     // loturile se nasc la culegere și se finalizează de motor
