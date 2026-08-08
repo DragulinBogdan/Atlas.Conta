@@ -1,6 +1,7 @@
 # Pasul 5 — Felia 2: FacturaIntrare + conex-NIR prin API (contract)
 
-Stare: **ÎN LUCRU (2026-08-08)**. A doua felie verticală pe șablonul BTR
+Stare: **EXECUTAT (2026-08-08)** — toți cei 5 pași + review advers cu fix-urile
+aplicate; închiderea în §Închidere. A doua felie verticală pe șablonul BTR
 (`p5-spike1-contract.md` — șablonul + datoriile lui). Exersează exact ce BTR nu
 a atins: **lotul născut la culegere, TVA la culegere, dimensiunile pe frunză,
 mecanismul conex, numărul cules (nu din serie)**. Scope confirmat de utilizator:
@@ -88,3 +89,45 @@ trezoreriei).
 POST/PUT/DELETE pe NIR + `ProdusId` pe `NirDetaliu`; GenereazaPlata prin API
 (felia trezoreriei: PLT/INC + imperecheri); proiecții noi de raportare; restul
 datoriilor de client din spike (licența DevExtreme — acțiunea utilizatorului).
+
+## Închidere (2026-08-08)
+
+**Fluxul-ancoră complet, verificat în browser pe baza Privat**: FCT nouă
+(SMOKE-F2-1, furnizor remote din 129k, gestiune, linie de stoc cu produs din
+312k) → salvare (Total 60,50 — net 50 + N21 aplicat implicit de server) →
+dry-run verde → operare → panoul „Documente generate" cu link → NIR conex
+(Total 50 = NETUL, 36b) → **NIR-17815 operat** (numărul din serie la operare)
+→ lotul finalizat la NET (12,50) cu +4/50 în gestiune → anularea lanțului →
+ștergere. ModelCheck: bugetar + privat verzi (inclusiv blocul privat NOU de
+semantică TVA pe N21).
+
+**Datoria M2 a spike-ului ÎNCHISĂ**: `openapi.json` se generează OFFLINE
+(`swagger tofile`, fără host/Postgres — HostedService-urile nu pornesc; probat
+byte-identic cu dump-ul din host viu); `pnpm gen:openapi` + `verifica:drift`.
+
+**Constatări de fond fixate pe parcurs** (nu erau în contract):
+- Recalculul TVA la culegere e CONDIȚIONAT de declanșatorii din UI (baza/
+  TipTva schimbate) — altfel override-ul murea la orice PUT de header.
+- `NirApply.Citeste` citește liniile pe BAZA detaliului cu frunza prin
+  as-cast (TPT LEFT JOIN) — NIR-urile istorice (linii pre-DIM-2) nu mai ies
+  cu `Linii: []`.
+- Trei bug-uri de nucleu client, găsite la smoke și fixate: cheile OData sunt
+  OBIECTE `Guid` (comparațiile normalizate); `laSelectie` = notificare +
+  update funcțional în felie; `onValueChanged` propagă DOAR schimbările cu
+  `e.event` (schimbarea programatică re-raporta prin closure vechi și ștergea
+  câmpurile abia scrise).
+
+**Review advers — niciun defect de FOND; fixate**: override TVA refuzat pe
+regimuri fără TVA separat + negativ (D1/D7); re-parentarea... nu — Tipul mutat
+pe ne-stoc rupe referința la lotul finalizat (D3); lotul finalizat fără urme
+moare la Sterge (D4); affordances oneste — `PoateAnula/Storna` încorporează
+copiii operați, NIR `PoateEdita=false` (D5).
+
+**Datorii documentate**: override explicit 0 moare la operare (condiția 36a
+`!= 0`) și renunțarea la override cere declanșator — fix-ul de fond = flag
+`TvaSuprascris` pe frunză, aditiv, dacă nevoia devine reală (D2/D6, comentate
+în DTO); `Partener.ContImplicit` scriibil prin OData (politică de contare —
+aceeași putere ca back-office-ul; member-permission dacă se cere, D8);
+overload-urile OData cu `tenantName` nu trec prin customizer (irelevant fără
+MT); linia de tip BAZĂ pe drafturi vechi e invizibilă în `Linii` dar
+contribuie la `Total` și moare la prima reconciliere (deliberat, comentat).
