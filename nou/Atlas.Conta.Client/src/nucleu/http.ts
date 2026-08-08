@@ -1,4 +1,4 @@
-import { stergeToken, token } from './auth';
+import { expiraSesiunea, token } from './auth';
 
 // Singurul loc care vorbește cu API-ul. Traduce cele TREI feluri de răspuns pe
 // care contractul le distinge (spike D2):
@@ -36,7 +36,7 @@ function antete(cuCorp: boolean): HeadersInit {
 async function trimite(cale: string, init: RequestInit, cuCorp: boolean): Promise<Response> {
   const raspuns = await fetch(cale, { ...init, headers: { ...antete(cuCorp), ...(init.headers ?? {}) } });
   if (raspuns.status === 401) {
-    stergeToken();
+    expiraSesiunea();
     throw new EroareSesiune();
   }
   if (raspuns.status === 422) {

@@ -1,8 +1,10 @@
-# Atlas.Conta.Client — SPA React (pasul 5, spike 1)
+# Atlas.Conta.Client — SPA React (pasul 5)
 
-Clientul React al tierului API (deciziile 42/43; contractul spike-ului:
-`docs/api/p5-spike1-contract.md`, pasul 4 = D10 + D11). Felia pilot:
-**NotaTransfer (BTR)** + proiecția **sold stoc**.
+Clientul React al tierului API (deciziile 42/43). Felia pilot a spike-ului
+(`docs/api/p5-spike1-contract.md`): **NotaTransfer (BTR)** + proiecția
+**sold stoc**. A doua felie (`docs/api/p5-felia-fct-contract.md`, F2-D8):
+**FacturaIntrare (FCT)** cu editor de linie complet + **NIR** citire/comenzi —
+fluxul-ancoră FCT operată → `ConexId` → „Deschide NIR-ul generat" → Operează.
 
 ## Rulare în dev
 
@@ -17,7 +19,10 @@ pnpm dev            # http://localhost:5173 — /api merge prin proxy la 5001
 ```
 
 Autentificare: `Admin`, parolă goală. Tokenul stă în `sessionStorage`; 401 pe
-orice apel îl șterge și trimite ecranul la `/login`.
+orice apel îl șterge și trimite ecranul la `/login` — pe TOATE cele trei
+conducte: `http.ts` (fetch-ul feliilor), `dxStore` (grilele remote) și
+`ODataStore` (lookup-urile). Ultimele două nu trec prin `http.ts`, iar fără
+tratare un 401 arăta acolo ca „nimic găsit" (`nucleu/auth.ts::expiraSesiunea`).
 
 Dev-ul trece prin **proxy-ul Vite** (`vite.config.ts`), nu prin CORS: browserul
 vorbește doar cu originul Vite. În producție SPA-ul e servit static de WebApi
@@ -76,15 +81,33 @@ tipurile generate. `WriteDto ≠ ReadDto` e vizibil în tipuri.
 ```
 src/
   generated/     openapi.json · api-types.ts · metadata.json      (comise)
-  nucleu/        auth · http · campMeta · formular · CampShell
+  nucleu/        auth · http · campMeta · formular · CampShell · zi
                  campuri (CampText/CampData/CampNumar) · Lookup
                  DocumentShell · PanouErori · dxStore
   felii/
+    fct/         api.ts · FctLista · FctDetaliu · FctEditorLinie
+    nir/         api.ts · NirLista · NirDetaliu            (citire + comenzi)
     btr/         api.ts · BtrLista · BtrDetaliu · EditorLinie
     stoc/        SoldStoc
   pagini/        Login
-  App.tsx        rute: /login · /btr · /btr/nou · /btr/:id · /stoc
+  App.tsx        rute: /login · /fct[/nou|/:id] · /nir[/:id] · /btr[/nou|/:id] · /stoc
 ```
+
+Trei lucruri pe care le exersează felia FCT peste șablonul BTR, toate vizibile
+în `felii/fct/api.ts` și `FctEditorLinie.tsx`:
+
+- **numărul e CULES** (al furnizorului — FCT n-are politică de numerotare);
+  serverul îl lasă nullable pe draft și îl cere la operare, clientul îl cere la
+  culegere (`obligatoriu` explicit pe câmp — vezi `useCamp`);
+- **`TipTvaId` face round-trip, `ValoareTva` NU.** Pe sârmă `ValoareTva`
+  înseamnă „override manual" (36a): se trimite doar dacă operatorul a atins
+  câmpul în sesiunea curentă de editare, altfel serverul recalculează. `TipTva`
+  absent pe o linie EXISTENTĂ e golire deliberată; pe una nouă = implicitul
+  tipului de document;
+- **Produs → Tip, precompletat din răspunsul OData al selecției** (`laSelectie`
+  pe `Lookup`, aplicat prin `seteazaMulte` ca să nu se piardă în două
+  actualizări succesive) — doar când Tipul e gol. Lotul rămâne server-owned:
+  se naște din `Produs` la culegere, nu apare în WriteDto.
 
 Regula transversală (43a): **vocabular de componente compuse în cod, niciodată
 descriptori interpretați.** Metadata leagă *atributele* câmpului

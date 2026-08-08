@@ -83,6 +83,28 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 }
 .editor-linie__comenzi { display: flex; gap: 8px; margin-top: 8px; }
 
+/* valoare de afișare, în rama de câmp (ecranele read-only) */
+.valoare-statica { padding: 6px 0; min-height: 30px; }
+.valoare-statica a { color: var(--accent); }
+
+/* secțiune pliabilă în editorul de linie (clasificația bugetară) */
+.sectiune-pliabila { margin-top: 8px; }
+.sectiune-pliabila > summary { cursor: pointer; color: #46525f; margin-bottom: 8px; }
+
+/* cererea de parametru a unei comenzi (data stornării) */
+.cerere-data {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: var(--gol);
+  background: #ffffff;
+  border: 1px solid var(--linie);
+  border-left: 4px solid var(--accent);
+  border-radius: 4px;
+}
+.cerere-data > .camp__eticheta { margin-bottom: 0; }
+
 /* ── panouri de erori ────────────────────────────────────────────────── */
 .panou {
   border: 1px solid var(--rosu);

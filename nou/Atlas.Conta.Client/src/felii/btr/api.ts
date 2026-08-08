@@ -1,6 +1,7 @@
 import type { components } from '../../generated/api-types';
 import { ia, posteaza, pune, sterge } from '../../nucleu/http';
 import { storeRemote } from '../../nucleu/dxStore';
+import { azi } from '../../nucleu/zi';
 
 // `api.ts` DE MÂNĂ, cu tipurile GENERATE (43d): suprafața feliei e mică și
 // deliberată — un client generat ar dicta forma hook-urilor și tot n-ar ajuta
@@ -46,11 +47,6 @@ export const btr = {
 
 export function antetGol(): BtrWrite {
   return { Data: azi(), Linii: [] };
-}
-
-export function azi(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, '0')}-${`${d.getDate()}`.padStart(2, '0')}`;
 }
 
 // ReadDto → WriteDto: exact câmpurile pe care operatorul are voie să le trimită.

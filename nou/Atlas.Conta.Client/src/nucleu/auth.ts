@@ -16,6 +16,20 @@ export function stergeToken(): void {
   sessionStorage.removeItem(CHEIE);
 }
 
+// Sesiunea expirată, tratată IDENTIC pe toate conductele: `http.ts` (fetch-ul
+// feliilor), `dxStore` (grilele remote) și `ODataStore` (lookup-urile). Cele
+// două din urmă nu trec prin `http.ts` — cererea o face componenta DevExtreme,
+// iar fără asta un 401 pe ele arăta ca „nimic găsit".
+//
+// Navigarea e HARD (`location.assign`), nu prin router: apelurile pleacă și din
+// afara arborelui React (store-uri DevExtreme), unde nu există `useNavigate`, iar
+// un reload curăță oricum cache-ul de query și starea de formular a sesiunii moarte.
+export function expiraSesiunea(): void {
+  if (!esteAutentificat()) return;   // deja tratat de primul 401 al valului
+  stergeToken();
+  window.location.assign('/login');
+}
+
 // Endpoint-ul XAF întoarce tokenul ca TEXT BRUT (nu JSON, nu `{token:…}`) —
 // verificat pe host-ul viu. `JSON.parse` ar pica; ghilimelele eventuale se taie.
 export async function autentifica(utilizator: string, parola: string): Promise<void> {

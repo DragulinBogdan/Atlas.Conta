@@ -15,6 +15,11 @@ type StareFormular = {
   schema: string;
   valoare: Record<string, unknown>;
   seteaza: (camp: string, v: unknown) => void;
+  // Mai multe câmpuri ÎNTR-O SINGURĂ actualizare. Există pentru cazul real în
+  // care o selecție aduce cu ea date derivate (Produs → Tip): două `seteaza`
+  // succesive ar pleca amândouă din aceeași `valoare` închisă în closure, iar a
+  // doua ar șterge efectul primeia.
+  seteazaMulte: (patch: Record<string, unknown>) => void;
   readOnly: boolean;
   // Erorile structurale se arată abia după prima încercare de trimitere:
   // un formular gol nu întâmpină operatorul cu roșu.
@@ -40,6 +45,7 @@ export function Formular<T extends object>(props: PropsFormular<T>) {
     schema,
     valoare: valoare as Record<string, unknown>,
     seteaza: (camp, v) => onSchimba({ ...valoare, [camp]: v }),
+    seteazaMulte: (patch) => onSchimba({ ...valoare, ...patch }),
     readOnly,
     aratErori,
   }), [tip, schema, valoare, onSchimba, readOnly, aratErori]);
@@ -69,20 +75,29 @@ export type LegaturaCamp<V> = {
   meta: CampMeta;
   valoare: V | undefined;
   seteaza: (v: V | undefined) => void;
+  seteazaMulte: (patch: Record<string, unknown>) => void;
   eroare: string | null;
   readOnly: boolean;
 };
 
 // Un editor tipizat = `useCamp` + controlul lui de input. Atât.
-export function useCamp<V>(camp: string, readOnlyLocal = false): LegaturaCamp<V> {
+//
+// `obligatoriuLocal` e ESCAPA declarată: schema OpenAPI rămâne sursa implicită,
+// dar unde serverul permite deliberat null pe DRAFT și cere valoarea abia la
+// operare (FCT: `Numar` = numărul furnizorului), felia poate marca cerința ca s-o
+// vadă operatorul la culegere. Nu e o regulă nouă — e aceeași regulă, arătată
+// mai devreme; se scrie EXPLICIT la locul folosirii, nu se derivă nicăieri.
+export function useCamp<V>(camp: string, readOnlyLocal = false, obligatoriuLocal?: boolean): LegaturaCamp<V> {
   const stare = useStareFormular();
   const meta = campMeta(stare.tip, camp, stare.schema);
+  const metaEfectiv = obligatoriuLocal == null ? meta : { ...meta, obligatoriu: obligatoriuLocal };
   const valoare = stare.valoare[camp] as V | undefined;
   return {
-    meta,
+    meta: metaEfectiv,
     valoare,
     seteaza: (v) => stare.seteaza(camp, v),
-    eroare: stare.aratErori ? eroareStructurala(meta, valoare) : null,
+    seteazaMulte: stare.seteazaMulte,
+    eroare: stare.aratErori ? eroareStructurala(metaEfectiv, valoare) : null,
     readOnly: stare.readOnly || readOnlyLocal,
   };
 }

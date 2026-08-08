@@ -10,7 +10,7 @@ import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
 import {
-  antetGol, azi, btr, spreWrite,
+  antetGol, btr, spreWrite,
   SCHEMA_ANTET, SCHEMA_LINIE, TIP_ANTET, TIP_LINIE,
   type BtrLinieWrite, type BtrWrite,
 } from './api';
@@ -124,10 +124,8 @@ export function BtrDetaliu() {
     {
       eticheta: 'Stornează',
       disponibila: doc?.PoateStorna ?? false,
-      ruleaza: () => {
-        const data = window.prompt('Data stornării (AAAA-LL-ZZ):', azi());
-        if (data) void comanda(() => btr.storneaza(id!, data));
-      },
+      cereData: { eticheta: 'Data stornării' },
+      ruleaza: (data) => { if (data) void comanda(() => btr.storneaza(id!, data)); },
     },
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza('/btr') },
   ];

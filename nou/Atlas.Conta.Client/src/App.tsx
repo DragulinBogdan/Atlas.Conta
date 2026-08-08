@@ -3,20 +3,30 @@ import { esteAutentificat, stergeToken } from './nucleu/auth';
 import { Login } from './pagini/Login';
 import { BtrLista } from './felii/btr/BtrLista';
 import { BtrDetaliu } from './felii/btr/BtrDetaliu';
+import { FctLista } from './felii/fct/FctLista';
+import { FctDetaliu } from './felii/fct/FctDetaliu';
+import { NirLista } from './felii/nir/NirLista';
+import { NirDetaliu } from './felii/nir/NirDetaliu';
 import { SoldStoc } from './felii/stoc/SoldStoc';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
-// sincronizat. Ruta statică `/btr/nou` e declarată ÎNAINTEA celei parametrice.
+// sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
+// NIR-ul n-are rută `/nou`: în felia asta nu se culege din client (F2-D3).
 export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route element={<Cadru />}>
+        <Route path="/fct" element={<FctLista />} />
+        <Route path="/fct/nou" element={<FctDetaliu />} />
+        <Route path="/fct/:id" element={<FctDetaliu />} />
+        <Route path="/nir" element={<NirLista />} />
+        <Route path="/nir/:id" element={<NirDetaliu />} />
         <Route path="/btr" element={<BtrLista />} />
         <Route path="/btr/nou" element={<BtrDetaliu />} />
         <Route path="/btr/:id" element={<BtrDetaliu />} />
         <Route path="/stoc" element={<SoldStoc />} />
-        <Route path="*" element={<Navigate to="/btr" replace />} />
+        <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
     </Routes>
   );
@@ -31,6 +41,8 @@ function Cadru() {
     <div className="cadru">
       <nav className="cadru__meniu">
         <span className="cadru__marca">Atlas Conta</span>
+        <NavLink to="/fct">Facturi intrare</NavLink>
+        <NavLink to="/nir">NIR-uri</NavLink>
         <NavLink to="/btr">Note de transfer</NavLink>
         <NavLink to="/stoc">Sold stoc</NavLink>
         <button

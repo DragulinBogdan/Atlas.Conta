@@ -1,5 +1,5 @@
 import { createStore } from 'devextreme-aspnet-data-nojquery';
-import { token } from './auth';
+import { expiraSesiunea, token } from './auth';
 
 // Pachetul `-nojquery` e varianta pentru SPA-uri (React/Angular/Vue) a
 // `DevExtreme.AspNet.Data`: bundle-ul CJS clasic cere `jquery` necondiționat, iar
@@ -16,5 +16,9 @@ export function storeRemote(loadUrl: string, key: string | string[] = 'Id') {
     onBeforeSend: (_operatie, setari) => {
       setari.headers = { ...(setari.headers ?? {}), Authorization: `Bearer ${token() ?? ''}` };
     },
+    // Sesiunea expirată: aceeași reacție ca pe `http.ts` (vezi `expiraSesiunea`).
+    // Fără asta grila arăta „No data" la 401 — indistinct de un filtru fără
+    // rezultate.
+    onAjaxError: (e) => { if (e.xhr?.status === 401) expiraSesiunea(); },
   });
 }

@@ -1,6 +1,7 @@
 import { DateBox, NumberBox, TextBox } from 'devextreme-react';
 import { CampShell } from './CampShell';
 import { useCamp } from './formular';
+import { izolataZi } from './zi';
 
 // Vocabularul de editoare (43a). Fiecare e o FAȚĂ SUBȚIRE peste `CampShell`:
 // controlul de input + legătura la agregat. Identitatea editorului se scrie
@@ -15,10 +16,13 @@ import { useCamp } from './formular';
 export type PropsCamp<T extends object> = {
   camp: Extract<keyof T, string>;
   readOnly?: boolean;
+  // Vezi `useCamp`: escapă declarată pentru câmpurile pe care serverul le lasă
+  // nullable pe draft, dar le cere la operare. Implicit rămâne schema OpenAPI.
+  obligatoriu?: boolean;
 };
 
-export function CampText<T extends object>({ camp, readOnly }: PropsCamp<T>) {
-  const c = useCamp<string>(camp, readOnly);
+export function CampText<T extends object>({ camp, readOnly, obligatoriu }: PropsCamp<T>) {
+  const c = useCamp<string>(camp, readOnly, obligatoriu);
   return (
     <CampShell meta={c.meta} eroare={c.eroare}>
       <TextBox
@@ -34,8 +38,8 @@ export function CampText<T extends object>({ camp, readOnly }: PropsCamp<T>) {
 // Datele circulă pe sârmă ca `DateOnly` ISO („2026-08-08") — se păstrează ca
 // STRING în agregat: nicio conversie de fus orar nu are voie să atingă o dată
 // contabilă.
-export function CampData<T extends object>({ camp, readOnly }: PropsCamp<T>) {
-  const c = useCamp<string>(camp, readOnly);
+export function CampData<T extends object>({ camp, readOnly, obligatoriu }: PropsCamp<T>) {
+  const c = useCamp<string>(camp, readOnly, obligatoriu);
   return (
     <CampShell meta={c.meta} eroare={c.eroare}>
       <DateBox
@@ -49,17 +53,8 @@ export function CampData<T extends object>({ camp, readOnly }: PropsCamp<T>) {
   );
 }
 
-function izolataZi(v: unknown): string | undefined {
-  if (!v) return undefined;
-  const d = v instanceof Date ? v : new Date(String(v));
-  if (Number.isNaN(d.getTime())) return undefined;
-  const luna = `${d.getMonth() + 1}`.padStart(2, '0');
-  const zi = `${d.getDate()}`.padStart(2, '0');
-  return `${d.getFullYear()}-${luna}-${zi}`;
-}
-
-export function CampNumar<T extends object>({ camp, readOnly, zecimale = 3 }: PropsCamp<T> & { zecimale?: number }) {
-  const c = useCamp<number>(camp, readOnly);
+export function CampNumar<T extends object>({ camp, readOnly, obligatoriu, zecimale = 3 }: PropsCamp<T> & { zecimale?: number }) {
+  const c = useCamp<number>(camp, readOnly, obligatoriu);
   return (
     <CampShell meta={c.meta} eroare={c.eroare}>
       <NumberBox

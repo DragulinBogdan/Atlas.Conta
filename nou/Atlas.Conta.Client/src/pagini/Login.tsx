@@ -16,7 +16,7 @@ export function Login() {
     setOcupat(true);
     try {
       await autentifica(utilizator, parola);
-      navigheaza('/btr', { replace: true });
+      navigheaza('/fct', { replace: true });
     }
     catch (ex) {
       setErori([ex instanceof Error ? ex.message : String(ex)]);
