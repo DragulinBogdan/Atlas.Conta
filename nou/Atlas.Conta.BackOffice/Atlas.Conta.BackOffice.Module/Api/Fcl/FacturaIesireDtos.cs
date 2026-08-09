@@ -169,6 +169,14 @@ public sealed class RestNedescarcatRandDto {
     public decimal Rest { get; set; }
 }
 
+// Corpul comenzii `POST /api/fcl/{id}/genereaza-descarcare`: data descărcării.
+// E CULEASĂ (acțiunea XAF o cere la fel, cu default-ul „azi"), fiindcă marfa
+// devine disponibilă la o dată care nu e nici a facturii, nici neapărat cea de
+// azi — recepția care deblochează backorder-ul poate fi înregistrată retroactiv.
+public sealed class GenerareDescarcareRequestDto {
+    public DateOnly Data { get; set; }
+}
+
 // Rezultatul comenzii `POST /api/fcl/{id}/genereaza-descarcare`.
 public sealed class GenerareDescarcareRezultatDto {
     // Descărcarea generată — `null` = nu era nimic de alocat (fără linii de
