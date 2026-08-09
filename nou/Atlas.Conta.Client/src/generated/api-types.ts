@@ -2472,6 +2472,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/odata/UnitateInterna": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/UnitateInterna"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/UnitateInterna/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/UnitateInterna/$count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/UnitateInterna({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/UnitateInterna({key})"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/UnitateInterna/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/UnitateInterna/{key}"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/UnitateInterna({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/UnitateInterna({key})/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/UnitateInterna/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/UnitateInterna/{key}/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3538,6 +3634,17 @@ export interface components {
             /** Format: date */
             DataExtras?: string | null;
             Linii?: components["schemas"]["TrezorerieLinieWriteDto"][] | null;
+        };
+        UnitateInterna: {
+            /** Format: uuid */
+            ID?: string;
+            Cod?: string | null;
+            Denumire?: string | null;
+            Calitati?: components["schemas"]["CalitateRepartitor"];
+            Activ?: boolean;
+            /** Format: uuid */
+            ContImplicitId?: string | null;
+            ContImplicit?: components["schemas"]["Cont"];
         };
     };
     responses: never;
@@ -18463,6 +18570,288 @@ export interface operations {
         };
     };
     "GET_api/odata/TipTva/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/UnitateInterna": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=full": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=none": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.streaming=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.streaming=false": components["schemas"]["UnitateInterna"][];
+                    "application/json": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["UnitateInterna"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["UnitateInterna"][];
+                    "application/xml": components["schemas"]["UnitateInterna"][];
+                    "text/plain": components["schemas"]["UnitateInterna"][];
+                    "application/octet-stream": components["schemas"]["UnitateInterna"][];
+                    "text/json": components["schemas"]["UnitateInterna"][];
+                };
+            };
+        };
+    };
+    "GET_api/odata/UnitateInterna/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns the number of entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false": number;
+                    "application/json;odata.metadata=minimal": number;
+                    "application/json;odata.metadata=full;odata.streaming=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false": number;
+                    "application/json;odata.metadata=full": number;
+                    "application/json;odata.metadata=none;odata.streaming=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false": number;
+                    "application/json;odata.metadata=none": number;
+                    "application/json;odata.streaming=true": number;
+                    "application/json;odata.streaming=false": number;
+                    "application/json": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;IEEE754Compatible=false": number;
+                    "application/json;IEEE754Compatible=true": number;
+                    "application/xml": number;
+                    "text/plain": number;
+                    "application/octet-stream": number;
+                    "text/json": number;
+                };
+            };
+        };
+    };
+    "GET_api/odata/UnitateInterna({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=false": components["schemas"]["UnitateInterna"];
+                    "application/json": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/xml": components["schemas"]["UnitateInterna"];
+                    "text/plain": components["schemas"]["UnitateInterna"];
+                    "application/octet-stream": components["schemas"]["UnitateInterna"];
+                    "text/json": components["schemas"]["UnitateInterna"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/UnitateInterna/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=false": components["schemas"]["UnitateInterna"];
+                    "application/json": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["UnitateInterna"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["UnitateInterna"];
+                    "application/xml": components["schemas"]["UnitateInterna"];
+                    "text/plain": components["schemas"]["UnitateInterna"];
+                    "application/octet-stream": components["schemas"]["UnitateInterna"];
+                    "text/json": components["schemas"]["UnitateInterna"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/UnitateInterna({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/UnitateInterna/{key}/{navigationProperty}/$ref": {
         parameters: {
             query?: never;
             header?: never;

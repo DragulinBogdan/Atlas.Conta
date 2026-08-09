@@ -74,6 +74,11 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // cum contează motorul plata (31c), deci se administrează în
                     // back-office. Clientul le citește pentru lookup-ul de latură.
                     options.BusinessObject<ContPropriu>().ConfigureController(c => c.ReadOnly());
+                    // Unitatea internă = STRUCTURA firmei (sediul emitent al FCL
+                    // — F4, amendament la „nimic nou" din F4-D5): se administrează
+                    // în back-office, clientul o citește pentru lookup-ul de
+                    // emitent. Nomenclator de structură, nu viu — deci ReadOnly.
+                    options.BusinessObject<UnitateInterna>().ConfigureController(c => c.ReadOnly());
                     // `Lot` NU e nomenclator obișnuit (review advers M1): PretUnitar/
                     // Data/Gestiune sunt load-bearing pentru evaluare și FIFO —
                     // loturile se nasc la culegere și se finalizează de motor

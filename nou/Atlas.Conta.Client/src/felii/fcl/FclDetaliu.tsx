@@ -217,21 +217,18 @@ export function FclDetaliu() {
                   există în WriteDto (F4-D1). Se vede în titlu, după operare. */}
               <CampData<FclWrite> camp="Data" />
 
-              {/* EMITENTUL e un repartitor INTERN (unitate/gestiune), iar OData
-                  nu expune azi niciun set pentru `UnitateInterna` — nomenclatoarele
-                  opt-in sunt Gestiune/Partener/Produs/Angajat/ContPropriu (42f).
-                  Consecința, asumată și semnalată: pe un document EXISTENT
-                  emitentul se AFIȘEAZĂ (denumirea vine din ReadDto, oricare i-ar
-                  fi tipul), iar la unul NOU se alege dintre gestiuni — singura
-                  sursă internă disponibilă, acceptată de validarea operării
-                  („predatorul nu are voie să fie partener"). Fixul de fond e o
-                  linie în `Startup.cs` (expunerea `UnitateInterna`) + un lookup
-                  aici — pur aditiv. */}
+              {/* EMITENTUL = unitatea internă (sediul — cum operează și
+                  ModelCheck/importul); `UnitateInterna` e expusă ReadOnly în
+                  OData exact pentru lookup-ul ăsta (amendament F4-D5). Pe un
+                  document EXISTENT emitentul se AFIȘEAZĂ static din ReadDto:
+                  istoricul poate purta orice repartitor intern (validarea cere
+                  doar „nu Partener"), iar un lookup pe un singur set ar minți
+                  pe valorile din afara lui. */}
               {nou
                 ? (
                   <Lookup<FclWrite>
                     camp="PredatorId"
-                    entitate="Gestiune"
+                    entitate="UnitateInterna"
                     mod="local"
                     cauta={['Cod', 'Denumire']}
                     eticheta="Emitent"
