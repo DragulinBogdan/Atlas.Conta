@@ -1,7 +1,7 @@
 ﻿using Atlas.Conta.BackOffice.Blazor.Server.Services;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.DXF.Blazor.Application.Extensions;
-using Atlas.DXF.EfCore.Database.Exceptions;
 using Azure.AI.OpenAI;
 using DevExpress.AIIntegration;
 using DevExpress.AspNetCore.Reporting;
@@ -185,18 +185,8 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
             // După AddXaf: AtlasDxfExceptionService câștigă rezoluția IExceptionHandlerService,
             // iar violările de constraint DB apar în UI ca mesaje prietenoase.
             services.AddAtlasDxfServices();
-            ConstraintViolationMessages.ForeignKeyDeleteTemplate =
-                "Nu se poate șterge înregistrarea „{0}”: există înregistrări „{1}” care o referă.";
-            ConstraintViolationMessages.ForeignKeyTemplate =
-                "Operația intră în conflict cu o referință între înregistrările „{0}” și „{1}”.";
-            ConstraintViolationMessages.UniqueTemplate =
-                "Există deja o înregistrare „{0}” cu aceleași valori pentru {1}.";
-            ConstraintViolationMessages.NotNullTemplate =
-                "„{1}” este obligatoriu pe „{0}”.";
-            ConstraintViolationMessages.CheckTemplate =
-                "Înregistrarea „{0}” încalcă regula „{1}”.";
-            ConstraintViolationMessages.FallbackTemplate =
-                "Operația încalcă restricția de bază de date „{0}”.";
+            // Template-urile RO, partajate cu WebApi (F4-M2): o singură sursă.
+            MesajeConstraintRo.Aplica();
             var authentication = services.AddAuthentication(options => {
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             });

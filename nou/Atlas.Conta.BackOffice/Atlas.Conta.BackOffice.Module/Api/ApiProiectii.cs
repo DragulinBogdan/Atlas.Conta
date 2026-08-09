@@ -53,22 +53,27 @@ internal static class ApiProiectii {
         }).ToList();
     }
 
-    // Codul ancorei `TipDocument` pentru o mulțime MĂRGINITĂ de documente
-    // (grupul conex — 0–2 copii; stingerile unui document — panoul de
-    // imperecheri). Ancora se caută după NUMELE CLASEI CLR, deci o singură
-    // căutare per CLASĂ, memoizată: o plată care stinge zece facturi nu face
-    // zece interogări de ancoră.
+    // Codul ancorei `TipDocument` pentru o mulțime de documente (grupul conex —
+    // 0–2 copii; stingerile unui document — panoul de imperecheri, unde extrasul
+    // de trezorerie din import poate purta SUTE de rânduri). Ancora se caută
+    // după NUMELE CLASEI CLR, deci o singură căutare per CLASĂ, memoizată.
+    //
+    // Documentele se materializează POLIMORF într-un SINGUR query pe bază: sub
+    // TPT, EF întoarce instanța tipului derivat corect (aceleași join-uri pe
+    // frunze ca `GetObjectByKey`, o singură dată pentru toată mulțimea).
+    // Varianta per-id (`GetObjectByKey` în buclă) a fost măsurată la ~11s pe un
+    // extras cu 335 de stingeri pe baza de import (N × interogarea TPT completă)
+    // — presupunerea „mulțime mărginită" nu ține pe documentele de trezorerie.
     public static Dictionary<Guid, string> CoduriTip(IObjectSpace os, IReadOnlyCollection<Guid> ids) {
         var rezultat = new Dictionary<Guid, string>();
         if (ids == null || ids.Count == 0)
             return rezultat;
+        var cerute = ids.Distinct().ToList();
+        var documente = os.GetObjectsQuery<Document>()
+            .Where(d => cerute.Contains(d.ID))
+            .ToList();
         var perClasa = new Dictionary<string, string>();
-        foreach (var id in ids.Distinct()) {
-            var doc = os.GetObjectByKey<Document>(id);
-            if (doc == null) {
-                rezultat[id] = null;
-                continue;
-            }
+        foreach (var doc in documente) {
             // EF Core dă proxy-uri de change-tracking — numele CLR real e pe
             // tipul de bază (aceeași de-proxificare ca în MotorOperare).
             var clr = doc.GetType();
@@ -84,8 +89,11 @@ internal static class ApiProiectii {
                 }
                 perClasa[clr.Name] = cod;
             }
-            rezultat[id] = cod;
+            rezultat[doc.ID] = cod;
         }
+        // Id-urile nerezolvate (inexistente/invizibile) rămân în contract: null.
+        foreach (var id in cerute)
+            rezultat.TryAdd(id, null);
         return rezultat;
     }
 

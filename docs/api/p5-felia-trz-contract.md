@@ -150,6 +150,10 @@ liniile la fiecare încărcare de grilă — de MĂSURAT înainte de release, nu
 optimizat orb) **[MĂSURAT 2026-08-09, decizia 59 —
 `docs/api/p5-perf-masuratori.md`: D-2a neproblemă; `DocumenteCuRest` ~410ms,
 acceptabil azi, optimizarea țintită documentată]**; D-5b — editarea manuală a plății autogenerate Draft se pierde
-la anularea facturii-sursă (de afișat un indiciu); D-6b — link-ul „Generat din"
+la anularea facturii-sursă (de afișat un indiciu) **[FIXAT 2026-08-09, decizia
+60: indiciu în panoul „Grup conex", verificat în browser]**; D-6b — link-ul „Generat din"
 hardcodat `/fct/` (corect azi, de generalizat la transferul 581 cu
-`DocumentSursaTip`); ordinea `Stingeri` pe Id (arbitrară Guid).
+`DocumentSursaTip`); ordinea `Stingeri` pe Id (arbitrară Guid) **[FIXAT
+2026-08-09, decizia 60: cronologic după data celeilalte părți; fix-ul a scos și
+N+1-ul REAL al lui `CoduriTip` pe stingerile extraselor — 11s → 0,19s, addendum
+în `p5-perf-masuratori.md`]**.

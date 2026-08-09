@@ -78,7 +78,11 @@ public static class ImperechereApply {
         // opuse (LEFT JOIN pe navigație, nu enumerare lazy — 25b/41c).
         var randuri = os.GetObjectsQuery<Imperechere>()
             .Where(i => i.DocumentStingatorId == documentId || i.DocumentId == documentId)
-            .OrderBy(i => i.ID)
+            // CRONOLOGIC după data CELEILALTE părți (F3 §Închidere: ordinea pe Id
+            // era arbitrară — Guid): operatorul citește panoul ca istoric al
+            // stingerilor. Id-ul rămâne tiebreak stabil pentru două din aceeași zi.
+            .OrderBy(i => i.DocumentStingatorId == documentId ? i.Document.Data : i.DocumentStingator.Data)
+            .ThenBy(i => i.ID)
             .Select(i => new {
                 i.ID, i.Suma, i.Autogenerat,
                 EsteStingator = i.DocumentStingatorId == documentId,

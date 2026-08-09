@@ -344,6 +344,14 @@ function Provenienta(props: { doc?: TrzRead }) {
             Generat din{' '}
             <Link to={`/fct/${doc.DocumentSursaId}`}>{doc.DocumentSursaNumar || 'documentul sursă'}</Link>
             {doc.Autogenerat ? ' (autogenerat de motor)' : ''}
+            {/* D-5b: draftul autogenerat e artefact al operării sursei — anularea
+                ei îl ȘTERGE cu tot cu modificările manuale (26d/31e). */}
+            {doc.Autogenerat && doc.Stare === 'Draft' && (
+              <div className="indiciu">
+                Draft autogenerat: dacă anulați operarea documentului-sursă, draftul se șterge
+                — inclusiv modificările făcute aici. Re-operarea sursei îl regenerează curat.
+              </div>
+            )}
           </li>
         )}
         {copii.map((c: DocumentCopil) => (

@@ -143,5 +143,20 @@ public abstract class ContaApiController : ControllerBase {
         catch (OperareException ex) {
             return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(ex.Message));
         }
+        catch (Exception ex) {
+            // Violările de constraint DB (F4-M2): pe rutele fără pre-check propriu
+            // (ex. DELETE pe un draft FCL ale cărui linii sunt referite de un DSC
+            // manual prin `LinieSursaId` — FK Restrict) commit-ul iese ca
+            // DbUpdateException, care fără traducere ajungea 500 brut. Aceeași
+            // traducere ca în Blazor (39a, `AtlasDxfExceptionService`), același
+            // contract ca orice refuz de domeniu: 422 + EroriDto. Template-urile
+            // RO se aplică la pornire (`MesajeConstraintRo.Aplica`); modelul EF se
+            // deduce din `Entries`-urile excepției — captions XAF cu fallback CLR.
+            var violare = Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationTranslator.TryTranslate(ex);
+            if (violare == null)
+                throw;
+            return StatusCode(StatusCodes.Status422UnprocessableEntity,
+                EroriDto.DinMesaj(Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationMessages.Format(violare)));
+        }
     }
 }

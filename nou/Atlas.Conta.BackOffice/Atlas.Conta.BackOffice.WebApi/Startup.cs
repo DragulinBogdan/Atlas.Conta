@@ -38,6 +38,10 @@ namespace Atlas.Conta.BackOffice.WebApi {
             // OData / endpoint-urile feliei), nu doar View-urile Blazor. Probele pe
             // surse: `Atlas.Conta.BackOffice.Module/Motor/GardianEditare.cs`.
             services.AddContaGardianEditare();
+            // Template-urile RO ale traducerii violărilor de constraint DB (F4-M2)
+            // — consumate de catch-ul din `ContaApiController.Domeniu`; aceeași
+            // sursă ca în Blazor.Server.
+            Atlas.Conta.BackOffice.Module.BusinessObjects.MesajeConstraintRo.Aplica();
 
             services.AddXafWebApi(builder => {
                 builder.ConfigureOptions(options => {

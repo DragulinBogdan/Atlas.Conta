@@ -72,6 +72,25 @@ Grila plătește **două execuții** ale aceleiași uniuni (`requireTotalCount` 
   nu are nevoie de total) — taie execuția de count (~40%). Ambele aditive,
   în proiecție/client, fără atins motorul.
 
+## Addendum 2026-08-09 (aceeași zi, sesiunea de mărunțiș): găsirea REALĂ era în
+`Stingeri`, nu în `Copii`
+
+Sanity-check-ul de după reordonarea `Stingeri` a lovit documentul EXTREM al
+bazei de import — un extras de trezorerie cu **335 de stingeri**:
+**~11s LA CALD**. Mecanismul era exact cel numit de D-2a (`CoduriTip` =
+GetObjectByKey per document, adică interogarea TPT completă per rând), dar pe
+mulțimea NEMĂRGINITĂ a panoului de stingeri — presupunerea „mulțime mărginită"
+din comentariul funcției nu ține pe documentele de trezorerie ale importului.
+Măsurătoarea inițială n-a prins-o fiindcă a exersat `Copii` (0–2 prin
+construcție), nu `Stingeri`.
+
+**Fix aplicat** (păstrează designul — ancora pe numele clasei CLR, fără listă
+de tipuri înghețată): documentele se materializează POLIMORF într-un singur
+query pe bază (`Where(ids.Contains)`) — sub TPT, EF întoarce instanța tipului
+derivat corect; aceleași join-uri, o singură dată. Re-măsurat pe același
+document: **11,3s → ~0,185s cald (61×)**, date identice (335 rânduri, Total
+1.689.058,45, ordinea cronologică nouă).
+
 ## Reproducere
 
 Scriptul de măsurare (curl, 6 rulări/endpoint) e trecător (scratchpad);

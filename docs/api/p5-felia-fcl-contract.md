@@ -170,12 +170,19 @@ rulate independent de main.
 
 **Constatări minore, documentate, nefixate**: mesajul „nimic de generat + rest" al
 comenzii manuale nu se afișează în client după recitire (cosmetic — API-ul întoarce
-corect); etichetele liniilor sunt goale în grilă pe documentul NESALVAT (se
+corect) **[NEREPRODUCTIBIL 2026-08-09, decizia 60: probat în browser pe un
+backorder real — mesajul se afișează și persistă după recitire]**; etichetele
+liniilor sunt goale în grilă pe documentul NESALVAT (se
 populează la prima recitire; pattern moștenit din FCT); **M2** — DELETE pe un draft
 FCL ale cărui linii sunt referite de `LinieSursaId` dintr-un DSC manual → 500 brut
 (DbUpdateException netradusă în WebApi; cale exotică — traducerea 39a există doar
-în Blazor); **M3** — refuzurile „Id duplicat în payload" și „linie de tip bază" nu
-au check ModelCheck (căile există, verificate manual la review). Constatare de
+în Blazor) **[TRANȘAT 2026-08-09, decizia 60: catch de traducere în
+`ContaApiController.Domeniu` (422 + EroriDto, template-uri RO partajate
+`MesajeConstraintRo`); calea exotică ÎNSĂȘI nu se mai reproduce — DELETE prin
+API e ștergere amânată (GCRecord), probat live, FK-ul nu se mai atinge]**;
+**M3** — refuzurile „Id duplicat în payload" și „linie de tip bază" nu
+au check ModelCheck (căile există, verificate manual la review) **[FIXAT
+2026-08-09, decizia 60: ambele check-uri + proba curățeniei liniei de bază]**. Constatare de
 mediu: pe baza de import stocul „Sediul central" stă pe `UnitateInterna` (nu pe o
 gestiune) — fapt al importului, nu al feliei. Bonus smoke: ListView-ul
 `RegistruContabil` în XAF (restanța DIM-4) s-a încărcat normal pe 305k rânduri.

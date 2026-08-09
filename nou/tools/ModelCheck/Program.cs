@@ -2255,9 +2255,33 @@ if (profil == ProfilContabil.Privat) {
         CheckRefuza("Apply cu gestiune de descărcare inexistentă → refuz cu mesaj de domeniu", () =>
             FacturaIesireApply.Aplica(os, idFcl, PayloadFcl(new FacturaIesireLinieWriteDto {
                 TipMaterialId = tipServiciuFcl.ID, Cantitate = 1m, PretUnitar = 1m }, Guid.NewGuid())));
+        // M3 (F4 §Închidere): același Id de linie de DOUĂ ori în payload — a doua
+        // apariție ar suprascrie tăcut prima; reconcilierea o refuză explicit.
+        CheckRefuza("Apply cu același Id de linie repetat în payload → refuz (nu suprascriere tăcută)", () =>
+            FacturaIesireApply.Aplica(os, idFcl, new FacturaIesireWriteDto {
+                Data = writeFcl.Data, PredatorId = sediuFcl.ID, PrimitorId = clientFcl.ID,
+                GestiuneDescarcareId = gestiuneFcl.ID,
+                Linii = { writeFcl.Linii[0], writeFcl.Linii[0] }
+            }));
+        // M3: linie de tip BAZĂ pe draft (draft vechi pre-P2, «detaliu generic»).
+        // Actualizarea ei prin Id se refuză („tip vechi"); absența ei din payload
+        // o CURĂȚĂ — proba curățeniei e check-ul de reziduu de mai jos (3 linii).
+        var linieBazaFcl = os.CreateObject<DocumentDetaliu>(); // NU FacturaIesireDetaliu
+        linieBazaFcl.Document = os.GetObjectByKey<FacturaIesire>(idFcl);
+        linieBazaFcl.TipMaterial = tipServiciuFcl; linieBazaFcl.Cantitate = 1m;
+        os.CommitChanges();
+        CheckRefuza("Apply cu Id de linie de tip BAZĂ (draft vechi) → refuz «tip vechi», nu adoptare tăcută", () =>
+            FacturaIesireApply.Aplica(os, idFcl, new FacturaIesireWriteDto {
+                Data = writeFcl.Data, PredatorId = sediuFcl.ID, PrimitorId = clientFcl.ID,
+                GestiuneDescarcareId = gestiuneFcl.ID,
+                Linii = { new FacturaIesireLinieWriteDto {
+                    Id = linieBazaFcl.ID, TipMaterialId = tipServiciuFcl.ID,
+                    Cantitate = 1m, PretUnitar = 1m } }
+            }));
         FacturaIesireApply.Aplica(os, idFcl, writeFcl);
         citFcl = FacturaIesireApply.Citeste(os, idFcl);
-        Check("Un Apply refuzat nu lasă reziduu: re-aplicarea payload-ului valid readuce agregatul la exact 3 linii, cu Total 290,4",
+        Check("Un Apply refuzat nu lasă reziduu, iar linia de tip BAZĂ absentă din payload e CURĂȚATĂ: "
+            + "re-aplicarea payload-ului valid readuce agregatul la exact 3 linii, cu Total 290,4",
             citFcl.Linii.Count == 3 && citFcl.Total == 290.4m
             && citFcl.GestiuneDescarcareId == gestiuneFcl.ID);
 
