@@ -248,11 +248,12 @@ public static class TrezorerieApply {
             .Where(l => l.DocumentId == id)
             .Sum(l => (decimal?)(l.Valoare + l.ValoareTva)) ?? 0m;
 
-        // Affordance onestă pe grupul conex (ca la FCT): gardianul refuză
-        // anularea/stornarea cât timp există un copil OPERAT. F3-D2 (pasul 2)
-        // adaugă aici și imperecherile — vezi nota din `TrezorerieReadDto`.
+        // Affordance onestă pe AMBELE condiții ale motorului (F3-D2): grupul
+        // conex (copil operat) ȘI stingerile — plata care a stins o factură nu
+        // se anulează până nu se șterge imperecherea.
         var copii = ApiProiectii.Copii(os, id);
         var faraCopiiOperati = copii.All(c => c.Stare != nameof(StareDocument.Operat));
+        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
 
         return new TrezorerieReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -262,12 +263,20 @@ public static class TrezorerieApply {
             TipInstrument = h.TipInstrument.ToString(),
             NumarExtras = h.NumarExtras, DataExtras = h.DataExtras,
             Total = total,
+            // Numerele stingerii DIN SERVICIU (F3-D2), nu recalculate aici:
+            // `Asignat` numără ambele roluri, `Ramas` = Total − Asignat cu
+            // `Total` trecut prin `LiniiCreanta`. Pe trezorerie cele două
+            // `Total`-uri coincid (niciun override) — ModelCheck o verifică; a
+            // doua agregare locală ar fi fost un al doilea adevăr. Trei
+            // interogări mărginite, doar pe CITIREA de detaliu (nu în `Lista`).
+            Asignat = ImperechereService.Asignat(os, id),
+            Ramas = ImperechereService.Ramas(os, id),
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             DocumentSursaNumar = h.DocumentSursaNumar,
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
-            PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati,
-            PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati,
+            PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
+            PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             Copii = copii,
             Linii = linii.Select(l => new TrezorerieLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,

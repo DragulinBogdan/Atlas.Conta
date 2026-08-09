@@ -3997,14 +3997,118 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Affordance onestă pe FCT (F2-D5): copilul PLT operat blochează anularea/stornarea facturii",
         FacturaIntrareApply.Citeste(os, idFctPlata) is { PoateAnula: false, PoateStorna: false });
 
-    // LIMITA ASUMATĂ A PASULUI 1 (F3-D2, se închide la pasul 2 cu
-    // `ImperechereApply` + helper-ul comun `AreImperecheri`): affordance-ul
-    // trezoreriei NU ține încă cont de imperecheri — motorul refuză, DTO-ul încă
-    // spune „true". Consemnat aici ca proba să se schimbe odată cu formula.
-    Check("Limita asumată F3-D2: PoateAnula rămâne true pe plata cu imperechere (affordance-ul nu vede încă stingerile)",
-        plataOperata.PoateAnula && plataOperata.PoateStorna);
+    // ── (e) F3-D2/F3-D3: affordances ONESTE + stingerile prin API ───────────
+    // Perechea de mai jos era MARCAJUL limitei pasului 1 (affordance optimist
+    // lângă refuzul motorului), scrisă ca să pice când intră fix-ul. Aici e
+    // adusă la noul adevăr: DTO-ul spune același lucru ca gardianul.
+    Check("F3-D2: affordance ONESTĂ — plata cu imperechere NU se mai anunță anulabilă (oglinda lui VerificaFaraImperecheri)",
+        !plataOperata.PoateAnula && !plataOperata.PoateStorna);
     CheckRefuza("…iar motorul chiar refuză: anularea plății cu imperechere",
         () => OperareApi.AnuleazaOperarea(os, idPlataAuto));
+    Check("F3-D2: numerele stingerii pe ReadDto-ul trezoreriei (Total/Asignat/Ramas din serviciu — TS nu le calculează)",
+        plataOperata.Total == 121m && plataOperata.Asignat == 121m && plataOperata.Ramas == 0m);
+
+    // Panoul de stingeri, citit din AMBELE capete ale ACELEIAȘI legături.
+    var stingeriPlataAuto = ImperechereApply.Stingeri(os, idPlataAuto);
+    Check("StingeriDto pe plata autogenerată: rolul de STINGĂTOR, celălalt document tipat „FCT” din ancoră, marcat Autogenerat",
+        stingeriPlataAuto is { Total: 121m, Asignat: 121m, Ramas: 0m }
+        && stingeriPlataAuto.Imperecheri.Count == 1
+        && stingeriPlataAuto.Imperecheri[0].EsteStingator
+        && stingeriPlataAuto.Imperecheri[0].CelalaltDocumentId == idFctPlata
+        && stingeriPlataAuto.Imperecheri[0].CelalaltTip == "FCT"
+        && stingeriPlataAuto.Imperecheri[0].CelalaltNumar == writeFct.Numar
+        && stingeriPlataAuto.Imperecheri[0].Suma == 121m
+        && stingeriPlataAuto.Imperecheri[0].Autogenerat);
+    var stingeriFct = ImperechereApply.Stingeri(os, idFctPlata);
+    Check("StingeriDto pe factură: ACELAȘI rând, cu rolul INVERSAT (EsteStingator false) și celălalt document tipat „PLT”",
+        stingeriFct is { Total: 121m, Asignat: 121m, Ramas: 0m }
+        && stingeriFct.Imperecheri.Count == 1
+        && stingeriFct.Imperecheri[0].Id == stingeriPlataAuto.Imperecheri[0].Id
+        && !stingeriFct.Imperecheri[0].EsteStingator
+        && stingeriFct.Imperecheri[0].CelalaltDocumentId == idPlataAuto
+        && stingeriFct.Imperecheri[0].CelalaltTip == "PLT"
+        && stingeriFct.Imperecheri[0].CelalaltNumar == "OP-API-9");
+    Check("Stingeri pe un id inexistent → null (nu excepție)",
+        ImperechereApply.Stingeri(os, Guid.NewGuid()) == null);
+    Check("F3-D4: documentul STINS INTEGRAL nu e candidat — filtrul Rest > 0 se aplică DUPĂ calcul, în SQL",
+        !ImperecheriProiectii.DocumenteCuRest(os).Any(r => r.DocumentId == idFctPlata));
+
+    // Ștergerea link-ului e LIBERĂ (31d) și deblochează anularea — exact fluxul
+    // clientului: după DELETE, butonul Anulează redevine activ.
+    ImperechereApply.Sterge(os, stingeriPlataAuto.Imperecheri[0].Id);
+    var plataFaraLink = TrezorerieApply.Citeste<Plata>(os, idPlataAuto);
+    Check("Sterge imperecherea → restul revine pe ambele documente ȘI affordance-ul se redeschide",
+        plataFaraLink is { PoateAnula: true, PoateStorna: true, Asignat: 0m, Ramas: 121m }
+        && ImperechereService.Ramas(os, idFctPlata) == 121m
+        && ImperechereApply.Stingeri(os, idFctPlata).Imperecheri.Count == 0);
+    CheckRefuza("Sterge pe o imperechere inexistentă → refuz de domeniu (nu NullReference)",
+        () => ImperechereApply.Sterge(os, Guid.NewGuid()));
+
+    // Creare prin API pe lanțul MANUAL: plata culeasă (150, casa → furnizor)
+    // stinge parțial factura ACELUIAȘI furnizor (121).
+    var creata = ImperechereApply.Creeaza(os, new ImperechereWriteDto {
+        DocumentStingatorId = idPlt, DocumentId = idFctPlata, Suma = 100m });
+    var panouPlt = ImperechereApply.Stingeri(os, idPlt);
+    var panouFct = ImperechereApply.Stingeri(os, idFctPlata);
+    Check("ImperechereApply.Creeaza → link ne-autogenerat; restul scade pe AMBELE părți (plata 50, factura 21)",
+        creata.DocumentStingatorId == idPlt && creata.DocumentId == idFctPlata
+        && creata.Suma == 100m && !creata.Autogenerat
+        && panouPlt is { Total: 150m, Asignat: 100m, Ramas: 50m }
+        && panouFct is { Total: 121m, Asignat: 100m, Ramas: 21m });
+    Check("Rolurile în panou: plata e STINGĂTOR (celălalt FCT), factura e stinsă (celălalt PLT)",
+        panouPlt.Imperecheri.Single() is { EsteStingator: true, CelalaltTip: "FCT", Autogenerat: false }
+        && panouFct.Imperecheri.Single() is { EsteStingator: false, CelalaltTip: "PLT" });
+
+    // Invarianții NU se rescriu în adaptor — refuzurile vin din
+    // `ImperechereService.ValideazaCreare`, prin aceeași cale ca UI-ul.
+    CheckRefuza("Creeaza peste restul stingibil al facturii (21 rămași, se cer 40) → refuz",
+        () => ImperechereApply.Creeaza(os, new ImperechereWriteDto {
+            DocumentStingatorId = idPlt, DocumentId = idFctPlata, Suma = 40m }));
+    CheckRefuza("Creeaza fără contrapartidă comună (încasarea clientului × factura furnizorului) → refuz",
+        () => ImperechereApply.Creeaza(os, new ImperechereWriteDto {
+            DocumentStingatorId = idInc, DocumentId = idFctPlata, Suma = 10m }));
+    CheckRefuza("Creeaza Plata↔Plata (același sens) → refuz",
+        () => ImperechereApply.Creeaza(os, new ImperechereWriteDto {
+            DocumentStingatorId = idPlt, DocumentId = idPlataAuto, Suma = 10m }));
+    CheckRefuza("Creeaza cu document inexistent → mesaj de DOMENIU la graniță (traducerea cheie → entitate, abaterea de la 42b)",
+        () => ImperechereApply.Creeaza(os, new ImperechereWriteDto {
+            DocumentStingatorId = idPlt, DocumentId = Guid.NewGuid(), Suma = 10m }));
+    CheckRefuza("Creeaza cu sumă în afara scării numeric(18,2) → refuz de domeniu, nu rotunjire tăcută",
+        () => ImperechereApply.Creeaza(os, new ImperechereWriteDto {
+            DocumentStingatorId = idPlt, DocumentId = idFctPlata, Suma = 1.005m }));
+    Check("Un Creeaza refuzat n-a lăsat link fantomă (validarea precede CreateObject, în serviciu)",
+        ImperechereApply.Stingeri(os, idFctPlata).Imperecheri.Count == 1);
+
+    // ── (f) F3-D4: proiecția de rest, în oglindă cu serviciul ───────────────
+    var cuRest = ImperecheriProiectii.DocumenteCuRest(os).ToList();
+    Check("F3-D9: proiecția DocumenteCuRest == ImperechereService.Ramas pe FIECARE rând (un al doilea adevăr ar fi un defect)",
+        cuRest.Count > 0 && cuRest.All(r => r.Rest == ImperechereService.Ramas(os, r.DocumentId)));
+    var idsRdcOperate = os.GetObjectsQuery<ReturClient>()
+        .Where(d => d.Stare == StareDocument.Operat).Select(d => d.ID).ToList();
+    Check($"F3-D4: uniunea acoperă EXACT cele cinci tipuri concrete; RDC exclus deliberat (LiniiCreanta divergent) — {idsRdcOperate.Count} retururi operate în bază",
+        cuRest.All(r => r.Tip is "FCT" or "FCL" or "PLT" or "INC" or "DEC")
+        && !cuRest.Any(r => idsRdcOperate.Contains(r.DocumentId)));
+    var randFct = cuRest.Single(r => r.DocumentId == idFctPlata);
+    var randPlt = cuRest.Single(r => r.DocumentId == idPlt);
+    Check("F3-D4: rândurile poartă tipul, contrapartida (latura partener, nu contul propriu) și cele trei numere",
+        randFct is { Tip: "FCT", Total: 121m, Asignat: 100m, Rest: 21m }
+        && randFct.ContrapartidaId == furnizor.ID && randFct.ContrapartidaDenumire == furnizor.Denumire
+        && randPlt is { Tip: "PLT", Total: 150m, Asignat: 100m, Rest: 50m }
+        && randPlt.ContrapartidaId == furnizor.ID);
+    var cuRestFurnizor = ImperecheriProiectii.DocumenteCuRest(os, furnizor.ID).ToList();
+    Check("F3-D4: filtrul pe contrapartidă dă candidații unui singur partener (factura + plățile furnizorului, fără încasarea clientului)",
+        cuRestFurnizor.Count > 0 && cuRestFurnizor.All(r => r.ContrapartidaId == furnizor.ID)
+        && cuRestFurnizor.Any(r => r.DocumentId == idFctPlata)
+        && cuRestFurnizor.Any(r => r.DocumentId == idPlt)
+        && !cuRestFurnizor.Any(r => r.DocumentId == idInc));
+    Check("F3-D4: proiecția rămâne IQueryable — filtrarea/sortarea/paginarea se traduc în SQL peste uniune (sondă: filtru pe tip + sort + take)",
+        ImperecheriProiectii.DocumenteCuRest(os).Where(r => r.Tip == "PLT")
+            .OrderByDescending(r => r.Rest).Take(1).ToList().Count == 1);
+
+    ImperechereApply.Sterge(os, creata.Id);
+    Check("Sterge link-ul manual → restul revine integral pe ambele (150 / 121)",
+        ImperechereService.Ramas(os, idPlt) == 150m
+        && ImperechereService.Ramas(os, idFctPlata) == 121m);
 
     CurataApiTrz(os);
     Check("Curățenie finală felia Api Trz (fără reziduuri e2e)",
@@ -4176,6 +4280,22 @@ using (var os = provider.CreateObjectSpace()) {
     ImperechereService.Imperecheaza(os, regularizare, avans, 46.2m);
     Check("Regularizarea stinge restul: avansul asignat pe AMBELE roluri, rest 0",
         ImperechereService.Ramas(os, avans.ID) == 0m && ImperechereService.Ramas(os, regularizare.ID) == 0m);
+
+    // F3-D3: panoul de stingeri pe documentul aflat pe AMBELE roluri — avansul
+    // stinge decontul ȘI e stins de regularizare, deci `EsteStingator` diferă
+    // între rândurile ACELUIAȘI panou (cazul pe care un DTO cu o singură
+    // „coloană" de imperecheri l-ar fi ratat).
+    var stingeriAvans = ImperechereApply.Stingeri(os, avans.ID);
+    var randStinge = stingeriAvans.Imperecheri.Single(i => i.EsteStingator);
+    var randStins = stingeriAvans.Imperecheri.Single(i => !i.EsteStingator);
+    Check("StingeriDto pe avans: două rânduri cu roluri OPUSE (stinge DEC 53,8; e stins de INC 46,2), numerele din serviciu",
+        stingeriAvans is { Total: 100m, Asignat: 100m, Ramas: 0m }
+        && stingeriAvans.Imperecheri.Count == 2
+        && randStinge is { CelalaltTip: "DEC", Suma: 53.8m } && randStinge.CelalaltDocumentId == dec.ID
+        && randStins is { CelalaltTip: "INC", Suma: 46.2m } && randStins.CelalaltDocumentId == regularizare.ID);
+    Check("…iar din capătul celălalt: panoul decontului vede avansul ca stingător de tip „PLT”, cu rest 0",
+        ImperechereApply.Stingeri(os, dec.ID) is { Total: 53.8m, Ramas: 0m } panouDec
+        && panouDec.Imperecheri.Single() is { EsteStingator: false, CelalaltTip: "PLT", Suma: 53.8m });
 
     // --- Gardianul de imperecheri + corecția directă + storno ---
     CheckRefuza("Anularea decontului cu imperechere → refuz", () => MotorOperare.AnuleazaOperarea(os, dec));

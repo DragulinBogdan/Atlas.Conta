@@ -83,6 +83,13 @@ public sealed class TrezorerieReadDto {
     // BRUT (Σ Valoare + ValoareTva), ca `Document.Total`; pe trezorerie ValoareTva
     // e 0 prin construcție, deci = Σ defalcării. E și plafonul stingerii (31d).
     public decimal Total { get; set; }
+    // NUMERELE STINGERII (F3-D2), din `ImperechereService` — sursa de adevăr:
+    // `Asignat` numără AMBELE roluri (un avans stinge un decont ȘI e stins de
+    // regularizare), `Ramas` = plafonul rămas al stingătorului. Clientul le
+    // AFIȘEAZĂ, nu le calculează (42c). Sunt pe ReadDto, NU pe ListDto: acolo ar
+    // fi un al doilea agregat pe fiecare rând de grilă.
+    public decimal Asignat { get; set; }
+    public decimal Ramas { get; set; }
     public bool Autogenerat { get; set; }
     public Guid? DocumentSursaId { get; set; }
     // Numărul documentului-sursă: plata autogenerată → link înapoi la FACTURA
@@ -94,12 +101,11 @@ public sealed class TrezorerieReadDto {
     // de mai jos) și pentru perechea PLT+INC a transferului 581, când intră.
     public List<DocumentCopilDto> Copii { get; set; } = new();
 
-    // Affordances pe RESURSĂ (42e). ATENȚIE — F3-D2 (pasul 2 al feliei):
-    // `PoateAnula`/`PoateStorna` NU țin încă cont de IMPERECHERI, deși motorul
-    // refuză anularea/stornarea cât timp există un link pe oricare rol
-    // (`VerificaFaraImperecheri`). Aici formula e cea de la FCT (stare + copii
-    // operați); helper-ul comun `AreImperecheri` intră odată cu
-    // `ImperechereApply`, transversal pe FCT/NIR/PLT/INC.
+    // Affordances pe RESURSĂ (42e), ONESTE pe AMBELE condiții ale motorului
+    // (F3-D2): starea + grupul conex (copil operat) + STINGERILE
+    // (`VerificaFaraImperecheri` — o plată cu imperechere nu se anulează până
+    // nu se șterge link-ul). Aceeași formulă pe FCT/NIR/PLT/INC, prin
+    // `ApiProiectii.AreImperecheri`.
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }

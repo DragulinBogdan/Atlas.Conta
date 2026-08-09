@@ -67,6 +67,13 @@ public static class NirApply {
             .Where(l => l.DocumentId == id)
             .Sum(l => (decimal?)(l.Valoare + l.ValoareTva)) ?? 0m;
 
+        // Affordance ONESTĂ pe stingeri (F3-D2): NIR-ul nu e creanță și n-ar
+        // trebui să poarte imperecheri, dar gardianul motorului
+        // (`VerificaFaraImperecheri`) e generic pe `Document` — dacă totuși
+        // există un link (import, compensare pe notă), refuzul se ARATĂ, nu se
+        // descoperă la apăsarea butonului. Un `Any` mărginit per citire.
+        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+
         return new NirReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
@@ -79,8 +86,8 @@ public static class NirApply {
             // scriere (F2-D3) — o affordance de editare ar minți contractul.
             PoateEdita = false,
             PoateOpera = h.Stare == StareDocument.Draft,
-            PoateAnula = h.Stare == StareDocument.Operat,
-            PoateStorna = h.Stare == StareDocument.Operat,
+            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             Linii = linii.Select(l => new NirLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,

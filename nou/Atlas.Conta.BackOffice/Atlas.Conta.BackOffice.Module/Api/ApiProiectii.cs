@@ -43,25 +43,60 @@ internal static class ApiProiectii {
             .OrderBy(d => d.Data).ThenBy(d => d.ID)
             .Select(d => new { d.ID, d.Numar, d.Stare, d.Autogenerat })
             .ToList();
+        var tipuri = CoduriTip(os, randuri.Select(r => r.ID).ToList());
         return randuri.Select(r => new DocumentCopilDto {
             Id = r.ID,
-            Tip = TipCopil(os, r.ID),
+            Tip = tipuri.TryGetValue(r.ID, out var cod) ? cod : null,
             Numar = r.Numar,
             Stare = r.Stare.ToString(),
             Autogenerat = r.Autogenerat
         }).ToList();
     }
 
-    static string TipCopil(IObjectSpace os, Guid id) {
-        var copil = os.GetObjectByKey<Document>(id);
-        if (copil == null)
-            return null;
-        try {
-            return MotorOperare.GasesteTipDocument(os, copil).Cod;
+    // Codul ancorei `TipDocument` pentru o mulțime MĂRGINITĂ de documente
+    // (grupul conex — 0–2 copii; stingerile unui document — panoul de
+    // imperecheri). Ancora se caută după NUMELE CLASEI CLR, deci o singură
+    // căutare per CLASĂ, memoizată: o plată care stinge zece facturi nu face
+    // zece interogări de ancoră.
+    public static Dictionary<Guid, string> CoduriTip(IObjectSpace os, IReadOnlyCollection<Guid> ids) {
+        var rezultat = new Dictionary<Guid, string>();
+        if (ids == null || ids.Count == 0)
+            return rezultat;
+        var perClasa = new Dictionary<string, string>();
+        foreach (var id in ids.Distinct()) {
+            var doc = os.GetObjectByKey<Document>(id);
+            if (doc == null) {
+                rezultat[id] = null;
+                continue;
+            }
+            // EF Core dă proxy-uri de change-tracking — numele CLR real e pe
+            // tipul de bază (aceeași de-proxificare ca în MotorOperare).
+            var clr = doc.GetType();
+            while (clr.Assembly.IsDynamic || clr.Name.EndsWith("Proxy"))
+                clr = clr.BaseType;
+            if (!perClasa.TryGetValue(clr.Name, out var cod)) {
+                try {
+                    cod = MotorOperare.GasesteTipDocument(os, clr.Name).Cod;
+                }
+                catch (OperareException) {
+                    // Ancoră de seed lipsă: nu e motiv să pice CITIREA documentului.
+                    cod = clr.Name;
+                }
+                perClasa[clr.Name] = cod;
+            }
+            rezultat[id] = cod;
         }
-        catch (OperareException) {
-            // Ancoră de seed lipsă: nu e motiv să pice CITIREA documentului.
-            return copil.GetType().Name;
-        }
+        return rezultat;
     }
+
+    // Affordance ONESTĂ pe stingeri (F3-D2): oglinda API a gardianului
+    // `MotorOperare.VerificaFaraImperecheri` — anularea și stornarea se refuză
+    // cât timp documentul poartă un link pe ORICARE rol (31d). Trăiește aici, nu
+    // în serviciu, fiindcă e o CITIRE de affordance (ca `Copii`), nu un
+    // invariant: invarianții stingerii rămân în `ImperechereService`. CUSĂTURĂ:
+    // predicatul e identic cu al gardianului — dacă acolo se schimbă (alt rol,
+    // alt filtru), affordance-ul de aici minte până se schimbă la fel.
+    public static bool AreImperecheri(IObjectSpace os, Guid documentId) =>
+        os.GetObjectsQuery<Imperechere>()
+            .Any(i => i.DocumentStingatorId == documentId || i.DocumentId == documentId);
 }
