@@ -145,8 +145,14 @@ export function FclEditorLinie(props: {
           <div>
             <CampNumar<FclLinieWrite> camp="ValoareTva" zecimale={2} />
             <p className="indiciu">
+              {/* Golirea câmpului NU anulează suprascrierea (payload-ul fără
+                  ValoareTva = „nu m-am pronunțat", regula F2 — serverul păstrează
+                  override-ul salvat); indiciul spune adevărul pe cazul ăsta
+                  (review F4/M1). */}
               {tvaAtins
-                ? 'Suprascris manual — se trimite ca atare.'
+                ? (linie.ValoareTva == null
+                  ? 'Golirea nu anulează suprascrierea salvată — modificați cantitatea, prețul sau tipul de TVA ca să revină calculul.'
+                  : 'Suprascris manual — se trimite ca atare.')
                 : 'Calculat de server din preț × cantitate; modificați doar dacă factura emisă diferă.'}
             </p>
           </div>

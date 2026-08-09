@@ -75,14 +75,41 @@ public class DescarcareGestiune : Document {
                 var idsSursa = liniiCuSursa.Select(d => d.LinieSursaId.Value).Distinct().ToList();
                 var surse = os.GetObjectsQuery<FacturaIesireDetaliu>()
                     .Where(s => idsSursa.Contains(s.ID))
-                    .Select(s => new { s.ID, s.DocumentId, s.ProdusId })
-                    .ToDictionary(s => s.ID, s => (s.DocumentId, s.ProdusId));
+                    .Select(s => new { s.ID, s.DocumentId, s.ProdusId, s.Cantitate })
+                    .ToDictionary(s => s.ID, s => (s.DocumentId, s.ProdusId, s.Cantitate));
                 foreach (var d in liniiCuSursa) {
                     if (!surse.TryGetValue(d.LinieSursaId.Value, out var sursa) || sursa.DocumentId != DocumentSursaId)
                         erori.Add("Linia-sursă a descărcării trebuie să fie o linie a facturii-sursă a documentului.");
                     else if (d.LotId != null && infoLot.TryGetValue(d.LotId.Value, out var lot2)
                             && sursa.ProdusId != null && lot2.ProdusId != sursa.ProdusId)
                         erori.Add("Lotul liniei de descărcare nu aparține produsului liniei-sursă.");
+                }
+
+                // Plafonul de acoperire per linie-sursă (review advers F4/D2):
+                // Σ(descărcat OPERAT pe alte documente) + liniile PROPRII
+                // ≤ cantitatea liniei FCL. Contra realității MATERIALIZATE, nu a
+                // drafturilor străine: drafturile nu postează nimic — anti-dublarea
+                // lor rămâne a GENERATORULUI (RestNedescarcat numără drafturile),
+                // iar dintr-o cursă de generare dublă primul document operat
+                // câștigă și al doilea pică aici, zgomotos. Închide și cazul
+                // single-operator: DSC-ul manual cules peste o linie deja
+                // acoperită. (Concurența multi-operator pe commit rămâne parcată —
+                // decizia 42, seam-ul advisory lock 25f.)
+                var operatPeSursa = os.GetObjectsQuery<DescarcareGestiuneDetaliu>()
+                    .Where(dd => dd.LinieSursaId != null && idsSursa.Contains(dd.LinieSursaId.Value)
+                        && dd.DocumentId != ID
+                        && dd.Document.Stare == StareDocument.Operat)
+                    .GroupBy(dd => dd.LinieSursaId.Value)
+                    .Select(g => new { LinieSursaId = g.Key, Suma = g.Sum(x => x.Cantitate) })
+                    .ToDictionary(x => x.LinieSursaId, x => x.Suma);
+                foreach (var grup in liniiCuSursa.GroupBy(d => d.LinieSursaId.Value)) {
+                    if (!surse.TryGetValue(grup.Key, out var sursa) || sursa.DocumentId != DocumentSursaId)
+                        continue; // deja refuzată mai sus
+                    var total = operatPeSursa.GetValueOrDefault(grup.Key) + grup.Sum(d => d.Cantitate);
+                    if (total > sursa.Cantitate)
+                        erori.Add($"Acoperirea liniei-sursă ar depăși cantitatea facturată "
+                            + $"({total:0.###} din {sursa.Cantitate:0.###}) — linia e deja descărcată "
+                            + "(dublură de generare sau descărcare manuală suprapusă).");
                 }
             }
         }

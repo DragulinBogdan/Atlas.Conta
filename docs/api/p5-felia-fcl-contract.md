@@ -1,6 +1,7 @@
 # Pasul 5 — Felia 4: FCL + descărcarea de gestiune prin API (contract)
 
-Stare: **ÎN LUCRU (2026-08-09)**. A patra felie verticală pe șablonul consolidat
+Stare: **EXECUTAT (2026-08-09)** — toți cei 5 pași + review advers cu fix-urile
+aplicate; închiderea în §Închidere. A patra felie verticală pe șablonul consolidat
 (`p5-spike1-contract.md`, `p5-felia-fct-contract.md`, `p5-felia-trz-contract.md`).
 Completează fluxul de VÂNZARE în client: factura de ieșire culeasă și operată,
 descărcarea de gestiune generată (automat la operare + manual pe backorder),
@@ -125,6 +126,64 @@ Premise verificate pe cod (explorare + spot-check main):
    acțiunii XAF „Generează descărcarea" contra gardianului (F4-D3); review
    advers; fix-uri; docs (decizia 58).
 
-## Închidere
+## Închidere (2026-08-09)
 
-(de completat la final)
+**Fluxul-ancoră complet, verificat în browser pe baza Privat** (clona de import:
+129k parteneri, 312k produse, 66k chei de stoc): FCL nouă — emitent din lookup-ul
+`UnitateInterna`, client remote, gestiunea MAGAZIN — cu DOUĂ linii pe același
+produs (una cu PIN de lot prin lookup-ul OData filtrat pe produs + `$expand=Produs`,
+una FIFO peste sold: 2.000 cerute / 1.391 disponibile) → Creează (TVA N21 aplicat
+implicit de server: Total 48.642 brut) → Operează → **FCL-1** (serie fiscală
+server-owned) + scadența +30 din politică + **DSC-ul conex în aceeași tranzacție**
+→ secțiunea „Descărcare" arată acoperirea la bucată (pin 10/10; FIFO 1.381/2.000,
+**rest 619**) → DSC-1 deschis pe `/dsc/{id}` (cost 21.283,56 — decuplat de prețul
+de vânzare; „Generat din FCL-1") → operat → note verificate ÎN BAZĂ la cent
+(FCL-1: 4111=707 net + 4111=4427 TVA; DSC-1: 607=371; stoc −1.391) → affordances
+oneste (PoateAnula/Storna false pe copil operat; PoateGeneraDescarcare true pe
+rest) → comanda manuală fără stoc → `DscId null` + restul raportat → **stingerea
+din panoul FCL** (candidații filtrați pe rol+contrapartidă: 1.239 INC/PLT din
+25.077 documente cu rest; confirmare inline; Asignat 689 / Rest 47.953, candidatul
+stins iese din grilă). Recepție reală FCT→NIR (+50 în MAGAZIN) → **acțiunea XAF
+„Generează descărcarea" pe Blazor creează draftul** (proba empirică a fixului D1).
+ModelCheck final: bugetar verde, privat verde (56 check-uri noi FCL+DSC), ambele
+rulate independent de main.
+
+**Review advers — 2 defecte de fond, fixate de main:**
+- **D1 (exact riscul pin-uit în F4-D3)**: acțiunea XAF „Generează descărcarea" era
+  RUPTĂ de la spike-1 — `Application.CreateObjectSpace` = familia secured, iar
+  serviciul scrie `Autogenerat`/`DocumentSursa` (server-owned) ⇒ gardianul refuza
+  commit-ul. Fix: migrarea pe secvența `DocumentOperareController` (gate CanWrite →
+  `INonSecuredObjectSpaceFactory` din `Application.ServiceProvider` →
+  `FacturaIesireApply.GenereazaDescarcare` → DSC-ul deschis prin ID pe OS de View
+  propriu). Probat empiric în Blazor pe baza de import.
+- **D2**: plafonul de acoperire per linie-sursă nu se valida la operarea DSC —
+  dublura de generare concurentă sau DSC-ul manual suprapus materializa cost dublu.
+  Fix în `DescarcareGestiune.ValideazaOperare`: Σ(operat pe alte documente) +
+  liniile proprii ≤ cantitatea facturată, per linie-sursă. Contra realității
+  MATERIALIZATE, nu a drafturilor străine (anti-dublarea drafturilor rămâne a
+  generatorului — `RestNedescarcat`): într-o cursă primul operat câștigă, al doilea
+  pică zgomotos. Check ModelCheck dedicat (DSC manual 8 peste 13 operați din 20 →
+  refuz). Concurența multi-operator pe commit rămâne parcată (42/25f).
+- **M1** (fixat): indiciul editorului de linie mințea la golirea override-ului de
+  TVA (golirea NU anulează suprascrierea — payload-ul fără ValoareTva = „nu m-am
+  pronunțat"); indiciul spune acum adevărul și arată calea (re-atinge un declanșator).
+
+**Constatări minore, documentate, nefixate**: mesajul „nimic de generat + rest" al
+comenzii manuale nu se afișează în client după recitire (cosmetic — API-ul întoarce
+corect); etichetele liniilor sunt goale în grilă pe documentul NESALVAT (se
+populează la prima recitire; pattern moștenit din FCT); **M2** — DELETE pe un draft
+FCL ale cărui linii sunt referite de `LinieSursaId` dintr-un DSC manual → 500 brut
+(DbUpdateException netradusă în WebApi; cale exotică — traducerea 39a există doar
+în Blazor); **M3** — refuzurile „Id duplicat în payload" și „linie de tip bază" nu
+au check ModelCheck (căile există, verificate manual la review). Constatare de
+mediu: pe baza de import stocul „Sediul central" stă pe `UnitateInterna` (nu pe o
+gestiune) — fapt al importului, nu al feliei. Bonus smoke: ListView-ul
+`RegistruContabil` în XAF (restanța DIM-4) s-a încărcat normal pe 305k rânduri.
+
+**Datorii rămase (moștenite, re-confirmate)**: perf-ul proiecțiilor pe baza de
+import (D-2a/D-3a + `PoateGeneraDescarcare` care încarcă entitatea și enumeră
+liniile la fiecare `Citeste`) — de MĂSURAT înainte de release; emitentul pe
+documentul EXISTENT se afișează static (lookup-ul ar minți pe repartitori din
+afara setului `UnitateInterna`); scrierea manuală DSC prin API; RDC în proiecția
+de rest. Artefactele de smoke (FCL-1, DSC-1+draft, INC 689, FCT SMOKE-F4-1+NIR)
+rămân pe baza de dev Privat, ca la feliile anterioare.

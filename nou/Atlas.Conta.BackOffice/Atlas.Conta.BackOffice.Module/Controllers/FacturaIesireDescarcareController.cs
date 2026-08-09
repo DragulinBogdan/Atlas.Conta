@@ -1,8 +1,10 @@
+using Atlas.Conta.BackOffice.Module.Api.Fcl;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Actions;
 using DevExpress.Persistent.Base;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Atlas.Conta.BackOffice.Module.Controllers;
 
@@ -36,38 +38,58 @@ public class FacturaIesireDescarcareController : ObjectViewController<DetailView
         // Gol / neschimbat (DateTime.MinValue) → azi.
         var aleasa = e.ParameterCurrentValue is DateTime dt && dt != default ? dt : DateTime.Today;
         var data = DateOnly.FromDateTime(aleasa);
+        var fclId = ViewCurrentObject.ID;
 
-        // ObjectSpace propriu: FCL e deja operată/comisă, nu edităm nimic pe ea —
-        // izolăm generarea de OS-ul editorului (spre deosebire de MotorOperare,
-        // unde modificările editorului intră în aceeași tranzacție cu registrele).
-        var os = Application.CreateObjectSpace(typeof(DescarcareGestiune));
-        var fcl = (FacturaIesire)os.GetObject(ViewCurrentObject);
+        // Gate de autorizare, ca la DocumentOperareController (spike D-F1): ușa
+        // non-secured de mai jos e a MOTORULUI — cine nu are Write pe document
+        // prin securitatea XAF nu comandă generarea.
+        if (Application.Security is not DevExpress.ExpressApp.Security.IRequestSecurityStrategy cerinte
+                || !DevExpress.ExpressApp.Security.IsGrantedExtensions.CanWrite(
+                        cerinte, ObjectSpace, (object)ViewCurrentObject))
+            throw new UserFriendlyException("Nu aveți dreptul de scriere necesar pentru generarea descărcării.");
 
-        var dsc = DescarcareService.Genereaza(os, fcl, data);
-        if (dsc == null) {
+        // Comanda rulează pe ObjectSpace NON-SECURED, ca pe tierul Web API
+        // (F4-D3, review advers D1): `DescarcareService.Genereaza` scrie
+        // `Autogenerat` + `DocumentSursa` — câmpuri server-owned pe care
+        // `GardianEditare` le refuză pe orice cale secured, inclusiv OS-ul creat
+        // de controller prin `Application.CreateObjectSpace` (familia View-urilor
+        // Blazor). Aceeași intrare de Module ca endpoint-ul: Apply comite și
+        // întoarce restul recalculat DUPĂ commit (draftul contează la acoperire).
+        GenerareDescarcareRezultatDto rezultat;
+        var fabrica = Application.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
+        using (var osMotor = fabrica.CreateNonSecuredObjectSpace(typeof(DescarcareGestiune))) {
+            try {
+                rezultat = FacturaIesireApply.GenereazaDescarcare(osMotor, fclId, data);
+            }
+            catch (OperareException ex) {
+                throw new UserFriendlyException(ex.Message);
+            }
+        }
+
+        if (rezultat.DscId is not Guid dscId) {
             // Nimic de alocat (fără linii de stoc, fără sold, sau tot acoperit).
             // Raportăm restul interogabil per linie (design §5: rămâne cusătura
             // pe care se așază fluxul de comenzi la pasul 5).
-            var resturi = DescarcareService.RestNedescarcat(os, fcl).Where(x => x.RestNeacoperit > 0).ToList();
-            Informeaza("Nimic de descărcat.", RezumaResturi(os, resturi));
-            os.Dispose();
+            Informeaza("Nimic de descărcat.", RezumaResturi(rezultat.Resturi));
             return;
         }
 
-        os.CommitChanges();
-
-        // Draftul contează la acoperire (design §5, anti-dublare): restul se
-        // recalculează DUPĂ commit — arată ce a mai rămas backorder.
-        var ramase = DescarcareService.RestNedescarcat(os, fcl).Where(x => x.RestNeacoperit > 0).ToList();
-
-        // Deschidem DSC-ul în editare (pattern-ul conexului din DocumentOperareController).
-        e.ShowViewParameters.CreatedView = Application.CreateDetailView(os, dsc);
+        // Deschidem DSC-ul în editare pe un ObjectSpace de VIEW propriu
+        // (pattern-ul conexului din DocumentOperareController: puntea între
+        // ObjectSpace-uri e ID-ul, nu instanța).
+        var osView = Application.CreateObjectSpace(typeof(DescarcareGestiune));
+        e.ShowViewParameters.CreatedView = Application.CreateDetailView(
+            osView, osView.GetObjectByKey<DescarcareGestiune>(dscId));
         e.ShowViewParameters.TargetWindow = TargetWindow.Default;
 
-        if (ramase.Count > 0)
+        if (rezultat.Resturi.Count > 0)
             Informeaza("Descărcare generată. Rest nedescărcat (backorder), interogabil per linie:",
-                RezumaResturi(os, ramase));
+                RezumaResturi(rezultat.Resturi));
     }
+
+    // Rezumat produs × rest din DTO-ul comenzii (denumirile vin deja proiectate).
+    static string RezumaResturi(IReadOnlyList<RestNedescarcatRandDto> resturi) =>
+        string.Join("; ", resturi.Select(x => $"{x.ProdusDenumire ?? "?"} × {x.Rest:0.###}"));
 
     // Rezumat produs × cantitate al resturilor (proiecție server-side, 25b).
     // Reutilizat de DocumentOperareController la operarea FCL (design §5:

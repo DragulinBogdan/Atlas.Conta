@@ -2474,6 +2474,32 @@ if (profil == ProfilContabil.Privat) {
             && !citFcl2.PoateGeneraDescarcare
             && FacturaIesireApply.RestNedescarcat(os, idFcl2).Single().Rest == 0m);
 
+        // --- Plafonul de acoperire per linie-sursă (review advers F4/D2) ---
+        // Operat pe linia fcl2: 13 (DSC-ul conex); draftul de backorder (7) NU
+        // intră în plafon — drafturile nu postează nimic, anti-dublarea lor e a
+        // GENERATORULUI (RestNedescarcat le numără). Un DSC MANUAL cu încă 8 pe
+        // aceeași linie-sursă ar duce materializarea la 21 din 20 facturate →
+        // refuz zgomotos la operare (închide și dublura de generare concurentă:
+        // primul document operat câștigă, al doilea pică aici).
+        var dscManualFcl = os.CreateObject<DescarcareGestiune>();
+        dscManualFcl.Data = new DateOnly(2026, 5, 21);
+        dscManualFcl.PredatorId = gestiuneFcl.ID;
+        dscManualFcl.PrimitorId = clientFcl.ID;
+        dscManualFcl.DocumentSursa = os.GetObjectByKey<FacturaIesire>(idFcl2);
+        var linieManualFcl = os.CreateObject<DescarcareGestiuneDetaliu>();
+        linieManualFcl.Document = dscManualFcl;
+        linieManualFcl.TipMaterialId = tipMarfa.ID;
+        linieManualFcl.LotId = lotSuplFcl.ID;
+        linieManualFcl.LinieSursaId = restFcl2[0].LinieId;
+        linieManualFcl.Cantitate = 8m;
+        os.CommitChanges();
+        CheckRefuza("Plafonul de acoperire per linie-sursă (F4/D2): descărcarea MANUALĂ suprapusă "
+            + "(8 peste cei 13 operați, din 20 facturate) → refuz la operare",
+            () => OperareApi.Opereaza(os, dscManualFcl.ID));
+        os.Delete(linieManualFcl);
+        os.Delete(dscManualFcl);
+        os.CommitChanges();
+
         // --- Lista DSC ---
         var listaDsc = DscApply.Lista(os).Where(x => x.Id == idDsc).ToList();
         Check("Lista DSC → un rând, cu Stare ca text (CASE în SQL), gestiune/client, marcajul «autogenerat» și costul din agregat",
