@@ -36,8 +36,13 @@ export function DocumentShell(props: {
   ocupat?: boolean;
   antet: ReactNode;
   linii?: ReactNode;
+  // Zonă de sub linii, pentru ce ATÂRNĂ de document fără să fie agregatul lui:
+  // azi panoul de STINGERI (imperecherile sunt legături între documente operate,
+  // nu părți ale WriteDto-ului — 31d). Slot, nu componentă cunoscută de shell:
+  // felia decide dacă și când îl montează.
+  subsol?: ReactNode;
 }) {
-  const { titlu, sumar, comenzi, erori, mesaje = [], rezultatExtra, ocupat = false, antet, linii } = props;
+  const { titlu, sumar, comenzi, erori, mesaje = [], rezultatExtra, ocupat = false, antet, linii, subsol } = props;
   const [cerere, setCerere] = useState<Comanda | null>(null);
   const [data, setData] = useState<string | undefined>(azi());
 
@@ -97,6 +102,7 @@ export function DocumentShell(props: {
 
       <section className="document__antet">{antet}</section>
       {linii && <section className="document__linii">{linii}</section>}
+      {subsol}
     </div>
   );
 }

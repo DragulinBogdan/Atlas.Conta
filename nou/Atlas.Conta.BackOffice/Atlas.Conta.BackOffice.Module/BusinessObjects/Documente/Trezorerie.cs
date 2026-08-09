@@ -13,8 +13,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Tipul liniei: tehnic „TRZ" la culegere manuală; liniile autogenerate din
 // factură păstrează Tipul liniei sursă (poartă informația de defalcare).
 public abstract class DocumentTrezorerie : Document {
+    [XafDisplayName("Instrument de plată")]
     public virtual TipInstrumentPlata TipInstrument { get; set; }
+    [XafDisplayName("Număr extras")]
     public virtual string NumarExtras { get; set; }
+    [XafDisplayName("Dată extras")]
     public virtual DateOnly? DataExtras { get; set; }
 
     // Contrapartida (latura care NU e contul propriu) — cheia invariantului de

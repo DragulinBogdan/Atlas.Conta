@@ -88,3 +88,15 @@ export function labelEnum(enumerare: string, valoare: string | null | undefined)
   if (!valoare) return '';
   return metadata.Enumuri[enumerare]?.[valoare] ?? valoare;
 }
+
+// Toate valorile unui enum, ca sursă de SelectBox (`CampSelectie`). Ordinea e
+// cea din dump — adică ordinea de declarație a membrilor în C#, nu una inventată
+// aici. Label-ul cade pe numele membrului când tipul n-are `[XafDisplayName]`
+// (azi: `TipInstrumentPlata`) — fixul de fond e în Module + regenerarea
+// dump-ului, nu o hartă de traduceri în client.
+export function valoriEnum(enumerare: string): { valoare: string; label: string }[] {
+  const membri = metadata.Enumuri[enumerare];
+  if (membri === undefined && import.meta.env.DEV)
+    console.warn(`[campMeta] enum-ul „${enumerare}" nu există în metadata.json.`);
+  return Object.entries(membri ?? {}).map(([valoare, label]) => ({ valoare, label }));
+}

@@ -44,8 +44,8 @@ export type PropsLookup<T extends object> = PropsCamp<T> & {
 };
 
 export function Lookup<T extends object>(props: PropsLookup<T>) {
-  const { camp, readOnly, obligatoriu, entitate, mod, afisare, cauta, expand, sortare, laSelectie } = props;
-  const c = useCamp<string>(camp, readOnly, obligatoriu);
+  const { camp, readOnly, obligatoriu, eticheta, entitate, mod, afisare, cauta, expand, sortare, laSelectie } = props;
+  const c = useCamp<string>(camp, readOnly, obligatoriu, eticheta);
   const proprietateAfisare = defaultProperty(entitate);
 
   const sursa = useMemo(() => new DataSource({

@@ -69,6 +69,11 @@ export function linieGoala(): FctLinieWrite {
 // iar re-trimiterea valorii citite ar îngheța TVA-ul (serverul n-ar mai
 // recalcula când se schimbă cantitatea sau prețul). Override-ul îl pune editorul
 // de linie, doar când operatorul chiar atinge câmpul.
+//
+// Câmpurile `Plata*` (F3-D5) sunt CULESE, deci circulă în ambele sensuri: ele
+// descriu plata pe care motorul o va genera la operare (31e). `GenereazaPlata`
+// e bifă, nu tri-state — absența ei din payload ar însemna „fals", iar asta e
+// exact semantica bifei nebifate.
 export function spreWrite(citit: FctRead): FctWrite {
   return {
     Numar: citit.Numar,
@@ -81,6 +86,11 @@ export function spreWrite(citit: FctRead): FctWrite {
     CodCpv: citit.CodCpv,
     Valuta: citit.Valuta,
     Curs: citit.Curs,
+    GenereazaPlata: citit.GenereazaPlata,
+    PlataContPropriuId: citit.PlataContPropriuId,
+    PlataNumar: citit.PlataNumar,
+    PlataData: citit.PlataData,
+    PlataTipInstrument: citit.PlataTipInstrument,
     Linii: (citit.Linii ?? []).map((l) => ({
       Id: l.Id,
       TipMaterialId: l.TipMaterialId,

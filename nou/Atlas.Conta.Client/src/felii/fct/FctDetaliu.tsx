@@ -4,11 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
-import { CampData, CampText } from '../../nucleu/campuri';
+import { CampBifa, CampData, CampSelectie, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
 import { PanouErori } from '../../nucleu/PanouErori';
+import { PanouStingeri } from '../../nucleu/PanouStingeri';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
+import { rutaTip } from '../../nucleu/stingeri';
 import {
   antetGol, fct, linieGoala, spreWrite,
   SCHEMA_ANTET, SCHEMA_LINIE, TIP_ANTET, TIP_LINIE,
@@ -123,6 +125,10 @@ export function FctDetaliu() {
       // doar imediat după operare.
       await cache.invalidateQueries({ queryKey: ['fct'] });
       await cache.invalidateQueries({ queryKey: ['nir'] });
+      // Operarea poate naște PLATA (31e) și, cu ea, imperecherea automată pe
+      // restul stingibil — lista de plăți și panoul de stingeri se recitesc.
+      await cache.invalidateQueries({ queryKey: ['plt'] });
+      await cache.invalidateQueries({ queryKey: ['stingeri'] });
     }
     catch (e) {
       setErori(eroriDin(e));
@@ -216,9 +222,54 @@ export function FctDetaliu() {
               <CampData<FctWrite> camp="DataPV" />
               <CampText<FctWrite> camp="CodCpv" />
             </div>
+
+            {/* PLATA AUTOMATĂ (F3-D5 / 31e): nu e „un alt document" cules aici,
+                ci datele din care MOTORUL construiește plata la operarea
+                facturii — echivalentul DECONT_* din legacy. Câmpurile apar doar
+                când bifa e pusă: condiționalitate ÎN COD (43a), nu regulă de
+                vizibilitate interpretată dintr-un descriptor.
+
+                Ce NU face ecranul: nu construiește plata și nu-i calculează
+                suma (o duce motorul, din liniile facturii), nu cere contul
+                propriu ca „obligatoriu" — refuzul, dacă lipsește, e al
+                gardianului, cu mesajul lui. */}
+            {/* Secțiunea rămâne NEcontrolată: un `open` legat de bifă ar
+                re-deschide-o la fiecare re-randare, peste voia operatorului.
+                Starea se citește din etichetă, unde e oricum mai vizibilă. */}
+            <details className="sectiune-pliabila">
+              <summary>Plată automată{agregat.GenereazaPlata ? ' — activă' : ''}</summary>
+              <div className="grila-campuri">
+                <CampBifa<FctWrite> camp="GenereazaPlata" />
+                {agregat.GenereazaPlata && (
+                  <>
+                    <Lookup<FctWrite>
+                      camp="PlataContPropriuId"
+                      entitate="ContPropriu"
+                      mod="local"
+                      cauta={['Cod', 'Denumire', 'Iban']}
+                    />
+                    <CampText<FctWrite> camp="PlataNumar" />
+                    <CampData<FctWrite> camp="PlataData" />
+                    <CampSelectie<FctWrite> camp="PlataTipInstrument" enumerare="TipInstrumentPlata" />
+                  </>
+                )}
+              </div>
+            </details>
           </Formular>
         </>
       }
+      subsol={!nou && doc?.Id && doc.Stare === 'Operat'
+        ? (
+          // Factura stă pe rolul de STINSĂ (plata o stinge — 31d): rolul e
+          // identitate declarată de felie, nu deducție în panou.
+          <PanouStingeri
+            documentId={doc.Id}
+            contrapartidaId={doc.PredatorId}
+            rol="este-stins"
+            onSchimbare={() => void cache.invalidateQueries({ queryKey: ['fct'] })}
+          />
+        )
+        : undefined}
       linii={
         <>
           <div className="linii__bara">
@@ -309,9 +360,12 @@ function etichete(citite: FctLinieRead[] | null | undefined, linie: FctLinieWrit
   };
 }
 
-// Grupul conex (F2-D5): NIR-ul clonă (și, când va exista felia trezoreriei,
-// plata autogenerată). Link, nu redirect automat: operatorul decide când trece
-// pe documentul copil — factura poate avea și alte linii de verificat.
+// Grupul conex (F2-D5): NIR-ul clonă și PLATA autogenerată (31e). Link, nu
+// redirect automat: operatorul decide când trece pe documentul copil — factura
+// poate avea și alte linii de verificat.
+//
+// Rutarea trece prin `rutaTip` (vocabular închis, în nucleu): un tip fără felie
+// de client rămâne TEXT, nu link mort.
 function Copii(props: { copii?: DocumentCopil[] | null }) {
   const copii = props.copii ?? [];
   if (copii.length === 0) return null;
@@ -319,14 +373,20 @@ function Copii(props: { copii?: DocumentCopil[] | null }) {
     <div className="panou panou--succes">
       <div className="panou__titlu">Documente generate</div>
       <ul className="panou__lista">
-        {copii.map((c) => (
-          <li key={c.Id}>
-            {c.Tip === 'NIR'
-              ? <Link to={`/nir/${c.Id}`}>Deschide NIR-ul generat {c.Numar}</Link>
-              : <span>{c.Tip} {c.Numar}</span>}
-            {' '}— {labelEnum('StareDocument', c.Stare)}{c.Autogenerat ? ', autogenerat' : ''}
-          </li>
-        ))}
+        {copii.map((c) => {
+          const ruta = c.Id ? rutaTip(c.Tip, c.Id) : null;
+          const eticheta = c.Tip === 'NIR'
+            ? `Deschide NIR-ul generat ${c.Numar ?? ''}`
+            : c.Tip === 'PLT'
+              ? `Deschide plata generată ${c.Numar ?? ''}`
+              : `${c.Tip ?? ''} ${c.Numar ?? ''}`;
+          return (
+            <li key={c.Id}>
+              {ruta ? <Link to={ruta}>{eticheta.trim()}</Link> : <span>{eticheta.trim()}</span>}
+              {' '}— {labelEnum('StareDocument', c.Stare)}{c.Autogenerat ? ', autogenerat' : ''}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

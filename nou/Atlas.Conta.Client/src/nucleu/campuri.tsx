@@ -1,6 +1,7 @@
-import { DateBox, NumberBox, TextBox } from 'devextreme-react';
+import { CheckBox, DateBox, NumberBox, SelectBox, TextBox } from 'devextreme-react';
 import { CampShell } from './CampShell';
 import { useCamp } from './formular';
+import { valoriEnum } from './campMeta';
 import { izolataZi } from './zi';
 
 // Vocabularul de editoare (43a). Fiecare e o FAȚĂ SUBȚIRE peste `CampShell`:
@@ -19,10 +20,14 @@ export type PropsCamp<T extends object> = {
   // Vezi `useCamp`: escapă declarată pentru câmpurile pe care serverul le lasă
   // nullable pe draft, dar le cere la operare. Implicit rămâne schema OpenAPI.
   obligatoriu?: boolean;
+  // A doua escapă (vezi `useCamp`): felia numește câmpul în vocabularul ei
+  // acolo unde caption-ul bazei e corect, dar prea abstract (PLT: predatorul E
+  // contul propriu). Implicit rămâne `metadata.json`.
+  eticheta?: string;
 };
 
-export function CampText<T extends object>({ camp, readOnly, obligatoriu }: PropsCamp<T>) {
-  const c = useCamp<string>(camp, readOnly, obligatoriu);
+export function CampText<T extends object>({ camp, readOnly, obligatoriu, eticheta }: PropsCamp<T>) {
+  const c = useCamp<string>(camp, readOnly, obligatoriu, eticheta);
   return (
     <CampShell meta={c.meta} eroare={c.eroare}>
       <TextBox
@@ -38,8 +43,8 @@ export function CampText<T extends object>({ camp, readOnly, obligatoriu }: Prop
 // Datele circulă pe sârmă ca `DateOnly` ISO („2026-08-08") — se păstrează ca
 // STRING în agregat: nicio conversie de fus orar nu are voie să atingă o dată
 // contabilă.
-export function CampData<T extends object>({ camp, readOnly, obligatoriu }: PropsCamp<T>) {
-  const c = useCamp<string>(camp, readOnly, obligatoriu);
+export function CampData<T extends object>({ camp, readOnly, obligatoriu, eticheta }: PropsCamp<T>) {
+  const c = useCamp<string>(camp, readOnly, obligatoriu, eticheta);
   return (
     <CampShell meta={c.meta} eroare={c.eroare}>
       <DateBox
@@ -53,8 +58,8 @@ export function CampData<T extends object>({ camp, readOnly, obligatoriu }: Prop
   );
 }
 
-export function CampNumar<T extends object>({ camp, readOnly, obligatoriu, zecimale = 3 }: PropsCamp<T> & { zecimale?: number }) {
-  const c = useCamp<number>(camp, readOnly, obligatoriu);
+export function CampNumar<T extends object>({ camp, readOnly, obligatoriu, eticheta, zecimale = 3 }: PropsCamp<T> & { zecimale?: number }) {
+  const c = useCamp<number>(camp, readOnly, obligatoriu, eticheta);
   return (
     <CampShell meta={c.meta} eroare={c.eroare}>
       <NumberBox
@@ -62,6 +67,47 @@ export function CampNumar<T extends object>({ camp, readOnly, obligatoriu, zecim
         readOnly={c.readOnly}
         format={`#,##0.${'#'.repeat(zecimale)}`}
         onValueChanged={(e) => c.seteaza(e.value == null ? undefined : Number(e.value))}
+      />
+    </CampShell>
+  );
+}
+
+// Bifă (`bool` pe sârmă). Valoarea implicită e `false`, nu `undefined`: un flag
+// de comportament (FCT: „generează plata") nu are stare „nu m-am pronunțat" —
+// serverul îl citește oricum ca fals.
+export function CampBifa<T extends object>({ camp, readOnly, eticheta }: PropsCamp<T>) {
+  const c = useCamp<boolean>(camp, readOnly, undefined, eticheta);
+  return (
+    <CampShell meta={{ ...c.meta, obligatoriu: false }}>
+      <div className="camp__bifa">
+        <CheckBox
+          value={c.valoare ?? false}
+          readOnly={c.readOnly}
+          onValueChanged={(e) => c.seteaza(Boolean(e.value))}
+        />
+      </div>
+    </CampShell>
+  );
+}
+
+// Enum-ul (`TipInstrumentPlata`, …): pe sârmă circulă ca STRING — numele
+// membrului, convenția `Stare` (F3-D1). Valorile și label-urile vin din
+// `metadata.json`, adică din C#; clientul nu ține nicio listă proprie de
+// instrumente de plată — o valoare nouă în enum apare aici la regenerarea
+// dump-ului, fără atingerea acestui fișier.
+export function CampSelectie<T extends object>(
+  { camp, readOnly, obligatoriu, eticheta, enumerare }: PropsCamp<T> & { enumerare: string }) {
+  const c = useCamp<string>(camp, readOnly, obligatoriu, eticheta);
+  return (
+    <CampShell meta={c.meta} eroare={c.eroare}>
+      <SelectBox
+        dataSource={valoriEnum(enumerare)}
+        value={c.valoare ?? null}
+        readOnly={c.readOnly}
+        valueExpr="valoare"
+        displayExpr="label"
+        showClearButton={!c.meta.obligatoriu}
+        onValueChanged={(e) => c.seteaza((e.value as string) ?? undefined)}
       />
     </CampShell>
   );

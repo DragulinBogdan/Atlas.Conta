@@ -7,6 +7,10 @@ import { FctLista } from './felii/fct/FctLista';
 import { FctDetaliu } from './felii/fct/FctDetaliu';
 import { NirLista } from './felii/nir/NirLista';
 import { NirDetaliu } from './felii/nir/NirDetaliu';
+import { PltLista } from './felii/plt/PltLista';
+import { PltDetaliu } from './felii/plt/PltDetaliu';
+import { IncLista } from './felii/inc/IncLista';
+import { IncDetaliu } from './felii/inc/IncDetaliu';
 import { SoldStoc } from './felii/stoc/SoldStoc';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
@@ -22,6 +26,12 @@ export function App() {
         <Route path="/fct/:id" element={<FctDetaliu />} />
         <Route path="/nir" element={<NirLista />} />
         <Route path="/nir/:id" element={<NirDetaliu />} />
+        <Route path="/plt" element={<PltLista />} />
+        <Route path="/plt/nou" element={<PltDetaliu />} />
+        <Route path="/plt/:id" element={<PltDetaliu />} />
+        <Route path="/inc" element={<IncLista />} />
+        <Route path="/inc/nou" element={<IncDetaliu />} />
+        <Route path="/inc/:id" element={<IncDetaliu />} />
         <Route path="/btr" element={<BtrLista />} />
         <Route path="/btr/nou" element={<BtrDetaliu />} />
         <Route path="/btr/:id" element={<BtrDetaliu />} />
@@ -43,6 +53,8 @@ function Cadru() {
         <span className="cadru__marca">Atlas Conta</span>
         <NavLink to="/fct">Facturi intrare</NavLink>
         <NavLink to="/nir">NIR-uri</NavLink>
+        <NavLink to="/plt">Plăți</NavLink>
+        <NavLink to="/inc">Încasări</NavLink>
         <NavLink to="/btr">Note de transfer</NavLink>
         <NavLink to="/stoc">Sold stoc</NavLink>
         <button

@@ -63,6 +63,16 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .sumar { display: flex; gap: 16px; align-items: baseline; color: #46525f; }
 .sumar__stare { font-weight: 600; }
 
+/* panoul de stingeri (imperecheri): aceeași ramă ca zona de linii */
+.document__stingeri {
+  background: #ffffff;
+  border: 1px solid var(--linie);
+  border-radius: 6px;
+  padding: var(--gol);
+  margin-bottom: var(--gol);
+}
+.stingeri__numere { display: flex; gap: 16px; color: #46525f; }
+
 /* ── câmpuri ─────────────────────────────────────────────────────────── */
 .grila-campuri {
   display: grid;
@@ -72,6 +82,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .camp__eticheta { display: block; font-size: 12px; color: #55616f; margin-bottom: 3px; }
 .camp__obligatoriu { color: var(--rosu); }
 .camp__eroare { min-height: 15px; font-size: 12px; color: var(--rosu); }
+.camp__bifa { padding: 6px 0; min-height: 30px; }
+/* comutatorul de fel al contrapartidei (partener / angajat) */
+.camp__comutator { display: flex; gap: 6px; padding: 3px 0; }
 .camp--eroare .dx-texteditor { border-color: var(--rosu); }
 
 .editor-linie {

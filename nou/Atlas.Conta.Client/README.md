@@ -5,6 +5,9 @@ Clientul React al tierului API (deciziile 42/43). Felia pilot a spike-ului
 **sold stoc**. A doua felie (`docs/api/p5-felia-fct-contract.md`, F2-D8):
 **FacturaIntrare (FCT)** cu editor de linie complet + **NIR** citire/comenzi —
 fluxul-ancoră FCT operată → `ConexId` → „Deschide NIR-ul generat" → Operează.
+A treia (`docs/api/p5-felia-trz-contract.md`, F3-D7/D8): **trezoreria** —
+plăți/încasări culese și operate, **panoul de stingeri** (imperecheri create și
+șterse din UI) și **plata automată** a facturii.
 
 ## Rulare în dev
 
@@ -82,16 +85,41 @@ tipurile generate. `WriteDto ≠ ReadDto` e vizibil în tipuri.
 src/
   generated/     openapi.json · api-types.ts · metadata.json      (comise)
   nucleu/        auth · http · campMeta · formular · CampShell · zi
-                 campuri (CampText/CampData/CampNumar) · Lookup
+                 campuri (CampText/CampData/CampNumar/CampBifa/CampSelectie) · Lookup
                  DocumentShell · PanouErori · dxStore
+                 stingeri.ts + PanouStingeri (resursă a DOCUMENTULUI, nu a unei felii)
   felii/
     fct/         api.ts · FctLista · FctDetaliu · FctEditorLinie
     nir/         api.ts · NirLista · NirDetaliu            (citire + comenzi)
     btr/         api.ts · BtrLista · BtrDetaliu · EditorLinie
+    trz/         nucleul PARTAJAT al trezoreriei: api.ts (fabrică pe rută) ·
+                 TrezorerieLista/Detaliu/EditorLinie · LaturaContrapartida · tipTrz
+    plt/ inc/    feliile subțiri: ruta + identitatea (titluri, laturi în JSX)
     stoc/        SoldStoc
   pagini/        Login
-  App.tsx        rute: /login · /fct[/nou|/:id] · /nir[/:id] · /btr[/nou|/:id] · /stoc
+  App.tsx        rute: /login · /fct[/nou|/:id] · /nir[/:id] · /plt[/nou|/:id]
+                 /inc[/nou|/:id] · /btr[/nou|/:id] · /stoc
 ```
+
+Ce exersează felia TREZORERIE peste FCT (`felii/trz`, `nucleu/PanouStingeri`):
+
+- **două rute, un nucleu** — oglinda lui F3-D1 de pe server (`TrezorerieApply`
+  generic + controllere subțiri): DTO-urile și `spreWrite` sunt în `felii/trz`,
+  iar `felii/plt` / `felii/inc` dau ruta, titlurile și **laturile ca JSX** (PLT:
+  cont propriu → beneficiar; INC: invers). Identitatea rămâne în cod (43a);
+- **`Numar` NU se culege** (PLT/INC au politică de numerotare ⇒ server-owned) și
+  **`Valoare` E culeasă** pe linie (nu există `PregatesteOperare` pe trezorerie)
+  — exact invers față de FCT;
+- **selectorul de fel al contrapartidei** (partener remote / angajat local): două
+  lookup-uri comutate în cod, cu felul DEDUS la încărcare printr-o sondă OData
+  pe mulțimea îngustă (angajații) și comutator manual ca escape hatch;
+- **panoul de stingeri**: Total/Asignat/**Rest** din `StingeriDto` (serverul e
+  autorul — TS nu scade nimic), imperecherile cu link spre celălalt document,
+  ștergere liberă (31d) și creare din candidații cu rest ai contrapartidei
+  (`/api/proiectii/documente-cu-rest`). Rolul (cine stinge pe cine) e declarat de
+  felie, nu dedus: trezoreria `stinge`, factura `este-stins`;
+- **plata automată pe FCT**: bifă + câmpuri condiționate în cod, iar plata
+  generată apare în „Documente generate" ca link `/plt/{id}`.
 
 Trei lucruri pe care le exersează felia FCT peste șablonul BTR, toate vizibile
 în `felii/fct/api.ts` și `FctEditorLinie.tsx`:

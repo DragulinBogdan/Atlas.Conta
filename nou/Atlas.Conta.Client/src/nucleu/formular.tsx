@@ -87,10 +87,22 @@ export type LegaturaCamp<V> = {
 // operare (FCT: `Numar` = numărul furnizorului), felia poate marca cerința ca s-o
 // vadă operatorul la culegere. Nu e o regulă nouă — e aceeași regulă, arătată
 // mai devreme; se scrie EXPLICIT la locul folosirii, nu se derivă nicăieri.
-export function useCamp<V>(camp: string, readOnlyLocal = false, obligatoriuLocal?: boolean): LegaturaCamp<V> {
+//
+// `etichetaLocala` e a doua escapă declarată, cu aceeași disciplină: metadata
+// rămâne sursa implicită, dar unde caption-ul BAZEI e corect și prea abstract
+// pentru felie (PLT: „Predator (de la)" ESTE contul propriu din care se
+// plătește), felia îl numește în vocabularul ei — explicit, la locul folosirii
+// (precedentul: coloana „Furnizor" din `FctLista`). Fixul de fond rămâne
+// `[XafDisplayName]` pe derivată în Module + regenerarea dump-ului.
+export function useCamp<V>(
+  camp: string, readOnlyLocal = false, obligatoriuLocal?: boolean, etichetaLocala?: string): LegaturaCamp<V> {
   const stare = useStareFormular();
   const meta = campMeta(stare.tip, camp, stare.schema);
-  const metaEfectiv = obligatoriuLocal == null ? meta : { ...meta, obligatoriu: obligatoriuLocal };
+  const metaEfectiv = {
+    ...meta,
+    ...(obligatoriuLocal == null ? {} : { obligatoriu: obligatoriuLocal }),
+    ...(etichetaLocala == null ? {} : { caption: etichetaLocala }),
+  };
   const valoare = stare.valoare[camp] as V | undefined;
   return {
     meta: metaEfectiv,
