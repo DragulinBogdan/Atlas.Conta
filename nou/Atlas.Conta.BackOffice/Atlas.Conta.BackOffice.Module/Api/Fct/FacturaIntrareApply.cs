@@ -36,6 +36,10 @@ public static class FacturaIntrareApply {
     public static Guid Aplica(IObjectSpace os, Guid? id, FacturaIntrareWriteDto dto) {
         if (dto == null)
             throw new OperareException("Lipsește corpul cererii.");
+        // Parse-ul enum-ului ÎNAINTE de a atinge ObjectSpace-ul (F3-D5): pe calea
+        // de CREARE un refuz de după `CreateObject` ar lăsa o factură orfană în
+        // OS-ul viu al apelantului, pe care un commit ulterior ar persista-o.
+        var plataTipInstrument = ApiEnum.TipInstrumentOptional(dto.PlataTipInstrument);
 
         FacturaIntrare doc;
         if (id is Guid existentId) {
@@ -70,6 +74,27 @@ public static class FacturaIntrareApply {
         if (dto.Curs != null)
             VerificaScara(dto.Curs.Value, Scara.Pret, "Cursul valutar");
         doc.Curs = dto.Curs;
+
+        // Plata automată (F3-D5, ridicarea excluderii F2): parametrii culeși ai
+        // documentului SECUNDAR (`FacturaIntrare.GenereazaSecundar` — 31e). Nu se
+        // validează aici nimic în plus: `ValideazaOperare` cere contul propriu
+        // dacă bifa e pusă, iar draftul are voie să fie incomplet până la operare.
+        doc.GenereazaPlata = dto.GenereazaPlata;
+        // Navigația, ca la laturi: existența se validează cu mesaj de domeniu.
+        if (dto.PlataContPropriuId is Guid contPropriuId) {
+            doc.PlataContPropriu = os.GetObjectByKey<ContPropriu>(contPropriuId)
+                ?? throw new OperareException(
+                    $"Contul propriu (casă/bancă) {contPropriuId} nu există în nomenclator.");
+        }
+        else {
+            doc.PlataContPropriu = null;
+            doc.PlataContPropriuId = null;
+        }
+        doc.PlataNumar = dto.PlataNumar;
+        doc.PlataData = dto.PlataData;
+        // NULLABLE pe model: absența din payload NU devine `OrdinPlata` aici —
+        // default-ul îl aplică `GenereazaSecundar`, la generare (ApiEnum).
+        doc.PlataTipInstrument = plataTipInstrument;
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<FacturaIntrareLinieWriteDto>());
 
@@ -289,6 +314,10 @@ public static class FacturaIntrareApply {
                 PredatorCodFiscal = (d.Predator as Partener).CodFiscal,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 d.DataScadenta, d.NumarPV, d.DataPV, d.CodCpv, d.Valuta, d.Curs,
+                // Parametrii plății automate (F3-D5).
+                d.GenereazaPlata, d.PlataContPropriuId,
+                PlataContPropriuDenumire = d.PlataContPropriu.Denumire,
+                d.PlataNumar, d.PlataData, d.PlataTipInstrument,
                 d.Autogenerat, d.DocumentSursaId
             })
             .FirstOrDefault();
@@ -334,7 +363,7 @@ public static class FacturaIntrareApply {
         // anularea/stornarea cât timp există un copil OPERAT — iar copiii sunt
         // deja calculați pentru DTO, deci consecința se arată, nu se descoperă
         // la refuz. (Imperecherile rămân neacoperite — felia trezoreriei.)
-        var copii = Copii(os, id);
+        var copii = ApiProiectii.Copii(os, id);
         var faraCopiiOperati = copii.All(c => c.Stare != nameof(StareDocument.Operat));
 
         return new FacturaIntrareReadDto {
@@ -345,6 +374,12 @@ public static class FacturaIntrareApply {
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
             DataScadenta = h.DataScadenta, NumarPV = h.NumarPV, DataPV = h.DataPV,
             CodCpv = h.CodCpv, Valuta = h.Valuta, Curs = h.Curs,
+            GenereazaPlata = h.GenereazaPlata,
+            PlataContPropriuId = h.PlataContPropriuId,
+            PlataContPropriuDenumire = h.PlataContPropriuDenumire,
+            PlataNumar = h.PlataNumar, PlataData = h.PlataData,
+            // Enum → STRING pe sârmă (convenția `Stare`); null rămâne null.
+            PlataTipInstrument = h.PlataTipInstrument?.ToString(),
             Total = total,
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             PoateEdita = h.Stare == StareDocument.Draft,
@@ -370,41 +405,6 @@ public static class FacturaIntrareApply {
                 ProiectId = l.ProiectId, ProiectCod = l.ProiectCod
             }).ToList()
         };
-    }
-
-    // Grupul conex. Coloanele plate vin dintr-o proiecție; CODUL TIPULUI nu poate
-    // veni din SQL — sub TPT nu există discriminator, iar ancora `TipDocument` se
-    // găsește după NUMELE CLASEI CLR (`MotorOperare.GasesteTipDocument`), care nu
-    // e o coloană. Alternativa traductibilă (`d is NIR ? "NIR" : …`) ar înghețat
-    // lista tipurilor în cod, exact ce evită ancora. Rezolvarea se face deci în
-    // memorie, pe o mulțime MĂRGINITĂ prin construcție: grupul conex al unui
-    // document are 0–2 copii (NIR-ul clonă + plata autogenerată).
-    static List<DocumentCopilDto> Copii(IObjectSpace os, Guid id) {
-        var randuri = os.GetObjectsQuery<Document>()
-            .Where(d => d.DocumentSursaId == id)
-            .OrderBy(d => d.Data).ThenBy(d => d.ID)
-            .Select(d => new { d.ID, d.Numar, d.Stare, d.Autogenerat })
-            .ToList();
-        return randuri.Select(r => new DocumentCopilDto {
-            Id = r.ID,
-            Tip = TipCopil(os, r.ID),
-            Numar = r.Numar,
-            Stare = r.Stare.ToString(),
-            Autogenerat = r.Autogenerat
-        }).ToList();
-    }
-
-    static string TipCopil(IObjectSpace os, Guid id) {
-        var copil = os.GetObjectByKey<Document>(id);
-        if (copil == null)
-            return null;
-        try {
-            return MotorOperare.GasesteTipDocument(os, copil).Cod;
-        }
-        catch (OperareException) {
-            // Ancoră de seed lipsă: nu e motiv să pice CITIREA documentului.
-            return copil.GetType().Name;
-        }
     }
 
     // `IQueryable` — DataSourceLoader îi pune deasupra filtrarea/sortarea/

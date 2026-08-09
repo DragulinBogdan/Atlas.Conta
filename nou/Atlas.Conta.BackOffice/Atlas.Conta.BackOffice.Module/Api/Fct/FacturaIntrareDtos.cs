@@ -21,8 +21,15 @@ namespace Atlas.Conta.BackOffice.Module.Api.Fct;
 //   * dimensiunile FRUNZEI (DIM-2): patru FK-uri pe `FacturaIntrareDetaliu`,
 //     clonate pe NIR-ul conex prin contractul `DimensiuniCulese/PreiaDimensiuni`.
 //
-// EXCLUSE deliberat din WriteDto: `GenereazaPlata`/`Plata*` (felia trezoreriei),
-// `TethysId` (import), `Chitanta*` (câmpuri moarte — 31e).
+//   * parametrii PLĂȚII AUTOMATE (F3-D5, fostul grup DECONT_*): `GenereazaPlata`
+//     + `Plata*` — datele CULESE din care `FacturaIntrare.GenereazaSecundar`
+//     construiește draftul de plată la operare (31e). Plata apare apoi în
+//     `Copii[]` cu Tip="PLT"; numărul ei vine din `PlataNumar` (calea motorului),
+//     nu din serie — de aceea `PlataNumar` e cules, deși `Plata.Numar` e
+//     server-owned pe calea /plt.
+//
+// EXCLUSE deliberat din WriteDto: `TethysId` (import), `Chitanta*` (câmpuri
+// moarte — 31e; încasarea-dovadă a BF se tratează la fluxul BF, aditiv).
 
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 public sealed class FacturaIntrareWriteDto {
@@ -37,6 +44,18 @@ public sealed class FacturaIntrareWriteDto {
     public string CodCpv { get; set; }
     public string Valuta { get; set; }
     public decimal? Curs { get; set; }
+
+    // ── Plata automată (F3-D5) ────────────────────────────────────────────
+    // Bifa + parametrii ei; `ValideazaOperare` cere contul propriu dacă bifa e
+    // pusă (draftul are voie să fie incomplet până atunci).
+    public bool GenereazaPlata { get; set; }
+    public Guid? PlataContPropriuId { get; set; }
+    public string PlataNumar { get; set; }
+    public DateOnly? PlataData { get; set; }
+    // STRING pe sârmă (convenția `Stare`/`TipInstrument`); null = nu s-a cules,
+    // iar `GenereazaSecundar` aplică `OrdinPlata` la generare.
+    public string PlataTipInstrument { get; set; }
+
     public List<FacturaIntrareLinieWriteDto> Linii { get; set; } = new();
 }
 
@@ -100,6 +119,14 @@ public sealed class FacturaIntrareReadDto {
     public string CodCpv { get; set; }
     public string Valuta { get; set; }
     public decimal? Curs { get; set; }
+    // ── Plata automată (F3-D5) ────────────────────────────────────────────
+    public bool GenereazaPlata { get; set; }
+    public Guid? PlataContPropriuId { get; set; }
+    public string PlataContPropriuDenumire { get; set; }
+    public string PlataNumar { get; set; }
+    public DateOnly? PlataData { get; set; }
+    public string PlataTipInstrument { get; set; }
+
     // BRUT (Σ Valoare + ValoareTva), ca `Document.Total`.
     public decimal Total { get; set; }
     public bool Autogenerat { get; set; }
@@ -152,16 +179,8 @@ public sealed class FacturaIntrareLinieReadDto {
     public string ProiectCod { get; set; }
 }
 
-// Un copil al grupului conex, cât să-l poți deschide și eticheta.
-public sealed class DocumentCopilDto {
-    public Guid Id { get; set; }
-    // Codul ancorei `TipDocument` (NIR, PLT…) — vocabularul de rutare al
-    // clientului (`/nir/{id}`), nu numele clasei CLR.
-    public string Tip { get; set; }
-    public string Numar { get; set; }
-    public string Stare { get; set; }
-    public bool Autogenerat { get; set; }
-}
+// `DocumentCopilDto` a urcat în `Api/ApiDtos.cs` (felia trezoreriei): grupul
+// conex e mecanism de BAZĂ, nu al facturii — îl citesc și PLT/INC.
 
 // ── Listă: exact coloanele grilei (fără linii — N+1 pe `Total` real) ───────
 public sealed class FacturaIntrareListDto {

@@ -3,6 +3,7 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Btr;
 using Atlas.Conta.BackOffice.Module.Api.Fct;
 using Atlas.Conta.BackOffice.Module.Api.Nir;
+using Atlas.Conta.BackOffice.Module.Api.Trz;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using Atlas.Conta.BackOffice.Module.Motor;
@@ -3705,6 +3706,310 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Curățenie finală trezorerie (fără reziduuri e2e)",
         !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajTrz))
         && !os.GetObjectsQuery<Produs>().Any(p => p.Cod == MarcajTrz));
+}
+
+// ============ Felia Api Trz: PLT/INC prin nucleul generic (F3-D1/D5/D9) ============
+// Marcaj E2E-API-TRZ. Blocul e2e de deasupra probează MOTORUL pe trezorerie;
+// acesta probează CONTRACTUL API-ului peste el — aceleași obiecte de seed
+// (CASA/TREZ, Tipul tehnic TRZ), dar cu documentele construite exclusiv din
+// WriteDto și citite exclusiv prin proiecții plate. Ce exersează în plus față de
+// feliile BTR/FCT:
+//   * `Numar` SERVER-OWNED (PLT/INC au PoliticaNumerotare) — nici măcar nu e în
+//     WriteDto; apare abia după operare, din serie. Invers față de FCT;
+//   * `Valoare` CULEASĂ pe linie (trezoreria n-are `PregatesteOperare`);
+//   * nucleul GENERIC pe `T : DocumentTrezorerie` — o singură implementare, două
+//     rute, cu filtrarea pe tip făcută de TPT (`Citeste<Plata>` nu vede o
+//     încasare);
+//   * `TipInstrument` ca STRING pe sârmă, în ambele sensuri (round-trip, CASE în
+//     listă, refuz de domeniu la valoare necunoscută);
+//   * F3-D5: parametrii plății automate în DTO-urile FCT → plata autogenerată în
+//     `Copii[]` → citită pe ruta ei → operată → imperecherea automată.
+const string MarcajApiTrz = "E2E-ATRZ";
+
+void CurataApiTrz(IObjectSpace os) {
+    // Toate documentele blocului ating cel puțin un repartitor marcat (inclusiv
+    // plata autogenerată: TREZ → furnizorul marcat), deci marcajul de repartitor
+    // e cheia de curățenie — ca la CurataTrz.
+    var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiTrz)).Select(r => r.ID).ToList();
+    var docs = os.GetObjectsQuery<Document>()
+        .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+    var docIds = docs.Select(d => d.ID).ToList();
+    os.Delete(os.GetObjectsQuery<Imperechere>()
+        .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+        os.Delete(doc);
+    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiTrz)).ToList());
+    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajApiTrz + "-CE").ToList());
+    os.CommitChanges();
+}
+
+using (var os = provider.CreateObjectSpace()) {
+    CurataApiTrz(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+    var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628.00.00");
+    var casa = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
+    var trezoreria = os.FirstOrDefault<ContPropriu>(c => c.Cod == "TREZ");
+    var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00");
+    var cont411 = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
+    var cont531 = os.FirstOrDefault<Cont>(c => c.Simbol == "531.01.01");
+    var cont770 = os.FirstOrDefault<Cont>(c => c.Simbol == "770.00.00");
+
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = MarcajApiTrz + "-FURN";
+    furnizor.Denumire = "Furnizor probă felia Api Trz";
+    var client = os.CreateObject<Partener>();
+    client.Cod = MarcajApiTrz + "-CL";
+    client.Denumire = "Client probă felia Api Trz";
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = MarcajApiTrz + "-CE";
+    codEc.Denumire = "Cod economic probă felia Api Trz";
+    os.CommitChanges();
+
+    // Dry-run-ul își cere ObjectSpace-ul PROPRIU (contractul lui
+    // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
+    IReadOnlyList<string> DryRunTrz(Guid docId) {
+        using var osDry = provider.CreateObjectSpace();
+        return OperareApi.Valideaza(osDry, docId);
+    }
+
+    // ── (a) Plata culeasă manual ────────────────────────────────────────────
+    var writePlt = new TrezorerieWriteDto {
+        Data = new DateOnly(2026, 3, 14),
+        PredatorId = casa.ID,
+        PrimitorId = furnizor.ID,
+        TipInstrument = "DispozitieCasa",
+        NumarExtras = "EX-API-1",
+        DataExtras = new DateOnly(2026, 3, 14),
+        Linii = {
+            // Tipul tehnic TRZ e DEFAULT DE CULEGERE în client (F3-D7), nu o
+            // validare de server — de aceea vine prin payload ca oricare altul.
+            new TrezorerieLinieWriteDto {
+                TipMaterialId = tipTrz.ID, Valoare = 150m, CodEconomicId = codEc.ID
+            }
+        }
+    };
+    var idPlt = TrezorerieApply.Aplica<Plata>(os, null, writePlt);
+    var plt = TrezorerieApply.Citeste<Plata>(os, idPlt);
+    Check("Apply PLT creare → header plat; NUMĂRUL rămâne NULL — PLT are PoliticaNumerotare ⇒ server-owned (invers față de FCT, unde e cules)",
+        plt != null && plt.Id == idPlt && plt.Stare == "Draft" && plt.Numar == null
+        && plt.Data == new DateOnly(2026, 3, 14) && plt.DataOperare == null
+        && plt.PredatorId == casa.ID && plt.PredatorDenumire == casa.Denumire
+        && plt.PrimitorId == furnizor.ID && plt.PrimitorDenumire == furnizor.Denumire
+        && plt.TipInstrument == "DispozitieCasa"
+        && plt.NumarExtras == "EX-API-1" && plt.DataExtras == new DateOnly(2026, 3, 14)
+        && plt.Total == 150m
+        && !plt.Autogenerat && plt.DocumentSursaId == null && plt.DocumentSursaNumar == null
+        && plt.Copii.Count == 0
+        && plt.PoateEdita && plt.PoateOpera && !plt.PoateAnula && !plt.PoateStorna);
+    Check("Linia PLT: `Valoare` CULEASĂ (trezoreria n-are PregatesteOperare) + dimensiunea frunzei, proiectate plat",
+        plt.Linii.Count == 1 && plt.Linii[0].TipMaterialId == tipTrz.ID
+        && plt.Linii[0].TipMaterialCod == "TRZ" && plt.Linii[0].Valoare == 150m
+        && plt.Linii[0].CodEconomicId == codEc.ID && plt.Linii[0].CodEconomicCod == codEc.Cod
+        && plt.Linii[0].SursaFinantareId == null && plt.Linii[0].CodFunctionalId == null
+        && plt.Linii[0].ProiectId == null && plt.Linii[0].AngajamentId == null);
+    Check("Dry-run (Valideaza) pe draftul PLT valid → listă goală", DryRunTrz(idPlt).Count == 0);
+
+    // Reconcilierea colecției + refuzurile de contract (pe calea de ACTUALIZARE,
+    // ca un Apply refuzat să nu poată lăsa reziduu în ObjectSpace-ul viu).
+    writePlt.Linii[0].Id = plt.Linii[0].Id;
+    writePlt.Linii.Add(new TrezorerieLinieWriteDto {
+        TipMaterialId = tipTrz.ID, Valoare = 20m, CodEconomicId = codEc.ID
+    });
+    TrezorerieApply.Aplica<Plata>(os, idPlt, writePlt);
+    Check("Reconciliere: linia nouă (fără Id) se adaugă, Total urcă la 170",
+        TrezorerieApply.Citeste<Plata>(os, idPlt) is { Linii.Count: 2, Total: 170m });
+    CheckRefuza("Apply cu Id de linie străin → refuz (agregatul nu adoptă linii din alt document)",
+        () => TrezorerieApply.Aplica<Plata>(os, idPlt, new TrezorerieWriteDto {
+            Data = writePlt.Data, PredatorId = casa.ID, PrimitorId = furnizor.ID,
+            Linii = { new TrezorerieLinieWriteDto {
+                Id = Guid.NewGuid(), TipMaterialId = tipTrz.ID, Valoare = 1m } }
+        }));
+    CheckRefuza("Apply cu valoare în afara scării numeric(18,2) → refuz de domeniu, nu DbUpdateException",
+        () => TrezorerieApply.Aplica<Plata>(os, idPlt, new TrezorerieWriteDto {
+            Data = writePlt.Data, PredatorId = casa.ID, PrimitorId = furnizor.ID,
+            Linii = { new TrezorerieLinieWriteDto {
+                TipMaterialId = tipTrz.ID, Valoare = 1.005m } }
+        }));
+    writePlt.Linii.RemoveAt(1);
+    TrezorerieApply.Aplica<Plata>(os, idPlt, writePlt);
+    Check("Reconciliere: linia absentă din payload se ȘTERGE; un Apply refuzat n-a lăsat reziduu",
+        TrezorerieApply.Citeste<Plata>(os, idPlt) is { Linii.Count: 1, Total: 150m });
+
+    // Laturile NU se verifică la scriere (draftul are voie să fie greșit) — le
+    // refuză OPERAREA, prin hook-ul tipului. Proba pe un draft cu laturi inversate.
+    var idPltInvers = TrezorerieApply.Aplica<Plata>(os, null, new TrezorerieWriteDto {
+        Data = new DateOnly(2026, 3, 14),
+        PredatorId = furnizor.ID, PrimitorId = casa.ID,
+        Linii = { new TrezorerieLinieWriteDto {
+            TipMaterialId = tipTrz.ID, Valoare = 10m, CodEconomicId = codEc.ID } }
+    });
+    Check("TipInstrument absent din payload ⇒ OrdinPlata (default-ul convenției F3-D1)",
+        TrezorerieApply.Citeste<Plata>(os, idPltInvers).TipInstrument == "OrdinPlata");
+    var eroriInvers = DryRunTrz(idPltInvers);
+    Check("Apply acceptă laturile inversate (validarea lor e a OPERĂRII) — dry-run-ul le raportează pe amândouă, ca DATE",
+        eroriInvers.Count >= 2
+        && eroriInvers.Any(e => e.Contains("Predatorul plății"))
+        && eroriInvers.Any(e => e.Contains("Primitorul plății")));
+    TrezorerieApply.Sterge<Plata>(os, idPltInvers);
+    Check("Sterge pe draft: documentul și liniile lui dispar împreună",
+        TrezorerieApply.Citeste<Plata>(os, idPltInvers) == null
+        && !os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.DocumentId == idPltInvers));
+
+    // ── Comanda pe plată: numărul din serie + contarea din laturi ───────────
+    var rezPlt = OperareApi.Opereaza(os, idPlt);
+    Check("OperareApi.Opereaza pe PLT → Operat, fără conex/secundar",
+        rezPlt.StareNoua == StareDocument.Operat && rezPlt.ConexId == null && rezPlt.Mesaje.Count == 0);
+    plt = TrezorerieApply.Citeste<Plata>(os, idPlt);
+    Check("După operare numărul vine DIN SERIE (PLT-), nu din payload; affordances inversate",
+        plt.Stare == "Operat" && plt.Numar?.StartsWith("PLT-") == true && plt.DataOperare != null
+        && !plt.PoateEdita && !plt.PoateOpera && plt.PoateAnula && plt.PoateStorna);
+    var notePlt = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idPlt).ToList();
+    Check("PLT contează din laturi: 401.01.00 (fallback furnizor) = 531.01.01 (ContImplicit CASA), 150",
+        notePlt.Count == 1 && notePlt[0].ContDebitId == cont401.ID
+        && notePlt[0].ContCreditId == cont531.ID && notePlt[0].Valoare == 150m);
+    Check("PLT nu mișcă stoc", !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idPlt));
+    CheckRefuza("Apply peste PLT Operat → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
+        () => TrezorerieApply.Aplica<Plata>(os, idPlt, writePlt));
+    CheckRefuza("Sterge peste PLT Operat → același refuz de domeniu",
+        () => TrezorerieApply.Sterge<Plata>(os, idPlt));
+
+    var listaPlt = TrezorerieApply.Lista<Plata>(os).Where(x => x.Id == idPlt).ToList();
+    Check("Lista PLT → Stare ȘI TipInstrument ca text (CASE în SQL), Autogenerat, Total din agregat",
+        listaPlt.Count == 1 && listaPlt[0].Stare == "Operat"
+        && listaPlt[0].TipInstrument == "DispozitieCasa" && !listaPlt[0].Autogenerat
+        && listaPlt[0].Numar == plt.Numar && listaPlt[0].Total == 150m
+        && listaPlt[0].PredatorDenumire == casa.Denumire
+        && listaPlt[0].PrimitorDenumire == furnizor.Denumire);
+    Check("Lista PLT → filtrarea/sortarea se traduc în SQL peste proiecție (sondă: filtru pe enum-ul textual + sort + take)",
+        TrezorerieApply.Lista<Plata>(os).Where(x => x.TipInstrument == "DispozitieCasa")
+            .OrderByDescending(x => x.Data).Take(1).ToList().Count == 1);
+
+    // ── (b) Încasarea: același nucleu, laturi oglindite ─────────────────────
+    var idInc = TrezorerieApply.Aplica<Incasare>(os, null, new TrezorerieWriteDto {
+        Data = new DateOnly(2026, 3, 15),
+        PredatorId = client.ID, PrimitorId = casa.ID,
+        TipInstrument = "Chitanta",
+        Linii = { new TrezorerieLinieWriteDto {
+            TipMaterialId = tipTrz.ID, Valoare = 80m, CodEconomicId = codEc.ID } }
+    });
+    Check("Genericul filtrează pe TIP sub TPT: Citeste<Plata> pe un id de încasare → null (o rută nu adoptă documentele celeilalte)",
+        TrezorerieApply.Citeste<Plata>(os, idInc) == null
+        && TrezorerieApply.Citeste<Incasare>(os, idInc) != null
+        && !TrezorerieApply.Lista<Plata>(os).Any(x => x.Id == idInc)
+        && TrezorerieApply.Lista<Incasare>(os).Any(x => x.Id == idInc));
+    OperareApi.Opereaza(os, idInc);
+    var inc = TrezorerieApply.Citeste<Incasare>(os, idInc);
+    var noteInc = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idInc).ToList();
+    Check("Apply<Incasare> + operare: număr din seria proprie (INC-), contare oglindită 531.01.01 = 411.01.01 (fallback client), 80",
+        inc.Stare == "Operat" && inc.Numar?.StartsWith("INC-") == true
+        && inc.TipInstrument == "Chitanta" && inc.Total == 80m
+        && noteInc.Count == 1 && noteInc[0].ContDebitId == cont531.ID
+        && noteInc[0].ContCreditId == cont411.ID && noteInc[0].Valoare == 80m);
+
+    // ── (c) Enum-ul pe sârmă: valoare necunoscută = refuz de domeniu ────────
+    CheckRefuza("TipInstrument necunoscut → refuz cu valorile valide enumerate (nu conversie tăcută la 0, nu ArgumentException)",
+        () => TrezorerieApply.Aplica<Plata>(os, null, new TrezorerieWriteDto {
+            Data = new DateOnly(2026, 3, 14), PredatorId = casa.ID, PrimitorId = furnizor.ID,
+            TipInstrument = "Bilet la ordin" }));
+    CheckRefuza("TipInstrument dat ca NUMĂR („3”) → tot refuz: contractul e pe nume, nu pe ordinea membrilor",
+        () => TrezorerieApply.Aplica<Plata>(os, null, new TrezorerieWriteDto {
+            Data = new DateOnly(2026, 3, 14), PredatorId = casa.ID, PrimitorId = furnizor.ID,
+            TipInstrument = "3" }));
+    Check("Un Apply refuzat pe enum NU lasă document orfan în ObjectSpace (parse înaintea CreateObject)",
+        os.GetObjectsQuery<Plata>().Count(p => p.PrimitorId == furnizor.ID) == 1);
+
+    // ── (d) F3-D5: plata automată, cap-coadă prin API ───────────────────────
+    var writeFct = new FacturaIntrareWriteDto {
+        Numar = MarcajApiTrz + "-FF1",
+        Data = new DateOnly(2026, 3, 16),
+        PredatorId = furnizor.ID, PrimitorId = mag1.ID,
+        // Grupul DECONT_*, ridicat din excluderea F2.
+        GenereazaPlata = true,
+        PlataContPropriuId = trezoreria.ID,
+        PlataNumar = "OP-API-9",
+        PlataData = new DateOnly(2026, 3, 17),
+        PlataTipInstrument = "Cec",
+        // Doar linii de SERVICIU ⇒ conexul NIR nu se generează (n-are linii
+        // eligibile), deci singurul copil e SECUNDARUL — plata.
+        Linii = { new FacturaIntrareLinieWriteDto {
+            TipMaterialId = tipServicii.ID, Cantitate = 1m, PretUnitar = 100m,
+            CodEconomicId = codEc.ID } }
+    };
+    var idFctPlata = FacturaIntrareApply.Aplica(os, null, writeFct);
+    var fctCitit = FacturaIntrareApply.Citeste(os, idFctPlata);
+    Check("F3-D5: parametrii plății automate fac ROUND-TRIP prin DTO-urile FCT (bifă, cont propriu + denumire, număr, dată, instrument ca STRING)",
+        fctCitit.GenereazaPlata && fctCitit.PlataContPropriuId == trezoreria.ID
+        && fctCitit.PlataContPropriuDenumire == trezoreria.Denumire
+        && fctCitit.PlataNumar == "OP-API-9" && fctCitit.PlataData == new DateOnly(2026, 3, 17)
+        && fctCitit.PlataTipInstrument == "Cec");
+    CheckRefuza("Instrument de plată necunoscut pe FCT → același refuz (helper de parse COMUN cu trezoreria)",
+        () => FacturaIntrareApply.Aplica(os, idFctPlata, new FacturaIntrareWriteDto {
+            Numar = writeFct.Numar, Data = writeFct.Data,
+            PredatorId = furnizor.ID, PrimitorId = mag1.ID, PlataTipInstrument = "OP" }));
+    var idContPropriuInexistent = Guid.NewGuid();
+    CheckRefuza("Cont propriu inexistent pe FCT → refuz cu mesaj de domeniu (nu violare de FK)",
+        () => FacturaIntrareApply.Aplica(os, idFctPlata, new FacturaIntrareWriteDto {
+            Numar = writeFct.Numar, Data = writeFct.Data,
+            PredatorId = furnizor.ID, PrimitorId = mag1.ID,
+            GenereazaPlata = true, PlataContPropriuId = idContPropriuInexistent }));
+
+    var rezFct = OperareApi.Opereaza(os, idFctPlata);
+    Check("Operarea FCT (numai servicii ⇒ fără NIR conex) întoarce SECUNDARUL: draftul de plată",
+        rezFct.StareNoua == StareDocument.Operat && rezFct.ConexId != null);
+    var idPlataAuto = rezFct.ConexId.Value;
+    fctCitit = FacturaIntrareApply.Citeste(os, idFctPlata);
+    Check("Citeste.Copii → plata autogenerată: Tip „PLT” din ancora TipDocument, numărul CULES pe factură, Draft, Autogenerat",
+        fctCitit.Copii.Count == 1 && fctCitit.Copii[0].Id == idPlataAuto
+        && fctCitit.Copii[0].Tip == "PLT" && fctCitit.Copii[0].Numar == "OP-API-9"
+        && fctCitit.Copii[0].Stare == "Draft" && fctCitit.Copii[0].Autogenerat);
+
+    var plataAuto = TrezorerieApply.Citeste<Plata>(os, idPlataAuto);
+    Check("Citeste<Plata> pe copil: header din grupul DECONT_* (TREZ→furnizor, Cec, data plății) + link înapoi la factură prin numărul ei",
+        plataAuto != null && plataAuto.Autogenerat && plataAuto.Stare == "Draft"
+        && plataAuto.Numar == "OP-API-9" && plataAuto.Data == new DateOnly(2026, 3, 17)
+        && plataAuto.TipInstrument == "Cec"
+        && plataAuto.PredatorId == trezoreria.ID && plataAuto.PrimitorId == furnizor.ID
+        && plataAuto.DocumentSursaId == idFctPlata
+        && plataAuto.DocumentSursaNumar == writeFct.Numar
+        && plataAuto.Total == 121m);
+    Check("Liniile plății autogenerate păstrează Tipul SURSEI (628, nu TRZ — F3-D7 e convenție de client), valoarea BRUTĂ și dimensiunea clonată",
+        plataAuto.Linii.Count == 1 && plataAuto.Linii[0].TipMaterialId == tipServicii.ID
+        && plataAuto.Linii[0].TipMaterialCod == "628.00.00"
+        && plataAuto.Linii[0].Valoare == 121m
+        && plataAuto.Linii[0].CodEconomicId == codEc.ID);
+
+    OperareApi.Opereaza(os, idPlataAuto);
+    var impAuto = os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentStingatorId == idPlataAuto).ToList();
+    Check("Operarea plății autogenerate prin OperareApi → imperecherea automată pe BRUT (121), factura stinsă integral",
+        impAuto.Count == 1 && impAuto[0].DocumentId == idFctPlata && impAuto[0].Suma == 121m
+        && impAuto[0].Autogenerat && ImperechereService.Ramas(os, idFctPlata) == 0m);
+    var plataOperata = TrezorerieApply.Citeste<Plata>(os, idPlataAuto);
+    var notePlataAuto = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idPlataAuto).ToList();
+    Check("Plata autogenerată operată: numărul rămâne CEL CULES pe factură (AsignaNumar onorează un număr existent — nu se consumă serie), contare 401 = 770",
+        plataOperata.Stare == "Operat" && plataOperata.Numar == "OP-API-9"
+        && notePlataAuto.Count == 1 && notePlataAuto[0].ContDebitId == cont401.ID
+        && notePlataAuto[0].ContCreditId == cont770.ID && notePlataAuto[0].Valoare == 121m);
+    Check("Affordance onestă pe FCT (F2-D5): copilul PLT operat blochează anularea/stornarea facturii",
+        FacturaIntrareApply.Citeste(os, idFctPlata) is { PoateAnula: false, PoateStorna: false });
+
+    // LIMITA ASUMATĂ A PASULUI 1 (F3-D2, se închide la pasul 2 cu
+    // `ImperechereApply` + helper-ul comun `AreImperecheri`): affordance-ul
+    // trezoreriei NU ține încă cont de imperecheri — motorul refuză, DTO-ul încă
+    // spune „true". Consemnat aici ca proba să se schimbe odată cu formula.
+    Check("Limita asumată F3-D2: PoateAnula rămâne true pe plata cu imperechere (affordance-ul nu vede încă stingerile)",
+        plataOperata.PoateAnula && plataOperata.PoateStorna);
+    CheckRefuza("…iar motorul chiar refuză: anularea plății cu imperechere",
+        () => OperareApi.AnuleazaOperarea(os, idPlataAuto));
+
+    CurataApiTrz(os);
+    Check("Curățenie finală felia Api Trz (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajApiTrz))
+        && !os.GetObjectsQuery<FacturaIntrare>().Any(d => d.Numar.StartsWith(MarcajApiTrz)));
 }
 
 // ===================== Scenariul e2e 3c: Decont =====================

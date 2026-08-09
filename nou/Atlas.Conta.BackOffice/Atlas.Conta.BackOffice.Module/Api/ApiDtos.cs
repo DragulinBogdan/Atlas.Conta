@@ -1,3 +1,6 @@
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Motor;
+
 namespace Atlas.Conta.BackOffice.Module.Api;
 
 // DTO-urile PARTAJATE între feliile verticale (decizia 42d / spike D1): tot ce
@@ -39,4 +42,48 @@ public sealed record EroriDto(string[] Erori) {
         .Select(l => l.Trim())
         .Where(l => l.Length > 0)
         .ToArray());
+}
+
+// Un copil al grupului conex, cât să-l poți deschide și eticheta. PARTAJAT
+// (felia trezoreriei): grupul conex e mecanism de bază (decizia 17), nu al unui
+// tip anume — FCT îl folosește pentru NIR + plata autogenerată, trezoreria
+// pentru simetria affordance-urilor. Proiecția care îl umple stă în
+// `ApiProiectii.Copii` — o singură dată, ca și tipul.
+public sealed class DocumentCopilDto {
+    public Guid Id { get; set; }
+    // Codul ancorei `TipDocument` (NIR, PLT…) — vocabularul de rutare al
+    // clientului (`/nir/{id}`), nu numele clasei CLR.
+    public string Tip { get; set; }
+    public string Numar { get; set; }
+    public string Stare { get; set; }
+    public bool Autogenerat { get; set; }
+}
+
+// Traducerea enum ↔ sârmă, în ADAPTOR, o dată (nota de la începutul fișierului):
+// pe sârmă valorile de enum sunt STRING-uri, iar intrarea vine de la un client
+// care poate greși. Refuzul e de DOMENIU, cu valorile valide enumerate — nu o
+// `ArgumentException` de infrastructură și nici o conversie tăcută la 0.
+internal static class ApiEnum {
+    // Header-ul de trezorerie: `TipInstrument` NU e nullable pe model, iar
+    // absența din payload înseamnă „instrumentul obișnuit" (F3-D1).
+    public static TipInstrumentPlata TipInstrument(string valoare) =>
+        TipInstrumentOptional(valoare) ?? TipInstrumentPlata.OrdinPlata;
+
+    // Varianta pentru câmpurile NULLABLE (`FacturaIntrare.PlataTipInstrument`):
+    // acolo null e o valoare cu înțeles propriu — parametrul plății autogenerate
+    // n-a fost cules, iar `GenereazaSecundar` aplică el default-ul. Parse-ul e
+    // același; doar tratarea absenței diferă.
+    public static TipInstrumentPlata? TipInstrumentOptional(string valoare) {
+        if (string.IsNullOrWhiteSpace(valoare))
+            return null;
+        var cerut = valoare.Trim();
+        foreach (var nume in Enum.GetNames<TipInstrumentPlata>())
+            if (string.Equals(nume, cerut, StringComparison.OrdinalIgnoreCase))
+                return Enum.Parse<TipInstrumentPlata>(nume);
+        // Potrivirea e pe NUME, nu prin `Enum.TryParse`: acela ar accepta și
+        // numărul („1"), adică exact contractul fragil pe care string-ul îl evită.
+        throw new OperareException(
+            $"Instrumentul de plată „{valoare}” nu există — valorile acceptate: "
+            + string.Join(", ", Enum.GetNames<TipInstrumentPlata>()) + ".");
+    }
 }
