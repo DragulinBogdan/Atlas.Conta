@@ -80,6 +80,7 @@ public static class DscApply {
             Total = total,
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             DocumentSursaNumar = h.DocumentSursaNumar,
+            DocumentSursaTip = ApiProiectii.CodTip(os, h.DocumentSursaId),
             // Pe acest tier descărcarea n-are NICIO cale de scriere (F4-D2) — o
             // affordance de editare ar minți contractul (precedentul NIR, F2-D5).
             PoateEdita = false,

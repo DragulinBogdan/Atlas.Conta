@@ -273,6 +273,7 @@ public static class TrezorerieApply {
             Ramas = ImperechereService.Ramas(os, id),
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             DocumentSursaNumar = h.DocumentSursaNumar,
+            DocumentSursaTip = ApiProiectii.CodTip(os, h.DocumentSursaId),
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
             PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,

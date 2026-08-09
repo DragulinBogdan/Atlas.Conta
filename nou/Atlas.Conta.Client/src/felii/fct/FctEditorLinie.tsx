@@ -24,12 +24,24 @@ import { SCHEMA_LINIE, TIP_LINIE, type FctLinieWrite } from './api';
 //     ca omul să compare cu factura — dar afișarea nu e trimitere.
 const CAMPURI: (keyof FctLinieWrite & string)[] = ['TipMaterialId', 'Cantitate', 'PretUnitar'];
 
+// Etichetele CULESE la selecție, pentru grila documentului: liniile nesalvate
+// n-au încă ReadDto, dar răspunsul OData al selecției e DEJA în client — nu se
+// inventează nimic în TS, se reține ce a afișat lookup-ul. Valoare/ValoareTva/
+// lot rămân ale serverului (apar după Salvează).
+export type EticheteCulese = {
+  TipMaterialCod?: string;
+  TipMaterialDenumire?: string;
+  ProdusDenumire?: string;
+};
+
+const text = (v: unknown) => (v == null ? '' : String(v));
+
 export function FctEditorLinie(props: {
   linie: FctLinieWrite;
   // Ce a calculat SERVERUL pentru linia asta (ReadDto) — doar pentru afișare.
   valoareTvaCitita?: number | null;
   readOnly: boolean;
-  onSalveaza: (l: FctLinieWrite) => void;
+  onSalveaza: (l: FctLinieWrite, etichete: EticheteCulese) => void;
   onRenunta: () => void;
 }) {
   const { readOnly, onSalveaza, onRenunta } = props;
@@ -37,6 +49,7 @@ export function FctEditorLinie(props: {
     ...props.linie,
     ValoareTva: props.linie.ValoareTva ?? props.valoareTvaCitita ?? undefined,
   }));
+  const [etichete, setEtichete] = useState<EticheteCulese>({});
   // Override-ul de TVA nu e un flag global de formular: e starea UNUI câmp, iar
   // singura sursă de adevăr e „valoarea lui s-a schimbat de când s-a deschis
   // editorul". O linie care intră în editare purtând deja un override (a fost
@@ -55,7 +68,7 @@ export function FctEditorLinie(props: {
     setAratErori(true);
     if (structurale.length > 0)
       return;
-    onSalveaza({ ...linie, ValoareTva: tvaAtins ? linie.ValoareTva ?? null : null });
+    onSalveaza({ ...linie, ValoareTva: tvaAtins ? linie.ValoareTva ?? null : null }, etichete);
   }
 
   return (
@@ -75,6 +88,7 @@ export function FctEditorLinie(props: {
             mod="remote"
             afisare={codSiDenumire}
             cauta={['Cod', 'Denumire']}
+            expand={['TipMaterial']}
             laSelectie={(p) => {
               // ODataStore deserializează Edm.Guid ca OBIECT `Guid` DevExtreme,
               // nu ca string (bug găsit la smoke: `typeof === 'string'` pica
@@ -84,6 +98,17 @@ export function FctEditorLinie(props: {
               const tip = p?.TipMaterialId == null ? undefined : String(p.TipMaterialId);
               if (tip)
                 setLinie((prev) => prev.TipMaterialId ? prev : { ...prev, TipMaterialId: tip });
+              // Eticheta Tipului precompletat vine din `$expand=TipMaterial` al
+              // aceleiași selecții; se reține doar când precompletarea chiar se
+              // aplică (guard-ul din closure e suficient pentru o etichetă).
+              const tipEl = p?.TipMaterial as Record<string, unknown> | null | undefined;
+              setEtichete((prev) => ({
+                ...prev,
+                ProdusDenumire: text(p?.Denumire),
+                ...(tip && !linie.TipMaterialId
+                  ? { TipMaterialCod: text(tipEl?.Cod), TipMaterialDenumire: text(tipEl?.Denumire) }
+                  : {}),
+              }));
             }}
           />
           <Lookup<FctLinieWrite>
@@ -92,6 +117,9 @@ export function FctEditorLinie(props: {
             mod="local"
             afisare={codSiDenumire}
             cauta={['Cod', 'Denumire']}
+            laSelectie={(t) => setEtichete((prev) => ({
+              ...prev, TipMaterialCod: text(t?.Cod), TipMaterialDenumire: text(t?.Denumire),
+            }))}
           />
           <CampNumar<FctLinieWrite> camp="Cantitate" />
           <CampNumar<FctLinieWrite> camp="PretUnitar" zecimale={6} />

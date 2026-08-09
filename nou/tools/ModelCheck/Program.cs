@@ -2366,7 +2366,7 @@ if (profil == ProfilContabil.Privat) {
             citDsc != null && citDsc.Id == idDsc && citDsc.Stare == "Draft"
             && citDsc.Numar == null && citDsc.Data == new DateOnly(2026, 5, 10)
             && citDsc.Autogenerat && citDsc.DocumentSursaId == idFcl
-            && citDsc.DocumentSursaNumar == citFcl.Numar
+            && citDsc.DocumentSursaNumar == citFcl.Numar && citDsc.DocumentSursaTip == "FCL"
             && citDsc.PredatorId == gestiuneFcl.ID && citDsc.PredatorDenumire == gestiuneFcl.Denumire
             && citDsc.PrimitorId == clientFcl.ID && citDsc.PrimitorDenumire == clientFcl.Denumire);
         Check("DSC prin API = CITIRE + comenzi (F4-D2): nicio affordance de editare, dar operarea e disponibilă pe draft",
@@ -3430,6 +3430,7 @@ using (var os = provider.CreateObjectSpace()) {
     Check("NirApply.Citeste pe conex: header cu sursa ETICHETATĂ, fără număr (seria NIR se consumă la propria operare)",
         nirDto != null && nirDto.Stare == "Draft" && nirDto.Numar == null && nirDto.Autogenerat
         && nirDto.DocumentSursaId == idFct && nirDto.DocumentSursaNumar == "E2E-AF1"
+        && nirDto.DocumentSursaTip == "FCT"
         && nirDto.PredatorDenumire == furnizor.Denumire && nirDto.PrimitorDenumire == mag1.Denumire
         && nirDto.Total == 59.5m
         // PoateEdita e FALS prin construcție (F2-D5): tierul n-are nicio cale de
@@ -4335,6 +4336,7 @@ using (var os = provider.CreateObjectSpace()) {
         && plt.NumarExtras == "EX-API-1" && plt.DataExtras == new DateOnly(2026, 3, 14)
         && plt.Total == 150m
         && !plt.Autogenerat && plt.DocumentSursaId == null && plt.DocumentSursaNumar == null
+        && plt.DocumentSursaTip == null
         && plt.Copii.Count == 0
         && plt.PoateEdita && plt.PoateOpera && !plt.PoateAnula && !plt.PoateStorna);
     Check("Linia PLT: `Valoare` CULEASĂ (trezoreria n-are PregatesteOperare) + dimensiunea frunzei, proiectate plat",
@@ -4507,6 +4509,7 @@ using (var os = provider.CreateObjectSpace()) {
         && plataAuto.PredatorId == trezoreria.ID && plataAuto.PrimitorId == furnizor.ID
         && plataAuto.DocumentSursaId == idFctPlata
         && plataAuto.DocumentSursaNumar == writeFct.Numar
+        && plataAuto.DocumentSursaTip == "FCT"
         && plataAuto.Total == 121m);
     Check("Liniile plății autogenerate păstrează Tipul SURSEI (628, nu TRZ — F3-D7 e convenție de client), valoarea BRUTĂ și dimensiunea clonată",
         plataAuto.Linii.Count == 1 && plataAuto.Linii[0].TipMaterialId == tipServicii.ID

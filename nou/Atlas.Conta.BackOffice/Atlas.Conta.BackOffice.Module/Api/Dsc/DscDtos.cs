@@ -40,6 +40,9 @@ public sealed class DscReadDto {
     // („Generat din"), fără a hardcoda `/fcl/`.
     public Guid? DocumentSursaId { get; set; }
     public string DocumentSursaNumar { get; set; }
+    // Codul de TIP al sursei (azi FCL prin construcție, dar clientul nu-l mai
+    // presupune: `rutaTip(DocumentSursaTip, …)` — D-6b).
+    public string DocumentSursaTip { get; set; }
     public List<DscLinieReadDto> Linii { get; set; } = new();
 
     // Affordances pe RESURSĂ (42e): aceeași sursă ca acțiunile XAF.

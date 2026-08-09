@@ -29,12 +29,26 @@ import { SCHEMA_LINIE, TIP_LINIE, type FclLinieWrite } from './api';
 // și nu calculează nicio valoare.
 const CAMPURI: (keyof FclLinieWrite & string)[] = ['TipMaterialId', 'Cantitate', 'PretUnitar'];
 
+// Etichetele CULESE la selecție, pentru grila documentului: liniile nesalvate
+// n-au încă ReadDto, dar răspunsul OData al selecției e DEJA în client — nu se
+// inventează nimic în TS, se reține ce a afișat lookup-ul. Valoare/ValoareTva
+// rămân ale serverului (apar după Salvează).
+export type EticheteCulese = {
+  TipMaterialCod?: string;
+  TipMaterialDenumire?: string;
+  ProdusDenumire?: string;
+  LotEticheta?: string;
+  TipTvaCod?: string;
+};
+
+const text = (v: unknown) => (v == null ? '' : String(v));
+
 export function FclEditorLinie(props: {
   linie: FclLinieWrite;
   // Ce a calculat SERVERUL pentru linia asta (ReadDto) — doar pentru afișare.
   valoareTvaCitita?: number | null;
   readOnly: boolean;
-  onSalveaza: (l: FclLinieWrite) => void;
+  onSalveaza: (l: FclLinieWrite, etichete: EticheteCulese) => void;
   onRenunta: () => void;
 }) {
   const { readOnly, onSalveaza, onRenunta } = props;
@@ -42,6 +56,7 @@ export function FclEditorLinie(props: {
     ...props.linie,
     ValoareTva: props.linie.ValoareTva ?? props.valoareTvaCitita ?? undefined,
   }));
+  const [etichete, setEtichete] = useState<EticheteCulese>({});
   // Override-ul de TVA nu e un flag global de formular: e starea UNUI câmp, iar
   // singura sursă de adevăr e „valoarea lui s-a schimbat de când s-a deschis
   // editorul" (același mecanism ca la FCT).
@@ -65,7 +80,7 @@ export function FclEditorLinie(props: {
     setAratErori(true);
     if (structurale.length > 0)
       return;
-    onSalveaza({ ...linie, ValoareTva: tvaAtins ? linie.ValoareTva ?? null : null });
+    onSalveaza({ ...linie, ValoareTva: tvaAtins ? linie.ValoareTva ?? null : null }, etichete);
   }
 
   return (
@@ -86,6 +101,7 @@ export function FclEditorLinie(props: {
               mod="remote"
               afisare={codSiDenumire}
               cauta={['Cod', 'Denumire']}
+              expand={['TipMaterial']}
               laSelectie={(p) => {
                 // ODataStore deserializează Edm.Guid ca OBIECT `Guid` DevExtreme,
                 // nu ca string — `String()` îl aduce la forma de sârmă. Aplicarea
@@ -95,6 +111,18 @@ export function FclEditorLinie(props: {
                 const tip = p?.TipMaterialId == null ? undefined : String(p.TipMaterialId);
                 if (tip)
                   setLinie((prev) => prev.TipMaterialId ? prev : { ...prev, TipMaterialId: tip });
+                // Eticheta Tipului precompletat vine din `$expand=TipMaterial` al
+                // aceleiași selecții (doar când precompletarea chiar se aplică);
+                // eticheta pinului se stinge odată cu pinul (`schimba`).
+                const tipEl = p?.TipMaterial as Record<string, unknown> | null | undefined;
+                setEtichete((prev) => ({
+                  ...prev,
+                  ProdusDenumire: text(p?.Denumire),
+                  LotEticheta: '',
+                  ...(tip && !linie.TipMaterialId
+                    ? { TipMaterialCod: text(tipEl?.Cod), TipMaterialDenumire: text(tipEl?.Denumire) }
+                    : {}),
+                }));
               }}
             />
             <p className="indiciu">
@@ -107,6 +135,9 @@ export function FclEditorLinie(props: {
             mod="local"
             afisare={codSiDenumire}
             cauta={['Cod', 'Denumire']}
+            laSelectie={(t) => setEtichete((prev) => ({
+              ...prev, TipMaterialCod: text(t?.Cod), TipMaterialDenumire: text(t?.Denumire),
+            }))}
           />
           <div>
             {/* PINUL de lot (F4-D6): identificare specifică, prioritară la
@@ -126,6 +157,7 @@ export function FclEditorLinie(props: {
               sortare="Data"
               cauta={['LotFabricatie']}
               filtru={produsId == null ? undefined : ['ProdusId', '=', produsId]}
+              laSelectie={(l) => setEtichete((prev) => ({ ...prev, LotEticheta: l ? etichetaLot(l) : '' }))}
             />
             <p className="indiciu">
               {produsId == null
@@ -141,6 +173,7 @@ export function FclEditorLinie(props: {
             mod="local"
             afisare={etichetaTipTva}
             cauta={['Cod', 'Denumire']}
+            laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
           />
           <div>
             <CampNumar<FclLinieWrite> camp="ValoareTva" zecimale={2} />

@@ -335,6 +335,11 @@ function Provenienta(props: { doc?: TrzRead }) {
   const doc = props.doc;
   const copii = doc?.Copii ?? [];
   if (!doc || (!doc.DocumentSursaId && copii.length === 0)) return null;
+  // Ruta sursei prin `rutaTip` + TIPUL din ReadDto (D-6b): azi sursa e factura
+  // (plata autogenerată 31e), dar la transferul 581 va fi PLT/INC — clientul nu
+  // mai presupune `/fct/`. Tip fără felie de client = text, nu link mort.
+  const rutaSursa = doc.DocumentSursaId ? rutaTip(doc.DocumentSursaTip, doc.DocumentSursaId) : null;
+  const etichetaSursa = doc.DocumentSursaNumar || 'documentul sursă';
   return (
     <div className="panou panou--succes">
       <div className="panou__titlu">Grup conex</div>
@@ -342,7 +347,7 @@ function Provenienta(props: { doc?: TrzRead }) {
         {doc.DocumentSursaId && (
           <li>
             Generat din{' '}
-            <Link to={`/fct/${doc.DocumentSursaId}`}>{doc.DocumentSursaNumar || 'documentul sursă'}</Link>
+            {rutaSursa ? <Link to={rutaSursa}>{etichetaSursa}</Link> : <span>{etichetaSursa}</span>}
             {doc.Autogenerat ? ' (autogenerat de motor)' : ''}
             {/* D-5b: draftul autogenerat e artefact al operării sursei — anularea
                 ei îl ȘTERGE cu tot cu modificările manuale (26d/31e). */}

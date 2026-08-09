@@ -6,6 +6,7 @@ import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
 import { CampShell } from '../../nucleu/CampShell';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
+import { rutaTip } from '../../nucleu/stingeri';
 import { nir, SCHEMA_ANTET, SCHEMA_LINIE, TIP_ANTET, TIP_LINIE } from './api';
 
 // Ecran READ-ONLY cu comenzi (F2-D3). Nu există `Formular`, fiindcă nu există
@@ -47,6 +48,11 @@ export function NirDetaliu() {
       setErori(eroriDin(e));
     }
   }
+
+  // Ruta sursei prin `rutaTip` + TIPUL din ReadDto (D-6b): azi sursa e mereu o
+  // factură de intrare, dar clientul nu presupune asta — un tip fără felie de
+  // client rămâne text, nu link mort.
+  const rutaSursa = doc?.DocumentSursaId ? rutaTip(doc.DocumentSursaTip, doc.DocumentSursaId) : null;
 
   const comenzi: Comanda[] = [
     {
@@ -96,7 +102,9 @@ export function NirDetaliu() {
           <Static
             membru="DocumentSursaId"
             valoare={doc?.DocumentSursaId
-              ? <Link to={`/fct/${doc.DocumentSursaId}`}>{doc.DocumentSursaNumar || 'Deschide factura sursă'}</Link>
+              ? (rutaSursa
+                ? <Link to={rutaSursa}>{doc.DocumentSursaNumar || 'Deschide documentul sursă'}</Link>
+                : `${doc.DocumentSursaTip ?? ''} ${doc.DocumentSursaNumar ?? ''}`.trim() || '—')
               : null}
           />
         </div>

@@ -2773,6 +2773,7 @@ export interface components {
             /** Format: uuid */
             DocumentSursaId?: string | null;
             DocumentSursaNumar?: string | null;
+            DocumentSursaTip?: string | null;
             Linii?: components["schemas"]["DscLinieReadDto"][] | null;
             PoateEdita?: boolean;
             PoateOpera?: boolean;
@@ -3231,6 +3232,7 @@ export interface components {
             /** Format: uuid */
             DocumentSursaId?: string | null;
             DocumentSursaNumar?: string | null;
+            DocumentSursaTip?: string | null;
             Linii?: components["schemas"]["NirLinieReadDto"][] | null;
             PoateEdita?: boolean;
             PoateOpera?: boolean;
@@ -3615,6 +3617,7 @@ export interface components {
             /** Format: uuid */
             DocumentSursaId?: string | null;
             DocumentSursaNumar?: string | null;
+            DocumentSursaTip?: string | null;
             Linii?: components["schemas"]["TrezorerieLinieReadDto"][] | null;
             Copii?: components["schemas"]["DocumentCopilDto"][] | null;
             PoateEdita?: boolean;

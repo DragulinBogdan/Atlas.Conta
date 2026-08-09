@@ -31,6 +31,9 @@ public sealed class NirReadDto {
     // Numărul facturii-sursă: eticheta cu care UI-ul arată de unde vine NIR-ul
     // („generat din factura X"), fără un al doilea apel.
     public string DocumentSursaNumar { get; set; }
+    // Codul de TIP al sursei (azi FCT; mecanismul e generic) — clientul rutează
+    // „Generat din" prin `rutaTip`, nu printr-un `/fct/` hardcodat (D-6b).
+    public string DocumentSursaTip { get; set; }
     public List<NirLinieReadDto> Linii { get; set; } = new();
 
     // Affordances pe RESURSĂ (42e): aceeași sursă ca acțiunile XAF.

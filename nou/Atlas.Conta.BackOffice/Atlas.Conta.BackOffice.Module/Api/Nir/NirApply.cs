@@ -82,6 +82,7 @@ public static class NirApply {
             Total = total,
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             DocumentSursaNumar = h.DocumentSursaNumar,
+            DocumentSursaTip = ApiProiectii.CodTip(os, h.DocumentSursaId),
             // Review advers F2-D5: pe acest tier NIR-ul nu are NICIO cale de
             // scriere (F2-D3) — o affordance de editare ar minți contractul.
             PoateEdita = false,

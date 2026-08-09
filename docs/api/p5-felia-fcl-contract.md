@@ -173,7 +173,10 @@ comenzii manuale nu se afișează în client după recitire (cosmetic — API-ul
 corect) **[NEREPRODUCTIBIL 2026-08-09, decizia 60: probat în browser pe un
 backorder real — mesajul se afișează și persistă după recitire]**; etichetele
 liniilor sunt goale în grilă pe documentul NESALVAT (se
-populează la prima recitire; pattern moștenit din FCT); **M2** — DELETE pe un draft
+populează la prima recitire; pattern moștenit din FCT) **[FIXAT 2026-08-09,
+decizia 61: editorul culege etichetele la selecție (`laSelectie` + `$expand=
+TipMaterial` pe produs), grila le folosește ca fallback până la recitire —
+FCT+FCL]**; **M2** — DELETE pe un draft
 FCL ale cărui linii sunt referite de `LinieSursaId` dintr-un DSC manual → 500 brut
 (DbUpdateException netradusă în WebApi; cale exotică — traducerea 39a există doar
 în Blazor) **[TRANȘAT 2026-08-09, decizia 60: catch de traducere în
@@ -194,6 +197,8 @@ liniile la fiecare `Citeste`) — de MĂSURAT înainte de release **[MĂSURAT
 `PoateGeneraDescarcare` +~40ms doar pe drumul complet, neproblemă;
 `DocumenteCuRest` ~410ms, acceptabil azi]**; emitentul pe
 documentul EXISTENT se afișează static (lookup-ul ar minți pe repartitori din
-afara setului `UnitateInterna`); scrierea manuală DSC prin API; RDC în proiecția
+afara setului `UnitateInterna`) **[FIXAT 2026-08-09, decizia 61: sonda
+`existaInSet` (nucleu) decide — valoarea în set ⇒ lookup, altfel static]**;
+scrierea manuală DSC prin API; RDC în proiecția
 de rest. Artefactele de smoke (FCL-1, DSC-1+draft, INC 689, FCT SMOKE-F4-1+NIR)
 rămân pe baza de dev Privat, ca la feliile anterioare.

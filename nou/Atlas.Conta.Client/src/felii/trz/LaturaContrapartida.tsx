@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Lookup } from '../../nucleu/Lookup';
 import { useCamp } from '../../nucleu/formular';
-import { ia } from '../../nucleu/http';
+import { existaInSet } from '../../nucleu/sonda';
 
 // Latura NE-trezorerie a unei plăți/încasări: beneficiarul plății, respectiv
 // plătitorul încasării. Poate fi PARTENER sau ANGAJAT (31a: ContPropriu →
@@ -17,24 +17,10 @@ import { ia } from '../../nucleu/http';
 // ═══ Deducerea felului la ÎNCĂRCAREA unui document existent ═══
 // ReadDto-ul dă `PrimitorId` + `PrimitorDenumire`, nu FELUL laturii — și nici
 // n-ar trebui: pe server e un `Repartitor`, distincția e a nomenclatoarelor.
-// Deci se PROBEAZĂ mulțimea îngustă (angajații) cu o interogare OData
-// mărginită; 0 rezultate ⇒ partener (default). Sonda e o simplă existență
-// (`$filter=ID eq …&$top=1&$select=ID`), nu o citire de entitate: nu depinde de
-// sintaxa de cheie și nu aduce date.
-//
-// Eșecul sondei NU e fatal: felul rămâne pe default, iar operatorul are oricând
-// comutatorul manual — care e și escape hatch-ul dacă deducerea greșește.
-
-async function esteAngajat(id: string): Promise<boolean> {
-  try {
-    const r = await ia<{ value?: unknown[] }>(
-      `/api/odata/Angajat?$filter=${encodeURIComponent(`ID eq ${id}`)}&$select=ID&$top=1`);
-    return (r.value?.length ?? 0) > 0;
-  }
-  catch {
-    return false;
-  }
-}
+// Deci se PROBEAZĂ mulțimea îngustă (angajații) cu sonda de existență din
+// nucleu (`existaInSet`); 0 rezultate ⇒ partener (default). Eșecul sondei NU e
+// fatal: felul rămâne pe default, iar operatorul are oricând comutatorul
+// manual — care e și escape hatch-ul dacă deducerea greșește.
 
 type Fel = 'Partener' | 'Angajat';
 
@@ -57,7 +43,7 @@ export function LaturaContrapartida<T extends object>(props: {
     if (!valoare || valoare === probat) return;
     let activ = true;
     setProbat(valoare);
-    void esteAngajat(valoare).then((da) => {
+    void existaInSet('Angajat', valoare).then((da) => {
       if (activ && da) setFel('Angajat');
     });
     return () => { activ = false; };

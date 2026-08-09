@@ -12,6 +12,7 @@ import { PanouErori } from '../../nucleu/PanouErori';
 import { PanouStingeri } from '../../nucleu/PanouStingeri';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
+import { existaInSet } from '../../nucleu/sonda';
 import { rutaTip } from '../../nucleu/stingeri';
 import { azi, izolataZi } from '../../nucleu/zi';
 import {
@@ -19,7 +20,7 @@ import {
   SCHEMA_ANTET, SCHEMA_LINIE, TIP_ANTET, TIP_LINIE,
   type DocumentCopil, type FclLinieRead, type FclLinieWrite, type FclWrite,
 } from './api';
-import { FclEditorLinie } from './FclEditorLinie';
+import { FclEditorLinie, type EticheteCulese } from './FclEditorLinie';
 
 // Felia verticală FCL, ecranul de document — șablonul consolidat (43c):
 //   (1) server-read  → `useQuery` pe ReadDto (affordances, Total, etichete, Copii);
@@ -50,6 +51,10 @@ export function FclDetaliu() {
   const [mesaje, setMesaje] = useState<string[]>([]);
   const [inEditare, setInEditare] = useState<FclLinieWrite | null>(null);
   const [indiceEditat, setIndiceEditat] = useState<number | null>(null);
+  // Etichetele CULESE în sesiunea asta, per POZIȚIE de linie (paralel cu
+  // `agregat.Linii`): grila le folosește cât timp linia n-are încă etichete
+  // server-owned în ReadDto (documentul/linia nesalvată).
+  const [eticheteLinii, setEticheteLinii] = useState<(EticheteCulese | undefined)[]>([]);
 
   const citit = useQuery({
     queryKey: ['fcl', id],
@@ -58,17 +63,33 @@ export function FclDetaliu() {
   });
 
   // ReadDto proaspăt ⇒ formularul se re-seed-uiește. O singură direcție,
-  // server → agregat, la fiecare recitire.
+  // server → agregat, la fiecare recitire. Etichetele culese local mor odată cu
+  // re-seed-ul: serverul le are de acum pe toate.
   useEffect(() => {
     if (citit.data) {
       setAgregat(spreWrite(citit.data));
       setModificat(false);
+      setEticheteLinii([]);
     }
   }, [citit.data]);
 
   const doc = citit.data;
   const poateEdita = nou || (doc?.PoateEdita ?? false);
   const linii = agregat.Linii ?? [];
+
+  // Emitentul unui document EXISTENT: istoricul poate purta orice repartitor
+  // intern (validarea cere doar „nu Partener"), iar lookup-ul pe setul
+  // `UnitateInterna` ar minți pe valorile din afara lui (afişare goală, listă
+  // care nu conține valoarea). Sonda de existență decide: valoarea E în set ⇒
+  // lookup normal (editabil pe draft); altfel — sau cât timp nu știm — afișare
+  // statică din ReadDto. Eșecul sondei cade deci pe varianta care nu minte.
+  const emitentInSet = useQuery({
+    queryKey: ['sonda', 'UnitateInterna', doc?.PredatorId],
+    queryFn: () => existaInSet('UnitateInterna', doc!.PredatorId!),
+    enabled: !nou && doc?.PredatorId != null,
+    staleTime: Infinity,
+  });
+  const emitentEditabil = nou || doc?.PredatorId == null || emitentInSet.data === true;
 
   const structurale = useMemo(
     () => [
@@ -93,7 +114,9 @@ export function FclDetaliu() {
       setModificat(false);
       cache.invalidateQueries({ queryKey: ['fcl'] });
       if (nou) navigheaza(`/fcl/${salvat.Id}`, { replace: true });
-      else setAgregat(spreWrite(salvat));
+      // Serverul poate REORDONA liniile la recitire — etichetele per poziție nu
+      // mai corespund; se golesc aici, iar cele server-owned vin cu refetch-ul.
+      else { setAgregat(spreWrite(salvat)); setEticheteLinii([]); }
     },
     onError: (e) => { setMesaje([]); setErori(eroriDin(e)); },
   });
@@ -176,11 +199,19 @@ export function FclDetaliu() {
     setModificat(true);
   }
 
-  function salveazaLinie(linie: FclLinieWrite) {
+  function salveazaLinie(linie: FclLinieWrite, culese: EticheteCulese) {
     const urmatoare = [...linii];
-    if (indiceEditat == null) urmatoare.push(linie);
-    else urmatoare[indiceEditat] = linie;
+    const et = [...eticheteLinii];
+    if (indiceEditat == null) {
+      urmatoare.push(linie);
+      et[urmatoare.length - 1] = culese;
+    }
+    else {
+      urmatoare[indiceEditat] = linie;
+      et[indiceEditat] = { ...et[indiceEditat], ...culese };
+    }
     setAgregat({ ...agregat, Linii: urmatoare });
+    setEticheteLinii(et);
     setModificat(true);
     setInEditare(null);
     setIndiceEditat(null);
@@ -188,6 +219,7 @@ export function FclDetaliu() {
 
   function stergeLinie(indice: number) {
     setAgregat({ ...agregat, Linii: linii.filter((_, i) => i !== indice) });
+    setEticheteLinii(eticheteLinii.filter((_, i) => i !== indice));
     setModificat(true);
   }
 
@@ -220,11 +252,11 @@ export function FclDetaliu() {
               {/* EMITENTUL = unitatea internă (sediul — cum operează și
                   ModelCheck/importul); `UnitateInterna` e expusă ReadOnly în
                   OData exact pentru lookup-ul ăsta (amendament F4-D5). Pe un
-                  document EXISTENT emitentul se AFIȘEAZĂ static din ReadDto:
-                  istoricul poate purta orice repartitor intern (validarea cere
-                  doar „nu Partener"), iar un lookup pe un singur set ar minți
-                  pe valorile din afara lui. */}
-              {nou
+                  document EXISTENT sonda `emitentInSet` decide (vezi sus):
+                  valoarea în set ⇒ lookup (rămâne editabil pe draft); valoare
+                  istorică din afara setului ⇒ afișare statică din ReadDto —
+                  lookup-ul ar minți pe ea. */}
+              {emitentEditabil
                 ? (
                   <Lookup<FclWrite>
                     camp="PredatorId"
@@ -299,10 +331,12 @@ export function FclDetaliu() {
           </div>
 
           {/* Grilă READONLY peste liniile agregatului local: nu vorbește cu
-              serverul, nu editează. Etichetele bogate (lot, valori) vin din
-              ReadDto — server-owned; liniile nesalvate le arată goale. */}
+              serverul, nu editează. Etichetele vin din ReadDto (server-owned)
+              sau, pe liniile încă nesalvate, din ce a CULES editorul la selecție
+              (nimic inventat în TS); valorile rămân exclusiv ale serverului —
+              apar după Salvează. */}
           <DataGrid
-            dataSource={linii.map((l, i) => ({ ...l, __indice: i, ...etichete(doc?.Linii, l) }))}
+            dataSource={linii.map((l, i) => ({ ...l, __indice: i, ...etichete(doc?.Linii, l, eticheteLinii[i]) }))}
             keyExpr="__indice"
             showBorders
             columnAutoWidth
@@ -468,16 +502,18 @@ function PanouDescarcare(props: {
   );
 }
 
-// Etichetele server-owned ale unei linii: se caută în ReadDto după `Id`. Linia
-// nouă nu are încă niciuna — corect: nu le inventăm în TS.
-function etichete(citite: FclLinieRead[] | null | undefined, linie: FclLinieWrite) {
+// Etichetele unei linii: cele CULESE în sesiunea asta (alegerea proaspătă a
+// operatorului) bat ReadDto-ul, care se caută după `Id`; linia nouă fără
+// culegere rămâne goală — nu le inventăm în TS. Valorile n-au variantă culeasă:
+// sunt ale serverului prin construcție (43b).
+function etichete(citite: FclLinieRead[] | null | undefined, linie: FclLinieWrite, culese?: EticheteCulese) {
   const g = citite?.find((c) => c.Id === linie.Id);
   return {
-    TipMaterialCod: g?.TipMaterialCod ?? '',
-    TipMaterialDenumire: g?.TipMaterialDenumire ?? '',
-    ProdusDenumire: g?.ProdusDenumire ?? '',
-    LotEticheta: g?.LotEticheta ?? '',
-    TipTvaCod: g?.TipTvaCod ?? '',
+    TipMaterialCod: culese?.TipMaterialCod ?? g?.TipMaterialCod ?? '',
+    TipMaterialDenumire: culese?.TipMaterialDenumire ?? g?.TipMaterialDenumire ?? '',
+    ProdusDenumire: culese?.ProdusDenumire ?? g?.ProdusDenumire ?? '',
+    LotEticheta: culese?.LotEticheta ?? g?.LotEticheta ?? '',
+    TipTvaCod: culese?.TipTvaCod ?? g?.TipTvaCod ?? '',
     Valoare: g?.Valoare,
     ValoareTva: g?.ValoareTva,
   };

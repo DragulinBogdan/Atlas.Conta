@@ -77,10 +77,10 @@ export function DscDetaliu() {
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza('/dsc') },
   ];
 
-  // Sursa unei descărcări e întotdeauna o factură de ieșire (DSC-ul se naște din
-  // ea), dar ruta se compune prin `rutaTip` — vocabularul închis al nucleului —
-  // nu prin string lipit aici.
-  const rutaSursa = doc?.DocumentSursaId ? rutaTip('FCL', doc.DocumentSursaId) : null;
+  // Sursa unei descărcări e azi întotdeauna o factură de ieșire, dar tipul vine
+  // din ReadDto și ruta din `rutaTip` — vocabularul închis al nucleului — nu
+  // dintr-un string lipit aici (D-6b).
+  const rutaSursa = doc?.DocumentSursaId ? rutaTip(doc.DocumentSursaTip, doc.DocumentSursaId) : null;
 
   return (
     <DocumentShell

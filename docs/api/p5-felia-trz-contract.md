@@ -153,7 +153,9 @@ acceptabil azi, optimizarea țintită documentată]**; D-5b — editarea manual�
 la anularea facturii-sursă (de afișat un indiciu) **[FIXAT 2026-08-09, decizia
 60: indiciu în panoul „Grup conex", verificat în browser]**; D-6b — link-ul „Generat din"
 hardcodat `/fct/` (corect azi, de generalizat la transferul 581 cu
-`DocumentSursaTip`); ordinea `Stingeri` pe Id (arbitrară Guid) **[FIXAT
+`DocumentSursaTip`) **[FIXAT 2026-08-09, decizia 61: `DocumentSursaTip` pe
+ReadDto (NIR/TRZ/DSC, prin `ApiProiectii.CodTip`) + `rutaTip` pe toate
+link-urile „Generat din"]**; ordinea `Stingeri` pe Id (arbitrară Guid) **[FIXAT
 2026-08-09, decizia 60: cronologic după data celeilalte părți; fix-ul a scos și
 N+1-ul REAL al lui `CoduriTip` pe stingerile extraselor — 11s → 0,19s, addendum
 în `p5-perf-masuratori.md`]**.

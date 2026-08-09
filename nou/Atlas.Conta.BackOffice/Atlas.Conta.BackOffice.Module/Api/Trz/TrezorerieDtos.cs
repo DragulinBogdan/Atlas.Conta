@@ -95,6 +95,9 @@ public sealed class TrezorerieReadDto {
     // Numărul documentului-sursă: plata autogenerată → link înapoi la FACTURA
     // care a generat-o (clientul n-o mai caută după DocumentSursaId).
     public string DocumentSursaNumar { get; set; }
+    // Codul de TIP al sursei (azi FCT — plata autogenerată; la transferul 581
+    // va fi PLT/INC) — clientul rutează „Generat din" prin `rutaTip` (D-6b).
+    public string DocumentSursaTip { get; set; }
     public List<TrezorerieLinieReadDto> Linii { get; set; } = new();
     // Grupul conex (decizia 17). Azi gol pe trezorerie — plata/încasarea sunt
     // COPII, nu părinți; câmpul există pentru simetria affordance-urilor (formula

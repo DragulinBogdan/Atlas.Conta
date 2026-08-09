@@ -97,6 +97,15 @@ internal static class ApiProiectii {
         return rezultat;
     }
 
+    // Codul de tip al UNUI document (documentul-sursă din „Generat din"):
+    // aceeași rezolvare polimorfă ca `CoduriTip`, pe mulțimea de un element.
+    // Clientul rutează prin `rutaTip` (vocabular închis) — un tip fără felie
+    // rămâne text, dar link-ul nu mai e hardcodat pe `/fct/` (D-6b).
+    public static string CodTip(IObjectSpace os, Guid? documentId) =>
+        documentId == null
+            ? null
+            : CoduriTip(os, new[] { documentId.Value }).GetValueOrDefault(documentId.Value);
+
     // Affordance ONESTĂ pe stingeri (F3-D2): oglinda API a gardianului
     // `MotorOperare.VerificaFaraImperecheri` — anularea și stornarea se refuză
     // cât timp documentul poartă un link pe ORICARE rol (31d). Trăiește aici, nu

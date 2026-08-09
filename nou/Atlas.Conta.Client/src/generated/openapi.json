@@ -58585,6 +58585,10 @@
             "type": "string",
             "nullable": true
           },
+          "DocumentSursaTip": {
+            "type": "string",
+            "nullable": true
+          },
           "Linii": {
             "type": "array",
             "items": {
@@ -59896,6 +59900,10 @@
             "type": "string",
             "nullable": true
           },
+          "DocumentSursaTip": {
+            "type": "string",
+            "nullable": true
+          },
           "Linii": {
             "type": "array",
             "items": {
@@ -60982,6 +60990,10 @@
             "nullable": true
           },
           "DocumentSursaNumar": {
+            "type": "string",
+            "nullable": true
+          },
+          "DocumentSursaTip": {
             "type": "string",
             "nullable": true
           },
