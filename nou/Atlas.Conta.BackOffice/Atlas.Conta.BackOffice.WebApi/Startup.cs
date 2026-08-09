@@ -54,6 +54,10 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // decide cine are voie, ca peste tot.
                     options.BusinessObject<Partener>();
                     options.BusinessObject<Produs>();
+                    // Angajatul e tot nomenclator VIU (F3-D6): beneficiarul unei
+                    // plăți poate fi un salariat nou (avans/decont), cules în
+                    // fluxul operațional ca și furnizorul.
+                    options.BusinessObject<Angajat>();
                     // Restul e READ-ONLY prin construcție: sunt nomenclatoare de
                     // POLITICĂ, administrate în back-office (planul de conturi,
                     // regimurile de TVA cu conturile lor, clasificația bugetară).
@@ -65,6 +69,11 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     options.BusinessObject<SursaFinantare>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<CodFunctional>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<Proiect>().ConfigureController(c => c.ReadOnly());
+                    // Conturile proprii (casierii/bănci) sunt POLITICĂ, nu
+                    // nomenclator viu (F3-D6): `ContImplicit`/`EsteBanca` decid
+                    // cum contează motorul plata (31c), deci se administrează în
+                    // back-office. Clientul le citește pentru lookup-ul de latură.
+                    options.BusinessObject<ContPropriu>().ConfigureController(c => c.ReadOnly());
                     // `Lot` NU e nomenclator obișnuit (review advers M1): PretUnitar/
                     // Data/Gestiune sunt load-bearing pentru evaluare și FIFO —
                     // loturile se nasc la culegere și se finalizează de motor

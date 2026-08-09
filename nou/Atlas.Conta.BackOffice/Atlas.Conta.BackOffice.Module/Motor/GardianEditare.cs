@@ -138,7 +138,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "nu se mai modifică și nu se șterge. Anulați operarea sau stornați-l.");
             return;
         }
-        if (os.IsDeletedObject(doc) || originale == null)
+        if (EsteSters(os, doc) || originale == null)
             return;
         if (doc.Stare != stareOriginala)
             erori.Add($"Starea documentului {Eticheta(doc)} o schimbă doar motorul "
@@ -162,7 +162,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     // ar lăsa registrele fără liniile-sursă, iar verificarea doar a gazdei NOI
     // ar fi lăsat-o să treacă).
     static void VerificaLinie(IObjectSpace os, DocumentDetaliu linie, ICollection<string> erori) {
-        if (!os.IsNewObject(linie) && !os.IsDeletedObject(linie)) {
+        if (!os.IsNewObject(linie) && !EsteSters(os, linie)) {
             var documentIdOriginal = Originale(os, linie)?[nameof(DocumentDetaliu.DocumentId)] as Guid?;
             if (documentIdOriginal is Guid gazdaVeche && gazdaVeche != Guid.Empty
                     && gazdaVeche != linie.DocumentId) {
@@ -202,7 +202,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     // (re-validarea sumei ar cere excluderea propriului rând), Delete liber
     // (link fără registre proprii; gardianul de anulare/storno din motor există).
     static void VerificaImperechere(IObjectSpace os, Imperechere imperechere, ICollection<string> erori) {
-        if (os.IsDeletedObject(imperechere))
+        if (EsteSters(os, imperechere))
             return;
         if (!os.IsNewObject(imperechere)) {
             erori.Add("Imperecherea nu se editează — șterge-o și creeaz-o din nou.");
@@ -218,6 +218,24 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             erori.Add(ex.Message);
         }
     }
+
+    // „Obiectul ăsta e pe cale să fie ȘTERS?" — răspuns valabil ÎN Committing.
+    //
+    // De ce NU `os.IsDeletedObject` singur (probă pe surse 26.1.3, găsită de
+    // smoke-ul feliei de trezorerie): `EFCoreObjectSpace.IsDeletedObject`
+    // (EFCoreObjectSpace.cs:375-386) întoarce true DOAR pentru `Detached` sau
+    // pentru un tip cu ștergere amânată al cărui `GCRecord` e deja 1. Or
+    // `GCRecord` îl pune `EFCoreDeferredDeletionInterceptor` în `SavingChanges`
+    // (DeferredDeletion/EFCoreDeferredDeletionInterceptor.cs:95-120), adică DUPĂ
+    // evenimentul `Committing` — deci în gardian entitatea e încă `Deleted` cu
+    // `GCRecord` 0 și `IsDeletedObject` răspunde FALS. Consecința reală: o
+    // ștergere de imperechere era raportată ca „editare" și refuzată (31d cere
+    // ștergerea liberă), pe ORICE cale secured — UI-ul XAF și `api/imperecheri`.
+    // Starea EF e sursa corectă aici; `IsDeletedObject` rămâne în paralel pentru
+    // ștergerile deja materializate și pentru providerii non-EF.
+    static bool EsteSters(IObjectSpace os, object obj) =>
+        (os is EFCoreObjectSpace efCore && efCore.DbContext.Entry(obj).State == EntityState.Deleted)
+        || os.IsDeletedObject(obj);
 
     // Starea de dinaintea modificării, din evidența EF (OriginalValues) — o
     // scriere pe `Stare` nu-și poate ascunde propria urmă.
