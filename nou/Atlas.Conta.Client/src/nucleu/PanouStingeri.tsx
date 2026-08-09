@@ -29,17 +29,29 @@ export function PanouStingeri(props: {
   // Lipsa ei ascunde doar zona de ADĂUGARE — lista existentă se vede oricum.
   contrapartidaId?: string | null;
   rol: RolStingere;
+  // Tipurile de document care POT fi candidați ai acestei stingeri (review
+  // F3-D6a: proiecția întoarce toate documentele cu rest ale contrapartidei,
+  // dar nu toate se pot stinge — un buton pe un candidat incompatibil = refuz
+  // GARANTAT al serverului). Felia le declară fiindcă ea știe rolul: trezoreria
+  // (`stinge`) stinge creanțe/datorii (FCT/FCL/DEC); factura (`este-stins`) e
+  // stinsă doar de trezorerie (PLT/INC). Se aplică ca filtru pe grilă → ajunge
+  // la DataSourceLoader → SQL. Gol/absent = fără filtru (compatibil înainte).
+  tipuriCandidate?: string[];
   // Stingerea schimbă affordances-urile documentului (`PoateAnula`/`PoateStorna`
   // țin cont de imperecheri — F3-D2), deci felia trebuie să-și recitească
   // ReadDto-ul. Panoul nu știe cum se cheamă cache-ul feliei; îl anunță.
   onSchimbare?: () => void;
 }) {
-  const { documentId, contrapartidaId, rol, onSchimbare } = props;
+  const { documentId, contrapartidaId, rol, tipuriCandidate, onSchimbare } = props;
   const cache = useQueryClient();
   const [erori, setErori] = useState<string[]>([]);
   const [candidat, setCandidat] = useState<DocumentCuRest | null>(null);
   const [suma, setSuma] = useState<number | undefined>(undefined);
   const [ocupat, setOcupat] = useState(false);
+  // Rândul pentru care se cere confirmarea ștergerii — confirmare INLINE, nu
+  // `window.confirm`: dialogul nativ BLOCHEAZĂ renderer-ul (găsit la smoke F3),
+  // pe lângă că nu e stilabil. Nul = nicio confirmare în așteptare.
+  const [randDeSters, setRandDeSters] = useState<StingereRand | null>(null);
   // Reîncărcarea grilei REMOTE de candidați: store nou ⇒ grilă reîncărcată.
   // (Rândurile se schimbă la fiecare stingere — restul lor scade.)
   const [versiune, setVersiune] = useState(0);
@@ -88,9 +100,10 @@ export function PanouStingeri(props: {
     finally { setOcupat(false); }
   }
 
-  async function stergeRand(rand: StingereRand) {
-    if (!rand.Id) return;
-    if (!window.confirm('Ștergeți legătura de stingere? Restul ambelor documente se eliberează.')) return;
+  async function confirmaStergere() {
+    const rand = randDeSters;
+    if (!rand?.Id) return;
+    setRandDeSters(null);
     setErori([]);
     setOcupat(true);
     try {
@@ -100,6 +113,16 @@ export function PanouStingeri(props: {
     catch (e) { setErori(eroriDin(e)); }
     finally { setOcupat(false); }
   }
+
+  // Filtrul de tip pentru candidați (F3-D6a): `["Tip","=","PLT"] or […]`,
+  // formatul DataSourceLoader — ajunge la SQL prin loadOptions.
+  const filtruTipuri = useMemo(() => {
+    if (!tipuriCandidate || tipuriCandidate.length === 0) return undefined;
+    if (tipuriCandidate.length === 1) return ['Tip', '=', tipuriCandidate[0]];
+    return tipuriCandidate
+      .map((t) => ['Tip', '=', t])
+      .reduce((acc, f) => (acc.length === 0 ? f : [acc, 'or', f]), [] as unknown[]);
+  }, [tipuriCandidate]);
 
   return (
     <section className="document__stingeri">
@@ -142,7 +165,7 @@ export function PanouStingeri(props: {
                   type="button"
                   className="buton buton--mic"
                   disabled={ocupat}
-                  onClick={() => void stergeRand(c.data as StingereRand)}
+                  onClick={() => setRandDeSters(c.data as StingereRand)}
                 >
                   Șterge
                 </button>
@@ -150,6 +173,19 @@ export function PanouStingeri(props: {
             />
           </DataGrid>
         )}
+
+      {randDeSters && (
+        <div className="cerere-data">
+          <span>
+            Ștergeți legătura de stingere cu <strong>{randDeSters.CelalaltTip} {randDeSters.CelalaltNumar}</strong>?
+            {' '}Restul ambelor documente se eliberează.
+          </span>
+          <button type="button" className="buton buton--primar" disabled={ocupat} onClick={() => void confirmaStergere()}>
+            Șterge legătura
+          </button>
+          <button type="button" className="buton" onClick={() => setRandDeSters(null)}>Renunță</button>
+        </div>
+      )}
 
       {sursaCandidati == null
         ? <p className="indiciu">Documentul n-are contrapartidă — nu se pot propune candidați de stins.</p>
@@ -190,6 +226,7 @@ export function PanouStingeri(props: {
               showBorders
               columnAutoWidth
               height={280}
+              defaultFilterValue={filtruTipuri}
             >
               <Sorting mode="multiple" />
               <FilterRow visible />

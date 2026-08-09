@@ -34,7 +34,9 @@ export function CampText<T extends object>({ camp, readOnly, obligatoriu, etiche
         value={c.valoare ?? ''}
         readOnly={c.readOnly}
         maxLength={c.meta.lungimeMaxima}
-        onValueChanged={(e) => c.seteaza((e.value as string) || undefined)}
+        // Regula F2/F3, uniformă pe orice widget DevExtreme: doar schimbările
+        // operatorului (`e.event`) se propagă în formular (vezi `CampSelectie`).
+        onValueChanged={(e) => { if (e.event) c.seteaza((e.value as string) || undefined); }}
       />
     </CampShell>
   );
@@ -52,7 +54,7 @@ export function CampData<T extends object>({ camp, readOnly, obligatoriu, etiche
         displayFormat="dd.MM.yyyy"
         value={c.valoare ?? null}
         readOnly={c.readOnly}
-        onValueChanged={(e) => c.seteaza(izolataZi(e.value))}
+        onValueChanged={(e) => { if (e.event) c.seteaza(izolataZi(e.value)); }}
       />
     </CampShell>
   );
@@ -66,7 +68,7 @@ export function CampNumar<T extends object>({ camp, readOnly, obligatoriu, etich
         value={c.valoare ?? undefined}
         readOnly={c.readOnly}
         format={`#,##0.${'#'.repeat(zecimale)}`}
-        onValueChanged={(e) => c.seteaza(e.value == null ? undefined : Number(e.value))}
+        onValueChanged={(e) => { if (e.event) c.seteaza(e.value == null ? undefined : Number(e.value)); }}
       />
     </CampShell>
   );
@@ -83,7 +85,11 @@ export function CampBifa<T extends object>({ camp, readOnly, eticheta }: PropsCa
         <CheckBox
           value={c.valoare ?? false}
           readOnly={c.readOnly}
-          onValueChanged={(e) => c.seteaza(Boolean(e.value))}
+          // Regula F2, valabilă pe ORICE widget DevExtreme: doar schimbările
+          // OPERATORULUI (`e.event`) se propagă — schimbarea programatică
+          // (seed-ul agregatului) ar re-raporta prin closure-ul VECHI al
+          // contextului și ar șterge câmpurile abia scrise.
+          onValueChanged={(e) => { if (e.event) c.seteaza(Boolean(e.value)); }}
         />
       </div>
     </CampShell>
@@ -107,7 +113,11 @@ export function CampSelectie<T extends object>(
         valueExpr="valoare"
         displayExpr="label"
         showClearButton={!c.meta.obligatoriu}
-        onValueChanged={(e) => c.seteaza((e.value as string) ?? undefined)}
+        // Regula F2 (vezi `Lookup`/`CampBifa`): doar `e.event` se propagă —
+        // altfel seed-ul valorii declanșa un `seteaza` din closure-ul vechi
+        // care RESETA agregatul abia încărcat (bug găsit la smoke F3: plata
+        // autogenerată se deschidea cu laturile și liniile „dispărute").
+        onValueChanged={(e) => { if (e.event) c.seteaza((e.value as string) ?? undefined); }}
       />
     </CampShell>
   );

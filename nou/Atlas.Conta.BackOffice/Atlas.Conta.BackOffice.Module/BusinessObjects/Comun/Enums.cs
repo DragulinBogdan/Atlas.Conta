@@ -1,3 +1,5 @@
+using DevExpress.ExpressApp.DC;
+
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 public enum StareDocument { Draft = 0, Operat = 1, Stornat = 2 }
@@ -32,7 +34,16 @@ public enum NaturaClasa {
     Tehnica = 5,
 }
 
-public enum TipInstrumentPlata { OrdinPlata = 1, Cec = 2, DispozitieCasa = 3, Chitanta = 4 }
+// `[XafDisplayName]` pe MEMBRI (review F3-D7): XAF îl citește prin
+// `EnumDescriptor`, iar dump-ul de metadata (`MetadataDump.LabeluriEnum` prin
+// `CaptionHelper`) îl emite — deci și UI-ul XAF, și clientul React arată
+// eticheta frumoasă, dintr-o singură sursă.
+public enum TipInstrumentPlata {
+    [XafDisplayName("Ordin de plată")] OrdinPlata = 1,
+    [XafDisplayName("Cec")] Cec = 2,
+    [XafDisplayName("Dispoziție de casă")] DispozitieCasa = 3,
+    [XafDisplayName("Chitanță")] Chitanta = 4,
+}
 
 // Regimul fiscal al unui TipTva (P1, design §2). `NeexigibilLaIncasare` NU
 // intră la P1 — se adaugă aditiv odată cu mecanismul (4428 + transfer la

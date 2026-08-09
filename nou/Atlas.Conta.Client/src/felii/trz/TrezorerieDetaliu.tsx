@@ -301,6 +301,10 @@ export function TrezorerieDetaliu(props: {
             contrapartidaId={contrapartida(doc)}
             // Trezoreria e STINGĂTORUL (31d): plata stinge factura.
             rol="stinge"
+            // Trezoreria stinge creanțe/datorii, nu alte documente de
+            // trezorerie (F3-D6a; INC↔PLT — avans↔regularizare — merge la
+            // momentul 581, aditiv).
+            tipuriCandidate={['FCT', 'FCL', 'DEC']}
             onSchimbare={() => void cache.invalidateQueries({ queryKey: [cheieCache] })}
           />
         )

@@ -1,55 +1,55 @@
 {
   "Enumuri": {
     "CalitateRepartitor": {
-      "CentruCost": "CentruCost",
-      "Comisie": "Comisie",
-      "Cursant": "Cursant",
-      "Delegat": "Delegat",
-      "Departament": "Departament",
+      "Niciuna": "Niciuna",
       "Gestionar": "Gestionar",
+      "Comisie": "Comisie",
+      "Departament": "Departament",
+      "CentruCost": "CentruCost",
       "LocConsum": "LocConsum",
-      "Niciuna": "Niciuna"
+      "Delegat": "Delegat",
+      "Cursant": "Cursant"
     },
     "DimensiuneFlags": {
-      "CentruCost": "CentruCost",
-      "CodEconomic": "CodEconomic",
-      "CodFunctional": "CodFunctional",
-      "Material": "Material",
       "Niciuna": "Niciuna",
-      "Proiect": "Proiect",
       "Repartitor": "Repartitor",
+      "Material": "Material",
+      "CodFunctional": "CodFunctional",
+      "CodEconomic": "CodEconomic",
       "SursaFinantare": "SursaFinantare",
-      "Unitate": "Unitate"
+      "Unitate": "Unitate",
+      "Proiect": "Proiect",
+      "CentruCost": "CentruCost"
     },
     "DirectieAsamblare": {
       "Consum": "Consum",
       "Produs": "Produs"
     },
     "DirectieDiferenta": {
-      "Minus": "Minus",
-      "Plus": "Plus"
+      "Plus": "Plus",
+      "Minus": "Minus"
     },
     "DirectieTva": {
-      "Colectat": "Colectat",
-      "Deductibil": "Deductibil"
+      "Deductibil": "Deductibil",
+      "Colectat": "Colectat"
     },
     "LaturaDocument": {
       "Predator": "Predator",
       "Primitor": "Primitor"
     },
     "NaturaClasa": {
+      "Stoc": "Stoc",
+      "Serviciu": "Serviciu",
       "Cheltuiala": "Cheltuiala",
       "Imobilizare": "Imobilizare",
-      "Serviciu": "Serviciu",
-      "Stoc": "Stoc",
       "Tehnica": "Tehnica"
     },
     "RegimTva": {
-      "Capitalizat": "Capitalizat",
-      "Neimpozabil": "Neimpozabil",
       "Normal": "Normal",
+      "Capitalizat": "Capitalizat",
+      "TaxareInversa": "TaxareInversa",
       "Scutit": "Scutit",
-      "TaxareInversa": "TaxareInversa"
+      "Neimpozabil": "Neimpozabil"
     },
     "StareDocument": {
       "Draft": "Draft",
@@ -58,23 +58,23 @@
     },
     "SursaCont": {
       "Explicit": "Explicit",
+      "TipMaterial": "TipMaterial",
       "RepartitorPredator": "RepartitorPredator",
-      "RepartitorPrimitor": "RepartitorPrimitor",
-      "TipMaterial": "TipMaterial"
+      "RepartitorPrimitor": "RepartitorPrimitor"
     },
     "TipInstrumentPlata": {
+      "OrdinPlata": "Ordin de plată",
       "Cec": "Cec",
-      "Chitanta": "Chitanta",
-      "DispozitieCasa": "DispozitieCasa",
-      "OrdinPlata": "OrdinPlata"
+      "DispozitieCasa": "Dispoziție de casă",
+      "Chitanta": "Chitanță"
     },
     "TipStoc": {
-      "Consum": "Consum",
-      "Custodie": "Custodie",
-      "Folosinta": "Folosinta",
-      "Gratuit": "Gratuit",
       "Magazie": "Magazie",
+      "Consum": "Consum",
+      "Folosinta": "Folosinta",
+      "Custodie": "Custodie",
       "Marfuri": "Marfuri",
+      "Gratuit": "Gratuit",
       "ProductieNeterminata": "ProductieNeterminata"
     }
   },

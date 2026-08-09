@@ -57,7 +57,11 @@ static class MetadataDump {
     public static string Genereaza() {
         var assembly = typeof(Document).Assembly;
         var tipuri = new SortedDictionary<string, TipMeta>(StringComparer.Ordinal);
-        var enumuri = new SortedDictionary<string, SortedDictionary<string, string>>(StringComparer.Ordinal);
+        // Enumurile păstrează ordinea de DECLARAȚIE a membrilor (review F3-D7b),
+        // nu alfabetică: SelectBox-ul clientului le arată în ordinea din C#
+        // (default-ul primul), nu cu default-ul rătăcit alfabetic. Cheia externă
+        // (numele enum-ului) rămâne sortată ordinal — determinism pentru drift.
+        var enumuri = new SortedDictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
 
         foreach (var t in assembly.GetTypes().Where(EsteRelevant)) {
             if (t.IsEnum)
@@ -130,15 +134,21 @@ static class MetadataDump {
         (Attribute.GetCustomAttribute(m, typeof(XafDisplayNameAttribute), inherit: true)
             as XafDisplayNameAttribute)?.DisplayName;
 
-    static SortedDictionary<string, string> LabeluriEnum(Type t) {
-        var labeluri = new SortedDictionary<string, string>(StringComparer.Ordinal);
-        foreach (var f in t.GetFields(BindingFlags.Public | BindingFlags.Static))
-            labeluri[f.Name] = Caption(f) ?? f.Name;
+    // Ordinea de DECLARAȚIE (după valoarea numerică — determinist, spre deosebire
+    // de ordinea reflectată a `GetFields`); `Dictionary` păstrează ordinea de
+    // inserție la serializare (System.Text.Json).
+    static Dictionary<string, string> LabeluriEnum(Type t) {
+        var labeluri = new Dictionary<string, string>();
+        foreach (var valoare in Enum.GetValues(t)) {
+            var nume = Enum.GetName(t, valoare);
+            var camp = t.GetField(nume);
+            labeluri[nume] = Caption(camp) ?? nume;
+        }
         return labeluri;
     }
 
     sealed record DumpMeta(
-        SortedDictionary<string, SortedDictionary<string, string>> Enumuri,
+        SortedDictionary<string, Dictionary<string, string>> Enumuri,
         SortedDictionary<string, TipMeta> Tipuri);
 
     sealed record TipMeta(string DefaultProperty, SortedDictionary<string, string> Membri);

@@ -232,10 +232,12 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     // ștergere de imperechere era raportată ca „editare" și refuzată (31d cere
     // ștergerea liberă), pe ORICE cale secured — UI-ul XAF și `api/imperecheri`.
     // Starea EF e sursa corectă aici; `IsDeletedObject` rămâne în paralel pentru
-    // ștergerile deja materializate și pentru providerii non-EF.
+    // ștergerile deja materializate. Ambele prin API-ul PUBLIC `IObjectSpace`
+    // (review F3-D1a): `IsObjectToDelete` = `GetEntityState(obj) == Deleted`
+    // (EFCoreObjectSpace.cs:371-374), fără cast la tipul concret — corect și pe
+    // providerii non-EF.
     static bool EsteSters(IObjectSpace os, object obj) =>
-        (os is EFCoreObjectSpace efCore && efCore.DbContext.Entry(obj).State == EntityState.Deleted)
-        || os.IsDeletedObject(obj);
+        os.IsObjectToDelete(obj) || os.IsDeletedObject(obj);
 
     // Starea de dinaintea modificării, din evidența EF (OriginalValues) — o
     // scriere pe `Stare` nu-și poate ascunde propria urmă.

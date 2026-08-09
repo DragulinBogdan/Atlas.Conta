@@ -266,6 +266,8 @@ export function FctDetaliu() {
             documentId={doc.Id}
             contrapartidaId={doc.PredatorId}
             rol="este-stins"
+            // O factură e stinsă doar de trezorerie (F3-D6a).
+            tipuriCandidate={['PLT', 'INC']}
             onSchimbare={() => void cache.invalidateQueries({ queryKey: ['fct'] })}
           />
         )

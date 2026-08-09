@@ -3726,6 +3726,15 @@ using (var os = provider.CreateObjectSpace()) {
 //     `Copii[]` → citită pe ruta ei → operată → imperecherea automată.
 const string MarcajApiTrz = "E2E-ATRZ";
 
+// Review F3-D5a: `TrezorerieApply.Lista` traduce `TipInstrument` în string cu un
+// CASE care are ULTIMA ramură fallback („Chitanta") — un membru NOU de enum ar
+// apărea tăcut ca „Chitanta" în grilă. Gardianul (analogul scării numerice): dacă
+// enum-ul crește, testul pică zgomotos și cere actualizarea CASE-ului + a
+// parse-ului `ApiEnum` + a etichetelor.
+Check("Gardian F3-D5a: TipInstrumentPlata are exact membrii mapați în CASE-ul din Lista",
+    Enum.GetNames<TipInstrumentPlata>().OrderBy(n => n)
+        .SequenceEqual(new[] { "Cec", "Chitanta", "DispozitieCasa", "OrdinPlata" }));
+
 void CurataApiTrz(IObjectSpace os) {
     // Toate documentele blocului ating cel puțin un repartitor marcat (inclusiv
     // plata autogenerată: TREZ → furnizorul marcat), deci marcajul de repartitor
