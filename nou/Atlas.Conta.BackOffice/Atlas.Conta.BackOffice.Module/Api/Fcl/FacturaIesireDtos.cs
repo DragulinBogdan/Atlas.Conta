@@ -108,11 +108,16 @@ public sealed class FacturaIesireReadDto {
     public List<DocumentCopilDto> Copii { get; set; } = new();
 
     // Affordances pe RESURSĂ (42e): clientul nu re-derivă regulile din `Stare`.
-    // `PoateGeneraDescarcare` + restul nedescărcat sunt ale pasului 2 (F4-D4).
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
     public bool PoateStorna { get; set; }
+    // Backorder (F4-D4): butonul „Generează descărcarea" e activ DOAR când
+    // comanda ar avea ce face — factură OPERATĂ, gestiune de descărcare aleasă
+    // și rest nedescărcat > 0. Calculată SERVER-SIDE, din aceeași proiecție pe
+    // care o întoarce `rest-nedescarcat`: clientul nu re-derivă regula (43a) și
+    // nu descoperă „nimic de descărcat" abia la apăsare.
+    public bool PoateGeneraDescarcare { get; set; }
 }
 
 public sealed class FacturaIesireLinieReadDto {
@@ -140,6 +145,39 @@ public sealed class FacturaIesireLinieReadDto {
     public decimal? TipTvaCota { get; set; }
     public Guid? CodEconomicId { get; set; }
     public string CodEconomicCod { get; set; }
+}
+
+// ── Backorder: restul nedescărcat + rezultatul generării (F4-D3/D4) ────────
+//
+// Cusătura §2.2 din designul P2, expusă pe sârmă: pozițiile facturate acum și
+// descărcate mai târziu (venitul se postează la emitere, costul la
+// disponibilitate). Un rând per linie de STOC a facturii — inclusiv cele
+// acoperite integral (`Rest` 0), fiindcă tabelul din client arată starea
+// acoperirii, nu doar ce lipsește.
+public sealed class RestNedescarcatRandDto {
+    // Linia de FCL (`FacturaIesireDetaliu`) pe care se măsoară acoperirea.
+    public Guid LinieId { get; set; }
+    public Guid? ProdusId { get; set; }
+    public string ProdusDenumire { get; set; }
+    // Pinul de lot al liniei, dacă operatorul l-a cules (P2 §4): explică de ce
+    // restul nu se poate acoperi din alt lot cu sold.
+    public Guid? LotId { get; set; }
+    public decimal Cantitate { get; set; }
+    // Σ cantităților descărcate pe această linie, din DSC-urile Draft SAU Operat
+    // copil ale ACESTEI facturi (draftul contează — anti-dublare; Stornat nu).
+    public decimal Acoperit { get; set; }
+    public decimal Rest { get; set; }
+}
+
+// Rezultatul comenzii `POST /api/fcl/{id}/genereaza-descarcare`.
+public sealed class GenerareDescarcareRezultatDto {
+    // Descărcarea generată — `null` = nu era nimic de alocat (fără linii de
+    // stoc, fără sold disponibil, sau totul deja acoperit). NU e o eroare:
+    // backorder-ul e starea normală a unei comenzi nelivrate încă.
+    public Guid? DscId { get; set; }
+    // Ce a RĂMAS backorder DUPĂ generare (doar rândurile cu `Rest` > 0):
+    // răspunsul spune și ce s-a făcut, și ce se mai așteaptă.
+    public List<RestNedescarcatRandDto> Resturi { get; set; } = new();
 }
 
 // ── Listă: exact coloanele grilei (fără linii — N+1 pe `Total` real) ───────

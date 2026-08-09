@@ -271,6 +271,85 @@ public static class FacturaIesireApply {
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;
 
+    // ═══════════════════ Backorder: descărcarea de gestiune ═══════════════════
+    //
+    // Calea MANUALĂ a descărcării (F4-D3): la operarea facturii, DSC-ul conex se
+    // generează automat (`FacturaIesire.GenereazaSecundar` → `DescarcareService`,
+    // în tranzacția operării), dar pozițiile fără stoc la acea dată rămân
+    // nedescărcate. Comanda de aici re-rulează generatorul pentru RESTUL
+    // neacoperit — geamănul acțiunii XAF „Generează descărcarea"
+    // (`FacturaIesireDescarcareController`), pe aceeași cale de motor.
+    //
+    // CONTRACT DE APELANT (42b): rulează pe un ObjectSpace NON-SECURED, propriu
+    // comenzii. `DescarcareService` scrie `Autogenerat` și `DocumentSursa` — două
+    // câmpuri SERVER-OWNED pe care `GardianEditare` le refuză pe orice cale
+    // secured, deci ușa secured nu e o opțiune. Gate-ul de autorizare („cine
+    // comandă") rămâne al controllerului, ÎNAINTEA acestui apel (spike D-F1:
+    // secured/non-secured răspunde la „cum scrie motorul", nu la „cine comandă").
+    // Comite: draftul generat trebuie să existe ca să poată fi deschis și operat.
+    public static GenerareDescarcareRezultatDto GenereazaDescarcare(IObjectSpace os, Guid id, DateOnly data) {
+        var fcl = os.GetObjectByKey<FacturaIesire>(id)
+            ?? throw new OperareException($"Factura de ieșire {id} nu există.");
+        // Refuz de DOMENIU: pe un draft nu există încă acoperire de generat
+        // (oglinda lui `ActualizeazaDisponibilitatea` din controllerul XAF), iar
+        // pe o factură stornată descărcarea n-ar avea ce acoperi.
+        if (fcl.Stare != StareDocument.Operat)
+            throw new OperareException(
+                $"Descărcarea de gestiune se generează doar pentru o factură OPERATĂ — "
+                + $"{Eticheta(fcl)} e în starea „{fcl.Stare}”.");
+
+        var dsc = DescarcareService.Genereaza(os, fcl, data);
+        if (dsc != null)
+            os.CommitChanges();
+
+        // Restul se recalculează DUPĂ commit: draftul abia generat CONTEAZĂ la
+        // acoperire (design §5, anti-dublare), deci ce rămâne aici e exact ce mai
+        // așteaptă marfă.
+        return new GenerareDescarcareRezultatDto {
+            DscId = dsc?.ID,
+            Resturi = Resturi(os, fcl).Where(r => r.Rest > 0).ToList()
+        };
+    }
+
+    // Proiecția de acoperire per linie de stoc (F4-D4), tradusă din
+    // `DescarcareService.RestNedescarcat` (care întoarce tupluri cu ID-uri).
+    // Întoarce TOATE liniile de stoc, inclusiv cele acoperite integral: tabelul
+    // din client arată starea acoperirii, nu doar lipsa. Comanda de generare
+    // filtrează ea `Rest > 0` — acolo întrebarea e „ce mai așteaptă".
+    public static IReadOnlyList<RestNedescarcatRandDto> RestNedescarcat(IObjectSpace os, Guid id) {
+        var fcl = os.GetObjectByKey<FacturaIesire>(id)
+            ?? throw new OperareException($"Factura de ieșire {id} nu există.");
+        return Resturi(os, fcl);
+    }
+
+    // Denumirile produselor într-un SINGUR query pe mulțimea implicată (fără
+    // N+1): proiecția serviciului dă doar ID-uri, iar rândurile sunt mărginite
+    // de numărul de linii de stoc ale facturii.
+    static List<RestNedescarcatRandDto> Resturi(IObjectSpace os, FacturaIesire fcl) {
+        var randuri = DescarcareService.RestNedescarcat(os, fcl);
+        if (randuri.Count == 0)
+            return new List<RestNedescarcatRandDto>();
+
+        var idsProdus = randuri.Where(r => r.ProdusId != null)
+            .Select(r => r.ProdusId.Value).Distinct().ToList();
+        var denumiri = idsProdus.Count == 0
+            ? new Dictionary<Guid, string>()
+            : os.GetObjectsQuery<Produs>()
+                .Where(p => idsProdus.Contains(p.ID))
+                .Select(p => new { p.ID, p.Denumire })
+                .ToDictionary(x => x.ID, x => x.Denumire);
+
+        return randuri.Select(r => new RestNedescarcatRandDto {
+            LinieId = r.LinieId,
+            ProdusId = r.ProdusId,
+            ProdusDenumire = r.ProdusId != null ? denumiri.GetValueOrDefault(r.ProdusId.Value) : null,
+            LotId = r.LotId,
+            Cantitate = r.Cantitate,
+            Acoperit = r.Acoperit,
+            Rest = r.RestNeacoperit
+        }).ToList();
+    }
+
     // ═══════════════════════ Citire ═══════════════════════
     //
     // Proiecții PLATE (42c): `Select` înainte de materializare, niciun membru
@@ -337,6 +416,16 @@ public static class FacturaIesireApply {
         var faraCopiiOperati = copii.All(c => c.Stare != nameof(StareDocument.Operat));
         var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
 
+        // Backorder (F4-D4): affordance ONESTĂ pe comanda de generare — aceleași
+        // trei condiții pe care le-ar întâlni comanda (Operat, gestiune aleasă,
+        // rest > 0). Ordinea contează: cele două verificări ieftine
+        // scurt-circuitează, deci proiecția de acoperire (care încarcă entitatea
+        // și enumerează liniile) NU se plătește pe drafturi și nici pe facturile
+        // de servicii — exact cazul majoritar.
+        var poateGeneraDescarcare = h.Stare == StareDocument.Operat
+            && h.GestiuneDescarcareId != null
+            && RestNedescarcat(os, id).Any(r => r.Rest > 0);
+
         return new FacturaIesireReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
@@ -352,6 +441,7 @@ public static class FacturaIesireApply {
             PoateOpera = h.Stare == StareDocument.Draft,
             PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
+            PoateGeneraDescarcare = poateGeneraDescarcare,
             Copii = copii,
             Linii = linii.Select(l => new FacturaIesireLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,

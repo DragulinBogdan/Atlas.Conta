@@ -1,6 +1,7 @@
 ﻿using Atlas.Conta.BackOffice.ModelCheck;
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Btr;
+using Atlas.Conta.BackOffice.Module.Api.Dsc;
 using Atlas.Conta.BackOffice.Module.Api.Fcl;
 using Atlas.Conta.BackOffice.Module.Api.Fct;
 using Atlas.Conta.BackOffice.Module.Api.Nir;
@@ -2325,11 +2326,189 @@ if (profil == ProfilContabil.Privat) {
             && !os.GetObjectsQuery<FacturaIesireDetaliu>().Any(l => l.DocumentId == idFclDraft)
             && os.GetObjectByKey<Lot>(lotVechiFcl.ID) != null);
 
+        // ═══ Pasul 2 al feliei: descărcarea de gestiune prin API (F4-D2/D3/D4) ═══
+        // Fluxul de VÂNZARE continuă de unde s-a oprit culegerea: descărcarea
+        // conexă, generată de motor în tranzacția operării facturii, se CITEȘTE
+        // prin felia ei (F4-D2: citire + comenzi, fără agregat de scriere), se
+        // OPEREAZĂ prin comenzile generice, iar pozițiile fără stoc la facturare
+        // (backorder) trec prin comanda manuală de generare (F4-D3) și prin
+        // proiecția de rest (F4-D4).
+        var cont607Fcl = os.FirstOrDefault<Cont>(c => c.Simbol == "607");
+
+        var idDsc = citFcl.Copii.Single().Id;
+        var citDsc = DscApply.Citeste(os, idDsc);
+        Check("DscApply.Citeste → header: draft AUTOGENERAT legat de factura-sursă (cu numărul ei, pentru link-ul «Generat din»), "
+            + "predator = GESTIUNEA de descărcare, primitor = clientul (laturile se ÎNLOCUIESC, nu se inversează)",
+            citDsc != null && citDsc.Id == idDsc && citDsc.Stare == "Draft"
+            && citDsc.Numar == null && citDsc.Data == new DateOnly(2026, 5, 10)
+            && citDsc.Autogenerat && citDsc.DocumentSursaId == idFcl
+            && citDsc.DocumentSursaNumar == citFcl.Numar
+            && citDsc.PredatorId == gestiuneFcl.ID && citDsc.PredatorDenumire == gestiuneFcl.Denumire
+            && citDsc.PrimitorId == clientFcl.ID && citDsc.PrimitorDenumire == clientFcl.Denumire);
+        Check("DSC prin API = CITIRE + comenzi (F4-D2): nicio affordance de editare, dar operarea e disponibilă pe draft",
+            !citDsc.PoateEdita && citDsc.PoateOpera && !citDsc.PoateAnula && !citDsc.PoateStorna);
+
+        var dPin = citDsc.Linii.Single(l => l.LinieSursaId == lPin.Id);
+        var dFifo = citDsc.Linii.Single(l => l.LinieSursaId == lFifo.Id);
+        Check("PROBA descărcării: PINUL respectat (3 buc din lotul pin, la 6 lei) și FIFO pe restul (4 buc din lotul VECHI, la 5) — "
+            + "valoarea e COSTUL lotului, decuplat de prețul de vânzare (20)",
+            citDsc.Linii.Count == 2
+            && dPin.LotId == lotNouFcl.ID && dPin.Cantitate == 3m && dPin.Valoare == 18m
+            && dFifo.LotId == lotVechiFcl.ID && dFifo.Cantitate == 4m && dFifo.Valoare == 20m
+            && citDsc.Total == 38m);
+        Check("Linia de descărcare: produsul vine PRIN LOT (frunza DSC n-are ProdusId), cu eticheta lotului; "
+            + "linia de SERVICIU a facturii nu produce descărcare",
+            dPin.ProdusId == produsFcl.ID && dPin.ProdusDenumire == produsFcl.Denumire
+            && dPin.LotEticheta == lotNouFcl.Eticheta
+            && dPin.TipMaterialId == tipMarfa.ID && dPin.TipMaterialCod == tipMarfa.Cod
+            && citDsc.Linii.All(l => l.LinieSursaId != lServ.Id));
+        Check("Dimensiunea frunzei (DIM-2) e CLONATĂ de pe linia FCL sursă: CodEconomic pe linia pin, absent pe cealaltă",
+            dPin.CodEconomicId == codEcFcl.ID && dPin.CodEconomicCod == codEcFcl.Cod
+            && dFifo.CodEconomicId == null && dFifo.CodEconomicCod == null);
+
+        // --- Comenzile generice pe DSC (nimic nou în motor) ---
+        Check("Dry-run pe descărcarea draft → listă goală (aceiași gardieni ca la operare)",
+            DryRunFcl(idDsc).Count == 0);
+        var rezDsc = OperareApi.Opereaza(os, idDsc);
+        Check("OperareApi pe DSC → Operat, FĂRĂ conex (descărcarea e frunza lanțului conex)",
+            rezDsc.StareNoua == StareDocument.Operat && rezDsc.ConexId == null && rezDsc.Mesaje.Count == 0);
+        citDsc = DscApply.Citeste(os, idDsc);
+        Check("Citeste după operare: numărul din seria proprie (DSC-), affordances inversate",
+            citDsc.Stare == "Operat" && citDsc.Numar?.StartsWith("DSC-") == true
+            && citDsc.DataOperare != null
+            && !citDsc.PoateEdita && !citDsc.PoateOpera && citDsc.PoateAnula && citDsc.PoateStorna);
+
+        var noteDscApi = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idDsc).ToList();
+        Check("Costul se postează pe DSC, decuplat de vânzare: 607 = 371 la 38 (18+20), în timp ce factura a postat 140 pe 707",
+            noteDscApi.Count == 2 && noteDscApi.Sum(n => n.Valoare) == 38m
+            && noteDscApi.All(n => n.ContDebitId == cont607Fcl.ID
+                && n.ContCreditId == tipMarfa.ContImplicitId));
+        var stocDscApi = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == idDsc).ToList();
+        Check("Operarea DSC scoate marfa din gestiune: −3 pe lotul pin, −4 pe lotul vechi, Marfuri, pe gestiunea de descărcare",
+            stocDscApi.Count == 2
+            && stocDscApi.Single(r => r.LotId == lotNouFcl.ID).Cantitate == -3m
+            && stocDscApi.Single(r => r.LotId == lotVechiFcl.ID).Cantitate == -4m
+            && stocDscApi.All(r => r.TipStoc == TipStoc.Marfuri && r.RepartitorId == gestiuneFcl.ID));
+
+        citFcl = FacturaIesireApply.Citeste(os, idFcl);
+        Check("Affordance ONESTĂ pe grupul conex: cu descărcarea OPERATĂ, factura nu mai poate fi anulată/stornată",
+            !citFcl.PoateAnula && !citFcl.PoateStorna
+            && citFcl.Copii.Single() is { Tip: "DSC", Stare: "Operat" });
+        var restFcl1 = FacturaIesireApply.RestNedescarcat(os, idFcl);
+        Check("Factură acoperită integral: rest zero pe AMBELE linii de stoc (rândurile acoperite rămân în proiecție — "
+            + "tabelul arată starea acoperirii, nu doar lipsa), iar PoateGeneraDescarcare e fals",
+            restFcl1.Count == 2 && restFcl1.All(r => r.Rest == 0m && r.Acoperit == r.Cantitate)
+            && !citFcl.PoateGeneraDescarcare);
+        var genFaraRest = FacturaIesireApply.GenereazaDescarcare(os, idFcl, new DateOnly(2026, 5, 15));
+        Check("GenereazaDescarcare pe o factură fără rest → DscId null (nimic de generat NU e eroare)",
+            genFaraRest.DscId == null && genFaraRest.Resturi.Count == 0);
+
+        // --- Backorder (F4-D3/D4): factura cere mai mult decât soldul disponibil ---
+        // Rămas în gestiune după descărcarea de mai sus: 6 buc lot vechi + 7 buc
+        // lot pin = 13. Factura cere 20 ⇒ 7 rămân backorder (venitul se postează
+        // acum, costul la disponibilitate — fluxul-ancoră al magazinului, 37).
+        var idFcl2 = FacturaIesireApply.Aplica(os, null, new FacturaIesireWriteDto {
+            Data = new DateOnly(2026, 5, 20),
+            PredatorId = sediuFcl.ID, PrimitorId = clientFcl.ID,
+            GestiuneDescarcareId = gestiuneFcl.ID,
+            Linii = { new FacturaIesireLinieWriteDto {
+                TipMaterialId = tipMarfa.ID, ProdusId = produsFcl.ID,
+                Descriere = "Comandă parțial acoperită", Cantitate = 20m, PretUnitar = 20m,
+                TipTvaId = n21Fcl.ID } }
+        });
+        CheckRefuza("GenereazaDescarcare pe FCL DRAFT → refuz de DOMENIU (pe draft nu există încă acoperire de generat)",
+            () => FacturaIesireApply.GenereazaDescarcare(os, idFcl2, new DateOnly(2026, 5, 20)));
+
+        var rezFcl2 = OperareApi.Opereaza(os, idFcl2);
+        var idDsc2 = rezFcl2.ConexId.Value;
+        var citDsc2 = DscApply.Citeste(os, idDsc2);
+        Check("Backorder: descărcarea conexă alocă DOAR disponibilul (6 din lotul vechi + 7 din lotul pin = 13); "
+            + "generatorul nu aruncă niciodată la lipsă de stoc",
+            citDsc2.Linii.Count == 2 && citDsc2.Linii.Sum(l => l.Cantitate) == 13m
+            && citDsc2.Linii.Single(l => l.LotId == lotVechiFcl.ID).Cantitate == 6m
+            && citDsc2.Linii.Single(l => l.LotId == lotNouFcl.ID).Cantitate == 7m);
+
+        var restFcl2 = FacturaIesireApply.RestNedescarcat(os, idFcl2);
+        Check("RestNedescarcat (F4-D4): un rând per linie de stoc, cu produsul DENUMIT server-side — 20 cerute / 13 acoperite / 7 rest",
+            restFcl2.Count == 1 && restFcl2[0].ProdusId == produsFcl.ID
+            && restFcl2[0].ProdusDenumire == produsFcl.Denumire && restFcl2[0].LotId == null
+            && restFcl2[0].Cantitate == 20m && restFcl2[0].Acoperit == 13m && restFcl2[0].Rest == 7m);
+        var proiectieFcl2 = DescarcareService.RestNedescarcat(os, os.GetObjectByKey<FacturaIesire>(idFcl2));
+        Check("Consistență (42c): DTO-ul de rest == proiecția `DescarcareService.RestNedescarcat` per linie",
+            proiectieFcl2.Count == restFcl2.Count && proiectieFcl2.All(p => {
+                var r = restFcl2.Single(x => x.LinieId == p.LinieId);
+                return r.Cantitate == p.Cantitate && r.Acoperit == p.Acoperit
+                    && r.Rest == p.RestNeacoperit && r.ProdusId == p.ProdusId && r.LotId == p.LotId;
+            }));
+        Check("PoateGeneraDescarcare (affordance server-side, F4-D4): adevărat pe factura operată, cu gestiune și rest > 0",
+            FacturaIesireApply.Citeste(os, idFcl2).PoateGeneraDescarcare);
+
+        // Descărcarea parțială se operează (draftul nu rezervă stoc — gardianul de
+        // sold rămâne autoritatea), apoi comanda manuală se lovește de lipsă.
+        OperareApi.Opereaza(os, idDsc2);
+        var genFaraStoc = FacturaIesireApply.GenereazaDescarcare(os, idFcl2, new DateOnly(2026, 5, 20));
+        Check("GenereazaDescarcare fără sold disponibil → DscId null, dar restul se RAPORTEAZĂ (7 buc așteaptă marfă)",
+            genFaraStoc.DscId == null && genFaraStoc.Resturi.Count == 1 && genFaraStoc.Resturi[0].Rest == 7m);
+
+        // Suplimentarea stocului (în realitate: recepția FCT→NIR) — aceeași rețetă
+        // de sold de deschidere ca la începutul blocului.
+        var lotSuplFcl = DeschidereFcl(8m, 7m, new DateOnly(2026, 5, 18));
+        os.CommitChanges();
+
+        var genBackorder = FacturaIesireApply.GenereazaDescarcare(os, idFcl2, new DateOnly(2026, 5, 20));
+        Check("Comanda manuală de generare (F4-D3), după suplimentarea stocului: al DOILEA DSC, exact restul, rest zero după el",
+            genBackorder.DscId != null && genBackorder.Resturi.Count == 0);
+        var citDsc3 = DscApply.Citeste(os, genBackorder.DscId.Value);
+        Check("DSC₂ (backorder) — autogenerat pe factura-sursă, la data comenzii, cu linia-sursă păstrată și costul lotului nou (7 × 8)",
+            citDsc3.Autogenerat && citDsc3.DocumentSursaId == idFcl2
+            && citDsc3.Data == new DateOnly(2026, 5, 20) && citDsc3.Stare == "Draft"
+            && citDsc3.Linii.Count == 1
+            && citDsc3.Linii[0] is { Cantitate: 7m, Valoare: 56m }
+            && citDsc3.Linii[0].LotId == lotSuplFcl.ID
+            && citDsc3.Linii[0].LinieSursaId == restFcl2[0].LinieId);
+
+        var citFcl2 = FacturaIesireApply.Citeste(os, idFcl2);
+        Check("Grupul conex al facturii cu backorder: DOUĂ descărcări (una operată, una draft) — și PoateGeneraDescarcare a redevenit fals",
+            citFcl2.Copii.Count == 2 && citFcl2.Copii.All(c => c.Tip == "DSC" && c.Autogenerat)
+            && citFcl2.Copii.Count(c => c.Stare == "Operat") == 1
+            && !citFcl2.PoateGeneraDescarcare
+            && FacturaIesireApply.RestNedescarcat(os, idFcl2).Single().Rest == 0m);
+
+        // --- Lista DSC ---
+        var listaDsc = DscApply.Lista(os).Where(x => x.Id == idDsc).ToList();
+        Check("Lista DSC → un rând, cu Stare ca text (CASE în SQL), gestiune/client, marcajul «autogenerat» și costul din agregat",
+            listaDsc.Count == 1 && listaDsc[0].Stare == "Operat" && listaDsc[0].Numar == citDsc.Numar
+            && listaDsc[0].PredatorDenumire == gestiuneFcl.Denumire
+            && listaDsc[0].PrimitorDenumire == clientFcl.Denumire
+            && listaDsc[0].Autogenerat && listaDsc[0].Total == 38m);
+        Check("Lista DSC → filtrarea/sortarea se traduc în SQL peste proiecție (sondă: filtru + sort + take); "
+            + "Citeste pe un id care nu e descărcare → null, nu excepție",
+            DscApply.Lista(os).Where(x => x.Stare == "Operat")
+                .OrderByDescending(x => x.Data).Take(1).ToList().Count == 1
+            && DscApply.Citeste(os, idFcl) == null);
+
+        // --- Lanțul de anulare/storno pe grup ---
+        OperareApi.AnuleazaOperarea(os, idDsc);
+        Check("Anularea descărcării o readuce pe Draft, îi șterge rândurile de stoc și ELIBEREAZĂ factura "
+            + "(PoateAnula/PoateStorna redevin adevărate — draftul continuă să acopere)",
+            DscApply.Citeste(os, idDsc).Stare == "Draft"
+            && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idDsc)
+            && FacturaIesireApply.Citeste(os, idFcl) is { PoateAnula: true, PoateStorna: true }
+            && FacturaIesireApply.RestNedescarcat(os, idFcl).All(r => r.Rest == 0m));
+        var rezStornoDsc2 = OperareApi.Storneaza(os, idDsc2, new DateOnly(2026, 5, 25));
+        Check("Storno pe descărcarea operată: Stornat — iar acoperirea se REDESCHIDE (stornatul nu acoperă, draftul da): "
+            + "restul urcă de la 0 la 13 și PoateGeneraDescarcare redevine adevărat",
+            rezStornoDsc2.StareNoua == StareDocument.Stornat
+            && DscApply.Citeste(os, idDsc2) is { Stare: "Stornat", PoateAnula: false, PoateStorna: false }
+            && FacturaIesireApply.RestNedescarcat(os, idFcl2).Single().Rest == 13m
+            && FacturaIesireApply.Citeste(os, idFcl2).PoateGeneraDescarcare);
+
         CurataApiFcl(os);
-        Check("Curățenie finală felia Api FCL (fără reziduuri e2e)",
+        Check("Curățenie finală felia Api FCL + DSC (fără reziduuri e2e)",
             !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajApiFcl))
             && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajApiFcl))
-            && !os.GetObjectsQuery<FacturaIesire>().Any(d => d.ID == idFcl));
+            && !os.GetObjectsQuery<FacturaIesire>().Any(d => d.ID == idFcl || d.ID == idFcl2)
+            && !os.GetObjectsQuery<DescarcareGestiune>().Any(d => d.ID == idDsc || d.ID == idDsc2));
     }
 
     Rezumat();
