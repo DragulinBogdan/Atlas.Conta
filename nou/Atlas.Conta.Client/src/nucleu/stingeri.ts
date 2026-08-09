@@ -44,7 +44,9 @@ export const stingeri = {
 export function rutaTip(tip: string | null | undefined, id: string): string | null {
   switch (tip) {
     case 'FCT': return `/fct/${id}`;
+    case 'FCL': return `/fcl/${id}`;
     case 'NIR': return `/nir/${id}`;
+    case 'DSC': return `/dsc/${id}`;
     case 'PLT': return `/plt/${id}`;
     case 'INC': return `/inc/${id}`;
     case 'BTR': return `/btr/${id}`;

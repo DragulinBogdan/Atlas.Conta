@@ -7,6 +7,10 @@ import { FctLista } from './felii/fct/FctLista';
 import { FctDetaliu } from './felii/fct/FctDetaliu';
 import { NirLista } from './felii/nir/NirLista';
 import { NirDetaliu } from './felii/nir/NirDetaliu';
+import { FclLista } from './felii/fcl/FclLista';
+import { FclDetaliu } from './felii/fcl/FclDetaliu';
+import { DscLista } from './felii/dsc/DscLista';
+import { DscDetaliu } from './felii/dsc/DscDetaliu';
 import { PltLista } from './felii/plt/PltLista';
 import { PltDetaliu } from './felii/plt/PltDetaliu';
 import { IncLista } from './felii/inc/IncLista';
@@ -26,6 +30,13 @@ export function App() {
         <Route path="/fct/:id" element={<FctDetaliu />} />
         <Route path="/nir" element={<NirLista />} />
         <Route path="/nir/:id" element={<NirDetaliu />} />
+        <Route path="/fcl" element={<FclLista />} />
+        <Route path="/fcl/nou" element={<FclDetaliu />} />
+        <Route path="/fcl/:id" element={<FclDetaliu />} />
+        {/* DSC n-are rută `/nou`: descărcarea se naște din operarea facturii sau
+            din comanda de backorder, niciodată din culegere (F4-D2). */}
+        <Route path="/dsc" element={<DscLista />} />
+        <Route path="/dsc/:id" element={<DscDetaliu />} />
         <Route path="/plt" element={<PltLista />} />
         <Route path="/plt/nou" element={<PltDetaliu />} />
         <Route path="/plt/:id" element={<PltDetaliu />} />
@@ -53,6 +64,8 @@ function Cadru() {
         <span className="cadru__marca">Atlas Conta</span>
         <NavLink to="/fct">Facturi intrare</NavLink>
         <NavLink to="/nir">NIR-uri</NavLink>
+        <NavLink to="/fcl">Facturi ieșire</NavLink>
+        <NavLink to="/dsc">Descărcări</NavLink>
         <NavLink to="/plt">Plăți</NavLink>
         <NavLink to="/inc">Încasări</NavLink>
         <NavLink to="/btr">Note de transfer</NavLink>

@@ -35,6 +35,15 @@ export type PropsLookup<T extends object> = PropsCamp<T> & {
   cauta?: string | string[];
   expand?: string[];
   sortare?: string;
+  // FILTRU server-side pe nomenclator (`DataSource.filter` → `$filter`), pentru
+  // lookup-ul DEPENDENT de altă valoare a formularului: pinul de lot al FCL
+  // (F4-D6) arată doar loturile produsului ales. Condiționalitatea („activ doar
+  // cu produs ales") rămâne în COD, în felie (43a) — aici doar se transmite.
+  //
+  // Formatul e cel al DevExtreme (`['ProdusId', '=', id]`). Valorile GUID se
+  // serializează ca `Edm.Guid` (nu ca string între apostrofuri) prin `fieldTypes`
+  // dedus mai jos — altfel `$filter` iese `ProdusId eq '…'` și serverul îl refuză.
+  filtru?: unknown[];
   // NOTIFICAREA selecției inițiate de operator: felia aplică datele derivate
   // (Produs → Tip) pe propria stare, cu UPDATE FUNCȚIONAL (`set(prev => …)`) —
   // nu prin starea formularului din closure. (Prima formă — patch întors aici
@@ -44,9 +53,15 @@ export type PropsLookup<T extends object> = PropsCamp<T> & {
 };
 
 export function Lookup<T extends object>(props: PropsLookup<T>) {
-  const { camp, readOnly, obligatoriu, eticheta, entitate, mod, afisare, cauta, expand, sortare, laSelectie } = props;
+  const { camp, readOnly, obligatoriu, eticheta, entitate, mod, afisare, cauta, expand, sortare, filtru, laSelectie } = props;
   const c = useCamp<string>(camp, readOnly, obligatoriu, eticheta);
   const proprietateAfisare = defaultProperty(entitate);
+
+  // `expand`/`filtru` sunt ARRAY-uri scrise inline în JSX: ca dependențe directe
+  // ar fi mereu „noi" și ar reconstrui sursa la fiecare randare (widget reîncărcat
+  // sub degetele operatorului). Cheia de identitate e CONȚINUTUL lor.
+  const cheieExpand = JSON.stringify(expand ?? null);
+  const cheieFiltru = JSON.stringify(filtru ?? null);
 
   const sursa = useMemo(() => new DataSource({
     store: new ODataStore({
@@ -54,6 +69,7 @@ export function Lookup<T extends object>(props: PropsLookup<T>) {
       key: 'ID',
       keyType: 'Guid',
       version: 4,
+      fieldTypes: tipuriGuid(filtru),
       // JWT-ul nu poate trece prin `http.ts` aici: cererea o face componenta
       // DevExtreme. Același token, același header, un singur loc.
       beforeSend: (e) => { e.headers = { ...e.headers, Authorization: `Bearer ${token() ?? ''}` }; },
@@ -62,10 +78,12 @@ export function Lookup<T extends object>(props: PropsLookup<T>) {
       errorHandler: (e) => { if (e.httpStatus === 401) expiraSesiunea(); },
     }),
     expand,
+    filter: filtru,
     sort: sortare ?? proprietateAfisare,
     paginate: mod === 'remote',
     pageSize: mod === 'remote' ? 50 : undefined,
-  }), [entitate, mod, proprietateAfisare, expand, sortare]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `expand`/`filtru` intră prin cheile de conținut de mai sus.
+  }), [entitate, mod, proprietateAfisare, cheieExpand, sortare, cheieFiltru]);
 
   return (
     <CampShell meta={c.meta} eroare={c.eroare}>
@@ -101,6 +119,27 @@ export function Lookup<T extends object>(props: PropsLookup<T>) {
       />
     </CampShell>
   );
+}
+
+// Tipurile de câmp pe care ODataStore le folosește la serializarea filtrului.
+// Se DEDUC din valorile filtrului: o valoare cu forma unui GUID e `Edm.Guid`,
+// deci `$filter` iese `ProdusId eq 1234…` (fără apostrofuri), forma pe care o
+// cere OData v4. Deducerea din VALOARE, nu din numele câmpului, ca să nu existe
+// o convenție tăcută („orice `…Id` e Guid") care să mintă la primul filtru pe un
+// câmp text.
+const FORMA_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function tipuriGuid(filtru?: unknown[]): Record<string, 'Guid'> | undefined {
+  if (!filtru) return undefined;
+  const tipuri: Record<string, 'Guid'> = {};
+  const parcurge = (nod: unknown) => {
+    if (!Array.isArray(nod)) return;
+    if (nod.length === 3 && typeof nod[0] === 'string' && typeof nod[2] === 'string' && FORMA_GUID.test(nod[2]))
+      tipuri[nod[0]] = 'Guid';
+    nod.forEach(parcurge);
+  };
+  parcurge(filtru);
+  return Object.keys(tipuri).length > 0 ? tipuri : undefined;
 }
 
 // `selectedItem` e actualizat asincron pe drumul valorii (drop_down_list îl
