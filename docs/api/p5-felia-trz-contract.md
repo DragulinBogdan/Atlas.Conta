@@ -1,6 +1,7 @@
 # Pasul 5 — Felia 3: trezoreria prin API (PLT/INC + imperecheri + plata automată) (contract)
 
-Stare: **ÎN LUCRU (2026-08-09)**. A treia felie verticală pe șablonul BTR/FCT
+Stare: **EXECUTAT (2026-08-09)** — toți cei 5 pași + review advers cu fix-urile
+aplicate; închiderea în §Închidere. A treia felie verticală pe șablonul BTR/FCT
 (`p5-spike1-contract.md`, `p5-felia-fct-contract.md`). Deblochează STINGERILE
 în client: plăți/încasări culese și operate, imperecherile create/șterse din
 UI, plata automată a facturii. Rămân amânate (31f): transferul între conturi
@@ -104,3 +105,49 @@ Transferul 581 (pereche PLT+INC conexă); importul extraselor; imperecherea pe
 poziții; NTC prin API (stingătorul-notă rămâne pe calea XAF; `ValideazaCreare`
 îl acceptă deja dacă vine); includerea RDC în proiecția de rest (cere soluție
 pentru `LiniiCreanta` polimorf în SQL — documentată, nu improvizată).
+
+## Închidere (2026-08-09)
+
+**Fluxul-ancoră complet, verificat în browser pe baza Privat**: FCT nouă cu
+secțiunea „Plată automată" (bifă + cont propriu Casa + instrument) → operare →
+NIR + **plata autogenerată** în „Documente generate" → link `/plt/{id}` →
+plata se deschide COMPLETĂ (laturi, felul beneficiarului dedus prin sonda OData,
+linia 628 clonată) → operare (număr `OP-F3-1` din culegere, nu din serie) →
+**panoul de stingeri** arată imperecherea automată (Total 242 / Asignat 242 /
+Rest 0), stingerea legată de factură cu link. Plată MANUALĂ separată: candidații
+de stins filtrați corect pe rol (doar FCT/FCL/DEC pentru trezorerie).
+ModelCheck: bugetar 334 / privat 191, verzi.
+
+**Bug de fond găsit la smoke, fixat**: TOATE widget-urile DevExtreme propagau
+și schimbarea PROGRAMATICĂ a valorii (seed-ul agregatului), iar un `seteaza`
+din closure-ul vechi al contextului ștergea câmpurile abia scrise — plata
+autogenerată se deschidea cu laturile/liniile „dispărute". Garda `if (e.event)`
+(regula F2 de pe `Lookup`) generalizată pe tot vocabularul de câmpuri; regula
+canonică a clientului: formularul e sursa de adevăr, widget-ul raportează
+exclusiv acțiunile omului.
+
+**Review advers — niciun defect de fond; fix-urile aplicate**:
+- D-6a: candidații de stingere filtrați pe rol compatibil (`tipuriCandidate`
+  per felie — filtru pe DataSourceLoader → SQL; refuzul se evită, nu se provoacă);
+- `window.confirm` (blocant — exact tipul de dialog care a înghețat renderer-ul
+  la smoke) înlocuit cu confirmare INLINE în panou;
+- D-7/D-7b: `[XafDisplayName]` pe `TipInstrumentPlata` (label frumos în XAF ȘI
+  React, o singură sursă) + dump-ul enum în ordinea de DECLARAȚIE (default-ul
+  primul, nu alfabetic);
+- D-5a: gardian ModelCheck pe membrii enum (CASE-ul cu fallback ar fi mapat
+  tăcut un membru nou);
+- D-1a: `EsteSters` prin API public `IObjectSpace.IsObjectToDelete` (fără cast
+  la tipul concret).
+- **Fix colateral de FOND** (defect pre-existent din spike, scos de smoke):
+  sub ștergerea amânată, `EFCoreObjectSpace.IsDeletedObject` e fals la
+  `Committing` (GCRecord-ul îl pune interceptorul abia la SavingChanges) — DELETE
+  de imperechere era judecat ca EDITARE și refuzat pe orice cale secured,
+  inclusiv UI-ul XAF. Reparat cu `EsteSters` în cele 3 ramuri ale gardianului.
+
+**Datorii documentate (minore, nefixate)**: D-2a/D-3a — perf pe baza de import
+(`CoduriTip` face GetObjectByKey per copil; `DocumenteCuRest` agregă TOATE
+liniile la fiecare încărcare de grilă — de MĂSURAT înainte de release, nu de
+optimizat orb); D-5b — editarea manuală a plății autogenerate Draft se pierde
+la anularea facturii-sursă (de afișat un indiciu); D-6b — link-ul „Generat din"
+hardcodat `/fct/` (corect azi, de generalizat la transferul 581 cu
+`DocumentSursaTip`); ordinea `Stingeri` pe Id (arbitrară Guid).
