@@ -1,6 +1,7 @@
 ﻿using Atlas.Conta.BackOffice.ModelCheck;
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Btr;
+using Atlas.Conta.BackOffice.Module.Api.Fcl;
 using Atlas.Conta.BackOffice.Module.Api.Fct;
 using Atlas.Conta.BackOffice.Module.Api.Nir;
 using Atlas.Conta.BackOffice.Module.Api.Trz;
@@ -2037,6 +2038,298 @@ if (profil == ProfilContabil.Privat) {
                 () => FacturaIntrareApply.Aplica(os, idFctPrv, w));
         }
         CurataApiPrv(os);
+    }
+
+    // ======= Felia Api FCL — culegere, TVA, operare (F4-D9, pasul 1 al feliei) =======
+    // Fluxul de VÂNZARE parcurs prin CONTRACTUL feliei: WriteDto →
+    // `FacturaIesireApply.Aplica` → `Citeste`/`Lista` → dry-run → `OperareApi`.
+    // Endpoint-urile din host sunt transport peste EXACT acest cod, deci ce e verde
+    // aici e verde și pe sârmă. Blocul trăiește în suita PRIVATĂ fiindcă vânzarea
+    // din stoc e a profilului privat (la bugetar liniile de stoc pe FCL sunt
+    // interzise declarativ — 30a — și DSC e tip inert).
+    //
+    // Ce exersează în plus față de felia FCT:
+    //   * `Numar` SERVER-OWNED (serie fiscală „FCL-"): lipsește din WriteDto și se
+    //     consumă abia la materializarea operării — exact invers față de FCT;
+    //   * PINUL de lot CULES pe linie (`LotId` de bază) lângă produs („General!" +
+    //     „Specific?", P2 §4) — pe FCT lotul era server-owned;
+    //   * `GestiuneDescarcareId` pe header;
+    //   * DSC-ul autogenerat apare în `Copii[]` — îl generează MOTORUL
+    //     (`GenereazaSecundar` → `DescarcareService`), felia doar îl citește.
+    {
+        const string MarcajApiFcl = "E2E-API-FCL";
+        using var os = provider.CreateObjectSpace();
+
+        void CurataApiFcl(IObjectSpace o) {
+            var repIds = o.GetObjectsQuery<Repartitor>()
+                .Where(r => r.Cod.StartsWith(MarcajApiFcl)).Select(r => r.ID).ToList();
+            var docs = o.GetObjectsQuery<Document>()
+                .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+            var docIds = docs.Select(d => d.ID).ToList();
+            o.Delete(o.GetObjectsQuery<Imperechere>()
+                .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+            o.Delete(o.GetObjectsQuery<RegistruStoc>()
+                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            o.Delete(o.GetObjectsQuery<RegistruContabil>()
+                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            o.Delete(o.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            // Copiii autogenerați (DSC) întâi — DocumentSursa spre FCL.
+            foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+                o.Delete(doc);
+            // Rândurile de sold de DESCHIDERE n-au document (25e): se prind pe lot.
+            var lotIds = o.GetObjectsQuery<Lot>()
+                .Where(l => l.Produs.Cod.StartsWith(MarcajApiFcl)).Select(l => l.ID).ToList();
+            o.Delete(o.GetObjectsQuery<RegistruStoc>().Where(r => lotIds.Contains(r.LotId)).ToList());
+            o.Delete(o.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiFcl)).ToList());
+            o.Delete(o.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajApiFcl)).ToList());
+            o.Delete(o.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(MarcajApiFcl)).ToList());
+            o.Delete(o.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiFcl)).ToList());
+            o.CommitChanges();
+        }
+        CurataApiFcl(os);
+
+        var sediuFcl = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+        var tipMarfa = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371");   // MF → Marfuri
+        var tipServiciuFcl = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704"); // VEN
+        var n21Fcl = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        var sddFcl = os.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
+        var cont4111Fcl = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
+        var cont4427Fcl = os.FirstOrDefault<Cont>(c => c.Simbol == "4427");
+        var cont707Fcl = os.FirstOrDefault<Cont>(c => c.Simbol == "707");
+
+        var clientFcl = os.CreateObject<Partener>();
+        clientFcl.Cod = MarcajApiFcl + "-CL";
+        clientFcl.Denumire = "Client probă felia Api FCL";
+        clientFcl.CodFiscal = "RO87654321";
+        var gestiuneFcl = os.CreateObject<Gestiune>();
+        gestiuneFcl.Cod = MarcajApiFcl + "-G";
+        gestiuneFcl.Denumire = "Gestiune probă felia Api FCL";
+        var codEcFcl = os.CreateObject<CodEconomic>();
+        codEcFcl.Cod = MarcajApiFcl + "-CE";
+        codEcFcl.Denumire = "Cod economic probă felia Api FCL";
+        var produsFcl = os.CreateObject<Produs>();
+        produsFcl.Cod = MarcajApiFcl + "-A";
+        produsFcl.Denumire = "Marfă probă felia Api FCL";
+        produsFcl.UM = "BUC";
+        produsFcl.TipMaterial = tipMarfa;
+        os.CommitChanges();
+
+        // Sold de deschidere (decizia 25e — rând fără document sursă): două loturi
+        // la prețuri diferite, în Marfuri (TipStoc-ul regulii DSC pentru clasa MF).
+        Lot DeschidereFcl(decimal pret, decimal cantitate, DateOnly data) {
+            var l = os.CreateObject<Lot>();
+            l.Produs = produsFcl; l.Gestiune = gestiuneFcl; l.PretUnitar = pret; l.Data = data;
+            var r = os.CreateObject<RegistruStoc>();
+            r.Data = data; r.TipStoc = TipStoc.Marfuri; r.Lot = l; r.Repartitor = gestiuneFcl;
+            r.Cantitate = cantitate; r.Valoare = cantitate * pret;
+            return l;
+        }
+        var lotVechiFcl = DeschidereFcl(5m, 10m, new DateOnly(2026, 5, 2));
+        var lotNouFcl = DeschidereFcl(6m, 10m, new DateOnly(2026, 5, 4));
+        os.CommitChanges();
+
+        // Dry-run-ul își cere ObjectSpace-ul PROPRIU (contractul lui
+        // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
+        IReadOnlyList<string> DryRunFcl(Guid docId) {
+            using var osDry = provider.CreateObjectSpace();
+            return OperareApi.Valideaza(osDry, docId);
+        }
+
+        // --- Apply: creare din WriteDto (fără Numar/Valoare — server-owned) ---
+        var writeFcl = new FacturaIesireWriteDto {
+            Data = new DateOnly(2026, 5, 10),
+            PredatorId = sediuFcl.ID,
+            PrimitorId = clientFcl.ID,
+            GestiuneDescarcareId = gestiuneFcl.ID,
+            Linii = {
+                // Pin pe lotul NOU (mai scump): identificarea specifică bate FIFO.
+                new FacturaIesireLinieWriteDto {
+                    TipMaterialId = tipMarfa.ID, ProdusId = produsFcl.ID, LotId = lotNouFcl.ID,
+                    Descriere = "Marfă cu pin", Cantitate = 3m, PretUnitar = 20m,
+                    TipTvaId = n21Fcl.ID, CodEconomicId = codEcFcl.ID
+                },
+                new FacturaIesireLinieWriteDto {
+                    TipMaterialId = tipMarfa.ID, ProdusId = produsFcl.ID,
+                    Descriere = "Marfă FIFO", Cantitate = 4m, PretUnitar = 20m,
+                    TipTvaId = n21Fcl.ID
+                },
+                // Fără TipTva în payload ⇒ default-ul tipului de document (N21).
+                new FacturaIesireLinieWriteDto {
+                    TipMaterialId = tipServiciuFcl.ID,
+                    Descriere = "Transport", Cantitate = 1m, PretUnitar = 100m
+                }
+            }
+        };
+        var idFcl = FacturaIesireApply.Aplica(os, null, writeFcl);
+        var citFcl = FacturaIesireApply.Citeste(os, idFcl);
+        FacturaIesireLinieReadDto LinieFclDto(string descriere) =>
+            FacturaIesireApply.Citeste(os, idFcl).Linii.Single(l => l.Descriere == descriere);
+
+        Check("Apply FCL creare → header plat: NUMĂRUL LIPSEȘTE (serie fiscală server-owned, invers față de FCT), "
+            + "scadență neculeasă, gestiunea de descărcare și CodFiscal-ul clientului",
+            citFcl != null && citFcl.Id == idFcl && citFcl.Stare == "Draft"
+            && citFcl.Numar == null && citFcl.Data == new DateOnly(2026, 5, 10)
+            && citFcl.DataScadenta == null && citFcl.DataOperare == null
+            && citFcl.PredatorId == sediuFcl.ID && citFcl.PredatorDenumire == sediuFcl.Denumire
+            && citFcl.PrimitorId == clientFcl.ID && citFcl.PrimitorDenumire == clientFcl.Denumire
+            && citFcl.PrimitorCodFiscal == "RO87654321"
+            && citFcl.GestiuneDescarcareId == gestiuneFcl.ID
+            && citFcl.GestiuneDescarcareDenumire == gestiuneFcl.Denumire
+            && !citFcl.Autogenerat && citFcl.DocumentSursaId == null && citFcl.Copii.Count == 0
+            && citFcl.PoateEdita && citFcl.PoateOpera && !citFcl.PoateAnula && !citFcl.PoateStorna);
+
+        var lPin = citFcl.Linii.Single(l => l.Descriere == "Marfă cu pin");
+        var lFifo = citFcl.Linii.Single(l => l.Descriere == "Marfă FIFO");
+        var lServ = citFcl.Linii.Single(l => l.Descriere == "Transport");
+        Check("PROBA FELIEI: PINUL de lot e CULES (spre deosebire de FCT, unde lotul e server-owned) — "
+            + "linia pin poartă lotul cu eticheta lui, linia FIFO rămâne fără lot",
+            lPin.LotId == lotNouFcl.ID && lPin.LotEticheta == lotNouFcl.Eticheta
+            && !lPin.LotEticheta.Contains("culegere")
+            && lFifo.LotId == null && lFifo.LotEticheta == null);
+        Check("Produsul („General!”) e pe liniile de stoc, cu cod și denumire proiectate plat; serviciul n-are produs",
+            lPin.ProdusId == produsFcl.ID && lPin.ProdusCod == produsFcl.Cod
+            && lPin.ProdusDenumire == produsFcl.Denumire
+            && lFifo.ProdusId == produsFcl.ID && lServ.ProdusId == null && lServ.ProdusCod == null);
+        Check("TVA materializat LA CULEGERE (GATE 53c): N21 → net + 21% separat (60/12,6; 80/16,8; 100/21); Total BRUT 290,4",
+            lPin is { Valoare: 60m, ValoareTva: 12.6m, Cantitate: 3m, PretUnitar: 20m }
+            && lFifo is { Valoare: 80m, ValoareTva: 16.8m }
+            && lServ is { Valoare: 100m, ValoareTva: 21m }
+            && citFcl.Total == 290.4m);
+        Check("TipTvaImplicit s-a aplicat DOAR pe linia nouă fără TipTva în payload (N21 pe FCL, seed privat)",
+            lServ.TipTvaId == n21Fcl.ID && lServ.TipTvaCod == "N21" && lServ.TipTvaCota == 21m
+            && lPin.TipTvaId == n21Fcl.ID);
+        Check("Dimensiunea FRUNZEI (DIM-2: FCL are DOAR CodEconomic) — culeasă pe linia pin, absentă pe celelalte",
+            lPin.CodEconomicId == codEcFcl.ID && lPin.CodEconomicCod == codEcFcl.Cod
+            && lFifo.CodEconomicId == null && lFifo.CodEconomicCod == null);
+
+        // --- Semantica override-ului de ValoareTva (aceleași reguli ca FCT) ---
+        // ROUND-TRIP: clientul retrimite agregatul ÎNTREG, inclusiv TipTva-ul primit
+        // la citire (pus de default) — absența lui pe o linie existentă ar fi golire.
+        writeFcl.Linii[0].Id = lPin.Id;
+        writeFcl.Linii[1].Id = lFifo.Id;
+        writeFcl.Linii[2].Id = lServ.Id;
+        writeFcl.Linii[2].TipTvaId = lServ.TipTvaId;
+        writeFcl.Linii[2].ValoareTva = 20.5m;
+        FacturaIesireApply.Aplica(os, idFcl, writeFcl);
+        Check("Override ValoareTva pe regim Normal → acceptat, aplicat DUPĂ calcul (36a: documentul EMIS poartă rotunjirea)",
+            LinieFclDto("Transport").ValoareTva == 20.5m);
+        writeFcl.Linii[2].ValoareTva = null;
+        FacturaIesireApply.Aplica(os, idFcl, writeFcl);
+        Check("PUT ulterior FĂRĂ declanșatori (baza/TipTva neatinse) → override-ul PĂSTRAT",
+            LinieFclDto("Transport").ValoareTva == 20.5m);
+        writeFcl.Linii[2].PretUnitar = 200m;
+        FacturaIesireApply.Aplica(os, idFcl, writeFcl);
+        Check("Schimbarea BAZEI redeclanșează calculul standard → override-ul cedează (200 + 42)",
+            LinieFclDto("Transport") is { Valoare: 200m, ValoareTva: 42m });
+        writeFcl.Linii[2].PretUnitar = 100m;
+        FacturaIesireApply.Aplica(os, idFcl, writeFcl);
+
+        writeFcl.Linii[2].ValoareTva = -5m;
+        CheckRefuza("Override ValoareTva NEGATIV → refuz (F2-D7)",
+            () => FacturaIesireApply.Aplica(os, idFcl, writeFcl));
+        writeFcl.Linii[2].TipTvaId = sddFcl.ID;
+        writeFcl.Linii[2].ValoareTva = 5m;
+        CheckRefuza("Override pe regim Scutit (SDD) → refuz (regimul nu poartă TVA separat)",
+            () => FacturaIesireApply.Aplica(os, idFcl, writeFcl));
+        writeFcl.Linii[2].TipTvaId = n21Fcl.ID;
+        writeFcl.Linii[2].ValoareTva = null;
+
+        // --- Refuzuri de contract (mesaj de domeniu, nu excepție de infrastructură) ---
+        FacturaIesireWriteDto PayloadFcl(FacturaIesireLinieWriteDto linie, Guid? gestiune = null) =>
+            new() {
+                Data = writeFcl.Data, PredatorId = sediuFcl.ID, PrimitorId = clientFcl.ID,
+                GestiuneDescarcareId = gestiune ?? gestiuneFcl.ID,
+                Linii = { linie }
+            };
+        CheckRefuza("Apply cu Id de linie străin → refuz (agregatul nu adoptă linii din alt document)", () =>
+            FacturaIesireApply.Aplica(os, idFcl, PayloadFcl(new FacturaIesireLinieWriteDto {
+                Id = Guid.NewGuid(), TipMaterialId = tipServiciuFcl.ID, Cantitate = 1m, PretUnitar = 1m })));
+        CheckRefuza("Apply cu preț unitar în afara scării numeric(18,6) → refuz de domeniu, nu DbUpdateException", () =>
+            FacturaIesireApply.Aplica(os, idFcl, PayloadFcl(new FacturaIesireLinieWriteDto {
+                TipMaterialId = tipServiciuFcl.ID, Cantitate = 1m, PretUnitar = 0.0000001m })));
+        CheckRefuza("Apply cu pin pe lot inexistent → refuz cu mesaj de domeniu (nu violare de FK)", () =>
+            FacturaIesireApply.Aplica(os, idFcl, PayloadFcl(new FacturaIesireLinieWriteDto {
+                TipMaterialId = tipMarfa.ID, ProdusId = produsFcl.ID, LotId = Guid.NewGuid(),
+                Cantitate = 1m, PretUnitar = 10m })));
+        CheckRefuza("Apply cu gestiune de descărcare inexistentă → refuz cu mesaj de domeniu", () =>
+            FacturaIesireApply.Aplica(os, idFcl, PayloadFcl(new FacturaIesireLinieWriteDto {
+                TipMaterialId = tipServiciuFcl.ID, Cantitate = 1m, PretUnitar = 1m }, Guid.NewGuid())));
+        FacturaIesireApply.Aplica(os, idFcl, writeFcl);
+        citFcl = FacturaIesireApply.Citeste(os, idFcl);
+        Check("Un Apply refuzat nu lasă reziduu: re-aplicarea payload-ului valid readuce agregatul la exact 3 linii, cu Total 290,4",
+            citFcl.Linii.Count == 3 && citFcl.Total == 290.4m
+            && citFcl.GestiuneDescarcareId == gestiuneFcl.ID);
+
+        // --- Dry-run, apoi comanda ---
+        Check("Dry-run (Valideaza) pe draftul FCL valid → listă goală", DryRunFcl(idFcl).Count == 0);
+        Check("Dry-run-ul nu materializează nimic: documentul rămâne Draft, fără număr și fără registre",
+            FacturaIesireApply.Citeste(os, idFcl) is { Stare: "Draft", Numar: null }
+            && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idFcl));
+
+        var rezFcl = OperareApi.Opereaza(os, idFcl);
+        Check("OperareApi.Opereaza pe FCL → Operat + ConexId (descărcarea generată în aceeași tranzacție), cu mesaj pentru operator",
+            rezFcl.StareNoua == StareDocument.Operat && rezFcl.ConexId != null
+            && rezFcl.Mesaje.Count == 1);
+
+        citFcl = FacturaIesireApply.Citeste(os, idFcl);
+        Check("Citeste după operare: numărul vine ACUM din seria fiscală (FCL-), scadența din politică (+30), affordances inversate",
+            citFcl.Stare == "Operat" && citFcl.Numar?.StartsWith("FCL-") == true
+            && citFcl.DataOperare != null && citFcl.DataScadenta == citFcl.Data.AddDays(30)
+            && !citFcl.PoateEdita && !citFcl.PoateOpera && citFcl.PoateAnula && citFcl.PoateStorna);
+        Check("Citeste.Copii → DESCĂRCAREA conexă: codul ancorei TipDocument (DSC), draft autogenerat fără număr propriu",
+            citFcl.Copii.Count == 1 && citFcl.Copii[0].Id == rezFcl.ConexId
+            && citFcl.Copii[0].Tip == "DSC" && citFcl.Copii[0].Stare == "Draft"
+            && citFcl.Copii[0].Autogenerat && citFcl.Copii[0].Numar == null);
+        Check("Valorile culese supraviețuiesc operării (PregatesteOperare le rescrie din aceeași formulă)",
+            LinieFclDto("Marfă cu pin") is { Valoare: 60m, ValoareTva: 12.6m }
+            && citFcl.Total == 290.4m);
+
+        var noteApiFcl = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idFcl).ToList();
+        Check("Aceeași cale de postare ca în UI: 4111 = 707 pe marfă (140), 4111 = 704 pe serviciu (100), "
+            + "4427 colectat per linie (50,4) — costul rămâne pe DSC",
+            noteApiFcl.Count == 6
+            && noteApiFcl.Where(n => n.ContCreditId == cont707Fcl.ID).Sum(n => n.Valoare) == 140m
+            && noteApiFcl.Where(n => n.ContCreditId == tipServiciuFcl.ContImplicitId).Sum(n => n.Valoare) == 100m
+            && noteApiFcl.Where(n => n.ContCreditId == cont4427Fcl.ID).Sum(n => n.Valoare) == 50.4m
+            && noteApiFcl.All(n => n.ContDebitId == cont4111Fcl.ID));
+
+        // --- Gardienii de scriere, prin contract ---
+        CheckRefuza("Apply peste FCL Operat → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
+            () => FacturaIesireApply.Aplica(os, idFcl, writeFcl));
+        CheckRefuza("Sterge peste FCL Operat → același refuz de domeniu",
+            () => FacturaIesireApply.Sterge(os, idFcl));
+
+        // --- Lista ---
+        var listaFcl = FacturaIesireApply.Lista(os).Where(x => x.Id == idFcl).ToList();
+        Check("Lista FCL → un rând, cu Stare ca text (CASE în SQL), emitent/client, scadență și Total BRUT din agregat",
+            listaFcl.Count == 1 && listaFcl[0].Stare == "Operat"
+            && listaFcl[0].Numar == citFcl.Numar
+            && listaFcl[0].PredatorDenumire == sediuFcl.Denumire
+            && listaFcl[0].PrimitorDenumire == clientFcl.Denumire
+            && listaFcl[0].DataScadenta == citFcl.DataScadenta && listaFcl[0].Total == 290.4m);
+        Check("Lista FCL → filtrarea/sortarea se traduc în SQL peste proiecție (sondă: filtru + sort + take)",
+            FacturaIesireApply.Lista(os).Where(x => x.Stare == "Operat")
+                .OrderByDescending(x => x.Data).Take(1).ToList().Count == 1);
+
+        // --- Sterge pe draft (documentul + liniile; loturile REFERITE supraviețuiesc) ---
+        var idFclDraft = FacturaIesireApply.Aplica(os, null, new FacturaIesireWriteDto {
+            Data = new DateOnly(2026, 5, 12), PredatorId = sediuFcl.ID, PrimitorId = clientFcl.ID,
+            GestiuneDescarcareId = gestiuneFcl.ID,
+            Linii = { new FacturaIesireLinieWriteDto {
+                TipMaterialId = tipMarfa.ID, ProdusId = produsFcl.ID, LotId = lotVechiFcl.ID,
+                Descriere = "De șters", Cantitate = 1m, PretUnitar = 10m, TipTvaId = n21Fcl.ID } }
+        });
+        FacturaIesireApply.Sterge(os, idFclDraft);
+        Check("Sterge pe draft: documentul și liniile dispar, dar LOTUL pin rămâne (FCL îl referă, nu-l naște)",
+            FacturaIesireApply.Citeste(os, idFclDraft) == null
+            && !os.GetObjectsQuery<FacturaIesireDetaliu>().Any(l => l.DocumentId == idFclDraft)
+            && os.GetObjectByKey<Lot>(lotVechiFcl.ID) != null);
+
+        CurataApiFcl(os);
+        Check("Curățenie finală felia Api FCL (fără reziduuri e2e)",
+            !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajApiFcl))
+            && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajApiFcl))
+            && !os.GetObjectsQuery<FacturaIesire>().Any(d => d.ID == idFcl));
     }
 
     Rezumat();
