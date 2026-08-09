@@ -147,7 +147,9 @@ exclusiv acțiunile omului.
 **Datorii documentate (minore, nefixate)**: D-2a/D-3a — perf pe baza de import
 (`CoduriTip` face GetObjectByKey per copil; `DocumenteCuRest` agregă TOATE
 liniile la fiecare încărcare de grilă — de MĂSURAT înainte de release, nu de
-optimizat orb); D-5b — editarea manuală a plății autogenerate Draft se pierde
+optimizat orb) **[MĂSURAT 2026-08-09, decizia 59 —
+`docs/api/p5-perf-masuratori.md`: D-2a neproblemă; `DocumenteCuRest` ~410ms,
+acceptabil azi, optimizarea țintită documentată]**; D-5b — editarea manuală a plății autogenerate Draft se pierde
 la anularea facturii-sursă (de afișat un indiciu); D-6b — link-ul „Generat din"
 hardcodat `/fct/` (corect azi, de generalizat la transferul 581 cu
 `DocumentSursaTip`); ordinea `Stingeri` pe Id (arbitrară Guid).

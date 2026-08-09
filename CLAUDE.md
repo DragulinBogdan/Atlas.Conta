@@ -1867,6 +1867,23 @@ Raport de producție.
     de măsurat înainte de release). Bonus: ListView-ul RegistruContabil
     (restanța DIM-4) se încarcă normal pe 305k rânduri.
 
+59. **Măsurarea de perf a proiecțiilor pe baza de import — executată; datoria
+    D-2a/D-3a + `PoateGeneraDescarcare` ÎNCHISĂ ca măsurătoare**
+    (`docs/api/p5-perf-masuratori.md` — metodă, cifre, EXPLAIN). Pe clona de
+    import (205k documente, 337k linii, 46k imperecheri), HTTP cald, parametrii
+    reali de grilă: `Citeste` FCT/FCL 54–95ms (D-2a neproblemă — mulțime
+    mărginită 0–2 copii; `PoateGeneraDescarcare` +~40ms doar pe drumul complet,
+    scurt-circuitul funcționează), listele cu join pe agregat 135–150ms,
+    `rest-nedescarcat` ~50ms. Singurul peste prag: **`DocumenteCuRest` ~410ms**
+    per încărcare de panou (count ~175ms + pagină ~225ms; dominanta =
+    `GroupAggregate` pe TOATE cele 337k linii — cost structural, nu index
+    lipsă; filtrul pe contrapartidă nu intră în agregate). VERDICT: acceptabil
+    pentru release (panoul se deschide la cerere, nu e hot path), dar e singura
+    proiecție cu creștere liniară în totalul datelor (~2s la ~5 ani de volum);
+    optimizarea țintită e documentată în raport (contrapartida împinsă în
+    agregate + fără `requireTotalCount` pe panou — ambele aditive) și se face
+    CÂND cifra o cere, nu preventiv.
+
 ```
 /legacy   → surse Delphi (.pas, .dfm) + scripturi SQL vechi
 /db       → se poate export schemă (CREATE) + CONȚINUTUL tabelelor de configurare
@@ -2088,10 +2105,14 @@ per felie):
   rest-nedescarcat, feliile client fcl/dsc cu pinul de lot; review advers: fixul
   acțiunii XAF (ruptă sub gardian de la spike-1) + plafonul de acoperire per
   linie-sursă.
+- **Măsurarea de perf a proiecțiilor pe baza de import** (EXECUTATĂ, decizia
+  59; raport: `docs/api/p5-perf-masuratori.md`): datoria D-2a/D-3a +
+  `PoateGeneraDescarcare` închisă ca măsurătoare — totul sub 150ms în afară de
+  `DocumenteCuRest` (~410ms, acceptabil azi; optimizarea țintită documentată,
+  se aplică când cifra o cere).
 - Urmează, pe șablonul consolidat: NIR scriere (`ProdusId` pe NirDetaliu —
-  decizie de model), SAU transferul 581 (pereche PLT+INC conexă), SAU
-  **măsurarea de perf a proiecțiilor pe baza de import** (datoria D-2a/D-3a +
-  `PoateGeneraDescarcare` — înainte de release). Finisajul clientului rămâne pe
+  decizie de model), SAU transferul 581 (pereche PLT+INC conexă). Finisajul
+  clientului rămâne pe
   lista din contractele §Închidere (licența DevExtreme = acțiunea
   utilizatorului). Alternativă rămasă: felia C1a a comenzilor
   (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă, la presiune

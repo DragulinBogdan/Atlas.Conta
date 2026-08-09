@@ -182,7 +182,10 @@ gestiune) — fapt al importului, nu al feliei. Bonus smoke: ListView-ul
 
 **Datorii rămase (moștenite, re-confirmate)**: perf-ul proiecțiilor pe baza de
 import (D-2a/D-3a + `PoateGeneraDescarcare` care încarcă entitatea și enumeră
-liniile la fiecare `Citeste`) — de MĂSURAT înainte de release; emitentul pe
+liniile la fiecare `Citeste`) — de MĂSURAT înainte de release **[MĂSURAT
+2026-08-09, decizia 59 — `docs/api/p5-perf-masuratori.md`:
+`PoateGeneraDescarcare` +~40ms doar pe drumul complet, neproblemă;
+`DocumenteCuRest` ~410ms, acceptabil azi]**; emitentul pe
 documentul EXISTENT se afișează static (lookup-ul ar minți pe repartitori din
 afara setului `UnitateInterna`); scrierea manuală DSC prin API; RDC în proiecția
 de rest. Artefactele de smoke (FCL-1, DSC-1+draft, INC 689, FCT SMOKE-F4-1+NIR)
