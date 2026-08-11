@@ -612,11 +612,23 @@ public static class MotorOperare {
     }
 
     static void StergeConexeDraftAutogenerate(IObjectSpace os, Document doc) {
+        var stersi = false;
         foreach (var copil in os.GetObjectsQuery<Document>()
             .Where(x => x.DocumentSursaId == doc.ID && x.Autogenerat && x.Stare == StareDocument.Draft).ToList()) {
             os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == copil.ID).ToList());
             os.Delete(copil);
+            stersi = true;
         }
+        // Review advers F5-F4: de când draftul conex e editabil (F5-D8b), operatorul
+        // poate adăuga pe el linii MANUALE, iar acelea nasc loturi proprii la
+        // culegere. Ștergerea de aici se face în ObjectSpace-ul non-secured al
+        // motorului, unde nu rulează niciun controller de culegere — fără pasul
+        // ăsta loturile lor ar rămâne orfane (preț 0, dată 0001-01-01, fără linie
+        // mamă), permanent în nomenclator și în lookup-uri. Fără impact contabil
+        // (fără rânduri de stoc nu intră în picking), dar e exact zgomotul pe
+        // care curățenia există să-l prevină.
+        if (stersi)
+            LoturiCulegereService.CurataOrfane(os);
     }
 
     // Ancora TipDocument după numele CLR al clasei — reutilizabilă (motor,

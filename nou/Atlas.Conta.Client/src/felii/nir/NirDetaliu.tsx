@@ -169,7 +169,11 @@ export function NirDetaliu() {
       cereData: { eticheta: 'Data stornării' },
       ruleaza: (data) => { if (data) void comanda(() => nir.storneaza(id!, data)); },
     },
-    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => void stergeDocumentul() },
+    // Draftul AUTOGENERAT e artefactul operării facturii, nu un document al
+    // operatorului: serverul îi refuză ștergerea (review advers F5-F2 — pe o
+    // factură numai cu linii de stoc el poartă singura postare a datoriei), iar
+    // butonul n-are ce căuta activ. Editarea RĂMÂNE (F5-D8b, recepția parțială).
+    { eticheta: 'Șterge', disponibila: !nou && poateEdita && !doc?.Autogenerat, ruleaza: () => void stergeDocumentul() },
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza('/nir') },
   ];
 

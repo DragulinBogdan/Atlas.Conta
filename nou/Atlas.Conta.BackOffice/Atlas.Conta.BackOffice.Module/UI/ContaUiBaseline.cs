@@ -39,6 +39,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         LayoutDocumente(registry);
         DetaliuGeneric(registry);
         FacturaIntrare(registry);
+        Nir(registry);
         FacturaIesire(registry);
         ListaDiferenteInventar(registry);
         Decont(registry);
@@ -231,6 +232,52 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             if (dv.Items[nameof(FacturaIntrareDetaliu.Lot)] is IModelCommonMemberViewItem lot)
                 lot.AllowEdit = false;
             // Idem `Valoare` (review advers D7): rezultat, nu culegere.
+            if (dv.Items[nameof(DocumentDetaliu.Valoare)] is IModelCommonMemberViewItem valoare)
+                valoare.AllowEdit = false;
+        });
+    }
+
+    // Review advers F5-F1: felia 5 a făcut din ecranul XAF de NIR o cale VIE de
+    // culegere (`DocumenteLoturiCulegereController` e țintit pe `Document`, iar
+    // `NirDetaliu` are acum Produs + PretUnitar) — dar fără oglinda blocului de
+    // mai sus lotul rămânea EDITABIL lângă ele, adică exact bypass-ul închis pe
+    // FCT la GOL 1. Concret: operatorul culege produs și preț ȘI alege din
+    // nomenclator lotul unei recepții anterioare; serviciul de culegere vede lot
+    // străin și tace (gardul F5-D3), produsul și prețul rămân inerte fără niciun
+    // mesaj, iar operarea adaugă +cantitate pe un lot DEJA în stoc, evaluat la
+    // prețul LUI — marfă re-recepționată, invizibilă pentru gardianul de sold
+    // (mișcarea e pozitivă) și o notă `3xx = 401` fără legătură cu hârtia
+    // furnizorului. Gardul rămâne corect; aici i se închide capcana.
+    static void Nir(UiBaselineRegistry registry) {
+        var entitate = registry.For<NirDetaliu>();
+        entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
+        entitate.ListView(nameof(NirDetaliu) + ListView, _ => { })
+            // Ordinea coloanelor = ordinea de culegere: produsul dă Tipul și naște
+            // lotul recepției manuale.
+            .Column(d => d.Produs, c => c.Index = 0)
+            .Column(d => d.TipMaterial, c => c.Index = 1)
+            // Lotul e al mecanismului (născut din produs + gestiunea primitoare pe
+            // recepția manuală, MOȘTENIT de pe factură pe clona conexă): read-only
+            // pe ambele cazuri — pe conex nici nu e al liniei (F5-D4).
+            .Column(d => d.Lot, c => { c.Index = 2; c.AllowEdit = false; })
+            .Column(d => d.Cantitate, c => c.Index = 3)
+            .Column(d => d.PretUnitar, c => c.Index = 4)
+            // `Valoare` e REZULTAT (F5-D6): `PregatesteOperare` o rescrie
+            // necondiționat, pe ambele ramuri. Editabilă, valoarea tastată s-ar
+            // pierde fără mesaj — review advers D7, aceeași concluzie ca pe FCT.
+            .Column(d => d.Valoare, c => { c.Index = 5; c.AllowEdit = false; })
+            .Column(d => d.DataExpirare, c => c.Index = 6)
+            .Column(d => d.LotFabricatie, c => c.Index = 7)
+            // NIR-ul nu culege TVA (F5-D5): pe clona conexă `TipTva` e informativ
+            // (clonat din factură), `ValoareTva` e mereu 0 — a le arăta la culegere
+            // ar sugera că se completează aici.
+            .Column(d => d.TipTva, c => c.Index = -1)
+            .Column(d => d.ValoareTva, c => c.Index = -1);
+        // Dialogul de New/edit al colecției (40a) — acolo AllowEdit-ul coloanei nu
+        // ajunge, iar bypass-ul ar rămâne deschis pe cealaltă cale.
+        entitate.DetailView(nameof(NirDetaliu) + "_DetailView", dv => {
+            if (dv.Items[nameof(NirDetaliu.Lot)] is IModelCommonMemberViewItem lot)
+                lot.AllowEdit = false;
             if (dv.Items[nameof(DocumentDetaliu.Valoare)] is IModelCommonMemberViewItem valoare)
                 valoare.AllowEdit = false;
         });

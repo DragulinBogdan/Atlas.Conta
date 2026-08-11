@@ -85,6 +85,19 @@ public static class NirApply {
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
                 + "Anulați operarea sau stornați-l.");
+        // Review advers F2: draftul AUTOGENERAT nu se șterge de mână. E artefactul
+        // operării facturii (26d), iar când factura are numai linii de stoc el
+        // poartă SINGURA postare a datoriei (`3xx = 401`) și singura intrare în
+        // stoc — factura însăși duce doar rândul de TVA (26a). Ștergerea lui ar
+        // lăsa o factură OPERATĂ, cu Total pe ecran, fără datorie și fără marfă
+        // în registre, fără ca nimic să-i spună operatorului. Proprietarul
+        // artefactului e motorul: anularea sursei îl șterge, re-operarea îl
+        // regenerează. F5-D8b a tranșat EDITAREA lui (recepția parțială e flux de
+        // producție) — anihilarea e altă decizie și nu se moștenește din ea.
+        if (doc.Autogenerat)
+            throw new OperareException(
+                $"NIR-ul {Eticheta(doc)} e generat automat din factura-sursă — nu se șterge de aici. "
+                + "Anulați operarea facturii: NIR-ul dispare odată cu ea, iar re-operarea îl regenerează.");
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
@@ -127,7 +140,22 @@ public static class NirApply {
             // Produsul e mecanismul lotului (F5-D2): îl consumă
             // `LoturiCulegereService` după reconciliere. `LotId` NU se atinge —
             // e server-owned (F5-D4).
-            if (l.ProdusId is Guid produsId) {
+            //
+            // Review advers F3: pe linia cu lot STRĂIN (clona conexă) produsul e
+            // declarat peste tot „inert" — dar inert însemna „nefolosit de
+            // serviciu", nu „negolit". Diferența nu e de stil: persistat, îl
+            // citește validarea de coerență Tip↔Produs, deci un apelant al API-ului
+            // (import, script, felie viitoare) care pune acolo un produs de alt Tip
+            // face NIR-ul PERMANENT ne-operabil, cu un mesaj care arată spre un
+            // câmp pe care UI-ul îl afișează read-only. Marfa liniei conexe e a
+            // lotului moștenit — aici o GOLIM, ca inerția să fie adevărată.
+            var lotStrainAlLiniei = detaliu.LotId is Guid lotExistentId
+                && os.GetObjectByKey<Lot>(lotExistentId)?.LinieIntrareId != detaliu.ID;
+            if (lotStrainAlLiniei) {
+                detaliu.Produs = null;
+                detaliu.ProdusId = null;
+            }
+            else if (l.ProdusId is Guid produsId) {
                 detaliu.Produs = os.GetObjectByKey<Produs>(produsId)
                     ?? throw new OperareException($"Produsul {produsId} nu există în catalog.");
             }

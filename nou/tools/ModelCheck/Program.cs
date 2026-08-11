@@ -5371,6 +5371,16 @@ using (var os = provider.CreateObjectSpace()) {
         && conexDupa.Total == 23.8m);
     Check("PUT-ul pe conex nu atinge TipTva-ul informativ clonat din factură (F5-D5: NIR-ul nu culege TVA)",
         conexDupa.Linii[0].TipTvaId == cap19.ID && conexDupa.Linii[0].TipTvaCod == "CAP19");
+    // Review advers F3: „inert" trebuie să însemne GOLIT, nu doar nefolosit —
+    // altfel produsul rămâne persistat pe linia conexă și îl citește validarea de
+    // coerență Tip↔Produs, care poate face NIR-ul permanent ne-operabil printr-un
+    // câmp pe care UI-ul îl afișează read-only.
+    Check("Produsul trimis pe o linie cu lot STRĂIN e GOLIT, nu doar ignorat (review advers F3)",
+        conexDupa.Linii[0].ProdusId == null);
+    CheckRefuza("Sterge pe NIR-ul CONEX (draft autogenerat) → refuz: e artefactul operării facturii, poartă singura postare a datoriei (review advers F2)",
+        () => NirApply.Sterge(os, idNirConex));
+    Check("Refuzul de mai sus nu a atins documentul: conexul e viu, cu linia lui",
+        NirApply.Citeste(os, idNirConex) is { } viu && viu.Linii.Count == 1);
 
     OperareApi.Opereaza(os, idNirConex);
     var stocConex = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == idNirConex).ToList();
