@@ -19,7 +19,6 @@ import { SoldStoc } from './felii/stoc/SoldStoc';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
-// NIR-ul n-are rută `/nou`: în felia asta nu se culege din client (F2-D3).
 export function App() {
   return (
     <Routes>
@@ -29,6 +28,9 @@ export function App() {
         <Route path="/fct/nou" element={<FctDetaliu />} />
         <Route path="/fct/:id" element={<FctDetaliu />} />
         <Route path="/nir" element={<NirLista />} />
+        {/* Recepția fără factură se culege manual (F5): NIR-ul are rută `/nou`
+            de la felia 5, pe lângă clona conexă născută de operarea facturii. */}
+        <Route path="/nir/nou" element={<NirDetaliu />} />
         <Route path="/nir/:id" element={<NirDetaliu />} />
         <Route path="/fcl" element={<FclLista />} />
         <Route path="/fcl/nou" element={<FclDetaliu />} />

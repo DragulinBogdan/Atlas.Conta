@@ -4,8 +4,12 @@ import { Column, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Sorting } fro
 import { nir, TIP_ANTET } from './api';
 import { campMeta } from '../../nucleu/campMeta';
 
-// Listă pură de citire: NIR-ul nu se creează din client în felia asta (F2-D3) —
-// de aceea nu există buton „Nou". Lipsa lui e contractul, nu o omisiune.
+// Grila de citire (43c): `DataGrid` + store remote pe protocolul
+// `DataSourceLoader` — filtrare/sortare/paginare server-side.
+//
+// Butonul „Nou" există de la felia 5: NIR-ul se culege și MANUAL (recepția fără
+// factură — marfa intră pe aviz, loturile se nasc pe liniile lui). Restul se
+// nasc din operarea facturii, ca până acum — cele două căi duc la același ecran.
 const SCHEMA_LISTA = 'NirListDto';
 const cap = (membru: string) => campMeta(TIP_ANTET, membru, SCHEMA_LISTA).caption;
 
@@ -17,6 +21,9 @@ export function NirLista() {
     <div className="ecran">
       <div className="ecran__bara">
         <h2>NIR-uri</h2>
+        <button type="button" className="buton buton--primar" onClick={() => navigheaza('/nir/nou')}>
+          Nou
+        </button>
       </div>
 
       <DataGrid
@@ -43,7 +50,8 @@ export function NirLista() {
       </DataGrid>
 
       <p className="indiciu">
-        Dublu-click pe un rând deschide documentul. NIR-urile se nasc din operarea facturii de intrare.
+        Dublu-click pe un rând deschide documentul. NIR-urile se nasc din operarea facturii de intrare
+        sau se culeg manual, când marfa intră înaintea facturii.
       </p>
     </div>
   );
