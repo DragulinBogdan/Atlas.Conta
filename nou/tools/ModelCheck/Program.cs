@@ -3427,15 +3427,19 @@ using (var os = provider.CreateObjectSpace()) {
 
     // --- NIR: citirea conexului, apoi comanda pe el ---
     var nirDto = NirApply.Citeste(os, idNir);
-    Check("NirApply.Citeste pe conex: header cu sursa ETICHETATĂ, fără număr (seria NIR se consumă la propria operare)",
+    Check("NirApply.Citeste pe conex: header cu sursa ETICHETATĂ, fără număr (seria NIR se consumă la propria operare), editabil ca DRAFT (F5-D8b)",
         nirDto != null && nirDto.Stare == "Draft" && nirDto.Numar == null && nirDto.Autogenerat
         && nirDto.DocumentSursaId == idFct && nirDto.DocumentSursaNumar == "E2E-AF1"
         && nirDto.DocumentSursaTip == "FCT"
         && nirDto.PredatorDenumire == furnizor.Denumire && nirDto.PrimitorDenumire == mag1.Denumire
         && nirDto.Total == 59.5m
-        // PoateEdita e FALS prin construcție (F2-D5): tierul n-are nicio cale de
-        // scriere pe NIR — affordance-ul nu minte contractul.
-        && !nirDto.PoateEdita && nirDto.PoateOpera && !nirDto.PoateAnula && !nirDto.PoateStorna);
+        // PoateEdita urmează STAREA (F5-D8b): felia 5 a adăugat calea de scriere
+        // pe NIR, deci affordance-ul spune ce poate serverul (42e). Inclusiv pe
+        // draftul AUTOGENERAT — conexul e proiectat să fie deschis în editare
+        // (26d) pentru recepția parțială, iar gardul de lot străin (F5-D3) e ce
+        // face editarea lui sigură. Până la felia 5 era fals prin construcție,
+        // fiindcă tierul n-avea nicio cale de scriere (F2-D5).
+        && nirDto.PoateEdita && nirDto.PoateOpera && !nirDto.PoateAnula && !nirDto.PoateStorna);
     Check("NIR-ul preia DOAR linia de stoc: lotul finalizat (eticheta nu mai spune „în culegere”), valoarea și dimensiunea clonată prin contract",
         nirDto.Linii.Count == 1 && nirDto.Linii[0].LotId == lotFinal.ID
         && nirDto.Linii[0].LotEticheta == lotFinal.Eticheta
@@ -5103,6 +5107,297 @@ using (var os = provider.CreateObjectSpace()) {
         Inert(tipRlf) && Inert(tipRdc));
     Check("Extensia PastreazaSemn e inertă la bugetar: nicio regulă de contare existentă nu o poartă",
         !os.GetObjectsQuery<RegulaContare>().Any(r => r.PastreazaSemn));
+}
+
+// ========= Scenariul e2e pasul 5 / felia 5: Api NIR scriere (F5-D8) =========
+// RECEPȚIA FĂRĂ FACTURĂ, parcursă prin contractul feliei: WriteDto →
+// `NirApply.Aplica` → `Citeste` → dry-run → `OperareApi.Opereaza` → registre.
+// Fluxul n-a existat nicăieri până la felia asta (nici în XAF, nici prin API):
+// `NirDetaliu` n-avea `ProdusId`, iar `CreeazaLot` n-avea niciun apelant din UI
+// — exact golul de model pe care GATE-ul l-a închis pe FCT (53a).
+//
+// Ce exersează în plus față de blocul „Api FCT + NIR (F2-D6)":
+//   * lotul se naște pe linia PROPRIE a NIR-ului (nu pe a facturii), din
+//     `ProdusId`, la `Aplica` — seam-ul `LoturiCulegereService` generalizat (F5-D3);
+//   * `Valoare = PretUnitar × Cantitate` materializată LA CULEGERE, cu formula
+//     GEAMĂNĂ celei din `NIR.PregatesteOperare` (F5-D6a);
+//   * TESTUL-ANCORĂ AL FELIEI (riscul 1 din contract): PUT pe NIR-ul CONEX —
+//     cu produsul completat și cantitatea redusă — NU naște al doilea lot;
+//   * refuzurile F5-D7/D7b, fiecare fără rânduri-fantomă (33d).
+// Rulează pe profilul BUGETAR: NIR n-are `PoliticaTva` în niciun profil (F5-D5),
+// deci nimic din felie nu cere profilul privat.
+const string MarcajApiNir = "E2E-API-NIR";
+
+void CurataApiNir(IObjectSpace os) {
+    // Documentele probei se găsesc prin marfa lor: NIR-ul n-are număr cules
+    // (seria e server-owned), deci ancora e produsul marcat — prin loturile lui
+    // și prin `NirDetaliu.ProdusId`. Facturile probei se găsesc pe număr.
+    var idsDoc = os.GetObjectsQuery<DocumentDetaliu>()
+        .Where(d => d.Lot.Produs.Cod.StartsWith(MarcajApiNir))
+        .Select(d => d.DocumentId).ToList();
+    idsDoc.AddRange(os.GetObjectsQuery<NirDetaliu>()
+        .Where(d => d.Produs.Cod.StartsWith(MarcajApiNir))
+        .Select(d => d.DocumentId).ToList());
+    idsDoc.AddRange(os.GetObjectsQuery<FacturaIntrare>()
+        .Where(d => d.Numar.StartsWith("E2E-ANF")).Select(d => d.ID).ToList());
+    idsDoc = idsDoc.Distinct().ToList();
+    // …plus copiii conecși (NIR-ul generat la operarea facturii).
+    idsDoc.AddRange(os.GetObjectsQuery<Document>()
+        .Where(d => d.DocumentSursaId != null && idsDoc.Contains(d.DocumentSursaId.Value))
+        .Select(d => d.ID).ToList());
+    idsDoc = idsDoc.Distinct().ToList();
+
+    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
+    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
+    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => idsDoc.Contains(d.DocumentId)).ToList());
+    os.Delete(os.GetObjectsQuery<Document>().Where(d => idsDoc.Contains(d.ID)).ToList());
+    os.CommitChanges();
+    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiNir)).ToList());
+    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajApiNir)).ToList());
+    os.Delete(os.GetObjectsQuery<Partener>().Where(p => p.Cod == "E2E-ANFURN").ToList());
+    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == "E2E-ANCE").ToList());
+    os.CommitChanges();
+}
+
+using (var os = provider.CreateObjectSpace()) {
+    CurataApiNir(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipMateriale = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302.01.00");
+    var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628.00.00");
+    var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00");
+    var cap19 = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP19");
+
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = "E2E-ANFURN";
+    furnizor.Denumire = "Furnizor probă felia Api NIR";
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = "E2E-ANCE";
+    codEc.Denumire = "Cod economic probă felia Api NIR";
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = MarcajApiNir + "-A";
+    produs.Denumire = "Produs A probă felia Api NIR";
+    produs.UM = "BUC";
+    produs.TipMaterial = tipMateriale;
+    // Produs al ALTUI Tip — proba de coerență Tip-linie ↔ Produs (F5-D7).
+    var produsStrain = os.CreateObject<Produs>();
+    produsStrain.Cod = MarcajApiNir + "-S";
+    produsStrain.Denumire = "Produs de alt Tip, probă felia Api NIR";
+    produsStrain.UM = "BUC";
+    produsStrain.TipMaterial = tipServicii;
+    os.CommitChanges();
+
+    var dataNir = new DateOnly(2026, 3, 12);
+
+    // Dry-run-ul își cere ObjectSpace-ul PROPRIU (contractul lui
+    // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
+    IReadOnlyList<string> DryRunNir(Guid docId) {
+        using var osDry = provider.CreateObjectSpace();
+        return OperareApi.Valideaza(osDry, docId);
+    }
+
+    // --- Apply: recepția MANUALĂ, din WriteDto (fără Numar/LotId/Valoare) ---
+    var write = new NirWriteDto {
+        Data = dataNir,
+        PredatorId = furnizor.ID,
+        PrimitorId = mag1.ID,
+        Linii = {
+            new NirLinieWriteDto {
+                TipMaterialId = tipMateriale.ID, ProdusId = produs.ID,
+                Cantitate = 4m, PretUnitar = 12.5m,
+                LotFabricatie = "LOT-NIR", DataExpirare = new DateOnly(2027, 6, 30),
+                CodEconomicId = codEc.ID
+            }
+        }
+    };
+    var idNir = NirApply.Aplica(os, null, write);
+    var citit = NirApply.Citeste(os, idNir);
+    Check("Apply NIR manual → header plat, FĂRĂ număr (seria „NIR-” e server-owned, se consumă la operare — invers față de FCT)",
+        citit != null && citit.Id == idNir && citit.Stare == "Draft" && citit.Numar == null
+        && citit.Data == dataNir
+        && citit.PredatorId == furnizor.ID && citit.PredatorDenumire == furnizor.Denumire
+        && citit.PrimitorId == mag1.ID && citit.PrimitorDenumire == mag1.Denumire
+        && !citit.Autogenerat && citit.DocumentSursaId == null
+        && citit.PoateEdita && citit.PoateOpera && !citit.PoateAnula && !citit.PoateStorna);
+
+    var linie = citit.Linii.Single();
+    var lotNascut = os.GetObjectsQuery<Lot>().FirstOrDefault(l => l.LinieIntrareId == linie.Id);
+    Check("PROBA FELIEI: lotul se naște pe linia PROPRIE a NIR-ului, din ProdusId — nefinalizat, în gestiunea PRIMITOARE (hook-ul GestiuneLoturiCulese)",
+        lotNascut != null && lotNascut.ProdusId == produs.ID && lotNascut.GestiuneId == mag1.ID
+        && lotNascut.Data == default && lotNascut.PretUnitar == 0m
+        && linie.LotId == lotNascut.ID && !linie.LotStrain
+        && linie.LotEticheta == lotNascut.Eticheta
+        && linie.LotEticheta.Contains("(în culegere)"));
+    Check("Valoarea materializată LA CULEGERE din prețul cules (F5-D6a): 4 × 12,5 = 50, Total 50 — nu 0 până la operare",
+        linie.Valoare == 50m && linie.ValoareTva == 0m && citit.Total == 50m
+        && linie.PretUnitar == 12.5m && linie.Cantitate == 4m);
+    Check("Linia poartă produsul, atributele de lot și dimensiunea frunzei, proiectate plat",
+        linie.ProdusId == produs.ID && linie.ProdusCod == produs.Cod
+        && linie.ProdusDenumire == produs.Denumire
+        && linie.LotFabricatie == "LOT-NIR" && linie.DataExpirare == new DateOnly(2027, 6, 30)
+        && linie.CodEconomicId == codEc.ID && linie.CodEconomicCod == "E2E-ANCE"
+        && linie.SursaFinantareId == null && linie.ProiectId == null
+        && linie.TipTvaId == null);
+
+    // --- Reconcilierea colecției (upsert pe Id) ---
+    write.Linii[0].Id = linie.Id;
+    write.Linii[0].Cantitate = 6m;
+    NirApply.Aplica(os, idNir, write);
+    citit = NirApply.Citeste(os, idNir);
+    Check("Reconciliere pe Id: cantitatea schimbată → valoarea o urmează (6 × 12,5 = 75), ACELAȘI lot (nu un al doilea pentru aceeași linie)",
+        citit.Linii.Single().Valoare == 75m && citit.Linii.Single().LotId == lotNascut.ID
+        && os.GetObjectsQuery<Lot>().Count(l => l.LinieIntrareId == linie.Id) == 1);
+    CheckRefuza("Apply NIR cu Id de linie străin → refuz (agregatul nu adoptă linii din alt document)", () =>
+        NirApply.Aplica(os, idNir, new NirWriteDto {
+            Data = dataNir, PredatorId = furnizor.ID, PrimitorId = mag1.ID,
+            Linii = { new NirLinieWriteDto {
+                Id = Guid.NewGuid(), TipMaterialId = tipMateriale.ID, Cantitate = 1m, PretUnitar = 1m } }
+        }));
+    CheckRefuza("Apply NIR cu același Id de linie de două ori → refuz (a doua apariție ar suprascrie tăcut prima)", () =>
+        NirApply.Aplica(os, idNir, new NirWriteDto {
+            Data = dataNir, PredatorId = furnizor.ID, PrimitorId = mag1.ID,
+            Linii = { write.Linii[0], write.Linii[0] }
+        }));
+    CheckRefuza("Apply NIR cu preț unitar în afara scării numeric(18,6) → refuz de domeniu, nu DbUpdateException", () =>
+        NirApply.Aplica(os, idNir, new NirWriteDto {
+            Data = dataNir, PredatorId = furnizor.ID, PrimitorId = mag1.ID,
+            Linii = { new NirLinieWriteDto {
+                TipMaterialId = tipMateriale.ID, Cantitate = 1m, PretUnitar = 0.0000001m } }
+        }));
+    NirApply.Aplica(os, idNir, write);
+    Check("Un Apply refuzat nu lasă reziduu: re-aplicarea payload-ului valid readuce agregatul la exact o linie",
+        NirApply.Citeste(os, idNir).Linii.Count == 1);
+
+    // --- Refuzurile de OPERARE (F5-D7/D7b), fiecare fără rânduri-fantomă ---
+    void RefuzNir(string nume, NirLinieWriteDto linieProba) {
+        var id = NirApply.Aplica(os, null, new NirWriteDto {
+            Data = dataNir, PredatorId = furnizor.ID, PrimitorId = mag1.ID,
+            Linii = { linieProba }
+        });
+        CheckRefuza(nume, () => OperareApi.Opereaza(os, id));
+        Check(nume + " — fără rânduri-fantomă în ObjectSpace (33d)",
+            !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == id)
+            && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == id)
+            && os.GetObjectByKey<NIR>(id).Stare == StareDocument.Draft);
+        NirApply.Sterge(os, id);
+    }
+
+    RefuzNir("Linie de stoc FĂRĂ produs → refuz cu mesajul care spune CE SĂ FACĂ („alegeți produsul”, F5-D7)",
+        new NirLinieWriteDto {
+            TipMaterialId = tipMateriale.ID, Cantitate = 1m, PretUnitar = 10m, CodEconomicId = codEc.ID
+        });
+    RefuzNir("Produs de ALT Tip decât Tipul liniei → refuz (oglinda 53f: lotul ar ajunge în registrul altui Tip decât cel postat)",
+        new NirLinieWriteDto {
+            TipMaterialId = tipMateriale.ID, ProdusId = produsStrain.ID,
+            Cantitate = 1m, PretUnitar = 10m, CodEconomicId = codEc.ID
+        });
+    RefuzNir("Preț unitar 0 pe linia care își NAȘTE lotul → refuz (F5-D7b: altfel lotul intră în stoc cu preț 0 și FIFO îl propagă în toate ieșirile)",
+        new NirLinieWriteDto {
+            TipMaterialId = tipMateriale.ID, ProdusId = produs.ID,
+            Cantitate = 1m, PretUnitar = 0m, CodEconomicId = codEc.ID
+        });
+
+    // --- Dry-run, apoi comanda ---
+    Check("Dry-run (Valideaza) pe draftul NIR manual valid → listă goală",
+        DryRunNir(idNir).Count == 0);
+    Check("Dry-run-ul NU materializează nimic: documentul rămâne Draft, fără registre și fără lot finalizat",
+        os.GetObjectByKey<NIR>(idNir).Stare == StareDocument.Draft
+        && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idNir)
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idNir)
+        && os.GetObjectByKey<Lot>(lotNascut.ID).PretUnitar == 0m);
+
+    var rezNir = OperareApi.Opereaza(os, idNir);
+    Check("OperareApi.Opereaza pe NIR manual → Operat, cu număr din politica proprie (seria NIR-), fără conex; affordances inversate (nu mai e editabil)",
+        rezNir.StareNoua == StareDocument.Operat && rezNir.ConexId == null
+        && NirApply.Citeste(os, idNir) is { Numar: not null, PoateEdita: false, PoateOpera: false,
+            PoateAnula: true, PoateStorna: true }
+        && NirApply.Citeste(os, idNir).Numar.StartsWith("NIR-"));
+    var lotFinalizat = os.GetObjectByKey<Lot>(lotNascut.ID);
+    Check("Motorul FINALIZEAZĂ lotul născut pe linia NIR-ului: preț 12,5 (75/6), data documentului, atributele culese pe linie",
+        lotFinalizat.PretUnitar == 12.5m && lotFinalizat.Data == dataNir
+        && lotFinalizat.LotFabricatie == "LOT-NIR"
+        && lotFinalizat.DataExpirare == new DateOnly(2027, 6, 30));
+    var stocNirManual = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == idNir).ToList();
+    Check("NIR manual → +6/+75 Magazie pe gestiunea primitoare, pe lotul propriu",
+        stocNirManual.Count == 1 && stocNirManual[0].TipStoc == TipStoc.Magazie
+        && stocNirManual[0].RepartitorId == mag1.ID && stocNirManual[0].LotId == lotFinalizat.ID
+        && stocNirManual[0].Cantitate == 6m && stocNirManual[0].Valoare == 75m);
+    var noteNirManual = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idNir).ToList();
+    Check("NIR manual contează recepția ca oricare alta: 302.01.00 = 401, 75 (regula de oprire a feliei — registrele nu disting proveniența)",
+        noteNirManual.Count == 1 && noteNirManual[0].ContDebitId == tipMateriale.ContImplicitId
+        && noteNirManual[0].ContCreditId == cont401.ID && noteNirManual[0].Valoare == 75m);
+    CheckRefuza("Apply peste NIR Operat → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
+        () => NirApply.Aplica(os, idNir, write));
+    CheckRefuza("Sterge peste NIR Operat → același refuz de domeniu",
+        () => NirApply.Sterge(os, idNir));
+
+    // --- TESTUL-ANCORĂ: PUT pe NIR-ul CONEX nu naște al doilea lot (F5-D3) ---
+    // Marfa e deja recepționată pe lotul născut la culegerea FACTURII; un al
+    // doilea lot ar dubla stocul invizibil pentru gardianul de sold (lotul nou
+    // pornește de la zero, deci nicio verificare nu devine negativă).
+    var idFct = FacturaIntrareApply.Aplica(os, null, new FacturaIntrareWriteDto {
+        Numar = "E2E-ANF1", Data = dataNir, PredatorId = furnizor.ID, PrimitorId = mag1.ID,
+        Linii = { new FacturaIntrareLinieWriteDto {
+            TipMaterialId = tipMateriale.ID, ProdusId = produs.ID,
+            Cantitate = 10m, PretUnitar = 5m, TipTvaId = cap19.ID, CodEconomicId = codEc.ID } }
+    });
+    var idNirConex = OperareApi.Opereaza(os, idFct).ConexId.Value;
+    var conex = NirApply.Citeste(os, idNirConex);
+    var lotFct = os.GetObjectByKey<Lot>(conex.Linii[0].LotId.Value);
+    Check("NIR conex: DRAFT AUTOGENERAT deci EDITABIL (F5-D8b — recepția parțială e flux de producție), cu lot STRĂIN pe linie, fără produs și fără preț propriu",
+        conex.PoateEdita && conex.Autogenerat
+        && conex.Linii.Count == 1 && conex.Linii[0].LotStrain
+        && conex.Linii[0].ProdusId == null && conex.Linii[0].PretUnitar == 0m
+        && lotFct.LinieIntrareId != conex.Linii[0].Id && lotFct.PretUnitar == 5.95m);
+
+    var loturiInainte = os.GetObjectsQuery<Lot>().Count(l => l.Produs.Cod.StartsWith(MarcajApiNir));
+    // Cazul EXACT al riscului 1: PUT cu produsul COMPLETAT (clientul l-ar putea
+    // trimite) și cantitatea redusă (recepție parțială — marfa primită e mai
+    // puțină decât cea facturată).
+    NirApply.Aplica(os, idNirConex, new NirWriteDto {
+        Data = conex.Data, PredatorId = conex.PredatorId, PrimitorId = conex.PrimitorId,
+        Linii = { new NirLinieWriteDto {
+            Id = conex.Linii[0].Id, TipMaterialId = conex.Linii[0].TipMaterialId,
+            ProdusId = produs.ID, Cantitate = 4m, PretUnitar = 99m,
+            CodEconomicId = conex.Linii[0].CodEconomicId } }
+    });
+    var conexDupa = NirApply.Citeste(os, idNirConex);
+    Check("TESTUL-ANCORĂ (riscul 1): PUT pe NIR-ul conex cu produs completat → NICIUN al doilea lot, linia referă tot lotul facturii",
+        os.GetObjectsQuery<Lot>().Count(l => l.Produs.Cod.StartsWith(MarcajApiNir)) == loturiInainte
+        && conexDupa.Linii[0].LotId == lotFct.ID && conexDupa.Linii[0].LotStrain
+        && !os.GetObjectsQuery<Lot>().Any(l => l.LinieIntrareId == conexDupa.Linii[0].Id));
+    Check("Recepția PARȚIALĂ pe conex: valoarea se recalculează din prețul LOTULUI (4 × 5,95 = 23,8), prețul cules pe linie e IGNORAT (F5-D6b)",
+        conexDupa.Linii[0].Cantitate == 4m && conexDupa.Linii[0].Valoare == 23.8m
+        && conexDupa.Total == 23.8m);
+    Check("PUT-ul pe conex nu atinge TipTva-ul informativ clonat din factură (F5-D5: NIR-ul nu culege TVA)",
+        conexDupa.Linii[0].TipTvaId == cap19.ID && conexDupa.Linii[0].TipTvaCod == "CAP19");
+
+    OperareApi.Opereaza(os, idNirConex);
+    var stocConex = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == idNirConex).ToList();
+    Check("NIR conex operat după PUT: +4/+23,8 pe lotul facturii — gardul de preț (F5-D7b) NU atinge liniile cu lot străin, acolo prețul e al lotului",
+        stocConex.Count == 1 && stocConex[0].LotId == lotFct.ID
+        && stocConex[0].Cantitate == 4m && stocConex[0].Valoare == 23.8m);
+
+    // --- Sterge: draftul manual și lotul lui mor împreună ---
+    var idNir2 = NirApply.Aplica(os, null, new NirWriteDto {
+        Data = dataNir, PredatorId = furnizor.ID, PrimitorId = mag1.ID,
+        Linii = { new NirLinieWriteDto {
+            TipMaterialId = tipMateriale.ID, ProdusId = produs.ID,
+            Cantitate = 2m, PretUnitar = 8m, CodEconomicId = codEc.ID } }
+    });
+    var idLotDraft = NirApply.Citeste(os, idNir2).Linii[0].LotId.Value;
+    NirApply.Sterge(os, idNir2);
+    Check("Sterge pe draftul NIR manual: documentul, linia și LOTUL în culegere dispar împreună",
+        NirApply.Citeste(os, idNir2) == null
+        && !os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.DocumentId == idNir2)
+        && !os.GetObjectsQuery<Lot>().Any(l => l.ID == idLotDraft));
+
+    CurataApiNir(os);
+    Check("Curățenie finală felia Api NIR (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajApiNir))
+        && !os.GetObjectsQuery<Partener>().Any(p => p.Cod == "E2E-ANFURN")
+        && !os.GetObjectsQuery<FacturaIntrare>().Any(d => d.Numar.StartsWith("E2E-ANF"))
+        && os.GetObjectByKey<NIR>(idNir) == null);
 }
 
 Rezumat();

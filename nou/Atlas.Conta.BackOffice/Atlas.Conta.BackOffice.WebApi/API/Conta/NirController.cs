@@ -6,11 +6,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 
-// Felia NIR (F2-D3): CITIRE + COMENZI, fără agregat de scriere. NIR-ul de
-// producție e clona conexă pe care motorul o generează la operarea facturii —
-// fluxul-ancoră e FCT operată → `ConexId` → `/nir/{id}` → Operează. POST/PUT/
-// DELETE (NIR-ul cules manual + `ProdusId` pe `NirDetaliu`) sunt felie
-// separată, pur aditivă: se adaugă aici, fără să mute nimic.
+// Felia NIR: CITIRE + COMENZI (F2-D3) + SCRIERE (F5-D8). Cele două fluxuri ale
+// recepției intră pe aceleași rute:
+//   * CONEX — FCT operată → `ConexId` → `/nir/{id}` → Operează: liniile vin din
+//     clona pe care motorul o generează în tranzacția operării facturii, iar
+//     PUT-ul le poate corecta (recepția PARȚIALĂ: cantitatea primită scade,
+//     valoarea o urmează din prețul lotului);
+//   * MANUAL — marfa intră pe aviz/bon: POST/PUT culeg documentul, iar loturile
+//     se nasc pe propriile linii (`LoturiCulegereService`, apelat din Apply —
+//     pe tierul ăsta nu rulează niciun ViewController).
+// Scrierea s-a ADĂUGAT fără să mute nimic, exact cum anunța excluderea F2-D3.
 //
 // Comenzile sunt identice cu ale oricărei felii: `OperareApi` e agnostic de tip,
 // iar gate-ul de autorizare vine din `ContaApiController`.
@@ -36,6 +41,41 @@ public class NirController : ContaApiController {
         var dto = NirApply.Citeste(os, id);
         return dto == null ? NotFound() : Ok(dto);
     }
+
+    // ── Scriere: agregatul per document (42d) ─────────────────────────────
+    // `Numar` nu apare în WriteDto: NIR are politică de numerotare, deci seria e
+    // server-owned (F5-D8) — invers față de FCT, unde numărul e al furnizorului.
+    [HttpPost]
+    [ProducesResponseType(typeof(NirReadDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult Post([FromBody] NirWriteDto dto) => Domeniu(() => {
+        using var os = Secured(typeof(NIR));
+        var id = NirApply.Aplica(os, null, dto);
+        return Created($"/api/nir/{id}", NirApply.Citeste(os, id));
+    });
+
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(NirReadDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult Put(Guid id, [FromBody] NirWriteDto dto) => Domeniu(() => {
+        using var os = Secured(typeof(NIR));
+        NirApply.Aplica(os, id, dto);
+        return Ok(NirApply.Citeste(os, id));
+    });
+
+    // Ștergerea unui DRAFT. Pre-check-ul de domeniu e în `Sterge` (mesaj propriu),
+    // gardianul de Committing rămâne plasa; curățenia loturilor născute la
+    // culegere merge tot pe acolo.
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult Delete(Guid id) => Domeniu(() => {
+        using var os = Secured(typeof(NIR));
+        if (os.GetObjectByKey<NIR>(id) == null)
+            return NotFound();
+        NirApply.Sterge(os, id);
+        return NoContent();
+    });
 
     // ── Comenzi: OS NON-SECURED, tranzacția integral a motorului (42b) ─────
     [HttpPost("{id:guid}/opereaza")]

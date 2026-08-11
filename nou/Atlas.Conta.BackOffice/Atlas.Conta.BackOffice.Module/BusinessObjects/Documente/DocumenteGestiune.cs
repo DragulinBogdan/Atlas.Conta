@@ -63,8 +63,23 @@ public class NIR : Document {
                 else
                     erori.Add("Fiecare linie de NIR referă un lot (recepția e pe lot — decizia 13).");
             }
-            else if (os.GetObjectByKey<Lot>(d.LotId.Value).GestiuneId != PrimitorId)
-                erori.Add("Lotul fiecărei linii aparține gestiunii primitoare.");
+            else {
+                var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
+                if (lot.GestiuneId != PrimitorId)
+                    erori.Add("Lotul fiecărei linii aparține gestiunii primitoare.");
+                // F5-D7b: linia care și-a NĂSCUT lotul (recepție manuală) cere un
+                // preț. Fără el, `PregatesteOperare` materializează Valoare 0, iar
+                // motorul finalizează lotul cu PretUnitar 0 (Valoare/Cantitate,
+                // 26e): marfă cu valoare zero în stoc, pe care FIFO o propagă în
+                // TOATE ieșirile ulterioare, iar corecția e posibilă doar cât timp
+                // lotul n-are dependenți. Precedentul exact e plusul de inventar
+                // (28e — „plus cu preț de evaluare pozitiv"). Liniile cu lot
+                // STRĂIN (clona conexă) și cele de tip BAZĂ nu sunt atinse:
+                // acolo prețul e al lotului, nu al liniei (F5-D6b).
+                if (lot.LinieIntrareId == d.ID && d is NirDetaliu nd && nd.PretUnitar <= 0)
+                    erori.Add("Prețul unitar al liniei de recepție trebuie să fie pozitiv "
+                        + "(lotul se naște cu acest preț).");
+            }
             if (d.Cantitate <= 0)
                 erori.Add("Cantitatea recepționată trebuie să fie pozitivă.");
         }
