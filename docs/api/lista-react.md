@@ -64,3 +64,12 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
   apelul precede filtrarea pe tip, deci nu e configurabil). Dacă apare cerință
   reală de audit: fie ticket la DevExpress, fie audit propriu pe registre
   (append-only, deja istoricul contabil), fie la pasul 5 în tierul API.
+
+## Adăugate la felia 5 (NIR scriere)
+
+- **`window.confirm` la ștergerea unui draft** (`FctDetaliu`/`NirDetaliu`):
+  inconsecvent cu confirmarea inline aleasă la felia 3 pentru panoul de stingeri
+  (57f). Dincolo de inconsecvență, dialogul nativ blochează întregul renderer —
+  s-a văzut la smoke-ul feliei 5, unde tab-ul a rămas nefolosibil. În React
+  soluția e aceeași ca la stingeri: confirmare inline în shell, nu dialog de
+  browser.

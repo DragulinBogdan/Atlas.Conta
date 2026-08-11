@@ -1,9 +1,11 @@
 # Pasul 5 — Felia 5: NIR scriere (recepția culeasă manual) — contract
 
-Stare: **PROPUS** (2026-08-11) — deciziile pin-uite mai jos așteaptă confirmarea;
-implementarea urmează pe șablonul consolidat (`p5-spike1-contract.md`,
-`p5-felia-fct-contract.md`, `p5-felia-trz-contract.md`,
-`p5-felia-fcl-contract.md`).
+Stare: **EXECUTAT** (2026-08-12) — cei 3 pași + review advers cu fix-urile
+aplicate; închiderea în §Închidere. A cincea felie verticală pe șablonul
+consolidat (`p5-spike1-contract.md`, `p5-felia-fct-contract.md`,
+`p5-felia-trz-contract.md`, `p5-felia-fcl-contract.md`).
+Amendamente adăugate în timpul execuției: **F5-D7b** (preț pozitiv pe linia care
+naște lotul) și **F5-D8b** (`PoateEdita` redevine funcție de stare).
 
 A cincea felie verticală. Ridică excluderea declarată explicit la felia 2
 (F2-D3, comentată în `NirDtos.cs`/`NirController.cs`: „POST/PUT/DELETE pe NIR +
@@ -161,3 +163,96 @@ Verificări obligatorii la închidere:
   Operează;
 - drift openapi + dump metadata verificate;
 - review advers dedicat, cu accent pe riscurile 1–3.
+
+---
+
+## Închidere (2026-08-12)
+
+Regula de oprire e ÎNDEPLINITĂ, verificată în browser pe clona bazei de import
+(205k documente, 37k linii FCT, 46,6k loturi): NIR manual cules din client → lotul
+se naște la salvare („în culegere"), valoarea se materializează la culegere
+(2.550 = 10 × 255, nu 0) → operare → număr `NIR-17817` din seria proprie, lot
+finalizat la preț 255, iar registrele sunt **+10 / 2.550 pe DEPOZIT** și nota
+**371 = 401 / 2.550** — adică exact ce ar fi postat un NIR conex echivalent.
+Registrele nu disting proveniența. FCT + conexul ei neatinse: blocurile ModelCheck
+existente au rămas verzi fără nicio ajustare (singura modificare de check e
+inversarea asserției `PoateEdita`, autorizată punctual prin F5-D8b).
+
+Verificat suplimentar în browser: refuzul F5-D7 se randează pe AMBELE căi
+(„Verifică" și „Operează") cu mesajul care spune ce să facă, documentul rămâne
+Draft fără registre (33d ține și prin UI); ștergerea unui draft manual trece
+(ștergere amânată, ca la 60a).
+
+### Amendamentele luate în execuție
+
+- **F5-D7b** (scos la verificarea pasului 1): linia care își NAȘTE lotul cere
+  `PretUnitar > 0`. Fără el, o recepție culeasă fără preț se operează tăcut și
+  naște un lot cu valoare zero, pe care FIFO îl propagă în toate ieșirile
+  ulterioare; corecția e posibilă doar cât timp lotul n-are dependenți.
+  Precedentul exact: plusul de inventar (28e). Liniile cu lot străin nu sunt
+  atinse — acolo prețul e al lotului.
+- **F5-D8b** (ridicat de agentul pasului 2 prin regula de oprire): `PoateEdita`
+  redevine `Stare == Draft`, inclusiv pe NIR-ul AUTOGENERAT. F2-D5 îl ținea fals
+  fiindcă tierul n-avea nicio cale de scriere; din felia asta are, deci `false`
+  devenise el însuși minciuna. Draftul conex e proiectat să se deschidă în editare
+  (26d), iar gardul de lot străin (F5-D3) e chiar ce face editarea lui sigură:
+  recepția parțială — operatorul scade cantitatea primită pe NIR-ul generat — e
+  flux de producție, nu accident.
+
+### Review advers — 2 defecte de fond + 2 minore, toate fixate
+
+- **F1. Capcana lotului străin pe calea XAF.** `ContaUiBaseline` n-avea pentru
+  `NirDetaliu` oglinda blocului FCT, iar F5-D9 tocmai făcuse din ecranul XAF de
+  NIR o cale VIE de culegere. Cu produs și preț afișate lângă un `Lot` EDITABIL,
+  operatorul putea alege din nomenclator lotul unei recepții anterioare: serviciul
+  vede lot străin și TACE (gardul F5-D3 — corect), produsul și prețul rămân inerte
+  fără mesaj, iar operarea adaugă +cantitate pe un lot DEJA în stoc, evaluat la
+  prețul LUI, cu o notă `3xx = 401` fără legătură cu hârtia furnizorului. Marfă
+  re-recepționată, invizibilă pentru gardianul de sold (mișcarea e pozitivă) —
+  riscul 1 din contract, intrat pe cealaltă ușă. Lecția generală: **un gard care
+  tace devine capcană exact pe calea unde există și alternativa corectă**. Fix:
+  `Lot` și `Valoare` read-only pe ambele căi (coloană + dialogul liniei), TVA-ul
+  scos din culegere.
+- **F2. Ștergerea NIR-ului conex.** `Sterge` refuza doar starea, nu și
+  `Autogenerat`, iar clientul dădea buton. Pe o factură cu linii exclusiv de stoc,
+  factura postează DOAR rândul de TVA (26a) — datoria și intrarea în stoc trăiesc
+  integral pe conex. Ștergerea lui lăsa o factură OPERATĂ, cu Total pe ecran, fără
+  datorie și fără marfă în registre, fără ca nimic să-i spună operatorului.
+  F5-D8b tranșase EDITAREA artefactului; **anihilarea e altă decizie și nu se
+  moștenește din ea**. Fix: refuz cu mesajul care spune remediul (anulați
+  operarea facturii), buton stins în client.
+- **F3 (minor).** Produsul trimis pe o linie cu lot străin era PERSISTAT, nu
+  ignorat — deci citit de validarea de coerență Tip↔Produs, care putea face NIR-ul
+  permanent ne-operabil printr-un câmp pe care UI-ul îl afișează read-only. Acum
+  se GOLEȘTE: „inert" devine adevărat, nu doar afirmat în comentarii.
+- **F4 (minor).** De când conexul e editabil poate purta linii manuale cu loturi
+  proprii; `StergeConexeDraftAutogenerate` rulează în OS-ul non-secured al
+  motorului, unde nu curăță nimeni — loturile rămâneau orfane în nomenclator.
+  Curățenia se face acum acolo unde se face ștergerea.
+
+Zone atacate și găsite CURATE (utile ca evidență): dublarea de lot prin API (toate
+secvențele de PUT/ștergere/re-editare încercate — gardul ține; două linii nu pot
+împărți un lot prin construcție, `LotId` fiind server-owned pe ambele frunze care
+nasc loturi); pierderea de date istorice (liniile de tip BAZĂ tratate coerent în
+toate cele cinci locuri care le văd, iar `AnuleazaOperarea` nu resetează
+preț/dată, deci `Finalizat()` rămâne adevărat pe draftul re-deschis); regresia pe
+FCT (singura schimbare de comportament e gardul nou, care umbrește exclusiv
+ramura ce năștea al doilea lot — strict îmbunătățire); contractul de scriere
+(niciun câmp server-owned atins de `Aplica`).
+
+### Rămase, ne-blocante
+
+- `AngajamentId` intră în `spreWrite` dar n-are lookup în editorul de linie —
+  la fel ca pe FCT (consecvent, nu regresie): un angajament pus pe altă cale
+  supraviețuiește PUT-ului, dar nu se poate culege din client.
+- Ștergerea unui draft folosește `window.confirm` (moștenit din FCT), inconsecvent
+  cu confirmarea inline aleasă la F3 pentru panoul de stingeri; item pentru
+  `lista-react.md`, nu pentru felie.
+- Drift de rotunjire preexistent pe recepția parțială a conexului la cantități
+  foarte mari (`Cantitate × round₆(Valoare/Cantitate)` ≠ `Valoare`) — semnalat de
+  review ca NEintrodus de felie; felia doar îl face vizibil înainte de operare.
+- Ecranul XAF de NIR rămâne funcțional, nu product-grade (F5-D9): fără layout,
+  captions sau recalcul de `Valoare` la culegere. `RecalculValoriCulegere` rămâne
+  FCT/FCL-only, cu limitarea documentată în cod.
+- Artefactele probei (NIR-17817 operat) rămân pe clona de dev, ca la feliile
+  anterioare. Harness-ul de reconciliere (`Atlas.Conta.Import1C.Flax`) e neatins.
