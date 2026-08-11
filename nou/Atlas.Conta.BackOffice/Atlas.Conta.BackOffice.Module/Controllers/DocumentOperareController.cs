@@ -105,7 +105,7 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
         //
         // Commit NECONDIȚIONAT (GATE XAF D2): pe un draft deschis și neatins
         // `IsModified` e false, iar seam-ul de culegere din `Committing`
-        // (FacturaIntrareLoturiController — nașterea lotului) n-ar mai rula
+        // (DocumenteLoturiCulegereController — nașterea lotului) n-ar mai rula
         // niciodată pe calea „butonul direct", pe care contractul D2 o declară
         // acoperită. Un commit fără modificări e inofensiv (SaveChanges pe zero
         // entries), dar dă seam-urilor de Committing ultima șansă.

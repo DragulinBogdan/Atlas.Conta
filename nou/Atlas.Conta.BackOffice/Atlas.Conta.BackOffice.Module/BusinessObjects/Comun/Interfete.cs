@@ -34,6 +34,25 @@ public interface ILinieCuPretUnitar {
     decimal PretUnitar { get; }
 }
 
+// Linia care NAȘTE un lot la culegere (F5-D2): produsul ales de operator devine
+// identitatea lotului nou, iar `LoturiCulegereService` face nașterea/
+// sincronizarea/curățenia pe contractul ăsta — o singură logică pentru toate
+// tipurile de INTRARE culese manual (decizia 25c: baza nu poartă ProdusId,
+// produsul e caracteristică de frunză). Gestiunea lotului vine din hook-ul
+// polimorf `Document.GestiuneLoturiCulese`.
+//
+// Numele spune INTENȚIA, nu forma. `FacturaIesireDetaliu` și
+// `DescarcareGestiuneDetaliu` au și ele `ProdusId`, dar cu semantică OPUSĂ:
+// acolo produsul e criteriul de PICKING dintr-un lot EXISTENT (decizia 37d,
+// „General! + Specific?"). Dacă ar declara interfața, fiecare culegere de FCL
+// ar naște loturi fantomă — marfă inventată în stoc, în loc de marfă aleasă
+// din el. Interdicția e load-bearing: nu se declară pe ieșiri.
+// Implementat de FacturaIntrareDetaliu și NirDetaliu.
+public interface ILinieCareNasteLot {
+    Guid? ProdusId { get; set; }
+    Produs Produs { get; set; }
+}
+
 // Trăsătura PROPRIE a Decontului (inventar 06, nuanța deciziei 15): linia
 // poartă postarea explicită — cont și repartitor, per latură — ca date de
 // primă clasă. Motorul o consultă înaintea rezolvării declarative (SursaCont)

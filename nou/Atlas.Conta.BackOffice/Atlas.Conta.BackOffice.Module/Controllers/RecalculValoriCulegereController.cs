@@ -101,6 +101,15 @@ static class RecalculCulegere {
     // Tipurile cu lanț de valori cules (ILinieCuPretUnitar): FCT + FCL — exact cele
     // două ecrane ale gate-ului. Restul documentelor își materializează `Valoare`
     // din altă parte (preț de lot, valoare culeasă direct), deci n-au ce recalcula.
+    //
+    // LIMITARE ASUMATĂ (F5-D9): NIR-ul cules manual are din felia 5 preț pe linie
+    // (`NirDetaliu.PretUnitar`), deci FORMA cere recalcul — dar ecranul lui XAF nu
+    // e product-grade (GATE-ul a fost explicit FCT+FCL, decizia 44.2). În XAF
+    // `Valoare` rămâne 0 pe ecran până la operare, când `NIR.PregatesteOperare` o
+    // materializează (F5-D6a); pe calea API `NirApply` o pune la culegere.
+    // Extinderea aici e aditivă și se face când NIR-ul primește ecran, nu „pentru
+    // simetrie" — recalculul e cuplat cu TVA-ul, pe care NIR-ul deliberat nu-l are
+    // (F5-D5).
     public static bool TipCuPretUnitarCules(Type tip) =>
         tip != null && (typeof(FacturaIntrare).IsAssignableFrom(tip) || typeof(FacturaIesire).IsAssignableFrom(tip));
 }

@@ -3,12 +3,21 @@ using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
-// F2-D1: mecanismul de CULEGERE al loturilor de pe factura de intrare, extras din
-// `FacturaIntrareLoturiController` ca serviciu pe `IObjectSpace` pur — o singură
-// logică de naștere/sincronizare/curățenie, apelată din (a) controllerul XAF
-// (adaptor subțire pe `ObjectSpace.Committing`) și (b) `FacturaIntrareApply`
-// înainte de commit, unde nu rulează niciun ViewController. Motorul doar
-// FINALIZEAZĂ lotul la operare (26e) — nașterea lui e a culegerii.
+// F2-D1: mecanismul de CULEGERE al loturilor, extras din controllerul de culegere
+// al FCT (azi `DocumenteLoturiCulegereController`, F5-D9) ca serviciu pe
+// `IObjectSpace` pur — o singură logică de naștere/sincronizare/curățenie, apelată
+// din (a) controllerul XAF (adaptor subțire pe `ObjectSpace.Committing`) și
+// (b) apply-urile tierului API înainte de commit, unde nu rulează niciun
+// ViewController. Motorul doar FINALIZEAZĂ lotul la operare (26e) — nașterea lui
+// e a culegerii.
+//
+// F5-D3: generalizat de la `FacturaIntrare`/`FacturaIntrareDetaliu` la
+// `(Document, ILinieCareNasteLot)` — recepția manuală (NIR fără factură) naște
+// loturi prin exact același seam, iar orice tip viitor de intrare culeasă intră
+// declarând interfața. Gestiunea vine din hook-ul polimorf
+// `Document.GestiuneLoturiCulese` (default = primitorul). Generalizarea e o
+// mutare de TIP, nu de semantică: fiecare ramură de mai jos e un fix de review
+// cu preț plătit și se păstrează verbatim.
 //
 // GATE XAF (D2, GOL 1 din contract): nașterea LOTULUI la culegere pe factura de
 // intrare. `CreeazaLot` (decizia 25c/26e) exista în model cu ZERO apelanți din UI,
@@ -31,7 +40,7 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // un draft e deliberat NEFINALIZAT în bază (preț 0, dată 0001-01-01): nu are rânduri
 // de stoc, deci nu intră în picking și nu poate fi consumat până la operare.
 public static class LoturiCulegereService {
-    public static void Sincronizeaza(IObjectSpace os, FacturaIntrare doc) {
+    public static void Sincronizeaza(IObjectSpace os, Document doc) {
         // Liniile ȘTERSE în acest commit — inclusiv cele cascadate de ștergerea
         // documentului Draft întreg (EF marchează Deleted dependenții încărcați la
         // `Remove`, iar colecția Detalii e încărcată în DetailView).
@@ -42,9 +51,12 @@ public static class LoturiCulegereService {
         // gardieni. Pe calea „Operează" handler-ul rulează de două ori — o dată pe
         // commit-ul culegerii (Draft → creează/sincronizează) și o dată pe commit-ul
         // motorului (Stare deja Operat → nu face nimic).
+        // F5-D3: filtrul e pe CONTRACT (`ILinieCareNasteLot`), nu pe tipul frunzei —
+        // liniile de tip BAZĂ ale NIR-urilor istorice/importate nu-l declară, deci
+        // ies natural din joc (`Citeste` le arată, dar ele n-au ce naște).
         var vii = doc != null && doc.Stare == StareDocument.Draft && !os.IsObjectToDelete(doc)
-            ? doc.Detalii.OfType<FacturaIntrareDetaliu>().Where(d => !os.IsObjectToDelete(d)).ToList()
-            : new List<FacturaIntrareDetaliu>();
+            ? doc.Detalii.Where(d => d is ILinieCareNasteLot && !os.IsObjectToDelete(d)).ToList()
+            : new List<DocumentDetaliu>();
 
         if (idsSterse.Count == 0 && vii.Count == 0)
             return;
@@ -59,13 +71,27 @@ public static class LoturiCulegereService {
             .Select(t => new { t.ID, t.Clasa.Natura })
             .ToDictionary(t => t.ID, t => t.Natura);
 
-        // Gestiunea lotului = latura PRIMITOARE a facturii (FCT: Partener → Gestiune).
-        var gestiune = doc != null && doc.PrimitorId != Guid.Empty
-            ? os.GetObjectByKey<Repartitor>(doc.PrimitorId) as Gestiune
-            : null;
+        // Gestiunea lotului = hook-ul polimorf al documentului (F5-D2); default =
+        // latura PRIMITOARE (FCT și NIR: Partener → Gestiune).
+        var gestiune = doc?.GestiuneLoturiCulese(os);
 
         foreach (var linie in vii) {
+            var culege = (ILinieCareNasteLot)linie;
             var lot = loturiProprii.FirstOrDefault(l => l.LinieIntrareId == linie.ID && !os.IsObjectToDelete(l));
+
+            // GARDUL DE LOT STRĂIN (F5-D3, riscul propriu al feliei): linia care
+            // referă un lot pe care NU l-a născut ea rămâne NEATINSĂ. Cazul real e
+            // clona conexă — `MotorOperare.GenereazaConex` copiază `LotId` de pe
+            // linia facturii, deci lotul aparține liniei FCT, iar linia de NIR îl
+            // moștenește (F5-D4). Fără gard, un PUT pe NIR-ul conex cu `ProdusId`
+            // completat ar cădea pe ramura de creare (`lot == null`) și ar naște
+            // un AL DOILEA lot pentru marfă deja recepționată: stoc dublat, pe
+            // care gardianul de sold nu are cum să-l prindă (lotul nou pornește de
+            // la zero, deci nicio verificare de sold nu devine negativă).
+            // Consecința asumată: pe astfel de linii produsul/prețul cules sunt
+            // inerte — prețul e al lotului (F5-D6b), iar marfa e a facturii.
+            if (lot == null && linie.LotId != null)
+                continue;
             // Tip necules / necunoscut = culegere INCOMPLETĂ, nu decizie: lotul
             // existent se lasă în pace (regula de Save cere oricum Tipul, iar un
             // commit refuzat de validare nu are voie să distrugă lotul liniei).
@@ -77,20 +103,21 @@ public static class LoturiCulegereService {
             // un lot pe care culegerea l-a născut și motorul nu l-a atins încă.
             //
             // Review advers D1: `ProdusId` e coloană NOUĂ (migrația
-            // FacturaIntrareProdus), deci pe TOATE liniile preexistente (34.289
+            // FacturaIntrareProdus pe FCT, `NirCulegereLot` pe NIR — F5 lovește
+            // aceeași clasă de risc), deci pe TOATE liniile preexistente (34.289
             // în baza de import) e null deși linia are lot FINALIZAT. Fără
             // distincția de mai jos, orice commit pe un astfel de draft — inclusiv
             // cel pe care `Opereaza` îl face necondiționat, sau tranziția
             // Operat→Draft a anulării — ștergea lotul istoric (ID, dată reală,
             // preț, poziție FIFO) fără nicio eroare, iar documentul rămânea
             // neoperabil.
-            if (linie.ProdusId == null && lot != null && Finalizat(lot)) {
+            if (culege.ProdusId == null && lot != null && Finalizat(lot)) {
                 // Self-healing: lotul finalizat E sursa de adevăr; linia își ia
                 // produsul de la el (culegerea veche nu-l avea).
-                linie.ProdusId = lot.ProdusId;
+                culege.ProdusId = lot.ProdusId;
                 continue;
             }
-            if (linie.ProdusId == null || natura != NaturaClasa.Stoc) {
+            if (culege.ProdusId == null || natura != NaturaClasa.Stoc) {
                 if (lot != null && !Finalizat(lot))
                     LoturiLiniiSterse.StergeLot(os, linie, lot);
                 else if (lot != null && linie.LotId == lot.ID) {
@@ -114,7 +141,7 @@ public static class LoturiCulegereService {
                 // trece nici inserția).
                 if (gestiune == null)
                     continue;
-                var produs = os.GetObjectByKey<Produs>(linie.ProdusId.Value);
+                var produs = os.GetObjectByKey<Produs>(culege.ProdusId.Value);
                 if (produs == null)
                     continue;
                 loturiProprii.Add(linie.CreeazaLot(os, produs, gestiune));
@@ -123,8 +150,8 @@ public static class LoturiCulegereService {
 
             // Sincronizare pe lotul propriu: produsul reales pe linie și gestiunea
             // schimbată pe header se propagă; preț/dată rămân motorului (26e).
-            if (lot.ProdusId != linie.ProdusId.Value) {
-                var produs = os.GetObjectByKey<Produs>(linie.ProdusId.Value);
+            if (lot.ProdusId != culege.ProdusId.Value) {
+                var produs = os.GetObjectByKey<Produs>(culege.ProdusId.Value);
                 if (produs != null)
                     lot.Produs = produs;
             }
@@ -149,8 +176,13 @@ public static class LoturiCulegereService {
         // Liniile se citesc explicit după documentele marcate spre ștergere.
         var idsDocumente = os.GetObjectsToDelete(true).OfType<Document>().Select(d => d.ID).ToList();
         var idsSterse = LoturiLiniiSterse.Ids(os);
+        // F5-D3: query pe BAZA detaliului — strict mai larg decât frunza FCT de
+        // dinainte (acoperă și liniile de NIR, și pe cele de tip bază ale
+        // documentelor istorice). `Curata` filtrează oricum candidații pe
+        // `LinieIntrareId`, deci lărgirea nu poate atinge un lot care nu e al
+        // unei linii șterse.
         if (idsDocumente.Count > 0)
-            idsSterse.AddRange(os.GetObjectsQuery<FacturaIntrareDetaliu>()
+            idsSterse.AddRange(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => idsDocumente.Contains(d.DocumentId))
                 .Select(d => d.ID)
                 .ToList());
@@ -188,13 +220,15 @@ public static class LoturiCulegereService {
 }
 
 // Curățenia loturilor rămase fără linie-mamă, partajată de cele două ferestre din
-// care o linie de FCT poate dispărea. FK-ul invers linie←lot nu există în schemă
+// care o linie poate dispărea. FK-ul invers linie←lot nu există în schemă
 // (26e — ar face ciclu de inserție), deci întreținerea proveniența e integral a
 // noastră: un lot al cărui `LinieIntrareId` nu mai are linie e orfan (preț 0, fără
 // rânduri de stoc) și ar polua nomenclatorul de loturi și lookup-urile.
 static class LoturiLiniiSterse {
+    // F5-D3: pe BAZA detaliului, nu pe frunza FCT — orice linie ștearsă e
+    // candidată, iar `Curata` face selecția reală prin `LinieIntrareId`.
     public static List<Guid> Ids(IObjectSpace os) =>
-        os.GetObjectsToDelete(true).OfType<FacturaIntrareDetaliu>().Select(d => d.ID).ToList();
+        os.GetObjectsToDelete(true).OfType<DocumentDetaliu>().Select(d => d.ID).ToList();
 
     public static void Curata(IObjectSpace os, List<Guid> idsSterse, List<Lot> candidati) {
         // NUMAI loturile PROPRII ale liniilor șterse (`LinieIntrareId`), niciodată

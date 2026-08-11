@@ -9,7 +9,13 @@ namespace Atlas.Conta.BackOffice.Module.Controllers;
 // mai poartă logică — doar fereastra de execuție (`ObjectSpace.Committing`) și
 // documentul curent. Motivația mecanismului (de ce Committing, self-healing-ul
 // 53f, lotul nefinalizat pe draft) trăiește lângă cod, în serviciu.
-public class FacturaIntrareLoturiController : ObjectViewController<DetailView, FacturaIntrare> {
+//
+// F5-D9: țintit pe `Document`, nu pe `FacturaIntrare` — recepția manuală (NIR)
+// naște loturi prin ACELAȘI seam, iar lecția 58c e că orice cale de UI care nu
+// trece prin el divergează tăcut. Serviciul e natural no-op pe tipurile ale
+// căror linii nu declară `ILinieCareNasteLot` (BTR/BCS/…): filtrul de contract
+// face selecția, nu tipul view-ului.
+public class DocumenteLoturiCulegereController : ObjectViewController<DetailView, Document> {
     protected override void OnActivated() {
         base.OnActivated();
         ObjectSpace.Committing += OnCommitting;
@@ -29,8 +35,8 @@ public class FacturaIntrareLoturiController : ObjectViewController<DetailView, F
 // obicei din ListView, unde controllerul de mai sus nici nu e activ, iar liniile
 // cascadate ar lăsa loturile orfane. Aici NU se creează și nu se sincronizează
 // nimic (într-o listă nu se culege nici produs, nici latură) — doar curățenia.
-// Țintă `Document`, nu `FacturaIntrare`: acoperă și un eventual ListView pe baza
-// ierarhiei; filtrul pe `FacturaIntrareDetaliu` din serviciu face selecția.
+// Țintă `Document`, nu un tip anume: acoperă și un eventual ListView pe baza
+// ierarhiei; filtrul pe `LinieIntrareId` din serviciu face selecția.
 public class DocumenteLoturiCuratenieController : ObjectViewController<ListView, Document> {
     protected override void OnActivated() {
         base.OnActivated();

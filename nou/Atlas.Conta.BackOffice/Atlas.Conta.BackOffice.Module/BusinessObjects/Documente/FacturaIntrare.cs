@@ -150,7 +150,7 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
     }
 }
 
-public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCuPretUnitar {
+public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCuPretUnitar, ILinieCareNasteLot {
     // Lanțul de valori trăiește pe derivată (testul bazei §3); capetele lui
     // (Valoare + ValoareTva din bază) intră în registre. Cota și regimul vin
     // din TipTva (bază, P1) — fosta CotaTva de pe derivată era redundantă.

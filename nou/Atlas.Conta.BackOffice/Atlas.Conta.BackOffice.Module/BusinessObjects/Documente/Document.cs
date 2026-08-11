@@ -113,6 +113,20 @@ public abstract class Document : BaseObject {
     public virtual Guid RepartitorImplicitDebit() => PredatorId;
     public virtual Guid RepartitorImplicitCredit() => PrimitorId;
 
+    // Gestiunea în care se NASC loturile culese pe liniile documentului
+    // (F5-D2) — hook polimorf consumat de `LoturiCulegereService`, pe FK-uri +
+    // IObjectSpace ca toate hook-urile motorului (25b: apelanții nu garantează
+    // lazy loading).
+    //
+    // Default = latura PRIMITOARE, adevărată pe ambele tipuri de INTRARE care
+    // culeg azi produse: FCT (Partener → Gestiune) și NIR (Partener →
+    // Gestiune). Tipurile la care marfa apare pe latura PREDATOARE (plusul de
+    // inventar — gestiunea inventariată, 28d; produsele Asamblării, 46d) vor
+    // face override când intră în scopul culegerii (restanța 53i); hook-ul e
+    // ancora pentru ele, nu se scrie nimic speculativ acum.
+    public virtual Gestiune GestiuneLoturiCulese(DevExpress.ExpressApp.IObjectSpace os) =>
+        PrimitorId != Guid.Empty ? os.GetObjectByKey<Repartitor>(PrimitorId) as Gestiune : null;
+
     // Rolul de STINGĂTOR în imperechere (decizia 31d, extinsă de 48b —
     // compensarea): contrapartidele pe care documentul le poate stinge, fiecare
     // cu PLAFONUL ei. `null` = tipul NU stinge nimic (majoritatea — facturile

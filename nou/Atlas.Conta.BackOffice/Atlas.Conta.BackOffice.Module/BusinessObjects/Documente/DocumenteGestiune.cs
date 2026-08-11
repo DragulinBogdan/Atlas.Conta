@@ -1,5 +1,7 @@
 using Atlas.Conta.BackOffice.Module.UI;
 using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Editors;
+using DevExpress.Persistent.Base;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -13,14 +15,23 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // închiderea întrebării 00 §13.1) — factura postează doar liniile non-stoc.
 [TipDetaliu(typeof(NirDetaliu))]
 public class NIR : Document {
-    // Liniile care referă un lot străin (născut pe altă linie — cazul conex) își
-    // iau valoarea din prețul finalizat al lotului; liniile care și-au creat
-    // propriul lot au Valoare culeasă (prețul lotului se derivă abia la operare).
+    // Cele două cazuri ale recepției, cu o formulă fiecare (F5-D6):
+    //  (a) lot STRĂIN (născut pe altă linie — cazul conex): valoarea vine din
+    //      prețul finalizat al lotului, deci recepția parțială (operatorul scade
+    //      cantitatea primită) se reevaluează corect;
+    //  (b) lot PROPRIU (recepție manuală, fără factură): valoarea se
+    //      materializează din prețul CULES pe linie — altfel un NIR manual s-ar
+    //      opera cu Valoare 0, iar prețul lotului (Valoare/Cantitate, 26e) ar
+    //      ieși tot 0. Prețul trăiește pe frunză (`NirDetaliu`); liniile de tip
+    //      BAZĂ ale NIR-urilor istorice/importate n-au de unde-l lua și rămân cu
+    //      valoarea lor (importul a scris-o deja).
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.Where(d => d.LotId != null)) {
             var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
             if (lot.LinieIntrareId != d.ID)
                 d.Valoare = Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar);
+            else if (d is NirDetaliu nd)
+                d.Valoare = Scara.RotunjesteBani(nd.PretUnitar * d.Cantitate);
         }
     }
 
@@ -30,13 +41,55 @@ public class NIR : Document {
             erori.Add("Predatorul NIR-ului trebuie să fie un partener (furnizor).");
         if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)
             erori.Add("Primitorul NIR-ului trebuie să fie o gestiune.");
+        // Natura Clasei per Tip prin PROIECȚIE (disciplina 25b): nicio navigație
+        // lazy atinsă în enumerare.
+        var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
+        var naturi = os.GetObjectsQuery<TipMaterial>()
+            .Where(t => idsTip.Contains(t.ID))
+            .Select(t => new { t.ID, t.Clasa.Natura })
+            .ToDictionary(t => t.ID, t => t.Natura);
+
         foreach (var d in Detalii) {
-            if (d.LotId == null)
-                erori.Add("Fiecare linie de NIR referă un lot (recepția e pe lot — decizia 13).");
+            if (d.LotId == null) {
+                // F5-D7: pe recepția manuală lipsa lotului are o CAUZĂ pe care
+                // operatorul o poate remedia — produsul necules. Mesajul generic
+                // („referă un lot") îi spunea ce lipsește, nu ce să facă; rămâne
+                // pentru restul cazurilor (linie de tip bază pe un NIR istoric,
+                // sau lot nenăscut încă fiindcă latura primitoare nu e gestiune —
+                // refuzat separat mai sus).
+                if (d is ILinieCareNasteLot culege && culege.ProdusId == null
+                        && naturi.GetValueOrDefault(d.TipMaterialId) == NaturaClasa.Stoc)
+                    erori.Add("Liniile de stoc ale NIR-ului își creează lotul la culegere (alegeți produsul).");
+                else
+                    erori.Add("Fiecare linie de NIR referă un lot (recepția e pe lot — decizia 13).");
+            }
             else if (os.GetObjectByKey<Lot>(d.LotId.Value).GestiuneId != PrimitorId)
                 erori.Add("Lotul fiecărei linii aparține gestiunii primitoare.");
             if (d.Cantitate <= 0)
                 erori.Add("Cantitatea recepționată trebuie să fie pozitivă.");
+        }
+
+        // Identitatea dublă a liniei (Tip + Produs) trebuie să fie coerentă —
+        // oglinda validării de pe FCT (GATE 53f) / FCL (review P2 defect 4): un
+        // produs de alt Tip ar conta pe conturile Tipului greșit, iar lotul născut
+        // de linie ar ajunge în registrul altui Tip decât cel postat. Totul pe
+        // proiecții (25b).
+        //
+        // NU se adaugă refuzul „linia trebuie să fie de tipul derivat" (regula
+        // FCT/FCL): NIR-urile istorice și cele importate poartă linii de tip BAZĂ,
+        // iar `NirApply.Citeste` le arată deliberat — un refuz aici le-ar face
+        // ne-anulabile și ne-stornabile.
+        var idsProdus = Detalii.OfType<ILinieCareNasteLot>()
+            .Where(d => d.ProdusId != null).Select(d => d.ProdusId.Value).Distinct().ToList();
+        if (idsProdus.Count > 0) {
+            var tipPerProdus = os.GetObjectsQuery<Produs>()
+                .Where(p => idsProdus.Contains(p.ID))
+                .Select(p => new { p.ID, p.TipMaterialId })
+                .ToDictionary(p => p.ID, p => p.TipMaterialId);
+            foreach (var d in Detalii.OfType<NirDetaliu>())
+                if (d.ProdusId != null && tipPerProdus.TryGetValue(d.ProdusId.Value, out var tipProdus)
+                        && tipProdus != null && tipProdus != d.TipMaterialId)
+                    erori.Add("Produsul liniei aparține altui Tip decât Tipul liniei — corectați Tipul sau produsul.");
         }
     }
 }
@@ -44,7 +97,37 @@ public class NIR : Document {
 // DIM-2 (decizia 54e, inventar §2): NIR primește prin clona conexă tot ce
 // culege FCT — frunza poartă reuniunea FCT, culegibilă și pe NIR manual (Î3):
 // fără ea, NIR-ul manual n-ar putea satisface defalcarea conturilor 3xx.
-public class NirDetaliu : DocumentDetaliu {
+//
+// F5-D1: frunza capătă și capătul de CULEGERE al recepției manuale (marfa
+// intrată pe aviz, factura vine ulterior): produsul care naște lotul, prețul
+// de recepție și atributele lui. Pe NIR-ul CONEX câmpurile astea rămân goale —
+// clona din FCT aduce lotul deja născut pe linia facturii (lot STRĂIN), iar
+// valoarea vine din prețul lui; recepția conexă nu-și alege marfa, o
+// moștenește (F5-D4).
+public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot {
+    // F5-D1/F5-D2: identitatea liniei de stoc pe recepția manuală — oglinda lui
+    // FacturaIntrareDetaliu.ProdusId (GATE XAF D1). Nullable în schemă (aceeași
+    // frunză poartă și liniile clonei conexe, unde produsul e al lotului);
+    // obligatoriu pe liniile de stoc fără lot, prin validare.
+    public virtual Guid? ProdusId { get; set; }
+    // Catalog de produse (potențial mare).
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    public virtual Produs Produs { get; set; }
+
+    // Prețul de recepție cules de pe hârtia furnizorului: `Valoare` rămâne
+    // REZULTAT (GATE 53c), materializat din `PretUnitar × Cantitate` — la
+    // culegere pe calea API și la operare în `NIR.PregatesteOperare` (F5-D6a).
+    // Scara PREȚ (18,6 — decizia 49e), pe numele proprietății.
+    // IGNORAT pe liniile cu lot străin: acolo prețul e al lotului (F5-D6b).
+    [XafDisplayName("Preț unitar")]
+    public virtual decimal PretUnitar { get; set; }
+
+    // Atribute de lot culese la intrare; motorul le copiază pe Lot la operare.
+    [XafDisplayName("Dată expirare")]
+    public virtual DateOnly? DataExpirare { get; set; }
+    [XafDisplayName("Lot fabricație")]
+    public virtual string LotFabricatie { get; set; }
+
     public virtual Guid? CodEconomicId { get; set; }
     [XafDisplayName("Cod economic")]
     public virtual CodEconomic CodEconomic { get; set; }

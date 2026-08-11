@@ -26,7 +26,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Fct;
 //      dă, nu că rămân 0), apoi override-ul manual de `ValoareTva`, dacă vine;
 //   4. `LoturiCulegereService.Sincronizeaza` — nașterea/sincronizarea/curățenia
 //      loturilor liniilor de stoc, ÎNAINTE de commit (echivalentul lui
-//      `FacturaIntrareLoturiController.OnCommitting`).
+//      `DocumenteLoturiCulegereController.OnCommitting`).
 public static class FacturaIntrareApply {
 
     // ═══════════════════════ Scriere ═══════════════════════

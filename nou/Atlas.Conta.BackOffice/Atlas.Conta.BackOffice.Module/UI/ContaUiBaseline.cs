@@ -63,6 +63,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<FacturaIntrare>().HideForeignKeys();           // PlataContPropriuId
         registry.For<FacturaIesire>().HideForeignKeys();            // GestiuneDescarcareId
         registry.For<FacturaIntrareDetaliu>().HideForeignKeys();    // ProdusId (GATE XAF D1)
+        registry.For<NirDetaliu>().HideForeignKeys();               // ProdusId (F5-D1)
         registry.For<FacturaIesireDetaliu>().HideForeignKeys();     // ProdusId
         registry.For<DecontDetaliu>().HideForeignKeys();            // ContDebitId/ContCreditId/RepartitorDebitId/RepartitorCreditId
         registry.For<DescarcareGestiuneDetaliu>().HideForeignKeys();// LinieSursaId
