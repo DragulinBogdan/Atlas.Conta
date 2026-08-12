@@ -98,6 +98,22 @@ public static class LoturiCulegereService {
             if (!naturi.TryGetValue(linie.TipMaterialId, out var natura))
                 continue;
 
+            // GARDUL DE DIRECȚIE (F6-D3): linia care REFUZĂ nașterea (LDI minus —
+            // descarcă un lot existent) se rutează pe curățenie, ca și cum
+            // produsul n-ar fi cules. Fără el, o linie de minus cu produs rămas
+            // pe ea din starea de plus ar naște lot-artefact pe draft.
+            //
+            // Poziția e load-bearing: ÎNAINTE de self-healing, altfel o linie
+            // comutată Plus→Minus cu lotul propriu FINALIZAT (operare + anulare +
+            // comutare) și-ar primi `ProdusId` înapoi de la lot, luptându-se cu
+            // golirea din Apply. Pe cazul ăla referința se rupe și lotul finalizat
+            // supraviețuiește ca reziduu istoric — nu se șterge, poate avea urme
+            // (rânduri de registru anulate, alte linii care-l referă).
+            if (!culege.NasteLot) {
+                CurataLotulPropriu(os, linie, lot);
+                continue;
+            }
+
             // Produsul golit sau Tipul mutat pe ne-stoc = decizie explicită a
             // operatorului ⇒ lotul PROPRIU al liniei dispare — DAR numai dacă e
             // un lot pe care culegerea l-a născut și motorul nu l-a atins încă.
@@ -118,18 +134,7 @@ public static class LoturiCulegereService {
                 continue;
             }
             if (culege.ProdusId == null || natura != NaturaClasa.Stoc) {
-                if (lot != null && !Finalizat(lot))
-                    LoturiLiniiSterse.StergeLot(os, linie, lot);
-                else if (lot != null && linie.LotId == lot.ID) {
-                    // Review advers F2-D3: Tipul mutat pe NE-stoc pe un draft
-                    // re-deschis (post-anulare) — lotul FINALIZAT nu se șterge
-                    // (are istorie), dar linia devenită de serviciu nu are voie
-                    // să-l mai refere: dimensiunea Material s-ar rezolva din
-                    // lotul irelevant (33b), iar lotul ar rămâne legat de o
-                    // linie ne-stoc. Referința se rupe, lotul rămâne.
-                    linie.Lot = null;
-                    linie.LotId = null;
-                }
+                CurataLotulPropriu(os, linie, lot);
                 continue;
             }
 
@@ -193,6 +198,28 @@ public static class LoturiCulegereService {
             .Where(l => l.LinieIntrareId != null && idsSterse.Contains(l.LinieIntrareId.Value))
             .ToList();
         LoturiLiniiSterse.Curata(os, idsSterse, loturi);
+    }
+
+    // Linia nu mai are ce naște (produs golit, Tip mutat pe ne-stoc, direcție
+    // care refuză nașterea): lotul PROPRIU al liniei dispare — dar numai dacă e
+    // unul pe care culegerea l-a născut și motorul nu l-a atins încă.
+    //
+    // Lotul FINALIZAT nu se șterge (are istorie: preț, dată reală, poziție FIFO,
+    // posibil rânduri de registru), dar linia nu mai are voie să-l refere:
+    // dimensiunea Material s-ar rezolva din lotul irelevant (33b), iar lotul ar
+    // rămâne legat de o linie care nu-l mai reprezintă (review advers F2-D3).
+    // Referința se rupe, lotul rămâne.
+    //
+    // `linie.LotId != lot.ID` (lot propriu, dar linia pinuiește altceva) nu se
+    // atinge deloc: pinul e al liniei de minus și nu e al nostru — vezi și
+    // `StergeLot`, care rupe referința doar când e chiar spre lotul șters.
+    static void CurataLotulPropriu(IObjectSpace os, DocumentDetaliu linie, Lot lot) {
+        if (lot != null && !Finalizat(lot))
+            LoturiLiniiSterse.StergeLot(os, linie, lot);
+        else if (lot != null && linie.LotId == lot.ID) {
+            linie.Lot = null;
+            linie.LotId = null;
+        }
     }
 
     // Lotul FINALIZAT a trecut prin motor (26e: `PretUnitar = Valoare/Cantitate`,

@@ -47,10 +47,16 @@ public interface ILinieCuPretUnitar {
 // „General! + Specific?"). Dacă ar declara interfața, fiecare culegere de FCL
 // ar naște loturi fantomă — marfă inventată în stoc, în loc de marfă aleasă
 // din el. Interdicția e load-bearing: nu se declară pe ieșiri.
-// Implementat de FacturaIntrareDetaliu și NirDetaliu.
+// Implementat de FacturaIntrareDetaliu, NirDetaliu și ListaDiferenteInventarDetaliu.
 public interface ILinieCareNasteLot {
     Guid? ProdusId { get; set; }
     Produs Produs { get; set; }
+
+    // F6-D3: linia care poartă o DIRECȚIE poate refuza nașterea. Pe LDI doar
+    // PLUSUL naște lot (28d); minusul pinuiește un lot existent, iar un produs
+    // rămas cules pe el ar naște lot-artefact pe draft. Default `true` — FCT și
+    // NIR nasc necondiționat și nu se ating.
+    bool NasteLot => true;
 }
 
 // Trăsătura PROPRIE a Decontului (inventar 06, nuanța deciziei 15): linia

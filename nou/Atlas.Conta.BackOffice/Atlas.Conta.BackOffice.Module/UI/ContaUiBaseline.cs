@@ -335,21 +335,38 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.Stare, c => c.Index = 4)
             .Column(d => d.Total, c => c.Index = -1);
 
+    // F6-D10 (lecția F5-F1, aplicată preventiv): declararea `ILinieCareNasteLot`
+    // face din ecranul LDI o cale VIE de culegere — `DocumenteLoturiCulegereController`
+    // e țintit pe `Document`. Cele două direcții culeg lucruri DIFERITE, iar
+    // câmpurile celeilalte sunt capcane: pe plus lotul e al mecanismului (născut
+    // din produs + gestiunea inventariată), pe minus produsul și prețul de
+    // evaluare sunt inerte. Comutarea o face `[Appearance]` de pe frunză;
+    // ordinea coloanelor de aici e ordinea de culegere a plusului.
     static void ListaDiferenteInventar(UiBaselineRegistry registry) {
         var entitate = registry.For<ListaDiferenteInventarDetaliu>();
-        entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
+        entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
         entitate.ListView(nameof(ListaDiferenteInventarDetaliu) + ListView, _ => { })
             .Column(d => d.Directie, c => c.Index = 0)
             .Column(d => d.TipMaterial, c => c.Index = 1)
-            .Column(d => d.Lot, c => c.Index = 2)
-            .Column(d => d.Cantitate, c => c.Index = 3)
-            .Column(d => d.PretEvaluare, c => c.Index = 4)
-            .Column(d => d.Valoare, c => c.Index = 5)
-            .Column(d => d.DataExpirare, c => c.Index = 6)
-            .Column(d => d.LotFabricatie, c => c.Index = 7)
+            .Column(d => d.Produs, c => c.Index = 2)
+            .Column(d => d.Lot, c => c.Index = 3)
+            .Column(d => d.Cantitate, c => c.Index = 4)
+            .Column(d => d.PretEvaluare, c => c.Index = 5)
+            // Rezultat, nu culegere: `PregatesteOperare` o rescrie necondiționat
+            // pe ambele direcții — vezi nota de pe FCT (review advers D7).
+            .Column(d => d.Valoare, c => { c.Index = 6; c.AllowEdit = false; })
+            .Column(d => d.DataExpirare, c => c.Index = 7)
+            .Column(d => d.LotFabricatie, c => c.Index = 8)
             // LDI n-are semantică de TVA — ascunde coloanele moștenite din bază.
             .Column(d => d.TipTva, c => c.Index = -1)
             .Column(d => d.ValoareTva, c => c.Index = -1);
+        // Dialogul de New/edit al colecției (40a) — acolo AllowEdit-ul coloanei nu
+        // ajunge; `Lot`/`Produs` NU se blochează aici: editabilitatea lor e pe
+        // direcție ([Appearance] de pe frunză), nu necondiționată ca la FCT/NIR.
+        entitate.DetailView(nameof(ListaDiferenteInventarDetaliu) + "_DetailView", dv => {
+            if (dv.Items[nameof(DocumentDetaliu.Valoare)] is IModelCommonMemberViewItem valoare)
+                valoare.AllowEdit = false;
+        });
     }
 
     static void Decont(UiBaselineRegistry registry) {
