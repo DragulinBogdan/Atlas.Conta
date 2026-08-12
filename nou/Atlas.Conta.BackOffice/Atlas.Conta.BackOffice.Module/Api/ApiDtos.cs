@@ -86,4 +86,23 @@ internal static class ApiEnum {
             $"Instrumentul de plată „{valoare}” nu există — valorile acceptate: "
             + string.Join(", ", Enum.GetNames<TipInstrumentPlata>()) + ".");
     }
+
+    // Direcția liniei de LDI (F6-D5), parsată la GRANIȚĂ — înaintea oricărui
+    // `CreateObject`. Spre deosebire de `TipInstrument`, absența NU are default:
+    // `DirectieDiferenta` n-are membru 0 tocmai ca linia culeasă fără direcție
+    // să nu treacă drept ceva (28e), iar direcția decide TOATĂ semantica liniei
+    // în `LdiApply` (ce câmpuri se golesc, dacă `LotId` se aplică, cum se
+    // materializează valoarea). O linie fără direcție ar fi oricum ne-operabilă;
+    // o refuzăm de la culegere, cu valorile valide enumerate.
+    public static DirectieDiferenta Directie(string valoare) {
+        if (!string.IsNullOrWhiteSpace(valoare)) {
+            var cerut = valoare.Trim();
+            foreach (var nume in Enum.GetNames<DirectieDiferenta>())
+                if (string.Equals(nume, cerut, StringComparison.OrdinalIgnoreCase))
+                    return Enum.Parse<DirectieDiferenta>(nume);
+        }
+        throw new OperareException(
+            $"Direcția liniei de inventar „{valoare}” nu există — valorile acceptate: "
+            + string.Join(", ", Enum.GetNames<DirectieDiferenta>()) + ".");
+    }
 }
