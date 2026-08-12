@@ -232,13 +232,47 @@ Niciodată `--no-build` la `dotnet ef` (incident cunoscut).
    operatorul re-recepționează marfă (lot străin pe plus)? (validarea de
    operare o refuză — dar verifică că nu există cale TĂCUTĂ).
 
-## Închidere (se completează la final)
+## Închidere (2026-08-13)
 
-- [ ] Contract îndeplinit; ModelCheck verde ambele profiluri; drift verde.
-- [ ] Smoke browser executat (flux-ancoră BCS + LDI).
-- [ ] Review advers: defecte + fix-uri.
+- [x] Contract îndeplinit; ModelCheck verde ambele profiluri (bugetar 456+,
+  privat 249, 88 verificări noi ale feliei incl. probele post-review);
+  `pnpm verifica:drift` verde; build client verde.
+- [x] Smoke browser executat pe perechea WebApi + client (baza Privat):
+  BCS-548 cules → operat (valoarea la culegere 5×0,65=3,25; −Magazie pe
+  gestiune + +Consum pe SEDIU; nota 6028=3028); LDI-19 cules → operat
+  (lotul plusului născut la salvare „(în culegere)" în gestiunea
+  PREDATORULUI, finalizat de motor la 0,70/13.08.2026; minusul semnat −1/
+  −0,65; note 3028=7588 + 6028=3028 pozitiv normalizat; Total net 0,75);
+  comutatorul de direcție în ambele sensuri; precompletarea Tipului din
+  produs; gardianul de sold cu mesaj de domeniu pe lotul fără sold
+  (validarea empirică a F6-D8). Capcană de MEDIU prinsă la smoke: migrația
+  trebuie aplicată și pe bazele de dev suplimentare
+  (`dotnet ef database update --connection ...Database=Atlas.Conta.BackOffice.Privat`)
+  — altfel ORICE query TPT pe detalii dă 500 (coloana nouă lipsește).
+- [x] Review advers: 2 defecte de FOND fixate (F1 — minusul putea descărca
+  lotul născut de linia-FRATE a aceluiași document la preț nefinalizat 0,
+  gardianul de sold trecea ⇒ gardul ASM 46d replicat pe LDI; F2 — lipsea
+  validarea de coerență Tip↔Produs pe plusul care naște lot ⇒ replicată de
+  pe NIR) + minore: M1 golirea produsului în serviciu pe `NasteLot == false`
+  (gardul mutat ÎNAINTEA gardului de lot străin — toate căile ajung la
+  aceeași stare), M2 pinul golit la comutarea Plus→Minus în client, M4
+  mesajul „tip vechi" atins (tipul se judecă înaintea parse-ului de
+  direcție). Găurile de acoperire închise cu 6 probe ModelCheck noi
+  (predatorul schimbat după naștere, lotul-frate, coerența, comutarea cu
+  lot finalizat + curățenia „fără urme" la Sterge).
 - Datorii/limitări documentate:
+  - M3: lotul propriu FINALIZAT rămâne orfan după comutarea de direcție
+    (operare→anulare→comutare) — inofensiv (sold 0, nerefolosibil pe plus);
+    curățenia „fără urme" îl culege abia la ștergerea documentului;
+  - M5 (UX XAF): pin de lot străin cules pe Plus înainte de alegerea
+    direcției nu mai poate fi scos decât comutând dus-întors pe Minus —
+    refuzul de operare e zgomotos, capcană tăcută nu există;
   - filtrarea laturilor interne pe `Calitati` (F6-D8) — extensie viitoare;
+    un purtător de LocConsum/Comisie care nu e UnitateInterna nu e
+    selectabil din client;
   - retrofit `MaterializeazaValori` pe BTR (F6-D6) — minor;
+  - lookup-urile pe linia EXISTENTĂ afișează placeholder până la
+    deschiderea dropdown-ului (rezolvarea lazy a display-ului; moștenit
+    din BTR) — item lista-react;
   - `window.confirm` la Șterge (moștenit NIR) — item existent lista-react;
   - DEC (F6-D12) — felie viitoare.
