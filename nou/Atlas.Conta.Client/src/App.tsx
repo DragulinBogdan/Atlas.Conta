@@ -11,6 +11,10 @@ import { FclLista } from './felii/fcl/FclLista';
 import { FclDetaliu } from './felii/fcl/FclDetaliu';
 import { DscLista } from './felii/dsc/DscLista';
 import { DscDetaliu } from './felii/dsc/DscDetaliu';
+import { BcsLista } from './felii/bcs/BcsLista';
+import { BcsDetaliu } from './felii/bcs/BcsDetaliu';
+import { LdiLista } from './felii/ldi/LdiLista';
+import { LdiDetaliu } from './felii/ldi/LdiDetaliu';
 import { PltLista } from './felii/plt/PltLista';
 import { PltDetaliu } from './felii/plt/PltDetaliu';
 import { IncLista } from './felii/inc/IncLista';
@@ -48,6 +52,12 @@ export function App() {
         <Route path="/btr" element={<BtrLista />} />
         <Route path="/btr/nou" element={<BtrDetaliu />} />
         <Route path="/btr/:id" element={<BtrDetaliu />} />
+        <Route path="/bcs" element={<BcsLista />} />
+        <Route path="/bcs/nou" element={<BcsDetaliu />} />
+        <Route path="/bcs/:id" element={<BcsDetaliu />} />
+        <Route path="/ldi" element={<LdiLista />} />
+        <Route path="/ldi/nou" element={<LdiDetaliu />} />
+        <Route path="/ldi/:id" element={<LdiDetaliu />} />
         <Route path="/stoc" element={<SoldStoc />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
@@ -71,6 +81,8 @@ function Cadru() {
         <NavLink to="/plt">Plăți</NavLink>
         <NavLink to="/inc">Încasări</NavLink>
         <NavLink to="/btr">Note de transfer</NavLink>
+        <NavLink to="/bcs">Bonuri de consum</NavLink>
+        <NavLink to="/ldi">Diferențe inventar</NavLink>
         <NavLink to="/stoc">Sold stoc</NavLink>
         <button
           type="button"

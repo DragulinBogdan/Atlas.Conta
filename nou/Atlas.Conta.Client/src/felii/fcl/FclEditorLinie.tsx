@@ -3,6 +3,7 @@ import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
 import { PanouErori } from '../../nucleu/PanouErori';
+import { etichetaLot } from '../../nucleu/lot';
 import { SCHEMA_LINIE, TIP_LINIE, type FclLinieWrite } from './api';
 
 // Liniile de draft se editează cu VOCABULARUL `Camp*`, nu în grilă (43c): grila
@@ -228,39 +229,4 @@ function etichetaTipTva(element: Record<string, unknown>): string {
   if (!element) return '';
   const cota = element.Cota == null ? null : Number(element.Cota);
   return `${codSiDenumire(element)}${cota == null ? '' : ` (${cota}%)`}`;
-}
-
-// Oglinda lui `ApiProiectii.EtichetaLot` (care e, la rândul lui, oglinda lui
-// `Lot.Eticheta` — [NotMapped]): aceleași reguli, aceeași formă. A treia copie
-// există fiindcă lookup-ul citește lotul prin OData, unde proprietatea calculată
-// nu ajunge; cusătura e documentată în toate trei. Fixul de fond ar fi o coloană
-// persistată sau o proiecție proprie de lookup-uri.
-function etichetaLot(element: Record<string, unknown>): string {
-  if (!element) return '';
-  const produs = element.Produs as Record<string, unknown> | null | undefined;
-  const denumire = produs?.Denumire == null ? '(produs nedefinit)' : String(produs.Denumire);
-  const data = ziLocala(element.Data);
-  const pret = element.PretUnitar == null ? 0 : Number(element.PretUnitar);
-  if (data == null)
-    return denumire;
-  // Lotul născut la culegere și nefinalizat încă de motor (25c): fără dată reală
-  // și fără preț — se spune, nu se inventează.
-  if (data === '01.01.0001' && pret === 0)
-    return `${denumire} (în culegere)`;
-  return `${denumire} · ${data} · ${pret.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
-}
-
-// `Edm.Date` iese din ODataStore fie ca `Date` (deserializat), fie ca string ISO.
-// Nicio conversie de fus: se citesc componentele locale ale obiectului sau se
-// taie stringul.
-function ziLocala(v: unknown): string | null {
-  if (v == null) return null;
-  if (v instanceof Date) {
-    const zi = `${v.getDate()}`.padStart(2, '0');
-    const luna = `${v.getMonth() + 1}`.padStart(2, '0');
-    return `${zi}.${luna}.${v.getFullYear()}`;
-  }
-  const text = String(v).slice(0, 10);
-  const parti = text.split('-');
-  return parti.length === 3 ? `${parti[2]}.${parti[1]}.${parti[0]}` : text;
 }

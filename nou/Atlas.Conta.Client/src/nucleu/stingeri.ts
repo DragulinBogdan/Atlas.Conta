@@ -50,6 +50,8 @@ export function rutaTip(tip: string | null | undefined, id: string): string | nu
     case 'PLT': return `/plt/${id}`;
     case 'INC': return `/inc/${id}`;
     case 'BTR': return `/btr/${id}`;
+    case 'BCS': return `/bcs/${id}`;
+    case 'LDI': return `/ldi/${id}`;
     default: return null;
   }
 }

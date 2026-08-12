@@ -3,6 +3,7 @@ import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
 import { PanouErori } from '../../nucleu/PanouErori';
+import { etichetaLot } from '../../nucleu/lot';
 import { SCHEMA_LINIE, TIP_LINIE, type BtrLinieWrite } from './api';
 
 // Liniile de draft se editează cu VOCABULARUL `Camp*`, nu în grilă (43c):
@@ -13,15 +14,9 @@ import { SCHEMA_LINIE, TIP_LINIE, type BtrLinieWrite } from './api';
 const CAMPURI: (keyof BtrLinieWrite & string)[] = ['TipMaterialId', 'LotId', 'Cantitate'];
 
 // `Lot` e singurul lookup unde `DefaultProperty` nu ajunge pe sârmă: `Eticheta`
-// e `[NotMapped]`, deci OData nu o expune. Compunem eticheta din `$expand=Produs`
-// — aceleași trei atribute ca `Lot.Eticheta` în model (produs · dată · preț).
-function etichetaLot(element: Record<string, unknown>): string {
-  if (!element) return '';
-  const produs = element.Produs as { Denumire?: string; Cod?: string } | undefined;
-  const data = String(element.Data ?? '').slice(0, 10);
-  const pret = Number(element.PretUnitar ?? 0).toFixed(2);
-  return `${produs?.Denumire ?? produs?.Cod ?? '?'} · ${data} · ${pret}`;
-}
+// e `[NotMapped]`, deci OData nu o expune — eticheta se compune din
+// `$expand=Produs`. Funcția a urcat în NUCLEU (F6-D9): o singură formă pentru
+// FCL, BTR, BCS și LDI.
 
 export function EditorLinie(props: {
   linie: BtrLinieWrite;
