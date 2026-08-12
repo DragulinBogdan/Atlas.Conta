@@ -113,11 +113,10 @@ public static class ListaDiferenteInventarApply {
         var pastrate = new HashSet<Guid>();
 
         foreach (var l in linii) {
-            // Parse-ul enumerării ÎNAINTE de orice `CreateObject` (F6-D5,
-            // precedentul `ApiEnum`): direcția decide tot ce urmează, iar un refuz
-            // după creare ar lăsa o linie orfană în ObjectSpace-ul viu.
-            var directie = ApiEnum.Directie(l.Directie);
-
+            // Review advers F6-M4: pe liniile EXISTENTE, tipul se judecă ÎNAINTEA
+            // parse-ului de direcție — o linie de tip BAZĂ (LDI istoric) iese din
+            // ReadDto cu `Directie` null, iar parse-ul ar refuza-o cu mesajul de
+            // enum („direcția «» nu există") în locul celui acționabil de mai jos.
             ListaDiferenteInventarDetaliu detaliu;
             if (l.Id is Guid linieId) {
                 if (!existente.TryGetValue(linieId, out var existenta))
@@ -130,13 +129,17 @@ public static class ListaDiferenteInventarApply {
                     ?? throw new OperareException(
                         $"Linia {linieId} nu e o linie de listă de diferențe (tip vechi) — ștergeți-o din "
                         + "document și culegeți-o din nou.");
+                detaliu.Directie = ApiEnum.Directie(l.Directie);
             }
             else {
+                // Parse-ul enumerării ÎNAINTE de `CreateObject` (F6-D5, precedentul
+                // `ApiEnum`): direcția decide tot ce urmează, iar un refuz după
+                // creare ar lăsa o linie orfană în ObjectSpace-ul viu.
+                var directie = ApiEnum.Directie(l.Directie);
                 detaliu = os.CreateObject<ListaDiferenteInventarDetaliu>();
                 detaliu.Document = doc;
+                detaliu.Directie = directie;
             }
-
-            detaliu.Directie = directie;
             detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
                 ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
 
@@ -149,7 +152,7 @@ public static class ListaDiferenteInventarApply {
             VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
             detaliu.Cantitate = l.Cantitate;
 
-            if (directie == DirectieDiferenta.Minus) {
+            if (detaliu.Directie == DirectieDiferenta.Minus) {
                 // Câmpurile PLUSULUI se golesc — persistat, nu doar ignorat
                 // (F6-D3). Navigația ȘI FK-ul scalar: fixup-ul EF nu are voie să
                 // reînvie referința dintr-o navigație încă încărcată.

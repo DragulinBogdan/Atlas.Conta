@@ -5874,6 +5874,28 @@ using (var os = provider.CreateObjectSpace()) {
         ListaDiferenteInventarApply.Citeste(os, idComut) == null
         && os.GetObjectByKey<Lot>(lotVechi.ID) != null);
 
+    // --- PUT care SCHIMBĂ PREDATORUL după nașterea lotului (review, gaura 1:
+    //     jumătatea neexersată a testului-ancoră — gestiunea lotului îl urmează,
+    //     ramura de sincronizare din LoturiCulegereService) ---
+    var mag2Ldi = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG2");
+    var idMutat = ListaDiferenteInventarApply.Aplica(os, null, new LdiWriteDto {
+        Data = dataLdi, PredatorId = mag1.ID, PrimitorId = comisie.ID,
+        Linii = { new LdiLinieWriteDto {
+            Directie = "Plus", TipMaterialId = tipMateriale.ID, ProdusId = produs.ID,
+            Cantitate = 2m, PretEvaluare = 4m, CodEconomicId = codEc.ID } }
+    });
+    var linieMutata = ListaDiferenteInventarApply.Citeste(os, idMutat).Linii.Single();
+    ListaDiferenteInventarApply.Aplica(os, idMutat, new LdiWriteDto {
+        Data = dataLdi, PredatorId = mag2Ldi.ID, PrimitorId = comisie.ID,
+        Linii = { new LdiLinieWriteDto {
+            Id = linieMutata.Id, Directie = "Plus", TipMaterialId = tipMateriale.ID,
+            ProdusId = produs.ID, Cantitate = 2m, PretEvaluare = 4m, CodEconomicId = codEc.ID } }
+    });
+    Check("PUT care schimbă PREDATORUL după nașterea lotului → gestiunea lotului îl urmează (gaura 1 din review)",
+        mag2Ldi != null
+        && os.GetObjectByKey<Lot>(linieMutata.LotId.Value).GestiuneId == mag2Ldi.ID);
+    ListaDiferenteInventarApply.Sterge(os, idMutat);
+
     // --- Self-healing pe linia „istorică": lot FINALIZAT + ProdusId null ---
     // `ProdusId` e coloană NOUĂ pe frunza LDI (migrația F6): pe liniile scrise
     // înainte de felie e null deși lotul e finalizat. Fără distincția din serviciu
@@ -5958,6 +5980,51 @@ using (var os = provider.CreateObjectSpace()) {
         mag1.ID, comisie.ID,
         new LdiLinieWriteDto { Directie = "Minus", TipMaterialId = tipMateriale.ID,
             LotId = lotVechi.ID, Cantitate = 999m });
+
+    // Review advers F6-F2: coerența Tip↔Produs pe plusul care naște lot —
+    // fără ea, lotul se năștea cu produs de marfă pe cont de materiale, iar
+    // ieșirile legitime (care VALIDEAZĂ coerența) găseau stocul pe cheia greșită.
+    var tipAltLdi = os.GetObjectsQuery<TipMaterial>().First(t => t.ID != tipMateriale.ID);
+    var produsAltTip = os.CreateObject<Produs>();
+    produsAltTip.Cod = MarcajApiLdi + "-B";
+    produsAltTip.Denumire = "Produs B (alt Tip) probă felia Api LDI";
+    produsAltTip.UM = "BUC";
+    produsAltTip.TipMaterial = tipAltLdi;
+    os.CommitChanges();
+    RefuzLdi("Plus cu produs din ALT Tip decât Tipul liniei → refuz de coerență (review F6-F2: invariantul 50a se păzește la naștere, ca pe FCT/NIR/ASM)",
+        mag1.ID, comisie.ID,
+        new LdiLinieWriteDto { Directie = "Plus", TipMaterialId = tipMateriale.ID, ProdusId = produsAltTip.ID,
+            Cantitate = 1m, PretEvaluare = 5m, CodEconomicId = codEc.ID });
+
+    // Review advers F6-F1 (oglinda gardului ASM, 46d): minusul care descarcă
+    // lotul născut de o linie-FRATE ar intra cu preț nefinalizat (0) — gardianul
+    // de sold ar trece (+3−2 ≥ 0 pe aceeași cheie, aceeași zi), iar consumul
+    // restului la prețul finalizat ar lăsa valoare orfană pe cantitate 0.
+    var idFrate = ListaDiferenteInventarApply.Aplica(os, null, new LdiWriteDto {
+        Data = dataLdi, PredatorId = mag1.ID, PrimitorId = comisie.ID,
+        Linii = { new LdiLinieWriteDto {
+            Directie = "Plus", TipMaterialId = tipMateriale.ID, ProdusId = produs.ID,
+            Cantitate = 3m, PretEvaluare = 7m, CodEconomicId = codEc.ID } }
+    });
+    var citFrate = ListaDiferenteInventarApply.Citeste(os, idFrate).Linii.Single();
+    ListaDiferenteInventarApply.Aplica(os, idFrate, new LdiWriteDto {
+        Data = dataLdi, PredatorId = mag1.ID, PrimitorId = comisie.ID,
+        Linii = {
+            new LdiLinieWriteDto {
+                Id = citFrate.Id, Directie = "Plus", TipMaterialId = tipMateriale.ID,
+                ProdusId = produs.ID, Cantitate = 3m, PretEvaluare = 7m, CodEconomicId = codEc.ID },
+            new LdiLinieWriteDto {
+                Directie = "Minus", TipMaterialId = tipMateriale.ID,
+                LotId = citFrate.LotId, Cantitate = 2m }
+        }
+    });
+    CheckRefuza("Minus care descarcă lotul născut de linia-FRATE a aceluiași document → refuz (review F6-F1: prețul plusului nu există până la operare)",
+        () => OperareApi.Opereaza(os, idFrate));
+    Check("Refuzul F6-F1 — fără rânduri-fantomă (33d)",
+        !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idFrate)
+        && os.GetObjectByKey<ListaDiferenteInventar>(idFrate).Stare == StareDocument.Draft);
+    ListaDiferenteInventarApply.Sterge(os, idFrate);
+
     Check("Seria „LDI-” NU se consumă la refuz (F6-D4 + GATE D6: numărul se asignează abia la materializare)",
         SerieLdi() == serieInainteLdi);
 
@@ -6016,6 +6083,36 @@ using (var os = provider.CreateObjectSpace()) {
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idLdi) == 4
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idLdi && r.Storno) == 2
         && SoldLdi(lotVechi) == 10m && SoldLdi(lotPlusFinal) == 0m);
+
+    // --- Riscul 1 din contract: comutarea cu lotul propriu FINALIZAT ---
+    // (operare → anulare → comutare pe Minus prin PUT): pinul ține, produsul se
+    // golește pe toate căile (F6-M1), iar lotul finalizat SUPRAVIEȚUIEȘTE —
+    // reziduu istoric asumat (F6-M3, documentat în contract §Închidere); la
+    // ștergerea documentului, curățenia „fără urme” îl culege totuși.
+    var idFinalizat = ListaDiferenteInventarApply.Aplica(os, null, new LdiWriteDto {
+        Data = dataLdi, PredatorId = mag1.ID, PrimitorId = comisie.ID,
+        Linii = { new LdiLinieWriteDto {
+            Directie = "Plus", TipMaterialId = tipMateriale.ID, ProdusId = produs.ID,
+            Cantitate = 2m, PretEvaluare = 9m, CodEconomicId = codEc.ID } }
+    });
+    var linieFinalizata = ListaDiferenteInventarApply.Citeste(os, idFinalizat).Linii.Single();
+    var idLotFinalizat = linieFinalizata.LotId.Value;
+    OperareApi.Opereaza(os, idFinalizat);
+    OperareApi.AnuleazaOperarea(os, idFinalizat);
+    ListaDiferenteInventarApply.Aplica(os, idFinalizat, new LdiWriteDto {
+        Data = dataLdi, PredatorId = mag1.ID, PrimitorId = comisie.ID,
+        Linii = { new LdiLinieWriteDto {
+            Id = linieFinalizata.Id, Directie = "Minus", TipMaterialId = tipMateriale.ID,
+            LotId = lotVechi.ID, Cantitate = 1m } }
+    });
+    var dupaFinalizat = ListaDiferenteInventarApply.Citeste(os, idFinalizat).Linii.Single();
+    Check("Comutare cu lotul propriu FINALIZAT (operare→anulare→comutare): pinul ține, produsul golit, lotul finalizat SUPRAVIEȚUIEȘTE cu prețul lui (riscul 1 din contract)",
+        dupaFinalizat.Directie == "Minus" && dupaFinalizat.LotId == lotVechi.ID
+        && dupaFinalizat.ProdusId == null
+        && os.GetObjectByKey<Lot>(idLotFinalizat) is { PretUnitar: 9m });
+    ListaDiferenteInventarApply.Sterge(os, idFinalizat);
+    Check("Sterge după comutarea cu lot finalizat: curățenia „fără urme” culege și reziduul (anularea i-a șters registrele, nicio linie vie nu-l referă)",
+        os.GetObjectByKey<Lot>(idLotFinalizat) == null);
 
     // --- Sterge: draftul de plus și lotul lui în culegere mor împreună ---
     var idLdi2 = ListaDiferenteInventarApply.Aplica(os, null, new LdiWriteDto {

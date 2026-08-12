@@ -79,9 +79,16 @@ export function LdiEditorLinie(props: {
     if (v.Directie !== linie.Directie && v.Directie === 'Minus') {
       // Minusul descarcă un lot existent: câmpurile plusului nu-i aparțin, iar
       // serverul oricum le golește (F6-D3). Le golim și aici, ca payload-ul să
-      // spună de la început același lucru.
-      setEtichete((prev) => ({ ...prev, ProdusDenumire: '' }));
-      setLinie({ ...v, ProdusId: null, PretEvaluare: null, DataExpirare: null, LotFabricatie: null });
+      // spună de la început același lucru. `LotId` se golește și el (review
+      // advers F6-M2): după un plus salvat, ReadDto îl dă = lotul PROPRIU al
+      // liniei — comutat pe minus, pinul ar apărea pre-umplut cu lotul „(în
+      // culegere)" al liniei însăși, pe care serverul urmează să-l ȘTEARGĂ.
+      setEtichete((prev) => ({ ...prev, ProdusDenumire: '', LotEticheta: '' }));
+      setLinie({
+        ...v,
+        ProdusId: null, PretEvaluare: null, DataExpirare: null, LotFabricatie: null,
+        LotId: null,
+      });
       return;
     }
     if (v.Directie !== linie.Directie && v.Directie === 'Plus') {

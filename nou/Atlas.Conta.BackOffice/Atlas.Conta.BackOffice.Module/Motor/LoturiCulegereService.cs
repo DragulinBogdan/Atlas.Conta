@@ -90,6 +90,33 @@ public static class LoturiCulegereService {
             // la zero, deci nicio verificare de sold nu devine negativă).
             // Consecința asumată: pe astfel de linii produsul/prețul cules sunt
             // inerte — prețul e al lotului (F5-D6b), iar marfa e a facturii.
+            // GARDUL DE DIRECȚIE (F6-D3): linia care REFUZĂ nașterea (LDI minus —
+            // descarcă un lot existent) se rutează pe curățenie, ca și cum
+            // produsul n-ar fi cules. Fără el, o linie de minus cu produs rămas
+            // pe ea din starea de plus ar naște lot-artefact pe draft.
+            //
+            // Poziția e load-bearing de două ori: ÎNAINTEA gardului de lot străin
+            // (o linie de minus proaspătă, cu pin și produs cules în dialog
+            // înainte de comutare, altfel ar sări peste golire — F6-M1;
+            // `CurataLotulPropriu` e no-op fără lot propriu, pinul nu se atinge)
+            // și ÎNAINTE de self-healing, altfel o linie comutată Plus→Minus cu
+            // lotul propriu FINALIZAT (operare + anulare + comutare) și-ar primi
+            // `ProdusId` înapoi de la lot, luptându-se cu golirea. Pe cazul ăla
+            // referința se rupe și lotul finalizat supraviețuiește ca reziduu
+            // istoric — nu se șterge, poate avea urme (rânduri de registru
+            // anulate, alte linii care-l referă).
+            if (!culege.NasteLot) {
+                CurataLotulPropriu(os, linie, lot);
+                // Review advers F6-M1: produsul e al NAȘTERII — pe linia care
+                // refuză nașterea rămânea persistat pe calea XAF ([Appearance]
+                // doar dezactivează editarea), divergent de golirea din Apply;
+                // validarea de coerență Tip↔Produs (F6-F2) l-ar judeca pe o
+                // linie care nu-l mai arată. Toate căile ajung la aceeași stare.
+                culege.Produs = null;
+                culege.ProdusId = null;
+                continue;
+            }
+
             if (lot == null && linie.LotId != null)
                 continue;
             // Tip necules / necunoscut = culegere INCOMPLETĂ, nu decizie: lotul
@@ -97,22 +124,6 @@ public static class LoturiCulegereService {
             // commit refuzat de validare nu are voie să distrugă lotul liniei).
             if (!naturi.TryGetValue(linie.TipMaterialId, out var natura))
                 continue;
-
-            // GARDUL DE DIRECȚIE (F6-D3): linia care REFUZĂ nașterea (LDI minus —
-            // descarcă un lot existent) se rutează pe curățenie, ca și cum
-            // produsul n-ar fi cules. Fără el, o linie de minus cu produs rămas
-            // pe ea din starea de plus ar naște lot-artefact pe draft.
-            //
-            // Poziția e load-bearing: ÎNAINTE de self-healing, altfel o linie
-            // comutată Plus→Minus cu lotul propriu FINALIZAT (operare + anulare +
-            // comutare) și-ar primi `ProdusId` înapoi de la lot, luptându-se cu
-            // golirea din Apply. Pe cazul ăla referința se rupe și lotul finalizat
-            // supraviețuiește ca reziduu istoric — nu se șterge, poate avea urme
-            // (rânduri de registru anulate, alte linii care-l referă).
-            if (!culege.NasteLot) {
-                CurataLotulPropriu(os, linie, lot);
-                continue;
-            }
 
             // Produsul golit sau Tipul mutat pe ne-stoc = decizie explicită a
             // operatorului ⇒ lotul PROPRIU al liniei dispare — DAR numai dacă e

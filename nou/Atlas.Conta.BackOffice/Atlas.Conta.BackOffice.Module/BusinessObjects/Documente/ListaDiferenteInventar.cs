@@ -47,11 +47,30 @@ public class ListaDiferenteInventar : Document {
         var primitor = os.GetObjectByKey<Repartitor>(PrimitorId);
         if (primitor is Partener || !primitor.Calitati.HasFlag(CalitateRepartitor.Comisie))
             erori.Add("Primitorul trebuie să fie comisia de inventariere (calitatea Comisie).");
+        // Review advers F6-F1 (oglinda gardului ASM, 46d): minusul care descarcă
+        // lotul născut de o linie-FRATE ar intra cu preț nefinalizat (0) —
+        // gardianul de sold ar trece (aceeași cheie, aceeași zi), iar consumul
+        // restului la prețul finalizat ar lăsa valoare orfană pe cantitate 0.
+        var idsLiniiProprii = Detalii.Select(x => x.ID).ToHashSet();
+        // Review advers F6-F2: coerența Tip↔Produs pe plusul care naște lot —
+        // invariantul 50a („Tip linie = Tip produs lot") se păzește la NAȘTERE,
+        // ca pe toate intrările (FCT/NIR/ASM); proiecție, disciplina 25b.
+        var idsProdus = Detalii.OfType<ILinieCareNasteLot>()
+            .Where(x => x.ProdusId != null).Select(x => x.ProdusId.Value).Distinct().ToList();
+        var tipPerProdus = idsProdus.Count == 0
+            ? new Dictionary<Guid, Guid?>()
+            : os.GetObjectsQuery<Produs>()
+                .Where(p => idsProdus.Contains(p.ID))
+                .Select(p => new { p.ID, p.TipMaterialId })
+                .ToDictionary(p => p.ID, p => (Guid?)p.TipMaterialId);
         foreach (var d in Detalii.OfType<ListaDiferenteInventarDetaliu>()) {
             if (d.Directie is not (DirectieDiferenta.Plus or DirectieDiferenta.Minus))
                 erori.Add("Fiecare linie de diferență poartă direcția (plus sau minus).");
             if (d.Cantitate == 0)
                 erori.Add("Cantitatea diferenței nu poate fi zero.");
+            if (d.ProdusId != null && tipPerProdus.TryGetValue(d.ProdusId.Value, out var tipProdus)
+                    && tipProdus != null && tipProdus != d.TipMaterialId)
+                erori.Add("Produsul liniei aparține altui Tip decât Tipul liniei — corectați Tipul sau produsul.");
             if (d.LotId == null) {
                 erori.Add(d.Directie == DirectieDiferenta.Plus
                     ? "Linia de plus își creează lotul la culegere (alegeți produsul)."
@@ -67,8 +86,9 @@ public class ListaDiferenteInventar : Document {
                 if ((d.PretEvaluare ?? 0m) <= 0m)
                     erori.Add("Plusul de inventar cere preț de evaluare pozitiv.");
             }
-            else if (d.Directie == DirectieDiferenta.Minus && lot.LinieIntrareId == d.ID)
-                erori.Add("Linia de minus descarcă un lot existent, nu unul creat de ea.");
+            else if (d.Directie == DirectieDiferenta.Minus && lot.LinieIntrareId != null
+                    && idsLiniiProprii.Contains(lot.LinieIntrareId.Value))
+                erori.Add("Linia de minus descarcă un lot existent, nu unul creat de acest document (lotul plusului nu are preț până la operare).");
         }
     }
 }
