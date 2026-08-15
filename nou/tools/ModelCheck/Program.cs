@@ -7340,7 +7340,16 @@ using (var os = provider.CreateObjectSpace()) {
         ScrieVir(dataF, casa, banca, 10m, pereche: idTintaAratata));
 
     var idFSelf = TrezorerieApply.Aplica<Plata>(os, null, ScrieVir(dataF, casa, banca, 10m));
-    TrezorerieApply.Aplica<Plata>(os, idFSelf, ScrieVir(dataF, casa, banca, 10m, pereche: idFSelf));
+    Check("ANCORA (fix review): `Aplica` refuză self-linkul PE LOC, cu mesajul MOTORULUI — apply-ul cunoaște `id`, iar acceptarea lui fabrica un draft pe care operatorul nu-l putea nici opera, nici șterge",
+        MesajRefuz(() => TrezorerieApply.Aplica<Plata>(os, idFSelf,
+            ScrieVir(dataF, casa, banca, 10m, pereche: idFSelf))) is string mSelfApply
+        && mSelfApply.Contains("nu poate fi documentul însuși"));
+    // Regula rămâne a MOTORULUI, nu a apply-ului: celelalte căi (UI-ul XAF, un
+    // import) scriu câmpul direct, deci proba ei se face tot direct — altfel,
+    // odată cu refuzul de la graniță, s-ar fi pierdut proba regulii de fond.
+    var docSelf = os.GetObjectByKey<Plata>(idFSelf);
+    docSelf.LaturaPereche = docSelf;
+    os.CommitChanges();
     var eroriSelf = DryRunAper(idFSelf);
     Check("ANCORA F8-D13.2 (1/7 self-link): documentul care se arată PE SINE = refuz — și-ar suprima propria generare, apoi s-ar bloca singur la anulare (gardianul s-ar vedea pe el însuși)",
         eroriSelf.Count == 1 && eroriSelf[0].Contains("nu poate fi documentul însuși"));
@@ -7403,7 +7412,7 @@ using (var os = provider.CreateObjectSpace()) {
     // referință. Fără mesaj propriu, operatorul rămâne cu un draft ne-operabil (F8-D8)
     // și neștergibil, informat că e „perechea lui însuși".
     var mesajSelf = MesajRefuz(() => TrezorerieApply.Sterge<Plata>(os, idFSelf));
-    Check("ANCORA F8-D13.6 (caz degenerat): draftul care se arată PE SINE nu se poate nici opera (F8-D8), nici șterge (FK self cu Restrict) — refuzul îi spune EXACT ieșirea: goliți câmpul, apoi ștergeți",
+    Check("ANCORA F8-D13.6 (caz degenerat): draftul care se arată PE SINE nu se poate nici opera (F8-D8), nici șterge (pre-check-ul de legătură se vede pe el însuși) — refuzul îi spune EXACT ieșirea: goliți câmpul, apoi ștergeți",
         mesajSelf != null && mesajSelf.Contains("se declară PE SINE")
         && mesajSelf.Contains("goliți întâi"));
     TrezorerieApply.Aplica<Plata>(os, idFSelf, ScrieVir(dataF, casa, banca, 10m));
@@ -7452,6 +7461,116 @@ using (var os = provider.CreateObjectSpace()) {
 
     TrezorerieApply.Sterge<Incasare>(os, idGLiber);
     TrezorerieApply.Sterge<Plata>(os, idGNormala);
+
+    // ── (H) Perechea STORNATĂ nu ține (fix review D1) ────────────────────────
+    // Un picior stornat are registrele INVERSATE: 581 e redeschis, perechea NU
+    // s-a produs. Felia avea DOUĂ criterii pentru aceeași întrebare — gardianul
+    // de anulare/storno judeca `== Operat` (corect), iar citirea perechii și
+    // filtrele de candidați numărau orice pointer ne-Draft (greșit). Consecința
+    // pornea de la storno, unealta NORMALĂ de corecție când perioada e închisă
+    // (decizia 14): piciorul rămas descoperit dispărea din listă și din
+    // avertisment (gaura 64k, tăcută), iar legarea manuală era refuzată cu un
+    // remediu IMPOSIBIL — „ștergeți acea legătură", pe un document stornat, care
+    // nu se mai editează și nu se mai șterge.
+    //
+    // Laturi PROPRII secțiunii: listele de candidați se citesc pe (predator,
+    // primitor), deci izolarea e condiția ca probele să fie deterministe.
+    var casaH = ContPropriuAper("-CASA-H", cont531);
+    var bancaH = ContPropriuAper("-BANCA-H", cont770);
+    var casaI = ContPropriuAper("-CASA-I", cont531);
+    var bancaI = ContPropriuAper("-BANCA-I", cont770);
+    os.CommitChanges();
+
+    var idH1 = TrezorerieApply.Aplica<Plata>(os, null, ScrieVir(new DateOnly(2026, 5, 16), casaH, bancaH, 400m));
+    var idHc = OperareApi.Opereaza(os, idH1).ConexId ?? Guid.Empty;
+    OperareApi.Opereaza(os, idHc);
+    OperareApi.Storneaza(os, idHc, new DateOnly(2026, 5, 17));
+    var numarH1 = TrezorerieApply.Citeste<Plata>(os, idH1).Numar;
+
+    Check("ANCORA D1 (descriptiv vs decizional): pe sursa cu perechea STORNATĂ, `Pereche` o ARATĂ în continuare (o poți deschide), dar `PerecheActiva` = FALSE — 581 e din nou deschis, iar clientul ramifică pe boolean, nu pe stare",
+        TrezorerieApply.Citeste<Plata>(os, idH1) is { Stare: "Operat", PerecheActiva: false } citH1
+        && citH1.Pereche != null && citH1.Pereche.Id == idHc && citH1.Pereche.Stare == "Stornat");
+    Check("ANCORA D1-A: sursa REDEVINE candidat pe endpoint după stornarea perechii (înainte, pointer-ul „nu e Draft” o scotea definitiv) — și fără mențiune de draft blocant, fiindcă nu există",
+        TrezorerieApply.CandidatiPereche<Incasare, Plata>(os, casaH.ID, bancaH.ID, null)
+            .SingleOrDefault(c => c.Id == idH1) is { Stare: "Operat", PerecheDraftNumar: null });
+
+    // Legarea manuală de o țintă al cărei POINTER e stornat: PERMISĂ (remediul
+    // imposibil a dispărut).
+    var idH3 = TrezorerieApply.Aplica<Incasare>(os, null,
+        ScrieVir(new DateOnly(2026, 5, 18), casaH, bancaH, 400m, pereche: idH1));
+    Check("ANCORA D1: legarea manuală de o țintă arătată doar de un pointer STORNAT trece dry-run-ul — altfel refuzul era o fundătură (pointer-ul stornat nu se mai poate nici edita, nici șterge)",
+        DryRunAper(idH3).Count == 0);
+    // Aceeași regulă pe cealaltă jumătate a punctului 5: ținta are LINK PROPRIU,
+    // dar spre un document stornat.
+    var idHLegatDeStornat = TrezorerieApply.Aplica<Plata>(os, null,
+        ScrieVir(new DateOnly(2026, 5, 18), casaH, bancaH, 400m, pereche: idHc));
+    var idHSpreEa = TrezorerieApply.Aplica<Incasare>(os, null,
+        ScrieVir(new DateOnly(2026, 5, 18), casaH, bancaH, 400m, pereche: idHLegatDeStornat));
+    Check("ANCORA D1: nici linkul PROPRIU al țintei nu mai blochează dacă arată spre un document STORNAT — o singură noțiune („capătul stornat nu contează”), aplicată în ambele jumătăți ale punctului 5",
+        DryRunAper(idHSpreEa).Count == 0);
+    TrezorerieApply.Sterge<Incasare>(os, idHSpreEa);
+    TrezorerieApply.Sterge<Plata>(os, idHLegatDeStornat);
+    TrezorerieApply.Sterge<Incasare>(os, idH3);
+
+    // Avertismentul: piciorul descoperit reintră în listă.
+    var idH2 = TrezorerieApply.Aplica<Incasare>(os, null, ScrieVir(new DateOnly(2026, 5, 18), casaH, bancaH, 400m));
+    var rezH2 = OperareApi.Opereaza(os, idH2);
+    Check("ANCORA D1-A: un nou picior cules manual îl NUMEȘTE pe cel rămas descoperit în avertismentul consultativ — pe criteriul vechi era tăcere, deci gaura 64k se redeschidea tăcut după orice storno",
+        rezH2.Mesaje.Any(m => m.Contains("picioare operate compatibile") && m.Contains(numarH1)));
+    OperareApi.AnuleazaOperarea(os, idH2);
+    var idH2Conex = os.GetObjectsQuery<DocumentTrezorerie>()
+        .Where(x => x.DocumentSursaId == idH2).Select(x => (Guid?)x.ID).FirstOrDefault();
+    Check("…iar anularea lui i-a șters draftul autogenerat (artefact al operării) — starea rămâne curată pentru proba următoare",
+        idH2Conex == null);
+    TrezorerieApply.Sterge<Incasare>(os, idH2);
+
+    // D1-B: anulare + re-operare REGENEREAZĂ perechea.
+    Check("ANCORA D1-B (gardianul rămâne pe Operat): ținta cu pointer STORNAT se anulează LIBER — gardianul apără registre, iar registrele pointer-ului sunt deja inversate",
+        OperareApi.AnuleazaOperarea(os, idH1).StareNoua == StareDocument.Draft
+        && os.GetObjectByKey<Incasare>(idHc) is { Stare: StareDocument.Stornat });
+    var rezH1Reoperat = OperareApi.Opereaza(os, idH1);
+    var idHc2 = rezH1Reoperat.ConexId ?? Guid.Empty;
+    Check("ANCORA D1-B: re-operarea sursei REGENEREAZĂ latura pereche (suprimarea se uită la perechea ACTIVĂ, nu la orice pointer) — altfel indiciul din client prescria exact o operațiune care nu făcea nimic",
+        idHc2 != Guid.Empty && os.GetObjectByKey<Incasare>(idHc2).LaturaPerecheId == idH1);
+    OperareApi.Opereaza(os, idHc2);
+    Check("ANCORA D1-B: perechea regenerată se operează (pointer-ul stornat nu mai blochează validarea) și 581 se închide la 0 peste TOATE cele trei documente — stornarea a golit contribuția piciorului anulat",
+        TrezorerieApply.Citeste<Incasare>(os, idHc2) is { Stare: "Operat" }
+        && Sold581(idH1, idHc, idHc2) == 0m
+        && TrezorerieApply.Citeste<Plata>(os, idH1) is { PerecheActiva: true } dupaRegen
+        && dupaRegen.Pereche.Id == idHc2);
+
+    // ── (I) D2: linkul golit pe copilul autogenerat ─────────────────────────
+    // `LaturaPerecheId` e câmp CULES, deci pe draftul autogenerat operatorul îl
+    // poate goli cu un click. Datele rămân corecte (gardul `Autogenerat` ține),
+    // dar o citire numai pe link ar declara „latura pereche lipsește, 581 rămâne
+    // deschis" despre un document care o ARE — iar sfatul „culegeți manual
+    // piciorul celălalt" ar produce chiar dubla postare pe care felia o închide.
+    var idI1 = TrezorerieApply.Aplica<Plata>(os, null, ScrieVir(new DateOnly(2026, 5, 19), casaI, bancaI, 700m));
+    var idIc = OperareApi.Opereaza(os, idI1).ConexId ?? Guid.Empty;
+    Check("ANCORA D1 (PerecheActiva pe DRAFT): perechea abia generată e Draft — intenția celui de-al doilea picior — deci ACTIVĂ; `Stornat` e singura stare care nu contează",
+        TrezorerieApply.Citeste<Plata>(os, idI1) is { PerecheActiva: true } inainteDeGolire
+        && inainteDeGolire.Pereche.Stare == "Draft");
+    TrezorerieApply.Aplica<Incasare>(os, idIc, ScrieVir(new DateOnly(2026, 5, 19), casaI, bancaI, 700m));
+    Check("ANCORA D2: după golirea linkului pe copilul autogenerat, SURSA își vede perechea prin grupul conex (`DocumentSursaId` + `Autogenerat`) și o raportează ACTIVĂ — panoul nu mai poate spune „581 rămâne deschis” despre un document care are perechea",
+        os.GetObjectByKey<Incasare>(idIc).LaturaPerecheId == null
+        && TrezorerieApply.Citeste<Plata>(os, idI1) is { PerecheActiva: true } dupaGolire
+        && dupaGolire.Pereche != null && dupaGolire.Pereche.Id == idIc);
+    Check("ANCORA D2 (oglinda, adăugire peste literă — vezi raportul): și COPILUL își vede sursa, altfel aceeași minciună se citea de pe celălalt ecran — iar acolo sfatul „re-operați” e inert prin construcție (`Autogenerat`)",
+        TrezorerieApply.Citeste<Incasare>(os, idIc) is { PerecheActiva: true } citCopil
+        && citCopil.Pereche != null && citCopil.Pereche.Id == idI1);
+    bool aGeneratDinNou;
+    using (var osProba = provider.CreateObjectSpace()) {
+        // ObjectSpace ARUNCAT, necomis: hook-ul CREEAZĂ documentul dacă decide
+        // să genereze, iar proba e chiar despre absența lui.
+        aGeneratDinNou = osProba.GetObjectByKey<Plata>(idI1).GenereazaSecundar(osProba) != null;
+    }
+    Check("ANCORA D2: suprimarea generării ține și cu linkul golit — sursa nu naște un al doilea copil (gardul de grup conex, nu doar cel de link)",
+        !aGeneratDinNou);
+    OperareApi.Opereaza(os, idIc);
+    Check("ANCORA D1 (PerecheActiva pe OPERAT): perechea operată e activă, 581 se închide la 0 — golirea linkului a rămas o chestiune de AFIȘARE, datele n-au fost niciodată în pericol",
+        TrezorerieApply.Citeste<Plata>(os, idI1) is { PerecheActiva: true } dupaOperare
+        && dupaOperare.Pereche.Stare == "Operat"
+        && Sold581(idI1, idIc) == 0m);
 
     CurataAper(os);
     Check("Curățenie finală felia pereche prin API (fără reziduuri e2e)",

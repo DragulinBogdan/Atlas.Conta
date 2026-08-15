@@ -79177,6 +79177,9 @@
           "Pereche": {
             "$ref": "#/components/schemas/LaturaPerecheDto"
           },
+          "PerecheActiva": {
+            "type": "boolean"
+          },
           "DocumentSursaId": {
             "type": "string",
             "format": "uuid",

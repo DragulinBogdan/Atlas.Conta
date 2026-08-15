@@ -287,8 +287,17 @@ export function DecDetaliu() {
             // aceeași latură pe care o normalizează `DocumenteCuRest`.
             contrapartidaId={doc.PredatorId}
             rol="este-stins"
-            // Un decont e stins doar de trezorerie (F3-D6a).
-            tipuriCandidate={['PLT', 'INC']}
+            // Stingătorii posibili ai unui decont: trezoreria (avansul plătit,
+            // regularizarea) ȘI nota contabilă — `NotaContabila` e stingător
+            // legitim din 49a (compensarea), cu capacitățile date de repartitorii
+            // expliciți ai liniilor ei. Lista e afordanță, nu regulă: autoritatea
+            // rămâne `ImperechereService.ValideazaCreare`.
+            //
+            // Azi filtrul e INERT pe 'NTC': proiecția de rest (`DocumenteCuRest`,
+            // 57c) are cinci ramuri CONCRETE — FCT/FCL/PLT/INC/DEC —, deci o notă
+            // nu apare printre candidați indiferent de filtru. Rămâne declarat ca
+            // să nu fie filtrul ĂSTA cel care exclude, când ramura va exista.
+            tipuriCandidate={['PLT', 'INC', 'NTC']}
             onSchimbare={() => void cache.invalidateQueries({ queryKey: ['dec'] })}
           />
         )

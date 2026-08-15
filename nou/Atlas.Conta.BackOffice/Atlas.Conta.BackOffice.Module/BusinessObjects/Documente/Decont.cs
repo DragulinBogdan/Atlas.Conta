@@ -71,6 +71,14 @@ public class DecontDetaliu : DocumentDetaliu, ILinieCuPostareExplicita, ILinieCu
 
     // Postarea explicită pe linie alege din planul mare (nomenclator mare —
     // lookup standard; SmartLookup revertat, decizia 40d/gate).
+    //
+    // NOTĂ (review F8): `ContDebit == ContCredit` pe aceeași linie postează un
+    // rând X = X — o notă nulă, care nu mișcă niciun sold. NU se refuză, din
+    // aceeași rațiune ca la contul SUMATOR ales explicit (F8-D14): postarea
+    // explicită e trăsătura tipului, iar operatorul care alege un cont anume îl
+    // primește; ce e afordanță (ce se OFERĂ în lookup) se rafinează în client,
+    // nu se transformă în interdicție de motor. Dacă vreodată devine cerință,
+    // locul e `ValideazaOperare`, nu culegerea.
     public virtual Guid? ContDebitId { get; set; }
     [XafDisplayName("Cont debit")]
     [EditorAlias(EditorAliases.LookupPropertyEditor)]

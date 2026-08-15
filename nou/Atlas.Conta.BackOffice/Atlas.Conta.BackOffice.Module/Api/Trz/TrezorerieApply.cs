@@ -71,6 +71,15 @@ public static class TrezorerieApply {
         // fără reciprocitate, fără self-link) rămân în motor (F8-D8), unde le
         // vede și calea XAF, și importul.
         if (dto.LaturaPerecheId is Guid perecheId) {
+            // Self-link-ul se refuză AICI, deși e regulă de motor (F8-D8, punctul
+            // 1): apply-ul cunoaște `id`, iar acceptarea lui ar produce un draft
+            // pe care operatorul nu-l poate nici opera, nici șterge (`Sterge` îl
+            // refuză: se arată pe sine ca pereche) — o culegere care fabrică o
+            // fundătură. Mesajul e IDENTIC cu al motorului: o singură formulare
+            // pentru aceeași greșeală, pe orice cale.
+            if (perecheId == doc.ID)
+                throw new OperareException(
+                    "Latura pereche nu poate fi documentul însuși — alegeți celălalt picior al viramentului.");
             doc.LaturaPereche = os.GetObjectByKey<DocumentTrezorerie>(perecheId)
                 ?? throw new OperareException(
                     $"Documentul indicat ca latură pereche ({perecheId}) nu există.");
@@ -100,21 +109,26 @@ public static class TrezorerieApply {
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
                 + "Anulați operarea sau stornați-l.");
 
-        // F8-D11: `LaturaPerecheId` e FK cu `Restrict` (F8-D6) — piciorul ARĂTAT
-        // ca pereche de alt document nu se poate șterge. Fără pre-check, refuzul
-        // ar veni din Postgres ca violare de constraint, tradusă generic (60a):
-        // adevărată, dar fără remediu. Aici e de DOMENIU, cu documentul numit și
-        // cu ieșirea: legătura se ține pe o singură parte, deci se șterge de acolo.
+        // F8-D11: piciorul ARĂTAT ca pereche de alt document nu se șterge cât
+        // timp legătura există — altfel pointerul ar rămâne să arate spre un
+        // document dispărut, iar suprimarea generării (F8-D7) l-ar cita.
+        //
+        // Pre-check-ul e SINGURUL gard real, nu doar un mesaj mai frumos: FK-ul
+        // `Restrict` (F8-D6) nu se atinge niciodată pe calea asta, fiindcă
+        // modelul folosește ștergere AMÂNATĂ (`UseDeferredDeletion`, 60a) —
+        // rândul rămâne în tabelă cu `GCRecord` setat. Refuzul e de DOMENIU, cu
+        // documentul numit și cu ieșirea: legătura se ține pe o singură parte,
+        // deci se șterge de acolo.
         var pointer = os.GetObjectsQuery<DocumentTrezorerie>()
             .Where(x => x.LaturaPerecheId == id)
             .Select(x => new { x.ID, x.Numar, x.Data })
             .FirstOrDefault();
-        // Cazul degenerat, scos de probă: documentul se arată PE SINE. Motorul îl
-        // refuză la operare (F8-D8, self-link), dar culegerea îl acceptă — iar
-        // FK-ul self-referențial cu `Restrict` e verificat IMEDIAT, deci nici
-        // baza nu lasă rândul să dispară cu tot cu propria referință. Fără mesajul
-        // ăsta operatorul rămâne cu un draft pe care nu-l poate nici opera, nici
-        // șterge, și cu un text care-i spune că e „perechea lui însuși".
+        // Cazul degenerat: documentul se arată PE SINE. `Aplica` îl refuză acum pe
+        // loc (vezi acolo), deci pe calea API nu se mai poate naște — dar rândul
+        // poate veni din altă parte (UI-ul XAF, un import vechi), iar pre-check-ul
+        // de mai sus l-ar prinde cu mesajul greșit („e declarat latura pereche a
+        // lui …" — a lui însuși). Mesajul propriu îi dă ieșirea: goliți câmpul,
+        // apoi ștergeți.
         if (pointer != null && pointer.ID == id)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} se declară PE SINE latură pereche — goliți întâi "
@@ -305,7 +319,7 @@ public static class TrezorerieApply {
         var copii = ApiProiectii.Copii(os, id);
         var faraCopiiOperati = copii.All(c => c.Stare != nameof(StareDocument.Operat));
         var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
-        var pereche = Pereche<T>(os, id);
+        var (pereche, perecheActiva) = Pereche<T>(os, id);
         // Oglinda gardianului `MotorOperare.VerificaFaraLaturaPerecheOperata`
         // (F8-D9). Grupul conex („copil operat") îl acoperea DOAR pentru perechea
         // AUTOGENERATĂ, care e și copil; legătura DECLARATĂ manual n-are
@@ -334,6 +348,7 @@ public static class TrezorerieApply {
             Ramas = ImperechereService.Ramas(os, id),
             EsteVirament = h.EsteVirament,
             LaturaPerecheId = h.LaturaPerecheId, Pereche = pereche,
+            PerecheActiva = perecheActiva,
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             DocumentSursaNumar = h.DocumentSursaNumar,
             DocumentSursaTip = ApiProiectii.CodTip(os, h.DocumentSursaId),
@@ -400,19 +415,28 @@ public static class TrezorerieApply {
     // ═══════════════════════ Latura pereche (F8-D11) ═══════════════════════
 
     // Perechea REZOLVATĂ a unui picior, pentru ReadDto. Derivarea „link propriu
-    // SAU cine mă arată" NU se rescrie aici: e a domeniului
-    // (`DocumentTrezorerie.PerecheId`, F8-D6) și are trei alți consumatori —
-    // suprimarea generării (F8-D7), gardianul de anulare/storno (F8-D9) și
+    // SAU cine mă arată SAU grupul conex autogenerat" NU se rescrie aici: e a
+    // domeniului (`DocumentTrezorerie.PerecheId`, F8-D6) și are alți consumatori
+    // — suprimarea generării (F8-D7), gardianul de anulare/storno (F8-D9) și
     // avertismentul (F8-D10). Un al doilea exemplar ar diverge tăcut de ei exact
     // în cazul pentru care felia există.
     //
+    // Întoarce PERECHEA (descriptivă — o vede și dacă e stornată, ca s-o poată
+    // deschide) ȘI dacă e ACTIVĂ (`PerecheActivaId`, adică 581 chiar s-a închis).
+    // Clientul ramifică pe boolean, nu pe stare — zero predicat de domeniu în TS.
+    //
     // Costul: o materializare a documentului (`GetObjectByKey`, TPT) pe CITIREA
     // de detaliu — alături de cele trei interogări ale stingerii, aceeași
-    // categorie. NU intră în `Lista` (acolo ar fi al doilea agregat pe rând).
-    static LaturaPerecheDto Pereche<T>(IObjectSpace os, Guid id) where T : DocumentTrezorerie {
+    // categorie. Al doilea apel (cel „activ") se face DOAR când perechea găsită
+    // e stornată: filtrele lui sunt o submulțime a celor descriptive, deci o
+    // pereche negăsită descriptiv nu poate fi găsită activ, iar una găsită și
+    // ne-stornată trece prin exact același filtru la aceeași sursă. NU intră în
+    // `Lista` (acolo ar fi al doilea agregat pe rând).
+    static (LaturaPerecheDto Pereche, bool Activa) Pereche<T>(IObjectSpace os, Guid id)
+        where T : DocumentTrezorerie {
         var doc = os.GetObjectByKey<T>(id);
         if (doc?.PerecheId(os) is not Guid perecheId)
-            return null;
+            return (null, false);
         // Proiecție PLATĂ pe celălalt picior — nu-l materializăm ca entitate doar
         // ca să-i citim numărul.
         var p = os.GetObjectsQuery<DocumentTrezorerie>()
@@ -420,8 +444,12 @@ public static class TrezorerieApply {
             .Select(x => new { x.ID, x.Numar, x.Stare })
             .FirstOrDefault();
         if (p == null)
-            return null;
-        return new LaturaPerecheDto {
+            return (null, false);
+        // Perechea ACTIVĂ poate fi un ALT document decât cea descriptivă (linkul
+        // meu arată spre unul stornat, dar altcineva mă arată pe mine) — de asta
+        // se întreabă domeniul, nu se deduce din starea celui afișat.
+        var activa = p.Stare != StareDocument.Stornat || doc.PerecheActivaId(os) != null;
+        return (new LaturaPerecheDto {
             Id = p.ID,
             // Codul ancorei `TipDocument` (PLT/INC) — rezolvat POLIMORF, ca la
             // „Generat din" (D-6b): clientul rutează prin `rutaTip`, nu presupune
@@ -429,7 +457,7 @@ public static class TrezorerieApply {
             Tip = ApiProiectii.CodTip(os, p.ID),
             Numar = p.Numar,
             Stare = p.Stare.ToString()
-        };
+        }, activa);
     }
 
     // Plafonul listei de candidați: e sursa unui SelectBox, nu o grilă paginată
@@ -469,13 +497,16 @@ public static class TrezorerieApply {
         // culege al doilea picior. Contabil, 581 se închide doar când al doilea
         // picior e OPERAT.
         //
-        // Pointer-ul non-Draft îl scoate definitiv (Operat = perechea s-a produs;
-        // Stornat = pointerul nu se mai poate șterge, deci legarea n-are ieșire);
-        // cel Draft îl lasă în listă, dar cu `PerecheDraftNumar` completat mai jos.
+        // Doar pointer-ul OPERAT îl scoate definitiv (perechea s-a produs). Cel
+        // STORNAT nu contează (fix review D1): are registrele inversate, deci 581
+        // e redeschis, iar candidatul chiar E descoperit — plus că refuzul ar fi
+        // fost o fundătură (un pointer stornat nu se mai poate nici edita, nici
+        // șterge, deci remediul „ștergeți acea legătură" e imposibil). Cel Draft
+        // îl lasă în listă, dar cu `PerecheDraftNumar` completat mai jos.
         // Anti-join pe aceeași tabelă (forma din `DocumenteCuRest`), nu subquery
         // corelat (42c).
-        var cuPerecheDefinitiva = os.GetObjectsQuery<DocumentTrezorerie>()
-            .Where(x => x.LaturaPerecheId != null && x.Stare != StareDocument.Draft)
+        var cuPerecheOperata = os.GetObjectsQuery<DocumentTrezorerie>()
+            .Where(x => x.LaturaPerecheId != null && x.Stare == StareDocument.Operat)
             .Select(x => x.LaturaPerecheId.Value);
 
         var candidati = os.GetObjectsQuery<TOpus>()
@@ -489,7 +520,14 @@ public static class TrezorerieApply {
                 // F8-D8 punctul 5 refuză o țintă care declară deja pe altcineva,
                 // iar remediul nu e al nostru (e legătura ei).
                 && d.LaturaPerecheId == null
-                && !cuPerecheDefinitiva.Contains(d.ID)
+                && !cuPerecheOperata.Contains(d.ID)
+                // O latură GENERATĂ de motor aparține deja transferului ei, prin
+                // grupul conex — chiar dacă linkul i-a fost golit (câmpul e cules,
+                // iar golirea e la un click). Fără predicatul ăsta ar apărea în
+                // lista altui document, iar legarea ar produce exact dublarea pe
+                // 581 pe care felia o închide. Oglinda lui în validare (F8-D8)
+                // rămâne autoritatea; aici e afordanța care nu ademenește.
+                && !(d.Autogenerat && d.DocumentSursaId != null)
                 // Draft ȘI Operat: validarea legăturii (F8-D8) nu cere stare —
                 // ambele sunt legături legitime (piciorul cules înainte de
                 // operare, sau cel deja operat de ieri). `Stornat` nu se OFERĂ:

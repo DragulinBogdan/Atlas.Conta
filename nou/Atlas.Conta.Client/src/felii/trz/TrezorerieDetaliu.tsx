@@ -494,6 +494,20 @@ function PanouVirament(props: { doc?: TrzRead }) {
   const pereche = doc?.Pereche;
   const rutaPereche = pereche?.Id ? rutaTip(pereche.Tip, pereche.Id) : null;
   const etichetaPereche = `${pereche?.Tip ?? ''} ${pereche?.Numar ?? ''}`.trim() || 'celălalt picior';
+  // „Perechea ȚINE?" e o întrebare de DOMENIU (o pereche STORNATĂ are registrele
+  // inversate, deci 581 e din nou deschis) — de asta vine gata calculată de la
+  // server (`PerecheActiva`), nu se deduce aici din `Pereche.Stare`.
+  const perecheActiva = doc?.PerecheActiva ?? false;
+  // Cine ține legătura: linkul e al documentului care-l DECLARĂ (F8-D6). Al
+  // treilea caz — perechea AUTOGENERATĂ căreia i s-a golit linkul: atunci nu
+  // arată nimeni spre nimeni, iar relația e cea de grup conex.
+  const provenienta = doc?.LaturaPerecheId
+    ? ' (declarată de acest document)'
+    : doc?.Copii?.some((c) => c.Id === pereche?.Id)
+      ? ' (generată la operarea acestui document)'
+      : doc?.DocumentSursaId && doc.DocumentSursaId === pereche?.Id
+        ? ' (acest document s-a generat la operarea celuilalt)'
+        : ' (celălalt document arată spre acesta)';
   return (
     <div className="panou">
       <div className="panou__titlu">Virament intern</div>
@@ -510,22 +524,38 @@ function PanouVirament(props: { doc?: TrzRead }) {
             {' '}— {labelEnum('StareDocument', pereche.Stare)}
             {/* Care capăt ține legătura: e util la ștergere (linkul e al
                 documentului care-l DECLARĂ — F8-D6, o singură parte scrisă). */}
-            {doc?.LaturaPerecheId
-              ? ' (declarată de acest document)'
-              : ' (celălalt document arată spre acesta)'}
+            {provenienta}
           </li>
         </ul>
       )}
       {/* Latura pereche se poate ȘTERGE cât e Draft (ștergerea nu se refuză —
           operatorul poate să fi cules deja piciorul celălalt manual, iar calea
           manuală reproduce exact același document). Ce NU se acceptă e tăcerea:
-          un virament operat fără pereche lasă 581 deschis, deci starea se
-          spune, nu se ghicește din absența unei linii în listă. */}
-      {doc?.Stare === 'Operat' && !pereche && (
+          un virament operat fără pereche ACTIVĂ lasă 581 deschis, deci starea se
+          spune, nu se ghicește din absența unei linii în listă.
+
+          Ramificarea e pe `PerecheActiva`, nu pe existența liniei: o pereche
+          STORNATĂ se vede în listă (o poți deschide), dar nu ține — registrele ei
+          sunt inversate. Sfatul diferă și el: acolo unde perechea lipsește cu
+          totul, culegerea manuală a piciorului celălalt e o cale validă; unde a
+          fost stornată, re-operarea o REGENEREAZĂ (gardianul de anulare nu se
+          uită la pointerii stornați), deci ăla e drumul scurt. */}
+      {doc?.Stare === 'Operat' && !perecheActiva && (
         <div className="indiciu">
-          Latura pereche lipsește (a fost ștearsă sau nu s-a generat): contul de tranzit 581
-          rămâne deschis până când culegeți manual piciorul celălalt — sau anulați operarea și
-          re-operați documentul, care o regenerează.
+          {pereche
+            ? `Latura pereche (${etichetaPereche}) a fost STORNATĂ: registrele ei sunt inversate,
+               deci contul de tranzit 581 e din nou deschis. `
+            : `Latura pereche lipsește (a fost ștearsă sau nu s-a generat): contul de tranzit 581
+               rămâne deschis. `}
+          {/* Remediul depinde de PROVENIENȚA acestui picior: generarea e a
+              documentului „mamă" (gardul `Autogenerat`), deci pe unul generat
+              automat sfatul „re-operați" n-ar face nimic. */}
+          {doc.Autogenerat
+            ? `Piciorul acesta a fost generat automat, deci re-operarea LUI nu regenerează nimic:
+               reluați de pe celălalt document (anulare + re-operare) sau culegeți manual piciorul
+               care lipsește.`
+            : `Anulați operarea și re-operați documentul — perechea se regenerează — sau culegeți
+               manual piciorul celălalt și legați-l.`}
         </div>
       )}
       {/* Același avertisment ca pe orice draft autogenerat (D-5b): artefact al

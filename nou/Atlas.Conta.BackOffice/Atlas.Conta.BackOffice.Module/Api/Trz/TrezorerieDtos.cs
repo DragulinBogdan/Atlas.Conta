@@ -144,6 +144,13 @@ public sealed class TrezorerieReadDto {
     // felia: legătura DECLARATĂ manual, care n-are nicio relație de grup conex.
     // `null` = documentul n-are pereche (nici generată, nici declarată).
     public LaturaPerecheDto Pereche { get; set; }
+    // Perechea de mai sus ȚINE? (`DocumentTrezorerie.PerecheActivaId`) — calculat
+    // pe SERVER, exact ca `EsteVirament`, ca să nu ajungă în TypeScript regula
+    // „ce stare a celuilalt picior închide 581". `Pereche` e DESCRIPTIVĂ (o arată
+    // și dacă e stornată, ca s-o poți deschide); asta e DECIZIONALĂ: `false` cu
+    // `Pereche` nenulă = perechea a fost STORNATĂ, deci 581 e din nou deschis și
+    // re-operarea documentului o regenerează. Clientul ramifică pe boolean.
+    public bool PerecheActiva { get; set; }
     public Guid? DocumentSursaId { get; set; }
     // Numărul documentului-sursă: plata autogenerată → link înapoi la FACTURA
     // care a generat-o (clientul n-o mai caută după DocumentSursaId).

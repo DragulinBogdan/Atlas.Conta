@@ -4617,6 +4617,7 @@ export interface components {
             /** Format: uuid */
             LaturaPerecheId?: string | null;
             Pereche?: components["schemas"]["LaturaPerecheDto"];
+            PerecheActiva?: boolean;
             /** Format: uuid */
             DocumentSursaId?: string | null;
             DocumentSursaNumar?: string | null;
