@@ -18,7 +18,7 @@ public class Decont : Document, IDocumentCuPV {
     // Creditul (contul de avans 542) se dimensionează pe TITULAR, nu pe
     // primitorul justificării — soldul avansurilor se ține per angajat;
     // convenția 00 §5 (credit←Primitor) rămâne default-ul celorlalte tipuri.
-    public override Guid RepartitorImplicitCredit() => PredatorId;
+    public override Guid RepartitorImplicitCredit(DevExpress.ExpressApp.IObjectSpace os) => PredatorId;
 
     // Cantitatea e pro-formă (legacy: defaults 'BUC'/'1'); lanțul de valori
     // trăiește pe derivată (testul bazei §3) — capătul se materializează aici,

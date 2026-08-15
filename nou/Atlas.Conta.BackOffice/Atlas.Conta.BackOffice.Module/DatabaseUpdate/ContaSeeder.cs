@@ -275,6 +275,66 @@ public static class ContaSeeder {
         }
     }
 
+    // Garda de idempotență PER RÂND al unei reguli de contare: cheia unui rând e
+    // (tip document × TipMaterial × filtru de natură) — exact discriminarea pe
+    // care o folosește motorul la potrivire. Garda „există vreo regulă pe tipul
+    // X" (folosită înainte) sare orice rând ADĂUGAT ulterior pe un tip deja
+    // seed-uit; șablonul incremental e cel de la 6xx=3xx / vânzare.
+    // Potrivirea celor două filtre NULLABLE se face în memorie (lista rândurilor
+    // unui tip e mică): semantica SQL a lui `coloană = @parametru NULL` e prea
+    // subtilă pentru o gardă de idempotență.
+    internal static bool RegulaContareLipsa(IObjectSpace os, TipDocument tipDoc,
+        Guid? tipMaterialId, NaturaClasa? naturaFiltru) =>
+        !os.GetObjectsQuery<RegulaContare>()
+            .Where(r => r.TipDocumentId == tipDoc.ID)
+            .Select(r => new { r.TipMaterialId, r.NaturaFiltru })
+            .ToList()
+            .Any(r => r.TipMaterialId == tipMaterialId && r.NaturaFiltru == naturaFiltru);
+
+    // Viramentul intern (F7-D6): Clasa/Tipul „VIR" + cele două reguli ale
+    // perechii. `simbolTranzit` = contul de viramente interne al PROFILULUI
+    // (581 în ambele planuri) — legat EXPLICIT, nu derivat din Cod (precedentul
+    // punții S371, 52b): „VIR" nu e simbol de cont, deci derivarea nu-l atinge.
+    //
+    // Ieșirea (Plata): tranzit = cont propriu SURSĂ (581 = 5311);
+    // intrarea (Incasare): cont propriu DESTINAȚIE = tranzit (5121 = 581).
+    // Contul propriu se ia din latura lui, FĂRĂ fallback — un cont propriu fără
+    // ContImplicit trebuie să pice zgomotos la operare (precedentul 31c).
+    internal static void SeedContareVirament(IObjectSpace os,
+        TipDocument plt, TipDocument inc, string simbolTranzit) {
+        var clasa = os.FirstOrDefault<ClasaProdus>(c => c.Cod == "VIR");
+        if (clasa == null) {
+            clasa = os.CreateObject<ClasaProdus>();
+            clasa.Cod = "VIR";
+            clasa.Denumire = "Viramente interne";
+            clasa.Natura = NaturaClasa.Virament;
+        }
+        var tip = os.FirstOrDefault<TipMaterial>(t => t.Cod == "VIR");
+        if (tip == null) {
+            tip = os.CreateObject<TipMaterial>();
+            tip.Cod = "VIR";
+            tip.Denumire = "Virament intern";
+            tip.Clasa = clasa;
+        }
+        if (tip.ContImplicitId == null)
+            tip.ContImplicitId = os.FirstOrDefault<Cont>(c => c.Simbol == simbolTranzit)?.ID;
+
+        if (RegulaContareLipsa(os, plt, tip.ID, null)) {
+            var iesire = os.CreateObject<RegulaContare>();
+            iesire.TipDocument = plt;
+            iesire.TipMaterial = tip;
+            iesire.SursaContDebit = SursaCont.TipMaterial;
+            iesire.SursaContCredit = SursaCont.RepartitorPredator;
+        }
+        if (RegulaContareLipsa(os, inc, tip.ID, null)) {
+            var intrare = os.CreateObject<RegulaContare>();
+            intrare.TipDocument = inc;
+            intrare.TipMaterial = tip;
+            intrare.SursaContDebit = SursaCont.RepartitorPrimitor;
+            intrare.SursaContCredit = SursaCont.TipMaterial;
+        }
+    }
+
     internal static void SeedNumerotare(IObjectSpace os, string codTip, string serie) {
         if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == codTip) == null) {
             var numerotare = os.CreateObject<PoliticaNumerotare>();

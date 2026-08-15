@@ -42,7 +42,8 @@
       "Serviciu": "Serviciu",
       "Cheltuiala": "Cheltuiala",
       "Imobilizare": "Imobilizare",
-      "Tehnica": "Tehnica"
+      "Tehnica": "Tehnica",
+      "Virament": "Virament"
     },
     "RegimTva": {
       "Normal": "Normal",

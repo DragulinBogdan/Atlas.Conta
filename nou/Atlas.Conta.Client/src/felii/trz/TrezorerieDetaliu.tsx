@@ -9,6 +9,7 @@ import { PanouErori } from '../../nucleu/PanouErori';
 import { PanouStingeri } from '../../nucleu/PanouStingeri';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
+import { useSonda } from '../../nucleu/sonda';
 import { rutaTip } from '../../nucleu/stingeri';
 import {
   antetGol, linieGoala, spreWrite,
@@ -28,10 +29,19 @@ import { TrezorerieEditorLinie } from './TrezorerieEditorLinie';
 //   • `Autogenerat` + `DocumentSursa` — plata născută din factură (31e) e un
 //     document normal, dar operatorul trebuie să vadă de unde vine;
 //   • **panoul de STINGERI** pe document OPERAT: trezoreria e stingătorul
-//     „clasic" (31d), deci rolul ei e `stinge`.
+//     „clasic" (31d), deci rolul ei e `stinge`;
+//   • **modul VIRAMENT INTERN** (F7-D8): când contrapartida e un al doilea CONT
+//     PROPRIU, documentul nu mai e o plată/încasare către un terț, ci un picior
+//     al transferului 581 — nu stinge nimic (`CapacitateStingere` e null pe el)
+//     și naște la operare latura pereche. Ecranul își schimbă forma: Tipul
+//     implicit al liniei, panoul de stingeri înlocuit de indiciul perechii.
 
 const CAMPURI_ANTET: (keyof TrzWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
+
+// Tipul tehnic cu care se precompletează linia nouă, per mod (F7-D8/31a).
+const COD_TIP_TRZ = 'TRZ';
+const COD_TIP_VIRAMENT = 'VIR';
 
 export function TrezorerieDetaliu(props: {
   api: ApiTrezorerie;
@@ -46,11 +56,13 @@ export function TrezorerieDetaliu(props: {
   // Laturile, scrise în felie: contul propriu + contrapartida, în ordinea
   // fluxului real (PLT: din ce cont → cui; INC: de la cine → în ce cont).
   laturi: ReactNode;
-  // Contrapartida documentului, pentru candidații panoului de stingeri
-  // (PLT: primitorul; INC: predatorul).
-  contrapartida: (doc: TrzRead) => string | undefined;
+  // CÂMPUL contrapartidei (PLT: primitorul; INC: predatorul) — nu valoarea:
+  // shell-ul are nevoie și de cea SALVATĂ (candidații panoului de stingeri), și
+  // de cea în curs de culegere (modul virament se citește din formular, sursa
+  // de adevăr, nu din comutatorul de fel al laturii).
+  campContrapartida: 'PredatorId' | 'PrimitorId';
 }) {
-  const { api, ruta, cheieCache, tip, titluNou, titluExistent, laturi, contrapartida } = props;
+  const { api, ruta, cheieCache, tip, titluNou, titluExistent, laturi, campContrapartida } = props;
   const { id } = useParams();
   const nou = id === 'nou' || id === undefined;
   const navigheaza = useNavigate();
@@ -82,6 +94,26 @@ export function TrezorerieDetaliu(props: {
   const doc = citit.data;
   const poateEdita = nou || (doc?.PoateEdita ?? false);
   const linii = agregat.Linii ?? [];
+
+  // ═══ Modul VIRAMENT: două surse, fiecare autoritară pe ce știe ═══
+  // Pe documentul SALVAT decide SERVERUL (`EsteVirament` — predicatul domeniului,
+  // AMBELE laturi conturi proprii); clientul nu-l reface din felul repartitorilor.
+  // Pe culegerea NEsalvată serverul n-are ce spune încă, deci se sondează
+  // formularul — dar cu EXACT aceeași definiție: AMBELE laturi în setul
+  // `ContPropriu`. O sondă doar pe contrapartidă ar intra în modul virament pe un
+  // draft cu laturile inversate (plată DE LA un partener CĂTRE casă), unde
+  // contrapartida chiar e cont propriu fără ca documentul să fie virament, iar
+  // mesajul de refuz al ecranului ar ieși mincinos. Cache-ul `useSonda` e pe
+  // (entitate, id) și e comun cu selectorul de fel al laturii ⇒ a doua sondă e
+  // ieftină. Cât timp nu știm (răspuns nevenit sau sondă eșuată — `undefined`),
+  // modul rămâne cel obișnuit: default-ul care nu minte.
+  const campContPropriu = campContrapartida === 'PredatorId' ? 'PrimitorId' : 'PredatorId';
+  const culege = nou || modificat;
+  const contrapartidaContPropriu = useSonda('ContPropriu', agregat[campContrapartida], culege);
+  const propriuContPropriu = useSonda('ContPropriu', agregat[campContPropriu], culege);
+  const esteVirament = culege
+    ? contrapartidaContPropriu === true && propriuContPropriu === true
+    : (doc?.EsteVirament ?? false);
 
   const structurale = useMemo(
     () => [
@@ -200,11 +232,14 @@ export function TrezorerieDetaliu(props: {
   return (
     <DocumentShell
       titlu={nou ? titluNou : titluExistent(doc?.Numar ?? '')}
-      sumar={<Sumar doc={doc} modificat={modificat || nou} />}
+      sumar={<Sumar doc={doc} modificat={modificat || nou} esteVirament={esteVirament} />}
       comenzi={comenzi}
       erori={erori}
       mesaje={mesaje}
-      rezultatExtra={<Provenienta doc={doc} />}
+      // Pe virament grupul conex ESTE latura pereche, iar despre ea vorbește
+      // `PanouVirament` (inclusiv avertismentul de draft autogenerat) — două
+      // panouri despre aceeași legătură ar fi doar zgomot.
+      rezultatExtra={esteVirament ? undefined : <Provenienta doc={doc} />}
       ocupat={salvare.isPending || citit.isFetching}
       antet={
         <>
@@ -288,27 +323,34 @@ export function TrezorerieDetaliu(props: {
               key={indiceEditat ?? 'linie-noua'}
               linie={inEditare}
               readOnly={!poateEdita}
+              codTipImplicit={esteVirament ? COD_TIP_VIRAMENT : COD_TIP_TRZ}
               onSalveaza={salveazaLinie}
               onRenunta={() => { setInEditare(null); setIndiceEditat(null); }}
             />
           )}
         </>
       }
-      subsol={doc && doc.Id && doc.Stare === 'Operat'
-        ? (
-          <PanouStingeri
-            documentId={doc.Id}
-            contrapartidaId={contrapartida(doc)}
-            // Trezoreria e STINGĂTORUL (31d): plata stinge factura.
-            rol="stinge"
-            // Trezoreria stinge creanțe/datorii, nu alte documente de
-            // trezorerie (F3-D6a; INC↔PLT — avans↔regularizare — merge la
-            // momentul 581, aditiv).
-            tipuriCandidate={['FCT', 'FCL', 'DEC']}
-            onSchimbare={() => void cache.invalidateQueries({ queryKey: [cheieCache] })}
-          />
-        )
-        : undefined}
+      // Sub linii stă ce ATÂRNĂ de document: stingerile pe plata/încasarea
+      // obișnuită, indiciul perechii pe virament. Cele două se EXCLUD, fiindcă
+      // viramentul nu stinge și nu e stins (F7-D5: `CapacitateStingere` e null
+      // pe el, deci orice stingere oferită aici ar fi refuzată de server).
+      subsol={esteVirament
+        ? <PanouVirament doc={doc} />
+        : doc && doc.Id && doc.Stare === 'Operat'
+          ? (
+            <PanouStingeri
+              documentId={doc.Id}
+              contrapartidaId={doc[campContrapartida]}
+              // Trezoreria e STINGĂTORUL (31d): plata stinge factura.
+              rol="stinge"
+              // Trezoreria stinge creanțe/datorii, nu alte documente de
+              // trezorerie (F3-D6a; INC↔PLT — avans↔regularizare — merge la
+              // momentul 581, aditiv).
+              tipuriCandidate={['FCT', 'FCL', 'DEC']}
+              onSchimbare={() => void cache.invalidateQueries({ queryKey: [cheieCache] })}
+            />
+          )
+          : undefined}
     />
   );
 }
@@ -369,6 +411,63 @@ function Provenienta(props: { doc?: TrzRead }) {
   );
 }
 
+// Ce ține locul panoului de stingeri pe un VIRAMENT INTERN (F7-D8): explicația
+// mecanismului + drumul spre celălalt picior. Legăturile sunt cele din ReadDto,
+// nu unele calculate aici: pe documentul-sursă latura pereche apare în `Copii[]`
+// (draftul născut de operare), pe latura generată e chiar `DocumentSursa`.
+// Rutarea trece prin `rutaTip` (61a) — vocabular închis, fără `/plt/` hardcodat.
+function PanouVirament(props: { doc?: TrzRead }) {
+  const doc = props.doc;
+  const copii = doc?.Copii ?? [];
+  const rutaSursa = doc?.DocumentSursaId ? rutaTip(doc.DocumentSursaTip, doc.DocumentSursaId) : null;
+  const etichetaSursa = doc?.DocumentSursaNumar || 'celălalt picior';
+  return (
+    <div className="panou">
+      <div className="panou__titlu">Virament intern</div>
+      <p className="indiciu">
+        Virament intern — la operare se generează automat latura pereche. Documentul nu
+        stinge și nu poate fi stins: contul de tranzit (581) se închide singur când ambele
+        picioare sunt operate.
+      </p>
+      {(doc?.DocumentSursaId || copii.length > 0) && (
+        <ul className="panou__lista">
+          {doc?.DocumentSursaId && (
+            <li>
+              Latura pereche (documentul care a generat-o pe aceasta):{' '}
+              {rutaSursa ? <Link to={rutaSursa}>{etichetaSursa}</Link> : <span>{etichetaSursa}</span>}
+            </li>
+          )}
+          {copii.map((c: DocumentCopil) => (
+            <li key={c.Id}>
+              Latura pereche: <Legatura copil={c} /> — {labelEnum('StareDocument', c.Stare)}
+            </li>
+          ))}
+        </ul>
+      )}
+      {/* Latura pereche se poate ȘTERGE cât e Draft (ștergerea nu se refuză —
+          operatorul poate să fi cules deja piciorul celălalt manual, iar calea
+          manuală reproduce exact același document). Ce NU se acceptă e tăcerea:
+          un virament operat fără pereche lasă 581 deschis, deci starea se
+          spune, nu se ghicește din absența unei linii în listă. */}
+      {doc?.Stare === 'Operat' && !doc.DocumentSursaId && copii.length === 0 && (
+        <div className="indiciu">
+          Latura pereche lipsește (a fost ștearsă): contul de tranzit 581 rămâne deschis
+          până când culegeți manual piciorul celălalt — sau anulați operarea și
+          re-operați documentul, care o regenerează.
+        </div>
+      )}
+      {/* Același avertisment ca pe orice draft autogenerat (D-5b): artefact al
+          operării sursei, deci anularea ei îl șterge cu tot cu modificări. */}
+      {doc?.Autogenerat && doc.Stare === 'Draft' && (
+        <div className="indiciu">
+          Draft autogenerat: dacă anulați operarea celuilalt picior, draftul se șterge —
+          inclusiv modificările făcute aici. Re-operarea lui îl regenerează curat.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Legatura(props: { copil: DocumentCopil }) {
   const { Id, Tip, Numar } = props.copil;
   const ruta = Id ? rutaTip(Tip, Id) : null;
@@ -378,8 +477,13 @@ function Legatura(props: { copil: DocumentCopil }) {
 
 // `Total` = brutul redus de SERVER; `Rest` vine tot din ReadDto (F3-D2) — TS nu
 // scade nimic. La editare nesalvată nu există: baza s-a schimbat.
-function Sumar(props: { doc?: TrzRead; modificat: boolean }) {
-  const { doc, modificat } = props;
+//
+// „Rest de stins" NU se arată pe virament: un picior de virament are `Ramas`
+// egal cu totalul pe veci (nu se stinge niciodată — F7-D5/F7-D7), deci numărul
+// ar fi corect aritmetic și mincinos ca înțeles. Aceeași regulă ca ascunderea
+// panoului de stingeri, la același capitol: pe virament stingerea nu există.
+function Sumar(props: { doc?: TrzRead; modificat: boolean; esteVirament: boolean }) {
+  const { doc, modificat, esteVirament } = props;
   return (
     <div className="sumar">
       <span className="sumar__stare">{labelEnum('StareDocument', doc?.Stare) || 'nesalvat'}</span>
@@ -388,9 +492,10 @@ function Sumar(props: { doc?: TrzRead; modificat: boolean }) {
           ? <em title="Totalul îl calculează serverul la salvare.">— recalculat la salvare</em>
           : doc.Total.toFixed(2)}
       </span>
-      {!modificat && doc?.Stare === 'Operat' && doc.Ramas != null && (
+      {!modificat && !esteVirament && doc?.Stare === 'Operat' && doc.Ramas != null && (
         <span>Rest de stins: <strong>{doc.Ramas.toFixed(2)}</strong></span>
       )}
+      {esteVirament && <span className="sumar__stare">virament intern</span>}
       {doc?.Numar && <span>Număr: {doc.Numar}</span>}
     </div>
   );

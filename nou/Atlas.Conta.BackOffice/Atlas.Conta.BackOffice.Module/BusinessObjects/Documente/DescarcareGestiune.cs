@@ -14,7 +14,7 @@ public class DescarcareGestiune : Document {
     // Ambele dimensiuni rămân pe gestiune (predatorul) — precedentul Decont 32c:
     // soldul 371/345 se ține per gestiune; clientul trăiește pe rândurile FCL și
     // pe link-ul DocumentSursa, nu pe dimensiunile registrului.
-    public override Guid RepartitorImplicitCredit() => PredatorId;
+    public override Guid RepartitorImplicitCredit(DevExpress.ExpressApp.IObjectSpace os) => PredatorId;
 
     // Valoare = COST (preț lot × cantitate — pattern BTR/BCS, prețul nu se culege).
     // ValoareTva 0: TVA-ul vânzării e integral pe FCL (P1), DSC nu poartă TVA.

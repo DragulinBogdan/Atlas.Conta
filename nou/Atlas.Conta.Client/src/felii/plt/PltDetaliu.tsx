@@ -8,10 +8,12 @@ import { plt, RUTA, TIP_ANTET } from './api';
 // IDENTITATEA — direcția banului, scrisă ca JSX, nu ca descriptor (43a):
 //
 //   predator = CONTUL PROPRIU din care se plătește (casă/bancă/trezorerie),
-//   primitor = BENEFICIARUL (partener sau angajat — avansul 542, 31a).
+//   primitor = BENEFICIARUL (partener, angajat — avansul 542, 31a — sau, la
+//              viramentul intern, un al doilea CONT PROPRIU: F7-D1).
 //
-// Contrapartida pentru panoul de stingeri e deci PRIMITORUL — aceeași latură pe
-// care o normalizează proiecția de rest pentru ramura PLT (F3-D4).
+// Contrapartida e deci PRIMITORUL — aceeași latură pe care o normalizează
+// proiecția de rest pentru ramura PLT (F3-D4) și tot ea spune, prin felul ei,
+// dacă documentul e un picior de virament (F7-D8).
 export function PltDetaliu() {
   return (
     <TrezorerieDetaliu
@@ -21,7 +23,7 @@ export function PltDetaliu() {
       tip={TIP_ANTET}
       titluNou="Plată — nouă"
       titluExistent={(numar) => `Plată ${numar}`}
-      contrapartida={(doc) => doc.PrimitorId}
+      campContrapartida="PrimitorId"
       laturi={
         <>
           {/* Conturile proprii sunt câteva (casierii + conturi bancare) ⇒ local. */}

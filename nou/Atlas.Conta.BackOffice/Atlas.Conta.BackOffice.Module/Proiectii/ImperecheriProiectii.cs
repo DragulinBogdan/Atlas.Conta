@@ -112,11 +112,24 @@ public static class ImperecheriProiectii {
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "FCL", Numar = d.Numar, Data = d.Data,
                     ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire }))
-            .Concat(os.GetObjectsQuery<Plata>().Where(d => d.Stare == StareDocument.Operat)
+            // PLT/INC: picioarele de VIRAMENT INTERN (F7) sunt EXCLUSE. Au
+            // `Rest > 0` pe veci (nu se sting niciodată — `CapacitateStingere` e
+            // null, `PoateFiStins` e false pe ele), iar contrapartida lor E un
+            // cont propriu, deci un panou filtrat pe un cont propriu chiar
+            // le-ar întoarce ca „de stins" — un candidat pe care serverul îl
+            // refuză la creare. Filtrul e oglinda predicatului de domeniu
+            // (`DocumentTrezorerie.EsteVirament`: AMBELE laturi conturi
+            // proprii); sub TPT testul de tip devine LEFT JOIN pe tabela mică
+            // `ContPropriu` + IS NULL, nu o a doua interogare.
+            .Concat(os.GetObjectsQuery<Plata>()
+                .Where(d => d.Stare == StareDocument.Operat
+                    && !(d.Predator is ContPropriu && d.Primitor is ContPropriu))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "PLT", Numar = d.Numar, Data = d.Data,
                     ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire }))
-            .Concat(os.GetObjectsQuery<Incasare>().Where(d => d.Stare == StareDocument.Operat)
+            .Concat(os.GetObjectsQuery<Incasare>()
+                .Where(d => d.Stare == StareDocument.Operat
+                    && !(d.Predator is ContPropriu && d.Primitor is ContPropriu))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "INC", Numar = d.Numar, Data = d.Data,
                     ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire }))

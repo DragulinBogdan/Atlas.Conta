@@ -60,6 +60,14 @@ export function TrezorerieLista(props: {
         {/* Autogenerat = plata născută din factură (31e) — coloană proprie
             trezoreriei: operatorul trebuie să vadă ce n-a cules el. */}
         <Column dataField="Autogenerat" caption={cap('Autogenerat')} dataType="boolean" />
+        {/* Marcaj de VIRAMENT INTERN (F7), în stilul coloanei de mai sus: un
+            picior al transferului 581 are număr din aceeași serie și
+            contrapartidă ca orice plată — fără coloană ar fi indistinguibil de
+            banii ieșiți din patrimoniu. Predicatul vine din SERVER
+            (`EsteVirament` — ambele laturi conturi proprii), nu din felul
+            laturilor dedus în TS. Caption LITERAL: nu e membru al entității
+            XAF (e o proiecție a DTO-ului), deci n-are ce căuta în metadata. */}
+        <Column dataField="EsteVirament" caption="Virament intern" dataType="boolean" />
         {/* `Total` vine calculat de server (proiecție), niciodată din TS. */}
         <Column dataField="Total" caption={cap('Total')} dataType="number" format="#,##0.00" alignment="right" />
       </DataGrid>

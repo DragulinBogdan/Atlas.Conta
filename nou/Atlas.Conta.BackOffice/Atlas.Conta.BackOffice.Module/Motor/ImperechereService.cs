@@ -99,6 +99,17 @@ public static class ImperechereService {
             throw new OperareException(
                 "Documentul care stinge nu poartă nicio contrapartidă (nota contabilă cere repartitori expliciți pe linii).");
 
+        // Rolul de STINS e la fel de polimorf ca rolul de stingător (F7-D5):
+        // viramentul intern nu închide nicio datorie, deci nu se stinge. Nu e
+        // redundant cu invariantul de contrapartidă de mai jos — capacitățile
+        // unei note contabile sunt repartitorii expliciți ai liniilor ei, deci
+        // pot cădea pe ORICE latură, inclusiv pe conturile proprii ale unui
+        // picior de virament.
+        if (!document.PoateFiStins(os))
+            throw new OperareException(
+                "Documentul nu poate fi stins: un virament intern nu închide nicio datorie sau creanță "
+                + "(contul de tranzit se închide singur când ambele picioare sunt operate).");
+
         // Contrapartida stingătorului (furnizor/client/angajat) trebuie să apară
         // pe documentul stins — echivalentul grupării pe partener din legacy
         // (spDecontariObligatii); acoperă și lanțul avans↔decont↔regularizare.

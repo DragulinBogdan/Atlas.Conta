@@ -4,7 +4,7 @@ import { CampNumar } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { SCHEMA_LINIE, TIP_LINIE, type TrzLinieWrite } from './api';
-import { idTipTrz } from './tipTrz';
+import { idTip } from './tipLinie';
 
 // Editorul de linie al trezoreriei — vocabularul `Camp*`, ca la BTR/FCT (43c);
 // grila doar afișează. Ce e propriu aici:
@@ -12,18 +12,22 @@ import { idTipTrz } from './tipTrz';
 //  1. **Linia e DEFALCAREA sumei** (31a): `Valoare` se CULEGE (nu există
 //     `PregatesteOperare` pe trezorerie), iar cantitatea/lotul/TVA-ul n-au
 //     semantică și nici nu sunt în contract.
-//  2. **`TRZ` precompletat pe linia NOUĂ** (F3-D7): default de culegere, nu
+//  2. **Tipul precompletat pe linia NOUĂ** (F3-D7): default de culegere, nu
 //     validare — lookup-ul rămâne NEFILTRAT, fiindcă liniile clonate din
 //     factură poartă Tipul ei (302/628…) și trebuie să rămână corectabile.
+//     CODUL îl dă felia (`TRZ` pe plata/încasarea obișnuită, `VIR` pe virament
+//     — F7-D8): editorul nu deduce nimic despre laturile documentului.
 const CAMPURI: (keyof TrzLinieWrite & string)[] = ['TipMaterialId', 'Valoare'];
 
 export function TrezorerieEditorLinie(props: {
   linie: TrzLinieWrite;
   readOnly: boolean;
+  // Codul TipMaterial cu care se precompletează linia nouă.
+  codTipImplicit: string;
   onSalveaza: (l: TrzLinieWrite) => void;
   onRenunta: () => void;
 }) {
-  const { readOnly, onSalveaza, onRenunta } = props;
+  const { readOnly, codTipImplicit, onSalveaza, onRenunta } = props;
   const [linie, setLinie] = useState<TrzLinieWrite>(props.linie);
   const [aratErori, setAratErori] = useState(false);
   const structurale = eroriStructurale(TIP_LINIE, SCHEMA_LINIE, linie as Record<string, unknown>, CAMPURI);
@@ -31,16 +35,18 @@ export function TrezorerieEditorLinie(props: {
 
   // Precompletarea Tipului tehnic, o dată, la MONTAREA unei linii noi. Update
   // FUNCȚIONAL și numai peste gol: dacă între timp operatorul a ales altceva
-  // (răspunsul OData vine asincron), alegerea lui rămâne.
+  // (răspunsul OData vine asincron), alegerea lui rămâne. Codul e în dependențe:
+  // dacă felul contrapartidei se lămurește cât editorul liniei noi e deschis
+  // (sonda de virament răspunde), golul se completează cu codul corect.
   useEffect(() => {
     if (!linieNoua || readOnly || props.linie.TipMaterialId != null) return;
     let activ = true;
-    void idTipTrz().then((id) => {
+    void idTip(codTipImplicit).then((id) => {
       if (activ && id)
         setLinie((prev) => (prev.TipMaterialId ? prev : { ...prev, TipMaterialId: id }));
     });
     return () => { activ = false; };
-  }, [linieNoua, readOnly, props.linie.TipMaterialId]);
+  }, [linieNoua, readOnly, codTipImplicit, props.linie.TipMaterialId]);
 
   function confirma() {
     setAratErori(true);

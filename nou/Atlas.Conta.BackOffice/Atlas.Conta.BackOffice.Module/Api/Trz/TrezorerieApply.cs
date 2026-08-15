@@ -212,7 +212,14 @@ public static class TrezorerieApply {
                 d.Autogenerat, d.DocumentSursaId,
                 // LEFT JOIN pe documentul-sursă: plata autogenerată → numărul
                 // FACTURII care a generat-o; null pe o plată culeasă manual.
-                DocumentSursaNumar = d.DocumentSursa.Numar
+                DocumentSursaNumar = d.DocumentSursa.Numar,
+                // F7-D7: predicatul de virament, în ACELAȘI query (test de tip
+                // pe laturi — sub TPT devine JOIN + IS NOT NULL, nu o a doua
+                // interogare). Formula e cea a domeniului
+                // (`DocumentTrezorerie.EsteVirament`): AMBELE laturi conturi
+                // proprii, nu doar contrapartida — un draft cu laturile
+                // inversate are contrapartida cont propriu fără să fie virament.
+                EsteVirament = d.Predator is ContPropriu && d.Primitor is ContPropriu
             })
             .FirstOrDefault();
         if (h == null)
@@ -271,6 +278,7 @@ public static class TrezorerieApply {
             // interogări mărginite, doar pe CITIREA de detaliu (nu în `Lista`).
             Asignat = ImperechereService.Asignat(os, id),
             Ramas = ImperechereService.Ramas(os, id),
+            EsteVirament = h.EsteVirament,
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             DocumentSursaNumar = h.DocumentSursaNumar,
             DocumentSursaTip = ApiProiectii.CodTip(os, h.DocumentSursaId),
@@ -324,6 +332,10 @@ public static class TrezorerieApply {
                    PredatorDenumire = d.Predator.Denumire,
                    PrimitorDenumire = d.Primitor.Denumire,
                    Autogenerat = d.Autogenerat,
+                   // Aceeași formulă ca în `Citeste` (predicatul domeniului:
+                   // AMBELE laturi conturi proprii), tot în SQL — sub TPT testul
+                   // de tip devine LEFT JOIN pe `ContPropriu` + IS NOT NULL.
+                   EsteVirament = d.Predator is ContPropriu && d.Primitor is ContPropriu,
                    Total = (decimal?)t.Total ?? 0m
                };
     }

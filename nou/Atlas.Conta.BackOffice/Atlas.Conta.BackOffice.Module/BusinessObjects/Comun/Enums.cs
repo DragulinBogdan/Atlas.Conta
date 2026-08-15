@@ -32,6 +32,14 @@ public enum NaturaClasa {
     Cheltuiala = 3,
     Imobilizare = 4,
     Tehnica = 5,
+    // F7-D2 (viramentul intern, transferul 581): „linia mută bani în interiorul
+    // patrimoniului, între două conturi proprii" — nici stoc, nici serviciu,
+    // nici cheltuială. NU se refolosește `Tehnica`: acolo stă exact `TRZ`
+    // (linia obișnuită de trezorerie), iar discriminarea de care depinde
+    // cuplajul laturi↔natură și contarea 581 ar dispărea. Contul de tranzit
+    // rămâne DATĂ (TipMaterial.ContImplicit per profil) — motorul nu cunoaște
+    // niciun simbol (decizia 29).
+    Virament = 6,
 }
 
 // `[XafDisplayName]` pe MEMBRI (review F3-D7): XAF îl citește prin

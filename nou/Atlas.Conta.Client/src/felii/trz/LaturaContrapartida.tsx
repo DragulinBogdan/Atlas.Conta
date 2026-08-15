@@ -1,28 +1,40 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Lookup } from '../../nucleu/Lookup';
 import { useCamp } from '../../nucleu/formular';
-import { existaInSet } from '../../nucleu/sonda';
+import { useSonda } from '../../nucleu/sonda';
 
 // Latura NE-trezorerie a unei plăți/încasări: beneficiarul plății, respectiv
-// plătitorul încasării. Poate fi PARTENER sau ANGAJAT (31a: ContPropriu →
-// Partener/Angajat, avansul 542 pe angajat) — două nomenclatoare diferite pe
+// plătitorul încasării. Poate fi PARTENER, ANGAJAT (31a: ContPropriu →
+// Partener/Angajat, avansul 542 pe angajat) sau, de la felia viramentului
+// (F7-D1/F7-D8), un al doilea CONT PROPRIU — trei nomenclatoare diferite pe
 // aceeași coloană `Repartitor`.
 //
-// Selectorul de FEL e două `Lookup`-uri COMUTATE ÎN COD (43a: condiționalitate
-// în JSX, nu descriptor). Cele două n-ar putea fi un singur lookup: partenerii
-// sunt 129k (căutare remote), angajații sunt un nomenclator mic (local), iar
-// „Repartitor" ca entitate unică ar amesteca gestiuni și conturi proprii în
-// aceeași listă.
+// Selectorul de FEL e trei `Lookup`-uri COMUTATE ÎN COD (43a: condiționalitate
+// în JSX, nu descriptor). Nu s-ar putea unifica: partenerii sunt 129k (căutare
+// remote), angajații și conturile proprii sunt nomenclatoare mici (local), iar
+// „Repartitor" ca entitate unică ar amesteca gestiuni, angajați și conturi
+// proprii în aceeași listă.
+//
+// Al treilea fel NU e o simplă a treia opțiune de nomenclator: contrapartida
+// cont propriu ÎNSEAMNĂ virament intern (transferul 581), iar din ea decurge
+// forma restului ecranului (Tipul implicit al liniei, panoul de stingeri
+// ascuns, latura pereche). Decizia aia NU se ia aici — shell-ul o citește din
+// VALOAREA laturii (`TrezorerieDetaliu`), fiindcă formularul e sursa de adevăr,
+// nu comutatorul de fel.
 //
 // ═══ Deducerea felului la ÎNCĂRCAREA unui document existent ═══
 // ReadDto-ul dă `PrimitorId` + `PrimitorDenumire`, nu FELUL laturii — și nici
 // n-ar trebui: pe server e un `Repartitor`, distincția e a nomenclatoarelor.
-// Deci se PROBEAZĂ mulțimea îngustă (angajații) cu sonda de existență din
-// nucleu (`existaInSet`); 0 rezultate ⇒ partener (default). Eșecul sondei NU e
-// fatal: felul rămâne pe default, iar operatorul are oricând comutatorul
-// manual — care e și escape hatch-ul dacă deducerea greșește.
+// Deci se PROBEAZĂ mulțimile înguste, în ordinea Angajat → ContPropriu, cu
+// sonda de existență din nucleu (`useSonda`); niciuna ⇒ partener (default).
+// Eșecul sondei NU e fatal: `undefined` („nu știm" — sonda propagă erorile, nu
+// le traduce în „nu") lasă felul pe default, iar operatorul are oricând
+// comutatorul manual — care e și escape hatch-ul dacă deducerea greșește.
+// Proba a doua pleacă doar dacă prima a răspuns „nu": mulțimile sunt disjuncte
+// prin construcție (TPT pe `Repartitor`), deci ordinea e ordinea declarată, nu
+// o prioritate care ar putea ascunde un conflict.
 
-type Fel = 'Partener' | 'Angajat';
+type Fel = 'Partener' | 'Angajat' | 'ContPropriu';
 
 export function LaturaContrapartida<T extends object>(props: {
   camp: Extract<keyof T, string>;
@@ -34,28 +46,23 @@ export function LaturaContrapartida<T extends object>(props: {
   const { camp, eticheta, readOnly } = props;
   const c = useCamp<string>(camp, readOnly);
   const valoare = c.valoare;
-  const [fel, setFel] = useState<Fel>('Partener');
-  // Id-ul pentru care s-a rulat deja sonda: fără el, fiecare re-randare a
-  // formularului (adică fiecare tastă) ar întreba serverul din nou.
-  const [probat, setProbat] = useState<string | null>(null);
+  // Alegerea OMULUI, când există: bate deducerea și rămâne până o schimbă tot
+  // el. Nul = felul se deduce din valoare.
+  const [felManual, setFelManual] = useState<Fel | null>(null);
+  const deduce = felManual === null;
 
-  useEffect(() => {
-    if (!valoare || valoare === probat) return;
-    let activ = true;
-    setProbat(valoare);
-    void existaInSet('Angajat', valoare).then((da) => {
-      if (activ && da) setFel('Angajat');
-    });
-    return () => { activ = false; };
-  }, [valoare, probat]);
+  const esteAngajat = useSonda('Angajat', valoare, deduce);
+  const esteContPropriu = useSonda('ContPropriu', valoare, deduce && esteAngajat === false);
+
+  const fel: Fel = felManual
+    ?? (esteAngajat ? 'Angajat' : esteContPropriu ? 'ContPropriu' : 'Partener');
 
   function comuta(nou: Fel) {
     if (nou === fel) return;
-    setFel(nou);
+    setFelManual(nou);
     // Schimbarea felului e o schimbare de INTENȚIE: valoarea veche aparține
-    // celuilalt nomenclator și n-ar mai avea nici măcar afișare.
+    // altui nomenclator și n-ar mai avea nici măcar afișare.
     c.seteaza(undefined);
-    setProbat(null);
   }
 
   return (
@@ -63,29 +70,33 @@ export function LaturaContrapartida<T extends object>(props: {
       <div className="camp">
         <label className="camp__eticheta">{eticheta} — fel</label>
         <div className="camp__control camp__comutator">
-          <button
-            type="button"
-            className={fel === 'Partener' ? 'buton buton--primar buton--mic' : 'buton buton--mic'}
-            disabled={c.readOnly}
-            onClick={() => comuta('Partener')}
-          >
-            Partener
-          </button>
-          <button
-            type="button"
-            className={fel === 'Angajat' ? 'buton buton--primar buton--mic' : 'buton buton--mic'}
-            disabled={c.readOnly}
-            onClick={() => comuta('Angajat')}
-          >
-            Angajat
-          </button>
+          {FELURI.map((f) => (
+            <button
+              key={f.fel}
+              type="button"
+              className={fel === f.fel ? 'buton buton--primar buton--mic' : 'buton buton--mic'}
+              disabled={c.readOnly}
+              onClick={() => comuta(f.fel)}
+            >
+              {f.eticheta}
+            </button>
+          ))}
         </div>
         <div className="camp__eroare" />
       </div>
 
       {fel === 'Partener'
-        ? <Lookup<T> camp={camp} eticheta={eticheta} entitate="Partener" mod="remote" readOnly={readOnly} cauta={['Denumire', 'Cod', 'CodFiscal']} />
-        : <Lookup<T> camp={camp} eticheta={eticheta} entitate="Angajat" mod="local" readOnly={readOnly} cauta={['Denumire', 'Cod', 'Marca']} />}
+        && <Lookup<T> camp={camp} eticheta={eticheta} entitate="Partener" mod="remote" readOnly={readOnly} cauta={['Denumire', 'Cod', 'CodFiscal']} />}
+      {fel === 'Angajat'
+        && <Lookup<T> camp={camp} eticheta={eticheta} entitate="Angajat" mod="local" readOnly={readOnly} cauta={['Denumire', 'Cod', 'Marca']} />}
+      {fel === 'ContPropriu'
+        && <Lookup<T> camp={camp} eticheta={`${eticheta} — cont propriu (virament intern)`} entitate="ContPropriu" mod="local" readOnly={readOnly} cauta={['Cod', 'Denumire', 'Iban']} />}
     </>
   );
 }
+
+const FELURI: { fel: Fel; eticheta: string }[] = [
+  { fel: 'Partener', eticheta: 'Partener' },
+  { fel: 'Angajat', eticheta: 'Angajat' },
+  { fel: 'ContPropriu', eticheta: 'Cont propriu' },
+];

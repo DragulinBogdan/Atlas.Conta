@@ -69401,7 +69401,8 @@
           "Serviciu",
           "Cheltuiala",
           "Imobilizare",
-          "Tehnica"
+          "Tehnica",
+          "Virament"
         ],
         "type": "string"
       },
@@ -70720,6 +70721,9 @@
           "Autogenerat": {
             "type": "boolean"
           },
+          "EsteVirament": {
+            "type": "boolean"
+          },
           "Total": {
             "type": "number",
             "format": "double"
@@ -70817,6 +70821,9 @@
           "Ramas": {
             "type": "number",
             "format": "double"
+          },
+          "EsteVirament": {
+            "type": "boolean"
           },
           "Autogenerat": {
             "type": "boolean"

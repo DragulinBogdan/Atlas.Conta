@@ -3531,7 +3531,7 @@ export interface components {
             LinieIntrareId?: string | null;
         };
         /** @enum {string} */
-        NaturaClasa: "Stoc" | "Serviciu" | "Cheltuiala" | "Imobilizare" | "Tehnica";
+        NaturaClasa: "Stoc" | "Serviciu" | "Cheltuiala" | "Imobilizare" | "Tehnica" | "Virament";
         NirLinieReadDto: {
             /** Format: uuid */
             Id?: string;
@@ -3998,6 +3998,7 @@ export interface components {
             PrimitorDenumire?: string | null;
             TipInstrument?: string | null;
             Autogenerat?: boolean;
+            EsteVirament?: boolean;
             /** Format: double */
             Total?: number;
         };
@@ -4034,6 +4035,7 @@ export interface components {
             Asignat?: number;
             /** Format: double */
             Ramas?: number;
+            EsteVirament?: boolean;
             Autogenerat?: boolean;
             /** Format: uuid */
             DocumentSursaId?: string | null;

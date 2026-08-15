@@ -475,20 +475,31 @@ internal static class ProfilBugetar {
         ContaSeeder.SeedNumerotare(os, "PLT", "PLT-");
         ContaSeeder.SeedNumerotare(os, "INC", "INC-");
 
-        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "PLT") == null) {
+        var plt = os.FirstOrDefault<TipDocument>(x => x.Cod == "PLT");
+        var inc = os.FirstOrDefault<TipDocument>(x => x.Cod == "INC");
+
+        // Rândurile GENERICE (plata/încasarea obișnuită). Garda e PER RÂND, pe
+        // cheia lui (tip document + fără filtre): garda veche „există vreo regulă
+        // pe PLT" ar sări rândul de virament de mai jos pe orice bază existentă.
+        if (ContaSeeder.RegulaContareLipsa(os, plt, null, null)) {
             var plata = os.CreateObject<RegulaContare>();
-            plata.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == "PLT");
+            plata.TipDocument = plt;
             plata.SursaContDebit = SursaCont.RepartitorPrimitor;
             plata.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00");
             plata.SursaContCredit = SursaCont.RepartitorPredator;
         }
-        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "INC") == null) {
+        if (ContaSeeder.RegulaContareLipsa(os, inc, null, null)) {
             var incasare = os.CreateObject<RegulaContare>();
-            incasare.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == "INC");
+            incasare.TipDocument = inc;
             incasare.SursaContDebit = SursaCont.RepartitorPrimitor;
             incasare.SursaContCredit = SursaCont.RepartitorPredator;
             incasare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
         }
+
+        // Viramentul intern (F7-D6): transferul între conturile proprii (casă ↔
+        // trezorerie) prin contul de tranzit — sinteticul `581` din CPLAN;
+        // analiticul nu se persistă (decizia 10).
+        ContaSeeder.SeedContareVirament(os, plt, inc, "581");
     }
 
     // Nota contabilă (FAZA 1C §5): SINGURA politică e numerotarea. Fără reguli

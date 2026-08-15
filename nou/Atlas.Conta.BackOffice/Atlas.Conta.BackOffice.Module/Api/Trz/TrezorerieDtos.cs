@@ -27,6 +27,29 @@ namespace Atlas.Conta.BackOffice.Module.Api.Trz;
 //   * `TipInstrument` = STRING pe sârmă (convenția `Stare`): contractul nu
 //     depinde de ordinea membrilor enum-ului, iar TypeScript-ul nu-l tipează
 //     `number`. null ⇒ `OrdinPlata`; o valoare necunoscută = refuz de domeniu.
+//
+// ═══ Viramentul intern (transferul 581) NU schimbă contractul de SCRIERE ═══
+// F7-D1/F7-D7: viramentul e o pereche PLT+INC pe laturi obișnuite, nu un tip de
+// document nou — header, linii și ciclu de viață identice; diferă doar FELUL
+// contrapartidei (al doilea cont propriu în loc de partener/angajat) și, în
+// consecință, contul de postare. Contrapartida e deja un `Guid` liber în
+// `TrezorerieWriteDto`, iar cuplajul „laturi ↔ natura liniilor" e invariant al
+// OPERĂRII (`DocumentTrezorerie.ValideazaOperare`), unde stau toate celelalte
+// reguli de laturi ⇒ WriteDto, rutele și `TrezorerieApply.Aplica` rămân
+// NEATINSE. Singura adăugire e `EsteVirament` — pe ReadDto (affordance de FORMĂ,
+// vezi mai jos) și pe ListDto (marcajul de grilă, review advers: fără el
+// picioarele transferului sunt indistinguibile de plățile reale) —, nu un al
+// doilea contract de scriere.
+//
+// `ImperecheriProiectii.DocumenteCuRest` EXCLUDE picioarele de virament pe
+// ramurile PLT/INC (review advers al feliei): contractul susținea că e imposibil
+// structural să apară — fals. Un picior de virament are `Rest > 0` pe veci (nu se
+// stinge niciodată — `CapacitateStingere` e null și `PoateFiStins` e false pe el),
+// iar contrapartida lui E chiar un cont propriu, adică exact filtrul pe care
+// proiecția îl primește când panoul se deschide pentru un alt document de
+// trezorerie. Ascunderea panoului pe virament (F7-D8) e formă de ecran, nu
+// garanție de date. Filtrul e un anti-join pe tabela mică `ContPropriu`, în
+// aceeași formă cu predicatul domeniului (AMBELE laturi conturi proprii).
 
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 public sealed class TrezorerieWriteDto {
@@ -90,6 +113,14 @@ public sealed class TrezorerieReadDto {
     // fi un al doilea agregat pe fiecare rând de grilă.
     public decimal Asignat { get; set; }
     public decimal Ramas { get; set; }
+    // AMBELE laturi sunt conturi proprii ⇒ documentul e un VIRAMENT INTERN
+    // (F7-D7): transfer între casă și bancă, nu plată/încasare către un terț.
+    // Calculată pe SERVER (predicatul e al domeniului —
+    // `DocumentTrezorerie.EsteVirament`), ca să nu-l refacă TypeScript-ul din
+    // felul repartitorilor. Clientul decide din ea FORMA ecranului: Tipul
+    // implicit al liniei (`VIR` în loc de `TRZ`), ascunderea panoului de
+    // stingeri (un virament nu stinge nimic) și indiciul laturii pereche.
+    public bool EsteVirament { get; set; }
     public bool Autogenerat { get; set; }
     public Guid? DocumentSursaId { get; set; }
     // Numărul documentului-sursă: plata autogenerată → link înapoi la FACTURA
@@ -145,5 +176,11 @@ public sealed class TrezorerieListDto {
     // Coloană de grilă cerută explicit (F3-D8): operatorul distinge plățile
     // culese de cele născute din facturi.
     public bool Autogenerat { get; set; }
+    // Aceeași distincție, pentru virament: fără ea picioarele transferului 581
+    // sunt indistinguibile în grilă de plățile/încasările reale (au numere din
+    // aceleași serii și contrapartidă ca oricare). Formula e IDENTICĂ celei din
+    // `Citeste` și cu predicatul domeniului — AMBELE laturi conturi proprii —,
+    // calculată în același query, nu într-o a doua interogare per rând.
+    public bool EsteVirament { get; set; }
     public decimal Total { get; set; }
 }
