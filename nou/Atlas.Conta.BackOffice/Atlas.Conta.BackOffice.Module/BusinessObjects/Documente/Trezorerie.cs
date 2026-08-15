@@ -307,10 +307,21 @@ public abstract class DocumentTrezorerie : Document {
         var idTinta = tinta.ID;
         var altPointer = os.GetObjectsQuery<DocumentTrezorerie>()
             .Where(x => x.LaturaPerecheId == idTinta && x.ID != ID)
-            .Select(x => (Guid?)x.ID).FirstOrDefault();
-        if (altPointer != null)
-            erori.Add($"Documentul {Eticheta(tinta)} e deja arătat ca pereche de alt document — "
-                + "ștergeți acea legătură sau alegeți alt picior.");
+            .Select(x => new { x.Numar, x.Data, x.Stare, x.Autogenerat })
+            .FirstOrDefault();
+        if (altPointer != null) {
+            var etichetaPointer = Eticheta(altPointer.Numar, altPointer.Data);
+            // Cazul cel mai frecvent al refuzului ăstuia NU e o legătură greșită a
+            // altcuiva, ci draftul pe care sistemul l-a generat singur la operarea
+            // țintei (64k): „e deja perechea altui document" l-ar lăsa pe operator
+            // să caute un vinovat care nu există. Numim artefactul și dăm ordinea
+            // corectă — el e cel care dispare, nu legătura pe care o culege acum.
+            erori.Add(altPointer.Stare == StareDocument.Draft && altPointer.Autogenerat
+                ? $"Documentul {Eticheta(tinta)} are deja o latură pereche GENERATĂ automat "
+                    + $"({etichetaPointer}), încă în lucru — ștergeți acel draft, apoi legați acest document."
+                : $"Documentul {Eticheta(tinta)} e deja arătat ca pereche de alt document "
+                    + $"({etichetaPointer}) — ștergeți acea legătură sau alegeți alt picior.");
+        }
     }
 
     // Avertismentul CONSULTATIV (F8-D10), nu un refuz: două viramente identice
@@ -348,22 +359,43 @@ public abstract class DocumentTrezorerie : Document {
             if (posibili.Count == 0)
                 return Array.Empty<string>();
 
-            // „Fără pereche" e SIMETRIC: cei arătați de altcineva ies din listă.
+            // Criteriul e „fără pereche OPERATĂ", NU „fără pereche" — și distincția
+            // e chiar scenariul 64k, altfel mesajul e mort exact acolo unde a fost
+            // scris: piciorul de ieșire operat și-a GENERAT un draft care-l arată,
+            // deci un filtru pe „e arătat de cineva" l-ar scoate din listă tocmai
+            // când operatorul culege manual celălalt picior. Contabil, 581 se
+            // închide doar când al doilea picior e OPERAT; un draft e o intenție.
+            //
+            // Pointer-ul care NU e Draft (Operat = perechea s-a produs; Stornat =
+            // nu se mai poate șterge, deci legarea n-ar avea ieșire) scoate
+            // candidatul definitiv. Cel Draft îl lasă în listă, dar e NUMIT: F8-D8
+            // punctul 5 refuză legarea cât timp el arată spre țintă, iar un sfat
+            // care nu se poate executa e mai rău decât tăcerea.
             var ids = posibili.Select(x => x.ID).ToList();
-            var aratati = os.GetObjectsQuery<DocumentTrezorerie>()
+            var pointeri = os.GetObjectsQuery<DocumentTrezorerie>()
                 .Where(x => x.LaturaPerecheId != null && ids.Contains(x.LaturaPerecheId.Value))
-                .Select(x => x.LaturaPerecheId.Value).ToList();
-            var candidati = posibili.Where(x => !aratati.Contains(x.ID)).ToList();
+                .Select(x => new { Tinta = x.LaturaPerecheId.Value, x.Numar, x.Data, x.Stare })
+                .ToList();
+            var cuPerecheDefinitiva = pointeri.Where(p => p.Stare != StareDocument.Draft)
+                .Select(p => p.Tinta).ToList();
+            var candidati = posibili.Where(x => !cuPerecheDefinitiva.Contains(x.ID)).ToList();
             if (candidati.Count == 0)
                 return Array.Empty<string>();
 
+            string Descrie(DocumentTrezorerie x) {
+                var blocant = pointeri.FirstOrDefault(p => p.Tinta == x.ID);
+                return blocant == null
+                    ? Eticheta(x)
+                    : $"{Eticheta(x)} (blocat de draftul {Eticheta(blocant.Numar, blocant.Data)} — ștergeți-l întâi)";
+            }
+
             const int plafon = 5;
-            var lista = string.Join(", ", candidati.Take(plafon).Select(Eticheta));
+            var lista = string.Join(", ", candidati.Take(plafon).Select(Descrie));
             if (candidati.Count > plafon)
                 lista += $" …și încă {candidati.Count - plafon}";
             return new[] {
                 $"S-a generat latura pereche a viramentului, dar există deja picioare operate compatibile: {lista}. "
-                + "Dacă acesta e piciorul lor, anulați operarea, alegeți «latura pereche» și ștergeți draftul generat."
+                + "Dacă acesta e piciorul lor, anulați operarea, ștergeți draftul generat și alegeți «latura pereche»."
             };
         }
         catch (Exception) {
@@ -373,8 +405,12 @@ public abstract class DocumentTrezorerie : Document {
         }
     }
 
-    static string Eticheta(Document doc) =>
-        string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : $"{doc.Numar} din {doc.Data:dd.MM.yyyy}";
+    static string Eticheta(Document doc) => Eticheta(doc.Numar, doc.Data);
+
+    // Varianta pe câmpuri PLATE: mesajele care numesc un ALT document îl citesc
+    // dintr-o proiecție, nu dintr-o navigație materializată (25b).
+    static string Eticheta(string numar, DateOnly data) =>
+        string.IsNullOrWhiteSpace(numar) ? $"({data:dd.MM.yyyy})" : $"{numar} din {data:dd.MM.yyyy}";
 }
 
 // Predator = ContPropriu (sursa banilor), primitor = beneficiarul.

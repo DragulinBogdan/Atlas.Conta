@@ -58,6 +58,28 @@ public abstract class TrezorerieControllerBase<T> : ContaApiController
         return dto == null ? NotFound() : Ok(dto);
     }
 
+    // Candidații de latură pereche (F8-D11) — CITIRE, deci ușa SECURED, ca la
+    // `rest-nedescarcat`. Ruta nu se ciocnește cu `{id:guid}`: constrângerea de
+    // rutare respinge segmentul text.
+    //
+    // Laturile vin ca parametri (nu ca id de document) fiindcă întrebarea se pune
+    // în timpul CULEGERII, pe un formular care poate să nu fie încă salvat;
+    // `exclusId` scoate documentul curent din propria listă când el există deja.
+    [HttpGet("candidati-pereche")]
+    [ProducesResponseType(typeof(IReadOnlyList<CandidatPerecheDto>), StatusCodes.Status200OK)]
+    public IActionResult CandidatiPereche(Guid predatorId, Guid primitorId, Guid? exclusId) {
+        using var os = Secured(typeof(T));
+        return Ok(Candidati(os, predatorId, primitorId, exclusId));
+    }
+
+    // Tipul OPUS al rutei se declară în DERIVATĂ, acolo unde se declară și ruta —
+    // e nevoie de el la COMPILARE (filtrarea de tip trebuie să ajungă în SQL).
+    // `TrezorerieApply.CandidatiPereche` verifică potrivirea cu contractul
+    // domeniului (`TipLaturaPereche`), deci declarația de aici nu poate diverge
+    // tăcut de el.
+    protected abstract IReadOnlyList<CandidatPerecheDto> Candidati(
+        IObjectSpace os, Guid predatorId, Guid primitorId, Guid? exclusId);
+
     // ── Scriere: agregatul per document (42d) ─────────────────────────────
     [HttpPost]
     [ProducesResponseType(typeof(TrezorerieReadDto), StatusCodes.Status201Created)]
@@ -136,6 +158,10 @@ public class PlataController : TrezorerieControllerBase<Plata> {
         : base(secured, nonSecured, securitate) { }
 
     protected override string Ruta => "/api/plt";
+
+    protected override IReadOnlyList<CandidatPerecheDto> Candidati(IObjectSpace os,
+        Guid predatorId, Guid primitorId, Guid? exclusId) =>
+        TrezorerieApply.CandidatiPereche<Plata, Incasare>(os, predatorId, primitorId, exclusId);
 }
 
 [Route("api/inc")]
@@ -145,4 +171,8 @@ public class IncasareController : TrezorerieControllerBase<Incasare> {
         : base(secured, nonSecured, securitate) { }
 
     protected override string Ruta => "/api/inc";
+
+    protected override IReadOnlyList<CandidatPerecheDto> Candidati(IObjectSpace os,
+        Guid predatorId, Guid primitorId, Guid? exclusId) =>
+        TrezorerieApply.CandidatiPereche<Incasare, Plata>(os, predatorId, primitorId, exclusId);
 }

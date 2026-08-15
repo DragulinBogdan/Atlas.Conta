@@ -64,6 +64,16 @@ public sealed class TrezorerieWriteDto {
     // Extrasul de cont pe care apare operațiunea (bancă) — informativ.
     public string NumarExtras { get; set; }
     public DateOnly? DataExtras { get; set; }
+    // Legătura EXPLICITĂ de pereche a viramentului (F8-D6/F8-D11): „acest picior
+    // e perechea documentului X". E câmp CULES — se aplică exact ca oricare
+    // altul —, iar prezența lui SUPRIMĂ generarea automată a celuilalt picior
+    // (F8-D7), în ambele sensuri. VALIDAREA lui rămâne integral în motor
+    // (`DocumentTrezorerie.ValideazaOperare`, cele șapte verificări F8-D8):
+    // apply-ul nu duplică nicio regulă de domeniu, rezolvă doar EXISTENȚA
+    // țintei, ca la orice FK, ca refuzul să fie de domeniu în loc de violare de
+    // constraint. `null` = „nu declar nimic" ⇒ comportamentul de dinainte
+    // (motorul generează perechea la operare).
+    public Guid? LaturaPerecheId { get; set; }
     public List<TrezorerieLinieWriteDto> Linii { get; set; } = new();
 }
 
@@ -122,6 +132,18 @@ public sealed class TrezorerieReadDto {
     // stingeri (un virament nu stinge nimic) și indiciul laturii pereche.
     public bool EsteVirament { get; set; }
     public bool Autogenerat { get; set; }
+    // Legătura de pereche AȘA CUM E SCRISĂ pe acest document (F8-D6): nenulă
+    // doar pe partea care o declară. Clientul o trimite înapoi la PUT — e câmpul
+    // lui de culegere; pentru „am pereche?" se citește `Pereche`, care e
+    // simetrică.
+    public Guid? LaturaPerecheId { get; set; }
+    // Perechea REZOLVATĂ (F8-D11) — sursa UNICĂ a indiciului din client: link
+    // propriu SAU documentul care mă arată pe MINE (helper-ul domeniului
+    // `DocumentTrezorerie.PerecheId`, F8-D6). Indiciul introdus la F7 se deducea
+    // din `Copii[]`/`DocumentSursaId` și rata exact cazul pentru care există
+    // felia: legătura DECLARATĂ manual, care n-are nicio relație de grup conex.
+    // `null` = documentul n-are pereche (nici generată, nici declarată).
+    public LaturaPerecheDto Pereche { get; set; }
     public Guid? DocumentSursaId { get; set; }
     // Numărul documentului-sursă: plata autogenerată → link înapoi la FACTURA
     // care a generat-o (clientul n-o mai caută după DocumentSursaId).
@@ -162,6 +184,46 @@ public sealed class TrezorerieLinieReadDto {
     public string CodFunctionalCod { get; set; }
     public Guid? ProiectId { get; set; }
     public string ProiectCod { get; set; }
+}
+
+// Celălalt picior al viramentului, cât să-l poți deschide și eticheta (F8-D11).
+// Formă deliberat identică cu `DocumentCopilDto` fără `Autogenerat`, dar tip
+// PROPRIU: perechea NU e un copil al grupului conex — legătura manuală n-are
+// `DocumentSursaId`, iar cine o citește ca pe un copil ratează exact cazul
+// feliei. `Tip` e codul ancorei `TipDocument` (PLT/INC), rezolvat POLIMORF prin
+// `ApiProiectii.CodTip` — clientul rutează prin `rutaTip`, nu hardcodează ruta.
+public sealed class LaturaPerecheDto {
+    public Guid Id { get; set; }
+    public string Tip { get; set; }
+    public string Numar { get; set; }
+    public string Stare { get; set; }
+}
+
+// Un candidat de latură pereche (F8-D11): picioarele de tip OPUS, pe ACELEAȘI
+// laturi, încă neîmperecheate. Listă mică — e sursa unui SelectBox, nu o grilă
+// paginată: fără `DataSourceLoader`, cu plafon fix în proiecție.
+//
+// `Total` e aici (spre deosebire de `DocumentCopilDto`) fiindcă e singurul
+// element care distinge două viramente altfel identice între aceleași conturi,
+// în aceeași zi — exact ambiguitatea din 64k pe care operatorul o tranșează
+// alegând. Nu e affordance de acțiune: alegerea rămâne a lui, iar validarea
+// legăturii (F8-D8) e a motorului.
+public sealed class CandidatPerecheDto {
+    public Guid Id { get; set; }
+    public string Numar { get; set; }
+    public DateOnly Data { get; set; }
+    public decimal Total { get; set; }
+    public string Stare { get; set; }
+    // Eticheta draftului care ARATĂ spre acest candidat — de regulă latura
+    // pereche pe care motorul i-a generat-o singur la operare (64k). `null` =
+    // se poate lega direct.
+    //
+    // Candidatul rămâne în listă (criteriul e „fără pereche OPERATĂ": un draft e
+    // o intenție, nu un picior — 581 nu s-a închis), dar F8-D8 punctul 5 REFUZĂ
+    // legarea cât timp draftul e acolo. Fără câmpul ăsta clientul ar oferi o
+    // opțiune care pică la operare, cu operatorul nedumerit; cu el, ordinea e
+    // vizibilă: ștergi draftul, apoi legi.
+    public string PerecheDraftNumar { get; set; }
 }
 
 // ── Listă: exact coloanele grilei (fără linii — N+1 pe `Total` real) ───────

@@ -63,6 +63,22 @@ public static class TrezorerieApply {
         doc.TipInstrument = tipInstrument;
         doc.NumarExtras = dto.NumarExtras;
         doc.DataExtras = dto.DataExtras;
+        // F8-D11: legătura de pereche e câmp CULES, aplicat ca oricare altul.
+        // NAVIGAȚIA, nu FK-ul scalar (regula de mai sus): existența țintei se
+        // validează cu mesaj de domeniu, nu cu violare de FK la commit. E
+        // SINGURA verificare făcută aici — cele șapte reguli ale legăturii
+        // (virament de ambele părți, tip opus, aceleași laturi, fără triplete,
+        // fără reciprocitate, fără self-link) rămân în motor (F8-D8), unde le
+        // vede și calea XAF, și importul.
+        if (dto.LaturaPerecheId is Guid perecheId) {
+            doc.LaturaPereche = os.GetObjectByKey<DocumentTrezorerie>(perecheId)
+                ?? throw new OperareException(
+                    $"Documentul indicat ca latură pereche ({perecheId}) nu există.");
+        }
+        else {
+            doc.LaturaPereche = null;
+            doc.LaturaPerecheId = null;
+        }
         // `Numar` NU se atinge: PLT/INC au PoliticaNumerotare ⇒ server-owned
         // (F3-D1) — nici nu e în WriteDto, nici gardianul nu l-ar accepta.
 
@@ -83,6 +99,30 @@ public static class TrezorerieApply {
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
                 + "Anulați operarea sau stornați-l.");
+
+        // F8-D11: `LaturaPerecheId` e FK cu `Restrict` (F8-D6) — piciorul ARĂTAT
+        // ca pereche de alt document nu se poate șterge. Fără pre-check, refuzul
+        // ar veni din Postgres ca violare de constraint, tradusă generic (60a):
+        // adevărată, dar fără remediu. Aici e de DOMENIU, cu documentul numit și
+        // cu ieșirea: legătura se ține pe o singură parte, deci se șterge de acolo.
+        var pointer = os.GetObjectsQuery<DocumentTrezorerie>()
+            .Where(x => x.LaturaPerecheId == id)
+            .Select(x => new { x.ID, x.Numar, x.Data })
+            .FirstOrDefault();
+        // Cazul degenerat, scos de probă: documentul se arată PE SINE. Motorul îl
+        // refuză la operare (F8-D8, self-link), dar culegerea îl acceptă — iar
+        // FK-ul self-referențial cu `Restrict` e verificat IMEDIAT, deci nici
+        // baza nu lasă rândul să dispară cu tot cu propria referință. Fără mesajul
+        // ăsta operatorul rămâne cu un draft pe care nu-l poate nici opera, nici
+        // șterge, și cu un text care-i spune că e „perechea lui însuși".
+        if (pointer != null && pointer.ID == id)
+            throw new OperareException(
+                $"Documentul {Eticheta(doc)} se declară PE SINE latură pereche — goliți întâi "
+                + "câmpul „latura pereche”, apoi ștergeți documentul.");
+        if (pointer != null)
+            throw new OperareException(
+                $"Documentul {Eticheta(doc)} e declarat latura pereche a lui "
+                + $"{Eticheta(pointer.Numar, pointer.Data)} — ștergeți întâi acea legătură.");
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
@@ -191,8 +231,12 @@ public static class TrezorerieApply {
         : typeof(T) == typeof(Incasare) ? "Încasarea"
         : "Documentul de trezorerie";
 
-    static string Eticheta(Document doc) =>
-        string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;
+    static string Eticheta(Document doc) => Eticheta(doc.Numar, doc.Data);
+
+    // Varianta pe câmpuri PLATE: mesajele care numesc un ALT document îl citesc
+    // dintr-o proiecție (25b — nicio navigație materializată pentru un mesaj).
+    static string Eticheta(string numar, DateOnly data) =>
+        string.IsNullOrWhiteSpace(numar) ? $"({data:dd.MM.yyyy})" : numar;
 
     // ═══════════════════════ Citire ═══════════════════════
     //
@@ -209,7 +253,7 @@ public static class TrezorerieApply {
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 d.TipInstrument, d.NumarExtras, d.DataExtras,
-                d.Autogenerat, d.DocumentSursaId,
+                d.Autogenerat, d.DocumentSursaId, d.LaturaPerecheId,
                 // LEFT JOIN pe documentul-sursă: plata autogenerată → numărul
                 // FACTURII care a generat-o; null pe o plată culeasă manual.
                 DocumentSursaNumar = d.DocumentSursa.Numar,
@@ -261,6 +305,16 @@ public static class TrezorerieApply {
         var copii = ApiProiectii.Copii(os, id);
         var faraCopiiOperati = copii.All(c => c.Stare != nameof(StareDocument.Operat));
         var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var pereche = Pereche<T>(os, id);
+        // Oglinda gardianului `MotorOperare.VerificaFaraLaturaPerecheOperata`
+        // (F8-D9). Grupul conex („copil operat") îl acoperea DOAR pentru perechea
+        // AUTOGENERATĂ, care e și copil; legătura DECLARATĂ manual n-are
+        // `DocumentSursa`, deci fără asta affordance-ul spunea „se poate anula"
+        // despre un document pe care motorul îl refuză — exact clasa de minciună
+        // închisă la F3-D2/F5-D8b. CUSĂTURĂ: predicatul e identic cu al
+        // gardianului (pointer OPERAT); dacă acolo se schimbă, aici minte.
+        var faraLaturaPerecheOperata = !os.GetObjectsQuery<DocumentTrezorerie>()
+            .Any(x => x.LaturaPerecheId == id && x.Stare == StareDocument.Operat);
 
         return new TrezorerieReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -279,13 +333,16 @@ public static class TrezorerieApply {
             Asignat = ImperechereService.Asignat(os, id),
             Ramas = ImperechereService.Ramas(os, id),
             EsteVirament = h.EsteVirament,
+            LaturaPerecheId = h.LaturaPerecheId, Pereche = pereche,
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             DocumentSursaNumar = h.DocumentSursaNumar,
             DocumentSursaTip = ApiProiectii.CodTip(os, h.DocumentSursaId),
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
-            PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
+            PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri
+                && faraLaturaPerecheOperata,
+            PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri
+                && faraLaturaPerecheOperata,
             Copii = copii,
             Linii = linii.Select(l => new TrezorerieLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
@@ -338,5 +395,142 @@ public static class TrezorerieApply {
                    EsteVirament = d.Predator is ContPropriu && d.Primitor is ContPropriu,
                    Total = (decimal?)t.Total ?? 0m
                };
+    }
+
+    // ═══════════════════════ Latura pereche (F8-D11) ═══════════════════════
+
+    // Perechea REZOLVATĂ a unui picior, pentru ReadDto. Derivarea „link propriu
+    // SAU cine mă arată" NU se rescrie aici: e a domeniului
+    // (`DocumentTrezorerie.PerecheId`, F8-D6) și are trei alți consumatori —
+    // suprimarea generării (F8-D7), gardianul de anulare/storno (F8-D9) și
+    // avertismentul (F8-D10). Un al doilea exemplar ar diverge tăcut de ei exact
+    // în cazul pentru care felia există.
+    //
+    // Costul: o materializare a documentului (`GetObjectByKey`, TPT) pe CITIREA
+    // de detaliu — alături de cele trei interogări ale stingerii, aceeași
+    // categorie. NU intră în `Lista` (acolo ar fi al doilea agregat pe rând).
+    static LaturaPerecheDto Pereche<T>(IObjectSpace os, Guid id) where T : DocumentTrezorerie {
+        var doc = os.GetObjectByKey<T>(id);
+        if (doc?.PerecheId(os) is not Guid perecheId)
+            return null;
+        // Proiecție PLATĂ pe celălalt picior — nu-l materializăm ca entitate doar
+        // ca să-i citim numărul.
+        var p = os.GetObjectsQuery<DocumentTrezorerie>()
+            .Where(x => x.ID == perecheId)
+            .Select(x => new { x.ID, x.Numar, x.Stare })
+            .FirstOrDefault();
+        if (p == null)
+            return null;
+        return new LaturaPerecheDto {
+            Id = p.ID,
+            // Codul ancorei `TipDocument` (PLT/INC) — rezolvat POLIMORF, ca la
+            // „Generat din" (D-6b): clientul rutează prin `rutaTip`, nu presupune
+            // că perechea unei plăți e mereu la `/inc/`.
+            Tip = ApiProiectii.CodTip(os, p.ID),
+            Numar = p.Numar,
+            Stare = p.Stare.ToString()
+        };
+    }
+
+    // Plafonul listei de candidați: e sursa unui SelectBox, nu o grilă paginată
+    // (fără `DataSourceLoader`, deci fără `take` de la client). Mulțimea e deja
+    // îngustă prin construcție — picioare neîmperecheate între EXACT aceleași
+    // două conturi proprii.
+    const int PlafonCandidati = 50;
+
+    // Picioarele care pot fi declarate pereche pentru un document aflat în
+    // culegere (F8-D11). `T` = tipul RUTEI, `TOpus` = tipul candidaților.
+    //
+    // De ce două tipuri și nu unul: query-ul trebuie să filtreze tipul ÎN SQL
+    // (sub TPT nu există discriminator, iar mulțimea „viramente între două
+    // conturi" nu e mărginită pe o bază reală — o materializare cu filtrare în
+    // memorie ar fi al doilea `CoduriTip` per rând, 60b), deci tipul opus trebuie
+    // să fie cunoscut la COMPILARE. Transportul îl are (ruta e concretă), dar
+    // AUTORITATEA rămâne contractul domeniului `TipLaturaPereche()` (F8-D8), care
+    // e verificat mai jos: cele două declarații nu pot diverge tăcut.
+    public static IReadOnlyList<CandidatPerecheDto> CandidatiPereche<T, TOpus>(
+        IObjectSpace os, Guid predatorId, Guid primitorId, Guid? exclusId)
+        where T : DocumentTrezorerie, new()
+        where TOpus : DocumentTrezorerie {
+
+        // Instanța e DETAȘATĂ (niciodată în ObjectSpace): `TipLaturaPereche` e o
+        // funcție pură a tipului, nu a stării. Nepotrivirea e bug de wiring, nu
+        // configurare — pică zgomotos, la primul apel.
+        var tipContract = new T().TipLaturaPereche();
+        if (tipContract != typeof(TOpus))
+            throw new InvalidOperationException(
+                $"Ruta {typeof(T).Name} cere candidați de tip {typeof(TOpus).Name}, "
+                + $"dar contractul domeniului declară {tipContract.Name}.");
+
+        // Criteriul e „fără pereche OPERATĂ", nu „fără pereche" — ACELAȘI ca al
+        // avertismentului (F8-D10), și din același motiv: în fluxul canonic 64k
+        // piciorul căutat și-a generat singur un draft care-l arată, deci un
+        // anti-join pe „e arătat de cineva" ar goli lista exact când operatorul
+        // culege al doilea picior. Contabil, 581 se închide doar când al doilea
+        // picior e OPERAT.
+        //
+        // Pointer-ul non-Draft îl scoate definitiv (Operat = perechea s-a produs;
+        // Stornat = pointerul nu se mai poate șterge, deci legarea n-are ieșire);
+        // cel Draft îl lasă în listă, dar cu `PerecheDraftNumar` completat mai jos.
+        // Anti-join pe aceeași tabelă (forma din `DocumenteCuRest`), nu subquery
+        // corelat (42c).
+        var cuPerecheDefinitiva = os.GetObjectsQuery<DocumentTrezorerie>()
+            .Where(x => x.LaturaPerecheId != null && x.Stare != StareDocument.Draft)
+            .Select(x => x.LaturaPerecheId.Value);
+
+        var candidati = os.GetObjectsQuery<TOpus>()
+            // Laturile sunt filtrul PRIMAR (F7-D1: cele două picioare stau pe
+            // aceleași laturi, direcția o poartă tipul) — vin de la client, deci
+            // predicatul de virament NU se presupune: e verificat aici, în aceeași
+            // formă cu al domeniului (AMBELE laturi conturi proprii).
+            .Where(d => d.PredatorId == predatorId && d.PrimitorId == primitorId
+                && d.Predator is ContPropriu && d.Primitor is ContPropriu
+                // Linkul PROPRIU rămâne excludere absolută, indiferent de stare:
+                // F8-D8 punctul 5 refuză o țintă care declară deja pe altcineva,
+                // iar remediul nu e al nostru (e legătura ei).
+                && d.LaturaPerecheId == null
+                && !cuPerecheDefinitiva.Contains(d.ID)
+                // Draft ȘI Operat: validarea legăturii (F8-D8) nu cere stare —
+                // ambele sunt legături legitime (piciorul cules înainte de
+                // operare, sau cel deja operat de ieri). `Stornat` nu se OFERĂ:
+                // nu e regulă de refuz (rămâne al motorului), e afordanță — un
+                // picior stornat nu mai are ce închide pe 581.
+                && (d.Stare == StareDocument.Draft || d.Stare == StareDocument.Operat));
+        if (exclusId is Guid exclus)
+            candidati = candidati.Where(d => d.ID != exclus);
+
+        // `Total` prin JOIN PE AGREGAT, ca în `Lista` (42c).
+        var totaluri = os.GetObjectsQuery<DocumentDetaliu>()
+            .GroupBy(l => l.DocumentId)
+            .Select(g => new { DocumentId = g.Key, Total = g.Sum(x => x.Valoare + x.ValoareTva) });
+
+        var lista = (from d in candidati
+                     join t in totaluri on d.ID equals t.DocumentId into agregat
+                     from t in agregat.DefaultIfEmpty()
+                     // Cronologic DESCENDENT: piciorul căutat e aproape întotdeauna
+                     // cel recent (foaia de vărsământ de ieri, extrasul de azi).
+                     orderby d.Data descending, d.ID descending
+                     select new CandidatPerecheDto {
+                         Id = d.ID,
+                         Numar = d.Numar,
+                         Data = d.Data,
+                         Stare = d.Stare == StareDocument.Draft ? "Draft" : "Operat",
+                         Total = (decimal?)t.Total ?? 0m
+                     }).Take(PlafonCandidati).ToList();
+
+        // Draftul care blochează legarea, pe mulțimea DEJA plafonată (≤ 50): o
+        // interogare mărginită, nu un subquery corelat per rând.
+        var ids = lista.Select(c => c.Id).ToList();
+        var drafturiBlocante = os.GetObjectsQuery<DocumentTrezorerie>()
+            .Where(x => x.LaturaPerecheId != null && ids.Contains(x.LaturaPerecheId.Value)
+                && x.Stare == StareDocument.Draft)
+            .Select(x => new { Tinta = x.LaturaPerecheId.Value, x.Numar, x.Data })
+            .ToList();
+        foreach (var candidat in lista) {
+            var blocant = drafturiBlocante.FirstOrDefault(x => x.Tinta == candidat.Id);
+            if (blocant != null)
+                candidat.PerecheDraftNumar = Eticheta(blocant.Numar, blocant.Data);
+        }
+        return lista;
     }
 }

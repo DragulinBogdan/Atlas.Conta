@@ -1432,6 +1432,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inc/candidati-pereche": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/inc/candidati-pereche"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inc/{id}/opereaza": {
         parameters: {
             query?: never;
@@ -2219,6 +2235,22 @@ export interface paths {
         put: operations["PUT_api/plt/{id}"];
         post?: never;
         delete: operations["DELETE_api/plt/{id}"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plt/candidati-pereche": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/plt/candidati-pereche"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3260,6 +3292,17 @@ export interface components {
         };
         /** @enum {string} */
         CalitateRepartitor: "Niciuna" | "Gestionar" | "Comisie" | "Departament" | "CentruCost" | "LocConsum" | "Delegat" | "Cursant";
+        CandidatPerecheDto: {
+            /** Format: uuid */
+            Id?: string;
+            Numar?: string | null;
+            /** Format: date */
+            Data?: string;
+            /** Format: double */
+            Total?: number;
+            Stare?: string | null;
+            PerecheDraftNumar?: string | null;
+        };
         ClasaProdus: {
             /** Format: uuid */
             ID?: string;
@@ -3922,6 +3965,13 @@ export interface components {
             /** Format: double */
             Suma?: number;
         };
+        LaturaPerecheDto: {
+            /** Format: uuid */
+            Id?: string;
+            Tip?: string | null;
+            Numar?: string | null;
+            Stare?: string | null;
+        };
         LdiLinieReadDto: {
             /** Format: uuid */
             Id?: string;
@@ -4565,6 +4615,9 @@ export interface components {
             EsteVirament?: boolean;
             Autogenerat?: boolean;
             /** Format: uuid */
+            LaturaPerecheId?: string | null;
+            Pereche?: components["schemas"]["LaturaPerecheDto"];
+            /** Format: uuid */
             DocumentSursaId?: string | null;
             DocumentSursaNumar?: string | null;
             DocumentSursaTip?: string | null;
@@ -4586,6 +4639,8 @@ export interface components {
             NumarExtras?: string | null;
             /** Format: date */
             DataExtras?: string | null;
+            /** Format: uuid */
+            LaturaPerecheId?: string | null;
             Linii?: components["schemas"]["TrezorerieLinieWriteDto"][] | null;
         };
         UnitateInterna: {
@@ -14303,6 +14358,69 @@ export interface operations {
             };
         };
     };
+    "GET_api/inc/candidati-pereche": {
+        parameters: {
+            query?: {
+                predatorId?: string;
+                primitorId?: string;
+                exclusId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/xml": components["schemas"]["CandidatPerecheDto"][];
+                    "text/plain": components["schemas"]["CandidatPerecheDto"][];
+                    "application/octet-stream": components["schemas"]["CandidatPerecheDto"][];
+                    "text/json": components["schemas"]["CandidatPerecheDto"][];
+                };
+            };
+        };
+    };
     "POST_api/inc/{id}/opereaza": {
         parameters: {
             query?: never;
@@ -19832,6 +19950,69 @@ export interface operations {
                     "text/plain": components["schemas"]["EroriDto"];
                     "application/octet-stream": components["schemas"]["EroriDto"];
                     "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "GET_api/plt/candidati-pereche": {
+        parameters: {
+            query?: {
+                predatorId?: string;
+                primitorId?: string;
+                exclusId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/xml": components["schemas"]["CandidatPerecheDto"][];
+                    "text/plain": components["schemas"]["CandidatPerecheDto"][];
+                    "application/octet-stream": components["schemas"]["CandidatPerecheDto"][];
+                    "text/json": components["schemas"]["CandidatPerecheDto"][];
                 };
             };
         };
