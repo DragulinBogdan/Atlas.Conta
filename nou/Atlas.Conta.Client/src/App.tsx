@@ -19,6 +19,8 @@ import { PltLista } from './felii/plt/PltLista';
 import { PltDetaliu } from './felii/plt/PltDetaliu';
 import { IncLista } from './felii/inc/IncLista';
 import { IncDetaliu } from './felii/inc/IncDetaliu';
+import { DecLista } from './felii/dec/DecLista';
+import { DecDetaliu } from './felii/dec/DecDetaliu';
 import { SoldStoc } from './felii/stoc/SoldStoc';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
@@ -49,6 +51,9 @@ export function App() {
         <Route path="/inc" element={<IncLista />} />
         <Route path="/inc/nou" element={<IncDetaliu />} />
         <Route path="/inc/:id" element={<IncDetaliu />} />
+        <Route path="/dec" element={<DecLista />} />
+        <Route path="/dec/nou" element={<DecDetaliu />} />
+        <Route path="/dec/:id" element={<DecDetaliu />} />
         <Route path="/btr" element={<BtrLista />} />
         <Route path="/btr/nou" element={<BtrDetaliu />} />
         <Route path="/btr/:id" element={<BtrDetaliu />} />
@@ -80,6 +85,7 @@ function Cadru() {
         <NavLink to="/dsc">Descărcări</NavLink>
         <NavLink to="/plt">Plăți</NavLink>
         <NavLink to="/inc">Încasări</NavLink>
+        <NavLink to="/dec">Deconturi</NavLink>
         <NavLink to="/btr">Note de transfer</NavLink>
         <NavLink to="/bcs">Bonuri de consum</NavLink>
         <NavLink to="/ldi">Diferențe inventar</NavLink>

@@ -101,6 +101,45 @@ export function CampBifa<T extends object>({ camp, readOnly, eticheta }: PropsCa
 // `metadata.json`, adică din C#; clientul nu ține nicio listă proprie de
 // instrumente de plată — o valoare nouă în enum apare aici la regenerarea
 // dump-ului, fără atingerea acestui fișier.
+// SelectBox peste o listă MICĂ dată de felie, nu peste un nomenclator OData
+// (`Lookup`) și nu peste un enum din metadata (`CampSelectie`). Există pentru
+// mulțimile pe care le calculează SERVERUL într-un endpoint propriu și care nu
+// sunt nomenclator: candidații de latură pereche ai viramentului (F8-D12,
+// `GET /api/{plt|inc}/candidati-pereche`) — o proiecție de domeniu, plafonată
+// server-side, nu o entitate expusă prin OData.
+//
+// Contractul e deliberat sărac: felia aduce datele (TanStack Query, ca orice
+// server-read — 43c) și le dă gata mapate; componenta nu știe să încarce nimic.
+// Așa nu apare un al doilea mecanism de sursă de date lângă `Lookup`.
+export function CampOptiuni<T extends object>(
+  { camp, readOnly, obligatoriu, eticheta, optiuni, substitut, textFaraDate }: PropsCamp<T> & {
+    optiuni: { valoare: string; label: string }[];
+    // Ce înseamnă „nimic ales" — pe virament: „se generează automat" (F8-D12:
+    // opțiunea goală E comportamentul normal, deci se NUMEȘTE, nu se lasă albă).
+    substitut?: string;
+    textFaraDate?: string;
+  }) {
+  const c = useCamp<string>(camp, readOnly, obligatoriu, eticheta);
+  return (
+    <CampShell meta={c.meta} eroare={c.eroare}>
+      <SelectBox
+        dataSource={optiuni}
+        value={c.valoare ?? null}
+        readOnly={c.readOnly}
+        valueExpr="valoare"
+        displayExpr="label"
+        placeholder={substitut}
+        searchEnabled
+        searchExpr="label"
+        noDataText={textFaraDate ?? 'Nimic găsit'}
+        showClearButton={!c.meta.obligatoriu}
+        // Regula F2/F3, uniformă pe orice widget DevExtreme.
+        onValueChanged={(e) => { if (e.event) c.seteaza((e.value as string) ?? undefined); }}
+      />
+    </CampShell>
+  );
+}
+
 export function CampSelectie<T extends object>(
   { camp, readOnly, obligatoriu, eticheta, enumerare }: PropsCamp<T> & { enumerare: string }) {
   const c = useCamp<string>(camp, readOnly, obligatoriu, eticheta);

@@ -10,6 +10,8 @@
 // Consumatori: pinul de lot al FCL, lotul descărcat pe BTR/BCS, lotul de minus
 // al LDI. Toate cer aceeași etichetă — de aceea e una singură.
 
+import { ziLocala } from './zi';
+
 export function etichetaLot(element: Record<string, unknown>): string {
   if (!element) return '';
   const produs = element.Produs as Record<string, unknown> | null | undefined;
@@ -25,17 +27,8 @@ export function etichetaLot(element: Record<string, unknown>): string {
   return `${denumire} · ${data} · ${pret.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
 }
 
-// `Edm.Date` iese din ODataStore fie ca `Date` (deserializat), fie ca string ISO.
-// Nicio conversie de fus: se citesc componentele locale ale obiectului sau se
-// taie stringul.
-export function ziLocala(v: unknown): string | null {
-  if (v == null) return null;
-  if (v instanceof Date) {
-    const zi = `${v.getDate()}`.padStart(2, '0');
-    const luna = `${v.getMonth() + 1}`.padStart(2, '0');
-    return `${zi}.${luna}.${v.getFullYear()}`;
-  }
-  const text = String(v).slice(0, 10);
-  const parti = text.split('-');
-  return parti.length === 3 ? `${parti[2]}.${parti[1]}.${parti[0]}` : text;
-}
+// `ziLocala` a trecut în `nucleu/zi.ts` (locul datelor) la felia 8, când a
+// căpătat al doilea consumator care n-are nicio treabă cu loturile: eticheta
+// candidaților de latură pereche. Re-exportată de aici pentru apelanții care o
+// știau ca vecina lui `etichetaLot`.
+export { ziLocala } from './zi';

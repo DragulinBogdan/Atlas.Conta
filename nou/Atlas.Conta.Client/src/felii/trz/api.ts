@@ -27,6 +27,11 @@ export type TrzLinieRead = Scheme['TrezorerieLinieReadDto'];
 export type TrzLinieWrite = Scheme['TrezorerieLinieWriteDto'];
 export type DocumentCopil = Scheme['DocumentCopilDto'];
 export type OperareRezultat = Scheme['OperareRezultatDto'];
+// Celălalt picior al viramentului (F8-D11): `Pereche` = starea REZOLVATĂ (link
+// propriu SAU cine mă arată), `CandidatPereche` = ce se poate declara la
+// culegere.
+export type LaturaPereche = Scheme['LaturaPerecheDto'];
+export type CandidatPereche = Scheme['CandidatPerecheDto'];
 
 // Schemele OpenAPI (required/maxLength) sunt COMUNE celor două rute: același
 // DTO generic pe server. Tipul de METADATA (captions) diferă — `Plata` vs
@@ -54,6 +59,19 @@ export function apiTrezorerie(baza: string) {
     anuleaza: (id: string) => posteaza<OperareRezultat>(`${baza}/${id}/anuleaza`),
     storneaza: (id: string, data: string) => posteaza<OperareRezultat>(`${baza}/${id}/storneaza`, { Data: data }),
 
+    // Picioarele care pot fi DECLARATE pereche pentru laturile curente (F8-D11):
+    // tipul OPUS, aceleași laturi, fără pereche definitivă. Listă MICĂ, plafonată
+    // server-side — de asta e un simplu `GET`, nu un store `DataSourceLoader`:
+    // e sursa unui SelectBox, nu a unei grile.
+    //
+    // `exclusId` = documentul curent (nu se poate arăta pe sine); pe un document
+    // NOU nu există încă, deci se omite.
+    candidatiPereche: (predatorId: string, primitorId: string, exclusId?: string) => {
+      const p = new URLSearchParams({ predatorId, primitorId });
+      if (exclusId) p.set('exclusId', exclusId);
+      return ia<CandidatPereche[]>(`${baza}/candidati-pereche?${p.toString()}`);
+    },
+
     storeLista: () => storeRemote(baza, 'Id'),
   };
 }
@@ -80,6 +98,11 @@ export function spreWrite(citit: TrzRead): TrzWrite {
     TipInstrument: citit.TipInstrument,
     NumarExtras: citit.NumarExtras,
     DataExtras: citit.DataExtras,
+    // Legătura DECLARATĂ de acest document (F8-D6): se scrie o singură parte,
+    // deci round-trip-ul e obligatoriu — fără el, orice PUT al unui virament
+    // legat i-ar ȘTERGE legătura, iar re-operarea ar genera un al treilea
+    // document (exact gaura 64k pe care felia o închide).
+    LaturaPerecheId: citit.LaturaPerecheId,
     Linii: (citit.Linii ?? []).map((l) => ({
       Id: l.Id,
       TipMaterialId: l.TipMaterialId,

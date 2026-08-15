@@ -39,8 +39,9 @@ export const stingeri = {
 };
 
 // Ruta feliei pentru un cod de tip (`CelalaltTip`, `DocumentCuRestRand.Tip`).
-// Vocabular ÎNCHIS, scris explicit: tipurile fără felie de client (DEC, RDC…)
-// rămân TEXT, nu link mort. Se extinde odată cu feliile, nu automat.
+// Vocabular ÎNCHIS, scris explicit: tipurile fără felie de client (RDC, NTC,
+// ASM…) rămân TEXT, nu link mort. Se extinde odată cu feliile, nu automat —
+// DEC a ieșit din listă la felia 8.
 export function rutaTip(tip: string | null | undefined, id: string): string | null {
   switch (tip) {
     case 'FCT': return `/fct/${id}`;
@@ -52,6 +53,7 @@ export function rutaTip(tip: string | null | undefined, id: string): string | nu
     case 'BTR': return `/btr/${id}`;
     case 'BCS': return `/bcs/${id}`;
     case 'LDI': return `/ldi/${id}`;
+    case 'DEC': return `/dec/${id}`;
     default: return null;
   }
 }

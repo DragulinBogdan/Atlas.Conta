@@ -17,3 +17,19 @@ export function izolataZi(v: unknown): string | undefined {
   const zi = `${d.getDate()}`.padStart(2, '0');
   return `${d.getFullYear()}-${luna}-${zi}`;
 }
+
+// Zi ISO (sau `Date` deserializat de ODataStore) → „dd.MM.yyyy", pentru AFIȘARE
+// în text (etichete de lookup, opțiuni de SelectBox) — acolo unde nu există un
+// widget cu `displayFormat`. Nicio conversie de fus: se citesc componentele
+// locale ale obiectului sau se taie stringul.
+export function ziLocala(v: unknown): string | null {
+  if (v == null) return null;
+  if (v instanceof Date) {
+    const zi = `${v.getDate()}`.padStart(2, '0');
+    const luna = `${v.getMonth() + 1}`.padStart(2, '0');
+    return `${zi}.${luna}.${v.getFullYear()}`;
+  }
+  const text = String(v).slice(0, 10);
+  const parti = text.split('-');
+  return parti.length === 3 ? `${parti[2]}.${parti[1]}.${parti[0]}` : text;
+}

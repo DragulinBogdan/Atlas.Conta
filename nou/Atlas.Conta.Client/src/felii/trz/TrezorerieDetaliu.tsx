@@ -4,17 +4,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
-import { CampData, CampSelectie, CampText } from '../../nucleu/campuri';
+import { CampData, CampOptiuni, CampSelectie, CampText } from '../../nucleu/campuri';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { PanouStingeri } from '../../nucleu/PanouStingeri';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
 import { useSonda } from '../../nucleu/sonda';
 import { rutaTip } from '../../nucleu/stingeri';
+import { ziLocala } from '../../nucleu/zi';
 import {
   antetGol, linieGoala, spreWrite,
   SCHEMA_ANTET, SCHEMA_LINIE, TIP_LINIE,
-  type ApiTrezorerie, type DocumentCopil, type TrzLinieRead, type TrzLinieWrite, type TrzRead, type TrzWrite,
+  type ApiTrezorerie, type CandidatPereche, type DocumentCopil,
+  type TrzLinieRead, type TrzLinieWrite, type TrzRead, type TrzWrite,
 } from './api';
 import { TrezorerieEditorLinie } from './TrezorerieEditorLinie';
 
@@ -34,7 +36,12 @@ import { TrezorerieEditorLinie } from './TrezorerieEditorLinie';
 //     PROPRIU, documentul nu mai e o plată/încasare către un terț, ci un picior
 //     al transferului 581 — nu stinge nimic (`CapacitateStingere` e null pe el)
 //     și naște la operare latura pereche. Ecranul își schimbă forma: Tipul
-//     implicit al liniei, panoul de stingeri înlocuit de indiciul perechii.
+//     implicit al liniei, panoul de stingeri înlocuit de panoul perechii;
+//   • **latura pereche DECLARATĂ** (F8-D12): pe un virament în culegere,
+//     operatorul poate arăta piciorul EXISTENT în loc să lase motorul să
+//     genereze unul — singurul mod de a închide gaura 64k (două picioare culese
+//     manual generau, tăcut, un al treilea document și dublau postarea).
+//     „(niciuna)" rămâne default-ul: generarea automată E comportamentul normal.
 
 const CAMPURI_ANTET: (keyof TrzWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
@@ -115,6 +122,27 @@ export function TrezorerieDetaliu(props: {
     ? contrapartidaContPropriu === true && propriuContPropriu === true
     : (doc?.EsteVirament ?? false);
 
+  // ═══ Candidații de latură pereche (F8-D12) ═══
+  // Mulțime calculată de SERVER (tip OPUS, aceleași laturi, fără pereche
+  // definitivă), nu un nomenclator: de asta e `useQuery` + `CampOptiuni`, nu
+  // `Lookup`. Se recitește când se schimbă laturile — ele SUNT criteriul.
+  // Numai pe draft: pe un document ne-editabil câmpul nu se randează deloc, iar
+  // starea reală a perechii o spune `PanouVirament` din ReadDto (`Pereche`).
+  const candidatiActivi = esteVirament && poateEdita
+    && agregat.PredatorId != null && agregat.PrimitorId != null;
+  const candidati = useQuery({
+    queryKey: [cheieCache, 'candidati-pereche', agregat.PredatorId, agregat.PrimitorId, id ?? 'nou'],
+    queryFn: () => api.candidatiPereche(agregat.PredatorId!, agregat.PrimitorId!, nou ? undefined : id),
+    enabled: candidatiActivi,
+  });
+
+  const optiuniPereche = useMemo(
+    () => (candidati.data ?? []).map((c) => ({
+      valoare: String(c.Id),
+      label: etichetaCandidat(c),
+    })),
+    [candidati.data]);
+
   const structurale = useMemo(
     () => [
       ...eroriStructurale(tip, SCHEMA_ANTET, agregat as Record<string, unknown>, CAMPURI_ANTET),
@@ -160,6 +188,12 @@ export function TrezorerieDetaliu(props: {
       const rezultat = await rulare();
       setMesaje([`Stare nouă: ${labelEnum('StareDocument', rezultat.StareNoua)}`, ...(rezultat.Mesaje ?? [])]);
       await cache.invalidateQueries({ queryKey: [cheieCache] });
+      // Operarea unui VIRAMENT naște (sau șterge, la anulare) latura pereche —
+      // un document de tipul OPUS. Lista lui și, mai ales, candidații de pereche
+      // ai altor picioare nu mai sunt de încredere; cheile ambelor felii de
+      // trezorerie se invalidează, indiferent pe care dintre ele suntem.
+      await cache.invalidateQueries({ queryKey: ['plt'] });
+      await cache.invalidateQueries({ queryKey: ['inc'] });
       // Operarea unei plăți autogenerate creează imperecherea automată (31e), iar
       // anularea/stornarea o desface — panoul de stingeri al documentului (și al
       // facturii-sursă, dacă e deschisă în altă filă) nu mai e de încredere.
@@ -210,7 +244,13 @@ export function TrezorerieDetaliu(props: {
   ];
 
   function schimbaAntet(v: TrzWrite) {
-    setAgregat(v);
+    // Legătura de pereche APARȚINE laturilor pentru care a fost aleasă: candidații
+    // sunt exact „picioarele pe ACELEAȘI laturi" (F7-D1), iar motorul refuză la
+    // operare o țintă cu alte laturi (F8-D8 punctul 4). Schimbarea unei laturi
+    // stinge deci alegerea — pattern-ul pinului de lot al FCL (58e). Comparația se
+    // face AICI, unde `agregat` e încă valoarea DINAINTEA schimbării.
+    const laturiSchimbate = v.PredatorId !== agregat.PredatorId || v.PrimitorId !== agregat.PrimitorId;
+    setAgregat(laturiSchimbate ? { ...v, LaturaPerecheId: null } : v);
     setModificat(true);
   }
 
@@ -260,6 +300,33 @@ export function TrezorerieDetaliu(props: {
               <CampSelectie<TrzWrite> camp="TipInstrument" enumerare="TipInstrumentPlata" />
               <CampText<TrzWrite> camp="NumarExtras" />
               <CampData<TrzWrite> camp="DataExtras" />
+
+              {/* Latura pereche DECLARATĂ (F8-D12) — doar în modul virament și
+                  doar cât documentul se poate scrie. Pe un document operat
+                  câmpul dispare, iar starea reală o spune `PanouVirament` din
+                  ReadDto (`Pereche` — link propriu SAU cine mă arată): un
+                  SelectBox care nu conține valoarea salvată ar afișa gol pe o
+                  legătură existentă.
+                  „(niciuna)" NU e o opțiune de listă, ci absența valorii:
+                  generarea automată rămâne comportamentul normal, iar butonul de
+                  golire o readuce. */}
+              {candidatiActivi && (
+                <div>
+                  <CampOptiuni<TrzWrite>
+                    camp="LaturaPerecheId"
+                    optiuni={optiuniPereche}
+                    substitut="(niciuna) — se generează automat la operare"
+                    textFaraDate={candidati.isFetching
+                      ? 'Se caută…'
+                      : 'Niciun picior compatibil — la operare se generează unul'}
+                  />
+                  <p className="indiciu">
+                    Alegeți piciorul EXISTENT al aceluiași transfer, dacă l-ați cules deja: legat,
+                    documentul nu mai generează nimic la operare. Lăsat gol, motorul creează singur
+                    latura pereche.
+                  </p>
+                </div>
+              )}
             </div>
           </Formular>
         </>
@@ -412,36 +479,41 @@ function Provenienta(props: { doc?: TrzRead }) {
 }
 
 // Ce ține locul panoului de stingeri pe un VIRAMENT INTERN (F7-D8): explicația
-// mecanismului + drumul spre celălalt picior. Legăturile sunt cele din ReadDto,
-// nu unele calculate aici: pe documentul-sursă latura pereche apare în `Copii[]`
-// (draftul născut de operare), pe latura generată e chiar `DocumentSursa`.
+// mecanismului + drumul spre celălalt picior.
+//
+// Sursa e `Pereche` din ReadDto (F8-D11/F8-D12) — starea REZOLVATĂ de server
+// („linkul meu SAU cine mă arată", `DocumentTrezorerie.PerecheId`). Înlocuiește
+// deducerea din `Copii[]`/`DocumentSursa` a feliei 7, care vedea DOAR perechea
+// generată de motor: latura DECLARATĂ manual (F8-D6) n-are `DocumentSursaId` și
+// nu apare printre copii, deci vechea formă ar fi spus „latura pereche lipsește"
+// exact pe cazul pentru care felia 8 există. O singură definiție, a serverului.
+//
 // Rutarea trece prin `rutaTip` (61a) — vocabular închis, fără `/plt/` hardcodat.
 function PanouVirament(props: { doc?: TrzRead }) {
   const doc = props.doc;
-  const copii = doc?.Copii ?? [];
-  const rutaSursa = doc?.DocumentSursaId ? rutaTip(doc.DocumentSursaTip, doc.DocumentSursaId) : null;
-  const etichetaSursa = doc?.DocumentSursaNumar || 'celălalt picior';
+  const pereche = doc?.Pereche;
+  const rutaPereche = pereche?.Id ? rutaTip(pereche.Tip, pereche.Id) : null;
+  const etichetaPereche = `${pereche?.Tip ?? ''} ${pereche?.Numar ?? ''}`.trim() || 'celălalt picior';
   return (
     <div className="panou">
       <div className="panou__titlu">Virament intern</div>
       <p className="indiciu">
-        Virament intern — la operare se generează automat latura pereche. Documentul nu
-        stinge și nu poate fi stins: contul de tranzit (581) se închide singur când ambele
-        picioare sunt operate.
+        Virament intern — la operare se generează automat latura pereche, dacă nu ați declarat-o
+        deja. Documentul nu stinge și nu poate fi stins: contul de tranzit (581) se închide singur
+        când ambele picioare sunt operate.
       </p>
-      {(doc?.DocumentSursaId || copii.length > 0) && (
+      {pereche && (
         <ul className="panou__lista">
-          {doc?.DocumentSursaId && (
-            <li>
-              Latura pereche (documentul care a generat-o pe aceasta):{' '}
-              {rutaSursa ? <Link to={rutaSursa}>{etichetaSursa}</Link> : <span>{etichetaSursa}</span>}
-            </li>
-          )}
-          {copii.map((c: DocumentCopil) => (
-            <li key={c.Id}>
-              Latura pereche: <Legatura copil={c} /> — {labelEnum('StareDocument', c.Stare)}
-            </li>
-          ))}
+          <li>
+            Latura pereche:{' '}
+            {rutaPereche ? <Link to={rutaPereche}>{etichetaPereche}</Link> : <span>{etichetaPereche}</span>}
+            {' '}— {labelEnum('StareDocument', pereche.Stare)}
+            {/* Care capăt ține legătura: e util la ștergere (linkul e al
+                documentului care-l DECLARĂ — F8-D6, o singură parte scrisă). */}
+            {doc?.LaturaPerecheId
+              ? ' (declarată de acest document)'
+              : ' (celălalt document arată spre acesta)'}
+          </li>
         </ul>
       )}
       {/* Latura pereche se poate ȘTERGE cât e Draft (ștergerea nu se refuză —
@@ -449,10 +521,10 @@ function PanouVirament(props: { doc?: TrzRead }) {
           manuală reproduce exact același document). Ce NU se acceptă e tăcerea:
           un virament operat fără pereche lasă 581 deschis, deci starea se
           spune, nu se ghicește din absența unei linii în listă. */}
-      {doc?.Stare === 'Operat' && !doc.DocumentSursaId && copii.length === 0 && (
+      {doc?.Stare === 'Operat' && !pereche && (
         <div className="indiciu">
-          Latura pereche lipsește (a fost ștearsă): contul de tranzit 581 rămâne deschis
-          până când culegeți manual piciorul celălalt — sau anulați operarea și
+          Latura pereche lipsește (a fost ștearsă sau nu s-a generat): contul de tranzit 581
+          rămâne deschis până când culegeți manual piciorul celălalt — sau anulați operarea și
           re-operați documentul, care o regenerează.
         </div>
       )}
@@ -466,6 +538,33 @@ function PanouVirament(props: { doc?: TrzRead }) {
       )}
     </div>
   );
+}
+
+// Eticheta unui candidat de latură pereche: NUMĂR + dată + total + stare —
+// exact cele patru lucruri care disting două viramente altfel identice între
+// aceleași conturi (ambiguitatea 64k pe care o tranșează operatorul).
+//
+// `PerecheDraftNumar` completat = ținta are deja un draft care o arată, iar
+// legarea va fi REFUZATĂ la operare (F8-D8 punctul 5) cât timp el există;
+// remediul îl spune serverul, clientul doar îl arată.
+//
+// Excepția `esteAles`: după salvare, draftul care blochează candidatul ALES e
+// chiar documentul curent (endpoint-ul aplică `exclusId` doar pe candidați, nu
+// și pe căutarea drafturilor blocante) — un „blocat de …" pe propria alegere ar
+// fi o minciună. Restul candidaților îl păstrează.
+// Eticheta candidatului: date ale serverului, puse cap la cap. Indiciul
+// „blocat de draftul X" vine tot de la server (`PerecheDraftNumar`) — inclusiv
+// absența lui pe candidatul ALES de documentul curent, care își e propriul
+// pointer Draft și care se exclude în proiecție (`exclusId`), nu aici.
+function etichetaCandidat(c: CandidatPereche): string {
+  const numar = c.Numar?.trim() || '(fără număr)';
+  const data = ziLocala(c.Data) ?? '';
+  const total = (c.Total ?? 0).toFixed(2);
+  const stare = labelEnum('StareDocument', c.Stare);
+  const baza = `${numar} · ${data} · ${total} · ${stare}`;
+  return c.PerecheDraftNumar
+    ? `${baza} — blocat de draftul ${c.PerecheDraftNumar} (ștergeți-l întâi)`
+    : baza;
 }
 
 function Legatura(props: { copil: DocumentCopil }) {

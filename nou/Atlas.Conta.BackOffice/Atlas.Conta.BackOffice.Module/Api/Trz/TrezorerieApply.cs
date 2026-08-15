@@ -520,10 +520,17 @@ public static class TrezorerieApply {
 
         // Draftul care blochează legarea, pe mulțimea DEJA plafonată (≤ 50): o
         // interogare mărginită, nu un subquery corelat per rând.
+        //
+        // `exclusId` se aplică ȘI aici, nu doar pe candidați: după ce operatorul
+        // salvează legătura, documentul CURENT devine el însuși pointer Draft
+        // spre candidatul pe care tocmai l-a ales — s-ar fi întors ca „blocat de
+        // draftul (data)" (numărul e gol pe draft), adică documentul deschis pe
+        // ecran blocându-și propria alegere.
         var ids = lista.Select(c => c.Id).ToList();
         var drafturiBlocante = os.GetObjectsQuery<DocumentTrezorerie>()
             .Where(x => x.LaturaPerecheId != null && ids.Contains(x.LaturaPerecheId.Value)
-                && x.Stare == StareDocument.Draft)
+                && x.Stare == StareDocument.Draft
+                && (exclusId == null || x.ID != exclusId))
             .Select(x => new { Tinta = x.LaturaPerecheId.Value, x.Numar, x.Data })
             .ToList();
         foreach (var candidat in lista) {

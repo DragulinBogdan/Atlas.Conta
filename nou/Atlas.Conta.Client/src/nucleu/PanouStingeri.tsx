@@ -259,8 +259,8 @@ export function PanouStingeri(props: {
   );
 }
 
-// Celălalt capăt al legăturii: link acolo unde felia există, text unde nu (DEC,
-// nota de compensare) — vezi `rutaTip`.
+// Celălalt capăt al legăturii: link acolo unde felia există, text unde nu (nota
+// de compensare, returul) — vezi `rutaTip`.
 function Celalalt(props: { rand: StingereRand }) {
   const { CelalaltTip, CelalaltNumar, CelalaltDocumentId } = props.rand;
   const eticheta = `${CelalaltTip ?? '—'} ${CelalaltNumar ?? ''}`.trim();
