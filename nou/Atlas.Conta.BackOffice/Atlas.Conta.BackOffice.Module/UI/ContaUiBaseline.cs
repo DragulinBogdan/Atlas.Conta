@@ -63,6 +63,12 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         // FK-uri proprii, nevăzute pe baza ierarhiei:
         registry.For<FacturaIntrare>().HideForeignKeys();           // PlataContPropriuId
         registry.For<FacturaIesire>().HideForeignKeys();            // GestiuneDescarcareId
+        // LaturaPerecheId (F8-D6) e declarat pe nivelul ABSTRACT `DocumentTrezorerie`,
+        // deci nu-l vede descoperirea pe ierarhia `Document` (ea citește doar
+        // membrii bazei ei). `ForHierarchy` de aici descoperă membrii trezoreriei
+        // și îi aplică pe Plata/Incasare prin asignabilitate — o singură
+        // declarație pentru ambele frunze.
+        registry.ForHierarchy<DocumentTrezorerie>().HideForeignKeys();
         registry.For<FacturaIntrareDetaliu>().HideForeignKeys();    // ProdusId (GATE XAF D1)
         registry.For<NirDetaliu>().HideForeignKeys();               // ProdusId (F5-D1)
         registry.For<FacturaIesireDetaliu>().HideForeignKeys();     // ProdusId

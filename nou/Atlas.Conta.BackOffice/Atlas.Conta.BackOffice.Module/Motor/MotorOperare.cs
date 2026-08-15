@@ -523,6 +523,7 @@ public static class MotorOperare {
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi anulat.");
         GardianPerioada.VerificaDeschisa(os, doc.Data);
+        VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
         VerificaFaraImperecheri(os, doc);
         StergeConexeDraftAutogenerate(os, doc);
@@ -566,6 +567,7 @@ public static class MotorOperare {
         if (dataStorno < doc.Data)
             throw new OperareException("Data stornării nu poate preceda data documentului.");
         GardianPerioada.VerificaDeschisa(os, dataStorno);
+        VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
         VerificaFaraImperecheri(os, doc);
         StergeConexeDraftAutogenerate(os, doc);
@@ -606,6 +608,24 @@ public static class MotorOperare {
 
         doc.Stare = StareDocument.Stornat;
         os.CommitChanges();
+    }
+
+    // Oglinda exactă a gardianului de grup conex pentru legătura de pereche
+    // (F8-D9): pointer-ul ≈ copil, ținta ≈ sursă. Piciorul care DECLARĂ legătura
+    // e frunza și se anulează liber (nimeni nu depinde de el); ținta nu, cât timp
+    // pointer-ul e OPERAT — altfel ținta ar reveni în Draft, s-ar re-opera și ar
+    // genera din nou o pereche, lângă cea deja operată: dublă postare pe 581.
+    //
+    // Se apelează ÎNAINTEA gardianului de grup conex, deliberat: perechea
+    // autogenerată e acoperită de amândoi (are și `DocumentSursaId`, și link),
+    // iar mesajul ăsta e cel specific — „latura pereche" spune operatorului
+    // exact ce vede pe ecran.
+    static void VerificaFaraLaturaPerecheOperata(IObjectSpace os, Document doc) {
+        if (os.GetObjectsQuery<DocumentTrezorerie>()
+                .Any(x => x.LaturaPerecheId == doc.ID && x.Stare == StareDocument.Operat))
+            throw new OperareException(
+                "Documentul e declarat latura pereche a unui virament încă operat — "
+                + "anulați/stornați întâi acel document.");
     }
 
     // Anularea/stornarea operează pe grupul conex (00 §8): copiii cu registre

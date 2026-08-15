@@ -20,6 +20,24 @@ public abstract class DocumentTrezorerie : Document {
     [XafDisplayName("Dată extras")]
     public virtual DateOnly? DataExtras { get; set; }
 
+    // Legătura EXPLICITĂ de pereche a viramentului (F8-D6; gaura 64k): „acest
+    // picior e perechea documentului X". Se scrie o SINGURĂ parte, deliberat —
+    // pe COPIL la generare (motorul) sau pe latura culeasă MANUAL (operatorul,
+    // arătând spre piciorul existent). Cealaltă parte e Operată, iar gardianul
+    // de Committing (55a) refuză orice scriere pe documentele ne-Draft: o
+    // legătură bidirecțională ar cere o ușă non-secured pentru un simplu link.
+    public virtual Guid? LaturaPerecheId { get; set; }
+    [XafDisplayName("Latura pereche")]
+    public virtual DocumentTrezorerie LaturaPereche { get; set; }
+
+    // Citirea e DERIVATĂ și SIMETRICĂ: „am pereche?" e adevărat și când eu arăt
+    // spre altcineva, și când altcineva mă arată pe mine. Consumatori:
+    // suprimarea generării (F8-D7), gardianul de anulare/storno (F8-D9),
+    // avertismentul (F8-D10), affordance-ul din ReadDto (F8-D11).
+    public Guid? PerecheId(DevExpress.ExpressApp.IObjectSpace os) =>
+        LaturaPerecheId ?? os.GetObjectsQuery<DocumentTrezorerie>()
+            .Where(x => x.LaturaPerecheId == ID).Select(x => (Guid?)x.ID).FirstOrDefault();
+
     // Contrapartida (latura care NU e contul propriu) — cheia invariantului de
     // imperechere: plata stinge doar documente pe care apare același repartitor.
     // Metodă, nu proprietate: nu e stare, iar XAF n-are ce căuta pe ea (XAF0033).
@@ -87,6 +105,12 @@ public abstract class DocumentTrezorerie : Document {
     // Contract, nu `is`/`switch` pe tip în clasa de bază (invariantul II).
     protected abstract DocumentTrezorerie CreeazaPereche(DevExpress.ExpressApp.IObjectSpace os);
 
+    // Tipul CLR al laturii pereche (F8-D8, punctul 3): Plata → Incasare,
+    // Incasare → Plata. Există separat de `CreeazaPereche` fiindcă validarea are
+    // nevoie de tip fără să instanțieze nimic — și fiindcă `is`/`switch` pe tip
+    // în clasa de bază ar rupe invariantul II („motorul nu cunoaște frunzele").
+    public abstract Type TipLaturaPereche();
+
     // Cele două picioare ale tranzitului 581 sunt confirmate de documente
     // diferite, la date diferite (foaia de vărsământ azi, extrasul mâine), deci
     // viramentul e o PERECHE, nu un document unic: la operarea primului picior
@@ -97,11 +121,24 @@ public abstract class DocumentTrezorerie : Document {
         // Gardul de recursie, local și explicit: latura pereche e ea însăși un
         // virament, deci fără el operarea ei ar genera un al treilea document,
         // la infinit.
-        if (Autogenerat || !EsteVirament(os))
+        //
+        // A doua jumătate (F8-D7) e la fel de load-bearing: generarea se suprimă
+        // și când CINEVA MĂ ARATĂ PE MINE ca pereche, nu doar când eu arăt spre
+        // altcineva. Cazul concret: ambele picioare culese manual ÎNAINTE de
+        // operare, cu legătura pusă pe al doilea — la operarea PRIMULUI (care
+        // n-are nimic în `LaturaPerecheId`) s-ar genera un al treilea document,
+        // adică gaura 64k mutată cu o zi mai devreme și la fel de tăcută.
+        //
+        // Gardul `Autogenerat` rămâne pe lângă link: două motive independente
+        // pentru același refuz, niciunul redundant (copilul poate fi ȘTERS și
+        // recules manual — atunci link-ul dispare, marcajul nu).
+        if (Autogenerat || !EsteVirament(os) || PerecheId(os) != null)
             return null;
 
         var pereche = CreeazaPereche(os);
         pereche.Data = Data;
+        // Legătura se scrie pe COPIL (F8-D6): el e Draft, deci partea scriibilă.
+        pereche.LaturaPerecheId = ID;
         pereche.TipInstrument = TipInstrument;
         // Laturile se copiază CA ATARE, NEinversate (F7-D1): predator = contul
         // sursă, primitor = contul destinație pe ambele documente; direcția o
@@ -133,6 +170,8 @@ public abstract class DocumentTrezorerie : Document {
         foreach (var d in Detalii)
             if (d.Valoare <= 0)
                 erori.Add("Fiecare linie poartă o valoare pozitivă (defalcarea sumei plătite/încasate).");
+
+        ValideazaLaturaPereche(os, erori);
 
         // Virament către sine: cele două picioare ar posta 581 = 581 pe același
         // cont propriu, iar dimensiunea implicită n-ar mai distinge nimic.
@@ -194,6 +233,148 @@ public abstract class DocumentTrezorerie : Document {
             }
         }
     }
+
+    // Legătura de pereche NU e obligatorie (generarea acoperă cazul normal —
+    // F7-D4); dacă e prezentă, se validează INTEGRAL (F8-D8). Fiecare verificare
+    // apără exact un fel de dublă postare sau de triplete: legătura suprimă
+    // generarea (F8-D7) și blochează anularea țintei (F8-D9), deci o legătură
+    // greșită e o armă, nu o notă informativă.
+    //
+    // Verificările lucrează pe FK-uri + IObjectSpace, fără navigații lazy în
+    // enumerare (25b).
+    void ValideazaLaturaPereche(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
+        if (LaturaPerecheId == null)
+            return;
+
+        // (6) Self-link: s-ar suprima propria generare și documentul s-ar bloca
+        //     singur la anulare (gardianul F8-D9 s-ar vedea pe el însuși).
+        if (LaturaPerecheId == ID) {
+            erori.Add("Latura pereche nu poate fi documentul însuși — alegeți celălalt picior al viramentului.");
+            return;
+        }
+
+        // (1) Cine declară legătura e el însuși virament. O plată obișnuită cu
+        //     link ar suprima nimic (nu generează oricum), dar ar bloca anularea
+        //     unui document nevinovat prin gardianul F8-D9.
+        if (!EsteVirament(os))
+            erori.Add("Latura pereche există doar la viramentul intern (ambele laturi conturi proprii) — "
+                + "ștergeți legătura sau corectați laturile.");
+
+        var tinta = os.GetObjectByKey<DocumentTrezorerie>(LaturaPerecheId.Value);
+        if (tinta == null) {
+            erori.Add("Documentul indicat ca latură pereche nu există (a fost șters?) — ștergeți legătura.");
+            return;
+        }
+
+        // (2) Ținta e virament — aceeași definiție, o singură dată (`EsteVirament`).
+        if (!tinta.EsteVirament(os))
+            erori.Add($"Documentul {Eticheta(tinta)} nu e un virament intern (laturile lui nu sunt două conturi proprii) — "
+                + "nu poate fi latura pereche.");
+
+        // (3) Tipul OPUS, prin contract (fără `is`/`switch` pe tip în bază):
+        //     două plăți „pereche" ar posta ieșirea de două ori, iar 581 n-ar
+        //     mai reveni la zero niciodată.
+        if (!TipLaturaPereche().IsInstanceOfType(tinta))
+            erori.Add($"Latura pereche a acestui document trebuie să fie de tipul opus "
+                + $"({(TipLaturaPereche() == typeof(Plata) ? "plată" : "încasare")}) — "
+                + $"{Eticheta(tinta)} nu e.");
+
+        // (4) ACELEAȘI laturi (F7-D1: cele două picioare stau pe aceleași laturi,
+        //     direcția o poartă tipul). Laturi diferite = alt transfer, iar
+        //     tranzitul 581 ar rămâne deschis pe amândouă.
+        if (tinta.PredatorId != PredatorId || tinta.PrimitorId != PrimitorId)
+            erori.Add($"Latura pereche trebuie să aibă exact aceleași conturi (predator/primitor) ca acest document — "
+                + $"{Eticheta(tinta)} are alte laturi.");
+
+        // (5) Ținta nu e deja legată — de nimeni, nici măcar de MINE. Cazul
+        //     „altcineva" apără de triplete: două picioare de intrare declarate
+        //     pereche ale aceleiași ieșiri s-ar opera amândouă și ar dubla
+        //     postarea, tăcut.
+        //
+        //     Cazul RECIPROC (A→B și B→A) e refuzat ca amendament la F8-D8,
+        //     scos de review-ul pasului 1: legătura e unilaterală prin
+        //     construcție (F8-D6 — cealaltă parte e Operată, iar gardianul de
+        //     Committing refuză scrierea pe ea), iar dublarea ei e o capcană cu
+        //     ieșire zero: după operarea ambelor picioare fiecare l-ar bloca pe
+        //     celălalt la anulare/storno (F8-D9), și nici linkul nu se mai poate
+        //     șterge — documentele nu mai sunt Draft.
+        if (tinta.LaturaPerecheId == ID)
+            erori.Add($"Documentul {Eticheta(tinta)} vă declară DEJA ca latură pereche — "
+                + "legătura se ține pe o singură parte; ștergeți-o pe aceasta.");
+        else if (tinta.LaturaPerecheId != null)
+            erori.Add($"Documentul {Eticheta(tinta)} e deja declarat perechea altui document — "
+                + "un virament are exact două picioare.");
+        var idTinta = tinta.ID;
+        var altPointer = os.GetObjectsQuery<DocumentTrezorerie>()
+            .Where(x => x.LaturaPerecheId == idTinta && x.ID != ID)
+            .Select(x => (Guid?)x.ID).FirstOrDefault();
+        if (altPointer != null)
+            erori.Add($"Documentul {Eticheta(tinta)} e deja arătat ca pereche de alt document — "
+                + "ștergeți acea legătură sau alegeți alt picior.");
+    }
+
+    // Avertismentul CONSULTATIV (F8-D10), nu un refuz: două viramente identice
+    // între aceleași conturi, în aceeași zi, sunt perfect legitime (64k), deci
+    // niciun criteriu de CONȚINUT nu poate distinge „al doilea picior al lui X"
+    // de „un al doilea virament". Ce se poate face onest e să-i ARĂTĂM
+    // operatorului picioarele candidate în clipa în care tocmai a generat unul nou.
+    public override IReadOnlyList<string> MesajeDupaOperare(DevExpress.ExpressApp.IObjectSpace os) {
+        try {
+            // Doar cazul „am generat singur perechea": legătura DECLARATĂ (a mea
+            // sau a altcuiva spre mine) a suprimat generarea, deci n-am ce sfat
+            // să dau. `Autogenerat` = sunt eu latura generată — la fel.
+            if (LaturaPerecheId != null || Autogenerat || !EsteVirament(os))
+                return Array.Empty<string>();
+            var amGenerat = os.GetObjectsQuery<DocumentTrezorerie>()
+                .Any(x => x.LaturaPerecheId == ID && x.Autogenerat);
+            if (!amGenerat)
+                return Array.Empty<string>();
+
+            // Candidații: picioare OPERATE, pe ACELEAȘI laturi, fără pereche.
+            // Fiind pe aceleași laturi ca mine (și eu sunt virament), sunt
+            // viramente prin construcție — nu se re-interoghează tipul
+            // repartitorilor. Filtrul de laturi îngustează în SQL; tipul opus se
+            // verifică în memorie (contract, nu `is` pe tip — și `IQueryable` nu
+            // poate filtra pe un `Type` variabil).
+            var pred = PredatorId;
+            var prim = PrimitorId;
+            var posibili = os.GetObjectsQuery<DocumentTrezorerie>()
+                .Where(x => x.PredatorId == pred && x.PrimitorId == prim
+                    && x.Stare == StareDocument.Operat
+                    && x.LaturaPerecheId == null && x.ID != ID)
+                .ToList()
+                .Where(x => TipLaturaPereche().IsInstanceOfType(x))
+                .ToList();
+            if (posibili.Count == 0)
+                return Array.Empty<string>();
+
+            // „Fără pereche" e SIMETRIC: cei arătați de altcineva ies din listă.
+            var ids = posibili.Select(x => x.ID).ToList();
+            var aratati = os.GetObjectsQuery<DocumentTrezorerie>()
+                .Where(x => x.LaturaPerecheId != null && ids.Contains(x.LaturaPerecheId.Value))
+                .Select(x => x.LaturaPerecheId.Value).ToList();
+            var candidati = posibili.Where(x => !aratati.Contains(x.ID)).ToList();
+            if (candidati.Count == 0)
+                return Array.Empty<string>();
+
+            const int plafon = 5;
+            var lista = string.Join(", ", candidati.Take(plafon).Select(Eticheta));
+            if (candidati.Count > plafon)
+                lista += $" …și încă {candidati.Count - plafon}";
+            return new[] {
+                $"S-a generat latura pereche a viramentului, dar există deja picioare operate compatibile: {lista}. "
+                + "Dacă acesta e piciorul lor, anulați operarea, alegeți «latura pereche» și ștergeți draftul generat."
+            };
+        }
+        catch (Exception) {
+            // Contractul hook-ului (F8-D10): informarea nu are voie să strice o
+            // operare deja COMISĂ. Fără mesaj > cu excepție.
+            return Array.Empty<string>();
+        }
+    }
+
+    static string Eticheta(Document doc) =>
+        string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : $"{doc.Numar} din {doc.Data:dd.MM.yyyy}";
 }
 
 // Predator = ContPropriu (sursa banilor), primitor = beneficiarul.
@@ -204,6 +385,7 @@ public class Plata : DocumentTrezorerie {
 
     protected override DocumentTrezorerie CreeazaPereche(DevExpress.ExpressApp.IObjectSpace os) =>
         os.CreateObject<Incasare>();
+    public override Type TipLaturaPereche() => typeof(Incasare);
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
@@ -223,6 +405,7 @@ public class Incasare : DocumentTrezorerie {
 
     protected override DocumentTrezorerie CreeazaPereche(DevExpress.ExpressApp.IObjectSpace os) =>
         os.CreateObject<Plata>();
+    public override Type TipLaturaPereche() => typeof(Plata);
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);

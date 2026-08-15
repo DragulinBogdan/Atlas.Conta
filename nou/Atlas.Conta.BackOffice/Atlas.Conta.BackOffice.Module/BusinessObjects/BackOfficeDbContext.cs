@@ -161,6 +161,16 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // recreate goale pe frunze. Declarația ține schema neatinsă.
             modelBuilder.Entity<DocumentTrezorerie>();
 
+            // F8-D6: latura pereche a viramentului — FK REAL self-referencing pe
+            // nivelul abstract al trezoreriei. `WithMany()` fără colecție: sensul
+            // invers e derivat prin query (`PerecheId`), nu materializat — o
+            // colecție ar sugera „mai multe perechi", exact ce validarea refuză.
+            // Restrict: piciorul arătat nu se șterge cât timp altcineva îl declară
+            // pereche (ca `DescarcareGestiuneDetaliu.LinieSursa` mai jos).
+            modelBuilder.Entity<DocumentTrezorerie>()
+                .HasOne(d => d.LaturaPereche).WithMany().HasForeignKey(d => d.LaturaPerecheId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<Document>()
                 .HasMany(d => d.Detalii)
                 .WithOne(d => d.Document)
