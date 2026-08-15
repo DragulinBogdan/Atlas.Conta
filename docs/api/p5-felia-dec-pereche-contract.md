@@ -348,6 +348,101 @@ cd nou/Atlas.Conta.Client && pnpm build                    # pasul 4
 O SINGURĂ migrație în felie (`LaturaPereche`, pasul 1) — dacă un agent ajunge să
 scrie a doua, s-a abătut de la contract și RAPORTEAZĂ.
 
+## Închidere (2026-08-16)
+
+- [x] Contract îndeplinit. ModelCheck final **bugetar 603 OK / 0 FAIL**, **privat
+  0 FAIL** (re-rulate de main la fiecare pas, nu doar raportate): ~40 verificări
+  noi în `E2E-API-DEC` + 7 în addendumul privat + 43 în `E2E-APER` + 15 la
+  fix-urile review-ului. O SINGURĂ migrație (`LaturaPereche`), cum cerea
+  contractul; `pnpm verifica:drift` verde după commit.
+- [x] **Smoke browser** pe perechea WebApi + client (baza Privat de import):
+  - **DEC-1**: cantitatea pro-formă `0 → 1` vizibilă la salvare, `TipTva` N21
+    aplicat server-side doar pe linia nouă, `Valoare 100,00` + `TVA 21,00` +
+    `Total 121,00`, `Numar` gol pe draft și consumat abia la operare (GATE D6);
+    registrele **`625 = 542` (100)** — contul explicit de pe linie a bătut contul
+    Tipului (628) — plus **`4426 = 542` (21)**, ambele dimensiuni pe titular
+    (32c); panoul de stingeri cu `Rest 121.00`; lookup-ul remote pe planul de
+    conturi caută pe simbol ȘI denumire.
+  - **Perechea**: `PLT-10` CASA → BANCA operat → latura pereche generată cu
+    linkul pus de motor; lista de candidați a arătat `PLT-10 … — blocat de
+    draftul (15.08.2026)`, iar după ștergerea draftului același candidat a
+    apărut liber; `INC-3` cules manual **cu latura pereche declarată** → operat
+    **fără al treilea document** și fără mesaj; registrele `581 = 5311` (CASA) și
+    `5121 = 581` (BANCA) ⇒ **581 se închide**; gardianul simetric probat în
+    ambele sensuri (anularea țintei → 422 cu mesajul specific, anularea
+    pointer-ului → permisă).
+  - **Re-smoke după fix-urile review-ului** (semantica perechii se schimbase):
+    stornarea piciorului pereche → panoul spune că 581 e din nou deschis, cu
+    calea executabilă; anularea + re-operarea sursei **regenerează** perechea
+    (`ConexId` nenul) — D1-B, care înainte era un no-op tăcut.
+- [x] **Review advers — închis**; ambele defecte de fond fixate, plus unul găsit
+  de main peste raport:
+  **D1 (grav)** — un pointer **Stornat** era numărat ca pereche definitivă de
+  `PerecheId`, de avertisment și de lista de candidați, deși registrele lui sunt
+  inversate (581 redeschis, perechea NU s-a produs); felia avea două criterii
+  pentru aceeași întrebare, iar gardianul era singurul corect. Ambele consecințe
+  porneau de la un storno — unealta normală de corecție când perioada e închisă
+  (decizia 14): piciorul rămas descoperit dispărea din candidați ȘI din
+  avertisment (gaura 64k, tăcută, cu remediu **imposibil** la legarea manuală —
+  un pointer stornat nu se editează și nu se șterge), iar re-operarea sursei nu
+  mai regenera perechea, deși clientul prescrie exact asta. Fix: **o legătură
+  contează doar cu celălalt capăt `Draft` sau `Operat`**, cu două metode de
+  roluri distincte — `PerecheId` (descriptivă) și `PerecheActivaId`
+  (decizională). Gardianul rămâne pe `Operat`: nu e inconsecvență — el apără
+  REGISTRE, suprimarea apără DRAFTURI.
+  **D2 (mediu)** — `LaturaPerecheId` e câmp CULES, deci pe copilul autogenerat
+  se golește cu un click; panoul, care citea exclusiv `Pereche`, declara apoi
+  „latura pereche lipsește, 581 rămâne deschis" despre un document cu perechea
+  OPERATĂ și prescria un remediu pe care motorul îl refuză — urmat mai departe,
+  ducea la a doua postare pe 581. Fix: citirea perechii ține cont și de copilul
+  autogenerat (`DocumentSursaId`), iar ReadDto capătă `PerecheActiva`
+  (server-computed) pe care ramifică clientul — zero predicat nou în TS.
+  **Fix de main peste raport**: latura **GENERATĂ** a altui virament nu se mai
+  oferă și nu se mai acceptă ca pereche a unui al treilea document (cu linkul
+  golit părea liberă, iar legarea ar fi dublat 581) — autoritatea în
+  `ValideazaLaturaPereche`, afordanța în ambele liste. Se vede în re-smoke:
+  `INC-2` (latura generată a lui `PLT-9`, felia 7) nu mai apare ca picior liber,
+  cum apărea la primul smoke.
+  Minore aplicate: comentariul din `Sterge` (ștergerea e AMÂNATĂ — FK-ul
+  `Restrict` nu se atinge, 60a), `MesajeDupaOperare` pe proiecție + plafon (rula
+  la fiecare operare de virament), self-link refuzat la graniță, mesajul
+  reciprocității spune că e de ajuns UNA dintre legături, `NTC` în candidații de
+  stingere pe DEC, nota `ContDebit == ContCredit`.
+- Amendament de proces peste F8-D8, fixat la verificarea pasului 1: **legătura
+  reciprocă** (`A→B` cu `B→A`) e refuzată — vezi amendamentul de la punctul 5.
+
+## Constatări (raportate, NEtranșate în felia asta)
+
+- **Picioarele de dinaintea migrației apar ca necuplate**: `LaturaPerecheId` e
+  coloană nouă, deci orice virament istoric (inclusiv perechile reale operate
+  înainte de felie) are linkul gol. Unde perechea a fost GENERATĂ, grupul conex
+  o recuperează (fix-ul D2 citește și `DocumentSursaId`); unde ambele picioare
+  au fost culese manual, sistemul le vede libere și le oferă ca și candidați.
+  Onest față de datele existente; o migrare de date care să deducă perechile
+  istorice ar fi euristică (exact ce refuză 64k) — nu se face.
+- **Afordanța e mai îngustă decât regula**, deliberat: un picior al cărui *link
+  propriu* arată spre un document stornat e legabil (validarea îl acceptă), dar
+  nu se OFERĂ în listele de candidați — `LaturaPerecheId == null` a rămas
+  excludere absolută acolo. Calea rămâne accesibilă prin alegere manuală;
+  relaxarea ar cere un join pe starea țintei linkului în ambele query-uri.
+- **Ecranul XAF al legăturii**: `LaturaPereche` e lookup nefiltrat peste toată
+  ierarhia `DocumentTrezorerie` (ambele tipuri, toate stările, tot istoricul).
+  Oferă ținte pe care motorul le refuză la operare — refuzul e zgomotos și
+  numește documentul, deci nu e „gard care tace", dar e o listă proastă.
+  Clientul React are mulțimea corectă (endpoint-ul de candidați). Filtrare în
+  XAF = item de polish, nu de felie.
+- **`NTC` printre candidații de stingere ai DEC-ului e inert azi**:
+  `DocumenteCuRest` (57c) are cinci ramuri concrete, iar nota contabilă nu e
+  printre ele. Filtrul a fost corectat (49a o face stingător legitim), dar
+  ramura de proiecție pentru NTC e altă decizie — semantica de „rest" a notei e
+  capacitate per repartitor, nu unpivot pe laturi.
+- **DEC: conturi explicite degenerate** (`ContDebit == ContCredit` ⇒ `X = X`;
+  cont sumator ales) nu se refuză — aceeași clasă cu filtrul `Sumator` din
+  lookup: afordanță, nu regulă (F8-D14). Notat în cod, lângă câmpuri.
+- **`Angajament` e lookup pe tabelă goală** — modulul e amânat (22c); wiring-ul
+  lui în celelalte felii (care poartă deja `AngajamentId` în DTO-uri) rămâne
+  aditiv, la cerință.
+
 ## Riscurile pin-uite (review-ul advers le țintește)
 
 1. **Dubla postare, mutată în altă zi**: ambele picioare Draft cu link pe al
