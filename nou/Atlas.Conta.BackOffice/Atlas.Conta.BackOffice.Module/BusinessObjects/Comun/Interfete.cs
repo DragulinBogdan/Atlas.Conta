@@ -26,10 +26,14 @@ public interface ILinieCuAtributeLot {
 // financiar: baza = PretUnitar × Cantitate. Contract read-only: seam-ul de
 // recalcul (TvaService.CalculeazaLaCulegere) doar CITEȘTE prețul; scrierea
 // rămâne a proprietății virtuale de pe derivată.
-// Implementat azi de FacturaIntrareDetaliu + FacturaIesireDetaliu — exact cele
-// două ecrane ale gate-ului. DecontDetaliu are aceeași formă de bază, dar nu are
-// ecran în felie (și își normalizează cantitatea 0→1 la operare — 32d, ce
-// culegerea ar trebui să facă vizibil, nu în spate); aderarea lui e aditivă.
+// Implementat de FacturaIntrareDetaliu, FacturaIesireDetaliu (cele două ecrane
+// ale gate-ului) și — din felia 8 (F8-D2) — DecontDetaliu: aderarea lui a fost
+// pură declarație (`PretUnitar` exista din 3a), iar seam-ul de calcul la
+// culegere e apelat de `DecontApply`. Tot acolo se face vizibilă și
+// normalizarea cantității pro-forma 0→1 (32d) — „ce culegerea ar trebui să facă
+// vizibil, nu în spate"; `Decont.PregatesteOperare` o păstrează, idempotentă,
+// pentru calea XAF/import. În XAF nimic nu s-a schimbat: controllerul de
+// recalcul se abonează pe TIPUL DOCUMENTULUI (FCT/FCL), nu pe interfața liniei.
 public interface ILinieCuPretUnitar {
     decimal PretUnitar { get; }
 }
