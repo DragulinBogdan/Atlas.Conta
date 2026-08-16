@@ -30,7 +30,12 @@ public class RegistruJurnalController : ContaApiController {
             return BadRequest(EroriDto.Din(new[] { "„dataStart” nu poate fi după „dataEnd”." }));
 
         using var os = Secured(typeof(RegistruContabil));
-        var rezultat = Incarca(ContabilProiectii.RegistruJurnal(os, dataStart, dataEnd), loadOptions);
+        // Ordinea cronologică se declară EXPLICIT (`OrdineJurnal()`), altfel
+        // `DataSourceLoader` pune în locul ei `Id`-ul singur — ordinea de INSERARE,
+        // care pe rânduri retroactive nu e cea cronologică (`Proiectii/OrdineLista.cs`).
+        // Aici e doar un DEFAULT: `sort=` de la client are prioritate (R-D9).
+        var rezultat = Incarca(ContabilProiectii.RegistruJurnal(os, dataStart, dataEnd),
+            loadOptions, ContabilProiectii.OrdineJurnal());
         // Aceeași completare ca la fișă, aceeași implementare (R-D8): codul de tip
         // nu e o coloană sub TPT. Vezi limitarea documentată pe `Randuri<T>` pentru
         // modul grupat.

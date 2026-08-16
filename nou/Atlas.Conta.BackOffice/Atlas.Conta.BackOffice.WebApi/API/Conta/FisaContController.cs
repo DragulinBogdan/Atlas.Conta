@@ -56,6 +56,12 @@ public class FisaContController : ContaApiController {
         // ordinea nu e negociabilă.
         loadOptions.Sort = null;
         loadOptions.Group = null;
+        // …iar refuzul NU e suficient: golit, `Sort` îl face pe `DataSourceLoader`
+        // să-și inventeze ordinea LUI (`Id`-ul singur — adică ordinea de INSERARE),
+        // cu un `OrderBy` care ȘTERGE ordinea proiecției în EF Core. De asta ordinea
+        // fișei se declară EXPLICIT mai jos, prin `OrdineFisa()`: e singura care
+        // ajunge la Postgres sub `LIMIT/OFFSET`, deci singura pe care paginarea o
+        // taie. Mecanica, cu sursele citate: `Proiectii/OrdineLista.cs`.
         // FILTRAREA rămâne permisă, deliberat: `SoldCurent` e proprietate a
         // REGISTRULUI (soldul contului la acel rând), nu a vederii — rămâne
         // adevărat pe orice submulțime afișată. Cine ar „repara" asta filtrând
@@ -68,7 +74,8 @@ public class FisaContController : ContaApiController {
         var rezultat = Incarca(ContabilProiectii.FisaCont(os, contId.Value,
             dataStart.Value, dataEnd.Value,
             repartitorId, materialId, codFunctionalId, codEconomicId,
-            sursaFinantareId, unitateId, proiectId, centruCostId), loadOptions);
+            sursaFinantareId, unitateId, proiectId, centruCostId),
+            loadOptions, ContabilProiectii.OrdineFisa());
         // Codul de tip al documentului-sursă, peste pagina DEJA materializată
         // (R-D8): un singur query polimorf pe mulțime, nu `GetObjectByKey` în
         // buclă. Consecință: `DocumentTip` nu e o coloană, deci filtrarea/sortarea

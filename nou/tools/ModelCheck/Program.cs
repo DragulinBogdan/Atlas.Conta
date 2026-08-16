@@ -15,6 +15,7 @@ using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
+using DevExtreme.AspNet.Data;
 using Microsoft.EntityFrameworkCore;
 
 // Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
@@ -7801,10 +7802,16 @@ void VerificaBalanta() {
 // Local function, apelată din AMBELE căi de profil, ca `VerificaBalanta`.
 void VerificaFisaJurnal() {
     const string MarcajFsa = "E2E-FSA";
+    // Marcaj propriu pentru blocul de regresie a ordinii: numărătorile fixate ale
+    // scenariului de bază (4 note în perioadă, 6 în total) rămân neatinse.
+    const string MarcajOrd = MarcajFsa + "-ORD";
     using var os = provider.CreateObjectSpace();
 
+    // `StartsWith`, nu egalitate: blocul de regresie de mai jos folosește un marcaj
+    // PROPRIU (`E2E-FSA-ORD`), ca rândurile lui să nu intre în numărătorile fixate
+    // ale scenariului de bază.
     void CurataFsa() {
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.NumarNota == MarcajFsa).ToList());
+        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.NumarNota.StartsWith(MarcajFsa)).ToList());
         os.Delete(os.GetObjectsQuery<NotaTransfer>().Where(d => d.Numar == MarcajFsa).ToList());
         os.Delete(os.GetObjectsQuery<Cont>().Where(c => c.Simbol.StartsWith(MarcajFsa)).ToList());
         os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajFsa)).ToList());
@@ -7934,6 +7941,111 @@ void VerificaFisaJurnal() {
         paginat.Count == 2
         && paginat.Select(r => r.SoldCurent).SequenceEqual(new[] { 175m, 135m }));
 
+    // ══ REGRESIE: ordinea prin `DataSourceLoader`, nu prin `.ToList()` ═════════
+    //
+    // Verificările de mai sus consumă `IQueryable`-ul DIRECT, unde `OrderBy`-ul
+    // proiecției e singurul din joc. Calea de API trece însă prin
+    // `DataSourceLoader`, care — când cererea n-are `sort=` și are paginare — își
+    // pune PROPRIA ordine (`Id`-ul singur), cu un `OrderBy` ce ȘTERGE ordinea
+    // proiecției în EF Core: `ORDER BY "Data", "Id", "Sens" DESC` ajungea la
+    // Postgres ca `ORDER BY "Id"`. Mecanica, cu sursele citate:
+    // `Proiectii/OrdineLista.cs`.
+    //
+    // De ce niciun check de dinainte nu-l prindea: în scenariile existente ordinea
+    // de INSERARE coincide cu cea cronologică, iar cele două ordini dau atunci
+    // aceeași secvență. Blocul ăsta o rupe DELIBERAT — și o rupe DETERMINIST:
+    // Id-urile se dau explicit, în ordine inversă față de dată (rândul cu data cea
+    // mai TÂRZIE primește cel mai mic Id), adică exact urma pe care o lasă operarea
+    // retroactivă / corecțiile / reimportările. Pe Id-uri UUIDv7 „naturale" scena
+    // n-ar fi reproductibilă: în aceeași milisecundă ordinea lor e aleatoare.
+    var cF3 = ContFsa("-3");
+    Guid IdOrd(int n) => Guid.Parse($"fa510000-0000-7000-8000-{n:D12}");
+    void NotaOrd(int idSecvential, DateOnly data, Cont debit, Cont credit, decimal valoare) =>
+        Atlas.DXF.EfCore.ObjectSpace.Extensions.ObjectSpaceExtensions.CreateObject<RegistruContabil>(
+            os, IdOrd(idSecvential), n => {
+                n.Data = data;
+                n.NumarNota = MarcajOrd;
+                n.ContDebit = debit;
+                n.ContCredit = credit;
+                n.Valoare = valoare;
+            });
+    // Id crescător ⇔ dată DESCRESCĂTOARE. Ultimul rând (Id-ul cel mai mic) are
+    // ACELAȘI cont pe ambele laturi: două rânduri de fișă cu Id identic, deci
+    // tiebreak-ul `Sens DESC` e și el sub test.
+    NotaOrd(1, new DateOnly(2026, 4, 14), cF3, cF3, 5m);
+    NotaOrd(2, new DateOnly(2026, 4, 12), cF3, cF2, 32m);
+    NotaOrd(3, new DateOnly(2026, 4, 10), cF2, cF3, 16m);
+    NotaOrd(4, new DateOnly(2026, 4, 8), cF3, cF2, 8m);
+    NotaOrd(5, new DateOnly(2026, 4, 6), cF2, cF3, 4m);
+    NotaOrd(6, new DateOnly(2026, 4, 4), cF3, cF2, 2m);
+    NotaOrd(7, new DateOnly(2026, 4, 2), cF3, cF2, 1m);
+    os.CommitChanges();
+
+    // Exact calea controllerului: opțiunile de grilă + ordinea declarată a
+    // proiecției, prin `DataSourceLoader`. Dacă seam-ul dispare (sau ordinea nu se
+    // mai declară), biblioteca revine la `Id` și blocul PICĂ.
+    List<FisaContRand> FisaPrinLoader(int skip, int take) {
+        var optiuni = new DataSourceLoadOptionsBase { Skip = skip, Take = take };
+        OrdineLista.AplicaOrdineImplicita(optiuni, ContabilProiectii.OrdineFisa());
+        return DataSourceLoader.Load(ContabilProiectii.FisaCont(os, cF3.ID, ds, de), optiuni)
+            .data.Cast<FisaContRand>().ToList();
+    }
+    // Invariantul REAL al fișei: soldul fiecărui rând == cumulul rândurilor de
+    // dinaintea lui ÎN ORDINEA AFIȘATĂ (nu doar „ultimul sold e corect" — ăla iese
+    // bun și dintr-o secvență amestecată).
+    bool CumulOk(IReadOnlyList<FisaContRand> randuri, decimal soldInainte) {
+        var acumulat = soldInainte;
+        foreach (var r in randuri) {
+            acumulat += r.Debit - r.Credit;
+            if (acumulat != r.SoldCurent)
+                return false;
+        }
+        return true;
+    }
+
+    // Întâi PREMISA, pe calea directă (neatinsă de bibliotecă, deci adevărată și
+    // înainte, și după fix): scenariul chiar deosebește cele două ordini. Fără
+    // asertarea asta, checkurile de mai jos ar putea trece pe o scenă fără dinți.
+    var soldAsteptat = new[] { 1m, 3m, -1m, 7m, -9m, 23m, 28m, 23m };
+    var ordDirect = ContabilProiectii.FisaCont(os, cF3.ID, ds, de).ToList();
+    Check("Premisa regresiei: pe cele 7 note ordinea de INSERARE (`Id`) e exact INVERSUL celei cronologice — deci `ORDER BY Id` și `ORDER BY Data, Id` chiar dau secvențe diferite (verificat pe calea DIRECTĂ, cea pe care biblioteca n-o atinge)",
+        ordDirect.Count == 8
+        && ordDirect.Select(r => r.Id).SequenceEqual(ordDirect.Select(r => r.Id).OrderByDescending(i => i))
+        && ordDirect.Select(r => r.SoldCurent).SequenceEqual(soldAsteptat));
+
+    var ordTot = FisaPrinLoader(0, 100);
+    Check("REGRESIE (defectul feliei 9): prin `DataSourceLoader`, fișa iese CRONOLOGIC (`Data, Id, Sens DESC`), nu în ordinea de inserare — iar soldul curent al fiecărui rând e cumulul rândurilor de dinaintea lui ÎN ORDINEA AFIȘATĂ (1, 3, −1, 7, −9, 23, 28, 23)",
+        ordTot.Count == 8
+        && ordTot.Select(r => r.Data).SequenceEqual(ordTot.Select(r => r.Data).OrderBy(d => d))
+        && ordTot.Select(r => r.SoldCurent).SequenceEqual(soldAsteptat)
+        && CumulOk(ordTot, 0m));
+    Check("REGRESIE, pe tiebreak: rândul cu același cont pe ambele laturi iese „D” înaintea lui „C” (`Sens DESC`), cu același `Id` — a treia cheie a ordinii nu se pierde nici ea",
+        ordTot[6] is { Sens: "D", Debit: 5m } && ordTot[7] is { Sens: "C", Credit: 5m }
+        && ordTot[6].Id == ordTot[7].Id && ordTot[6].Id == IdOrd(1));
+
+    var pag1 = FisaPrinLoader(0, 3);
+    var pag2 = FisaPrinLoader(3, 3);
+    var pag3 = FisaPrinLoader(6, 3);
+    Check("REGRESIE, PESTE PAGINARE (acolo se manifestă defectul): cele trei pagini concatenate reproduc EXACT secvența completă, iar cumulul continuă peste granița dintre pagini — `LIMIT/OFFSET` taie chiar secvența pe care s-a cumulat fereastra",
+        pag1.Concat(pag2).Concat(pag3).Select(r => r.SoldCurent).SequenceEqual(soldAsteptat)
+        && CumulOk(pag1, 0m) && CumulOk(pag2, pag1[^1].SoldCurent) && CumulOk(pag3, pag2[^1].SoldCurent));
+
+    // Aceeași boală pe jurnal, unde contractul (R-D9) promite ordine CRONOLOGICĂ
+    // implicită: fără declarația de ordine, `DataSourceLoader` o înlocuiește tot cu
+    // `Id`-ul, adică tot cu ordinea de inserare. Filtrul îl duce tot biblioteca —
+    // deci se verifică și compunerea filtru + sortare.
+    var optiuniJurnal = new DataSourceLoadOptionsBase {
+        Take = 100,
+        Filter = new object[] { "NumarNota", "=", MarcajOrd }
+    };
+    OrdineLista.AplicaOrdineImplicita(optiuniJurnal, ContabilProiectii.OrdineJurnal());
+    var jurnalOrd = DataSourceLoader.Load(ContabilProiectii.RegistruJurnal(os, ds, de), optiuniJurnal)
+        .data.Cast<JurnalRand>().ToList();
+    Check("REGRESIE pe jurnal: ordinea implicită promisă de R-D9 e CRONOLOGICĂ și supraviețuiește încărcării prin `DataSourceLoader` (cele 7 note ale scenariului, 02 → 14 aprilie), nu ordinea de inserare",
+        jurnalOrd.Count == 7
+        && jurnalOrd.Select(r => r.Data).SequenceEqual(jurnalOrd.Select(r => r.Data).OrderBy(d => d))
+        && jurnalOrd[0].Data == new DateOnly(2026, 4, 2) && jurnalOrd[^1].Data == new DateOnly(2026, 4, 14));
+
     // -- VERIFICAREA 6: jurnalul ---------------------------------------------
     var jurnal = ContabilProiectii.RegistruJurnal(os, ds, de).ToList();
     var sumaDirecta = os.GetObjectsQuery<RegistruContabil>()
@@ -7985,6 +8097,6 @@ void VerificaFisaJurnal() {
     Check("Curățenie finală felia fișă + jurnal (fără reziduuri e2e)",
         !os.GetObjectsQuery<Cont>().Any(c => c.Simbol.StartsWith(MarcajFsa))
         && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajFsa))
-        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.NumarNota == MarcajFsa)
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.NumarNota.StartsWith(MarcajFsa))
         && !os.GetObjectsQuery<NotaTransfer>().Any(d => d.Numar == MarcajFsa));
 }

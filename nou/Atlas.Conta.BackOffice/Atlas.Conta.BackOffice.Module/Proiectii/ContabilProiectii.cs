@@ -4,6 +4,7 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
+using DevExtreme.AspNet.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Module.Proiectii;
@@ -424,11 +425,17 @@ public static class ContabilProiectii {
     // documentului — o etichetă lipsă nu are voie să scoată un rând din fișă (ar
     // rupe atât soldul, cât și cusătura cu balanța).
     //
-    // Ordinea e FIXĂ (R-D6): `Data, Id, Sens DESC` — aceeași în fereastră și în
-    // `OrderBy`-ul LINQ de deasupra, ca `LIMIT/OFFSET`-ul paginării să taie exact
-    // secvența pe care s-a cumulat soldul. `Sens DESC` pune „D" înaintea lui „C"
-    // (lexicografic 'D' > 'C') — singurele două valori posibile; cuplajul e
-    // deliberat și se schimbă în ambele locuri odată.
+    // Ordinea e FIXĂ (R-D6): `Data, Id, Sens DESC` — aceeași în fereastră, în
+    // `OrderBy`-ul LINQ de deasupra ȘI în `OrdineFisa()` (forma pe care o consumă
+    // `DataSourceLoader`), ca `LIMIT/OFFSET`-ul paginării să taie exact secvența pe
+    // care s-a cumulat soldul. `Sens DESC` pune „D" înaintea lui „C" (lexicografic
+    // 'D' > 'C') — singurele două valori posibile; cuplajul e deliberat și se
+    // schimbă în TOATE cele trei locuri odată.
+    //
+    // De ce trei locuri și nu unul: `OrderBy`-ul LINQ serveşte consumatorii DIRECȚI
+    // (`.ToList()`), dar `DataSourceLoader` îl ȘTERGE — vezi demonstrația din
+    // `OrdineLista`. Sub paginare, singurul care ajunge la Postgres e cel declarat
+    // prin `OrdineFisa()`.
     public static IQueryable<FisaContRand> FisaCont(
         IObjectSpace os, Guid contId, DateOnly dataStart, DateOnly dataEnd,
         Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
@@ -566,8 +573,21 @@ public static class ContabilProiectii {
             // ordinea ajunge pe nivelul EXTERIOR, unde paginarea o respectă. Și e
             // pusă după `Select` ca `DataSourceLoader` să compună peste numele
             // proprietăților DTO-ului, nu peste ale tipului intern.
+            //
+            // ATENȚIE: ordinea asta e a consumatorilor DIRECȚI. `DataSourceLoader` o
+            // ȘTERGE (`OrderBy` peste `OrderBy` = `ApplyOrdering` în EF Core) și pune
+            // în loc `Id`-ul singur — de asta calea de API declară `OrdineFisa()`.
             .OrderBy(r => r.Data).ThenBy(r => r.Id).ThenByDescending(r => r.Sens);
     }
+
+    // Ordinea fișei în forma pe care o consumă `DataSourceLoader` — aceeași ca
+    // fereastra SQL și ca `OrderBy`-ul de mai sus (R-D6). Metodă, nu câmp: fiecare
+    // apelant primește propriul array, ca nimeni să nu poată muta ordinea altuia.
+    public static SortingInfo[] OrdineFisa() => new[] {
+        OrdineLista.Crescator(nameof(FisaContRand.Data)),
+        OrdineLista.Crescator(nameof(FisaContRand.Id)),
+        OrdineLista.Descrescator(nameof(FisaContRand.Sens))
+    };
 
     // ── Registrul-jurnal (R-D9) ─────────────────────────────────────────────
     // Rândurile BRUTE, cronologic — nu atomii: aici nota se citește așa cum a fost
@@ -609,9 +629,21 @@ public static class ContabilProiectii {
             // Ordinea implicită e cronologică; sortarea din grilă e PERMISĂ aici
             // (jurnalul n-are sold curent de rupt) și se așază deasupra —
             // `DataSourceLoader` adaugă propriul `OrderBy`, care devine cheia
-            // primară a ordonării.
+            // primară a ordonării. Tocmai fiindcă îl ADAUGĂ ca `OrderBy` (nu
+            // `ThenBy`), ordinea de mai jos NU supraviețuiește încărcării paginate:
+            // fără `sort=` de la client, biblioteca ar ordona după `Id` singur, adică
+            // după ordinea de INSERARE, nu după `Data`. Calea de API declară deci
+            // `OrdineJurnal()` — vezi `OrdineLista`.
             .OrderBy(r => r.Data).ThenBy(r => r.Id);
     }
+
+    // Ordinea implicită a jurnalului (cronologică), în forma consumată de
+    // `DataSourceLoader`. Spre deosebire de fișă, aici e doar un DEFAULT: dacă
+    // cererea poartă `sort=`, sortarea clientului câștigă (R-D9).
+    public static SortingInfo[] OrdineJurnal() => new[] {
+        OrdineLista.Crescator(nameof(JurnalRand.Data)),
+        OrdineLista.Crescator(nameof(JurnalRand.Id))
+    };
 
     // ── Codul de tip al documentului, peste pagina materializată (R-D8) ─────
     // Partajat de fișă și jurnal: ambele afișează documentul-sursă cu link, iar
