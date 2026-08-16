@@ -1,5 +1,9 @@
+using System.Runtime.CompilerServices;
+using System.Text;
+using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Module.Proiectii;
@@ -92,6 +96,111 @@ public sealed class BalantaRand {
 
     public decimal SoldFinalDebit { get; set; }
     public decimal SoldFinalCredit { get; set; }
+}
+
+// Contractul rândurilor care poartă un document-sursă. Codul de tip NU poate veni
+// din SQL — sub TPT nu există discriminator, iar ancora `TipDocument` se caută
+// după numele clasei CLR (R-D8/60b) — deci se completează în memorie, peste
+// pagina deja materializată. Interfața există ca aceeași completare să se scrie
+// O SINGURĂ dată pentru fișă și jurnal: două copii ar diverge tăcut (regula care
+// a urcat `CoduriTip` în `ApiProiectii`).
+public interface IRandCuDocument {
+    Guid? DocumentId { get; }
+    string DocumentTip { get; set; }
+}
+
+// Un rând de fișă de cont = un ATOM (o latură a unui rând de registru), plus
+// soldul curent cumulat până la el inclusiv.
+//
+// ATENȚIE la identitate: `Id` e al RÂNDULUI DE REGISTRU, nu al rândului de fișă
+// — un rând care are ACELAȘI cont pe ambele laturi (legitim: reclasificări
+// analitice) produce, corect, două rânduri de fișă cu același `Id` și `Sens`
+// diferit. Cheia de grilă e deci perechea (`Id`, `Sens`), niciodată `Id` singur.
+//
+public sealed class FisaContRand : IRandCuDocument {
+    public Guid Id { get; set; }
+    public DateOnly Data { get; set; }
+    public string NumarNota { get; set; }
+    // "D" / "C" — STRING, ca `Stare`/`TipStoc` pe restul proiecțiilor: contractul
+    // nu depinde de ordinea membrilor unui enum, iar filtrarea din grilă vine
+    // tot ca text.
+    public string Sens { get; set; }
+    // Exact una e nenulă pe fiecare rând (unpivot-ul R-D1).
+    public decimal Debit { get; set; }
+    public decimal Credit { get; set; }
+    // Soldul cumulat (cu semn: pozitiv = debitor) al contului până la acest rând
+    // INCLUSIV, calculat de fereastra SQL peste TOATĂ perioada `<= dataEnd` —
+    // deci include soldul inițial fără o a doua interogare.
+    public decimal SoldCurent { get; set; }
+    public Guid ContrapartidaId { get; set; }
+    public string ContrapartidaSimbol { get; set; }
+    // Repartitorul LATURII acestui rând (dimensiunea de debit pe atomul de debit).
+    public string RepartitorDenumire { get; set; }
+    // Null = rând de deschidere scris de migrare (25e/34d) — se afișează ca atare.
+    public Guid? DocumentId { get; set; }
+    public string DocumentTip { get; set; }
+    public string DocumentNumar { get; set; }
+    public bool Storno { get; set; }
+}
+
+// Rândul BRUT al interogării SQL a fișei — tipul pe care îl materializează
+// `SqlQuery<T>`, NU cel care pleacă pe sârmă. Există separat de `FisaContRand`
+// din două motive care se cer amândouă:
+//
+//  1. **Forma impusă de EF.** `SqlQuery<T>` înregistrează tipul în model ca
+//     entitate AD-HOC (`AdHocMapper.AddEntityType`), iar contextul rulează cu
+//     `UseChangeTrackingProxies` (cerință XAF, decizia 24). Convenția de
+//     proxy-uri se aplică deci și acestui tip și refuză, la FINALIZAREA
+//     modelului, orice entitate `sealed` sau cu proprietăți ne-virtuale:
+//     „Entity type … is sealed. 'UseChangeTrackingProxies' requires all entity
+//     types to be public, unsealed, have virtual properties…" (probat: excepție
+//     la primul apel).
+//  2. **Ce iese pe sârmă dacă tipul ăsta AR FI DTO-ul.** Fiind entitate în
+//     modelul XAF, instanțele materializate sunt proxy-uri care implementează și
+//     interfețele XAF — iar serializatorul le vede: probat live, răspunsul
+//     căpăta pe FIECARE rând `ObjectSpace`, `SecurityProcessor`, `LazyLoader`,
+//     `SecuredKeyValuePairs`, `WriteProtectedKeyValuePairs`,
+//     `IsDeleteProhibitedBeforeFirstObjectChange` — câmpuri care nu există în
+//     schema OpenAPI (Swashbuckle citește tipul DECLARAT), deci payload umflat
+//     și divergent de contractul generat.
+//
+// Fixul e o proiecție `Select` deasupra, spre `FisaContRand`: EF o compune în
+// aceeași interogare (nimic nu se materializează în plus), tipul de pe sârmă
+// redevine POCO sigilat, iar proxy-ul nu se mai construiește niciodată.
+// NU se expune în niciun `ProducesResponseType` și nu intră în codegen.
+public class FisaContSql {
+    public virtual Guid Id { get; set; }
+    public virtual DateOnly Data { get; set; }
+    public virtual string NumarNota { get; set; }
+    public virtual string Sens { get; set; }
+    public virtual decimal Debit { get; set; }
+    public virtual decimal Credit { get; set; }
+    public virtual decimal SoldCurent { get; set; }
+    public virtual Guid ContrapartidaId { get; set; }
+    public virtual string ContrapartidaSimbol { get; set; }
+    public virtual string RepartitorDenumire { get; set; }
+    public virtual Guid? DocumentId { get; set; }
+    public virtual string DocumentTip { get; set; }
+    public virtual string DocumentNumar { get; set; }
+    public virtual bool Storno { get; set; }
+}
+
+// Un rând de registru-jurnal = rândul BRUT al registrului (R-D9), nu atomul:
+// listarea cronologică arată nota așa cum a fost scrisă (debit ↔ credit pe
+// aceeași linie); unpivotat, fiecare notă ar apărea de două ori.
+public sealed class JurnalRand : IRandCuDocument {
+    public Guid Id { get; set; }
+    public DateOnly Data { get; set; }
+    public string NumarNota { get; set; }
+    public Guid ContDebitId { get; set; }
+    public string ContDebitSimbol { get; set; }
+    public Guid ContCreditId { get; set; }
+    public string ContCreditSimbol { get; set; }
+    public decimal Valoare { get; set; }
+    public Guid? DocumentId { get; set; }
+    public string DocumentTip { get; set; }
+    public string DocumentNumar { get; set; }
+    public bool Storno { get; set; }
 }
 
 public static class ContabilProiectii {
@@ -266,5 +375,261 @@ public static class ContabilProiectii {
                    SoldFinalDebit = netFinal > 0m ? netFinal : 0m,
                    SoldFinalCredit = netFinal < 0m ? -netFinal : 0m
                };
+    }
+
+    // ── Fișa de cont (R-D6) ─────────────────────────────────────────────────
+    //
+    // ═══ SINGURUL loc din repo cu SQL BRUT — de ce, și ce cere în schimb ═══
+    //
+    // Soldul curent per rând e prin definiție `sold_inițial + Σ(rândurile de
+    // dinainte)`, adică o FUNCȚIE DE FEREASTRĂ. LINQ nu are window functions, iar
+    // cele trei alternative cad toate (R-D6): cumulul în client încalcă „nimic nu
+    // se calculează în TS" (42c) și minte la orice paginare; agregatul corelat per
+    // rând e O(n²) pe 305k rânduri; fără sold curent, fișa nu mai e fișă.
+    //
+    // Ce cere SQL-ul brut în schimb, și e onorat mai jos:
+    //
+    //  1. **Soft delete-ul NU se mai adaugă singur.** Calea LINQ trece prin
+    //     `HasQueryFilter(GCRecord == 0)` pus de XAF (`EFCoreDeferredDeletionRegistration`
+    //     — șters ⇒ 1). În SQL brut nu există niciun automatism, deci `"GCRecord" = 0`
+    //     se scrie EXPLICIT pe registru ȘI pe fiecare tabelă alăturată. Fără el,
+    //     fișa ar arăta rânduri șterse și ar diverge TĂCUT de balanță — exact
+    //     defectul pe care felia asta există să-l prevină.
+    //  2. **Parametrizare strictă.** Zero interpolare de valori în text:
+    //     `FormattableStringFactory` construiește formatul cu `{n}`, iar EF le
+    //     transformă în parametri (`SqlQuery(FormattableString)`). Singurele
+    //     bucăți compuse dinamic sunt NUMELE de coloane ale filtrelor, alese
+    //     dintr-un set literal închis, scris aici — niciodată din request.
+    //  3. **Securitatea XAF e ocolită** (`SqlQuery` nu trece prin
+    //     `SecurityQueryCompiler`). Acceptabil AICI fiindcă `RegistruContabil`
+    //     n-are restricții pe rând — nimeni n-are Write pe registre (42a), iar
+    //     citirea nu e filtrată. Dacă asta se schimbă vreodată, fișa e PRIMUL loc
+    //     care trebuie reevaluat.
+    //
+    // ═══ Forma: trei niveluri, fiecare cu un motiv ═══
+    //   (a) unpivot-ul (R-D1) pe UN cont: `ContDebitId = @cont` ⇒ sens „D",
+    //       `ContCreditId = @cont` ⇒ sens „C". Un rând cu ACELAȘI cont pe ambele
+    //       laturi produce, corect, două rânduri. Tăiat aici la `Data <= dataEnd`.
+    //   (b) fereastra, peste TOT ce e `<= dataEnd` — de asta soldul curent
+    //       include soldul inițial fără o a doua interogare scalară. Filtrele de
+    //       dimensiune se aplică la ACEST nivel, adică ÎNAINTE de fereastră: „fișa
+    //       contului pe proiectul X" are și soldul inițial al proiectului X
+    //       (aceeași regulă ca la balanță — filtrul e parametru de proiecție, nu
+    //       filtru de grilă).
+    //   (c) `Data >= dataStart` + etichetele, în exterior — așa rândurile de
+    //       dinainte de perioadă contribuie la sold fără să se afișeze.
+    //
+    // Join-urile de etichete sunt LEFT prin construcție: rândul aparține contului
+    // nostru indiferent de starea CONTRApartidei, a repartitorului sau a
+    // documentului — o etichetă lipsă nu are voie să scoată un rând din fișă (ar
+    // rupe atât soldul, cât și cusătura cu balanța).
+    //
+    // Ordinea e FIXĂ (R-D6): `Data, Id, Sens DESC` — aceeași în fereastră și în
+    // `OrderBy`-ul LINQ de deasupra, ca `LIMIT/OFFSET`-ul paginării să taie exact
+    // secvența pe care s-a cumulat soldul. `Sens DESC` pune „D" înaintea lui „C"
+    // (lexicografic 'D' > 'C') — singurele două valori posibile; cuplajul e
+    // deliberat și se schimbă în ambele locuri odată.
+    public static IQueryable<FisaContRand> FisaCont(
+        IObjectSpace os, Guid contId, DateOnly dataStart, DateOnly dataEnd,
+        Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
+        Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
+        Guid? proiectId = null, Guid? centruCostId = null) {
+
+        var argumente = new List<object>();
+        // Placeholder-ul poziţional: valoarea intră în lista de argumente, în text
+        // ajunge doar indicele. Fiecare apel = un parametru nou (nu se refolosesc
+        // indici între ramurile uniunii — asigurare ieftină contra oricărei
+        // subtilităţi de substituţie din EF).
+        string P(object valoare) {
+            argumente.Add(valoare);
+            return "{" + (argumente.Count - 1) + "}";
+        }
+
+        // Coloanele de dimensiuni, proiectate cu NUME UNIFORME pe ambele ramuri
+        // ale uniunii (prefixul laturii dispare): filtrul de la nivelul (b) se
+        // scrie astfel o singură dată și cade automat pe latura corectă — atomul
+        // de debit poartă dimensiunile de debit, cel de credit pe ale lui
+        // (riscul 7 din contract).
+        var dimensiuni = new[] {
+            "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId",
+            "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId"
+        };
+        string Dimensiuni(string prefix) =>
+            string.Concat(dimensiuni.Select(d =>
+                $",\n            r.\"Dimensiuni{prefix}_{d}\" AS \"{d}\""));
+
+        var latura = new StringBuilder();
+        foreach (var (semn, contPropriu, contOpus, debit, credit) in new[] {
+            ("D", "ContDebitId", "ContCreditId", "r.\"Valoare\"", "CAST(0 AS numeric(18,2))"),
+            ("C", "ContCreditId", "ContDebitId", "CAST(0 AS numeric(18,2))", "r.\"Valoare\"")
+        }) {
+            if (latura.Length > 0)
+                latura.Append("\n        UNION ALL\n");
+            latura.Append($"""
+                        SELECT
+                            r."ID" AS "Id",
+                            r."Data" AS "Data",
+                            r."NumarNota" AS "NumarNota",
+                            CAST('{semn}' AS text) AS "Sens",
+                            {debit} AS "Debit",
+                            {credit} AS "Credit",
+                            r."{contOpus}" AS "ContrapartidaId",
+                            r."DocumentId" AS "DocumentId",
+                            r."Storno" AS "Storno"{Dimensiuni(semn == "D" ? "Debit" : "Credit")}
+                        FROM "RegistruContabil" r
+                        WHERE r."GCRecord" = 0 AND r."{contPropriu}" = {P(contId)} AND r."Data" <= {P(dataEnd)}
+                """);
+        }
+
+        var filtre = new StringBuilder();
+        void Filtru(string coloana, Guid? valoare) {
+            if (valoare is Guid v)
+                filtre.Append($"\n          AND a.\"{coloana}\" = {P(v)}");
+        }
+        Filtru("RepartitorId", repartitorId);
+        Filtru("MaterialId", materialId);
+        Filtru("CodFunctionalId", codFunctionalId);
+        Filtru("CodEconomicId", codEconomicId);
+        Filtru("SursaFinantareId", sursaFinantareId);
+        Filtru("UnitateId", unitateId);
+        Filtru("ProiectId", proiectId);
+        Filtru("CentruCostId", centruCostId);
+
+        // `DocumentTip` iese constant NULL din SQL și se completează în memorie
+        // peste pagină (R-D8) — coloana există ca forma rezultatului să
+        // corespundă exact tipului cerut de `SqlQuery<T>`. Consecință asumată,
+        // documentată și în controller: filtrarea/sortarea de grilă pe
+        // `DocumentTip` „vede" tot null, fiindcă tipul nu e o coloană.
+        var sql = $"""
+            SELECT
+                f."Id" AS "Id",
+                f."Data" AS "Data",
+                f."NumarNota" AS "NumarNota",
+                f."Sens" AS "Sens",
+                f."Debit" AS "Debit",
+                f."Credit" AS "Credit",
+                f."SoldCurent" AS "SoldCurent",
+                f."ContrapartidaId" AS "ContrapartidaId",
+                cp."Simbol" AS "ContrapartidaSimbol",
+                rep."Denumire" AS "RepartitorDenumire",
+                f."DocumentId" AS "DocumentId",
+                CAST(NULL AS text) AS "DocumentTip",
+                doc."Numar" AS "DocumentNumar",
+                f."Storno" AS "Storno"
+            FROM (
+                SELECT
+                    a.*,
+                    SUM(a."Debit" - a."Credit") OVER (
+                        ORDER BY a."Data", a."Id", a."Sens" DESC
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                    ) AS "SoldCurent"
+                FROM (
+            {latura}
+                ) a
+                WHERE 1 = 1{filtre}
+            ) f
+            LEFT JOIN "Conturi" cp ON cp."ID" = f."ContrapartidaId" AND cp."GCRecord" = 0
+            LEFT JOIN "Repartitori" rep ON rep."ID" = f."RepartitorId" AND rep."GCRecord" = 0
+            LEFT JOIN "Documente" doc ON doc."ID" = f."DocumentId" AND doc."GCRecord" = 0
+            WHERE f."Data" >= {P(dataStart)}
+            """;
+
+        // `DbContext` e proprietate publică pe `EFCoreObjectSpace` (surse 26.1.3,
+        // EFCoreObjectSpace.cs:91) — aceeași clasă și pe calea secured (nu există
+        // `SecuredEFCoreObjectSpace`; securitatea intră prin serviciile
+        // contextului, tocmai de ce nota (3) de mai sus e necesară).
+        var dbContext = ((EFCoreObjectSpace)os).DbContext;
+        return dbContext.Database
+            .SqlQuery<FisaContSql>(FormattableStringFactory.Create(sql, argumente.ToArray()))
+            // Proiecția spre POCO-ul sigilat, compusă în aceeași interogare: fără
+            // ea, pe sârmă ar pleca proxy-ul de entitate al lui `FisaContSql`, cu
+            // membrii XAF/EF cu tot (vezi comentariul tipului).
+            .Select(r => new FisaContRand {
+                Id = r.Id,
+                Data = r.Data,
+                NumarNota = r.NumarNota,
+                Sens = r.Sens,
+                Debit = r.Debit,
+                Credit = r.Credit,
+                SoldCurent = r.SoldCurent,
+                ContrapartidaId = r.ContrapartidaId,
+                ContrapartidaSimbol = r.ContrapartidaSimbol,
+                RepartitorDenumire = r.RepartitorDenumire,
+                DocumentId = r.DocumentId,
+                DocumentTip = r.DocumentTip,
+                DocumentNumar = r.DocumentNumar,
+                Storno = r.Storno
+            })
+            // `OrderBy` LINQ, nu `ORDER BY` în textul de mai sus: EF îmi împachetează
+            // SQL-ul ca subinterogare, iar o ordonare din interiorul subinterogării
+            // NU e garantată de Postgres când deasupra vine `LIMIT/OFFSET`. Aici
+            // ordinea ajunge pe nivelul EXTERIOR, unde paginarea o respectă. Și e
+            // pusă după `Select` ca `DataSourceLoader` să compună peste numele
+            // proprietăților DTO-ului, nu peste ale tipului intern.
+            .OrderBy(r => r.Data).ThenBy(r => r.Id).ThenByDescending(r => r.Sens);
+    }
+
+    // ── Registrul-jurnal (R-D9) ─────────────────────────────────────────────
+    // Rândurile BRUTE, cronologic — nu atomii: aici nota se citește așa cum a fost
+    // scrisă (debit ↔ credit pe aceeași linie), iar unpivot-ul ar dubla-o.
+    // LINQ normal (n-are sold curent, deci n-are nevoie de fereastră), deci și
+    // soft delete-ul, și securitatea rămân pe calea obișnuită.
+    //
+    // `dataStart`/`dataEnd` sunt aici filtre SIMPLE (spre deosebire de balanță și
+    // fișă, unde `dataStart` definește soldul inițial) — o listare cronologică
+    // n-are noțiune de „inițial", deci ambele sunt opționale.
+    public static IQueryable<JurnalRand> RegistruJurnal(
+        IObjectSpace os, DateOnly? dataStart = null, DateOnly? dataEnd = null) {
+
+        // `IgnoreAutoIncludes()` din același motiv ca la atomi: `BackOfficeDbContext`
+        // pune `AutoInclude()` pe cele 16 navigații de dimensiuni ale registrului
+        // (41c). Aici se proiectează plat, deci nu e nevoie de niciuna.
+        var randuri = os.GetObjectsQuery<RegistruContabil>().IgnoreAutoIncludes();
+        if (dataStart is DateOnly ds) randuri = randuri.Where(r => r.Data >= ds);
+        if (dataEnd is DateOnly de) randuri = randuri.Where(r => r.Data <= de);
+
+        return randuri
+            .Select(r => new JurnalRand {
+                Id = r.ID,
+                Data = r.Data,
+                NumarNota = r.NumarNota,
+                ContDebitId = r.ContDebitId,
+                ContDebitSimbol = r.ContDebit.Simbol,
+                ContCreditId = r.ContCreditId,
+                ContCreditSimbol = r.ContCredit.Simbol,
+                Valoare = r.Valoare,
+                DocumentId = r.DocumentId,
+                // Se completează în memorie peste pagină (R-D8) — vezi mai jos.
+                DocumentTip = null,
+                // Navigație NULLABLE (rândurile de deschidere, 25e/34d): EF
+                // generează LEFT JOIN, deci iese `null`, nu o excepție (riscul 8).
+                DocumentNumar = r.Document.Numar,
+                Storno = r.Storno
+            })
+            // Ordinea implicită e cronologică; sortarea din grilă e PERMISĂ aici
+            // (jurnalul n-are sold curent de rupt) și se așază deasupra —
+            // `DataSourceLoader` adaugă propriul `OrderBy`, care devine cheia
+            // primară a ordonării.
+            .OrderBy(r => r.Data).ThenBy(r => r.Id);
+    }
+
+    // ── Codul de tip al documentului, peste pagina materializată (R-D8) ─────
+    // Partajat de fișă și jurnal: ambele afișează documentul-sursă cu link, iar
+    // sub TPT codul de tip nu e o coloană (ancora `TipDocument` se caută după
+    // numele clasei CLR — 60b). O SINGURĂ implementare; două ar diverge tăcut.
+    //
+    // Se apelează DUPĂ `Incarca`, adică pe pagină (max. 500 de rânduri), nu pe
+    // toată perioada — `CoduriTip` face un singur query polimorf pe mulțime
+    // (varianta `GetObjectByKey` în buclă a fost măsurată la ~11s pe 335 de
+    // rânduri, 60b). Rândurile de deschidere (`DocumentId == null`) se sar din
+    // start: n-au document și nu trebuie să pice pe nimic.
+    public static void CompleteazaTipDocument(IObjectSpace os, IEnumerable<IRandCuDocument> randuri) {
+        var cuDocument = randuri?.Where(r => r?.DocumentId != null).ToList();
+        if (cuDocument == null || cuDocument.Count == 0)
+            return;
+        var tipuri = ApiProiectii.CoduriTip(os,
+            cuDocument.Select(r => r.DocumentId.Value).Distinct().ToList());
+        foreach (var rand in cuDocument)
+            rand.DocumentTip = tipuri.GetValueOrDefault(rand.DocumentId.Value);
     }
 }

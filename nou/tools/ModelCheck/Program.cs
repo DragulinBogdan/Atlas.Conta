@@ -2666,6 +2666,7 @@ if (profil == ProfilContabil.Privat) {
     // datele preexistente ale bazei diferă, iar invarianții globali (partidă
     // dublă, continuitate) se verifică peste ELE, nu doar peste scenariul propriu.
     VerificaBalanta();
+    VerificaFisaJurnal();
 
     Rezumat();
     return;
@@ -7587,6 +7588,7 @@ using (var os = provider.CreateObjectSpace()) {
 }
 
 VerificaBalanta();
+VerificaFisaJurnal();
 
 Rezumat();
 
@@ -7780,4 +7782,209 @@ void VerificaBalanta() {
         !os.GetObjectsQuery<Cont>().Any(c => c.Simbol.StartsWith(MarcajBal))
         && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajBal))
         && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.NumarNota == MarcajBal));
+}
+
+// ====== Felia 9 (raportare): fișa de cont (R-D6/R-D8) + registrul-jurnal (R-D9) ======
+// Verificarea 5 din contract e cea mai valoroasă a feliei: leagă calea SQL BRUT
+// (fereastra fișei) de cea LINQ (balanța). Dacă cele două ar diverge, unul dintre
+// rapoarte ar minți fără ca nimic să pice — exact defectul pe care o proiecție
+// „al doilea adevăr" îl produce (precedentul D9: `SoldStoc` == `StocService.Sold`).
+//
+// Scenariul e ales ca fiecare risc pin-uit să aibă un rând: rând cu ACELAȘI cont
+// pe ambele laturi (două rânduri de fișă, același `Id`), rând de storno, rânduri
+// de deschidere (`DocumentId == null`), granițe de dată, rând legat de un
+// document real (codul de tip, R-D8), filtrare peste proiecție (soldul curent
+// rămâne al REGISTRULUI), paginare (pagina 2 continuă soldul), ștergere amânată
+// (soft delete-ul scris de mână în SQL brut — dacă lipsește, fișa arată rânduri
+// șterse și divergează TĂCUT de balanță).
+//
+// Local function, apelată din AMBELE căi de profil, ca `VerificaBalanta`.
+void VerificaFisaJurnal() {
+    const string MarcajFsa = "E2E-FSA";
+    using var os = provider.CreateObjectSpace();
+
+    void CurataFsa() {
+        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.NumarNota == MarcajFsa).ToList());
+        os.Delete(os.GetObjectsQuery<NotaTransfer>().Where(d => d.Numar == MarcajFsa).ToList());
+        os.Delete(os.GetObjectsQuery<Cont>().Where(c => c.Simbol.StartsWith(MarcajFsa)).ToList());
+        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajFsa)).ToList());
+        os.CommitChanges();
+    }
+    CurataFsa();
+
+    Cont ContFsa(string sufix) {
+        var c = os.CreateObject<Cont>();
+        c.Simbol = MarcajFsa + sufix;
+        c.Denumire = "Cont probă fișă " + sufix;
+        return c;
+    }
+    var cF1 = ContFsa("-1");   // contul sub test
+    var cF2 = ContFsa("-2");   // contrapartida
+    var repF = os.CreateObject<UnitateInterna>();
+    repF.Cod = MarcajFsa + "-R";
+    repF.Denumire = "Repartitor probă fișă";
+    // Document REAL, doar ca ținta linkului: codul de tip nu e o coloană sub TPT,
+    // se rezolvă prin ancora `TipDocument` după numele clasei CLR (R-D8/60b).
+    // Rămâne Draft — nu se operează nimic; rândurile de registru sunt scrise de
+    // mână, exact ca în blocul de balanță.
+    var doc = os.CreateObject<NotaTransfer>();
+    doc.Numar = MarcajFsa;
+    doc.Data = new DateOnly(2026, 4, 5);
+    doc.Predator = repF;
+    doc.Primitor = repF;
+
+    void NotaFsa(DateOnly data, Cont debit, Cont credit, decimal valoare,
+        bool storno = false, Document document = null, Repartitor repDebit = null) {
+        var n = os.CreateObject<RegistruContabil>();
+        n.Data = data;
+        n.NumarNota = MarcajFsa;
+        n.ContDebit = debit;
+        n.ContCredit = credit;
+        n.Valoare = valoare;
+        n.Storno = storno;
+        n.Document = document;
+        n.DebitRepartitor = repDebit;
+    }
+
+    var ds = new DateOnly(2026, 4, 1);
+    var de = new DateOnly(2026, 4, 30);
+
+    NotaFsa(new DateOnly(2026, 3, 10), cF1, cF2, 100m, repDebit: repF);   // sold inițial: D100
+    NotaFsa(ds, cF1, cF2, 60m);                                           // EXACT dataStart => rulaj
+    NotaFsa(new DateOnly(2026, 4, 5), cF2, cF1, 25m, document: doc);      // legat de document
+    NotaFsa(new DateOnly(2026, 4, 10), cF1, cF1, 40m);                    // ACELAȘI cont pe ambele laturi
+    NotaFsa(new DateOnly(2026, 4, 15), cF2, cF1, 10m, storno: true);      // storno => intră (R-D7)
+    NotaFsa(new DateOnly(2026, 5, 1), cF1, cF2, 999m);                    // după dataEnd => exclus
+    os.CommitChanges();
+
+    var fisa = ContabilProiectii.FisaCont(os, cF1.ID, ds, de).ToList();
+
+    // -- Ordinea fixă + soldul curent cumulat (R-D6) --------------------------
+    Check("R-D6: fișa iese în ordinea FIXĂ `Data, Id, Sens DESC`, iar soldul curent pornește de la soldul INIȚIAL (D100, din afara perioadei) și se cumulă rând cu rând: 160 → 135 → 175 → 135 → 125",
+        fisa.Count == 5
+        && fisa[0] is { Sens: "D", Debit: 60m, Credit: 0m, SoldCurent: 160m }
+        && fisa[1] is { Sens: "C", Debit: 0m, Credit: 25m, SoldCurent: 135m }
+        && fisa[2] is { Sens: "D", Debit: 40m, SoldCurent: 175m }
+        && fisa[3] is { Sens: "C", Credit: 40m, SoldCurent: 135m }
+        && fisa[4] is { Sens: "C", Credit: 10m, Storno: true, SoldCurent: 125m });
+    Check("R-D1 pe fișă: rândul cu ACELAȘI cont pe ambele laturi produce DOUĂ rânduri de fișă cu același `Id` (debitul înaintea creditului) — deci cheia de grilă e perechea (`Id`, `Sens`), niciodată `Id` singur",
+        fisa[2].Id == fisa[3].Id && fisa[2].ContrapartidaId == cF1.ID);
+    Check("Contrapartida și repartitorul laturii vin din join-uri LEFT: simbolul contului opus pe fiecare rând, denumirea repartitorului doar unde dimensiunea e pusă (rândurile fără ea rămân goale, nu dispar)",
+        fisa.All(r => r.ContrapartidaSimbol == (r.ContrapartidaId == cF1.ID ? cF1.Simbol : cF2.Simbol))
+        && fisa.All(r => r.RepartitorDenumire == null));
+    Check("Risc 8 pe fișă: rândurile fără document (forma soldurilor de deschidere — 25e/34d) trec normal prin join-ul LEFT pe `Documente`; doar rândul legat poartă numărul",
+        fisa.Count(r => r.DocumentId == null) == 4
+        && fisa.Single(r => r.DocumentId != null) is { DocumentNumar: MarcajFsa } legat
+        && legat.DocumentId == doc.ID);
+
+    // -- R-D8: codul de tip, în memorie, peste pagină -------------------------
+    Check("R-D8: `DocumentTip` iese NULL din SQL (sub TPT nu e o coloană) — se completează abia în memorie, peste pagină",
+        fisa.All(r => r.DocumentTip == null));
+    ContabilProiectii.CompleteazaTipDocument(os, fisa);
+    Check("R-D8 (după completare): rândul legat poartă „BTR”, rândurile fără document rămân goale (nu pică pe nicio navigație presupusă nenulă)",
+        fisa.Single(r => r.DocumentId != null).DocumentTip == "BTR"
+        && fisa.Where(r => r.DocumentId == null).All(r => r.DocumentTip == null));
+
+    // -- VERIFICAREA 5: cusătura fișă (SQL brut) <-> balanță (LINQ) -----------
+    var balantaFsa = ContabilProiectii.Balanta(os, ds, de).ToList();
+    var randF1 = balantaFsa.Single(r => r.ContId == cF1.ID);
+    Check("VERIFICAREA 5 (cusătura feliei): ultimul `SoldCurent` din fișă == `SoldFinalDebit − SoldFinalCredit` din balanță, pe același cont și aceeași perioadă — calea SQL BRUT cu fereastră și calea LINQ cu `GROUP BY` dau aceeași cifră (125)",
+        fisa[^1].SoldCurent == randF1.SoldFinalDebit - randF1.SoldFinalCredit
+        && fisa[^1].SoldCurent == 125m);
+    Check("Cusătura, și pe soldul INIȚIAL: `SoldCurent` al primului rând minus efectul lui == `SoldInițial` din balanță (fereastra pornește exact de unde se oprește agregarea de dinainte de `dataStart`)",
+        fisa[0].SoldCurent - (fisa[0].Debit - fisa[0].Credit)
+            == randF1.SoldInitialDebit - randF1.SoldInitialCredit);
+
+    // Aceeași cusătură, pe conturile REALE ale bazei (nu doar pe scenariu): dacă
+    // undeva soft delete-ul, granițele de dată sau unpivot-ul ar diferi între cele
+    // două căi, un cont oarecare al bazei o arată.
+    var startLarg = new DateOnly(2000, 1, 1);
+    var endLarg = new DateOnly(2100, 1, 1);
+    var balantaTot = ContabilProiectii.Balanta(os, startLarg, endLarg).ToList();
+    var esantionFisa = balantaTot.OrderByDescending(r => r.RulajDebit + r.RulajCredit).Take(5).ToList();
+    var cusaturaOk = esantionFisa.Count > 0;
+    foreach (var rand in esantionFisa) {
+        var f = ContabilProiectii.FisaCont(os, rand.ContId, startLarg, endLarg).ToList();
+        var net = rand.SoldFinalDebit - rand.SoldFinalCredit;
+        cusaturaOk &= f.Count > 0 && f[^1].SoldCurent == net
+            && f.Sum(x => x.Debit) == rand.RulajDebit && f.Sum(x => x.Credit) == rand.RulajCredit;
+    }
+    Check($"VERIFICAREA 5, pe date REALE: pe cele mai traficate {esantionFisa.Count} conturi ale bazei, ultimul `SoldCurent` din fișă == soldul final din balanță, iar Σ Debit/Σ Credit ale fișei == rulajele balanței",
+        cusaturaOk);
+
+    // -- Filtrarea rămâne permisă; soldul curent rămâne AL REGISTRULUI --------
+    var fisaFiltrata = ContabilProiectii.FisaCont(os, cF1.ID, ds, de).Where(r => r.Sens == "C").ToList();
+    Check("Filtrarea se așază PESTE proiecție (exact ce pune `DataSourceLoader` deasupra) și NU recalculează nimic: cele trei rânduri creditoare păstrează soldurile registrului (135, 135, 125), nu un cumul al submulțimii (25, 65, 75)",
+        fisaFiltrata.Count == 3
+        && fisaFiltrata.Select(r => r.SoldCurent).SequenceEqual(new[] { 135m, 135m, 125m }));
+
+    // -- Paginarea: pagina 2 continuă soldul, iar LIMIT/OFFSET ajung în SQL ---
+    var interogarePaginata = ContabilProiectii.FisaCont(os, cF1.ID, ds, de).Skip(2).Take(2);
+    var sqlPaginat = interogarePaginata.ToQueryString();
+    var paginat = interogarePaginata.ToList();
+    var pusInSql = sqlPaginat.Contains("LIMIT") && sqlPaginat.Contains("OFFSET");
+    // SQL-ul compus se tipărește la EȘEC (ca diagnoza să fie în același loc cu
+    // verdictul) sau la cerere — `MODELCHECK_SQL=1` — ca proba să se poată reface
+    // fără să modifici codul: e singura interogare a repo-ului scrisă de mână.
+    if (!pusInSql || Environment.GetEnvironmentVariable("MODELCHECK_SQL") == "1")
+        Console.WriteLine(sqlPaginat);
+    Check("Paginarea se împinge în SQL (`LIMIT`/`OFFSET` peste `IQueryable`-ul din `SqlQuery<T>`), nu în memorie — riscul #1 al contractului",
+        pusInSql);
+    Check("Pagina 2 continuă soldul corect (175, 135) — fereastra se calculează peste TOATĂ perioada, nu peste pagină",
+        paginat.Count == 2
+        && paginat.Select(r => r.SoldCurent).SequenceEqual(new[] { 175m, 135m }));
+
+    // -- VERIFICAREA 6: jurnalul ---------------------------------------------
+    var jurnal = ContabilProiectii.RegistruJurnal(os, ds, de).ToList();
+    var sumaDirecta = os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => r.Data >= ds && r.Data <= de).Sum(r => r.Valoare);
+    Check($"VERIFICAREA 6: Σ Valoare din registrul-jurnal == suma directă din registru pe interval ({sumaDirecta}), pe TOATE rândurile bazei — și numărul de rânduri e identic (jurnalul nu unpivotează)",
+        jurnal.Sum(r => r.Valoare) == sumaDirecta
+        && jurnal.Count == os.GetObjectsQuery<RegistruContabil>().Count(r => r.Data >= ds && r.Data <= de));
+    var jurnalFsa = jurnal.Where(r => r.NumarNota == MarcajFsa).ToList();
+    Check("R-D9: jurnalul listează rândurile BRUTE, nu atomii — cele 4 note ale scenariului din perioadă apar o SINGURĂ dată fiecare (inclusiv cea cu același cont pe ambele laturi, care în fișă produce două rânduri), cronologic",
+        jurnalFsa.Count == 4
+        && jurnalFsa.Select(r => r.Data).SequenceEqual(jurnalFsa.Select(r => r.Data).OrderBy(d => d))
+        && jurnalFsa.Single(r => r.ContDebitId == cF1.ID && r.ContCreditId == cF1.ID).Valoare == 40m
+        && jurnalFsa.All(r => r.ContDebitSimbol != null && r.ContCreditSimbol != null));
+    ContabilProiectii.CompleteazaTipDocument(os, jurnalFsa);
+    Check("R-D8 pe jurnal: aceeași completare partajată — rândul legat poartă „BTR” și numărul documentului, rândurile de deschidere rămân goale",
+        jurnalFsa.Single(r => r.DocumentId != null) is { DocumentTip: "BTR", DocumentNumar: MarcajFsa }
+        && jurnalFsa.Where(r => r.DocumentId == null).All(r => r.DocumentTip == null && r.DocumentNumar == null));
+    Check("Jurnalul opțional pe perioadă: fără `dataStart`/`dataEnd` întoarce TOT registrul (inclusiv rândul de după `dataEnd`), fiindcă aici datele sunt filtre simple, nu granițe de agregare",
+        ContabilProiectii.RegistruJurnal(os).Count(r => r.NumarNota == MarcajFsa) == 6);
+
+    // -- Ștergerea amânată: scrisă DE MÂNĂ în SQL brut ------------------------
+    // Calea LINQ primește `WHERE "GCRecord" = 0` din filtrul global XAF; SQL-ul
+    // brut NU primește nimic automat. Dacă predicatul ar lipsi din fișă, rândul
+    // șters de mai jos ar rămâne vizibil ACOLO și ar dispărea din balanță — adică
+    // exact divergența tăcută pe care felia există s-o prevină.
+    os.Delete(os.GetObjectsQuery<RegistruContabil>()
+        .Single(r => r.NumarNota == MarcajFsa && r.Storno));
+    os.CommitChanges();
+    var fisaDupaStergere = ContabilProiectii.FisaCont(os, cF1.ID, ds, de).ToList();
+    var balantaDupaStergere = ContabilProiectii.Balanta(os, ds, de).ToList().Single(r => r.ContId == cF1.ID);
+    Check("Ștergerea AMÂNATĂ (`GCRecord`) se respectă și pe calea SQL brut: rândul șters iese din fișă (5 → 4 rânduri), soldul curent devine 135, iar balanța rămâne cusută pe aceeași cifră — predicatul e scris de mână, nu moștenit",
+        fisaDupaStergere.Count == 4
+        && fisaDupaStergere[^1].SoldCurent == 135m
+        && balantaDupaStergere.SoldFinalDebit - balantaDupaStergere.SoldFinalCredit == 135m
+        && ContabilProiectii.RegistruJurnal(os, ds, de).Count(r => r.NumarNota == MarcajFsa) == 3);
+
+    // -- Perioada de o singură zi + filtrul de dimensiune pe fișă -------------
+    Check("Perioada de o SINGURĂ zi pe fișă: `dataStart == dataEnd` pe ziua unui rând — se afișează doar rândurile acelei zile, dar soldul lor curent poartă tot ce a fost înainte (175, apoi 135)",
+        ContabilProiectii.FisaCont(os, cF1.ID, new DateOnly(2026, 4, 10), new DateOnly(2026, 4, 10)).ToList()
+            is { Count: 2 } oZi
+        && oZi[0].SoldCurent == 175m && oZi[1].SoldCurent == 135m);
+    Check("Filtrul de dimensiune e parametru de PROIECȚIE și se aplică înaintea ferestrei: filtrată pe repartitorul pus DOAR pe rândul de dinainte de perioadă, fișa lui aprilie iese goală, iar cea care începe în martie arată acel rând cu soldul 100 — filtrarea de grilă, în schimb, ar fi lăsat soldurile registrului neatinse",
+        ContabilProiectii.FisaCont(os, cF1.ID, ds, de, repartitorId: repF.ID).ToList().Count == 0
+        && ContabilProiectii.FisaCont(os, cF1.ID, new DateOnly(2026, 3, 1), de, repartitorId: repF.ID).ToList()
+            is { Count: 1 } peRep
+        && peRep[0].SoldCurent == 100m);
+
+    CurataFsa();
+    Check("Curățenie finală felia fișă + jurnal (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Cont>().Any(c => c.Simbol.StartsWith(MarcajFsa))
+        && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajFsa))
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.NumarNota == MarcajFsa)
+        && !os.GetObjectsQuery<NotaTransfer>().Any(d => d.Numar == MarcajFsa));
 }

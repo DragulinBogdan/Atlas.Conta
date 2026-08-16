@@ -134,6 +134,23 @@ public abstract class ContaApiController : ControllerBase {
     static System.Collections.IEnumerable Materializeaza(System.Collections.IEnumerable sursa) =>
         sursa == null ? Array.Empty<object>() : sursa.Cast<object>().ToList();
 
+    // Rândurile paginii deja materializate de `Incarca` — pentru completările care
+    // NU pot veni din SQL și se fac în memorie, peste pagină (azi: codul de tip al
+    // documentului, R-D8/60b). Instanțele sunt cele care se serializează, deci
+    // mutarea lor aici se vede în răspuns.
+    //
+    // Limitare asumată, nu ascunsă: în modul GRUPAT, `LoadResult.data` conține
+    // obiecte `Group`, nu rânduri, deci `OfType<T>` întoarce gol și completarea nu
+    // se aplică. Fișa forțează `Group = null` (R-D6), iar jurnalul grupat rămâne
+    // fără codul de tip (link-ul se pierde, cifrele nu) — coborârea recursivă în
+    // grupuri se adaugă dacă apare cerința.
+    protected static IEnumerable<T> Randuri<T>(object incarcare) {
+        var sursa = incarcare is LoadResult rezultat
+            ? rezultat.data
+            : incarcare as System.Collections.IEnumerable;
+        return sursa == null ? Enumerable.Empty<T>() : sursa.Cast<object>().OfType<T>();
+    }
+
     // Învelișul unic al acțiunilor: orice `OperareException` (pre-check de felie,
     // gardian de Committing, gardian de motor) devine 422 cu erorile ca listă.
     protected IActionResult Domeniu(Func<IActionResult> actiune) {
