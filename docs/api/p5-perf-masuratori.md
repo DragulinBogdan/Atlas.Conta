@@ -99,3 +99,150 @@ endpoint-urile cu parametrii de grilă de mai sus. Pentru SQL:
 `ALTER SYSTEM SET log_min_duration_statement=50` + `pg_reload_conf()` (și
 RESET la final), apoi `EXPLAIN (ANALYZE, BUFFERS)` pe statement-ul din
 `docker logs`.
+
+## Addendum 2026-08-16 — felia 9 (raportarea pe registre): balanță, fișă de cont, registru-jurnal
+
+**Măsurare, nu implementare** — nicio schimbare de cod de producție. Metodă
+identică cu cea de mai sus, aceeași bază (`Atlas.Conta.BackOffice.Privat`,
+305.059 rânduri `RegistruContabil` — stabil față de măsurătoarea 59), aceiași
+parametri de grilă reali (verificați în `Client/src/felii/raportare/*.tsx`),
+aceeași disciplină (6 rulări, prima aruncată, mediana celor 5 calde).
+
+Cazuri worst-case alese pe date reale, nu la întâmplare:
+- **Contul cel mai traficat**: `4111` „Clienți" — 144.248 atomi/an (108.912 pe
+  debit + 35.336 pe credit), de departe primul (locul 2, `371` „Mărfuri", are
+  102.606).
+- **Contrapartida cu cele mai multe restanțe**: aceeași folosită la măsurătoarea
+  59 (`019fa5d1-bb95-…`, 4.861 FCT), regăsită independent ca predator cu cele
+  mai multe facturi de intrare — bun reper de comparație mașină-cu-mașină.
+- **Luna cea mai încărcată**: martie 2025 (30.798 rânduri) — dar balanța/fișa
+  nu variază mult pe lună (costul e dominat de volumul TOTAL al contului/anului,
+  nu de lună), deci tabelul de mai jos raportează lună ianuarie (reprezentativă)
+  + anul întreg (worst-case real).
+
+### Rezultate (mediană caldă)
+
+| Endpoint | Parametri | ms | Observații |
+|---|---|---|---|
+| `GET /api/proiectii/balanta` (sintetic) | lună (ian 2025) | **59** | |
+| — | an (2025) | **88** | |
+| `GET /api/proiectii/balanta` (analitic, cheie dublă) | lună | **84** | |
+| — | an | **269** | cel mai scump caz nemăsurat până acum; sub prag |
+| `GET /api/proiectii/balanta` + `group=` (sintetic, sumar de grup) | lună | 57 | grupare pe `ContSimbol` = trivială (1:1 cu cheia deja agregată) |
+| — | an | 79 | |
+| `GET /api/proiectii/balanta` + `group=` (analitic, sumar de grup) | lună | 79 | agregă real: mai multe rânduri `Cont×Repartitor` colapsate pe cont |
+| — | an | **202** | worst-case pentru calea de grupare — nimeni n-o măsurase |
+| `GET /api/proiectii/fisa-cont` (contul `4111`, 144.248 atomi) | prima pagină, an, cu `requireTotalCount` | **244** | |
+| — | pagină adâncă (`skip=100000`) | **286** | |
+| — | pagină foarte adâncă (`skip=140000`) | 248 | **cost independent de `skip`** — vezi diagnostic |
+| — | prima pagină, fără `requireTotalCount` | 214 | count-ul costă ~30ms |
+| `GET /api/proiectii/registru-jurnal` | an, cu `requireTotalCount` | 77 | |
+| — | an, fără `requireTotalCount` | 63 | |
+| `GET /api/proiectii/documente-cu-rest` (reper, decizia 59) | filtrat contrapartidă (4.861 FCT) | **423** | ~410ms în 59 — mașina de azi e comparabilă, cifrele rămân comparabile |
+
+Singurele peste ~200ms: balanța analitică pe an (269ms, sub prag), balanța
+grupată analitic pe an (202ms, sub prag), fișa de cont (214–286ms, sub prag) și
+`DocumenteCuRest` (423ms, peste prag — reper, deja diagnosticat în 59).
+
+### Diagnostic: `DocumenteCuRest` — cauza e NESCHIMBATĂ față de decizia 59
+
+`EXPLAIN (ANALYZE, BUFFERS)` pe interogarea reală (capturată din
+`docker logs`, parametrizată cu contrapartida de mai sus): pagina costă
+**198,8ms** din care dominanta e tot `GroupAggregate` peste **toate** liniile
+`DocumentDetalii` (acum ~205k documente / rândurile lor) pentru `Total` —
+niciun predicat selectiv nu intră înaintea agregatului, exact ca la 59; plus
+count-ul separat (~250ms, măsurat direct din log). Niciun index n-ar reduce
+costul ăsta — e structural (agregat whole-table), nu lipsă de index. Verdictul
+din 59 rămâne valabil neschimbat.
+
+### Diagnostic: fișa de cont — index-urile EXISTĂ și sunt folosite; costul e `WindowAgg`, nu scanare
+
+`EXPLAIN (ANALYZE, BUFFERS)` pe interogarea SQL brută (contul `4111`, an
+întreg): **`RegistruContabil` e accesat prin `Bitmap Index Scan` pe
+`IX_RegistruContabil_ContDebitId`/`IX_RegistruContabil_ContCreditId` — NU
+`Seq Scan`.** Indexurile simple pe cele două FK-uri deja există și motorul de
+interogări le folosește corect. Costul dominant e `WindowAgg` (~58ms din
+226ms execuție totală) peste cele 144.241 rânduri unpivotate ale contului —
+**structural, prin construcție (R-D6): soldul curent cere suma cumulată peste
+tot istoricul contului `<= dataEnd`, indiferent de câte rânduri se afișează.**
+Confirmarea empirică: costul e practic CONSTANT indiferent de `skip`
+(244ms la `skip=0`, 286ms la `skip=100000`, 248ms la `skip=140000`) — fereastra
+se calculează integral înainte de orice `LIMIT/OFFSET`.
+
+**Despre indexul compus `(ContDebitId, Data)`/`(ContCreditId, Data)` întrebat
+explicit**: pe testul ăsta NU ar ajuta — filtrul `Data <= dataEnd` nu e
+selectiv (aproape toate cele 144k rânduri ale contului `4111` cad deja în anul
+cerut; `Bitmap Index Scan` pe `ContDebitId` singur întoarce aproape exact
+mulțimea finală). Ar putea ajuta pe un interval mult mai îngust față de
+istoricul total al contului (ex. „ultima lună" pe un cont vechi și traficat,
+unde filtrul de dată taie mult din rândurile candidate) — de măsurat separat,
+la cerință reală, nu preventiv (aceeași disciplină ca 59).
+
+### CONSTATARE CRITICĂ, în afara mandatului de perf — ordinea fișei de cont NU e cea din cod
+
+În timpul diagnosticului de mai sus, SQL-ul real capturat din `docker logs`
+pentru pagina de fișă de cont arată:
+
+```sql
+... ) AS a
+ORDER BY a."Id"
+LIMIT $6
+```
+
+**Nu** `ORDER BY a."Data", a."Id", a."Sens" DESC`, cum specifică LINQ-ul din
+`ContabilProiectii.FisaCont` (`.OrderBy(r => r.Data).ThenBy(r => r.Id)
+.ThenByDescending(r => r.Sens)`) și cum cere explicit contractul R-D6
+(„Ordinea e FIXĂ cronologic — sortarea din grilă se dezactivează... altfel
+soldul curent e o coloană de cifre fără sens"). EF Core pare să fi eliminat
+`Data` și `Sens` din `ORDER BY` — plauzibil o optimizare de „redundant
+order-by" care tratează `Id`-ul (cheia primară a tipului `FisaContSql`,
+înregistrat de `AdHocMapper`) ca fiind suficient pentru determinism, ignorând
+că `Data` e criteriul PRINCIPAL de sortare, nu doar un tie-breaker.
+
+**Verificat empiric, nu doar teoretic**: pe contul `4111`/2025, o interogare
+SQL directă care compară `ORDER BY Id` cu `ORDER BY Data, Id` găsește **26
+rânduri** (din 144.248) unde poziția diferă. Pe pagina curentă (an întreg,
+ID-uri de tip UUIDv7 — deci corelate temporal cu inserarea, nu cu `Data`
+document) proba vizuală pe primele 50 de rânduri a ieșit întâmplător
+cronologică (ordinea de inserare a importului 1C a fost, pentru marea
+majoritate a rândurilor, chiar cronologică) — asta ASCUNDE defectul, nu-l
+infirmă. `SoldCurent` în sine e calculat corect (fereastra internă folosește
+`ORDER BY Data, Id, Sens DESC`, neatinsă), dar **rândurile ies afișate/paginate
+în ordinea greșită** oriunde inserarea (deci ID-ul) diverge de `Data`
+documentului — exact cazul pe care motorul îl permite explicit: operare
+retroactivă (25d), corecții, reimportări.
+
+Nu e „cifră absurdă" pe cazul măsurat (diferența nu s-a văzut pe eșantionul
+vizual), dar e o încălcare silențioasă a unui invariant DECLARAT load-bearing
+(R-D6) — nu am atins codul (mandatul e strict de măsurare), dar o semnalez
+explicit: **de investigat și fixat separat, înainte de a declara felia 9
+închisă**, cel mai probabil prin forțarea `ORDER BY` direct în textul SQL brut
+(în loc de `.OrderBy()` LINQ compus peste `SqlQuery<T>`, care e vulnerabil la
+această optimizare a EF Core).
+
+### Verdict
+
+- **Balanța (sintetică/analitică, cu/fără grupare)** — verde, totul sub 300ms,
+  inclusiv worst-case (analitic, an, grupat sau nu: 202–269ms). Calea de
+  grupare server-side, nemăsurată până acum, e sănătoasă.
+- **Registru-jurnal** — verde, 63–77ms pe an întreg.
+- **Fișa de cont** — ACCEPTABILĂ ca perf (214–286ms, sub prag, cost dominat
+  structural de `WindowAgg`, indexurile existente sunt corect folosite), DAR
+  cu defectul de ordine de mai sus, care e un blocant de CORECTITUDINE, nu de
+  performanță — separat de verdictul de perf.
+- **`DocumenteCuRest`** — neschimbat față de 59: acceptabil azi, singura
+  proiecție cu creștere liniară reală, optimizare cunoscută și amânată.
+- **Nimic nu crește liniar în afară de `DocumenteCuRest`** (deja documentat în
+  59) — balanța/fișa/jurnalul cresc cu volumul CONTULUI/PERIOADEI cerute, nu cu
+  totalul bazei; la 5 ani de volum ca 2025, fișa unui cont foarte traficat ar
+  ajunge undeva la ~1–1,2s (extrapolare liniară pe `WindowAgg`, singura
+  componentă care scalează cu numărul de rânduri ale contului) — de
+  remăsurat, nu de optimizat preventiv.
+
+### Reproducere (addendum)
+
+Contul `4111` = `019fa5d0-cbcd-7461-9982-0809a2075b64`; contrapartida-reper =
+`019fa5d1-bb95-7e9c-b168-3169642f4267`. Restul, ca la metoda de mai sus.
+`log_min_duration_statement` resetat la final (`ALTER SYSTEM RESET` +
+`pg_reload_conf()` — verificat `-1`); WebApi oprit, porturile 5000/5001
+verificate libere.
