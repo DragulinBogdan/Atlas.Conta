@@ -22,6 +22,9 @@ import { IncDetaliu } from './felii/inc/IncDetaliu';
 import { DecLista } from './felii/dec/DecLista';
 import { DecDetaliu } from './felii/dec/DecDetaliu';
 import { SoldStoc } from './felii/stoc/SoldStoc';
+import { Balanta } from './felii/raportare/Balanta';
+import { FisaCont } from './felii/raportare/FisaCont';
+import { RegistruJurnal } from './felii/raportare/RegistruJurnal';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
@@ -64,6 +67,14 @@ export function App() {
         <Route path="/ldi/nou" element={<LdiDetaliu />} />
         <Route path="/ldi/:id" element={<LdiDetaliu />} />
         <Route path="/stoc" element={<SoldStoc />} />
+        {/* Raportarea pe registre (felia 9). Parametrii (perioadă, mod, cont)
+            trăiesc în query string, nu în cale: sunt STARE, nu identitate — un
+            raport e util fiindcă e partajabil ca link (43c). Fișa n-are intrare
+            proprie de meniu: se ajunge la ea din balanță, cu perioada păstrată,
+            dar are selector de cont ca să se poată schimba contul pe loc. */}
+        <Route path="/balanta" element={<Balanta />} />
+        <Route path="/fisa-cont" element={<FisaCont />} />
+        <Route path="/jurnal" element={<RegistruJurnal />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
     </Routes>
@@ -90,6 +101,8 @@ function Cadru() {
         <NavLink to="/bcs">Bonuri de consum</NavLink>
         <NavLink to="/ldi">Diferențe inventar</NavLink>
         <NavLink to="/stoc">Sold stoc</NavLink>
+        <NavLink to="/balanta">Balanță</NavLink>
+        <NavLink to="/jurnal">Jurnal</NavLink>
         <button
           type="button"
           className="buton buton--mic"
