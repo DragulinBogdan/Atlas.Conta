@@ -2661,6 +2661,12 @@ if (profil == ProfilContabil.Privat) {
             && !os.GetObjectsQuery<DescarcareGestiune>().Any(d => d.ID == idDsc || d.ID == idDsc2));
     }
 
+    // Felia 9 rulează pe AMBELE profiluri: proiecția e agnostică la plan (nu
+    // cunoaște niciun simbol), dar tocmai de asta merită probată pe amândouă —
+    // datele preexistente ale bazei diferă, iar invarianții globali (partidă
+    // dublă, continuitate) se verifică peste ELE, nu doar peste scenariul propriu.
+    VerificaBalanta();
+
     Rezumat();
     return;
 }
@@ -7580,4 +7586,198 @@ using (var os = provider.CreateObjectSpace()) {
         && os.GetObjectByKey<Incasare>(idD2) == null);
 }
 
+VerificaBalanta();
+
 Rezumat();
+
+// ============ Felia 9 (raportare): balanța de verificare (R-D1…R-D4) ============
+// Proiecția e un al DOILEA adevăr dacă nu e legată de primul (precedentul D9:
+// `SoldStoc` == `StocService.Sold`). Aici primul adevăr e chiar registrul, citit
+// naiv în memorie — plus invarianții care nu depind de scenariu (partidă dublă,
+// continuitate), verificați peste TOATE rândurile bazei, nu doar peste ale
+// noastre.
+//
+// Local function, apelată din AMBELE căi de profil (blocul privat iese cu
+// `return` înainte de suita bugetară) — o singură definiție a probelor.
+//
+// Scenariul e ales ca fiecare risc pin-uit în contract să aibă un rând al lui:
+// granițele de dată (exact `dataStart`, exact `dataEnd`, o zi după), storno
+// căzând în perioadă, cont cu sold inițial și ZERO mișcare, cont cu mișcare care
+// se netează la zero, același cont cu solduri de sensuri OPUSE pe doi repartitori
+// (capcana R-D4), dimensiune pusă doar pe o LATURĂ. Toate rândurile au
+// `DocumentId == null` — adică exact forma rândurilor de deschidere scrise de
+// migrare (25e/34d), care nu trebuie să pice pe nicio navigație presupusă nenulă.
+void VerificaBalanta() {
+    const string MarcajBal = "E2E-BAL";
+    using var os = provider.CreateObjectSpace();
+
+    void CurataBal() {
+        var conturiBal = os.GetObjectsQuery<Cont>()
+            .Where(c => c.Simbol.StartsWith(MarcajBal)).Select(c => c.ID).ToList();
+        os.Delete(os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => conturiBal.Contains(r.ContDebitId) || conturiBal.Contains(r.ContCreditId)).ToList());
+        os.Delete(os.GetObjectsQuery<Cont>().Where(c => c.Simbol.StartsWith(MarcajBal)).ToList());
+        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajBal)).ToList());
+        os.Delete(os.GetObjectsQuery<Proiect>().Where(p => p.Cod.StartsWith(MarcajBal)).ToList());
+        os.CommitChanges();
+    }
+    CurataBal();
+
+    Cont ContBal(string sufix) {
+        var c = os.CreateObject<Cont>();
+        c.Simbol = MarcajBal + sufix;
+        c.Denumire = "Cont probă balanță " + sufix;
+        return c;
+    }
+    UnitateInterna RepBal(string sufix) {
+        var r = os.CreateObject<UnitateInterna>();
+        r.Cod = MarcajBal + sufix;
+        r.Denumire = "Repartitor probă balanță " + sufix;
+        return r;
+    }
+
+    var c1 = ContBal("-1");   // solduri de ambele sensuri, pe doi repartitori
+    var c2 = ContBal("-2");   // contrapartida
+    var c3 = ContBal("-3");   // mișcare care se netează la ZERO
+    var c4 = ContBal("-4");   // sold inițial și ZERO mișcare în perioadă
+    var repA = RepBal("-A");
+    var repB = RepBal("-B");
+    var proiect = os.CreateObject<Proiect>();
+    proiect.Cod = MarcajBal + "-P";
+    proiect.Denumire = "Proiect probă balanță";
+
+    void Nota(DateOnly data, Cont debit, Cont credit, decimal valoare,
+        Repartitor repDebit, Repartitor repCredit, bool storno = false, Proiect proiectDebit = null) {
+        var n = os.CreateObject<RegistruContabil>();
+        n.Data = data;
+        n.NumarNota = MarcajBal;
+        n.ContDebit = debit;
+        n.ContCredit = credit;
+        n.Valoare = valoare;
+        n.Storno = storno;
+        n.DebitRepartitor = repDebit;
+        n.CreditRepartitor = repCredit;
+        n.DebitProiect = proiectDebit;
+    }
+
+    var ds = new DateOnly(2026, 4, 1);
+    var de = new DateOnly(2026, 4, 30);
+
+    Nota(new DateOnly(2026, 3, 15), c1, c2, 100m, repA, repA);                      // inițial
+    Nota(new DateOnly(2026, 3, 15), c2, c1, 300m, repB, repB);                      // inițial, sens opus pe c1
+    Nota(new DateOnly(2026, 3, 20), c4, c2, 70m, repA, repA);                       // c4: doar sold inițial
+    Nota(ds, c1, c3, 50m, repA, repA, proiectDebit: proiect);                       // EXACT dataStart ⇒ rulaj
+    Nota(de, c3, c1, 50m, repA, repA);                                              // EXACT dataEnd ⇒ inclus
+    Nota(new DateOnly(2026, 4, 10), c2, c1, 40m, repA, repB, storno: true);         // storno ⇒ intră (R-D7)
+    Nota(new DateOnly(2026, 5, 1), c1, c2, 999m, repA, repA);                       // după dataEnd ⇒ exclus
+    os.CommitChanges();
+
+    var sintetic = ContabilProiectii.Balanta(os, ds, de).ToList();
+    BalantaRand Rand(Cont c) => sintetic.SingleOrDefault(r => r.ContId == c.ID);
+
+    // ── 1. Partida dublă ────────────────────────────────────────────────────
+    Check("R-D1: unpivot-ul păstrează partida dublă — Σ RulajDebit == Σ RulajCredit (și Σ Initial*) peste TOATĂ balanța bazei, nu doar peste scenariu",
+        sintetic.Sum(r => r.RulajDebit) == sintetic.Sum(r => r.RulajCredit)
+        && sintetic.Sum(r => r.InitialDebit) == sintetic.Sum(r => r.InitialCredit));
+
+    // ── Scenariul pin-uit: granițe, storno, cazurile-limită ─────────────────
+    Check("R-D3: granițele de dată — rândul de EXACT `dataStart` e RULAJ (nu sold inițial), cel de EXACT `dataEnd` e inclus, cel de a doua zi după `dataEnd` e exclus; rândul de STORNO intră ca orice rând (R-D7)",
+        Rand(c1) is { InitialDebit: 100m, InitialCredit: 300m, RulajDebit: 50m, RulajCredit: 90m });
+    Check("R-D4: netarea la nivelul cheii — c1 iese `SoldInițial C200` și `SoldFinal C240` (net = 100−300+50−90), cu sumele brute păstrate alături",
+        Rand(c1) is { SoldInitialDebit: 0m, SoldInitialCredit: 200m, SoldFinalDebit: 0m, SoldFinalCredit: 240m });
+    Check("Risc 4a: contul cu sold inițial și ZERO mișcare în perioadă APARE în balanță (asta pică forma naivă cu două agregări + join)",
+        Rand(c4) is { InitialDebit: 70m, InitialCredit: 0m, SoldInitialDebit: 70m, RulajDebit: 0m, RulajCredit: 0m, SoldFinalDebit: 70m, SoldFinalCredit: 0m });
+    Check("Risc 4b: contul a cărui mișcare se netează la ZERO apare cu rulaje nenule și sold 0 pe ambele coloane (nu dispare)",
+        Rand(c3) is { InitialDebit: 0m, InitialCredit: 0m, RulajDebit: 50m, RulajCredit: 50m, SoldFinalDebit: 0m, SoldFinalCredit: 0m });
+    Check("Risc 8: rândurile cu `DocumentId == null` (forma soldurilor de deschidere scrise de migrare) intră normal — proiecția nu atinge navigația `Document`",
+        os.GetObjectsQuery<RegistruContabil>().Count(r => r.NumarNota == MarcajBal && r.DocumentId == null) == 7);
+
+    // ── 2. Balanța == recomputare naivă în memorie, pe un eșantion ───────────
+    // Primul adevăr = registrul citit rând cu rând și însumat în C#. Eșantionul:
+    // conturile scenariului + primele câteva conturi REALE ale bazei (pe profilul
+    // privat/bugetar sunt cele lăsate de celelalte blocuri e2e și de seed).
+    var esantion = new List<Guid> { c1.ID, c2.ID, c3.ID, c4.ID };
+    esantion.AddRange(os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => !esantion.Contains(r.ContDebitId))
+        .Select(r => r.ContDebitId).Distinct().Take(5).ToList());
+    var naivOk = true;
+    foreach (var contId in esantion.Distinct()) {
+        var randuri = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => (r.ContDebitId == contId || r.ContCreditId == contId) && r.Data <= de)
+            .Select(r => new { r.Data, r.ContDebitId, r.ContCreditId, r.Valoare }).ToList();
+        var iniD = randuri.Where(r => r.ContDebitId == contId && r.Data < ds).Sum(r => r.Valoare);
+        var iniC = randuri.Where(r => r.ContCreditId == contId && r.Data < ds).Sum(r => r.Valoare);
+        var rulD = randuri.Where(r => r.ContDebitId == contId && r.Data >= ds).Sum(r => r.Valoare);
+        var rulC = randuri.Where(r => r.ContCreditId == contId && r.Data >= ds).Sum(r => r.Valoare);
+        var netI = iniD - iniC;
+        var netF = netI + rulD - rulC;
+        var rand = sintetic.SingleOrDefault(r => r.ContId == contId);
+        if (randuri.Count == 0) {
+            naivOk &= rand == null;
+            continue;
+        }
+        naivOk &= rand != null
+            && rand.InitialDebit == iniD && rand.InitialCredit == iniC
+            && rand.RulajDebit == rulD && rand.RulajCredit == rulC
+            && rand.SoldInitialDebit == (netI > 0 ? netI : 0m)
+            && rand.SoldInitialCredit == (netI < 0 ? -netI : 0m)
+            && rand.SoldFinalDebit == (netF > 0 ? netF : 0m)
+            && rand.SoldFinalCredit == (netF < 0 ? -netF : 0m);
+    }
+    Check($"Balanța == recomputarea NAIVĂ din registru, în memorie, pe un eșantion de {esantion.Distinct().Count()} conturi (toate cele 8 cifre per cont)",
+        naivOk);
+
+    // ── 3. Analitic ⇒ sintetic pe RULAJE (soldurile, deliberat, nu) ──────────
+    var analitic = ContabilProiectii.Balanta(os, ds, de, analitic: true).ToList();
+    var c1A = analitic.SingleOrDefault(r => r.ContId == c1.ID && r.RepartitorId == repA.ID);
+    var c1B = analitic.SingleOrDefault(r => r.ContId == c1.ID && r.RepartitorId == repB.ID);
+    Check("R-D4 (capcana): pe același cont, analiticul dă `D100` pe repartitorul A și `C340` pe B, în timp ce sinteticul netează la `C240` — ambele corecte, la niveluri diferite; de asta modul se CERE explicit, nu se deduce",
+        c1A is { SoldFinalDebit: 100m, SoldFinalCredit: 0m }
+        && c1B is { SoldFinalDebit: 0m, SoldFinalCredit: 340m }
+        && Rand(c1) is { SoldFinalCredit: 240m });
+    Check("Modul analitic poartă denumirea repartitorului din join-ul pe rezultatul agregat; cel sintetic lasă cheia goală pe TOATE rândurile",
+        c1A.RepartitorDenumire == repA.Denumire && c1B.RepartitorDenumire == repB.Denumire
+        && sintetic.All(r => r.RepartitorId == null && r.RepartitorDenumire == null));
+    var rulajeAnalitic = analitic.GroupBy(r => r.ContId).ToDictionary(g => g.Key,
+        g => (D: g.Sum(x => x.RulajDebit), C: g.Sum(x => x.RulajCredit),
+              ID: g.Sum(x => x.InitialDebit), IC: g.Sum(x => x.InitialCredit)));
+    Check("Rulajele (și sumele brute inițiale) SUNT aditive: însumate per cont, balanța analitică == cea sintetică, cont cu cont, pe toată baza",
+        rulajeAnalitic.Count == sintetic.Count
+        && sintetic.All(s => rulajeAnalitic.TryGetValue(s.ContId, out var a)
+            && a.D == s.RulajDebit && a.C == s.RulajCredit
+            && a.ID == s.InitialDebit && a.IC == s.InitialCredit));
+
+    // ── 4. Continuitate: SoldInițial(N+1) == SoldFinal(N) ───────────────────
+    var martie = ContabilProiectii.Balanta(os, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31)).ToList();
+    var netFinalMartie = martie.ToDictionary(r => r.ContId, r => r.SoldFinalDebit - r.SoldFinalCredit);
+    Check("Continuitate: soldul inițial al lunii aprilie == soldul final al lunii martie, pe FIECARE cont al bazei (iar un cont care apare în martie nu poate lipsi din aprilie)",
+        sintetic.All(r => (netFinalMartie.TryGetValue(r.ContId, out var net) ? net : 0m)
+                == r.SoldInitialDebit - r.SoldInitialCredit)
+        && martie.All(r => sintetic.Any(a => a.ContId == r.ContId)));
+
+    // ── Filtrele de dimensiune: pre-agregare, pe LATURA corectă (risc 7) ─────
+    var peProiect = ContabilProiectii.Balanta(os, ds, de, proiectId: proiect.ID).ToList();
+    Check("Risc 7: filtrul de dimensiune se aplică pe atomi (înainte de `GROUP BY`) și pe LATURA LUI — proiectul e pus doar pe DEBITUL unui rând, deci apare doar contul debitor cu rulajul lui; contul creditor al ACELUIAȘI rând nu intră deloc",
+        peProiect.Count == 1 && peProiect[0].ContId == c1.ID
+        && peProiect[0] is { RulajDebit: 50m, RulajCredit: 0m, InitialDebit: 0m, InitialCredit: 0m });
+    var peRepB = ContabilProiectii.Balanta(os, ds, de, repartitorId: repB.ID).ToList();
+    Check("Filtrul pe Repartitor (dimensiune, nu cheie de grupare) taie tot ce nu-i aparține: c1 rămâne cu latura lui creditoare (300 inițial + 40 storno), c2 doar cu debitul inițial de 300",
+        peRepB.Count == 2
+        && peRepB.Single(r => r.ContId == c1.ID) is { InitialDebit: 0m, InitialCredit: 300m, RulajCredit: 40m, RulajDebit: 0m }
+        && peRepB.Single(r => r.ContId == c2.ID) is { InitialDebit: 300m, InitialCredit: 0m, RulajDebit: 0m, RulajCredit: 0m });
+
+    // ── Sonda de traducere: filtrare + sortare + paginare peste proiecție ────
+    var sonda = ContabilProiectii.Balanta(os, ds, de).Where(r => r.ContSimbol.StartsWith(MarcajBal))
+        .OrderByDescending(r => r.RulajCredit).Take(1).ToList();
+    Check("Filtrarea/sortarea/paginarea se traduc în SQL PESTE proiecție (sondă: where + order + take → un singur rând, cel cu rulajul creditor maxim) — adică exact ce pune `DataSourceLoader` deasupra",
+        sonda.Count == 1 && sonda[0].ContId == c1.ID && sonda[0].RulajCredit == 90m);
+    Check("Perioada de o SINGURĂ zi: `dataStart == dataEnd` pe ziua unui rând — rândul e rulaj, iar tot ce e înainte devine sold inițial",
+        ContabilProiectii.Balanta(os, de, de).SingleOrDefault(r => r.ContId == c3.ID)
+            is { RulajDebit: 50m, RulajCredit: 0m, InitialCredit: 50m, SoldFinalDebit: 0m, SoldFinalCredit: 0m });
+
+    CurataBal();
+    Check("Curățenie finală felia balanță (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Cont>().Any(c => c.Simbol.StartsWith(MarcajBal))
+        && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajBal))
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.NumarNota == MarcajBal));
+}
