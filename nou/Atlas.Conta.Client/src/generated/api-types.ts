@@ -296,6 +296,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proiectii/balanta-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/proiectii/balanta-plan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/bcs": {
         parameters: {
             query?: never;
@@ -3260,6 +3276,34 @@ export interface components {
         AuthenticationStandardLogonParameters: {
             UserName?: string | null;
             Password?: string | null;
+        };
+        BalantaPlanRand: {
+            /** Format: uuid */
+            ContId?: string;
+            /** Format: uuid */
+            ParinteId?: string | null;
+            ContSimbol?: string | null;
+            ContDenumire?: string | null;
+            /** Format: int32 */
+            Nivel?: number;
+            AreCopii?: boolean;
+            AreMiscareProprie?: boolean;
+            /** Format: double */
+            InitialDebit?: number;
+            /** Format: double */
+            InitialCredit?: number;
+            /** Format: double */
+            SoldInitialDebit?: number;
+            /** Format: double */
+            SoldInitialCredit?: number;
+            /** Format: double */
+            RulajDebit?: number;
+            /** Format: double */
+            RulajCredit?: number;
+            /** Format: double */
+            SoldFinalDebit?: number;
+            /** Format: double */
+            SoldFinalCredit?: number;
         };
         BalantaRand: {
             /** Format: uuid */
@@ -6298,6 +6342,125 @@ export interface operations {
                     "text/plain": components["schemas"]["BalantaRandPaginaDto"];
                     "application/octet-stream": components["schemas"]["BalantaRandPaginaDto"];
                     "text/json": components["schemas"]["BalantaRandPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "GET_api/proiectii/balanta-plan": {
+        parameters: {
+            query?: {
+                dataStart?: string;
+                dataEnd?: string;
+                nivelMaxim?: number;
+                repartitorId?: string;
+                materialId?: string;
+                codFunctionalId?: string;
+                codEconomicId?: string;
+                sursaFinantareId?: string;
+                unitateId?: string;
+                proiectId?: string;
+                centruCostId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/xml": components["schemas"]["BalantaPlanRand"][];
+                    "text/plain": components["schemas"]["BalantaPlanRand"][];
+                    "application/octet-stream": components["schemas"]["BalantaPlanRand"][];
+                    "text/json": components["schemas"]["BalantaPlanRand"][];
                 };
             };
             /** @description Bad Request */

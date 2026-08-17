@@ -107,6 +107,13 @@ Consecință impusă în client, nu doar afirmată: grupurile de grilă poartă 
 **exclusiv pe coloanele de rulaj**. Rollup-ul real pe plan (cu netare corectă la
 fiecare nivel) e felie proprie dacă apare cerința.
 
+> **Închis** (2026-08-17, felia 10): rollup-ul există, ca ecran separat —
+> `docs/api/p5-felia-balanta-plan-contract.md`. Decizia de aici rămâne
+> neschimbată: pe balanța PLATĂ totalurile stau în continuare doar pe rulaje;
+> cifrele de nivel superior se citesc pe celălalt ecran, unde sunt rânduri
+> calculate pe server (brutele cumulate, netarea refăcută la fiecare nod), nu
+> totaluri de grilă.
+
 ### R-D6 — Fișa de cont: SQL brut cu window function, ordine FIXĂ
 
 Soldul curent per rând e prin definiție `sold_inițial + Σ(rândurile de dinainte)`

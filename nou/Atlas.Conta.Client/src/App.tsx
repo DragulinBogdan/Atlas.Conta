@@ -23,6 +23,7 @@ import { DecLista } from './felii/dec/DecLista';
 import { DecDetaliu } from './felii/dec/DecDetaliu';
 import { SoldStoc } from './felii/stoc/SoldStoc';
 import { Balanta } from './felii/raportare/Balanta';
+import { BalantaPlan } from './felii/raportare/BalantaPlan';
 import { FisaCont } from './felii/raportare/FisaCont';
 import { RegistruJurnal } from './felii/raportare/RegistruJurnal';
 
@@ -73,6 +74,7 @@ export function App() {
             proprie de meniu: se ajunge la ea din balanță, cu perioada păstrată,
             dar are selector de cont ca să se poată schimba contul pe loc. */}
         <Route path="/balanta" element={<Balanta />} />
+        <Route path="/balanta-plan" element={<BalantaPlan />} />
         <Route path="/fisa-cont" element={<FisaCont />} />
         <Route path="/jurnal" element={<RegistruJurnal />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
@@ -102,6 +104,7 @@ function Cadru() {
         <NavLink to="/ldi">Diferențe inventar</NavLink>
         <NavLink to="/stoc">Sold stoc</NavLink>
         <NavLink to="/balanta">Balanță</NavLink>
+        <NavLink to="/balanta-plan">Balanță pe plan</NavLink>
         <NavLink to="/jurnal">Jurnal</NavLink>
         <button
           type="button"

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { CheckBox } from 'devextreme-react';
 import {
   Column, ColumnFixing, DataGrid, FilterRow, GroupItem, Grouping, GroupPanel,
@@ -47,7 +47,18 @@ export function Balanta() {
 
   return (
     <div className="ecran">
-      <div className="ecran__bara"><h2>Balanță de verificare</h2></div>
+      <div className="ecran__bara">
+        <h2>Balanță de verificare</h2>
+        {/* Puntea spre pliul pe plan (BP-D3): acolo cifrele de grup sunt rânduri
+            calculate pe server, nu totaluri de grilă — adică exact ce interzice
+            R-D5 aici. Perioada merge mai departe. */}
+        <Link
+          className="buton buton--mic"
+          to={urlCu('/balanta-plan', { dataStart: stare.dataStart, dataEnd: stare.dataEnd, ...dimensiuni })}
+        >
+          Vezi pe planul de conturi
+        </Link>
+      </div>
 
       <div className="bara-raport">
         <CasetaData eticheta="De la" valoare={stare.dataStart} seteaza={(v) => seteaza({ dataStart: v })} />

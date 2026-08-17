@@ -7655,6 +7655,23 @@ void VerificaBalanta() {
     var c4 = ContBal("-4");   // sold inițial și ZERO mișcare în perioadă
     var c5 = ContBal("-5");   // rânduri FĂRĂ repartitor lângă unul CU (review D3)
     var c6 = ContBal("-6");   // contul căruia îi dispare eticheta (review D4)
+    // Ramura pentru rollup (BP-D1…BP-D5). Forma e aleasă ca fiecare capcană a
+    // pliului să aibă un nod al ei: grupa `cG` are copii care se închid pe
+    // sensuri OPUSE (netarea la nod ≠ însumarea netelor copiilor), plus mișcare
+    // PROPRIE (cifrele nodului nu sunt suma copiilor afișați), un NEPOT (adâncime
+    // 2, pentru `Nivel` și `nivelMaxim`) și un cont a cărui GRUPĂ dispare (c6,
+    // ștearsă de scena D4 — devine rădăcină, nu rând pierdut).
+    var cG = ContBal("-G");   // grupa, cu mișcare proprie
+    cG.Sumator = true;
+    var cGD = ContBal("-GD"); // copil, se închide DEBITOR
+    cGD.Parinte = cG;
+    var cGC = ContBal("-GC"); // copil, se închide CREDITOR
+    cGC.Parinte = cG;
+    var cGDN = ContBal("-GDN"); // nepot sub cGD (nivelul 2)
+    cGDN.Parinte = cGD;
+    var cOrfan = ContBal("-ORF"); // părintele (c6) devine invizibil la scena D4
+    cOrfan.Parinte = c6;
+    var cX = ContBal("-X");   // contrapartida ramurii (ține c2 neatins de scenă)
     var repA = RepBal("-A");
     var repB = RepBal("-B");
     var proiect = os.CreateObject<Proiect>();
@@ -7694,6 +7711,15 @@ void VerificaBalanta() {
     Nota(new DateOnly(2026, 4, 5), c5, c2, 30m, null, repA);                        // rulaj, fără repartitor
     Nota(new DateOnly(2026, 4, 6), c5, c2, 11m, repA, repA);                        // rulaj, CU repartitor
     Nota(new DateOnly(2026, 4, 12), c6, c2, 17m, repA, repA);                       // contul cu eticheta ștearsă
+    // Ramura de rollup. Sumele sunt mici deliberat: sonda de traducere de mai jos
+    // cere ca maximul de rulaj CREDITOR peste conturile scenei să rămână al lui c1
+    // (90), iar contrapartida e `cX`, nu `c2`, ca cifrele blocului vechi să nu se
+    // miște deloc.
+    Nota(new DateOnly(2026, 4, 2), cGD, cX, 12m, repA, repA);                       // copil debitor
+    Nota(new DateOnly(2026, 4, 3), cGDN, cX, 4m, repA, repA);                       // nepot (nivelul 2)
+    Nota(new DateOnly(2026, 4, 4), cX, cGC, 30m, repA, repA);                       // copil creditor
+    Nota(new DateOnly(2026, 4, 5), cG, cX, 1m, repA, repA);                         // mișcarea PROPRIE a grupei
+    Nota(new DateOnly(2026, 4, 7), cOrfan, cX, 5m, repA, repA);                     // sub părintele care dispare
     os.CommitChanges();
 
     var sintetic = ContabilProiectii.Balanta(os, ds, de).ToList();
@@ -7714,7 +7740,7 @@ void VerificaBalanta() {
     Check("Risc 4b: contul a cărui mișcare se netează la ZERO apare cu rulaje nenule și sold 0 pe ambele coloane (nu dispare)",
         Rand(c3) is { InitialDebit: 0m, InitialCredit: 0m, RulajDebit: 50m, RulajCredit: 50m, SoldFinalDebit: 0m, SoldFinalCredit: 0m });
     Check("Risc 8: rândurile cu `DocumentId == null` (forma soldurilor de deschidere scrise de migrare) intră normal — proiecția nu atinge navigația `Document`",
-        os.GetObjectsQuery<RegistruContabil>().Count(r => r.NumarNota == MarcajBal && r.DocumentId == null) == 11);
+        os.GetObjectsQuery<RegistruContabil>().Count(r => r.NumarNota == MarcajBal && r.DocumentId == null) == 16);
 
     // ── 2. Balanța == recomputare naivă în memorie, pe un eșantion ───────────
     // Primul adevăr = registrul citit rând cu rând și însumat în C#. Eșantionul:
@@ -7912,6 +7938,86 @@ void VerificaBalanta() {
     Check("D4, cusătura: fișa contului fără etichetă se închide pe aceeași cifră ca rândul lui de balanță (17) — cele două căi nu divergeau doar pe join-ul de etichetă, iar acum nu divergează deloc",
         ContabilProiectii.FisaCont(os, c6.ID, ds, de).ToList() is { Count: 1 } fisaC6
         && fisaC6[^1].SoldCurent == c6Dupa.SoldFinalDebit - c6Dupa.SoldFinalCredit);
+
+    // ══ BP-D1…BP-D5: balanța pliată pe planul de conturi ═════════════════════
+    //
+    // Rulează DUPĂ scena D4, deliberat: acolo lui c6 i-a dispărut eticheta, iar
+    // `cOrfan` atârnă tocmai de c6 — adică exact cazul „părintele nu e vizibil",
+    // pe care pliul trebuie să-l trateze ca rădăcină, nu ca rând pierdut. Fără
+    // ordinea asta, cazul ar fi cerut o a doua scenă ca să existe.
+    var plan = ContabilProiectii.BalantaPlan(os, ds, de);
+    BalantaPlanRand Nod(Cont c) => plan.SingleOrDefault(n => n.ContId == c.ID);
+    var platDupaD4 = dupaStergereCont;
+
+    // ── 1. Miezul feliei: se cumulează BRUTELE, se netează la nod ────────────
+    // Grupa are 17 debit (12 al copilului + 4 al nepotului + 1 al ei) și 30
+    // credit; netarea la nivelul ei dă `C 13`. Un total de grilă peste coloanele
+    // de sold ale frunzelor ar afișa „D 17 / C 30" — două cifre, niciuna
+    // adevărată la acel nivel. Exact de asta R-D5 interzicea totalurile pe sold,
+    // și exact asta e mecanismul care lipsea.
+    var frunzeSubGrup = new[] { cG.ID, cGD.ID, cGC.ID, cGDN.ID };
+    var naivD = platDupaD4.Where(r => frunzeSubGrup.Contains(r.ContId)).Sum(r => r.SoldFinalDebit);
+    var naivC = platDupaD4.Where(r => frunzeSubGrup.Contains(r.ContId)).Sum(r => r.SoldFinalCredit);
+    Check("BP-D1: pliul cumulează cifrele BRUTE și netează LA NOD — grupa iese `C 13` (rulaj 17 debitor / 30 creditor), în timp ce însumarea coloanelor de sold ale frunzelor ei dă „D 17 / C 30”, adică două cifre din care niciuna nu e soldul grupei (chiar interdicția R-D5, acum cu mecanismul care-i lipsea)",
+        Nod(cG) is { RulajDebit: 17m, RulajCredit: 30m, SoldFinalDebit: 0m, SoldFinalCredit: 13m }
+        && naivD == 17m && naivC == 30m);
+    Check("BP-D1, pe copii: nodul intermediar poartă mișcarea lui ȘI a nepotului (12 + 4 = 16 debitor), nepotul rămâne cu ale lui, iar copilul creditor nu e „compensat” de frații lui — netarea e a fiecărui nod, nu a arborelui",
+        Nod(cGD) is { RulajDebit: 16m, SoldFinalDebit: 16m, SoldFinalCredit: 0m }
+        && Nod(cGDN) is { RulajDebit: 4m, SoldFinalDebit: 4m }
+        && Nod(cGC) is { RulajCredit: 30m, SoldFinalCredit: 30m, SoldFinalDebit: 0m });
+
+    // ── 2. Poziția în arbore ────────────────────────────────────────────────
+    Check("Poziția în arbore: adâncimea se măsoară pe lanțul de părinți vizibili (grupă 0, copii 1, nepot 2), `AreCopii` marchează nodurile expandabile, iar `AreMiscareProprie` spune că cifrele grupei NU sunt suma copiilor afișați (are 1 al ei) — un cont sumator cu postare pe el e legitim, dar trebuie să se vadă",
+        Nod(cG) is { Nivel: 0, ParinteId: null, AreCopii: true, AreMiscareProprie: true }
+        && Nod(cGD) is { Nivel: 1, AreCopii: true, AreMiscareProprie: true }
+        && Nod(cGDN) is { Nivel: 2, AreCopii: false, AreMiscareProprie: true }
+        && Nod(cGC) is { Nivel: 1, AreCopii: false }
+        && Nod(cGD).ParinteId == cG.ID && Nod(cGDN).ParinteId == cGD.ID);
+
+    // ── 3. Invariantul de închidere: nimic nu se pierde și nimic nu se dublează ─
+    // Fiecare frunză contribuie la EXACT o rădăcină, deci Σ peste rădăcini ==
+    // Σ peste balanța plată. E proba că pliul nu inventează și nu înghite cifre —
+    // inclusiv pentru contul fără etichetă și pentru cel al cărui părinte a
+    // dispărut.
+    var radacini = plan.Where(n => n.ParinteId == null).ToList();
+    Check("Închiderea pliului: Σ peste RĂDĂCINI == Σ peste balanța plată, pe toate cele patru cifre brute — fiecare frunză contribuie la exact o rădăcină, deci pliul nici nu pierde, nici nu dublează",
+        radacini.Sum(n => n.RulajDebit) == platDupaD4.Sum(r => r.RulajDebit)
+        && radacini.Sum(n => n.RulajCredit) == platDupaD4.Sum(r => r.RulajCredit)
+        && radacini.Sum(n => n.InitialDebit) == platDupaD4.Sum(r => r.InitialDebit)
+        && radacini.Sum(n => n.InitialCredit) == platDupaD4.Sum(r => r.InitialCredit));
+    Check("Partida dublă supraviețuiește pliului la nivelul rădăcinilor (Σ debit == Σ credit) — dacă un strămoș ar înghiți o latură, aici s-ar vedea",
+        radacini.Sum(n => n.RulajDebit) == radacini.Sum(n => n.RulajCredit));
+    Check("Frunza fără strămoș vizibil devine RĂDĂCINĂ, nu rând pierdut: `cOrfan` atârna de c6, căruia scena D4 tocmai i-a luat eticheta — părintele nerezolvabil s-ar fi văzut în client ca rând orfan sub un nod inexistent (aceeași clasă de pierdere tăcută ca INNER JOIN-ul din D4), iar c6 însuși rămâne nod, fără etichetă, cu cifra lui",
+        Nod(cOrfan) is { ParinteId: null, Nivel: 0, RulajDebit: 5m }
+        && Nod(c6) is { ContSimbol: null, ParinteId: null, RulajDebit: 17m });
+
+    // ── 4. Trunchierea pe adâncime (BP-D5) ──────────────────────────────────
+    var peClase = ContabilProiectii.BalantaPlan(os, ds, de, nivelMaxim: 1);
+    Check("BP-D5: `nivelMaxim` taie RÂNDURI, nu sume — la nivelul 1 rămân doar rădăcinile, cifrele lor sunt neschimbate, totalul e identic cu al pliului complet, iar `AreCopii` devine fals (ecranul nu oferă o expandare goală)",
+        peClase.All(n => n.Nivel == 0 && !n.AreCopii)
+        && peClase.Count == radacini.Count
+        && peClase.Sum(n => n.RulajDebit) == radacini.Sum(n => n.RulajDebit)
+        && peClase.Single(n => n.ContId == cG.ID) is { RulajDebit: 17m, SoldFinalCredit: 13m });
+
+    // ── 5. Dimensiunile rămân FILTRE (BP-D4), aplicate pe atomi ─────────────
+    var planPeProiect = ContabilProiectii.BalantaPlan(os, ds, de, proiectId: proiect.ID);
+    Check("BP-D4: dimensiunile rămân filtre de proiecție și pe calea pliată — aceeași mulțime de frunze ca balanța plată filtrată, deci filtrul se aplică tot pe atomi, înaintea agregării",
+        planPeProiect.Count(n => n.AreMiscareProprie) == peProiect.Count
+        && planPeProiect.Single(n => n.ContId == c1.ID) is { RulajDebit: 50m, RulajCredit: 0m });
+
+    // ── 6. Ciclul din date nu blochează serverul ────────────────────────────
+    // `Cont.Parinte` e o navigație editabilă din UI: un ciclu introdus din
+    // greșeală ar face urcarea infinită. Proba e chiar terminarea apelului —
+    // fără gardă, ModelCheck ar atârna aici la nesfârșit, nu ar pica.
+    cG.Parinte = cGDN;
+    os.CommitChanges();
+    var cuCiclu = ContabilProiectii.BalantaPlan(os, ds, de);
+    Check("Ciclu în `Cont.Parinte` (cG → cGDN → cGD → cG): pliul TERMINĂ (garda de vizitare), întoarce noduri și nu numără nicio frunză de două ori pe propriul ei nod — proba e că apelul se întoarce; fără gardă, verificarea n-ar pica, ar atârna",
+        cuCiclu.Count > 0
+        && cuCiclu.SingleOrDefault(n => n.ContId == cGDN.ID) is { RulajDebit: >= 4m }
+        && cuCiclu.Single(n => n.ContId == cGC.ID).RulajCredit == 30m);
+    cG.Parinte = null;
+    os.CommitChanges();
 
     CurataBal();
     Check("Curățenie finală felia balanță (fără reziduuri e2e)",

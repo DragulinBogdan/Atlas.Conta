@@ -2348,6 +2348,45 @@ Raport de producție.
     permisiuni (pre-existent, benign prin 61a); cele 8 dimensiuni fără UI, doar
     pass-through din URL.
 
+67. **Pasul 5, felia 10 — balanța pliată pe planul de conturi — executată**
+    (contract + închidere: `docs/api/p5-felia-balanta-plan-contract.md`,
+    BP-D1…BP-D5; smoke browser pe clona de import). Închide singurul item lăsat
+    deschis cu nume de felia 9 (R-D5). Zero migrații, motorul neatins.
+    Tranșările:
+    (a) **Se cumulează BRUTELE în sus, se netează LA NOD** — niciodată invers.
+    De asta „balanța pe clase" nu se putea obține grupând balanța plată,
+    oricâte `GroupItem`: soldul unei clase nu e o sumă de rânduri afișate. Pe
+    date reale, clasa 4 iese `C 10.100.771,84`, în timp ce însumarea coloanelor
+    de sold ale grupelor ei ar afișa `D 4.623.420,74 / C 14.724.192,58` — două
+    cifre, niciuna adevărată la acel nivel. Corolar impus, nu afirmat: ecranul
+    **n-are `Summary`** (un total peste rândurile afișate ar aduna părinții cu
+    copiii, adică ar număra fiecare frunză de câte ori are strămoși); cifra de
+    control `Σ rădăcini == Σ balanța plată` se verifică în ModelCheck.
+    (b) **Frunzele sunt chiar `Balanta`**, nu o a doua agregare (regula care
+    ține un singur `AtomContabil`); pliul e în MEMORIE — planul e mărginit prin
+    construcție, iar recursivitatea în SQL ar cere CTE scris de mână pentru un
+    rezultat oricum ne-paginabil. Cele două margini — părinte invizibil, cont
+    fără etichetă — devin **rădăcini**, nu rânduri pierdute (lecția D4 din
+    felia 9), sub invariantul „fiecare frunză contribuie la exact o rădăcină".
+    (c) **Fără `DataSourceLoader`** (singura proiecție a pasului 5 fără el): un
+    arbore nu se paginează — `LIMIT/OFFSET` peste mulțimea pliată taie exact
+    strămoșii, iar un nod fără ei e rând orfan. Diferența e de natură, nu de
+    comoditate: dincolo rezultatul e o listă, aici un graf.
+    (d) **Modul analitic nu se pliază** (cheia `Cont × Repartitor` e o a doua
+    ierarhie: „clasa 4 pe furnizorul X" nu e un nod al planului); dimensiunile
+    rămân filtre pre-agregare. `nivelMaxim` taie RÂNDURI, nu sume, cu
+    `AreCopii` recalculat peste mulțimea păstrată și refuz 400 sub 1 (un raport
+    golit tăcut arată exact ca o bază goală).
+    (e) **Ciclul din `Cont.Parinte` e oprit prin gardă de vizitare** —
+    navigația e editabilă din UI, iar fără ea verificarea n-ar pica, ar atârna;
+    proba e chiar terminarea apelului. Ne-blocant rămas: ciclul e oprit, nu
+    RAPORTAT — un gardian de nomenclator ar fi fixul de fond, aditiv.
+    (f) Smoke-ul a scos un defect de client în afara mandatului lui:
+    `autoExpandAll` se aplică LA MONTARE, iar arborele se monta pe tabloul gol
+    (datele vin din `useQuery`) ⇒ bifa „Extinde tot" nu făcea nimic, tăcut;
+    randarea e gate-uită pe încărcare. Perf: 58–75 ms pe clona de import, sub
+    balanța plată (nu plătește `requireTotalCount`); niciun index adăugat.
+
 ```
 /legacy   → surse Delphi (.pas, .dfm) + scripturi SQL vechi
 /db       → se poate export schemă (CREATE) + CONȚINUTUL tabelelor de configurare
@@ -2604,12 +2643,24 @@ per felie):
   partajat; `urlStare` în nucleu (prima folosire reală a lui „URL = starea
   globală"). Prima felie care nu adaugă un tip de document, ci **suprafața de
   citire** cu care se verifică tot ce s-a construit înainte.
-- Urmează, pe șablonul consolidat: nu mai există tip de document cu felie
-  obligatorie — restul e finisaj de client (listele §Închidere ale
-  contractelor + `docs/api/lista-react.md`; licența DevExtreme = acțiunea
-  utilizatorului) și feliile de scriere rămase (NTC/ASM/retururi, la cerere).
-  Pe raportare, extensiile naturale sunt jurnalele de TVA (per document, legate
-  de D300/D394/SAF-T — 36f) și rollup-ul pe planul de conturi (R-D5).
+- **Felia 10 — balanța pliată pe planul de conturi** (EXECUTATĂ, decizia 67;
+  contract: `docs/api/p5-felia-balanta-plan-contract.md`): rollup cu netare
+  refăcută la fiecare nod peste `Balanta`, `nivelMaxim`, ecran de arbore în
+  client. Închide R-D5.
+- **Felia 11 — jurnalele de TVA** (URMEAZĂ; fork tranșat 2026-08-17): sursa e
+  un **registru NOU, `RegistruTva`**, nu o proiecție peste documente —
+  invariantul III („orice raport e o sumă peste registre") și decizia 36f
+  („D300/D394/SAF-T ca proiecții peste REGISTRE") bat nota din felia 9, care
+  anticipa „altă sursă". Registrele de azi n-au faptele fiscale: rândul
+  4426/4427 poartă doar TVA-ul, nu baza și nu tipul, iar liniile
+  scutite/neimpozabile/capitalizate NU postează deloc, deși apar legal în
+  jurnal și în D300. Scop confirmat: registrul + jurnalul de cumpărări +
+  jurnalul de vânzări + agregarea per cotă (scheletul D300), cu codurile
+  SAF-T/D394 ca atribute pe rând; generarea fișierelor rămâne proiect separat
+  (35c).
+- Restul: finisaj de client (listele §Închidere ale contractelor +
+  `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului) și
+  feliile de scriere rămase (NTC/ASM/retururi, la cerere).
   Alternativă rămasă: felia C1a a comenzilor
   (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă, la presiune
   de client).

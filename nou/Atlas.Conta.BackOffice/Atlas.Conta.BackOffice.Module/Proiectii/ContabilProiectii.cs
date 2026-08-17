@@ -99,6 +99,44 @@ public sealed class BalantaRand {
     public decimal SoldFinalCredit { get; set; }
 }
 
+// Un nod al balanței pliate pe planul de conturi (BP-D1). Aceleași opt cifre ca
+// `BalantaRand` — deliberat, ca ecranul să se citească la fel la orice nivel —
+// plus poziția în arbore.
+//
+// `Nivel`/`ParinteId` sunt ale ARBORELUI RETURNAT, nu ale planului: un cont al
+// cărui părinte e invizibil (șters logic sau tăiat de securitate) devine
+// rădăcină, iar sub `nivelMaxim` nodurile de dedesubt nu se mai întorc. Ambele
+// cazuri păstrează invariantul care contează: fiecare frunză contribuie la
+// EXACT o rădăcină, deci Σ peste rădăcini == Σ peste balanța plată.
+public sealed class BalantaPlanRand {
+    public Guid ContId { get; set; }
+    // Null = rădăcină în arborele ÎNTORS.
+    public Guid? ParinteId { get; set; }
+    public string ContSimbol { get; set; }
+    public string ContDenumire { get; set; }
+    // 0 = rădăcină. Adâncimea e măsurată pe lanțul de părinți VIZIBILI.
+    public int Nivel { get; set; }
+    // Calculat peste mulțimea ÎNTOARSĂ: sub `nivelMaxim`, ultimul nivel păstrat
+    // iese cu `AreCopii = false`, ca ecranul să nu ofere o expandare goală.
+    public bool AreCopii { get; set; }
+    // Contul are rânduri de registru PE EL, nu doar prin descendenți. Legitim
+    // (nimic nu interzice postarea pe un cont sumator — filtrul din lookup-ul
+    // Decontului e afordanță, nu validare), dar înseamnă că cifrele nodului nu
+    // sunt suma copiilor afișați: diferența e mișcarea lui proprie.
+    public bool AreMiscareProprie { get; set; }
+
+    public decimal InitialDebit { get; set; }
+    public decimal InitialCredit { get; set; }
+    public decimal SoldInitialDebit { get; set; }
+    public decimal SoldInitialCredit { get; set; }
+
+    public decimal RulajDebit { get; set; }
+    public decimal RulajCredit { get; set; }
+
+    public decimal SoldFinalDebit { get; set; }
+    public decimal SoldFinalCredit { get; set; }
+}
+
 // Contractul rândurilor care poartă un document-sursă. Codul de tip NU poate veni
 // din SQL — sub TPT nu există discriminator, iar ancora `TipDocument` se caută
 // după numele clasei CLR (R-D8/60b) — deci se completează în memorie, peste
@@ -422,6 +460,144 @@ public static class ContabilProiectii {
             OrdineLista.Crescator(nameof(BalantaRand.ContSimbol)),
             OrdineLista.Crescator(nameof(BalantaRand.ContId))
         };
+
+    // ── Balanța pliată pe planul de conturi (BP-D1…BP-D5) ───────────────────
+    //
+    // Felia 9 a lăsat rollup-ul deschis cu un motiv (R-D5): pe un grup de grilă
+    // rulajele se pot însuma, dar SOLDURILE nu — netarea nu e aditivă. De aceea
+    // clientul poartă totaluri de grup exclusiv pe rulaje, iar „balanța pe clase"
+    // nu se poate obține grupând balanța plată. Aici e mecanismul care lipsea, și
+    // toată felia stă într-o singură propoziție:
+    //
+    //   ═══ se cumulează cifrele BRUTE în sus pe arbore, se NETEAZĂ la fiecare
+    //       nod. Niciodată invers. ═══
+    //
+    // Contul 4 („Terți") cu 401 pe sold creditor 200 și 411 pe sold debitor 100 dă
+    // `C 100` la nivelul grupei — nu „C200 și D100 alături", și nici „C300".
+    // Netarea se poate face doar din sumele brute ale nodului, care sunt aditive.
+    //
+    // Agregarea frunzelor NU se rescrie: e chiar `Balanta(...)` de mai sus (BP-D2).
+    // O a doua agregare, oricât de asemănătoare, ar fi un al doilea adevăr care
+    // diverge tăcut de primul la prima schimbare — aceeași regulă care ține un
+    // singur `AtomContabil`. Pliul de deasupra e în MEMORIE, deliberat: planul e
+    // mărginit prin construcție (1.679 de sintetice la bugetar, ~700 la privat),
+    // recursivitatea pe arbore în SQL ar cere CTE recursiv scris de mână, iar
+    // rezultatul e oricum ne-paginabil (BP-D3).
+    //
+    // BP-D3 — de ce NU trece prin `DataSourceLoader`: un arbore nu se pagina. Un
+    // nod fără strămoșii lui în pagină e un rând orfan, iar `LIMIT/OFFSET` peste o
+    // mulțime pliată taie exact strămoșii. Se întoarce deci tabloul ÎNTREG, iar
+    // mărginirea e a datelor, nu a paginării: numărul de noduri ≤ numărul de
+    // conturi ale planului.
+    //
+    // BP-D4 — modul ANALITIC nu se pliază. Cheia lui e `Cont × Repartitor`, adică
+    // o a doua ierarhie: pliată pe arborele de conturi ar amesteca două axe
+    // („clasa 4 pe furnizorul X" nu e un nod al planului). Dimensiunile rămân
+    // FILTRE, ca la balanța plată, și se aplică tot pe atomi, înaintea agregării.
+    public static List<BalantaPlanRand> BalantaPlan(
+        IObjectSpace os, DateOnly dataStart, DateOnly dataEnd, int? nivelMaxim = null,
+        Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
+        Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
+        Guid? proiectId = null, Guid? centruCostId = null) {
+
+        // Frunzele: exact balanța sintetică, cu aceiași parametri de proiecție.
+        var frunze = Balanta(os, dataStart, dataEnd, analitic: false,
+            repartitorId, materialId, codFunctionalId, codEconomicId,
+            sursaFinantareId, unitateId, proiectId, centruCostId).ToList();
+
+        // Planul, proiectat plat (fără navigații): patru coloane peste câteva mii
+        // de rânduri. Citit prin ObjectSpace-ul SECURIZAT ca tot restul — un cont
+        // invizibil pur și simplu lipsește de aici, iar consecința e tratată mai
+        // jos ca rădăcină, nu ca rând pierdut (lecția review-ului D4 din felia 9).
+        var plan = os.GetObjectsQuery<Cont>()
+            .Select(c => new { c.ID, c.Simbol, c.Denumire, c.ParinteId })
+            .ToDictionary(c => c.ID, c => (c.Simbol, c.Denumire, c.ParinteId));
+
+        var noduri = new Dictionary<Guid, BalantaPlanRand>();
+
+        BalantaPlanRand Nod(Guid contId) {
+            if (noduri.TryGetValue(contId, out var existent))
+                return existent;
+            var gasit = plan.TryGetValue(contId, out var info);
+            var nod = new BalantaPlanRand {
+                ContId = contId,
+                ContSimbol = gasit ? info.Simbol : null,
+                ContDenumire = gasit ? info.Denumire : null,
+                // Părintele contează doar dacă e el însuși vizibil: altfel nodul
+                // devine rădăcină. Alternativa (păstrarea unui `ParinteId` care nu
+                // se rezolvă) ar produce un rând invizibil în arborele clientului,
+                // adică exact pierderea tăcută pe care D4 a interzis-o.
+                ParinteId = gasit && info.ParinteId is Guid parinte && plan.ContainsKey(parinte)
+                    ? parinte : null
+            };
+            noduri.Add(contId, nod);
+            return nod;
+        }
+
+        foreach (var frunza in frunze) {
+            Nod(frunza.ContId).AreMiscareProprie = true;
+            // Urcarea: cifrele brute ale frunzei intră în ea însăși ȘI în fiecare
+            // strămoș. `vizitate` nu e paranoia decorativă — `Cont.Parinte` e o
+            // navigație editabilă din UI, iar un ciclu introdus din greșeală ar
+            // transforma raportul într-o buclă infinită pe server.
+            var vizitate = new HashSet<Guid>();
+            for (Guid? id = frunza.ContId; id is Guid contId && vizitate.Add(contId); id = Nod(contId).ParinteId) {
+                var nod = Nod(contId);
+                nod.InitialDebit += frunza.InitialDebit;
+                nod.InitialCredit += frunza.InitialCredit;
+                nod.RulajDebit += frunza.RulajDebit;
+                nod.RulajCredit += frunza.RulajCredit;
+            }
+        }
+
+        // Adâncimea, pe lanțul de părinți DIN MULȚIMEA CONSTRUITĂ (un `ParinteId`
+        // rămas nerezolvat ar opri urcarea, dar nu poate exista: `Nod` l-a creat).
+        foreach (var nod in noduri.Values) {
+            var nivel = 0;
+            var vizitate = new HashSet<Guid> { nod.ContId };
+            var parinte = nod.ParinteId;
+            while (parinte is Guid pid && noduri.TryGetValue(pid, out var sus) && vizitate.Add(pid)) {
+                nivel++;
+                parinte = sus.ParinteId;
+            }
+            nod.Nivel = nivel;
+        }
+
+        // Netarea — la NIVELUL NODULUI, din sumele lui brute cumulate (BP-D1).
+        foreach (var nod in noduri.Values) {
+            var netInitial = nod.InitialDebit - nod.InitialCredit;
+            var netFinal = netInitial + nod.RulajDebit - nod.RulajCredit;
+            nod.SoldInitialDebit = netInitial > 0m ? netInitial : 0m;
+            nod.SoldInitialCredit = netInitial < 0m ? -netInitial : 0m;
+            nod.SoldFinalDebit = netFinal > 0m ? netFinal : 0m;
+            nod.SoldFinalCredit = netFinal < 0m ? -netFinal : 0m;
+        }
+
+        // Trunchierea pe adâncime (BP-D5: „balanță pe clase" = `nivelMaxim=1`).
+        // E gratuită fiindcă cifrele descendenților sunt DEJA în strămoși — se
+        // taie rânduri, nu sume. Arborele rămâne închis în sus: părintele are
+        // întotdeauna `Nivel` mai mic, deci nu poate fi tăiat înaintea copilului.
+        var pastrate = nivelMaxim is int max
+            ? noduri.Values.Where(n => n.Nivel < max).ToList()
+            : noduri.Values.ToList();
+        var ramase = pastrate.Select(n => n.ContId).ToHashSet();
+
+        // `AreCopii` se calculează peste mulțimea PĂSTRATĂ, nu peste plan: sub
+        // trunchiere, ultimul nivel afișat nu mai are ce expanda.
+        foreach (var nod in pastrate)
+            nod.AreCopii = false;
+        foreach (var nod in pastrate)
+            if (nod.ParinteId is Guid pid && ramase.Contains(pid))
+                noduri[pid].AreCopii = true;
+
+        // Ordine totală și deterministă: simbolul e ordinea în care se citește o
+        // balanță; `ContId` e tiebreak-ul (simbolul nu e unic prin schemă, iar
+        // contul fără etichetă îl are chiar null).
+        return pastrate
+            .OrderBy(n => n.ContSimbol ?? string.Empty, StringComparer.Ordinal)
+            .ThenBy(n => n.ContId)
+            .ToList();
+    }
 
     // ── Fișa de cont (R-D6) ─────────────────────────────────────────────────
     //

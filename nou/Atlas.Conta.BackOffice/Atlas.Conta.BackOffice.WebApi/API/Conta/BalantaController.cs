@@ -66,3 +66,55 @@ public class BalantaController : ContaApiController {
             loadOptions, ContabilProiectii.OrdineBalanta(analitic)));
     }
 }
+
+// Balanța pliată pe planul de conturi (BP-D1…BP-D5) — rollup-ul lăsat deschis de
+// R-D5. Aceiași parametri de proiecție ca balanța plată, cu două diferențe de
+// contract, ambele consecințe ale formei de ARBORE:
+//
+//  • **Nu există `loadOptions`** (BP-D3): un arbore nu se paginează — un nod fără
+//    strămoșii lui e un rând orfan, iar `LIMIT/OFFSET` peste mulțimea pliată taie
+//    exact strămoșii. Se întoarce tabloul întreg; mărginirea vine din date
+//    (numărul de noduri ≤ numărul de conturi ale planului), nu din paginare.
+//  • **Nu există `analitic`** (BP-D4): cheia analitică e o a doua ierarhie, iar
+//    pliată pe arborele de conturi ar amesteca două axe. Dimensiunile rămân
+//    filtre, exact ca dincolo.
+[Route("api/proiectii/balanta-plan")]
+public class BalantaPlanController : ContaApiController {
+    public BalantaPlanController(IObjectSpaceFactory secured, INonSecuredObjectSpaceFactory nonSecured,
+        DevExpress.ExpressApp.Security.ISecurityStrategyBase securitate)
+        : base(secured, nonSecured, securitate) { }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(List<BalantaPlanRand>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    public IActionResult Get(
+        [FromQuery] DateOnly? dataStart = null, [FromQuery] DateOnly? dataEnd = null,
+        [FromQuery] int? nivelMaxim = null,
+        [FromQuery] Guid? repartitorId = null, [FromQuery] Guid? materialId = null,
+        [FromQuery] Guid? codFunctionalId = null, [FromQuery] Guid? codEconomicId = null,
+        [FromQuery] Guid? sursaFinantareId = null, [FromQuery] Guid? unitateId = null,
+        [FromQuery] Guid? proiectId = null, [FromQuery] Guid? centruCostId = null) {
+
+        // Aceeași regulă ca la balanța plată: perioada e obligatorie și n-are
+        // default rezonabil — fără `dataStart` noțiunea „sold inițial" nu există.
+        var erori = new List<string>();
+        if (dataStart == null)
+            erori.Add("Parametrul „dataStart” este obligatoriu (definește soldul inițial).");
+        if (dataEnd == null)
+            erori.Add("Parametrul „dataEnd” este obligatoriu (definește sfârșitul perioadei).");
+        if (dataStart is DateOnly ds && dataEnd is DateOnly de && ds > de)
+            erori.Add("„dataStart” nu poate fi după „dataEnd”.");
+        // `nivelMaxim` e o adâncime 1-based („1 = doar clasele"). Zero sau negativ
+        // ar goli raportul FĂRĂ ca cifrele să dispară de undeva — adică un raport
+        // gol care arată ca o bază goală. Se refuză, nu se normalizează tăcut.
+        if (nivelMaxim is int nm && nm < 1)
+            erori.Add("„nivelMaxim” trebuie să fie cel puțin 1 (1 = doar primul nivel al planului).");
+        if (erori.Count > 0)
+            return BadRequest(EroriDto.Din(erori));
+
+        using var os = Secured(typeof(RegistruContabil));
+        return Ok(ContabilProiectii.BalantaPlan(os, dataStart.Value, dataEnd.Value, nivelMaxim,
+            repartitorId, materialId, codFunctionalId, codEconomicId,
+            sursaFinantareId, unitateId, proiectId, centruCostId));
+    }
+}
