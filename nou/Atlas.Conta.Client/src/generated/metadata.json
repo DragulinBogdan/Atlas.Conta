@@ -52,6 +52,10 @@
       "Scutit": "Scutit",
       "Neimpozabil": "Neimpozabil"
     },
+    "SensTva": {
+      "Achizitie": "Achiziție",
+      "Livrare": "Livrare"
+    },
     "StareDocument": {
       "Draft": "Draft",
       "Operat": "Operat",
@@ -1003,6 +1007,27 @@
         "Storno": "Storno",
         "TipStoc": "TipStoc",
         "Valoare": "Valoare"
+      }
+    },
+    "RegistruTva": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Baza": "Bază impozabilă",
+        "Cota": "Cotă",
+        "Data": "Data",
+        "Detaliu": "Detaliu",
+        "DetaliuId": "Detaliu",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Partener": "Partener",
+        "PartenerId": "Partener",
+        "Regim": "Regim TVA",
+        "Sens": "Sens",
+        "Storno": "Storno",
+        "TipTva": "TipTva",
+        "TipTvaId": "TipTva",
+        "Tva": "TVA"
       }
     },
     "RegulaContare": {

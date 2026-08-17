@@ -101,6 +101,16 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Registre + politici
         public DbSet<RegistruStoc> RegistruStoc { get; set; }
         public DbSet<RegistruContabil> RegistruContabil { get; set; }
+        // Fără `AutoInclude` pe navigațiile lui — deliberat, spre deosebire de
+        // `RegistruContabil` (41c). Acolo dimensiunile CHIAR se afișează pe
+        // fiecare rând al grilei, deci lazy însemna N+1 per pagină plus
+        // lazy-load pe OS disposed la render târziu. Aici view-ul XAF e o
+        // suprafață de diagnostic — navigațiile se ascund din ListView
+        // (`ContaUiBaseline`), iar consumatorii reali sunt proiecțiile, care
+        // își fac join-urile explicit în `Select`. Nu există N+1 de prevenit.
+        // Bonus: numele DbSet-ului poate coincide cu al clasei fără să ceară
+        // alias-ul `using ...Entitate =` de care are nevoie `RegistruContabil`.
+        public DbSet<RegistruTva> RegistruTva { get; set; }
         public DbSet<TipDocument> TipuriDocument { get; set; }
         public DbSet<RegulaStoc> ReguliStoc { get; set; }
         public DbSet<RegulaContare> ReguliContare { get; set; }

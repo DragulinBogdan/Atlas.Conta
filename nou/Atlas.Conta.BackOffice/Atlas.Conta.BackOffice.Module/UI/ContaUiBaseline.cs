@@ -96,6 +96,19 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         // toate (fostul bloc de path-uri nested ale owned-ului a murit).
         registry.For<RegistruContabil>().HideForeignKeys();         // ContDebitId/ContCreditId/DocumentId/DetaliuId + Debit*/Credit*
         registry.For<RegulaContare>().HideForeignKeys();            // TipDocumentId/TipMaterialId/Cont* + Comun*/Override*
+        registry.For<RegistruTva>().HideForeignKeys();              // DocumentId/DetaliuId/PartenerId/TipTvaId
+        // Navigațiile registrului de TVA ies din ListView, din același motiv ca
+        // `RegistruStoc.Lot` de mai sus: sunt LAZY (registrul nu are AutoInclude
+        // — vezi DbContext) iar el e de ordinul sutelor de mii de rânduri, deci
+        // afișarea lor ar fi N+1 per pagină randată. Rândul rămâne complet
+        // (data, sens, regim, cotă, bază, TVA); identitatea documentului și a
+        // partenerului se citește în jurnale, unde join-ul e explicit (JT-D7).
+        registry.For<RegistruTva>()
+            .ListView(nameof(RegistruTva) + ListView, _ => { })
+            .Column(r => r.Document, c => c.Index = -1)
+            .Column(r => r.Detaliu, c => c.Index = -1)
+            .Column(r => r.Partener, c => c.Index = -1)
+            .Column(r => r.TipTva, c => c.Index = -1);
         registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
         registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId
     }

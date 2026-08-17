@@ -93,8 +93,11 @@ public static class Scara {
     // construirea modelului, cu numele proprietății în mesaj.
     public static int? ScaraPentru(string numeProprietate) => numeProprietate switch {
         // Bani postați: valoarea de postare a rândului principal, a doua valoare
-        // de postare (TVA) și suma stinsă de o imperechere.
-        "Valoare" or "ValoareTva" or "Suma" => Bani,
+        // de postare (TVA), suma stinsă de o imperechere și perechea fiscală a
+        // rândului de `RegistruTva` (baza impozabilă + TVA-ul ei — JT-D4). Baza
+        // e bani, nu preț: la `Capitalizat` se desface din valoarea BRUTĂ deja
+        // rotunjită, iar jurnalele o adună server-side pe perioade întregi.
+        "Valoare" or "ValoareTva" or "Suma" or "Baza" or "Tva" => Bani,
         // Prețuri unitare + cursul valutar (BNR dă 4 zecimale, 6 lasă loc).
         "PretUnitar" or "PretEvaluare" or "Curs" => Pret,
         "Cantitate" => Cantitate,

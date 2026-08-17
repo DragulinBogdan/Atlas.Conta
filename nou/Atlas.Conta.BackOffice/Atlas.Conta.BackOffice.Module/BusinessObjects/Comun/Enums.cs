@@ -72,6 +72,20 @@ public enum RegimTva {
 // FCL colectează. TaxareInversa ignoră direcția (4426 = 4427).
 public enum DirectieTva { Deductibil = 1, Colectat = 2 }
 
+// Latura jurnalului de TVA (JT-D1): cumpărări sau vânzări. Sensul NU e o a doua
+// axă de configurare — se derivă din `PoliticaTva.Directie` a tipului de
+// document (Deductibil → Achiziție, Colectat → Livrare), acolo unde profilul a
+// declarat deja că tipul e un eveniment de TVA. Pe rândul de `RegistruTva` e
+// SNAPSHOT, ca `Regim` și `Cota` (JT-D3): politica e dată editabilă, iar
+// jurnalul unei perioade declarate nu are voie să-și schimbe latura fiindcă
+// cineva a rescris politica anul următor. Fără valoarea 0 — convenția locală:
+// default invalid = protecție la rânduri scrise fără sens (ca DirectieDiferenta
+// și DirectieAsamblare).
+public enum SensTva {
+    [XafDisplayName("Achiziție")] Achizitie = 1,
+    [XafDisplayName("Livrare")] Livrare = 2,
+}
+
 // De unde își ia o latură a regulii de contare contul (testul bazei §7.2:
 // „contul se rezolvă prin POLITICĂ — per tip partener și/sau per Clasă-Tip").
 // Contul explicit al regulii rămâne fallback când sursa nu rezolvă.
