@@ -88,9 +88,14 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 // administratorul. Un singur mesaj, oricâte rânduri ar fi.
                 case RegistruStoc:
                 case RegistruContabil:
+                // Al treilea registru (felia 11) intră pe aceeași regulă: e scris
+                // de motor în aceeași tranzacție cu celelalte două, iar jurnalele
+                // de TVA sunt declarații — o editare directă ar fi exact genul de
+                // „corecție" pe care append-only-ul o interzice.
+                case RegistruTva:
                     if (!registruRaportat) {
                         registruRaportat = true;
-                        erori.Add("Registrele (stoc/contabil) se scriu doar de motor, la operare — "
+                        erori.Add("Registrele (stoc/contabil/TVA) se scriu doar de motor, la operare — "
                             + "nu se creează, modifică sau șterg direct.");
                     }
                     break;

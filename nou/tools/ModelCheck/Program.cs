@@ -2668,6 +2668,7 @@ if (profil == ProfilContabil.Privat) {
     // dublă, continuitate) se verifică peste ELE, nu doar peste scenariul propriu.
     VerificaBalanta();
     VerificaFisaJurnal();
+    VerificaRegistruTva(cuTva: true);
 
     Rezumat();
     return;
@@ -7590,6 +7591,7 @@ using (var os = provider.CreateObjectSpace()) {
 
 VerificaBalanta();
 VerificaFisaJurnal();
+VerificaRegistruTva(cuTva: false);
 
 Rezumat();
 
@@ -8340,4 +8342,359 @@ void VerificaFisaJurnal() {
         && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajFsa))
         && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.NumarNota.StartsWith(MarcajFsa))
         && !os.GetObjectsQuery<NotaTransfer>().Any(d => d.Numar == MarcajFsa));
+}
+
+// ============ Felia 11 (jurnalele de TVA): registrul fiscal (JT-D1…JT-D6) ============
+// Al treilea registru se judecă exact ca primele două: nu prin scenă, ci prin
+// CUSĂTURĂ — Σ TVA-ului fiscal al unui document == Σ postării lui contabile pe
+// conturile de TVA (JT-D6). Aia e proba că registrul nu e „al doilea adevăr”:
+// dacă derivarea și postarea ar diverge, felia ar produce un jurnal frumos și
+// fals. Cusătura e per DOCUMENT, nu pe perioadă, fiindcă agregatul de perioadă ar
+// include închiderea lunară (ITV mișcă 4426/4427 fără să fie operațiune taxabilă)
+// și ar cere excluderi scrise de mână; per document, ITV pur și simplu nu apare.
+//
+// Local function, apelată din AMBELE căi de profil (ca `VerificaBalanta`) —
+// `cuTva` = true doar pe privat, singurul profil care are rânduri `PoliticaTva`.
+// Universalele rulează peste TOATĂ baza, nu peste scenă.
+void VerificaRegistruTva(bool cuTva) {
+    const string MarcajJt = "E2E-JTVA";
+    using var os = provider.CreateObjectSpace();
+    var db = ((EFCoreObjectSpace)os).DbContext;
+
+    // Plasă + MĂSURĂTOARE, în ordinea asta. Scenele de dinainte (FCT/FCL/DEC
+    // privat, Api, 1C-a…) operează documente cu TVA, iar curățeniile lor — scrise
+    // înainte ca registrul fiscal să existe — șterg documentul și celelalte două
+    // registre, fără să știe de rândurile de aici. Măsurat azi: 0 orfani, adică
+    // ștergerea documentului le ia cu ea. Dacă vreodată n-o mai face, reziduul ar
+    // rupe cusătura JT-D6 (documentul invizibil, postarea contabilă dispărută,
+    // rândul fiscal viu) dintr-un motiv care n-are NICIO legătură cu motorul — de
+    // aceea se numără și se strigă ÎNAINTE de a fi purjat, nu se curăță tăcut.
+    // Purja e SQL direct: același tipar ca la balanță (singurul mod de a atinge
+    // rândurile de sub filtrul global de ștergere amânată).
+    var orfane = db.Database
+        .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM \"RegistruTva\" WHERE \"DocumentId\" NOT IN (SELECT \"ID\" FROM \"Documente\" WHERE \"GCRecord\" = 0)")
+        .Single();
+    if (orfane > 0) {
+        Console.WriteLine($"     (reziduu: {orfane} rânduri fiscale ale unor documente deja șterse de scenele anterioare — purjate)");
+        db.Database.ExecuteSql($"DELETE FROM \"RegistruTva\" WHERE \"DocumentId\" NOT IN (SELECT \"ID\" FROM \"Documente\" WHERE \"GCRecord\" = 0)");
+    }
+
+    void CurataJt() {
+        var idsSursa = os.GetObjectsQuery<Document>()
+            .Where(d => d.Numar.StartsWith(MarcajJt)).Select(d => d.ID).ToList();
+        var ids = idsSursa.Concat(os.GetObjectsQuery<Document>()
+            .Where(d => d.DocumentSursaId != null && idsSursa.Contains(d.DocumentSursaId.Value))
+            .Select(d => d.ID).ToList()).ToList();
+        os.Delete(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)).ToList());
+        os.Delete(os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
+        var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajJt)).ToList();
+        var idsLot = loturi.Select(l => l.ID).ToList();
+        os.Delete(os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => (r.DocumentId != null && ids.Contains(r.DocumentId.Value)) || idsLot.Contains(r.LotId)).ToList());
+        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)).ToList());
+        os.Delete(os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList());
+        os.Delete(loturi);
+        os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajJt)).ToList());
+        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajJt)).ToList());
+        os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(MarcajJt)).ToList());
+        os.CommitChanges();
+        // Rândurile fiscale tocmai șterse rămân fizic în tabelă cu GCRecord setat
+        // (ștergere amânată) — invizibile la citire, purjate hard de interogarea de
+        // mai sus la rularea următoare. Nimic de făcut aici.
+    }
+    CurataJt();
+
+    List<RegistruTva> Fiscal(Document d) =>
+        os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == d.ID).ToList();
+
+    // ---------------- Scena (doar profilul privat) ----------------
+    // Scena e ÎMPĂRȚITĂ deliberat în două: partea de construcție lasă documentele
+    // OPERATE, iar storno-ul și anularea vin abia DUPĂ universale. Motivul e că
+    // universalele rulează peste toată baza, iar restul suitei își curăță scenele
+    // — dacă și asta ar face-o înainte, cusătura JT-D6 s-ar măsura pe zero
+    // documente (poartă vacuă), sau, mai rău, doar pe unul stornat, unde ambele
+    // părți se netează la zero și o derivare greșită simetric ar trece neobservată.
+    FacturaIntrare fctA = null, fctB = null;
+    Document conexB = null;
+    var dataStorno = new DateOnly(2026, 7, 24);
+    if (cuTva) {
+        var mag = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+        var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+        var tip302 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302");
+        var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        var ti21 = os.FirstOrDefault<TipTva>(t => t.Cod == "TI21");
+        var sdd = os.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
+        var ned21 = os.FirstOrDefault<TipTva>(t => t.Cod == "NED21");
+        var conturiTvaScena = new[] { n21.ContTvaDeductibilId, n21.ContTvaColectatId }
+            .Where(id => id != null).Select(id => id.Value).ToList();
+
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = MarcajJt + "-FURN";
+        furnizor.Denumire = "Furnizor probă jurnal TVA";
+        var produs = os.CreateObject<Produs>();
+        produs.Cod = MarcajJt;
+        produs.Denumire = "Produs probă jurnal TVA";
+        produs.UM = "BUC";
+        produs.TipMaterial = tip302;
+        os.CommitChanges();
+
+        FacturaIntrare Factura(string sufix, DateOnly data) {
+            var f = os.CreateObject<FacturaIntrare>();
+            f.Numar = MarcajJt + sufix;
+            f.Data = data;
+            f.Predator = furnizor;
+            f.Primitor = mag;
+            return f;
+        }
+        FacturaIntrareDetaliu Linie(FacturaIntrare f, TipMaterial tip, TipTva tva, decimal pret, decimal cantitate = 1m) {
+            var d = os.CreateObject<FacturaIntrareDetaliu>();
+            d.Document = f;
+            d.TipMaterial = tip;
+            d.Cantitate = cantitate;
+            d.PretUnitar = pret;
+            d.TipTva = tva;
+            return d;
+        }
+
+        // --- Cele patru regimuri, pe UN singur document ---
+        // Prețul liniei capitalizate e ales ca desfacerea bazei să NU fie exactă:
+        // 82,644628 × 1,21 = 100,00 brut, iar 100,00 / 1,21 = 82,6446… — cazul în
+        // care o formulă simetrică ar lăsa un ban pe drum.
+        fctA = Factura("-F1", new DateOnly(2026, 3, 20));
+        var lNormal = Linie(fctA, tip628, n21, 100m);
+        var lInversa = Linie(fctA, tip628, ti21, 50m);
+        var lScutit = Linie(fctA, tip628, sdd, 70m);
+        var lCapitalizat = Linie(fctA, tip628, ned21, 82.644628m);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fctA);
+
+        var fiscalA = Fiscal(fctA);
+        RegistruTva Rand(DocumentDetaliu d) => fiscalA.SingleOrDefault(r => r.DetaliuId == d.ID);
+        Check("JT-D4: cele patru regimuri pe un singur document → patru rânduri fiscale, câte o formulă fiecare "
+            + "(Normal 100/21, TaxareInversa 50/10,5, Scutit 70/0, Capitalizat 100 brut → 82,64/17,36)",
+            fiscalA.Count == 4
+            && Rand(lNormal) is { Regim: RegimTva.Normal, Cota: 21m, Baza: 100m, Tva: 21m }
+            && Rand(lInversa) is { Regim: RegimTva.TaxareInversa, Cota: 21m, Baza: 50m, Tva: 10.5m }
+            && Rand(lScutit) is { Regim: RegimTva.Scutit, Cota: 0m, Baza: 70m, Tva: 0m }
+            && Rand(lCapitalizat) is { Regim: RegimTva.Capitalizat, Cota: 21m, Baza: 82.64m, Tva: 17.36m });
+        Check("JT-D1/JT-D3: sensul vine din direcția politicii (FCT deduce → Achiziție), partenerul din latura "
+            + "declarată (RepartitorPredator → furnizorul), data e a documentului, rândurile nu sunt storno",
+            fiscalA.All(r => r.Sens == SensTva.Achizitie && r.PartenerId == furnizor.ID
+                && r.Data == fctA.Data && !r.Storno && r.DocumentId == fctA.ID));
+
+        var noteA = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fctA.ID && !r.Storno).ToList();
+        var noteTvaA = noteA
+            .Where(n => conturiTvaScena.Contains(n.ContDebitId) || conturiTvaScena.Contains(n.ContCreditId)).ToList();
+        Check("MOTIVUL DE EXISTENȚĂ al registrului (design, „de ce nu o proiecție peste RegistruContabil”): liniile "
+            + "Scutit și Capitalizat nu produc NICIUN rând contabil de TVA, dar AU rând fiscal — o proiecție peste "
+            + "4426/4427 le-ar fi pierdut tăcut, adică raport incomplet cu aparență de raport complet",
+            Rand(lScutit) != null && Rand(lCapitalizat) != null
+            && !noteTvaA.Any(n => n.DetaliuId == lScutit.ID || n.DetaliuId == lCapitalizat.ID)
+            && noteTvaA.Count == 2);
+        Check("JT-D4, Capitalizat: se rotunjește BAZA, iar TVA-ul e DIFERENȚA — deci Baza + Tva == valoarea BRUTĂ a "
+            + "liniei, EXACT, fără reziduu de rotunjire (82,64 + 17,36 == 100,00)",
+            lCapitalizat.Valoare == 100m && lCapitalizat.ValoareTva == 0m
+            && Rand(lCapitalizat).Baza + Rand(lCapitalizat).Tva == lCapitalizat.Valoare);
+
+        // --- Conexul, pe o factură cu linie de stoc ---
+        fctB = Factura("-F2", new DateOnly(2026, 3, 21));
+        var linieStoc = Linie(fctB, tip302, n21, 10m, cantitate: 5m);
+        linieStoc.ProdusId = produs.ID;
+        linieStoc.CreeazaLot(os, produs, mag);
+        os.CommitChanges();
+        conexB = MotorOperare.Opereaza(os, fctB);
+        MotorOperare.Opereaza(os, conexB);
+        Check("JT-D2, cealaltă jumătate a criteriului: NIR-ul conex CLONEAZĂ TipTvaId (ca informație — 26b), dar "
+            + "tipul lui n-are rând PoliticaTva ⇒ zero rânduri fiscale; TVA-ul rămâne al facturii, cu un rând",
+            conexB is NIR { Stare: StareDocument.Operat }
+            && conexB.Detalii.All(d => d.TipTvaId == n21.ID)
+            && Fiscal(conexB).Count == 0 && Fiscal(fctB).Count == 1);
+    }
+    else {
+        // Scenă MINIMĂ pe bugetar, cerută de premisa verificării 2: pe o bază
+        // curată la capătul suitei nu mai există niciun document operat, deci
+        // „zero rânduri fiscale” ar fi fost adevărat și pe o derivare complet
+        // greșită. Un singur document, cu TipTva pe linie, îi dă dinți.
+        var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+        var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628.00.00");
+        var cap21 = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP21");
+
+        var furnizorB = os.CreateObject<Partener>();
+        furnizorB.Cod = MarcajJt + "-FURN";
+        furnizorB.Denumire = "Furnizor probă jurnal TVA";
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = MarcajJt + "-CE";
+        codEc.Denumire = "Cod economic probă jurnal TVA";
+        os.CommitChanges();
+
+        fctA = os.CreateObject<FacturaIntrare>();
+        fctA.Numar = MarcajJt + "-F1";
+        fctA.Data = new DateOnly(2026, 3, 20);
+        fctA.Predator = furnizorB;
+        fctA.Primitor = mag1;
+        var linieB = os.CreateObject<FacturaIntrareDetaliu>();
+        linieB.Document = fctA;
+        linieB.TipMaterial = tipServicii;
+        linieB.Cantitate = 1m;
+        linieB.PretUnitar = 100m;
+        linieB.TipTva = cap21;
+        linieB.CodEconomicId = codEc.ID; // clasificația cerută de PoliticaValidare bugetară
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fctA);
+        Check("Premisa verificării 2, construită explicit: pe profilul bugetar o factură cu TipTva pe linie "
+            + "(CAP21, regim Capitalizat) se operează normal și postează brutul (121) — dar NU produce niciun "
+            + "rând fiscal, fiindcă tipul ei n-are PoliticaTva",
+            fctA.Stare == StareDocument.Operat && linieB.TipTvaId == cap21.ID
+            && linieB.Valoare == 121m && Fiscal(fctA).Count == 0);
+    }
+
+    // ---------------- Universalele: peste TOATĂ baza, nu peste scenă ----------------
+
+    // Conturile de TVA se citesc ca DATE (TipTva.ContTvaDeductibil/Colectat —
+    // decizia 29: motorul e agnostic la plan, deci și proba lui). Nu 4426/4427.
+    var conturiTva = os.GetObjectsQuery<TipTva>()
+        .Select(t => new { t.ContTvaDeductibilId, t.ContTvaColectatId }).ToList()
+        .SelectMany(t => new[] { t.ContTvaDeductibilId, t.ContTvaColectatId })
+        .Where(id => id != null).Select(id => id.Value).Distinct().ToList();
+
+    var fiscale = os.GetObjectsQuery<RegistruTva>()
+        .Select(r => new { r.DocumentId, r.Regim, r.Tva, r.PartenerId }).ToList();
+    var docIdsFiscale = fiscale.Select(r => r.DocumentId).Distinct().ToList();
+
+    // VERIFICAREA 1 (JT-D6) — cusătura per document.
+    //
+    // `TaxareInversa` postează 4426 = 4427: UN rând contabil cu valoarea TVA pe
+    // AMBELE conturi de TVA. De aceea partea contabilă se însumează pe RÂND
+    // (apartenența e „atinge un cont de TVA pe oricare latură”), nu pe latură: o
+    // însumare per latură l-ar fi numărat de două ori și autolichidarea ar fi ieșit
+    // dublă. Motivul e semantic, nu tehnic — autolichidarea e o SINGURĂ operațiune
+    // taxabilă, cu o singură cifră de TVA, care se întâmplă să se posteze printr-un
+    // rând ce atinge ambele conturi.
+    //
+    // Nu se filtrează `Storno` pe niciuna dintre părți: ambele registre sunt
+    // append-only și suma lor ALGEBRICĂ e adevărul (R-D7) — iar un storno peste
+    // graniță de lună cade în altă perioadă pe ambele părți deodată, deci cusătura
+    // per document rămâne exactă acolo unde una pe perioadă ar fi picat.
+    var contabilTva = os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => r.DocumentId != null && docIdsFiscale.Contains(r.DocumentId.Value)
+            && (conturiTva.Contains(r.ContDebitId) || conturiTva.Contains(r.ContCreditId)))
+        .Select(r => new { DocumentId = r.DocumentId.Value, r.Valoare }).ToList();
+    var divergente = docIdsFiscale.Select(id => new {
+            Id = id,
+            Fiscal = fiscale.Where(r => r.DocumentId == id
+                && (r.Regim == RegimTva.Normal || r.Regim == RegimTva.TaxareInversa)).Sum(r => r.Tva),
+            Contabil = contabilTva.Where(r => r.DocumentId == id).Sum(r => r.Valoare)
+        })
+        .Where(x => x.Fiscal != x.Contabil).ToList();
+    foreach (var d in divergente.Take(5))
+        Console.WriteLine($"     DIVERGENȚĂ JT-D6 pe documentul {d.Id}: fiscal {d.Fiscal} vs contabil {d.Contabil}");
+    Check($"VERIFICAREA 1 (JT-D6), pe toate cele {docIdsFiscale.Count} documente cu rânduri fiscale ale bazei "
+        + $"({fiscale.Count} rânduri): Σ TVA al regimurilor care POSTEAZĂ (Normal + TaxareInversa) == Σ valoarea "
+        + "rândurilor contabile ale aceluiași document pe conturile de TVA — registrul fiscal se închide pe cifra "
+        + "contabilă PRIN CONSTRUCȚIE, nu prin coincidență"
+        + (cuTva ? " — și proba NU e vacuă: cel puțin două documente, cu sume nenule pe ambele părți" : ""),
+        divergente.Count == 0
+        // Anti-vacuitate (lecția porților vacue, 50b): pe profilul cu TVA, o
+        // cusătură măsurată pe zero documente — sau doar pe unul stornat, unde
+        // ambele părți se netează — ar fi trecut și cu derivarea complet greșită.
+        && (!cuTva || (docIdsFiscale.Count >= 2 && contabilTva.Sum(r => r.Valoare) > 0m)));
+
+    // Materializarea polimorfă a documentelor OPERATE (tiparul 60b: sub TPT, un
+    // singur query pe bază întoarce tipul derivat corect) — TPT n-are
+    // discriminator, deci „de ce tip e documentul” se citește din clasa CLR.
+    static string NumeClr(Document d) {
+        var t = d.GetType();
+        while (t.Assembly.IsDynamic || t.Name.EndsWith("Proxy"))
+            t = t.BaseType;
+        return t.Name;
+    }
+    var numeCuPolitica = os.GetObjectsQuery<PoliticaTva>().Select(p => p.TipDocument.ClrType).ToList();
+    var operate = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Operat).ToList();
+    var idsOperate = operate.Select(d => d.ID).ToList();
+    var idsCuPolitica = operate.Where(d => numeCuPolitica.Contains(NumeClr(d))).Select(d => d.ID).ToHashSet();
+    var liniiOperate = os.GetObjectsQuery<DocumentDetaliu>()
+        .Where(d => idsOperate.Contains(d.DocumentId))
+        .Select(d => new { d.DocumentId, d.TipTvaId }).ToList();
+
+    // VERIFICAREA 2 — bugetarul rămâne GOL, cu premisa verificată (altfel proba
+    // n-ar avea dinți: „zero rânduri” e trivial pe o bază fără linii fiscale).
+    if (!cuTva) {
+        var cuTipTva = liniiOperate.Count(l => l.TipTvaId != null);
+        Check("VERIFICAREA 2: profilul bugetar n-are NICIUN rând fiscal, deși premisa are dinți — există "
+            + $"{cuTipTva} linii de documente OPERATE care CHIAR poartă TipTva (CAP21 e implicitul FCT/FCL/DEC "
+            + "acolo). Criteriul JT-D2 cere ȘI politica, iar profilul neplătitor n-are niciun rând PoliticaTva: "
+            + "un criteriu bazat doar pe linie ar fi fabricat un jurnal de TVA pentru un neplătitor",
+            fiscale.Count == 0 && numeCuPolitica.Count == 0 && cuTipTva > 0);
+    }
+
+    // VERIFICAREA 3 — găurile declarate se MĂSOARĂ, nu se umplu cu presupuneri.
+    // (a) JT-D2: linia fără TipTva de pe un document cu politică rămâne în afara
+    //     jurnalului — gaură a DATELOR, nu a modelului.
+    // (b) Riscul 4 din design: `SursaContrapartida` care nu e o latură
+    //     (Explicit/TipMaterial) ⇒ partener null, raportat nu refuzat.
+    // Check-ul asertează doar coerența numărătorii (sunt măsurători, nu
+    // invarianți) — plus un invariant care ÎNCAPE aici și chiar are dinți:
+    // partenerul, când există, e una dintre laturile documentului lui.
+    var liniiFaraTipTva = liniiOperate.Count(l => idsCuPolitica.Contains(l.DocumentId) && l.TipTvaId == null);
+    var faraPartener = fiscale.Count(r => r.PartenerId == null);
+    var laturi = os.GetObjectsQuery<Document>()
+        .Where(d => docIdsFiscale.Contains(d.ID))
+        .Select(d => new { d.ID, d.PredatorId, d.PrimitorId })
+        .ToDictionary(d => d.ID, d => (d.PredatorId, d.PrimitorId));
+    Console.WriteLine($"     MĂSURAT (JT-D6 verificarea 3): {liniiFaraTipTva} linii fără TipTva pe documente operate "
+        + $"ale unui tip cu PoliticaTva (din {liniiOperate.Count} linii operate în bază); "
+        + $"{faraPartener} rânduri fiscale fără partener (din {fiscale.Count}).");
+    Check("VERIFICAREA 3: găurile declarate sunt numărabile și coerente (liniile fără TipTva ⊆ liniile operate, "
+        + "rândurile fără partener ⊆ rândurile fiscale), iar partenerul — când există — e chiar una dintre "
+        + "laturile documentului, adică repartitorul laturii cerute de politică, nu un terț inventat",
+        liniiFaraTipTva <= liniiOperate.Count && faraPartener <= fiscale.Count
+        && fiscale.Where(r => r.PartenerId != null).All(r =>
+            laturi.TryGetValue(r.DocumentId, out var l)
+            && (r.PartenerId == l.PredatorId || r.PartenerId == l.PrimitorId)));
+
+    // ---------------- Scena, partea a doua: storno și anulare ----------------
+    if (cuTva) {
+        MotorOperare.Storneaza(os, fctA, dataStorno);
+        var dupaStorno = Fiscal(fctA);
+        Check("JT-D5, storno: patru rânduri inverse la DATA STORNĂRII (Storno = true, bază/TVA cu semn schimbat), "
+            + "identitatea fiscală copiată ca snapshot — suma algebrică pe document e zero pe ambele coloane",
+            dupaStorno.Count == 8 && dupaStorno.Count(r => r.Storno) == 4
+            && dupaStorno.Where(r => r.Storno).All(r => r.Data == dataStorno)
+            && dupaStorno.Sum(r => r.Baza) == 0m && dupaStorno.Sum(r => r.Tva) == 0m
+            && dupaStorno.Where(r => r.Storno).All(s => dupaStorno.Any(o => !o.Storno
+                && o.DetaliuId == s.DetaliuId && o.TipTvaId == s.TipTvaId && o.Sens == s.Sens
+                && o.Regim == s.Regim && o.Cota == s.Cota && o.PartenerId == s.PartenerId
+                && o.Baza == -s.Baza && o.Tva == -s.Tva)));
+        // Cusătura JT-D6 rezistă și peste storno — și tocmai de aceea e per
+        // DOCUMENT: rândul invers cade în ALTĂ lună (iulie) decât originalul
+        // (martie), pe ambele părți deodată, deci o cusătură pe PERIOADĂ ar fi
+        // picat aici, iar una per document rămâne exactă (riscul 6 din design).
+        var contabilTvaStornat = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId == fctA.ID
+                && (conturiTva.Contains(r.ContDebitId) || conturiTva.Contains(r.ContCreditId)))
+            .Sum(r => r.Valoare);
+        Check("JT-D6 peste storno: cusătura se închide algebric pe document (0 == 0) chiar dacă rândurile inverse "
+            + "cad în altă LUNĂ decât originalele — motivul pentru care reconcilierea e per document, nu pe perioadă",
+            dupaStorno.Where(r => r.Regim is RegimTva.Normal or RegimTva.TaxareInversa).Sum(r => r.Tva)
+                == contabilTvaStornat);
+
+        MotorOperare.AnuleazaOperarea(os, conexB);
+        MotorOperare.AnuleazaOperarea(os, fctB);
+        Check("JT-D5, anulare: corecția directă șterge rândurile fiscale odată cu celelalte două registre — "
+            + "documentul revenit în Draft nu mai are nicio urmă în jurnal",
+            fctB.Stare == StareDocument.Draft && Fiscal(fctB).Count == 0
+            && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == fctB.ID));
+    }
+
+    CurataJt();
+    Check("Curățenie finală felia registru TVA (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajJt))
+        && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajJt))
+        && !os.GetObjectsQuery<CodEconomic>().Any(c => c.Cod.StartsWith(MarcajJt))
+        && !os.GetObjectsQuery<Document>().Any(d => d.Numar.StartsWith(MarcajJt))
+        // …și niciun rând fiscal VIZIBIL nu rămâne fără documentul lui: exact
+        // forma de reziduu pe care o lasă o curățenie care nu știe de registrul
+        // ăsta (vezi purja de la începutul feliei).
+        && os.GetObjectsQuery<RegistruTva>().All(r => os.GetObjectsQuery<Document>().Any(d => d.ID == r.DocumentId)));
 }

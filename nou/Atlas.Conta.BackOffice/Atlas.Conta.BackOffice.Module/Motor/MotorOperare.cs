@@ -29,6 +29,10 @@ public static class MotorOperare {
         public List<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)> Miscari;
         public List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
             decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)> Note;
+        // Felia 11 (JT-D1): faptele fiscale ale liniilor, derivate de
+        // `RegistruTvaService` tot în faza de CALCUL — un refuz al oricărui
+        // gardian nu lasă rânduri-fantomă în ObjectSpace-ul apelantului (33d).
+        public List<RegistruTvaService.RandTva> RanduriTva;
     }
 
     // Dry-run-ul comenzii de operare (D3): rulează EXACT fazele de calcul și
@@ -251,12 +255,22 @@ public static class MotorOperare {
             }
         }
 
+        // Faptele fiscale (felia 11, JT-D1): registrul de TVA e derivat de
+        // serviciul-insulă `RegistruTvaService`, pe același criteriu de politică
+        // ca pasul de mai sus — dar ACOPERĂ MAI MULT: rândurile `Scutit`,
+        // `Neimpozabil` și `Capitalizat` nu postează nimic contabil, însă apar
+        // legal în jurnalul de cumpărări/vânzări și în D300. Derivarea stă tot în
+        // faza de CALCUL (33d), deci un refuz de mai jos n-o materializează.
+        var randuriTva = RegistruTvaService.Deriva(os, doc, tipDoc, doc.Detalii);
+
         // Dimensiunile obligatorii per cont (decizia 15: flag-urile de defalcare
         // din plan = date de validare) se verifică pe seturile REZOLVATE, per
         // latură — abia aici se știe și contul, și rezultatul coalesce-ului.
         VerificaDimensiuniObligatorii(os, note, claseTip);
 
-        return new PlanOperare { TipDoc = tipDoc, ClaseTip = claseTip, Miscari = miscari, Note = note };
+        return new PlanOperare {
+            TipDoc = tipDoc, ClaseTip = claseTip, Miscari = miscari, Note = note, RanduriTva = randuriTva
+        };
     }
 
     // Întoarce documentul conex generat (draft autogenerat, decizia 17) sau null.
@@ -331,6 +345,20 @@ public static class MotorOperare {
             rand.AplicaDimensiuniCredit(n.DimensiuniCredit);
             rand.Document = doc;
             rand.Detaliu = n.Detaliu;
+        }
+
+        foreach (var t in plan.RanduriTva) {
+            var rand = os.CreateObject<RegistruTva>();
+            rand.Data = doc.Data;
+            rand.Document = doc;
+            rand.DetaliuId = t.DetaliuId;
+            rand.Sens = t.Sens;
+            rand.PartenerId = t.PartenerId;
+            rand.TipTvaId = t.TipTvaId;
+            rand.Regim = t.Regim;
+            rand.Cota = t.Cota;
+            rand.Baza = t.Baza;
+            rand.Tva = t.Tva;
         }
 
         // 4. Documentul conex (decizia 17, 00 §6): draft autogenerat în aceeași
@@ -530,6 +558,10 @@ public static class MotorOperare {
 
         var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();
         var randuriContabile = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList();
+        // Faptele fiscale se șterg pe aceeași cale ca celelalte două registre
+        // (JT-D5): niciun gardian propriu — TVA-ul nu e o resursă cu sold, deci
+        // n-are ce verifica înainte, spre deosebire de stoc.
+        var randuriTva = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == doc.ID).ToList();
 
         // Simularea eliminării: delta goală, rândurile proprii excluse, dar
         // cheile lor re-verificate de la prima dată afectată.
@@ -552,6 +584,7 @@ public static class MotorOperare {
 
         os.Delete(randuriStoc);
         os.Delete(randuriContabile);
+        os.Delete(randuriTva);
         doc.Stare = StareDocument.Draft;
         doc.DataOperare = null;
         os.CommitChanges();
@@ -574,6 +607,7 @@ public static class MotorOperare {
 
         var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();
         var randuriContabile = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList();
+        var randuriTva = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == doc.ID).ToList();
 
         var delta = randuriStoc
             .Select(r => new MiscareStoc(new CheieStoc(r.LotId, r.RepartitorId, r.TipStoc), dataStorno, -r.Cantitate))
@@ -604,6 +638,27 @@ public static class MotorOperare {
             invers.Storno = true;
             invers.Document = doc;
             invers.DetaliuId = r.DetaliuId;
+        }
+        // Faptele fiscale se inversează la fel (JT-D5): jurnalul nu filtrează
+        // NICIODATĂ `Storno` — registrul e append-only și suma lui algebrică e
+        // adevărul (R-D7). Consecință acceptată: rândul invers cade în luna
+        // stornării, deci jurnalul lunii deja declarate rămâne cum a fost declarat.
+        // Identitatea fiscală (`Sens`/`TipTva`/`Regim`/`Cota`/partener) se copiază
+        // ca atare — snapshot-ul rândului original, nu o re-derivare din politica
+        // de azi, care între timp poate fi alta.
+        foreach (var r in randuriTva) {
+            var invers = os.CreateObject<RegistruTva>();
+            invers.Data = dataStorno;
+            invers.Sens = r.Sens;
+            invers.Document = doc;
+            invers.DetaliuId = r.DetaliuId;
+            invers.PartenerId = r.PartenerId;
+            invers.TipTvaId = r.TipTvaId;
+            invers.Regim = r.Regim;
+            invers.Cota = r.Cota;
+            invers.Baza = -r.Baza;
+            invers.Tva = -r.Tva;
+            invers.Storno = true;
         }
 
         doc.Stare = StareDocument.Stornat;
