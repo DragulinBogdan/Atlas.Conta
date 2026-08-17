@@ -266,3 +266,105 @@ balanță → link către documentul unei linii**.
 
 Explicit NU în regula de oprire: export (PDF/Excel), formatare de raport
 tipărit, rollup pe planul de conturi, jurnale de TVA.
+
+---
+
+## Închidere (2026-08-17)
+
+- [x] **Contract îndeplinit.** ModelCheck final **bugetar 649 OK / 0 FAIL**,
+  **privat 302 OK / 0 FAIL** (re-rulate de main la fiecare pas, nu doar
+  raportate): +16 la balanță, +20 la fișă/jurnal, +5 la ordinea fișei, +5 la
+  fixurile review-ului. Soluția întreagă (inclusiv Blazor.Server) și clientul
+  compilează; `pnpm verifica:drift` verde după commit. **Zero migrații** — felia
+  a rămas integral aditivă și read-only, cum cerea scope-ul.
+- [x] **Regula de oprire, probată în browser de main** pe clona bazei de import:
+  balanța ian. 2025 (95 conturi, `Σ 49.574.505,71` identic pe ambele rulaje —
+  partida dublă vizibilă, coloanele de sold fără totaluri) → drill-down pe 3028
+  → fișa cu sold curent care pornește exact din `Sold inițial debitor` (2.024,59)
+  și se închide, pe pagina 3, pe `2.342,70` = `Sold final debitor` din balanță →
+  link către documentul liniei. Jurnalul: cronologic, storno afișat ca valoare
+  negativă pe corespondența originală (46a).
+- [x] **Perf măsurată** (addendum în `p5-perf-masuratori.md`): tot sub 300ms —
+  balanță sintetică 59/88ms (lună/an), analitică 84/269ms, jurnal 63/77ms, fișa
+  contului celui mai traficat 214–286ms, **inclusiv calea de grupare
+  server-side** (57–202ms), pe care n-o măsurase nimeni. `DocumenteCuRest`
+  re-măsurat ca reper (423ms vs ~410ms în 59) ⇒ cifrele rămân comparabile între
+  felii. `EXPLAIN`: fișa folosește deja `Bitmap Index Scan` pe indecșii de cont,
+  costul dominant e `WindowAgg` — structural (R-D6 cere istoricul integral) și
+  **constant indiferent de `skip`**. Niciun index adăugat (disciplina 59).
+
+### Ce a scos măsurătoarea, în afara mandatului ei
+
+**Ordinea fișei nu era optimizată de EF — era ȘTEARSĂ de `DataSourceLoader`.**
+SQL-ul real conținea `ORDER BY a."Id"`, nu cele trei chei din cod (26 din
+144.248 rânduri diferite ca poziție pe contul 4111). `SoldCurent` rămânea corect
+(fereastra e în SQL-ul nostru), dar rândurile puteau fi AFIȘATE în altă ordine
+decât cea în care soldul fusese cumulat — adică exact coloana de cifre fără sens
+pe care R-D6 există s-o prevină.
+
+Lanțul, demonstrat pe surse decompilate: `Incarca` pune mereu `Take` ⇒
+`HasPaging`; DTO-ul n-are `[Key]` ⇒ `PrimaryKey` gol; în ramura asta biblioteca
+își **inventează** o sortare (`EFSorting.FindSortableMember` → primul membru
+numit „Id"), o compilează ca `Queryable.OrderBy` (nu `ThenBy`), iar EF Core
+`SelectExpression.ApplyOrdering` face `_orderings.Clear()`.
+
+Sub-întrebarea gravă — dacă `Id`, care NU e unic pe fișă, e tratat ca cheie și
+poate deduplica rânduri — are răspuns **negativ**, verificat: `AdHocMapper`
+scoate convențiile de cheie și face `HasNoKey()`.
+
+Testul de regresie a fost **văzut picând** (4 verificări FAIL cu fixul dat
+înapoi). Scena are Id-uri EXPLICITE în ordine inversă față de dată — pe UUIDv7
+naturale ar fi fost flaky-verde. Invariantul verificat e cel real: `SoldCurent`
+al fiecărui rând == cumulul rândurilor **de dinaintea lui în ordinea afișată**,
+continuat peste paginare — nu „ultimul sold e corect", care iese bun și dintr-o
+secvență amestecată.
+
+### Review advers — 4 defecte de fond, toate închise
+
+Toate în afara drumului fericit **prin construcție**: niciunul nu se manifestă pe
+balanța sintetică a unei luni, cu Admin, pe un plan intact.
+
+1. **Fișa ocolea securitatea** (scurgere completă). `User` primea gol de la
+   balanță și de la OData, dar registrul COMPLET de la fișă; cu
+   `ContrapartidaId` pe fiecare rând, toată cartea mare. Închis prin gate
+   fail-closed — vezi R-D6, unde premisa a fost rescrisă.
+2. **Balanța analitică pagina pe cheie ne-unică** — același mecanism al
+   bibliotecii ca la ordinea fișei, în celălalt loc. Fix: ordine totală, și
+   ca **tiebreak când clientul sortează**, nu doar ca default (un click pe
+   antetul „Cont" reproducea cheia ne-unică pe calea reală).
+3. **Drill-down pe rândul analitic „fără repartitor"** deschidea fișa
+   NEFILTRATĂ, cu soldul SINTETIC afișat ca al rândului. Cauza era în contract,
+   nu în client: `Guid?` nu poate exprima „repartitor absent" — null înseamnă
+   deja „fără filtru". Fix: a treia valoare (`repartitorNul`).
+4. **`Cont` invizibil** (șters logic sau nevăzut prin securitate) ⇒ balanța
+   pierdea tăcut atomi prin `INNER JOIN` și partida dublă se rupea în footer,
+   în timp ce fișa aceluiași cont mergea. Fix: `LEFT JOIN`, cu contul nerezolvat
+   marcat. **Ordinea a contat**: fără gate-ul de la (1), LEFT JOIN-ul ar fi
+   arătat sume pe conturi fără nume unui utilizator fără drept pe plan — un fix
+   care deschide o scurgere închizând alta.
+
+Tiparul comun al lui (1)–(4): fiecare a fost posibil pentru că **un check
+exista, dar nu pe calea reală** — proiecțiile erau verificate ca `IQueryable`,
+niciodată prin `DataSourceLoader`; cusătura fișă↔balanță era verificată doar pe
+sintetic; partida dublă doar pe o bază cu toate conturile vizibile; securitatea
+deloc (ModelCheck rulează pe provider nesecurizat, deci un check ar fi trecut și
+cu gate-ul șters — motivul e scris în cod, proba e HTTP).
+
+### Rămase, ne-blocante
+
+- **`HeaderFilter` trunchiat la 100 de valori distincte** (măsurat: 100 din 105
+  pe „Cont debitor" în jurnal): plafonul din `Incarca` taie GRUPURILE, nu
+  rândurile. Peste 500 de valori rămâne trunchiat indiferent de scroll.
+- **`DocumentTip` divergează după permisiuni** (pre-existent): un utilizator
+  care nu vede `TipDocument` primește numele clasei CLR în loc de cod. Benign
+  prin 61a (`rutaTip` nu recunoaște ⇒ text, nu link mort), dar e o divergență de
+  contract funcție de cine cere.
+- **Cele 8 dimensiuni n-au UI** — se acceptă doar din URL (pass-through), fără
+  culegere. Scop declarat; promovarea oricăreia la cheie de grupare rămâne
+  aditivă (R-D4).
+- Restul listelor de citire (`Lista` per felie, `SoldStoc`, `DocumenteCuRest`)
+  primesc în continuare ordinea inventată de bibliotecă. Azi n-are ce rupe —
+  niciuna n-are ordine documentată — dar oricare capătă una trebuie s-o declare
+  la fel, altfel dispare identic.
+- Contul care se netează exact la zero apare cu toate cifrele 0 (corect
+  matematic, zgomot într-o balanță tipărită).
