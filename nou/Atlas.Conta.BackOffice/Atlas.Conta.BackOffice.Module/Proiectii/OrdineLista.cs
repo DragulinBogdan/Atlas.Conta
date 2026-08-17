@@ -38,15 +38,38 @@ public static class OrdineLista {
     public static SortingInfo Crescator(string selector) => new() { Selector = selector };
     public static SortingInfo Descrescator(string selector) => new() { Selector = selector, Desc = true };
 
-    // Ordinea implicită a unei proiecții: se aplică DOAR când cererea n-a cerut
-    // alta. Proiecțiile cu ordine NEnegociabilă (fișa de cont) își golesc întâi
-    // `Sort`-ul clientului — decizia aia trăiește în controllerul lor, aici nu se
-    // presupune nimic despre ea.
+    // Ordinea declarată a unei proiecții, în două roluri care sunt de fapt unul
+    // singur — „ORDER BY-ul care ajunge la Postgres trebuie să fie TOTAL":
+    //
+    //  • cererea n-are `sort=` ⇒ ordinea declarată devine ordinea, în locul celei
+    //    inventate de bibliotecă;
+    //  • cererea ARE `sort=` ⇒ sortarea clientului rămâne PRIMARĂ (grila sortează
+    //    ce vrea), iar selectorii declarați care nu apar deja în ea se adaugă
+    //    DUPĂ, ca tiebreak.
+    //
+    // A doua ramură nu e un lux (review advers D2): sortarea unei grile se face
+    // aproape întotdeauna pe o coloană NE-unică — „Cont" pe balanța analitică,
+    // orice coloană a jurnalului — iar `ORDER BY` ne-unic sub `LIMIT/OFFSET` n-are
+    // ordine garantată: același rând poate apărea pe două pagini sau pe niciuna.
+    // Dedupe pe SELECTOR, nu pe (selector, direcție): dacă clientul a sortat
+    // descrescător pe o coloană din cheie, a o re-adăuga crescător ar fi inertă în
+    // cel mai bun caz și derutantă în cel mai rău.
+    //
+    // Proiecțiile cu ordine NEnegociabilă (fișa de cont) își golesc întâi `Sort`-ul
+    // clientului — decizia aia trăiește în controllerul lor, aici nu se presupune
+    // nimic despre ea.
     public static void AplicaOrdineImplicita(DataSourceLoadOptionsBase optiuni, params SortingInfo[] ordine) {
         if (optiuni == null || ordine == null || ordine.Length == 0)
             return;
-        if (optiuni.Sort is { Length: > 0 })
+        if (optiuni.Sort is not { Length: > 0 } cerutaDeClient) {
+            optiuni.Sort = ordine;
             return;
-        optiuni.Sort = ordine;
+        }
+        var deja = new HashSet<string>(
+            cerutaDeClient.Where(s => s?.Selector != null).Select(s => s.Selector),
+            StringComparer.OrdinalIgnoreCase);
+        var tiebreak = ordine.Where(s => s?.Selector != null && deja.Add(s.Selector)).ToArray();
+        if (tiebreak.Length > 0)
+            optiuni.Sort = cerutaDeClient.Concat(tiebreak).ToArray();
     }
 }

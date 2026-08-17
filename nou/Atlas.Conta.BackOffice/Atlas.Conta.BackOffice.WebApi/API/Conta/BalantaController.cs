@@ -54,8 +54,15 @@ public class BalantaController : ContaApiController {
             return BadRequest(EroriDto.Din(erori));
 
         using var os = Secured(typeof(RegistruContabil));
+        // Ordinea se declară EXPLICIT și e TOTALĂ (review advers D2). Fără ea,
+        // `DataSourceLoader` pune ordinea LUI — `ContId` —, care e cheie unică în
+        // modul sintetic dar REPETATĂ în cel analitic (cheia de grupare e
+        // `Cont × Repartitor`): `ORDER BY` ne-unic sub `LIMIT/OFFSET` n-are ordine
+        // garantată, deci un rând poate apărea pe două pagini sau pe niciuna.
+        // Depinde de MOD, ca și cheia de grupare a proiecției.
         return Ok(Incarca(ContabilProiectii.Balanta(os, dataStart.Value, dataEnd.Value, analitic,
             repartitorId, materialId, codFunctionalId, codEconomicId,
-            sursaFinantareId, unitateId, proiectId, centruCostId), loadOptions));
+            sursaFinantareId, unitateId, proiectId, centruCostId),
+            loadOptions, ContabilProiectii.OrdineBalanta(analitic)));
     }
 }

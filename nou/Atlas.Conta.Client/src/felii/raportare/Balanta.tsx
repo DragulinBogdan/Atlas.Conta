@@ -7,7 +7,7 @@ import {
 } from 'devextreme-react/data-grid';
 import type { components } from '../../generated/api-types';
 import { storeRemote } from '../../nucleu/dxStore';
-import { urlCu, useUrlStare } from '../../nucleu/urlStare';
+import { urlCu, useDimensiuniUrl, useUrlStare } from '../../nucleu/urlStare';
 import { CasetaData, lunaCurenta } from './comune';
 
 // Balanța de verificare (R-D2…R-D5): agregarea registrului contabil, calculată
@@ -35,10 +35,15 @@ export function Balanta() {
   // de el (R-D4): sintetic = contul, analitic = cont × repartitor. Cu `ContId`
   // singur, două rânduri analitice ale aceluiași cont ar fi „același rând"
   // pentru grilă.
+  // Dimensiunile din URL merg mai departe la API (C1): ecranul nu le culege,
+  // dar un deep-link care le conține trebuie ori să filtreze, ori să nu le
+  // accepte — nu să le înghită tăcut și să arate balanța întreagă.
+  const dimensiuni = useDimensiuniUrl();
+
   const sursa = useMemo(() => storeRemote(
-    urlCu('/api/proiectii/balanta', stare),
+    urlCu('/api/proiectii/balanta', { ...stare, ...dimensiuni }),
     stare.analitic ? ['ContId', 'RepartitorId'] : ['ContId'],
-  ), [stare]);
+  ), [stare, dimensiuni]);
 
   return (
     <div className="ecran">
@@ -79,6 +84,14 @@ export function Balanta() {
             // contului FILTRATĂ pe acel repartitor, altfel drill-down-ul ar
             // duce la alte cifre decât cele din rândul clicat.
             repartitorId: stare.analitic ? rand.RepartitorId : undefined,
+            // …iar „fără repartitor" e un rând ANALITIC LEGITIM (LEFT JOIN-ul
+            // îl păstrează deliberat; pe baza de import e chiar majoritar —
+            // deschiderea s-a scris fără dimensiuni, 47c, iar 2025 a trecut
+            // fără dimensiuni culese pe linie, DIM-2). `repartitorId: null` ar
+            // dispărea din URL (`urlCu` sare valorile goale) și fișa s-ar
+            // deschide pe TOT contul, cu ultimul sold curent egal cu soldul
+            // SINTETIC — deci santinelă explicită, nu absență (review D3).
+            repartitorNul: stare.analitic && !rand.RepartitorId ? true : undefined,
           }));
         }}
       >
@@ -91,12 +104,19 @@ export function Balanta() {
         <Paging defaultPageSize={50} />
         <Pager showInfo showPageSizeSelector allowedPageSizes={[50, 100, 200]} />
 
-        <Column dataField={camp('ContSimbol')} caption="Cont" fixed width={110} />
+        {/* Join-ul pe `Cont` e LEFT (review D4): un atom nu se pierde din
+            balanță fiindcă i-a dispărut ETICHETA (cont șters soft, sau
+            invizibil prin securitate) — altfel linia dispărea și `Σ RulajDebit
+            != Σ RulajCredit` în footer, fără nicio explicație. Cifrele rămân
+            deci întregi, iar rândul fără etichetă se MARCHEAZĂ, nu se afișează
+            gol (un gol ar arăta ca o scăpare de randare). */}
+        <Column dataField={camp('ContSimbol')} caption="Cont" fixed width={110} cellRender={celulaCont} />
         <Column dataField={camp('ContDenumire')} caption="Denumire" />
         <Column
           dataField={camp('RepartitorDenumire')}
           caption="Repartitor"
           visible={stare.analitic}
+          cellRender={celulaRepartitor}
         />
 
         <Column caption="Sold inițial">
@@ -139,6 +159,22 @@ export function Balanta() {
       </p>
     </div>
   );
+}
+
+// Contul nerezolvat (LEFT JOIN, review D4): cifrele rândului sunt reale și intră
+// în totaluri — doar eticheta lipsește. Se spune ca atare, cu identificatorul în
+// `title`, ca rândul să fie urmăribil.
+function celulaCont({ data }: { data: BalantaRand }) {
+  if (data.ContSimbol) return <span>{data.ContSimbol}</span>;
+  return <span className="indiciu" title={data.ContId ?? ''}>(cont indisponibil)</span>;
+}
+
+// „Fără repartitor" e o cheie de grupare legitimă, nu o celulă goală — și e
+// exact rândul al cărui drill-down cere santinela `repartitorNul` (review D3).
+function celulaRepartitor({ data }: { data: BalantaRand }) {
+  return data.RepartitorDenumire
+    ? <span>{data.RepartitorDenumire}</span>
+    : <span className="indiciu">(fără repartitor)</span>;
 }
 
 const BANI = { dataType: 'number', format: '#,##0.00', alignment: 'right', width: 130 } as const;

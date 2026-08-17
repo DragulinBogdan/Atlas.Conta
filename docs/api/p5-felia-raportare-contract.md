@@ -131,10 +131,33 @@ Două consecințe **obligatorii**, altfel proiecția minte:
 2. **Parametrizare strictă** (fără interpolare de string în SQL).
 
 Notă de cusătură, de scris în cod: calea SQL brut **ocolește filtrele de
-securitate XAF**. E acceptabilă aici pentru că `RegistruContabil` n-are
-restricții pe rând (nimeni n-are Write pe registre — 42a, iar citirea nu e
-filtrată); dacă asta se schimbă vreodată, fișa e primul loc care trebuie
-reevaluat.
+securitate XAF**.
+
+**Corectat după review-ul advers (D1).** Prima formulare a acestei note spunea
+că e acceptabilă „pentru că `RegistruContabil` n-are restricții pe rând (…iar
+citirea nu e filtrată)" — o PREMISĂ, și una falsă: probat cu token, un
+utilizator fără nicio permisiune primea gol de la balanță și de la
+`/api/odata/Cont`, dar registrul COMPLET de la fișă — cu `ContrapartidaId` pe
+fiecare rând, adică toată cartea mare, plimbându-te din contrapartidă în
+contrapartidă.
+
+Premisa nu se re-afirmă, se **dovedește**, per cerere, **fail closed**:
+
+1. `contId` se rezolvă prin ObjectSpace-ul **securizat** — inexistent SAU
+   invizibil ⇒ **404**, fără sondare de existență (tiparul
+   `ComandaAutorizata`);
+2. echivalența celor două căi se **măsoară** (`ContabilProiectii.CaleaBrutaEchivalenta`):
+   numărul rândurilor de registru ale contului văzute prin
+   `GetObjectsQuery<RegistruContabil>()` vs. cele văzute de SQL-ul brut pe
+   aceeași mulțime. Diferă ⇒ **403**, cu mesaj care trimite la balanță/jurnal.
+   Numărătoarea e o dovadă, nu o euristică: interogarea securizată e
+   `predicatul ∧ criteriile de securitate`, deci poate doar scoate rânduri —
+   egalitate ⟺ n-a scos niciunul.
+
+Zona nu e acoperită de ModelCheck și nici nu poate fi (unealta rulează pe un
+provider standalone, NEsecurizat — acolo cele două căi sunt egale prin
+construcție, deci un check ar trece și cu gate-ul șters). Proba ei e HTTP, pe
+utilizatori cu drepturi diferite.
 
 ### R-D7 — Rândurile de storno intră; rândurile de deschidere se afișează ca atare
 

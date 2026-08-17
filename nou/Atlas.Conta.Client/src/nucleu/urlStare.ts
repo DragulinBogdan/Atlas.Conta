@@ -74,6 +74,35 @@ export function useUrlStare<T extends Record<string, ValoareStare>>(implicite: T
   return [stare, seteaza] as const;
 }
 
+// Cele 8 dimensiuni pe care proiecțiile de raportare le acceptă ca FILTRE
+// (R-D2: se aplică înaintea agregării, când coloana încă există). Clientul nu
+// le culege din UI în felia asta — dar le duce mai departe din URL, ca un
+// deep-link să nu mintă: `?proiectId=…` trebuie ori să filtreze, ori să nu fie
+// acceptat. Înghițirea tăcută era singura variantă exclusă (review, C1).
+const DIMENSIUNI = [
+  'repartitorId', 'materialId', 'codFunctionalId', 'codEconomicId',
+  'sursaFinantareId', 'unitateId', 'proiectId', 'centruCostId',
+] as const;
+
+// Dimensiunile prezente în URL-ul paginii, mai puțin cele pe care ecranul le
+// ține deja în starea lui (fișa are `repartitorId` al ei, dus de drill-down) —
+// altfel aceeași cheie ar ajunge de două ori pe sârmă.
+export function useDimensiuniUrl(deja: readonly string[] = []): Record<string, string> {
+  const [params] = useSearchParams();
+  const cheie = params.toString();
+  return useMemo(() => {
+    const p = new URLSearchParams(cheie);
+    const rezultat: Record<string, string> = {};
+    for (const d of DIMENSIUNI) {
+      if (deja.includes(d)) continue;
+      const v = p.get(d);
+      if (v) rezultat[d] = v;
+    }
+    return rezultat;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `deja` e literal per ecran.
+  }, [cheie]);
+}
+
 // Construirea unui link către alt ecran cu parametri (drill-down balanță →
 // fișă). Aici parametrii se scriu TOȚI cei dați — nu există „implicit" comun
 // între două ecrane diferite, deci omisiunea ar fi o presupunere. Valorile

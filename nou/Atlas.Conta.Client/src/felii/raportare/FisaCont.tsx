@@ -7,7 +7,7 @@ import {
 import type { components } from '../../generated/api-types';
 import { storeRemote } from '../../nucleu/dxStore';
 import { rutaTip } from '../../nucleu/stingeri';
-import { urlCu, useUrlStare } from '../../nucleu/urlStare';
+import { urlCu, useDimensiuniUrl, useUrlStare } from '../../nucleu/urlStare';
 import { CasetaData, etichetaCont, lunaCurenta, useSursaConturi, type ElementCont } from './comune';
 
 // Fișa de cont (R-D6): rândurile unui cont, cronologic, cu SOLDUL CURENT cumulat
@@ -26,6 +26,11 @@ export function FisaCont() {
     // cont × repartitor, deci fișa lui e a contului filtrată pe repartitor.
     // Filtru de PROIECȚIE (R-D2), nu de grilă — se aplică înaintea ferestrei.
     repartitorId: '',
+    // A TREIA valoare a aceluiași filtru (review D3): rândul analitic „fără
+    // repartitor". `repartitorId: ''` înseamnă „fără filtru" — deci absența nu
+    // poate exprima absența, iar drill-down-ul pe acel rând deschidea fișa
+    // întregului cont, cu ultimul sold curent egal cu soldul SINTETIC.
+    repartitorNul: false,
   });
 
   const sursaConturi = useSursaConturi();
@@ -34,16 +39,27 @@ export function FisaCont() {
   // nici o a doua sursă de adevăr pentru simbol/denumire.
   const [cont, setCont] = useState<ElementCont | null>(null);
 
+  // Ca la balanță (C1) — mai puțin `repartitorId`, pe care fișa îl ține deja în
+  // starea ei (îl aduce drill-down-ul analitic), ca să nu ajungă de două ori.
+  const dimensiuni = useDimensiuniUrl(['repartitorId']);
+
   const sursa = useMemo(() => (
     stare.contId
-      ? storeRemote(urlCu('/api/proiectii/fisa-cont', stare), ['Id', 'Sens'])
+      ? storeRemote(urlCu('/api/proiectii/fisa-cont', { ...stare, ...dimensiuni }), ['Id', 'Sens'])
       : null
-  ), [stare]);
+  ), [stare, dimensiuni]);
 
   return (
     <div className="ecran">
       <div className="ecran__bara">
-        <h2>Fișă de cont{cont?.Simbol ? ` — ${etichetaCont(cont)}` : ''}</h2>
+        {/* Filtrul de repartitor vine din drill-down și trăiește doar în URL —
+            dacă nu se spune, fișa arată ALTE cifre decât contul întreg fără
+            niciun indiciu vizibil de ce. */}
+        <h2>
+          Fișă de cont{cont?.Simbol ? ` — ${etichetaCont(cont)}` : ''}
+          {stare.repartitorNul ? ' (fără repartitor)' : ''}
+          {stare.repartitorId ? ' (filtrată pe repartitor)' : ''}
+        </h2>
         <Link className="buton buton--mic" to={urlCu('/balanta', { dataStart: stare.dataStart, dataEnd: stare.dataEnd })}>
           Înapoi la balanță
         </Link>
@@ -98,7 +114,7 @@ export function FisaCont() {
             // grilă: la schimbarea lor se schimbă sursa, iar grila se remontează
             // (starea ei de filtrare/paginare n-are ce transporta între două
             // rapoarte diferite).
-            key={`${stare.contId}|${stare.dataStart}|${stare.dataEnd}|${stare.repartitorId}`}
+            key={`${stare.contId}|${stare.dataStart}|${stare.dataEnd}|${stare.repartitorId}|${stare.repartitorNul}`}
             dataSource={sursa}
             remoteOperations={{ filtering: true, paging: true }}
             showBorders

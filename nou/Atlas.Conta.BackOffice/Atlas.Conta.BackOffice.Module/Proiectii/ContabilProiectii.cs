@@ -299,6 +299,19 @@ public static class ContabilProiectii {
         // două interogări, cu join-urile pe REZULTATUL agregat (42c, ca
         // `SoldStoc`): etichetele se atașează la câteva sute de rânduri, nu la
         // sutele de mii de atomi.
+        //
+        // ═══ Join-ul pe `Cont` e LEFT, nu INNER (review advers D4) ═══
+        // Un atom NU are voie să se piardă tăcut fiindcă i-a dispărut ETICHETA.
+        // `Cont` n-are `ForbidCRUD`, deci e ștergibil din XAF (soft delete,
+        // `GCRecord`), iar securitatea îl poate face invizibil — cu INNER JOIN
+        // linia ieșea din balanță, `Σ RulajDebit != Σ RulajCredit` în footer fără
+        // nicio explicație, iar fișa ACELUIAȘI cont mergea perfect (ea joinează
+        // LEFT). Cu LEFT, partida dublă rămâne întreagă și contul nerezolvat apare
+        // cu simbolul gol — clientul îl marchează onest.
+        // Nu e o scurgere nouă: rândurile agregate vin din `RegistruContabil`
+        // citit prin ObjectSpace-ul SECURIZAT (registru invizibil ⇒ balanță
+        // goală), iar denumirea contului rămâne null. E exact ce face de la
+        // început `RegistruJurnal` (`r.ContDebit.Simbol` ⇒ LEFT JOIN în EF).
         var conturi = os.GetObjectsQuery<Cont>();
         IQueryable<AgregatBalanta> etichetate;
 
@@ -315,14 +328,18 @@ public static class ContabilProiectii {
                 });
             // LEFT JOIN pe Repartitor: dimensiunea poate lipsi de pe atom, iar
             // grupul „fără repartitor" e o linie legitimă de balanță analitică.
+            // LEFT și pe `Cont`, din motivul de mai jos (review advers D4).
             etichetate =
                 from a in agregate
-                join c in conturi on a.ContId equals c.ID
+                join c in conturi on a.ContId equals c.ID into grupCont
+                from c in grupCont.DefaultIfEmpty()
                 join r in os.GetObjectsQuery<Repartitor>()
                     on a.RepartitorId equals (Guid?)r.ID into grupRep
                 from r in grupRep.DefaultIfEmpty()
                 select new AgregatBalanta {
-                    ContId = a.ContId, ContSimbol = c.Simbol, ContDenumire = c.Denumire,
+                    ContId = a.ContId,
+                    ContSimbol = c == null ? null : c.Simbol,
+                    ContDenumire = c == null ? null : c.Denumire,
                     RepartitorId = a.RepartitorId,
                     RepartitorDenumire = r == null ? null : r.Denumire,
                     InitialDebit = a.InitialDebit, InitialCredit = a.InitialCredit,
@@ -346,9 +363,12 @@ public static class ContabilProiectii {
             // același null intra ca CHEIE de join și Postgres îl tipiza `text`.
             etichetate =
                 from a in agregate
-                join c in conturi on a.ContId equals c.ID
+                join c in conturi on a.ContId equals c.ID into grupCont
+                from c in grupCont.DefaultIfEmpty()
                 select new AgregatBalanta {
-                    ContId = a.ContId, ContSimbol = c.Simbol, ContDenumire = c.Denumire,
+                    ContId = a.ContId,
+                    ContSimbol = c == null ? null : c.Simbol,
+                    ContDenumire = c == null ? null : c.Denumire,
                     RepartitorId = null, RepartitorDenumire = null,
                     InitialDebit = a.InitialDebit, InitialCredit = a.InitialCredit,
                     RulajDebit = a.RulajDebit, RulajCredit = a.RulajCredit
@@ -378,6 +398,31 @@ public static class ContabilProiectii {
                };
     }
 
+    // Ordinea balanței, în forma consumată de `DataSourceLoader` — și, mai
+    // important, o ordine TOTALĂ (review advers D2).
+    //
+    // Fără ea, biblioteca își pune singură ordinea („`Id`"-ul convenției EF, care
+    // pe `BalantaRand` nimerește `ContId`) — cheie UNICĂ în modul sintetic, dar
+    // REPETATĂ în cel analitic, unde cheia de grupare e `Cont × Repartitor`. Un
+    // `ORDER BY` pe cheie ne-unică sub `LIMIT/OFFSET` n-are ordine garantată: un
+    // rând poate apărea pe două pagini sau pe niciuna. (Postgres nu randomizează,
+    // deci defectul nu se manifesta la o rulare oarecare — dar garanția lipsea,
+    // iar asta se repară, nu se speră.)
+    //
+    // `ContSimbol` întâi, fiindcă e ordinea în care se citește o balanță; `ContId`
+    // și `RepartitorId` sunt tiebreak-urile care o fac totală (simbolul nu e unic
+    // prin schemă, iar `Cont` invizibil/șters îl lasă chiar null — D4).
+    public static SortingInfo[] OrdineBalanta(bool analitic) => analitic
+        ? new[] {
+            OrdineLista.Crescator(nameof(BalantaRand.ContSimbol)),
+            OrdineLista.Crescator(nameof(BalantaRand.ContId)),
+            OrdineLista.Crescator(nameof(BalantaRand.RepartitorId))
+        }
+        : new[] {
+            OrdineLista.Crescator(nameof(BalantaRand.ContSimbol)),
+            OrdineLista.Crescator(nameof(BalantaRand.ContId))
+        };
+
     // ── Fișa de cont (R-D6) ─────────────────────────────────────────────────
     //
     // ═══ SINGURUL loc din repo cu SQL BRUT — de ce, și ce cere în schimb ═══
@@ -402,10 +447,19 @@ public static class ContabilProiectii {
     //     bucăți compuse dinamic sunt NUMELE de coloane ale filtrelor, alese
     //     dintr-un set literal închis, scris aici — niciodată din request.
     //  3. **Securitatea XAF e ocolită** (`SqlQuery` nu trece prin
-    //     `SecurityQueryCompiler`). Acceptabil AICI fiindcă `RegistruContabil`
-    //     n-are restricții pe rând — nimeni n-are Write pe registre (42a), iar
-    //     citirea nu e filtrată. Dacă asta se schimbă vreodată, fișa e PRIMUL loc
-    //     care trebuie reevaluat.
+    //     `SecurityQueryCompiler`) — deci calea asta NU are voie să ruleze pe
+    //     încredere. Premisa scrisă aici la prima versiune („citirea nu e
+    //     filtrată") era pur și simplu FALSĂ: probat cu token pe un utilizator
+    //     fără nicio permisiune, balanța și `/api/odata/Cont` întorceau gol, iar
+    //     fișa întorcea registrul complet — cu `ContrapartidaId` pe fiecare rând,
+    //     adică toată cartea mare, plimbându-te din contrapartidă în
+    //     contrapartidă.
+    //     Fixul e FAIL CLOSED, în două bucăți, ambele obligatorii și amândouă în
+    //     controller (`FisaContController`): contul se rezolvă prin ObjectSpace-ul
+    //     SECURIZAT (invizibil ⇒ 404), iar echivalența celor două căi se
+    //     DOVEDEȘTE per cerere prin `CaleaBrutaEchivalenta` de mai jos (diferă ⇒
+    //     403). Proiecția rămâne deci utilizabilă doar când s-a arătat că vede
+    //     exact ce ar vedea calea securizată.
     //
     // ═══ Forma: trei niveluri, fiecare cu un motiv ═══
     //   (a) unpivot-ul (R-D1) pe UN cont: `ContDebitId = @cont` ⇒ sens „D",
@@ -436,11 +490,20 @@ public static class ContabilProiectii {
     // (`.ToList()`), dar `DataSourceLoader` îl ȘTERGE — vezi demonstrația din
     // `OrdineLista`. Sub paginare, singurul care ajunge la Postgres e cel declarat
     // prin `OrdineFisa()`.
+    //
+    // `repartitorNul` (D3): a TREIA valoare a filtrului pe repartitor. `Guid?`
+    // poate exprima doar „un repartitor anume" și „fără filtru" — dar rândul
+    // „fără repartitor" al balanței analitice e o cheie de grupare LEGITIMĂ
+    // (LEFT JOIN-ul o păstrează deliberat, iar pe baza de import e chiar
+    // majoritară: deschiderea s-a scris fără dimensiuni — 47c — și anul 2025 a
+    // trecut fără dimensiuni culese pe linie — DIM-2). Fără santinelă,
+    // drill-down-ul pe acel rând deschidea fișa NEfiltrată — cu ultimul sold
+    // curent egal cu soldul SINTETIC, nu cu al rândului clicat.
     public static IQueryable<FisaContRand> FisaCont(
         IObjectSpace os, Guid contId, DateOnly dataStart, DateOnly dataEnd,
         Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
         Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
-        Guid? proiectId = null, Guid? centruCostId = null) {
+        Guid? proiectId = null, Guid? centruCostId = null, bool repartitorNul = false) {
 
         var argumente = new List<object>();
         // Placeholder-ul poziţional: valoarea intră în lista de argumente, în text
@@ -494,6 +557,12 @@ public static class ContabilProiectii {
                 filtre.Append($"\n          AND a.\"{coloana}\" = {P(v)}");
         }
         Filtru("RepartitorId", repartitorId);
+        // Santinela D3, la ACELAȘI nivel ca celelalte filtre (deci înaintea
+        // ferestrei): „exact rândurile fără repartitor pe latura lor". Cu
+        // `repartitorId` dat simultan ar fi o contradicție — controllerul o
+        // refuză cu 400, ca cererea să nu întoarcă tăcut o fișă goală.
+        if (repartitorNul)
+            filtre.Append("\n          AND a.\"RepartitorId\" IS NULL");
         Filtru("MaterialId", materialId);
         Filtru("CodFunctionalId", codFunctionalId);
         Filtru("CodEconomicId", codEconomicId);
@@ -578,6 +647,59 @@ public static class ContabilProiectii {
             // ȘTERGE (`OrderBy` peste `OrderBy` = `ApplyOrdering` în EF Core) și pune
             // în loc `Id`-ul singur — de asta calea de API declară `OrdineFisa()`.
             .OrderBy(r => r.Data).ThenBy(r => r.Id).ThenByDescending(r => r.Sens);
+    }
+
+    // ═══ Gate-ul fail-closed al căii SQL brut (review advers D1) ═══
+    //
+    // Premisa „registrul nu e filtrat pe rând" NU se re-afirmă, se DOVEDEȘTE — și
+    // se dovedește PER CERERE, fiindcă e o proprietate a utilizatorului curent, nu
+    // a codului: numără rândurile de registru ale contului prin
+    // `GetObjectsQuery<RegistruContabil>()` (deci prin filtrele de securitate XAF)
+    // și le compară cu ce vede SQL-ul brut pe EXACT aceeași mulțime.
+    //
+    // De ce o simplă numărătoare e o dovadă, nu o euristică: interogarea securizată
+    // e literalmente `predicatul de mai jos ∧ criteriile de securitate`, deci poate
+    // doar SCOATE rânduri, niciodată adăuga. Egalitate ⟺ criteriile n-au scos
+    // nimic ⟺ calea brută vede exact ce ar vedea calea securizată. Orice altă
+    // relație (inclusiv „securizatul vede mai mult", adică o divergență de
+    // predicat, ex. semantica lui `GCRecord`) e o NEpotrivire și se refuză.
+    //
+    // Deliberat NU se compară mulțimea filtrată pe dimensiuni: cea NEfiltrată e
+    // supermulțimea ei, deci verificarea e mai strictă, nu mai laxă.
+    //
+    // Alternativa ieftină — un API XAF „utilizatorul are citire NERESTRICȚIONATĂ pe
+    // tipul T" — a fost căutată și respinsă: `IRequestSecurityStrategy.CanRead` (și
+    // `IsGranted` cu `PermissionRequest`) răspund la „are permisiune", nu la „e
+    // lipsită de criterii pe rând", iar un `true` de acolo nu exclude un
+    // `ObjectPermission` cu criteriu. Regula fiind fail-closed, „nu pot determina
+    // cu certitudine" înseamnă refuz — deci se plătește numărătoarea (ieftină:
+    // indecșii pe `ContDebitId`/`ContCreditId` există și sunt folosiți).
+    //
+    // ZONA ASTA NU E ACOPERITĂ DE ModelCheck și nici nu poate fi: unealta rulează
+    // pe un `EFCoreObjectSpaceProvider` standalone, NEsecurizat — acolo cele două
+    // căi sunt egale prin construcție, deci un check ar trece și cu gate-ul șters.
+    // Proba lui e HTTP, cu token, pe doi utilizatori cu drepturi diferite (vezi
+    // contractul feliei).
+    public static bool CaleaBrutaEchivalenta(IObjectSpace os, Guid contId, DateOnly dataEnd) {
+        var securizat = os.GetObjectsQuery<RegistruContabil>()
+            .Count(r => (r.ContDebitId == contId || r.ContCreditId == contId) && r.Data <= dataEnd);
+
+        // `AS "Value"`: forma pe care `SqlQuery<T>` o cere pentru un tip SCALAR.
+        // `long`, nu `int`: `COUNT(*)` e `bigint` pe Postgres.
+        // Parametrizat ca restul fișei — `contId` intră de două ori ca două
+        // argumente distincte, din aceeași prudență ca acolo.
+        const string sql = """
+            SELECT COUNT(*) AS "Value"
+            FROM "RegistruContabil" r
+            WHERE r."GCRecord" = 0
+              AND (r."ContDebitId" = {0} OR r."ContCreditId" = {1})
+              AND r."Data" <= {2}
+            """;
+        var brut = ((EFCoreObjectSpace)os).DbContext.Database
+            .SqlQuery<long>(FormattableStringFactory.Create(sql, contId, contId, dataEnd))
+            .Single();
+
+        return securizat == brut;
     }
 
     // Ordinea fișei în forma pe care o consumă `DataSourceLoader` — aceeași ca

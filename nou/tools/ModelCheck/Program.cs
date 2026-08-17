@@ -7623,6 +7623,16 @@ void VerificaBalanta() {
         os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajBal)).ToList());
         os.Delete(os.GetObjectsQuery<Proiect>().Where(p => p.Cod.StartsWith(MarcajBal)).ToList());
         os.CommitChanges();
+        // Scena D4 ȘTERGE deliberat un `Cont` (soft delete), iar un obiect deja
+        // șters nu mai iese din `GetObjectsQuery` — deci nici el, nici rândurile
+        // lui de registru n-ar fi culese de curățenia de mai sus, iar reziduul ar
+        // crește cu fiecare rulare. Purja e SQL direct, singurul mod de a atinge
+        // rândurile de sub filtrul global `GCRecord`. Ordinea respectă FK-ul
+        // (registrul referă conturile); rulează după commit, deci EF n-are nimic
+        // în zbor.
+        var db = ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)os).DbContext;
+        db.Database.ExecuteSql($"DELETE FROM \"RegistruContabil\" WHERE \"NumarNota\" = {MarcajBal}");
+        db.Database.ExecuteSql($"DELETE FROM \"Conturi\" WHERE \"Simbol\" LIKE {MarcajBal + "%"}");
     }
     CurataBal();
 
@@ -7643,6 +7653,8 @@ void VerificaBalanta() {
     var c2 = ContBal("-2");   // contrapartida
     var c3 = ContBal("-3");   // mișcare care se netează la ZERO
     var c4 = ContBal("-4");   // sold inițial și ZERO mișcare în perioadă
+    var c5 = ContBal("-5");   // rânduri FĂRĂ repartitor lângă unul CU (review D3)
+    var c6 = ContBal("-6");   // contul căruia îi dispare eticheta (review D4)
     var repA = RepBal("-A");
     var repB = RepBal("-B");
     var proiect = os.CreateObject<Proiect>();
@@ -7673,6 +7685,15 @@ void VerificaBalanta() {
     Nota(de, c3, c1, 50m, repA, repA);                                              // EXACT dataEnd ⇒ inclus
     Nota(new DateOnly(2026, 4, 10), c2, c1, 40m, repA, repB, storno: true);         // storno ⇒ intră (R-D7)
     Nota(new DateOnly(2026, 5, 1), c1, c2, 999m, repA, repA);                       // după dataEnd ⇒ exclus
+    // c5 (review D3): pe latura lui, DOUĂ rânduri fără repartitor (unul înainte de
+    // perioadă, unul în ea) și unul CU — adică exact forma bazei de import
+    // (deschiderea scrisă fără dimensiuni, 47c; 2025 fără dimensiuni culese pe
+    // linie, DIM-2). Analitic ies două rânduri pe același cont: „fără repartitor"
+    // și „repA".
+    Nota(new DateOnly(2026, 3, 25), c5, c2, 200m, null, repA);                      // inițial, fără repartitor
+    Nota(new DateOnly(2026, 4, 5), c5, c2, 30m, null, repA);                        // rulaj, fără repartitor
+    Nota(new DateOnly(2026, 4, 6), c5, c2, 11m, repA, repA);                        // rulaj, CU repartitor
+    Nota(new DateOnly(2026, 4, 12), c6, c2, 17m, repA, repA);                       // contul cu eticheta ștearsă
     os.CommitChanges();
 
     var sintetic = ContabilProiectii.Balanta(os, ds, de).ToList();
@@ -7693,7 +7714,7 @@ void VerificaBalanta() {
     Check("Risc 4b: contul a cărui mișcare se netează la ZERO apare cu rulaje nenule și sold 0 pe ambele coloane (nu dispare)",
         Rand(c3) is { InitialDebit: 0m, InitialCredit: 0m, RulajDebit: 50m, RulajCredit: 50m, SoldFinalDebit: 0m, SoldFinalCredit: 0m });
     Check("Risc 8: rândurile cu `DocumentId == null` (forma soldurilor de deschidere scrise de migrare) intră normal — proiecția nu atinge navigația `Document`",
-        os.GetObjectsQuery<RegistruContabil>().Count(r => r.NumarNota == MarcajBal && r.DocumentId == null) == 7);
+        os.GetObjectsQuery<RegistruContabil>().Count(r => r.NumarNota == MarcajBal && r.DocumentId == null) == 11);
 
     // ── 2. Balanța == recomputare naivă în memorie, pe un eșantion ───────────
     // Primul adevăr = registrul citit rând cu rând și însumat în C#. Eșantionul:
@@ -7750,6 +7771,30 @@ void VerificaBalanta() {
             && a.D == s.RulajDebit && a.C == s.RulajCredit
             && a.ID == s.InitialDebit && a.IC == s.InitialCredit));
 
+    // ── Cusătura ANALITICĂ balanță ↔ fișă, inclusiv „fără repartitor" (D3) ──
+    // Verificarea 5 din contract exista doar pe SINTETIC — adică exact pe modul în
+    // care drill-down-ul nu putea greși. Pe rândul ANALITIC, fișa trebuie să se
+    // închidă pe cifra RÂNDULUI, nu pe a contului; iar rândul „fără repartitor" e
+    // cazul care n-avea cum: `Guid?` nu poate exprima „absent" (null = „fără
+    // filtru"), deci drill-down-ul deschidea fișa NEfiltrată și se închidea pe
+    // soldul SINTETIC. Santinela `repartitorNul` e a treia valoare.
+    var c5Nul = analitic.SingleOrDefault(r => r.ContId == c5.ID && r.RepartitorId == null);
+    var c5A = analitic.SingleOrDefault(r => r.ContId == c5.ID && r.RepartitorId == repA.ID);
+    var fisaC5Nul = ContabilProiectii.FisaCont(os, c5.ID, ds, de, repartitorNul: true).ToList();
+    var fisaC5A = ContabilProiectii.FisaCont(os, c5.ID, ds, de, repartitorId: repA.ID).ToList();
+    var fisaC5Tot = ContabilProiectii.FisaCont(os, c5.ID, ds, de).ToList();
+    Check("Cusătura pe rândul ANALITIC „fără repartitor” (review D3): santinela `repartitorNul` selectează exact rândurile cu dimensiunea ABSENTĂ pe latura lor — fișa lor se închide pe soldul RÂNDULUI (230, cu soldul inițial de 200 al aceleiași chei), nu pe cel sintetic al contului (241)",
+        c5Nul is { InitialDebit: 200m, RulajDebit: 30m, SoldFinalDebit: 230m }
+        && fisaC5Nul.Count == 1
+        && fisaC5Nul[^1].SoldCurent == c5Nul.SoldFinalDebit - c5Nul.SoldFinalCredit
+        && fisaC5Tot[^1].SoldCurent == 241m);
+    Check("Aceeași cusătură pe rândul analitic CU repartitor, pe același cont: fișa filtrată se închide pe 11, iar cele două fișe analitice sunt DISJUNCTE și reconstituie împreună fișa contului (1 + 1 == 2 rânduri)",
+        c5A is { InitialDebit: 0m, RulajDebit: 11m, SoldFinalDebit: 11m }
+        && fisaC5A.Count == 1
+        && fisaC5A[^1].SoldCurent == c5A.SoldFinalDebit - c5A.SoldFinalCredit
+        && fisaC5Nul.Count + fisaC5A.Count == fisaC5Tot.Count
+        && !fisaC5Nul.Select(r => r.Id).Intersect(fisaC5A.Select(r => r.Id)).Any());
+
     // ── 4. Continuitate: SoldInițial(N+1) == SoldFinal(N) ───────────────────
     var martie = ContabilProiectii.Balanta(os, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31)).ToList();
     var netFinalMartie = martie.ToDictionary(r => r.ContId, r => r.SoldFinalDebit - r.SoldFinalCredit);
@@ -7777,6 +7822,96 @@ void VerificaBalanta() {
     Check("Perioada de o SINGURĂ zi: `dataStart == dataEnd` pe ziua unui rând — rândul e rulaj, iar tot ce e înainte devine sold inițial",
         ContabilProiectii.Balanta(os, de, de).SingleOrDefault(r => r.ContId == c3.ID)
             is { RulajDebit: 50m, RulajCredit: 0m, InitialCredit: 50m, SoldFinalDebit: 0m, SoldFinalCredit: 0m });
+
+    // ══ REGRESIE: balanța prin `DataSourceLoader`, PAGINATĂ (review D2) ═══════
+    //
+    // Golul de acoperire care a permis defectul: TOATE verificările de mai sus
+    // consumă `IQueryable`-ul direct (`.ToList()`) — balanța nu era încărcată prin
+    // `DataSourceLoader` NICĂIERI, adică exact forma de punct orb care a produs și
+    // defectul de ordine al feliei (vezi blocul omolog din fișă).
+    //
+    // Ce se rupea: fără ordine declarată, biblioteca își pune ordinea EI, iar pe
+    // `BalantaRand` convenția EF nimerește `ContId` — cheie unică în modul
+    // sintetic, dar REPETATĂ în cel analitic (cheia de grupare e `Cont ×
+    // Repartitor`). `ORDER BY` pe cheie ne-unică sub `LIMIT/OFFSET` n-are ordine
+    // garantată: un rând poate apărea pe două pagini sau pe niciuna. Postgres nu
+    // randomizează, deci nu se manifesta la o rulare oarecare — dar garanția
+    // lipsea, iar proba de mai jos o cere pe cea TARE: reuniunea paginilor ==
+    // exact mulțimea dintr-o singură cerere, fără duplicate și fără rânduri sărite.
+    //
+    // Filtrul pe `ContSimbol` e chiar ce pune grila pe coloanele de ieșire
+    // (legitim, R-D2) și ține scena mărginită la conturile blocului.
+    List<BalantaRand> BalantaPrinLoader(bool cheieDubla, int skip, int take) {
+        var optiuni = new DataSourceLoadOptionsBase {
+            Skip = skip, Take = take,
+            Filter = new object[] { "ContSimbol", "startswith", MarcajBal }
+        };
+        OrdineLista.AplicaOrdineImplicita(optiuni, ContabilProiectii.OrdineBalanta(cheieDubla));
+        return DataSourceLoader.Load(ContabilProiectii.Balanta(os, ds, de, cheieDubla), optiuni)
+            .data.Cast<BalantaRand>().ToList();
+    }
+    var paginareOk = true;
+    var modAnaliticAreCheieRepetata = false;
+    foreach (var cheieDubla in new[] { false, true }) {
+        var totul = BalantaPrinLoader(cheieDubla, 0, 1000);
+        string Cheie(BalantaRand r) => $"{r.ContId}|{r.RepartitorId}";
+        // Premisa: în modul analitic cheia bibliotecii (`ContId`) chiar se repetă —
+        // altfel proba n-ar avea dinți (c1 pe doi repartitori, c5 pe „null + repA").
+        if (cheieDubla)
+            modAnaliticAreCheieRepetata = totul.GroupBy(r => r.ContId).Any(g => g.Count() > 1);
+        var pagini = new List<BalantaRand>();
+        for (var skip = 0; skip < totul.Count; skip += 2)
+            pagini.AddRange(BalantaPrinLoader(cheieDubla, skip, 2));
+        paginareOk &= pagini.Count == totul.Count
+            && pagini.Select(Cheie).Distinct().Count() == pagini.Count
+            && pagini.Select(Cheie).OrderBy(k => k).SequenceEqual(totul.Select(Cheie).OrderBy(k => k))
+            // …și ordinea declarată chiar ajunge la Postgres: paginile concatenate
+            // reproduc secvența întreagă, rând cu rând.
+            && pagini.Select(Cheie).SequenceEqual(totul.Select(Cheie));
+    }
+    Check("REGRESIE (review D2): prin `DataSourceLoader`, paginată din 2 în 2, balanța reproduce EXACT mulțimea unei singure cereri — fără duplicate și fără rânduri sărite — în AMBELE moduri; premisa (cheia bibliotecii, `ContId`, chiar se repetă în modul analitic) e verificată în aceeași trecere",
+        paginareOk && modAnaliticAreCheieRepetata);
+
+    // ══ D4: contului îi dispare ETICHETA, atomul rămâne ══════════════════════
+    // Cu INNER JOIN linia DISPĂREA din balanță și `Σ RulajDebit != Σ RulajCredit`
+    // în footer, fără nicio explicație — în timp ce fișa aceluiași cont mergea
+    // perfect (ea joinează LEFT).
+    //
+    // Cum se ajunge în starea asta, măsurat aici, nu presupus: `os.Delete(cont)`
+    // NU e calea — ștergerea prin ObjectSpace CASCADEAZĂ la rândurile de registru
+    // (probat: după ea, contul rămâne fără niciun rând, deci atomul dispare cu
+    // totul și partida dublă rămâne întreagă de la sine). Starea periculoasă e
+    // aceea în care ATOMII SUPRAVIEȚUIESC etichetei: contul invizibil prin
+    // SECURITATE — pe care ModelCheck, rulând pe un provider standalone
+    // NEsecurizat, nu-l poate simula — și, cu aceeași formă exactă pentru
+    // interogare, contul marcat șters direct în bază (import, migrare, script).
+    // Scena o produce deci prin SQL: marcajul de ștergere pe `Cont`, rândurile de
+    // registru neatinse. Din perspectiva interogării, cele două cazuri sunt
+    // identice: join-ul pe etichetă nu găsește nimic.
+    var c6Inainte = sintetic.SingleOrDefault(r => r.ContId == c6.ID);
+    ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)os).DbContext.Database
+        .ExecuteSql($"UPDATE \"Conturi\" SET \"GCRecord\" = 1 WHERE \"ID\" = {c6.ID}");
+    var dupaStergereCont = ContabilProiectii.Balanta(os, ds, de).ToList();
+    var c6Dupa = dupaStergereCont.SingleOrDefault(r => r.ContId == c6.ID);
+    // Diagnostic la cerere (`MODELCHECK_D4=1`), ca `MODELCHECK_SQL` de la fișă:
+    // scena de mai sus e singura din bloc care depinde de o mecanică ascunsă
+    // (cascadarea ștergerii), deci merită să se poată inspecta fără a modifica cod.
+    if (Environment.GetEnvironmentVariable("MODELCHECK_D4") == "1")
+        Console.WriteLine($"[D4] inainte={c6Inainte?.ContSimbol ?? "<lipsa rand>"}/{c6Inainte?.RulajDebit} "
+            + $"dupa={(c6Dupa == null ? "<lipsa rand>" : $"simbol={c6Dupa.ContSimbol ?? "<null>"} den={c6Dupa.ContDenumire ?? "<null>"} rulD={c6Dupa.RulajDebit} sfD={c6Dupa.SoldFinalDebit}")} "
+            + $"count {sintetic.Count}->{dupaStergereCont.Count} "
+            + $"partida {dupaStergereCont.Sum(r => r.RulajDebit)}/{dupaStergereCont.Sum(r => r.RulajCredit)} "
+            + $"randuriRegistruC6={os.GetObjectsQuery<RegistruContabil>().Count(r => r.ContDebitId == c6.ID)}");
+    Check("D4 (review advers): contului îi dispare ETICHETA (marcat șters în bază / invizibil prin securitate), dar atomul lui NU se pierde — rândul rămâne în balanță cu simbolul și denumirea goale și cu rulajul intact (17), numărul de rânduri e neschimbat, iar partida dublă rămâne întreagă peste TOATĂ balanța (cu INNER JOIN, linia dispărea tăcut și Σ debit != Σ credit)",
+        c6Inainte is { ContSimbol: MarcajBal + "-6", RulajDebit: 17m }
+        && c6Dupa is { ContSimbol: null, ContDenumire: null, RulajDebit: 17m, SoldFinalDebit: 17m }
+        && dupaStergereCont.Count == sintetic.Count
+        && dupaStergereCont.Sum(r => r.RulajDebit) == dupaStergereCont.Sum(r => r.RulajCredit));
+    // …și fișa ACELUIAȘI cont (calea SQL brut) rămâne cusută pe aceeași cifră:
+    // ea joinează LEFT de la început, deci cele două căi nu mai divergeau.
+    Check("D4, cusătura: fișa contului fără etichetă se închide pe aceeași cifră ca rândul lui de balanță (17) — cele două căi nu divergeau doar pe join-ul de etichetă, iar acum nu divergează deloc",
+        ContabilProiectii.FisaCont(os, c6.ID, ds, de).ToList() is { Count: 1 } fisaC6
+        && fisaC6[^1].SoldCurent == c6Dupa.SoldFinalDebit - c6Dupa.SoldFinalCredit);
 
     CurataBal();
     Check("Curățenie finală felia balanță (fără reziduuri e2e)",

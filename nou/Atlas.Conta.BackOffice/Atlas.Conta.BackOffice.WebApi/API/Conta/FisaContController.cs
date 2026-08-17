@@ -21,13 +21,21 @@ public class FisaContController : ContaApiController {
     [HttpGet]
     [ProducesResponseType(typeof(PaginaDto<FisaContRand>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     public IActionResult Get(DataSourceLoadOptions loadOptions,
         [FromQuery] Guid? contId = null,
         [FromQuery] DateOnly? dataStart = null, [FromQuery] DateOnly? dataEnd = null,
         [FromQuery] Guid? repartitorId = null, [FromQuery] Guid? materialId = null,
         [FromQuery] Guid? codFunctionalId = null, [FromQuery] Guid? codEconomicId = null,
         [FromQuery] Guid? sursaFinantareId = null, [FromQuery] Guid? unitateId = null,
-        [FromQuery] Guid? proiectId = null, [FromQuery] Guid? centruCostId = null) {
+        [FromQuery] Guid? proiectId = null, [FromQuery] Guid? centruCostId = null,
+        // A treia valoare a filtrului pe repartitor (review advers D3): rândul
+        // „fără repartitor" al balanței analitice e o cheie de grupare legitimă,
+        // iar `Guid?` nu poate exprima „absent" — null acolo înseamnă „fără
+        // filtru", deci drill-down-ul pe acel rând deschidea fișa NEFILTRATĂ, cu
+        // ultimul sold curent egal cu soldul SINTETIC al contului.
+        [FromQuery] bool repartitorNul = false) {
 
         // Ca la balanță: 400 (cererea e malformată — îi lipsesc parametri), nu 422
         // (n-o refuză domeniul). Nullable EXACT ca să se distingă „lipsă" de
@@ -43,6 +51,9 @@ public class FisaContController : ContaApiController {
             erori.Add("Parametrul „dataEnd” este obligatoriu (definește sfârșitul perioadei).");
         if (dataStart is DateOnly ds && dataEnd is DateOnly de && ds > de)
             erori.Add("„dataStart” nu poate fi după „dataEnd”.");
+        if (repartitorNul && repartitorId != null)
+            erori.Add("„repartitorNul” și „repartitorId” se exclud reciproc "
+                + "(unul cere rândurile FĂRĂ repartitor, celălalt pe cele ale unui repartitor anume).");
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
 
@@ -71,10 +82,39 @@ public class FisaContController : ContaApiController {
         // ele TREBUIE aplicate înaintea ferestrei — vezi R-D2.)
 
         using var os = Secured(typeof(RegistruContabil));
+
+        // ═══ GATE-UL fail-closed al singurei căi cu SQL brut (review advers D1) ══
+        // Fișa e singura proiecție a repo-ului care ocolește `SecurityQueryCompiler`
+        // (funcția de fereastră n-are echivalent LINQ — R-D6). Prima versiune se
+        // baza pe o PREMISĂ scrisă în comentariu („registrul nu e filtrat"), iar
+        // premisa era falsă: probat cu token, un utilizator fără nicio permisiune
+        // primea gol de la `/balanta` și de la `/api/odata/Cont`, dar registrul
+        // COMPLET de aici — cu `ContrapartidaId` pe fiecare rând, adică toată
+        // cartea mare, plimbându-te din contrapartidă în contrapartidă.
+        //
+        // Premisa nu se re-afirmă, se DOVEDEȘTE, și se dovedește per cerere:
+        //   (1) contul se rezolvă prin ObjectSpace-ul SECURIZAT — inexistent SAU
+        //       invizibil ⇒ 404, fără sondare de existență (tiparul
+        //       `ComandaAutorizata`). Bonus: un `contId` greșit nu mai dă o fișă
+        //       goală și plauzibilă, indistinctă de „cont fără mișcări";
+        //   (2) echivalența celor două căi se măsoară (`CaleaBrutaEchivalenta`):
+        //       diferă ⇒ 403. Adică SQL-ul brut rulează doar după ce s-a arătat că
+        //       vede exact ce ar vedea calea securizată.
+        // Ambele obligatorii; ordinea contează (404 înaintea oricărei atingeri a
+        // registrului).
+        if (os.GetObjectByKey<Cont>(contId.Value) == null)
+            return NotFound();
+        if (!ContabilProiectii.CaleaBrutaEchivalenta(os, contId.Value, dataEnd.Value))
+            return StatusCode(StatusCodes.Status403Forbidden, EroriDto.Din(new[] {
+                "Fișa de cont nu poate fi servită: drepturile dumneavoastră restrâng rândurile de registru, "
+                + "iar raportul se calculează pe o cale care nu poate aplica acele restricții. "
+                + "Folosiți balanța sau registrul-jurnal, ori cereți drepturi de citire nerestricționată pe registru."
+            }));
+
         var rezultat = Incarca(ContabilProiectii.FisaCont(os, contId.Value,
             dataStart.Value, dataEnd.Value,
             repartitorId, materialId, codFunctionalId, codEconomicId,
-            sursaFinantareId, unitateId, proiectId, centruCostId),
+            sursaFinantareId, unitateId, proiectId, centruCostId, repartitorNul),
             loadOptions, ContabilProiectii.OrdineFisa());
         // Codul de tip al documentului-sursă, peste pagina DEJA materializată
         // (R-D8): un singur query polimorf pe mulțime, nu `GetObjectByKey` în
