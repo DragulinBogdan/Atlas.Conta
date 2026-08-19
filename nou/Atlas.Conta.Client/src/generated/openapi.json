@@ -81217,6 +81217,9 @@
           "Tva": {
             "type": "number",
             "format": "double"
+          },
+          "Storno": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

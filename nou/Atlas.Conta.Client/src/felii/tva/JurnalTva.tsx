@@ -139,6 +139,17 @@ function JurnalTva({ sens, titlu }: { sens: Sens; titlu: string }) {
 
         <Column dataField={camp('Baza')} caption="Bază" {...BANI} />
         <Column dataField={camp('Tva')} caption="TVA" {...BANI} />
+        {/* Rândul de STORNARE e un fapt fiscal distinct de operarea documentului
+            (review advers D3), nu o factură cu semn negativ — și trebuie să se
+            vadă ca atare. Pe o perioadă care le cuprinde pe amândouă, aceeași
+            factură apare de două ori: o dată la data operării, o dată la data
+            stornării, cu semnele opuse. */}
+        <Column
+          dataField={camp('Storno')}
+          caption="Storno"
+          dataType="boolean"
+          width={80}
+        />
 
         {/* ═══ Totaluri LEGITIME aici — și nu e o inconsecvență față de R-D5 ═══
             Balanța interzice totalurile pe `Sold*` fiindcă netarea nu e aditivă

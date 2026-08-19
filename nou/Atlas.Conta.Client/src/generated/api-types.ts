@@ -4229,6 +4229,7 @@ export interface components {
             Baza?: number;
             /** Format: double */
             Tva?: number;
+            Storno?: boolean;
         };
         JurnalTvaRandPaginaDto: {
             data?: components["schemas"]["JurnalTvaRand"][] | null;

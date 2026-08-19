@@ -69,6 +69,9 @@ public sealed class JurnalTvaRand : IRandCuDocument {
 
     public decimal Baza { get; set; }
     public decimal Tva { get; set; }
+    // Rândul provine din STORNAREA documentului, nu din operarea lui (JT-D5).
+    // E în CHEIA de grupare, nu doar o coloană — vezi `JurnalTva`.
+    public bool Storno { get; set; }
 }
 
 // Un rând de decont = o pereche (Sens × TipTva), peste o perioadă.
@@ -124,18 +127,28 @@ public static class TvaProiectii {
         // invariantul de mai sus s-ar rupe, jurnalul ar arăta două rânduri onest
         // etichetate, nu unul cu snapshot-ul ales la întâmplare de un `MIN`.
         //
-        // `Data` e singura care NU poate intra în cheie: pe un document stornat ea
-        // CHIAR variază (originalul la data operării, inversul la data stornării).
-        // `Min` peste mulțimea deja FILTRATĂ dă exact ce trebuie — luna curentă a
-        // rândurilor care au rămas după filtru.
+        // ═══ `Storno` E ÎN CHEIE — și ăsta e miezul (review advers D3) ═══
+        // Spre deosebire de celelalte trei, `Storno` NU e funcțional determinat de
+        // pereche: un document stornat are AMBELE seturi, iar ele sunt două FAPTE
+        // FISCALE DISTINCTE, la date diferite. Fără el în cheie, o interogare care
+        // cuprinde și operarea, și stornarea (banalul „jurnalul pe anul 2025") le
+        // neta într-un singur rând de zero lei, datat în luna operării: factura
+        // apărea ca „factură de 0,00", iar stornarea dispărea complet ca eveniment.
+        // Totalurile perioadei rămâneau corecte — se pierdea exact granularitatea
+        // per document pe care o cere D394.
+        //
+        // Corolar: `Data = Min` redevine EXACTĂ. Într-un grup, toate rândurile
+        // originale poartă `doc.Data` și toate inversele `dataStorno`, deci minimul
+        // e chiar data grupului, nu o alegere între două date diferite.
         var agregate = randuri
-            .GroupBy(r => new { r.DocumentId, r.TipTvaId, r.PartenerId, r.Regim, r.Cota })
+            .GroupBy(r => new { r.DocumentId, r.TipTvaId, r.PartenerId, r.Regim, r.Cota, r.Storno })
             .Select(g => new {
                 g.Key.DocumentId,
                 g.Key.TipTvaId,
                 g.Key.PartenerId,
                 g.Key.Regim,
                 g.Key.Cota,
+                g.Key.Storno,
                 Data = g.Min(r => r.Data),
                 Baza = g.Sum(r => r.Baza),
                 Tva = g.Sum(r => r.Tva)
@@ -189,7 +202,8 @@ public static class TvaProiectii {
                    Cota = a.Cota,
                    CodSafT = t == null ? null : (esteAchizitie ? t.CodSafTAchizitie : t.CodSafTLivrare),
                    Baza = a.Baza,
-                   Tva = a.Tva
+                   Tva = a.Tva,
+                   Storno = a.Storno
                };
     }
 
@@ -209,7 +223,12 @@ public static class TvaProiectii {
     public static SortingInfo[] OrdineJurnalTva() => new[] {
         OrdineLista.Crescator(nameof(JurnalTvaRand.Data)),
         OrdineLista.Crescator(nameof(JurnalTvaRand.DocumentId)),
-        OrdineLista.Crescator(nameof(JurnalTvaRand.TipTvaId))
+        OrdineLista.Crescator(nameof(JurnalTvaRand.TipTvaId)),
+        // A patra cheie, din același motiv pentru care `Storno` e în grupare: un
+        // document stornat produce DOUĂ rânduri pe aceeași pereche, iar fără ea
+        // ordinea n-ar mai fi totală — exact condiția sub care `LIMIT/OFFSET`
+        // poate dubla sau sări un rând (lecția feliei 9).
+        OrdineLista.Crescator(nameof(JurnalTvaRand.Storno))
     };
 
     // ── Decontul (JT-D7) ────────────────────────────────────────────────────

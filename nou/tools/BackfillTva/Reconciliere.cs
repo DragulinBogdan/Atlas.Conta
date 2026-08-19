@@ -105,9 +105,58 @@ public static class Reconciliere {
                 + $"Σ contabil pe conturile de TVA {contabilPeDoc.Where(x => docIds.Contains(x.Key)).Sum(x => x.Value):N2} lei",
                 contabilPeDoc.Where(x => docIds.Contains(x.Key)).Sum(x => x.Value) != 0m);
 
+        MasoaraComplementul(os, conturiTva, docIds);
         Masoara(os, rez, fiscale, check);
         Distributie(fiscale);
         return rez;
+    }
+
+    // ═══ COMPLEMENTUL cusăturii (review advers D2) ═══
+    //
+    // JT-D6 iterează documentele PREZENTE în `RegistruTva`. Mulțimea complementară
+    // — documente care postează pe conturile de TVA dar NU produc fapte fiscale —
+    // e invizibilă prin construcție: contractul putea raporta „ÎNDEPLINIT" în timp
+    // ce milioane de lei de TVA postat stăteau în afara oricărui jurnal.
+    //
+    // Nu e o verificare, ci o MĂSURĂTOARE defalcată pe tip de document: unele
+    // intrări sunt corecte prin design (`InchidereTva` mișcă 4426/4427 fără să fie
+    // operațiune taxabilă), altele sunt artefacte de import (`NotaContabila`
+    // punte), altele ar fi defecte adevărate. Diferența se ia cu ochii pe listă —
+    // dar lista trebuie să EXISTE. Disciplina „Acoperit cere acoperitor" (50b):
+    // ce nu e acoperit se numește, nu se presupune.
+    static void MasoaraComplementul(IObjectSpace os, List<Guid> conturiTva, HashSet<Guid> cuFapteFiscale) {
+        var randuri = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId != null
+                && (conturiTva.Contains(r.ContDebitId) || conturiTva.Contains(r.ContCreditId)))
+            .Select(r => new { DocumentId = r.DocumentId.Value, r.Valoare })
+            .ToList()
+            .Where(r => !cuFapteFiscale.Contains(r.DocumentId))
+            .ToList();
+        if (randuri.Count == 0) {
+            Console.WriteLine("    MĂSURAT (complementul D2): niciun document postează pe conturile de TVA "
+                + "fără să aibă fapte fiscale — mulțimile coincid exact.");
+            return;
+        }
+
+        // Tipul se citește din clasa CLR, materializând POLIMORF într-un singur
+        // query (tiparul 60b) — sub TPT nu există discriminator.
+        var ids = randuri.Select(r => r.DocumentId).Distinct().ToList();
+        var tipuri = os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList()
+            .ToDictionary(d => d.ID, d => {
+                var t = d.GetType();
+                while (t.Assembly.IsDynamic || t.Name.EndsWith("Proxy"))
+                    t = t.BaseType;
+                return t.Name;
+            });
+
+        Console.WriteLine($"    MĂSURAT (complementul D2): {randuri.Count} rânduri contabile pe conturi de TVA "
+            + $"aparțin unor documente FĂRĂ fapte fiscale ({ids.Count} documente). "
+            + "Unele sunt corecte prin design (închiderea lunară nu e operațiune taxabilă), "
+            + "altele pot fi artefacte de import — se citesc pe tip:");
+        foreach (var g in randuri.GroupBy(r => tipuri.GetValueOrDefault(r.DocumentId, "(document invizibil)"))
+                     .OrderByDescending(g => Math.Abs(g.Sum(r => r.Valoare))))
+            Console.WriteLine($"        {g.Key,-20} {g.Count(),7} rânduri / "
+                + $"{g.Select(r => r.DocumentId).Distinct().Count(),7} documente / Σ {g.Sum(r => r.Valoare),18:N2}");
     }
 
     // Măsurătorile declarate ale feliei (JT-D2 + riscul 4 din design): găurile se

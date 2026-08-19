@@ -135,8 +135,18 @@ static class Drafturi {
             .Where(r => documenteN.Contains(r.DocumentId)).ToList();
         var contabile = os.GetObjectsQuery<RegistruContabil>()
             .Where(r => documenteN.Contains(r.DocumentId)).ToList();
+        // Al treilea registru (felia 11, review advers D5): calea e apărată — grupul
+        // e obligatoriu `Draft`, iar un draft n-ar trebui să aibă rânduri de registru,
+        // deci ștergerea de aici e defensivă prin comentariul de mai sus. Dar ăsta e
+        // SINGURUL loc din repo care șterge rânduri de registru pe document în afara
+        // motorului, iar un registru lipsă dintr-o listă defensivă e o bombă cu
+        // ceas care se declanșează tocmai când apărarea chiar contează.
+        // `DocumentId` e NENUL pe `RegistruTva` (JT-D1), deci lista negrupată.
+        var fiscale = os.GetObjectsQuery<RegistruTva>()
+            .Where(r => grup.Documente.Contains(r.DocumentId)).ToList();
         os.Delete(registre);
         os.Delete(contabile);
+        os.Delete(fiscale);
         // Ordinea contează pentru FK-ul `DocumentDetaliu.LotId` (Restrict): liniile
         // pleacă înaintea loturilor. `Lot.LinieIntrareId` e coloană FĂRĂ FK
         // (decizia 26e), deci sensul celălalt nu constrânge nimic.

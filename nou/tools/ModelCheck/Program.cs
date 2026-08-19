@@ -1808,6 +1808,13 @@ if (profil == ProfilContabil.Privat) {
             linVenit.Document = rdc; linVenit.TipMaterial = tip707; linVenit.Valoare = 100m; linVenit.TipTva = n21;
             var linCost = os.CreateObject<DocumentDetaliu>();
             linCost.Document = rdc; linCost.TipMaterial = tip371; linCost.Lot = lot; linCost.Cantitate = 3m;
+            // TipTva pus și pe linia de COST — nu e o ciudățenie de scenă, e EXACT
+            // ce face calea de produs: `TipDocument.TipTvaImplicit` al lui RDC e
+            // N21, iar `DefaultTipTvaController` îl pune pe ORICE linie nouă
+            // culeasă în UI. Scena reproduce deci culegerea reală (review advers
+            // D1 al feliei 11) — înainte de fix, linia asta intra în jurnalul de
+            // TVA cu costul ca bază impozabilă.
+            linCost.TipTva = n21;
             os.CommitChanges();
 
             MotorOperare.Opereaza(os, rdc);
@@ -1831,6 +1838,24 @@ if (profil == ProfilContabil.Privat) {
             Check("RDC: Total = DOAR liniile de venit (−121) — costul e mișcare internă venit↔stoc, nu creanță",
                 rdc.Total == -121m
                 && rdc.Detalii.Sum(d => d.Valoare + d.ValoareTva) == -151m); // totalul „naiv" al bazei
+            // ═══ REGRESIE, review advers D1 al feliei 11 ═══
+            // Linia de cost NU e o operațiune taxabilă — e mișcare internă
+            // venit↔stoc — dar culegerea îi pusese `TipTva` (implicitul tipului).
+            // `PregatesteOperare` îi șterge acum IDENTITATEA fiscală, nu doar
+            // valoarea, deci `RegistruTva` nu mai primește rând pentru ea.
+            // Fără fix: jurnalul arăta pentru acest retur baza −130 (venitul −100
+            // PLUS costul −30) cu TVA −21 — o bază umflată cu 30%, într-o cifră
+            // care ajunge în D394. Iar cusătura JT-D6 NU putea s-o vadă:
+            // contribuția liniei de cost la TVA e exact 0, deci proba se închidea
+            // perfect pe un jurnal greșit. De-aia proba stă AICI, pe axa bazei.
+            var fiscalRdc = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == rdc.ID).ToList();
+            Check("REGRESIE D1 (felia 11): linia de COST a returului nu produce fapt fiscal — `PregatesteOperare` "
+                + "îi șterge `TipTva` (implicitul culegerii), nu doar `ValoareTva`. Registrul are UN singur rând, "
+                + "al liniei de VENIT, cu baza −100 și TVA −21 — nu −130/−21, cum ieșea înainte de fix",
+                linCost.TipTvaId == null
+                && fiscalRdc.Count == 1
+                && fiscalRdc[0].DetaliuId == linVenit.ID
+                && fiscalRdc[0] is { Baza: -100m, Tva: -21m, Sens: SensTva.Livrare });
             // 4427 e cont de PASIV: rândul −21 stă pe CREDIT, deci soldul creditor
             // (−SoldCont, unde SoldCont = debit − credit) scade cu 21.
             Check("TVA colectată (sold CREDITOR) scade cu 21 după retur",
@@ -8706,6 +8731,31 @@ void VerificaRegistruTva(bool cuTva) {
     Console.WriteLine($"     MĂSURAT (JT-D6 verificarea 3): {liniiFaraTipTva} linii fără TipTva pe documente operate "
         + $"ale unui tip cu PoliticaTva (din {liniiOperate.Count} linii operate în bază); "
         + $"{faraPartener} rânduri fiscale fără partener (din {fiscale.Count}).");
+    // ═══ COMPLEMENTUL cusăturii (review advers D2) ═══
+    // Verificarea 1 iterează documentele PREZENTE în `RegistruTva`. Mulțimea
+    // complementară — documente care postează pe conturile de TVA fără să producă
+    // fapte fiscale — era invizibilă PRIN CONSTRUCȚIE: contractul putea raporta
+    // „îndeplinit" în timp ce TVA postat stătea în afara oricărui jurnal.
+    // Unele intrări sunt corecte prin design (`InchidereTva` mișcă 4426/4427 fără
+    // să fie operațiune taxabilă), altele ar fi defecte adevărate — diferența se
+    // ia cu ochii, dar LISTA trebuie să existe („Acoperit cere acoperitor", 50b).
+    var complement = os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => r.DocumentId != null
+            && (conturiTva.Contains(r.ContDebitId) || conturiTva.Contains(r.ContCreditId)))
+        .Select(r => new { DocumentId = r.DocumentId.Value, r.Valoare }).ToList()
+        .Where(r => !docIdsFiscale.Contains(r.DocumentId)).ToList();
+    var tipuriComplement = complement.Count == 0
+        ? new Dictionary<Guid, string>()
+        : os.GetObjectsQuery<Document>()
+            .Where(d => complement.Select(c => c.DocumentId).Distinct().Contains(d.ID)).ToList()
+            .ToDictionary(d => d.ID, NumeClr);
+    Console.WriteLine($"     MĂSURAT (complementul D2): {complement.Count} rânduri contabile pe conturi de TVA "
+        + $"aparțin unor documente FĂRĂ fapte fiscale"
+        + (complement.Count == 0 ? " — mulțimile coincid exact." : ":"));
+    foreach (var g in complement.GroupBy(r => tipuriComplement.GetValueOrDefault(r.DocumentId, "(invizibil)")))
+        Console.WriteLine($"         {g.Key,-18} {g.Count(),5} rânduri / "
+            + $"{g.Select(r => r.DocumentId).Distinct().Count(),5} documente / Σ {g.Sum(r => r.Valoare),14:N2}");
+
     Check("VERIFICAREA 3: găurile declarate sunt numărabile și coerente (liniile fără TipTva ⊆ liniile operate, "
         + "rândurile fără partener ⊆ rândurile fiscale), iar partenerul — când există — e chiar una dintre "
         + "laturile documentului, adică repartitorul laturii cerute de politică, nu un terț inventat",
@@ -8739,6 +8789,36 @@ void VerificaRegistruTva(bool cuTva) {
             + "cad în altă LUNĂ decât originalele — motivul pentru care reconcilierea e per document, nu pe perioadă",
             dupaStorno.Where(r => r.Regim is RegimTva.Normal or RegimTva.TaxareInversa).Sum(r => r.Tva)
                 == contabilTvaStornat);
+
+        // ═══ REGRESIE, review advers D3 ═══
+        // Interogarea CEA MAI FIREASCĂ a jurnalului — anul întreg, adică perioada
+        // care cuprinde ȘI operarea (martie) ȘI stornarea (iulie) — era exact cea
+        // pe care felia o rata: fără `Storno` în cheia de grupare, originalul și
+        // inversul se netau într-un singur rând de 0,00 lei, datat în martie.
+        // Factura apărea ca „factură de zero lei", iar stornarea dispărea complet
+        // ca eveniment. Totalurile perioadei rămâneau corecte — se pierdea exact
+        // granularitatea per document pe care o cere D394.
+        //
+        // Scena de dinainte nu putea s-o prindă, fiindcă era construită să nu poată:
+        // toate probele de jurnal foloseau perioade care conțin doar una dintre
+        // cele două date.
+        var anul = TvaProiectii.JurnalTva(os, SensTva.Achizitie,
+                new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31))
+            .Where(r => r.DocumentId == fctA.ID).ToList();
+        Check("REGRESIE D3: pe anul întreg — perioada care cuprinde și operarea (20.03), și stornarea (24.07) — "
+            + "factura cu patru regimuri dă OPT rânduri de jurnal, nu patru de zero lei: patru originale datate "
+            + "în martie și patru de storno datate în iulie, fiecare cu semnul lui. `Storno` e în cheia de "
+            + "grupare tocmai fiindcă, spre deosebire de partener/regim/cotă, NU e determinat de perechea "
+            + "(Document × TipTva) — sunt două fapte fiscale distincte, la date distincte",
+            anul.Count == 8
+            && anul.Count(r => !r.Storno) == 4 && anul.Count(r => r.Storno) == 4
+            && anul.Where(r => !r.Storno).All(r => r.Data == fctA.Data)
+            && anul.Where(r => r.Storno).All(r => r.Data == dataStorno)
+            // …și fiecare original își are inversul exact, pe aceeași identitate
+            // fiscală: netarea rămâne corectă ca SUMĂ, doar că nu mai e impusă.
+            && anul.Where(r => r.Storno).All(s => anul.Any(o => !o.Storno
+                && o.TipTvaId == s.TipTvaId && o.Baza == -s.Baza && o.Tva == -s.Tva))
+            && anul.Sum(r => r.Baza) == 0m && anul.Sum(r => r.Tva) == 0m);
 
         MotorOperare.AnuleazaOperarea(os, conexB);
         MotorOperare.AnuleazaOperarea(os, fctB);

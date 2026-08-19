@@ -114,6 +114,22 @@ public class ReturClient : Document {
                 linie.Cantitate = -q;
                 linie.Valoare = -Scara.RotunjesteBani(q * os.GetObjectByKey<Lot>(linie.LotId.Value).PretUnitar);
                 linie.ValoareTva = 0m;
+                // …și IDENTITATEA FISCALĂ se șterge, nu doar valoarea (felia 11,
+                // review advers D1). Linia de cost e mișcare internă venit↔stoc,
+                // NU o operațiune taxabilă — dar `TipDocument.TipTvaImplicit` al
+                // lui RDC (N21) e pus de controllerul de culegere pe ORICE linie
+                // nouă, deci ajungea aici cu un tip de TVA fără sens.
+                //
+                // Până la felia 11 era doar inofensiv: pasul contabil de TVA sare
+                // liniile cu `ValoareTva == 0`. `RegistruTva` însă scrie un rând
+                // pentru ORICE linie cu `TipTvaId` — asta e chiar rostul lui
+                // (Scutit/Neimpozabil au bază fără taxă) — deci costul intra în
+                // jurnal ca bază impozabilă: un retur de 1.000 cu cost 600 ieșea
+                // pe D394 cu baza 1.600 și TVA 210. Cusătura JT-D6 nu putea s-o
+                // vadă: contribuția liniei la TVA e exact 0.
+                // Nicio pierdere de informație — tipul era o valoare implicită
+                // nefolosită de nimeni pe linia asta.
+                linie.TipTvaId = null;
             }
         }
     }
