@@ -224,3 +224,87 @@ de soldurile balanței.
    originalul — jurnalul lunii vechi rămâne cum a fost declarat (corect), dar
    cusătura JT-D6 e per document, deci peste ambele luni.
 7. **Perf** pe clona de import: jurnalul unui an, cu join pe partener.
+
+---
+
+## Închidere (2026-08-19)
+
+- [x] **Contract îndeplinit.** ModelCheck **bugetar 663 OK / 0 FAIL**, **privat
+  333 OK / 0 FAIL**. Soluția, uneltele și clientul compilează; codegen regenerat.
+  O migrație (`RegistruTva`), strict aditivă.
+- [x] **Proba pe volum** (clona de import, anul 2025 integral): backfill-ul a
+  reconstituit **90.732 de rânduri fiscale pe 61.347 de documente în 4m13s**, iar
+  cusătura JT-D6 s-a închis cu **0 divergențe pe 33.226.649,90 lei** de TVA
+  contabil. Idempotent, probat: a doua rulare scrie 0 rânduri în 2 secunde.
+- [x] **Smoke prin API** pe baza de dev: decontul lunii iunie 2025 pe 4 rânduri
+  cu codurile SAF-T atașate; jurnalul de cumpărări 1.543 rânduri, cu tipul
+  documentului rutat prin `rutaTip` și CUI-ul partenerului. Cusătura
+  **jurnal == decont verificată pe o zi întreagă, la cent, pe ambele sensuri**.
+- [x] **Perf** (addendum 3 în `p5-perf-masuratori.md`): jurnalul unui an întreg
+  14–15 ms, o lună 4 ms, decontul 12 ms. Niciun index adăugat.
+
+### Ce a scos review-ul advers — două defecte de fond, ambele invizibile pentru cusătură
+
+**D1 — baza impozabilă a returului, umflată cu costul mărfii.** `ReturClient` are
+`TipTvaImplicit = N21`, iar controllerul de culegere îl pune pe *orice* linie
+nouă — inclusiv pe linia de COST, care e mișcare internă venit↔stoc, nu
+operațiune taxabilă. `PregatesteOperare` îi zeroza `ValoareTva`, dar nu și
+identitatea fiscală; până la felia asta era inofensiv (pasul contabil sare
+liniile cu TVA zero), dar `RegistruTva` scrie rând pentru **orice** linie cu
+`TipTvaId` — ăsta e chiar rostul lui. Un retur de 1.000 cu cost 600 ieșea în
+jurnal cu baza 1.600 și TVA 210: raportul 13,1% în loc de 21%, într-o cifră care
+ajunge în D394.
+
+**Lecția, mai importantă decât defectul: JT-D6 nu putea să-l vadă.** Cusătura
+leagă doar coloana `Tva`, iar contribuția liniei de cost la TVA e exact 0 — deci
+proba se închidea perfect pe un jurnal greșit. E tiparul feliei 9 repetat: proba
+exista, dar nu pe axa pe care apărea greșeala. De aceea regresia stă în scena RDC,
+pe axa BAZEI, și scena culege acum `TipTva` pe linia de cost exact cum face UI-ul.
+
+**D3 — netarea storno-ului.** Cheia de grupare a jurnalului n-avea `Storno`. Pe
+*cea mai firească interogare posibilă* — „jurnalul pe anul 2025", adică perioada
+care cuprinde și operarea, și stornarea — originalul și inversul se netau într-un
+singur rând de `0,00`, datat în luna operării: factura apărea ca „factură de zero
+lei", iar stornarea dispărea complet ca eveniment. Totalurile perioadei rămâneau
+corecte; se pierdea exact granularitatea per document pe care o cere D394.
+
+Premisa „snapshot-urile sunt funcțional determinate de pereche" era corectă și a
+rezistat atacului — dar `Storno` **nu** e determinat de pereche: sunt două fapte
+fiscale distincte, la date distincte. Scena de verificare fusese construită astfel
+încât cazul să nu poată apărea (perioada în martie, storno-ul în iulie).
+
+**Ambele regresii au fost VĂZUTE PICÂND** (fixurile date înapoi ⇒ 2 FAIL).
+
+### Ce a scos ca formă a contractului
+
+**D2 — complementul nemăsurat.** JT-D6 iterează documentele *prezente* în
+`RegistruTva`; mulțimea complementară — documente care postează pe conturile de
+TVA fără să producă fapte fiscale — era invizibilă **prin construcție**.
+Măsurătoarea nouă, defalcată pe tip, scoate pe baza cu volum: **23,15 M lei pe
+`InchidereTva`** (corect prin design — închiderea nu e operațiune taxabilă) și
+**1,85 M lei pe `NotaContabila`** (punțile de import). Niciuna nu e un defect;
+amândouă erau invizibile. „Acoperit cere acoperitor" (50b).
+
+### Rămase, ne-blocante
+
+- **Smoke-ul VIZUAL în browser nu s-a făcut** (extensia Chrome deconectată).
+  Ecranele compilează, urmează tiparul feliei 9 și au fost probate prin API pe
+  date reale — dar randarea n-a fost văzută.
+- **Ramura de storno a backfill-ului n-a fost exercitată pe date reale**: baza de
+  import n-are documente stornate printre tipurile cu politică. Acoperită doar de
+  scena ModelCheck.
+- **Regimurile care motivează registrul** (`Scutit`, `Neimpozabil`, `Capitalizat`)
+  nu apar în baza de import — tot doar în scenă.
+- **2.404 linii fără `TipTva`** (din 93.143) rămân în afara jurnalului: gaură a
+  DATELOR sursei, măsurată la fiecare rulare.
+- **D4 fixat fără regresie automată**: o probă ar fi cerut ștergerea logică a unui
+  `TipTva` din nomenclatorul partajat, cu risc de reziduu pe alte scene; fixul e
+  `TryGetValue` + refuz de domeniu, în două locuri simetrice.
+- **`Deriva` reîncarcă `PoliticaTva` și dicționarul de `TipTva`** deși motorul
+  tocmai le-a citit — ~2 interogări în plus per document operat (măsurat de
+  review: ~400k round-trip-uri pe o rulare integrală de import). Deliberat, ca
+  serviciul să fie folosibil identic din backfill; de reconsiderat dacă o rulare
+  integrală devine iar hot path.
+- **Concurență**: backfill-ul rulat simultan cu operarea prin aplicație poate
+  dubla rândurile unui document; reconcilierea ar prinde-o ca divergență, dar
+  unealta nu cere nicăieri operator unic (spre deosebire de Import1C).
