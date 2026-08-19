@@ -246,3 +246,40 @@ Contul `4111` = `019fa5d0-cbcd-7461-9982-0809a2075b64`; contrapartida-reper =
 `log_min_duration_statement` resetat la final (`ALTER SYSTEM RESET` +
 `pg_reload_conf()` — verificat `-1`); WebApi oprit, porturile 5000/5001
 verificate libere.
+
+---
+
+## Addendum 3 (2026-08-19) — jurnalele de TVA (felia 11)
+
+Măsurat pe clona de import **după backfill** (`Atlas.Conta.Import1C.Flax`,
+**90.732 de rânduri fiscale** pe 61.347 de documente, anul 2025 integral).
+
+**Metodă diferită de a celorlalte addendumuri, și trebuie spus de ce**: baza de
+import **n-are tabele de securitate** — o creează Import1C printr-un
+`EFCoreObjectSpaceProvider` standalone, fără XAF security — deci nu există
+utilizator cu care să se obțină un token, iar calea HTTP folosită peste tot mai
+sus e imposibilă acolo. Cifrele de mai jos sunt deci pe **SQL ECHIVALENT**, rulat
+în psql (cald, a doua rulare), nu pe SQL-ul emis de EF.
+
+Ce lipsește față de SQL-ul real, și de ce nu schimbă ordinul de mărime: lanțul
+`CASE` care traduce `RegimTva` în string, `LEFT JOIN`-ul suplimentar pe frunza
+`Parteneri` (as-cast-ul pentru `CodFiscal`), și `ORDER BY`/`LIMIT`-ul pus de
+`DataSourceLoader`. Toate se aplică *peste* mulțimea deja agregată — care e de
+19–42 mii de rânduri, nu de 90 de mii.
+
+| Proiecție | Perioadă | Rânduri produse | Cald |
+|---|---|---|---|
+| `JurnalTva` achiziții | an | 19.374 | **14 ms** |
+| `JurnalTva` livrări | an | 42.037 | **15 ms** |
+| `JurnalTva` livrări | o lună | 3.182 | **4 ms** |
+| `DecontTva` | an | 8 | **12 ms** |
+
+**Verdict**: agregarea e integral server-side și ieftină — ordinul de mărime e
+al balanței pe o lună, nu al `DocumenteCuRest`. Niciun index adăugat (disciplina
+59); indecșii de FK creați automat pe `DocumentId`/`TipTvaId`/`PartenerId` la
+crearea tabelei sunt suficienți.
+
+**Ce rămâne de măsurat pe calea reală**: cifrele de mai sus nu acoperă tierul
+HTTP. Prima bază care are ȘI volum, ȘI utilizatori (o bază de client, sau clona
+de import re-creată prin updater) trebuie remăsurată cu metoda standard — până
+atunci, cifrele astea sunt un ordin de mărime, nu un contract.

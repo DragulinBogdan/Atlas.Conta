@@ -8415,9 +8415,15 @@ void VerificaRegistruTva(bool cuTva) {
     // — dacă și asta ar face-o înainte, cusătura JT-D6 s-ar măsura pe zero
     // documente (poartă vacuă), sau, mai rău, doar pe unul stornat, unde ambele
     // părți se netează la zero și o derivare greșită simetric ar trece neobservată.
-    FacturaIntrare fctA = null, fctB = null;
+    FacturaIntrare fctA = null, fctB = null, fctC = null;
+    FacturaIesire fclD = null;
     Document conexB = null;
     var dataStorno = new DateOnly(2026, 7, 24);
+    // Perioada scenei — filtrul cu care se citesc proiecțiile mai jos. Storno-ul
+    // cade DELIBERAT în afara ei (iulie), ca jurnalul lunii deja declarate să se
+    // vadă „cum a fost declarat" (JT-D5).
+    var pStart = new DateOnly(2026, 3, 1);
+    var pEnd = new DateOnly(2026, 3, 31);
     if (cuTva) {
         var mag = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
         var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
@@ -8432,6 +8438,11 @@ void VerificaRegistruTva(bool cuTva) {
         var furnizor = os.CreateObject<Partener>();
         furnizor.Cod = MarcajJt + "-FURN";
         furnizor.Denumire = "Furnizor probă jurnal TVA";
+        // Codul fiscal e SETAT deliberat: pe `RegistruTva` partenerul e tipat
+        // `Repartitor` (baza TPT — pe Decont e chiar angajatul), deci jurnalul îl
+        // scoate prin as-cast pe frunza `Partener`. Cu câmpul gol, proba ar fi
+        // trecut comparând null cu null.
+        furnizor.CodFiscal = "RO12345678";
         var produs = os.CreateObject<Produs>();
         produs.Cod = MarcajJt;
         produs.Denumire = "Produs probă jurnal TVA";
@@ -8510,6 +8521,56 @@ void VerificaRegistruTva(bool cuTva) {
             conexB is NIR { Stare: StareDocument.Operat }
             && conexB.Detalii.All(d => d.TipTvaId == n21.ID)
             && Fiscal(conexB).Count == 0 && Fiscal(fctB).Count == 1);
+
+        // --- A treia factură: contopirea + perechea SDD/SFD (pentru proiecții) ---
+        // Două linii cu ACELAȘI TipTva (jurnalul le contopește într-un rând: un
+        // jurnal listează facturi, nu poziții) și două cu regim și cotă IDENTICE
+        // dar TipTva diferit — perechea care demonstrează de ce cheia decontului e
+        // `TipTva` și nu (Regim × Cota).
+        var sfd = os.FirstOrDefault<TipTva>(t => t.Cod == "SFD");
+        fctC = Factura("-F3", new DateOnly(2026, 3, 22));
+        Linie(fctC, tip628, n21, 40m);
+        Linie(fctC, tip628, n21, 60m);
+        Linie(fctC, tip628, sdd, 30m);
+        Linie(fctC, tip628, sfd, 20m);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fctC);
+        Check("Premisa contopirii: patru linii, dintre care DOUĂ cu același TipTva (N21) — registrul are patru "
+            + "rânduri (granularitatea SAF-T, JT-D1), iar SDD/SFD au regim și cotă identice (Scutit, 0)",
+            Fiscal(fctC).Count == 4
+            && Fiscal(fctC).Count(r => r.TipTvaId == n21.ID) == 2
+            && sdd.Regim == sfd.Regim && sdd.Cota == sfd.Cota && sdd.ID != sfd.ID);
+
+        // --- O LIVRARE, ca sensul să fie exercitat pe AMBELE laturi ---
+        // Fără ea, direcționalitatea codului SAF-T (JT-D3) s-ar fi „verificat"
+        // doar pe ramura de achiziție — adică pe jumătate.
+        var sediuJt = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+        var tip704Jt = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704");
+        var clientJt = os.CreateObject<Partener>();
+        clientJt.Cod = MarcajJt + "-CLIENT";
+        clientJt.Denumire = "Client probă jurnal TVA";
+        fclD = os.CreateObject<FacturaIesire>();
+        // Numărul se pre-completează deliberat: FCL ARE politică de numerotare, iar
+        // `AsignaNumar` onorează numărul cules (55a) — altfel documentul ar fi ieșit
+        // cu seria fiscală și curățenia scenei (care caută marcajul în `Numar`) l-ar
+        // fi lăsat în urmă.
+        fclD.Numar = MarcajJt + "-V1";
+        fclD.Data = new DateOnly(2026, 3, 23);
+        fclD.Predator = sediuJt;
+        fclD.Primitor = clientJt;
+        var lVanzare = os.CreateObject<FacturaIesireDetaliu>();
+        lVanzare.Document = fclD;
+        lVanzare.TipMaterial = tip704Jt;
+        lVanzare.Cantitate = 1m;
+        lVanzare.PretUnitar = 200m;
+        lVanzare.TipTva = n21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fclD);
+        Check("Cealaltă latură: o LIVRARE cu același TipTva (N21) produce un rând fiscal cu Sens = Livrare și "
+            + "partenerul din latura declarată de politică (RepartitorPrimitor → clientul)",
+            Fiscal(fclD).Count == 1
+            && Fiscal(fclD)[0] is { Sens: SensTva.Livrare, Baza: 200m, Tva: 42m } r0
+            && r0.PartenerId == clientJt.ID && r0.TipTvaId == n21.ID);
     }
     else {
         // Scenă MINIMĂ pe bugetar, cerută de premisa verificării 2: pe o bază
@@ -8685,6 +8746,159 @@ void VerificaRegistruTva(bool cuTva) {
             + "documentul revenit în Draft nu mai are nicio urmă în jurnal",
             fctB.Stare == StareDocument.Draft && Fiscal(fctB).Count == 0
             && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == fctB.ID));
+    }
+
+    // ---------------- Proiecțiile (JT-D7) ----------------
+    // Rulate DUPĂ storno și anulare, deliberat: jurnalul trebuie citit peste un
+    // registru care conține deja rânduri inverse (fctA, stornată în IULIE) și un
+    // document care și-a pierdut rândurile (fctB, anulată). Perioada scenei e
+    // MARTIE, deci storno-ul cade în afara ei — exact JT-D5: „jurnalul lunii deja
+    // declarate rămâne cum a fost declarat".
+    if (cuTva) {
+        var n21P = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        var sddP = os.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
+        var sfdP = os.FirstOrDefault<TipTva>(t => t.Cod == "SFD");
+
+        // Registrul citit DIRECT, ca a doua față a aceleiași cifre. Peste TOATĂ
+        // baza, nu peste scenă: dacă alte documente ale suitei au rânduri în
+        // martie, ele intră în ambele părți ale comparației, deci proba se
+        // întărește, nu se strică.
+        var registruMartie = os.GetObjectsQuery<RegistruTva>()
+            .Where(r => r.Data >= pStart && r.Data <= pEnd)
+            .Select(r => new { r.DocumentId, r.TipTvaId, r.Sens, r.Baza, r.Tva }).ToList();
+
+        var jurnale = new Dictionary<SensTva, List<JurnalTvaRand>>();
+        var cusaturaOk = true;
+        var chiarAgrega = false;
+        foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+            var jurnal = TvaProiectii.JurnalTva(os, sens, pStart, pEnd).ToList();
+            jurnale[sens] = jurnal;
+            var brut = registruMartie.Where(r => r.Sens == sens).ToList();
+            cusaturaOk &= jurnal.Sum(r => r.Baza) == brut.Sum(r => r.Baza)
+                && jurnal.Sum(r => r.Tva) == brut.Sum(r => r.Tva)
+                && jurnal.Count == brut.Select(r => (r.DocumentId, r.TipTvaId)).Distinct().Count()
+                && jurnal.All(r => r.Data >= pStart && r.Data <= pEnd);
+            // Premisa care dă dinți cusăturii: pe cel puțin o latură agregarea
+            // CHIAR contopește rânduri (altfel „jurnal == registru" ar fi trecut
+            // și pe o proiecție care întoarce registrul neatins).
+            chiarAgrega |= brut.Count > jurnal.Count && jurnal.Count > 0;
+        }
+        Check("VERIFICAREA 4 (JT-D7): pe fiecare sens, jurnalul == registrul — Σ bază și Σ TVA identice, iar "
+            + "numărul de rânduri de jurnal == numărul de perechi (Document × TipTva) DISTINCTE ale perioadei; "
+            + "toate rândurile cad în perioadă (storno-ul din iulie nu se strecoară în jurnalul lui martie). "
+            + "Premisa: agregarea chiar contopește rânduri pe cel puțin o latură",
+            cusaturaOk && chiarAgrega
+            && jurnale[SensTva.Achizitie].Count > 0 && jurnale[SensTva.Livrare].Count > 0);
+
+        var jurnalAch = jurnale[SensTva.Achizitie];
+        var randuriC = jurnalAch.Where(r => r.DocumentId == fctC.ID).ToList();
+        var randuriA = jurnalAch.Where(r => r.DocumentId == fctA.ID).ToList();
+        Check("VERIFICAREA 5 (JT-D7): jurnalul AGREGĂ, nu pierde — factura cu patru linii de TipTva-uri DIFERITE "
+            + "dă patru rânduri, iar cea cu două linii de ACELAȘI TipTva le contopește (40 + 60 = 100 bază, 21 "
+            + "TVA), deci trei rânduri din patru linii; Σ per document se conservă în ambele cazuri",
+            randuriA.Count == 4
+            && randuriC.Count == 3
+            && randuriC.Single(r => r.TipTvaId == n21P.ID) is { Baza: 100m, Tva: 21m }
+            && randuriC.Sum(r => r.Baza) == 150m
+            && randuriC.All(r => r.DocumentNumar == fctC.Numar && r.PartenerId == fctC.PredatorId));
+
+        // Etichetele (JT-D3): join la citire, nu snapshot.
+        Check("JT-D3: etichetele se rezolvă la CITIRE — denumirea și codul fiscal ale partenerului, codul și "
+            + "denumirea tipului de TVA — iar cota și regimul vin de pe RÂND (snapshot), nu din nomenclatorul de azi",
+            randuriC.All(r => r.PartenerDenumire == fctC.Predator.Denumire
+                && r.PartenerCodFiscal == (fctC.Predator as Partener).CodFiscal)
+            && randuriC.Single(r => r.TipTvaId == sfdP.ID) is { TipTvaCod: "SFD", Regim: "Scutit", Cota: 0m }
+            && randuriC.Single(r => r.TipTvaId == n21P.ID) is { TipTvaCod: "N21", Regim: "Normal", Cota: 21m });
+
+        // ═══ Decontul: aceeași cifră, cealaltă față ═══
+        var decont = TvaProiectii.DecontTva(os, pStart, pEnd).ToList();
+        var decontOk = true;
+        foreach (var (sens, eticheta) in new[] {
+            (SensTva.Achizitie, "Achizitie"), (SensTva.Livrare, "Livrare")
+        }) {
+            var dinJurnal = jurnale[sens]
+                .GroupBy(r => new { r.TipTvaId, r.Regim, r.Cota })
+                .Select(g => (g.Key.TipTvaId, g.Key.Regim, g.Key.Cota,
+                    Baza: g.Sum(x => x.Baza), Tva: g.Sum(x => x.Tva)))
+                .OrderBy(x => x.TipTvaId).ThenBy(x => x.Cota).ToList();
+            var dinDecont = decont.Where(r => r.Sens == eticheta)
+                .Select(r => (r.TipTvaId, r.Regim, r.Cota, r.Baza, r.Tva))
+                .OrderBy(x => x.TipTvaId).ThenBy(x => x.Cota).ToList();
+            decontOk &= dinJurnal.SequenceEqual(dinDecont);
+        }
+        Check("VERIFICAREA 6 (JT-D7): decontul == jurnalul, pe aceeași perioadă și pe ambele sensuri — aceleași "
+            + "chei (TipTva × Regim × Cotă) cu aceleași sume. Sunt cele două fețe ale ACELUIAȘI registru, deci "
+            + "o divergență ar însemna că una dintre agregări minte",
+            decontOk && decont.Count > 0
+            && decont.Sum(r => r.Randuri) == registruMartie.Count);
+
+        // ═══ MOTIVUL pentru care cheia decontului e `TipTva` ═══
+        var scutite = decont.Where(r => r.Sens == "Achizitie"
+            && (r.TipTvaId == sddP.ID || r.TipTvaId == sfdP.ID)).ToList();
+        Check("VERIFICAREA 7 (JT-D7, corectura designului): SDD (scutit CU drept de deducere) și SFD (FĂRĂ drept) "
+            + "au ACELAȘI regim și aceeași cotă 0, dar coduri SAF-T diferite și rânduri diferite în D300 — și dau "
+            + "DOUĂ rânduri de decont, nu unul. O grupare pe (Regim × Cotă), cum spunea prima formulare, le-ar fi "
+            + "fuzionat, adică ar fi produs exact cifra pe care declarația n-o poate folosi",
+            scutite.Count == 2
+            && scutite.Select(r => r.TipTvaCod).OrderBy(c => c).SequenceEqual(new[] { "SDD", "SFD" })
+            && scutite.Select(r => (r.Regim, r.Cota)).Distinct().Count() == 1
+            // Bazele DIFERĂ, deci fuziunea chiar ar fi pierdut informație: SDD
+            // adună liniile ambelor facturi ale scenei (70 pe F1 + 30 pe F3), SFD
+            // are doar linia de 20 de pe F3. Un singur rând ar fi arătat 120 pe un
+            // cod SAF-T ales la întâmplare dintre cele două.
+            && scutite.Single(r => r.TipTvaCod == "SDD").Baza == 100m
+            && scutite.Single(r => r.TipTvaCod == "SFD").Baza == 20m
+            && scutite.All(r => r.Tva == 0m));
+
+        // ═══ Codul SAF-T e DIRECȚIONAL (JT-D3) ═══
+        var n21Ach = jurnalAch.First(r => r.TipTvaId == n21P.ID);
+        var n21Liv = jurnale[SensTva.Livrare].First(r => r.TipTvaId == n21P.ID);
+        Check("VERIFICAREA 8 (JT-D3): codul SAF-T e o etichetă DIRECȚIONALĂ, rezolvată la citire din același "
+            + "nomenclator — ACELAȘI TipTva (N21) iese cu codul de achiziție pe jurnalul de cumpărări și cu cel "
+            + "de livrare pe cel de vânzări, iar cele două chiar diferă",
+            n21Ach.CodSafT == n21P.CodSafTAchizitie && n21Liv.CodSafT == n21P.CodSafTLivrare
+            && !string.IsNullOrEmpty(n21Ach.CodSafT) && n21Ach.CodSafT != n21Liv.CodSafT
+            && decont.Where(r => r.TipTvaId == n21P.ID)
+                .All(r => r.CodSafT == (r.Sens == "Achizitie" ? n21P.CodSafTAchizitie : n21P.CodSafTLivrare)));
+
+        // ═══ Prin `DataSourceLoader`, PAGINAT (lecția care a produs două defecte
+        //     în felia 9) ═══
+        // Aici hazardul e mai mare decât la balanță, nu mai mic: `JurnalTvaRand`
+        // n-are niciun membru numit „Id", deci convenția EF a bibliotecii
+        // (`EFSorting.IsEFCodeFirstConventionalKey`) nu se aplică, iar fallback-ul
+        // ei alege PRIMA proprietate dintr-un tip sortabil în ordinea
+        // int → long → Guid …, adică `DocumentId` — cheie care se repetă de trei
+        // ori pe o singură factură cu trei tipuri de TVA. Fără `OrdineJurnalTva()`,
+        // `ORDER BY "DocumentId"` sub `LIMIT/OFFSET` n-are ordine garantată.
+        // Filtrul pe numărul documentului e chiar ce pune grila pe o coloană de
+        // ieșire (legitim) și ține proba mărginită la scenă.
+        List<JurnalTvaRand> JurnalPrinLoader(int skip, int take) {
+            var optiuni = new DataSourceLoadOptionsBase {
+                Skip = skip, Take = take,
+                Filter = new object[] { "DocumentNumar", "startswith", MarcajJt }
+            };
+            OrdineLista.AplicaOrdineImplicita(optiuni, TvaProiectii.OrdineJurnalTva());
+            return DataSourceLoader.Load(
+                TvaProiectii.JurnalTva(os, SensTva.Achizitie, pStart, pEnd), optiuni)
+                .data.Cast<JurnalTvaRand>().ToList();
+        }
+        var totul = JurnalPrinLoader(0, 1000);
+        string CheieJt(JurnalTvaRand r) => $"{r.DocumentId}|{r.TipTvaId}";
+        var pagini = new List<JurnalTvaRand>();
+        for (var skip = 0; skip < totul.Count; skip += 2)
+            pagini.AddRange(JurnalPrinLoader(skip, 2));
+        Check("VERIFICAREA 9 (regresia feliei 9): prin `DataSourceLoader`, paginat din 2 în 2, jurnalul reproduce "
+            + "EXACT mulțimea unei singure cereri — fără duplicate, fără rânduri sărite — și în ordinea DECLARATĂ; "
+            + "premisa (cheia pe care ar inventa-o biblioteca, `DocumentId`, chiar se repetă) e verificată în "
+            + "aceeași trecere",
+            totul.Count == 7
+            && totul.GroupBy(r => r.DocumentId).Any(g => g.Count() > 1)
+            && pagini.Count == totul.Count
+            && pagini.Select(CheieJt).Distinct().Count() == pagini.Count
+            && pagini.Select(CheieJt).SequenceEqual(totul.Select(CheieJt))
+            // …iar ordinea declarată e chiar cea cerută: cronologic, apoi pe cheia
+            // de grupare.
+            && totul.Select(r => r.Data).SequenceEqual(totul.Select(r => r.Data).OrderBy(d => d)));
     }
 
     CurataJt();

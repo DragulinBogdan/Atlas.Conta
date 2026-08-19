@@ -160,9 +160,15 @@ Trei verificări în ModelCheck, ambele profiluri:
   baza, TVA. Un jurnal listează **facturi**, nu poziții de factură; registrul
   rămâne per linie pentru cine are nevoie (SAF-T). Un singur ecran
   parametrizat pe `Sens`, ca `PLT`/`INC` (57a).
-- **Decont** — un rând per `(Sens × Regim × Cota)`, cu totalurile de bază și TVA.
-  E scheletul D300: rândurile de decont sunt exact combinația asta, iar maparea
-  pe numerele de rând ANAF e a declarației, nu a registrului.
+- **Decont** — un rând per `(Sens × TipTva)`, cu totalurile de bază și TVA.
+
+  **Corectat la implementare**: prima formulare spunea „per `(Sens × Regim ×
+  Cota)`" — și ar fi fost greșit. `SDD` (scutit CU drept de deducere) și `SFD`
+  (scutit FĂRĂ drept) au același regim și aceeași cotă 0, dar coduri SAF-T
+  diferite (310314 vs 310326) și rânduri diferite în D300. Gruparea pe regim×cotă
+  le-ar fi fuzionat, adică ar fi produs exact cifra pe care declarația n-o poate
+  folosi. **`TipTva` E identitatea de raportare** — el poartă mapările — deci el
+  e cheia. Regimul și cota rămân coloane afișate.
 
 Ambele prin `DataSourceLoader`, ca restul listelor.
 
