@@ -674,9 +674,11 @@
     "MapareD300": {
       "DefaultProperty": null,
       "Membri": {
+        "CriteriuRandOperatiuni": "CriteriuRandOperatiuni",
         "ID": "ID",
         "Rand": "Rând D300",
         "RandEsteDeOperatiuni": "RandEsteDeOperatiuni",
+        "RandFaraAscendentMapat": "RandFaraAscendentMapat",
         "RandId": "Rând D300",
         "Sens": "Sens",
         "TipTva": "Tip TVA",

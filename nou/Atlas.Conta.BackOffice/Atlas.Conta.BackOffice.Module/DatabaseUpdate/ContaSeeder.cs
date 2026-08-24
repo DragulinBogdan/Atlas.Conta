@@ -155,9 +155,18 @@ public static class ContaSeeder {
     // Idempotent pe `Cod`. Părinții și oglinzile se leagă din DICȚIONARUL
     // trecerii curente, nu printr-o a doua interogare: rândurile abia create nu
     // s-ar găsi la `FirstOrDefault` înainte de commit, iar o dependență de
-    // ordinea de creare ar fi fost o capcană tăcută. Pe rânduri preexistente cu
-    // FK gol legătura se completează (self-healing pe o bază seed-uită parțial),
-    // niciodată nu se rescrie una existentă.
+    // ordinea de creare ar fi fost o capcană tăcută.
+    //
+    // `Cod` e SINGURA cheie; TOT restul se REscrie la fiecare trecere, inclusiv
+    // pe rândurile preexistente (fix F6 al review-ului advers). Prima formă
+    // scria câmpurile doar la creare, ceea ce transforma seed-ul în „insert dacă
+    // lipsește" — iar un rând al LEGII care s-a schimbat (o denumire corectată,
+    // o coloană adăugată de un ordin nou, un `Fel` reclasificat) ar fi rămas
+    // pentru totdeauna în forma primei seed-uiri, pe TOATE bazele existente.
+    // Nomenclatorul e `[ForbidCRUD]` tocmai fiindcă seed-ul e singura lui cale
+    // de scriere; atunci seed-ul trebuie să fie și singura lui autoritate.
+    // Rescrierea e inofensivă prin construcție: EF nu emite UPDATE pentru o
+    // valoare identică, deci pe o bază la zi trecerea rămâne fără efect.
     internal static void SeedRandD300(IObjectSpace os) {
         const SectiuneD300 COL = SectiuneD300.Colectata, DED = SectiuneD300.Deductibila,
             REG = SectiuneD300.Regularizari;
@@ -238,21 +247,25 @@ public static class ContaSeeder {
             if (rand == null) {
                 rand = os.CreateObject<RandD300>();
                 rand.Cod = r.Cod;
-                rand.Denumire = r.Denumire;
-                rand.Sectiune = r.Sectiune;
-                rand.Ordine = i + 1;
-                rand.AreBaza = r.Baza;
-                rand.AreTva = r.Tva;
-                rand.Fel = r.Fel;
             }
+            rand.Denumire = r.Denumire;
+            rand.Sectiune = r.Sectiune;
+            rand.Ordine = i + 1;
+            rand.AreBaza = r.Baza;
+            rand.AreTva = r.Tva;
+            rand.Fel = r.Fel;
             dupaCod[r.Cod] = rand;
         }
+        // Legăturile se rescriu la fel de necondiționat ca restul — inclusiv
+        // ȘTERGEREA uneia care nu mai e în tabel (`null` explicit): un rând care
+        // a încetat să fie „din care" sau oglindă trebuie să și-o piardă, altfel
+        // proiecția ar continua să adune într-un părinte care nu mai există în
+        // formular. Ordinea (a doua trecere) rămâne obligatorie: ținta poate fi
+        // un rând creat mai târziu în prima trecere.
         foreach (var r in randuri) {
             var rand = dupaCod[r.Cod];
-            if (r.Parinte != null && rand.ParinteId == null && rand.Parinte == null)
-                rand.Parinte = dupaCod[r.Parinte];
-            if (r.Oglinda != null && rand.OglindaAId == null && rand.OglindaA == null)
-                rand.OglindaA = dupaCod[r.Oglinda];
+            rand.Parinte = r.Parinte != null ? dupaCod[r.Parinte] : null;
+            rand.OglindaA = r.Oglinda != null ? dupaCod[r.Oglinda] : null;
         }
     }
 
@@ -269,7 +282,7 @@ public static class ContaSeeder {
     // (`ProfilPrivat.VerificaMapariD300`): nucleul n-are de unde ști ce coduri
     // de `TipTva` seed-uiește un profil, iar lista nemapatelor deliberate e
     // exact tabelul D3-D2, care e conținut de profil (29c).
-    static void VerificaD300(IObjectSpace os, ProfilContabil profil) {
+    public static void VerificaD300(IObjectSpace os, ProfilContabil profil) {
         var randuri = os.GetObjectsQuery<RandD300>().ToList();
         if (randuri.Count != RanduriD300Asteptate)
             throw new InvalidOperationException(
@@ -302,7 +315,65 @@ public static class ContaSeeder {
                 throw new InvalidOperationException(
                     $"Maparea D300 {m.TipTva.Cod}/{m.Sens} țintește rd. {m.Rand.Cod}, de fel {m.Rand.Fel} — "
                     + "doar rândurile de operațiuni se alimentează din mapări (D3-D2).");
+        VerificaMapariFaraAscendent(mapari, randuri);
         ProfilPrivat.VerificaMapariD300(os, mapari);
+    }
+
+    // Punte pentru ModelCheck: pachetele de profil rămân `internal` (nu sunt
+    // API-ul modulului, ci conținut), dar re-seed-ul mapărilor D300 trebuie
+    // probat pe FUNCȚIA REALĂ — cea pe care o cheamă `--updateDatabase` —, nu pe
+    // o imitație scrisă în probă. Un singur seam, cu numele profilului în el.
+    public static void SeedMapareD300Privat(IObjectSpace os) => ProfilPrivat.SeedMapareD300(os);
+
+    // DUBLA NUMĂRARE pe verticala „din care" (fix F4 al review-ului advers) —
+    // riscul 1 al designului, rămas cu un singur gard din două.
+    //
+    // Proiecția adună rândul-părinte ca „mapările lui DIRECTE + Σ copiii", ceea
+    // ce e corect cât timp o pereche `(TipTva, Sens)` nu cade pe AMÂNDOI. Dacă
+    // TI21/achiziție e mapat și pe rd. 12.1, și pe rd. 12, cei 84 de lei intră
+    // în rd. 12 de DOUĂ ori (o dată direct, o dată urcați din copil), iar de
+    // acolo în totalul rd. 19 — un decont care se validează la ANAF și e greșit
+    // cu suma dublată. Gardul nu poate sta în proiecție (acolo cifra e deja
+    // făcută) și nici în forma „un rând nu primește două mapări ale aceleiași
+    // perechi" (indexul unic al tripletei acoperă exact atâta): singura formă
+    // corectă e pe LANȚUL de ascendenți, la orice adâncime.
+    //
+    // Ce NU e interzis: aceeași pereche pe două rânduri FRAȚI (TI19/achiziție pe
+    // rd. 16 ȘI rd. 33) — acolo multiplicitatea e cerută de formular, cele două
+    // sunt laturi diferite ale aceleiași operațiuni și nu se însumează niciodată
+    // în același total.
+    static void VerificaMapariFaraAscendent(
+            IReadOnlyCollection<MapareD300> mapari, IReadOnlyCollection<RandD300> randuri) {
+        var parinti = randuri.ToDictionary(r => r.ID, r => r.ParinteId);
+        // Lanțul de ascendenți al unui rând, cu gardă de ciclu (aceeași
+        // precauție ca proiecția: `Parinte` e o navigație, iar un ciclu
+        // introdus din greșeală ar transforma verificarea într-o buclă infinită).
+        HashSet<Guid> Ascendenti(Guid id) {
+            var sus = new HashSet<Guid>();
+            var curent = parinti.GetValueOrDefault(id);
+            while (curent is Guid pid && sus.Add(pid))
+                curent = parinti.GetValueOrDefault(pid);
+            return sus;
+        }
+        foreach (var pereche in mapari.GroupBy(m => new { m.TipTvaId, m.Sens })) {
+            var tinte = pereche.Select(m => m.RandId).Distinct().ToList();
+            if (tinte.Count < 2)
+                continue;
+            foreach (var tinta in tinte) {
+                var sus = Ascendenti(tinta);
+                // `Cast<Guid?>` ca „negăsit" să fie `null`, nu `Guid.Empty`:
+                // sentinela ar fi fost un al doilea înțeles al unei valori care
+                // are deja unul (Guid-ul nescris).
+                if (tinte.Where(sus.Contains).Cast<Guid?>().FirstOrDefault() is not Guid conflict)
+                    continue;
+                var copil = pereche.First(m => m.RandId == tinta);
+                var parinte = pereche.First(m => m.RandId == conflict);
+                throw new InvalidOperationException(
+                    $"Maparea D300 {copil.TipTva.Cod}/{copil.Sens} țintește și rd. {copil.Rand.Cod}, și "
+                    + $"rd. {parinte.Rand.Cod}, care îi e ascendent („din care”) — cifra ar intra de două ori "
+                    + "în rândul-părinte și în totalul lui. Păstrați o singură mapare pe verticală.");
+            }
+        }
     }
 
     // Minimul pentru fluxurile e2e: două gestiuni, o unitate (loc de consum),

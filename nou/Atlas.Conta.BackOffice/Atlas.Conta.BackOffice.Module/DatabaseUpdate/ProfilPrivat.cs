@@ -1,6 +1,9 @@
 using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
+// `IgnoreQueryFilters` — singurul loc din seed care întreabă tabela ÎNTREAGĂ,
+// peste filtrul global de ștergere amânată pus de XAF (`GCRecord = 0`).
+using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 
@@ -401,7 +404,20 @@ internal static class ProfilPrivat {
     // Politica de așezare pe decont (D3-D2), idempotentă pe tripletă. Rulează
     // după `SeedTipTva` (referă tipurile prin FK) și după nomenclatorul de
     // rânduri comis de nucleu (`ContaSeeder.SeedRandD300`).
-    static void SeedMapareD300(IObjectSpace os) {
+    //
+    // ȘTERGEREA LOGICĂ E O DECIZIE A UTILIZATORULUI, nu o gaură (fix F5 al
+    // review-ului advers). Maparea e POLITICĂ — editabilă din XAF exact ca să
+    // poată fi și ștearsă (decizia 4). Ștergerea în XAF e AMÂNATĂ (60a): rândul
+    // rămâne în tabelă cu `GCRecord` setat. Prima formă a seed-ului îl căuta
+    // doar printre cele VII, nu-l găsea, și îl recrea la fiecare
+    // `--updateDatabase` — adică desfăcea tăcut o decizie luată deliberat, de
+    // fiecare dată, iar contabilul care scosese SFD de pe rd. 29 îl regăsea
+    // acolo după orice release. De aceea tripleta se caută IGNORÂND filtrul de
+    // ștergere: „a existat vreodată" bate „există acum", fiindcă întrebarea nu e
+    // dacă maparea lipsește, ci dacă lipsa ei e intenționată.
+    // Public: ModelCheck (alt assembly) probează re-seed-ul pe CALEA REALĂ —
+    // aceeași funcție pe care o cheamă `--updateDatabase`, nu o imitație.
+    public static void SeedMapareD300(IObjectSpace os) {
         foreach (var m in MapariD300) {
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == m.TipTva);
             var rand = os.FirstOrDefault<RandD300>(r => r.Cod == m.Rand);
@@ -413,6 +429,16 @@ internal static class ProfilPrivat {
             if (os.GetObjectsQuery<MapareD300>()
                     .Any(x => x.TipTvaId == tip.ID && x.Sens == sens && x.RandId == rand.ID))
                 continue;
+            // A doua întrebare, pe tabela ÎNTREAGĂ: dacă rândul e acolo dar
+            // șters, tăcerea ar fi la fel de rea ca recrearea — decizia rămâne
+            // respectată, dar se SPUNE, ca o mapare lipsă din decont să aibă o
+            // urmă în log-ul care a produs baza.
+            if (os.GetObjectsQuery<MapareD300>().IgnoreQueryFilters()
+                    .Any(x => x.TipTvaId == tip.ID && x.Sens == sens && x.RandId == rand.ID)) {
+                Console.WriteLine($"  Mapare D300 {m.TipTva}/{m.Sens} → rd. {m.Rand}: ȘTEARSĂ de utilizator, "
+                    + "nu se recreează (politica e date — decizia 4).");
+                continue;
+            }
             var mapare = os.CreateObject<MapareD300>();
             mapare.TipTva = tip;
             mapare.Sens = sens;
@@ -429,6 +455,17 @@ internal static class ProfilPrivat {
     internal static void VerificaMapariD300(IObjectSpace os, IReadOnlyCollection<MapareD300> mapari) {
         var coduri = MapariD300.Select(m => m.TipTva)
             .Concat(NemapateDeliberat.Select(n => n.TipTva)).Distinct().ToList();
+        // Perechile a căror mapare a fost ȘTEARSĂ de utilizator (fix F5): a
+        // treia categorie, lângă „mapată" și „nemapată deliberat". Gardianul
+        // apără seed-ul de propriile GĂURI, nu utilizatorul de propriile
+        // decizii — un profil pe care contabilul l-a subțiat intenționat n-are
+        // voie să facă `--updateDatabase` să arunce, adică să blocheze orice
+        // release viitor pe baza aceea.
+        var stersDeUtilizator = os.GetObjectsQuery<MapareD300>().IgnoreQueryFilters()
+            .Select(m => new { m.TipTvaId, m.Sens })
+            .ToList()
+            .Select(m => (m.TipTvaId, m.Sens))
+            .ToHashSet();
         foreach (var cod in coduri) {
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
             if (tip == null)
@@ -436,6 +473,8 @@ internal static class ProfilPrivat {
                     $"Tabelul de mapare D300 referă tipul de TVA {cod}, care nu există în bază.");
             foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
                 if (mapari.Any(m => m.TipTvaId == tip.ID && m.Sens == sens))
+                    continue;
+                if (stersDeUtilizator.Contains((tip.ID, sens)))
                     continue;
                 var deliberat = NemapateDeliberat
                     .Where(n => n.TipTva == cod && n.Sens == sens).Select(n => n.Motiv).FirstOrDefault();

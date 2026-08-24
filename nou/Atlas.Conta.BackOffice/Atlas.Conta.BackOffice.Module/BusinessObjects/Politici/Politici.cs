@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
+using DevExpress.Data.Filtering;
+using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
@@ -338,7 +340,25 @@ public class MapareD300 : BaseObject {
     [XafDisplayName("Rând D300")]
     [RuleRequiredField("MapareD300_Rand_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Rândul de decont este obligatoriu.")]
+    // AFORDANȚA lookup-ului (fix F7 al review-ului advers): lista oferă doar
+    // rândurile care CHIAR se pot alimenta din mapări. Refuzul rămâne în
+    // validare — filtrul e ce vede operatorul, nu ce garantează sistemul (65).
+    //
+    // Forma e `DataSourceCriteriaProperty`, nu `DataSourceCriteria("Fel = ...")`,
+    // și asta e o constatare MĂSURATĂ, nu o preferință: limbajul de criterii NU
+    // acceptă numele unui membru de enum („Criteria Language Syntax", secțiunea
+    // Constants — `[Status] = Status.InProgress` e explicit greșit; se acceptă
+    // doar valoarea întreagă `= 1` sau forma serializată
+    // `##Enum#Namespace.Tip,Membru#`, care cere în plus `EnumProcessingHelper
+    // .RegisterEnum`). Ambele ar fi mutat comparația din compilator într-un
+    // string — exact ce refuză și comentariul regulii de mai jos.
+    [DataSourceCriteriaProperty(nameof(CriteriuRandOperatiuni))]
     public virtual RandD300 Rand { get; set; }
+
+    [NotMapped]
+    [Browsable(false)]
+    public CriteriaOperator CriteriuRandOperatiuni =>
+        CriteriaOperator.FromLambda<RandD300>(r => r.Fel == FelRandD300.Operatiuni);
 
     // Gardianul D3-D2, ca regulă de fond (nu criteriu în limbaj de criterii:
     // comparația de enum se scrie o dată, în C#, și nu depinde de parsare).
@@ -349,4 +369,55 @@ public class MapareD300 : BaseObject {
         CustomMessageTemplate = "Rândul de decont trebuie să fie de fel „Operațiuni” — "
             + "rândurile de total, oglindă și extern se calculează, nu se alimentează din mapări.")]
     public bool RandEsteDeOperatiuni => Rand == null || Rand.Fel == FelRandD300.Operatiuni;
+
+    // A DOUA jumătate a gardului contra dublei numărări (fix F4 al review-ului
+    // advers), geamăna celui din `ContaSeeder.VerificaD300`: aceeași pereche
+    // `(TipTva, Sens)` nu poate ținti simultan un rând ȘI un ascendent al lui.
+    //
+    // Proiecția adună părintele ca „mapările lui DIRECTE + Σ copiii": o pereche
+    // pusă și pe rd. 12.1, și pe rd. 12 intră de două ori în rd. 12 și de acolo
+    // în totalul rd. 19 — un decont care trece validările ANAF și e greșit.
+    // Seed-ul apără seed-ul; regula de aici apără CULEGEREA din XAF, unde
+    // maparea e editabilă (politica e date, decizia 4).
+    //
+    // Verificarea e SIMETRICĂ: nu contează dacă rândul nou e copilul unei mapări
+    // existente sau părintele ei — conflictul e al perechii, nu al ordinii în
+    // care s-au cules cele două. Fraților li se dă voie (TI19/achiziție pe
+    // rd. 16 ȘI rd. 33 e chiar cazul care a cerut nomenclatorul).
+    [NotMapped]
+    [Browsable(false)]
+    [RuleFromBoolProperty("MapareD300_FaraAscendent", DefaultContexts.Save,
+        CustomMessageTemplate = "Aceeași pereche (tip de TVA × sens) țintește deja un rând aflat pe "
+            + "aceeași verticală „din care” cu cel ales — cifra ar intra de două ori în rândul-părinte "
+            + "și în totalul lui. Păstrați o singură mapare pe verticală.")]
+    public bool RandFaraAscendentMapat {
+        get {
+            var os = ((IObjectSpaceLink)this).ObjectSpace;
+            var tipId = TipTva?.ID ?? TipTvaId;
+            if (os == null || Rand == null || tipId == Guid.Empty)
+                return true;
+            var sens = Sens;
+            // Doar mapările VII ale aceleiași perechi: una ștearsă logic nu mai
+            // alimentează nimic, deci nu poate dubla nimic (F5).
+            var altele = os.GetObjectsQuery<MapareD300>()
+                .Where(m => m.TipTvaId == tipId && m.Sens == sens).ToList();
+            foreach (var alta in altele) {
+                if (ReferenceEquals(alta, this) || alta.Rand == null || alta.RandId == Rand.ID)
+                    continue;
+                if (EsteAscendent(alta.Rand, Rand) || EsteAscendent(Rand, alta.Rand))
+                    return false;
+            }
+            return true;
+        }
+    }
+
+    // „`posibil` e undeva pe lanțul de părinți al lui `rand`" — cu gardă de
+    // ciclu, ca peste tot unde se urcă pe `Parinte` (67e).
+    static bool EsteAscendent(RandD300 posibil, RandD300 rand) {
+        var vazute = new HashSet<Guid>();
+        for (var sus = rand.Parinte; sus != null && vazute.Add(sus.ID); sus = sus.Parinte)
+            if (sus.ID == posibil.ID)
+                return true;
+        return false;
+    }
 }

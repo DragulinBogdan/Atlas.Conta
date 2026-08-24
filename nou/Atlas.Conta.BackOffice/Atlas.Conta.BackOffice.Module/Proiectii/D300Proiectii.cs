@@ -244,9 +244,9 @@ public static class D300Proiectii {
         var pierdutTva = new Dictionary<Guid, decimal>();
         var pierdutBaza = new Dictionary<Guid, decimal>();
         // Nedeductibilul care se scade la rd. 31: TVA-ul grupurilor cu
-        // `Regim = Capitalizat` care CHIAR au ajuns în secțiunea deductibilă.
-        // O SINGURĂ dată per grup, oricâte rânduri deductibile ar atinge —
-        // altfel scăderea ar depăși ce s-a adunat la rd. 30.
+        // `Regim = Capitalizat`, numărat de câte ori a INTRAT efectiv în rd. 30
+        // (vezi comentariul de la locul acumulării). Scăderea nu are voie nici
+        // să depășească ce s-a adunat, nici să rămână în urmă.
         var nedeductibil = 0m;
 
         foreach (var a in agregate) {
@@ -278,9 +278,26 @@ public static class D300Proiectii {
                 continue;
             }
 
-            if (a.Regim == RegimTva.Capitalizat
-                    && tinte.Any(n => n.Sectiune == SectiuneD300.Deductibila))
-                nedeductibil += a.Tva;
+            // Nedeductibilul care se scade la rd. 31 — numărat PE APARIȚIE în
+            // rd. 30, nu pe grup (fix F3 al review-ului advers).
+            //
+            // Prima formă întreba „a ajuns grupul în secțiunea Deductibila?" și
+            // scădea o dată. Criteriul suna corect și era greșit pe două căi
+            // opuse: o mapare pe rd. 33 (Regularizări taxă dedusă — secțiunea
+            // Deductibila, dar NU operand al rd. 30) producea o scădere pentru o
+            // cifră care nu se adunase niciodată la rd. 30, iar o pereche mapată
+            // pe DOUĂ rânduri deductibile (rd. 24 ȘI rd. 25) se aduna de două
+            // ori în rd. 30 și se scădea o singură dată. În ambele cazuri
+            // rd. 31 nu mai era rd. 30 minus ce n-are drept de deducere.
+            //
+            // Criteriul corect e chiar definiția: se scade exact de câte ori
+            // cifra a INTRAT în rd. 30 — adică numărul țintelor grupului care
+            // sunt operanzi ai lui rd. 30 ȘI au coloană de TVA (fără coloană
+            // n-au adus nimic de scăzut). `Regim` e cel SNAPSHOT de pe rândul de
+            // registru, nu `TipTva.Regim` de azi (riscul 2 din design).
+            if (a.Regim == RegimTva.Capitalizat)
+                nedeductibil += a.Tva
+                    * tinte.Count(n => n.AreTva && OperanziRd30.Contains(n.Cod));
 
             foreach (var tinta in tinte) {
                 // Coloana care nu există nu primește cifra — dar nici nu o
@@ -291,7 +308,26 @@ public static class D300Proiectii {
                     pierdutBaza[tinta.Id] = pierdutBaza.GetValueOrDefault(tinta.Id) + a.Baza;
                 if (tinta.AreTva)
                     tinta.Tva += a.Tva;
-                else if (a.Tva != 0m)
+                // TAXAREA INVERSĂ PE LIVRARE: singurul TVA „pierdut" care NU e
+                // un defect de mapare (fix F2 al review-ului advers).
+                //
+                // `TvaService.CalculeazaValori` (Motor/TvaService.cs:38-44)
+                // calculează taxa pe regimul `TaxareInversa` INDIFERENT de sens,
+                // fiindcă acolo formula e per regim, nu per latură. Pe achiziție
+                // e corect (beneficiarul autolichidează: 4426 = 4427); pe
+                // LIVRARE, furnizorul nu colectează nimic — formularul îi dă
+                // rd. 13, „livrări supuse măsurilor de simplificare", cu o
+                // singură coloană, de bază. Deci taxa CALCULATĂ pe un rând de
+                // registru TI/livrare n-are unde să meargă și nici n-ar trebui
+                // să existe: nu e cifră pierdută, e cifră care nu se declară.
+                //
+                // Rădăcina e în motor și NU se atinge în felia asta (ar cere
+                // recalculul registrului fiscal): restanța D3-r4. Până atunci
+                // proiecția tace DELIBERAT aici — un avertisment pe fiecare
+                // livrare cu taxare inversă ar fi zgomot permanent, iar un gard
+                // care strigă mereu se ignoră la fel de repede ca unul care tace.
+                else if (a.Tva != 0m
+                        && !(a.Regim == RegimTva.TaxareInversa && a.Sens == SensTva.Livrare))
                     pierdutTva[tinta.Id] = pierdutTva.GetValueOrDefault(tinta.Id) + a.Tva;
                 tinta.Randuri += a.Randuri;
                 if (eticheta.Cod != null)
@@ -409,6 +445,9 @@ public static class D300Proiectii {
             dupaCod["45"].Tva = Math.Max(T("43") - T("40"), 0m);
         }
 
+        // ── Validările BLOCANTE ale formularului (§5), ca AVERTISMENTE ──────
+        VerificaInegalitatileFormularului(rezultat, dupaCod);
+
         // ── Avertismentele ──────────────────────────────────────────────────
         //
         // Versiunea formularului (restanța D3-r1): o perioadă din 2025 proiectată
@@ -453,4 +492,91 @@ public static class D300Proiectii {
             .ToList();
         return rezultat;
     }
+
+    // VALIDĂRILE BLOCANTE ale formularului (§5 din `d300-structura-2026.md`),
+    // rulate pe cifrele NOASTRE — fixul F1 al review-ului advers.
+    //
+    // DE CE aici și nu la generatorul de fișier: DUKIntegrator le va refuza
+    // oricum, dar abia la depunere, cu un cod („V_6") și fără nicio urmă despre
+    // ce operațiune l-a produs. Proiecția are în mână și cifra, și drumul ei —
+    // deci e singurul loc unde refuzul poate veni cu o CAUZĂ. Iar felia nu
+    // produce fișierul (35c), așa că fără verificarea de aici decontul ar ieși
+    // pe ecran arătând perfect și ar pica la ANAF.
+    //
+    // DE CE avertisment și nu 422: cifrele sunt CORECTE — sunt suma algebrică a
+    // registrului, iar registrul e append-only (68). O inegalitate ruptă e un
+    // fapt al datelor (un storno într-o lună ulterioară), nu o eroare de calcul;
+    // a refuza cererea ar însemna să ascundem contabilului exact perioada pe
+    // care trebuie s-o vadă ca să știe ce are de regularizat. Nu se trunchiază
+    // și nu se normalizează nimic: cine „aranjează" rd. 31 ca să treacă
+    // validarea declară altceva decât are în contabilitate.
+    static void VerificaInegalitatileFormularului(D300Dto rezultat, IReadOnlyDictionary<string, Nod> dupaCod) {
+        Nod N(string cod) => dupaCod.GetValueOrDefault(cod);
+
+        // ── rd. 31 ≤ rd. 30 (V_6) ────────────────────────────────────────────
+        // Se poate rupe LEGITIM: rd. 30 e suma algebrică a lunii, iar scăderea
+        // nedeductibilului e o cifră tot algebrică. Un storno de achiziție fără
+        // drept de deducere dintr-o lună ULTERIOARĂ operării aduce în rd. 24 o
+        // bază și un TVA NEGATIVE; nedeductibilul lunii devine negativ, deci
+        // „scăderea" adună — și rd. 31 depășește rd. 30. Aritmetica e corectă
+        // (taxa dedusă chiar crește: se anulează o nedeductibilitate declarată
+        // luna trecută), dar formularul nu are cum s-o exprime.
+        if (N("30") is { AreTva: true } rd30 && N("31") is { AreTva: true } rd31 && rd31.Tva > rd30.Tva)
+            rezultat.Avertismente.Add(
+                $"rd. 31 ({rd31.Tva.ToString("N2", Ro)}) depășește rd. 30 ({rd30.Tva.ToString("N2", Ro)}) — "
+                + "validarea V_6 a formularului (taxa dedusă nu poate depăși taxa deductibilă) va refuza "
+                + "depunerea. Cauza tipică: storno al unei achiziții fără drept de deducere într-o lună "
+                + "ulterioară operării, care aduce în perioadă un nedeductibil negativ. Cifrele sunt cele "
+                + "din registru; regularizarea se declară, nu se ajustează în decont.");
+
+        // ── Ierarhia „din care": rd. 12 ≥ 12.1 + 12.2, rd. 26 ≥ 26.1 + 26.2 ──
+        // La noi e egalitate prin construcție (părintele își adună copiii), deci
+        // o abatere înseamnă că mecanismul de agregare s-a rupt — un rând
+        // dispărut din nomenclator, o legătură `Parinte` golită din UI. Verificat
+        // pe cifra IEȘITĂ, nu pe intenția codului: proba stă pe calea reală.
+        foreach (var (parinte, copii) in new[] {
+            ("12", new[] { "12.1", "12.2" }), ("26", new[] { "26.1", "26.2" })
+        }) {
+            if (N(parinte) is not { } sus)
+                continue;
+            var jos = copii.Select(N).Where(n => n != null).ToList();
+            if (sus.AreBaza && jos.All(n => n.AreBaza) && sus.Baza < jos.Sum(n => n.Baza))
+                rezultat.Avertismente.Add(Inegalitate(parinte, sus.Baza, copii, jos.Sum(n => n.Baza), "Valoare"));
+            if (sus.AreTva && jos.All(n => n.AreTva) && sus.Tva < jos.Sum(n => n.Tva))
+                rezultat.Avertismente.Add(Inegalitate(parinte, sus.Tva, copii, jos.Sum(n => n.Tva), "TVA"));
+        }
+
+        // ── Egalitățile-oglindă (V_7…V_24), pe AMBELE coloane ────────────────
+        // Tot egalități prin construcție (pasul 4 COPIAZĂ din sursă), și tot
+        // verificate pe rezultat: `OglindaAId` e o legătură de nomenclator, iar
+        // dacă seed-ul unei baze a pierdut-o, oglinda iese 0 lângă o sursă
+        // nenulă — exact forma de decont care arată complet și e respins.
+        // Perechile se citesc din nomenclator (`OglindaAId`), nu dintr-o listă
+        // scrisă aici: o a doua listă ar fi trebuit întreținută în paralel cu
+        // seed-ul, adică ar fi tăcut fix când seed-ul se schimbă.
+        foreach (var oglinda in dupaCod.Values.Where(n => n.OglindaAId != null).OrderBy(n => n.Ordine)) {
+            var sursa = dupaCod.Values.FirstOrDefault(n => n.Id == oglinda.OglindaAId.Value);
+            if (sursa == null) {
+                rezultat.Avertismente.Add(
+                    $"rd. {oglinda.Cod} e rând-oglindă, dar rândul-sursă din care ar trebui copiat nu s-a "
+                    + "putut citi din nomenclator — rândul rămâne zero, iar formularul va pica la validarea "
+                    + "de egalitate.");
+                continue;
+            }
+            if (oglinda.AreBaza && sursa.AreBaza && oglinda.Baza != sursa.Baza)
+                rezultat.Avertismente.Add(Oglinda(oglinda.Cod, oglinda.Baza, sursa.Cod, sursa.Baza, "Valoare"));
+            if (oglinda.AreTva && sursa.AreTva && oglinda.Tva != sursa.Tva)
+                rezultat.Avertismente.Add(Oglinda(oglinda.Cod, oglinda.Tva, sursa.Cod, sursa.Tva, "TVA"));
+        }
+    }
+
+    static string Inegalitate(string parinte, decimal sus, string[] copii, decimal jos, string coloana) =>
+        $"rd. {parinte} ({sus.ToString("N2", Ro)}) e sub suma sub-rândurilor „din care” rd. "
+        + $"{string.Join(" + rd. ", copii)} ({jos.ToString("N2", Ro)}), pe coloana {coloana} — validare "
+        + "blocantă a formularului. Verificați legăturile de sub-rând din nomenclatorul D300.";
+
+    static string Oglinda(string cod, decimal valoare, string codSursa, decimal sursa, string coloana) =>
+        $"rd. {cod} ({valoare.ToString("N2", Ro)}) trebuie să fie EGAL cu rd. {codSursa} "
+        + $"({sursa.ToString("N2", Ro)}) pe coloana {coloana} — validare blocantă a formularului "
+        + "(zona deductibilă a taxării inverse e copia celei colectate).";
 }

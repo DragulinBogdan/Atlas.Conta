@@ -9050,6 +9050,111 @@ void VerificaD300Seed(bool privat) {
         && new[] { "27", "28", "31", "32", "34", "35", "36", "40", "43", "45" }
             .All(c => !dupaCod[c].AreBaza && dupaCod[c].AreTva));
 
+    // ── FORMULARUL ÎNTREG, poziție cu poziție (fix F6 al review-ului advers) ──
+    //
+    // Verificările de mai sus sunt pe EȘANTIOANE și pe numărătoare: „55 de
+    // rânduri", „28 de operațiuni", „rd. 13/14/15 n-au TVA". Toate ar fi trecut
+    // și cu rd. 17 clasificat greșit ca `Extern`, sau cu rd. 25 fără coloană de
+    // bază — cifra totală rămâne 55, repartiția pe fel rămâne 28/10/9/8 dacă
+    // greșeala e o PERMUTARE. Iar seed-ul e singura cale de scriere a
+    // nomenclatorului (`[ForbidCRUD]`), deci o poziție greșită n-are nicio altă
+    // sită între ea și decontul depus.
+    //
+    // Tabelul de mai jos e TRANSCRIS din §2 al `d300-structura-2026.md` (adică
+    // din ordin), nu importat din seed: o probă care citește tabelul pe care-l
+    // verifică probează doar că fișierul se citește pe sine. Fiecare linie:
+    // ordinea în formular · cod · secțiune · are bază · are TVA · fel.
+    (int Ordine, string Cod, SectiuneD300 Sectiune, bool Baza, bool Tva, FelRandD300 Fel)[] asteptat = [
+        // COLECTATĂ — comerț intracomunitar și în afara UE (rd. 1-8): doar bază
+        // pe livrări/prestări (1-4), bază ȘI TVA pe taxarea inversă (5-8).
+        (1, "1", SectiuneD300.Colectata, true, false, FelRandD300.Operatiuni),
+        (2, "2", SectiuneD300.Colectata, true, false, FelRandD300.Operatiuni),
+        (3, "3", SectiuneD300.Colectata, true, false, FelRandD300.Operatiuni),
+        (4, "3.1", SectiuneD300.Colectata, true, false, FelRandD300.Operatiuni),
+        (5, "4", SectiuneD300.Colectata, true, false, FelRandD300.Operatiuni),
+        (6, "5", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (7, "5.1", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (8, "6", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (9, "7", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (10, "7.1", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (11, "8", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        // COLECTATĂ — interiorul țării și exporturi (rd. 9-16): cotele în vigoare
+        // (9/10/11), taxarea inversă internă (12 + cele două sub-rânduri), apoi
+        // cele trei rânduri fără coloană de TVA (13 simplificare, 14 scutit cu
+        // drept, 15 scutit fără drept) și regularizările (16).
+        (12, "9", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (13, "10", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (14, "11", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (15, "12", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (16, "12.1", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (17, "12.2", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (18, "13", SectiuneD300.Colectata, true, false, FelRandD300.Operatiuni),
+        (19, "14", SectiuneD300.Colectata, true, false, FelRandD300.Operatiuni),
+        (20, "15", SectiuneD300.Colectata, true, false, FelRandD300.Operatiuni),
+        (21, "16", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        // COLECTATĂ — vânzări la distanță / servicii electronice (17-18) + total.
+        (22, "17", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (23, "18", SectiuneD300.Colectata, true, true, FelRandD300.Operatiuni),
+        (24, "19", SectiuneD300.Colectata, true, true, FelRandD300.Total),
+        // DEDUCTIBILĂ — oglinzile zonei de taxare inversă (20-23).
+        (25, "20", SectiuneD300.Deductibila, true, true, FelRandD300.Oglinda),
+        (26, "20.1", SectiuneD300.Deductibila, true, true, FelRandD300.Oglinda),
+        (27, "21", SectiuneD300.Deductibila, true, true, FelRandD300.Oglinda),
+        (28, "22", SectiuneD300.Deductibila, true, true, FelRandD300.Oglinda),
+        (29, "22.1", SectiuneD300.Deductibila, true, true, FelRandD300.Oglinda),
+        (30, "23", SectiuneD300.Deductibila, true, true, FelRandD300.Oglinda),
+        // DEDUCTIBILĂ — achiziții interne și importuri (24-29.1). Rd. 27/28
+        // (compensația agricultorilor) au DOAR coloana TVA; rd. 29/29.1
+        // (scutite/neimpozabile) DOAR bază — asimetria e a formularului.
+        (31, "24", SectiuneD300.Deductibila, true, true, FelRandD300.Operatiuni),
+        (32, "25", SectiuneD300.Deductibila, true, true, FelRandD300.Operatiuni),
+        (33, "26", SectiuneD300.Deductibila, true, true, FelRandD300.Oglinda),
+        (34, "26.1", SectiuneD300.Deductibila, true, true, FelRandD300.Oglinda),
+        (35, "26.2", SectiuneD300.Deductibila, true, true, FelRandD300.Oglinda),
+        (36, "27", SectiuneD300.Deductibila, false, true, FelRandD300.Extern),
+        (37, "28", SectiuneD300.Deductibila, false, true, FelRandD300.Extern),
+        (38, "29", SectiuneD300.Deductibila, true, false, FelRandD300.Operatiuni),
+        (39, "29.1", SectiuneD300.Deductibila, true, false, FelRandD300.Operatiuni),
+        // DEDUCTIBILĂ — totalurile și ajustările (30-35). Rd. 30 e ultimul cu
+        // coloană de bază; de la rd. 31 în jos formularul e doar TVA.
+        (40, "30", SectiuneD300.Deductibila, true, true, FelRandD300.Total),
+        (41, "31", SectiuneD300.Deductibila, false, true, FelRandD300.Total),
+        (42, "32", SectiuneD300.Deductibila, false, true, FelRandD300.Extern),
+        (43, "33", SectiuneD300.Deductibila, true, true, FelRandD300.Operatiuni),
+        (44, "34", SectiuneD300.Deductibila, false, true, FelRandD300.Extern),
+        (45, "35", SectiuneD300.Deductibila, false, true, FelRandD300.Total),
+        // REGULARIZĂRI art. 303 (36-45): toate doar TVA; externii sunt exact
+        // cei patru pe care modelul nu-i are (38/39 de plată, 41/42 negative).
+        (46, "36", SectiuneD300.Regularizari, false, true, FelRandD300.Total),
+        (47, "37", SectiuneD300.Regularizari, false, true, FelRandD300.Total),
+        (48, "38", SectiuneD300.Regularizari, false, true, FelRandD300.Extern),
+        (49, "39", SectiuneD300.Regularizari, false, true, FelRandD300.Extern),
+        (50, "40", SectiuneD300.Regularizari, false, true, FelRandD300.Total),
+        (51, "41", SectiuneD300.Regularizari, false, true, FelRandD300.Extern),
+        (52, "42", SectiuneD300.Regularizari, false, true, FelRandD300.Extern),
+        (53, "43", SectiuneD300.Regularizari, false, true, FelRandD300.Total),
+        (54, "44", SectiuneD300.Regularizari, false, true, FelRandD300.Total),
+        (55, "45", SectiuneD300.Regularizari, false, true, FelRandD300.Total),
+    ];
+    var abateri = asteptat
+        .Where(a => !dupaCod.TryGetValue(a.Cod, out var r)
+            || (r.Ordine, r.Sectiune, r.AreBaza, r.AreTva, r.Fel)
+                != (a.Ordine, a.Sectiune, a.Baza, a.Tva, a.Fel))
+        .Select(a => a.Cod).ToList();
+    if (abateri.Count > 0)
+        Console.WriteLine($"     MĂSURAT (D3-V1, abateri de la §2): {string.Join(", ", abateri.Select(c =>
+            dupaCod.TryGetValue(c, out var r)
+                ? $"rd. {c} → ordine {r.Ordine}, {r.Sectiune}, bază {r.AreBaza}, TVA {r.AreTva}, {r.Fel}"
+                : $"rd. {c} → LIPSEȘTE"))}");
+    Check("D3-V1 (F6) formularul poziție cu poziție: toate cele 55 de rânduri au `Ordine`, `Sectiune`, perechea "
+        + "(AreBaza, AreTva) și `Fel` EXACT cum le scrie ordinul (§2), verificate contra unui tabel transcris "
+        + "în probă — nu prin eșantion, fiindcă o permutare trece de orice numărătoare",
+        abateri.Count == 0 && asteptat.Length == ContaSeeder.RanduriD300Asteptate);
+    // Denumirile nu se transcriu (sunt fraze de ordin, de zeci de cuvinte), dar
+    // absența lor s-ar vedea ca o casetă goală pe formular.
+    Check("D3-V1 (F6) fiecare rând are denumirea din ordin, negoală",
+        randuri.All(r => !string.IsNullOrWhiteSpace(r.Denumire)));
+
     // Sub-rândurile „din care": părintele e prefixul codului (12.1 → 12).
     var subRanduri = randuri.Where(r => r.Cod.Contains('.')).ToList();
     Check("D3-V1 sub-rândurile: cele 10 poziții „din care” au părintele rezolvat, exact pe prefixul codului",
@@ -9124,6 +9229,130 @@ void VerificaD300Seed(bool privat) {
         os.GetObjectsQuery<TipTva>().ToList()
             .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, Sens: s)))
             .Count(p => Randuri(p.Cod, p.Sens).Length == 0) == 3);
+
+    // ══════ F4: gardul de ASCENDENT — dubla numărare pe verticala „din care" ══════
+    //
+    // Riscul 1 al designului avea un singur gard din două. Indexul unic pe
+    // tripletă oprește „aceeași pereche de două ori pe ACELAȘI rând"; nimic nu
+    // oprea „aceeași pereche pe rd. 12.1 ȘI pe rd. 12", iar acolo proiecția
+    // adună copilul în părinte, deci cifra intră de două ori în rd. 12 și de
+    // acolo în totalul rd. 19. Un decont care trece toate validările ANAF și e
+    // greșit cu suma dublată e exact forma de defect pe care felia trebuie s-o
+    // facă imposibilă.
+    //
+    // Proba stă lângă contract și se șterge după ea (precedentul mapării de
+    // probă din D3-V3), și trece prin FUNCȚIA REALĂ a seed-ului, nu printr-o
+    // reimplementare a regulii.
+    //
+    // Fiecare fază pe ObjectSpace-ul EI: scrierea, verificarea și curățenia sunt
+    // trei tranzacții diferite, exact ca în viață (culegerea din UI, apoi
+    // `--updateDatabase`). Un singur OS ar fi lăsat identity map-ul să răspundă
+    // în locul bazei după ștergerea prin SQL brut.
+    string RuleazaGardianul() {
+        using var osGard = provider.CreateObjectSpace();
+        try {
+            ContaSeeder.VerificaD300(osGard, ProfilContabil.Privat);
+            return null;
+        }
+        catch (InvalidOperationException e) { return e.Message; }
+    }
+    int MapariVii() {
+        using var osNum = provider.CreateObjectSpace();
+        return osNum.GetObjectsQuery<MapareD300>().Count();
+    }
+    void SqlBrut(FormattableString sql) {
+        using var osSql = provider.CreateObjectSpace();
+        ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)osSql).DbContext.Database.ExecuteSql(sql);
+    }
+    {
+        Guid idProba;
+        using (var osScrie = provider.CreateObjectSpace()) {
+            var ti21Seed = osScrie.FirstOrDefault<TipTva>(t => t.Cod == "TI21");
+            var rand12 = osScrie.FirstOrDefault<RandD300>(r => r.Cod == "12");
+            // Premisa: TI21/achiziție e deja mapat pe rd. 12.1, copilul lui rd. 12.
+            var proba = osScrie.CreateObject<MapareD300>();
+            proba.TipTva = ti21Seed;
+            proba.Sens = SensTva.Achizitie;
+            proba.Rand = rand12;
+            osScrie.CommitChanges();
+            idProba = proba.ID;
+        }
+        var mesajGard = RuleazaGardianul();
+        // Ștergerea e FIZICĂ, nu logică: proba n-are voie să lase în urmă un
+        // rând șters care ar schimba răspunsul lui `VerificaMapariD300` la
+        // rulările următoare (F5 tratează ștearsa ca „nemapat de utilizator").
+        SqlBrut($"DELETE FROM \"MapariD300\" WHERE \"ID\" = {idProba}");
+        var mesajDupa = RuleazaGardianul();
+        Console.WriteLine($"     MĂSURAT (D3-V1/F4): gardian pe (TI21, Achiziție, rd. 12) lângă rd. 12.1 → "
+            + $"„{mesajGard ?? "<NU A ARUNCAT>"}”; după curățare → „{mesajDupa ?? "tace"}”.");
+        Check("D3-V1 (F4) o pereche (TipTva × Sens) nu poate ținti și un rând, și un ASCENDENT al lui: "
+            + "(TI21, Achiziție) pe rd. 12 lângă rd. 12.1 existent e REFUZAT de `ContaSeeder.VerificaD300` "
+            + "cu ambele rânduri numite în mesaj — altfel cei 84 de lei ar fi intrat de două ori în rd. 12 "
+            + "și în totalul rd. 19",
+            mesajGard != null && mesajGard.Contains("rd. 12.1") && mesajGard.Contains("rd. 12,")
+            && mesajGard.Contains("ascendent")
+            // …iar gardul TACE de îndată ce proba dispare: nu e un refuz permanent
+            // al mapării legitime pe rd. 12.1.
+            && mesajDupa == null && MapariVii() == 18);
+    }
+
+    // ══════ F5: ștergerea LOGICĂ a unei mapări e o decizie, nu o gaură ══════
+    //
+    // Maparea e politică editabilă (decizia 4), deci ștergerea ei din XAF e un
+    // flux normal — și e AMÂNATĂ (60a): rândul rămâne fizic în tabelă cu
+    // `GCRecord` setat. Două consecințe pe care prima formă le rata:
+    //   1. seed-ul nu găsea tripleta printre cele VII și o RECREA la fiecare
+    //      `--updateDatabase`, desfăcând tăcut decizia contabilului;
+    //   2. `VerificaMapariD300` o vedea ca pereche nemapată nedeclarată și
+    //      ARUNCA, adică bloca orice release viitor pe baza aceea.
+    // Proba le măsoară pe amândouă pe funcțiile REALE, apoi restaurează.
+    //
+    // MARCAJUL DE ȘTERGERE SE PUNE PRIN SQL, și e o constatare a harness-ului,
+    // nu o comoditate — aceeași cu cea a scenei D4 a balanței, unde e scrisă pe
+    // larg: ștergerea amânată o face `EFCoreDeferredDeletionInterceptor`, iar
+    // interceptorul e adăugat de `DbContextOptionsBuilder.UseDeferredDeletion()`
+    // pe calea de APLICAȚIE a XAF-ului (`ObjectSpaceProviderBuilderExtensions`,
+    // 26.1.3:73/110). Providerul standalone al lui ModelCheck n-are calea aceea,
+    // deci aici `os.Delete` șterge FIZIC — MĂSURAT, nu presupus: prima formă a
+    // probei a picat exact așa (18 mapări vii după re-seed, tabela fără niciun
+    // rând cu `GCRecord = 1`). Ce se verifică e comportamentul seed-ului în fața
+    // unei baze care ARE rândul marcat șters, iar starea aceea e identică
+    // indiferent cine a scris marcajul: filtrul global (`GCRecord = 0`) e
+    // model-level, deci funcționează și aici.
+    {
+        Guid idSters;
+        using (var osTinta = provider.CreateObjectSpace()) {
+            var sfd = osTinta.FirstOrDefault<TipTva>(t => t.Cod == "SFD");
+            var rand29 = osTinta.FirstOrDefault<RandD300>(r => r.Cod == "29");
+            idSters = osTinta.FirstOrDefault<MapareD300>(m =>
+                m.TipTvaId == sfd.ID && m.Sens == SensTva.Achizitie && m.RandId == rand29.ID).ID;
+        }
+        SqlBrut($"UPDATE \"MapariD300\" SET \"GCRecord\" = 1 WHERE \"ID\" = {idSters}");
+        var dupaStergere = MapariVii();
+
+        // Re-seed pe calea reală — aceeași funcție pe care o cheamă profilul.
+        using (var osSeed = provider.CreateObjectSpace()) {
+            ContaSeeder.SeedMapareD300Privat(osSeed);
+            osSeed.CommitChanges();
+        }
+        var dupaReseed = MapariVii();
+        var mesajVerificare = RuleazaGardianul();
+
+        // Restaurare: ștergerea amânată se ANULEAZĂ (`GCRecord` înapoi la 0), nu
+        // se re-creează un rând nou — altfel proba ar fi lăsat în urmă o
+        // tripletă moartă și un ID schimbat.
+        SqlBrut($"UPDATE \"MapariD300\" SET \"GCRecord\" = 0 WHERE \"ID\" = {idSters}");
+        var dupaRestaurare = MapariVii();
+        var mesajFinal = RuleazaGardianul();
+        Console.WriteLine($"     MĂSURAT (D3-V1/F5): mapări vii 18 → {dupaStergere} după ștergerea logică a "
+            + $"SFD/Achiziție → rd. 29 → {dupaReseed} după re-seed → {dupaRestaurare} după restaurare; "
+            + $"gardian după re-seed: „{mesajVerificare ?? "tace"}”.");
+        Check("D3-V1 (F5) o mapare ȘTEARSĂ LOGIC rămâne ștearsă: re-seed-ul NU o recreează (17 mapări vii, nu "
+            + "18 — decizia utilizatorului bate tabelul de profil), iar gardianul o citește ca „nemapată de "
+            + "utilizator”, nu ca gaură de profil (nu aruncă). După restaurare, ambele revin la 18",
+            dupaStergere == 17 && dupaReseed == 17 && mesajVerificare == null
+            && dupaRestaurare == 18 && mesajFinal == null);
+    }
 }
 
 // ============ Felia 12 (D300): proiecția decontului — D3-V2…V7 ============
@@ -9388,6 +9617,13 @@ void VerificaD300(bool cuTva) {
     LinieC(fctIunie, n9, 90m);     // NEMAPAT: formularul 2026 n-are achiziție cu 9%
     var fclIunie = Vanzare("-V2", new DateOnly(2026, 6, 11));
     LinieV(fclIunie, nim, 110m);   // NEMAPAT: în afara sferei TVA, nu se declară
+    // TAXARE INVERSĂ PE LIVRARE (fix F2): mapat pe rd. 13, care n-are coloană de
+    // TVA — iar motorul îi calculează totuși taxa (`TvaService`, regimul e per
+    // regim, nu per latură). Deliberat în IUNIE, nu în mai: luna ITV-ului e a
+    // cusăturii D3-V4, iar un 4426=4427 în plus acolo ar fi mutat o probă în
+    // alta. Aici rândul de registru poartă TVA 63,00 pe care formularul nu-l
+    // cere — iar proiecția trebuie să tacă, nu să strige.
+    LinieV(fclIunie, ti21, 300m);  // → rd. 13, bază 300; TVA 63 calculat și nedeclarat
     var fclStorno = Vanzare("-V3", new DateOnly(2026, 6, 15));
     LinieV(fclStorno, n19, 1000m); // → rd. 16, apoi stornat în ACEEAȘI lună
     os.CommitChanges();
@@ -9515,14 +9751,40 @@ void VerificaD300(bool cuTva) {
         + $"pierdut pe coloane absente {pierdutBaza:N2}/{pierdutTva:N2}.");
     Check("D3-V3 (D3-D4) — NIMIC nu se pierde: Σ rândurilor cu mapări directe + Σ nemapate, minus "
         + "multiplicitatea așezării pe mai multe rânduri, plus ce n-a încăput pe coloane absente, == Σ "
-        + "registrului pe perioadă, pe AMBELE coloane. Pe scena corectă pierderea e 0, iar multiplicitatea e "
-        + "exact TI19/achiziție, numărat o dată la rd. 16 și o dată la rd. 33",
+        + "registrului pe perioadă, pe AMBELE coloane. Baza nu pierde nimic, multiplicitatea e exact "
+        + "TI19/achiziție (numărat o dată la rd. 16 și o dată la rd. 33), iar cei 63,00 lei „pierduți” pe "
+        + "coloana TVA sunt taxarea inversă pe LIVRARE (rd. 13) — vezi F2 mai jos",
         sumaRanduriBaza + sumaNemapateBaza - multiplicitateBaza + pierdutBaza == brut.Sum(r => r.Baza)
         && sumaRanduriTva + sumaNemapateTva - multiplicitateTva + pierdutTva == brut.Sum(r => r.Tva)
-        && pierdutBaza == 0m && pierdutTva == 0m
+        && pierdutBaza == 0m && pierdutTva == 63m
         && multiplicitateBaza == 200m && multiplicitateTva == 38m
         // …și partiția e completă: fiecare grup e ori așezat, ori raportat.
         && grupuriNemapate == d3.Nemapate.Count && grupuriNemapate == 2
+        && d3.Avertismente.Count == 0);
+
+    // ══════ F2: taxarea inversă pe LIVRARE nu e o pierdere, e o nedeclarare ══════
+    //
+    // `TvaService.CalculeazaValori` (Motor/TvaService.cs:38-44) calculează taxa
+    // pe regimul `TaxareInversa` INDIFERENT de sens — corect pe achiziție
+    // (beneficiarul autolichidează), fals pe livrare (furnizorul nu colectează
+    // nimic). Formularul îi dă livrării rd. 13, cu o singură coloană, de bază.
+    // Deci rândul de registru poartă un TVA care n-are unde să meargă și nici
+    // n-ar trebui să existe. Rădăcina e în MOTOR și rămâne restanța D3-r4 (ar
+    // cere recalculul registrului fiscal); până atunci proiecția tace aici,
+    // deliberat: un avertisment pe fiecare livrare cu taxare inversă ar fi
+    // zgomot permanent, iar un gard care strigă mereu se ignoră la fel de
+    // repede ca unul care tace.
+    //
+    // Proba e discriminantă în ambele sensuri: cifra „pierdută” EXISTĂ (63,00,
+    // recalculată mai sus independent de proiecție), dar avertismentul NU — și
+    // rd. 13 poartă baza întreagă, cu `Tva` null, nu 0.
+    var randTi = d3.Randuri.Single(r => r.Cod == "13");
+    Check("D3-V2/V3 (F2) taxarea inversă pe LIVRARE: rd. 13 primește baza (300,00) cu `Tva` NULL (rândul n-are "
+        + "coloană), taxa calculată de motor (63,00) nu se strecoară nicăieri — și NU produce avertisment, "
+        + "spre deosebire de o mapare greșită pe un rând fără coloană de TVA: cauza e în `TvaService` "
+        + "(restanța D3-r4), nu în politica de așezare",
+        randTi is { Baza: 300m, Tva: null, Randuri: 1 } && randTi.Surse == "TI21"
+        && !d3.Avertismente.Any(a => a.StartsWith("rd. 13"))
         && d3.Avertismente.Count == 0);
 
     // ── Pierderea TĂCUTĂ, provocată deliberat (riscul 4 din design) ──
@@ -9603,6 +9865,73 @@ void VerificaD300(bool cuTva) {
             .Select(r => (r.Cod, r.Baza, r.Tva))
             .SequenceEqual(d3.Randuri.Where(r => r.Fel == "Operatiuni").Select(r => (r.Cod, r.Baza, r.Tva))));
 
+    // ══════ F3: rd. 31 se scade PE APARIȚIE în rd. 30, nu pe grup ══════
+    //
+    // Prima formă a scăderii întreba „a ajuns grupul în secțiunea Deductibila?".
+    // Criteriul suna corect și greșea pe două căi OPUSE, pe care cele două probe
+    // de mai jos le izolează una câte una — cu maparea de probă creată și ștearsă
+    // în scenă, ca cea din D3-V3, ca politica de profil să rămână neatinsă.
+    //
+    // Ambele probe folosesc NED21 (singurul `Capitalizat` din scenă, cu 21,00 lei
+    // de TVA nedeductibil pe achiziția de 100). Un `TipTva` nou, fără rânduri de
+    // registru, ar fi făcut probele VACUE: nimic de scăzut, egalitate trivială.
+    MapareD300 ProbaNed(string codRand) {
+        var m = os.CreateObject<MapareD300>();
+        m.TipTva = ned21;
+        m.Sens = SensTva.Achizitie;
+        m.Rand = os.FirstOrDefault<RandD300>(r => r.Cod == codRand);
+        os.CommitChanges();
+        return m;
+    }
+    void StergeProba(MapareD300 m) {
+        os.Delete(m);
+        os.CommitChanges();
+    }
+
+    // (a) Țintă în secțiunea Deductibila, dar care NU e operand al rd. 30:
+    //     rd. 33 „Regularizări taxă dedusă". Cifra n-a intrat niciodată în
+    //     rd. 30, deci nu are ce să iasă din rd. 31. Criteriul „pe secțiune" ar
+    //     fi scăzut-o a doua oară (42 în loc de 21) și ar fi coborât taxa dedusă
+    //     sub adevăr, adică ar fi declarat mai puțin TVA de recuperat.
+    var probaRd33 = ProbaNed("33");
+    var cu33 = D300Proiectii.D300(os, pStart, pEnd, null);
+    D300Rand A(string cod) => cu33.Randuri.Single(r => r.Cod == cod);
+    StergeProba(probaRd33);
+    Console.WriteLine($"     MĂSURAT (F3a): cu NED21 mapat în plus pe rd. 33 — rd. 30 {A("30").Tva:N2}, "
+        + $"rd. 31 {A("31").Tva:N2}, rd. 33 {A("33").Tva:N2}, rd. 35 {A("35").Tva:N2}.");
+    Check("D3-V5 (F3a) o țintă din secțiunea Deductibilă care NU e operand al rd. 30 (rd. 33 — regularizări "
+        + "taxă dedusă) nu produce nicio scădere în plus: rd. 30 rămâne 370,00, rd. 31 rămâne 349,00 = 370 − "
+        + "21, iar cei 21,00 se văd în rd. 33 (95 → 116) și de acolo în rd. 35",
+        A("30").Tva == 370m && A("31").Tva == 349m
+        && A("33").Baza == 600m && A("33").Tva == 116m
+        && A("35").Tva == A("31").Tva + A("33").Tva);
+
+    // (b) Două ținte care sunt AMÂNDOUĂ operanzi ai rd. 30 (rd. 24 și rd. 25):
+    //     cifra intră de două ori în rd. 30, deci trebuie scoasă de două ori din
+    //     rd. 31. Criteriul „o dată per grup" scădea 21 în loc de 42 și lăsa
+    //     rd. 31 la 370 — TVA dedus pe o taxă fără drept de deducere, adică
+    //     exact ce interzice §4.1.
+    var probaRd25 = ProbaNed("25");
+    var cu25 = D300Proiectii.D300(os, pStart, pEnd, null);
+    D300Rand C(string cod) => cu25.Randuri.Single(r => r.Cod == cod);
+    StergeProba(probaRd25);
+    Console.WriteLine($"     MĂSURAT (F3b): cu NED21 mapat în plus pe rd. 25 — rd. 24 {C("24").Tva:N2}, "
+        + $"rd. 25 {C("25").Tva:N2}, rd. 30 {C("30").Tva:N2}, rd. 31 {C("31").Tva:N2}.");
+    Check("D3-V5 (F3b) o pereche `Capitalizat` așezată pe DOUĂ rânduri operanzi ai rd. 30 se scade de DOUĂ "
+        + "ori: rd. 25 urcă la 76,00 (55 + 21), rd. 30 la 391,00, iar rd. 31 rămâne 349,00 = 391 − 2×21. "
+        + "Scăderea urmărește câte apariții a avut cifra în rd. 30, nu câte grupuri au fost",
+        C("25").Baza == 600m && C("25").Tva == 76m
+        && C("30").Tva == 391m && C("31").Tva == 391m - 2 * 21m && C("31").Tva == 349m);
+
+    // …și după ambele probe formularul revine EXACT la cifrele dinainte.
+    var dupaProbeNed = D300Proiectii.D300(os, pStart, pEnd, null);
+    Check("D3-V5 (F3) după ștergerea celor două mapări de probă, formularul revine bit cu bit la cifrele "
+        + "profilului — politica de seed a rămas neatinsă (18 mapări vii)",
+        dupaProbeNed.Randuri.Select(r => (r.Cod, r.Baza, r.Tva))
+            .SequenceEqual(d3.Randuri.Select(r => (r.Cod, r.Baza, r.Tva)))
+        && dupaProbeNed.Avertismente.Count == 0
+        && os.GetObjectsQuery<MapareD300>().Count() == 18);
+
     // ══════════ D3-V6: storno în aceeași perioadă ══════════
     var iunie = D300Proiectii.D300(os, iunieStart, iunieEnd, null);
     D300Rand I(string cod) => iunie.Randuri.Single(r => r.Cod == cod);
@@ -9617,6 +9946,57 @@ void VerificaD300(bool cuTva) {
         && I("19").Tva == 0m && I("35").Tva == 0m && I("36").Tva == 0m && I("37").Tva == 0m
         && iunie.Nemapate.Count == 2);
 
+    // ══════ F1: validările BLOCANTE ale formularului, ca avertismente ══════
+    //
+    // A TREIA lună a scenei, iulie, există pentru un singur fapt: stornarea
+    // facturii de MAI, adică a celei care poartă NED21. Un storno într-o lună
+    // ULTERIOARĂ operării aduce în perioada lui o achiziție fără drept de
+    // deducere cu semn NEGATIV — deci un „nedeductibil" negativ, iar scăderea
+    // de la rd. 31 devine adunare: rd. 31 IESE PESTE rd. 30, ceea ce validarea
+    // V_6 a formularului refuză categoric.
+    //
+    // Cifrele sunt CORECTE (taxa dedusă chiar crește: se anulează o
+    // nedeductibilitate declarată luna trecută), dar formularul nu are cum să le
+    // exprime. Deci: NU se trunchiază — se STRIGĂ. Fără avertisment, contabilul
+    // ar fi aflat de la DUKIntegrator, cu un cod și fără nicio cauză.
+    //
+    // Fără ITV pe iulie, deliberat: cusătura D3-D5 e a lunii mai, iar o închidere
+    // în plus ar fi amestecat două probe.
+    MotorOperare.Storneaza(os, fctMai, new DateOnly(2026, 7, 15));
+    os.CommitChanges();
+    var iulie = D300Proiectii.D300(os, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), null);
+    D300Rand J(string cod) => iulie.Randuri.Single(r => r.Cod == cod);
+    // Mai și iunie se RECITESC după storno (rândurile lui poartă data stornării,
+    // 25d — deci n-au ce căuta în lunile dinainte; proba o măsoară, n-o presupune).
+    var maiDupaStorno = D300Proiectii.D300(os, maiStart, maiEnd, null);
+    var iunieDupaStorno = D300Proiectii.D300(os, iunieStart, iunieEnd, null);
+    const string PrefixV6 = "rd. 31 (";
+    Console.WriteLine($"     MĂSURAT (F1, iulie — storno al facturii de mai): rd. 24 {J("24").Tva:N2}, "
+        + $"rd. 30 {J("30").Tva:N2}, rd. 31 {J("31").Tva:N2}; avertismente: "
+        + $"{(iulie.Avertismente.Count == 0 ? "niciunul" : string.Join(" | ", iulie.Avertismente))}");
+    Check("D3-V5 (F1) validarea blocantă V_6 (rd. 31 ≤ rd. 30) e MĂSURATĂ pe cifrele noastre: stornarea în "
+        + "iulie a facturii de mai aduce nedeductibilul cu semn negativ (rd. 24 = −231,00), deci rd. 31 "
+        + "(−349,00) DEPĂȘEȘTE rd. 30 (−370,00). Proiecția nu trunchiază și nu normalizează — scoate un "
+        + "avertisment care numește ambele cifre, validarea și cauza tipică",
+        J("24").Baza == -1100m && J("24").Tva == -231m
+        && J("30").Tva == -370m && J("31").Tva == -349m && J("31").Tva > J("30").Tva
+        && iulie.Avertismente.SingleOrDefault(a => a.StartsWith(PrefixV6)) is { } v6
+        && v6.Contains("V_6") && v6.Contains("-349,00") && v6.Contains("-370,00")
+        && v6.Contains("storno"));
+    Check("D3-V5 (F1) avertismentul V_6 e SPECIFIC lunii care rupe inegalitatea: pe mai (rd. 31 = 349 ≤ "
+        + "rd. 30 = 370) și pe iunie (ambele 0) NU apare — un gard care ar striga mereu s-ar ignora la fel "
+        + "de repede ca unul care tace",
+        !maiDupaStorno.Avertismente.Any(a => a.StartsWith(PrefixV6))
+        && !iunieDupaStorno.Avertismente.Any(a => a.StartsWith(PrefixV6))
+        && maiDupaStorno.Randuri.Single(r => r.Cod == "31").Tva == 349m
+        && maiDupaStorno.Randuri.Single(r => r.Cod == "30").Tva == 370m
+        // …și niciuna dintre cele trei luni nu rupe vreo altă inegalitate a
+        // formularului: ierarhia „din care" și oglinzile sunt egalități prin
+        // construcție, iar proba le măsoară pe rezultat, nu pe intenția codului.
+        && new[] { iulie, maiDupaStorno, iunieDupaStorno }
+            .All(d => !d.Avertismente.Any(a => a.Contains("sub suma sub-rândurilor")
+                || a.Contains("trebuie să fie EGAL"))));
+
     // ---------------- Curățenie ----------------
     var idItv = itv.ID;
     CurataD3();
@@ -9625,6 +10005,8 @@ void VerificaD300(bool cuTva) {
         !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajD3))
         && !os.GetObjectsQuery<Document>().Any(d => d.Numar.StartsWith(MarcajD3))
         && !os.GetObjectsQuery<InchidereTva>().Any(d => d.ID == idItv)
-        && !os.GetObjectsQuery<RegistruTva>().Any(r => r.Data >= pStart && r.Data <= pEnd)
+        // Perioada de curățat merge până la 31.07: scena are trei luni de când
+        // stornarea de la F1 și-a pus rândurile în iulie (data stornării, 25d).
+        && !os.GetObjectsQuery<RegistruTva>().Any(r => r.Data >= pStart && r.Data <= new DateOnly(2026, 7, 31))
         && os.GetObjectsQuery<MapareD300>().Count() == 18);
 }

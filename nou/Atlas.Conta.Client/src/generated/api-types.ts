@@ -1880,6 +1880,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/odata/MapareD300": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD300"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD300/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD300/$count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD300({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD300({key})"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD300/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD300/{key}"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD300({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD300({key})/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD300/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD300/{key}/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/MediaFile/DownloadStream": {
         parameters: {
             query?: never;
@@ -2664,6 +2760,102 @@ export interface paths {
             cookie?: never;
         };
         get: operations["GET_api/odata/Proiect/{key}/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/RandD300": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/RandD300"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/RandD300/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/RandD300/$count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/RandD300({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/RandD300({key})"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/RandD300/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/RandD300/{key}"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/RandD300({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/RandD300({key})/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/RandD300/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/RandD300/{key}/{navigationProperty}/$ref"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4143,6 +4335,8 @@ export interface components {
             PlataTipInstrument?: string | null;
             Linii?: components["schemas"]["FacturaIntrareLinieWriteDto"][] | null;
         };
+        /** @enum {string} */
+        FelRandD300: "Operatiuni" | "Total" | "Oglinda" | "Extern";
         FisaContRand: {
             /** Format: uuid */
             Id?: string;
@@ -4423,6 +4617,17 @@ export interface components {
             LotFabricatie?: string | null;
             /** Format: uuid */
             LinieIntrareId?: string | null;
+        };
+        MapareD300: {
+            /** Format: uuid */
+            ID?: string;
+            /** Format: uuid */
+            TipTvaId?: string;
+            TipTva?: components["schemas"]["TipTva"];
+            Sens?: components["schemas"]["SensTva"];
+            /** Format: uuid */
+            RandId?: string;
+            Rand?: components["schemas"]["RandD300"];
         };
         /** @enum {string} */
         NaturaClasa: "Stoc" | "Serviciu" | "Cheltuiala" | "Imobilizare" | "Tehnica" | "Virament";
@@ -4708,6 +4913,24 @@ export interface components {
             Cod?: string | null;
             Denumire?: string | null;
         };
+        RandD300: {
+            /** Format: uuid */
+            ID?: string;
+            Cod?: string | null;
+            Denumire?: string | null;
+            Sectiune?: components["schemas"]["SectiuneD300"];
+            /** Format: int32 */
+            Ordine?: number;
+            AreBaza?: boolean;
+            AreTva?: boolean;
+            Fel?: components["schemas"]["FelRandD300"];
+            /** Format: uuid */
+            ParinteId?: string | null;
+            Parinte?: components["schemas"]["RandD300"];
+            /** Format: uuid */
+            OglindaAId?: string | null;
+            OglindaA?: components["schemas"]["RandD300"];
+        };
         /** @enum {string} */
         RegimTva: "Normal" | "Capitalizat" | "TaxareInversa" | "Scutit" | "Neimpozabil";
         Repartitor: {
@@ -4736,6 +4959,10 @@ export interface components {
             /** Format: double */
             Rest?: number;
         };
+        /** @enum {string} */
+        SectiuneD300: "Colectata" | "Deductibila" | "Regularizari";
+        /** @enum {string} */
+        SensTva: "Achizitie" | "Livrare";
         SoldStocRand: {
             /** Format: uuid */
             LotId?: string;
@@ -17327,6 +17554,288 @@ export interface operations {
             };
         };
     };
+    "GET_api/odata/MapareD300": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=full": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=none": components["schemas"]["MapareD300"][];
+                    "application/json;odata.streaming=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.streaming=false": components["schemas"]["MapareD300"][];
+                    "application/json": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["MapareD300"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["MapareD300"][];
+                    "application/xml": components["schemas"]["MapareD300"][];
+                    "text/plain": components["schemas"]["MapareD300"][];
+                    "application/octet-stream": components["schemas"]["MapareD300"][];
+                    "text/json": components["schemas"]["MapareD300"][];
+                };
+            };
+        };
+    };
+    "GET_api/odata/MapareD300/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns the number of entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false": number;
+                    "application/json;odata.metadata=minimal": number;
+                    "application/json;odata.metadata=full;odata.streaming=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false": number;
+                    "application/json;odata.metadata=full": number;
+                    "application/json;odata.metadata=none;odata.streaming=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false": number;
+                    "application/json;odata.metadata=none": number;
+                    "application/json;odata.streaming=true": number;
+                    "application/json;odata.streaming=false": number;
+                    "application/json": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;IEEE754Compatible=false": number;
+                    "application/json;IEEE754Compatible=true": number;
+                    "application/xml": number;
+                    "text/plain": number;
+                    "application/octet-stream": number;
+                    "text/json": number;
+                };
+            };
+        };
+    };
+    "GET_api/odata/MapareD300({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=false": components["schemas"]["MapareD300"];
+                    "application/json": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/xml": components["schemas"]["MapareD300"];
+                    "text/plain": components["schemas"]["MapareD300"];
+                    "application/octet-stream": components["schemas"]["MapareD300"];
+                    "text/json": components["schemas"]["MapareD300"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/MapareD300/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=false": components["schemas"]["MapareD300"];
+                    "application/json": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["MapareD300"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["MapareD300"];
+                    "application/xml": components["schemas"]["MapareD300"];
+                    "text/plain": components["schemas"]["MapareD300"];
+                    "application/octet-stream": components["schemas"]["MapareD300"];
+                    "text/json": components["schemas"]["MapareD300"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/MapareD300({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/MapareD300/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "GET_api/MediaFile/DownloadStream": {
         parameters: {
             query?: {
@@ -22914,6 +23423,288 @@ export interface operations {
         };
     };
     "GET_api/odata/Proiect/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/RandD300": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=full": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=none": components["schemas"]["RandD300"][];
+                    "application/json;odata.streaming=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.streaming=false": components["schemas"]["RandD300"][];
+                    "application/json": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["RandD300"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["RandD300"][];
+                    "application/xml": components["schemas"]["RandD300"][];
+                    "text/plain": components["schemas"]["RandD300"][];
+                    "application/octet-stream": components["schemas"]["RandD300"][];
+                    "text/json": components["schemas"]["RandD300"][];
+                };
+            };
+        };
+    };
+    "GET_api/odata/RandD300/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns the number of entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false": number;
+                    "application/json;odata.metadata=minimal": number;
+                    "application/json;odata.metadata=full;odata.streaming=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false": number;
+                    "application/json;odata.metadata=full": number;
+                    "application/json;odata.metadata=none;odata.streaming=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false": number;
+                    "application/json;odata.metadata=none": number;
+                    "application/json;odata.streaming=true": number;
+                    "application/json;odata.streaming=false": number;
+                    "application/json": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;IEEE754Compatible=false": number;
+                    "application/json;IEEE754Compatible=true": number;
+                    "application/xml": number;
+                    "text/plain": number;
+                    "application/octet-stream": number;
+                    "text/json": number;
+                };
+            };
+        };
+    };
+    "GET_api/odata/RandD300({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=true": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=false": components["schemas"]["RandD300"];
+                    "application/json": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/xml": components["schemas"]["RandD300"];
+                    "text/plain": components["schemas"]["RandD300"];
+                    "application/octet-stream": components["schemas"]["RandD300"];
+                    "text/json": components["schemas"]["RandD300"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/RandD300/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=true": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=false": components["schemas"]["RandD300"];
+                    "application/json": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["RandD300"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["RandD300"];
+                    "application/xml": components["schemas"]["RandD300"];
+                    "text/plain": components["schemas"]["RandD300"];
+                    "application/octet-stream": components["schemas"]["RandD300"];
+                    "text/json": components["schemas"]["RandD300"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/RandD300({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/RandD300/{key}/{navigationProperty}/$ref": {
         parameters: {
             query?: never;
             header?: never;

@@ -106,6 +106,21 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     options.BusinessObject<Cont>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<Angajament>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<Repartitor>().ConfigureController(c => c.ReadOnly());
+                    // Felia D300 (F12, fix F7 al review-ului advers) — ecranul de
+                    // decont are nevoie să ARATE politica de așezare, nu doar
+                    // cifrele pe care ea le produce: „nemapat" e o afirmație pe
+                    // care operatorul trebuie s-o poată verifica singur.
+                    //   * `RandD300` — nomenclatorul rândurilor. E LEGE, nu
+                    //     configurare: `[ForbidCRUD]` în XAF, ReadOnly aici, se
+                    //     schimbă prin seed odată cu ordinul (D3-D1).
+                    //   * `MapareD300` — politică, deci EDITABILĂ… dar în
+                    //     back-office, ca toate politicile (56): ReadOnly pe
+                    //     OData înseamnă „citește-o din client, schimb-o unde are
+                    //     validare de profil". Prin ușa din dos ar fi ocolit atât
+                    //     regula rândului de operațiuni, cât și gardul de
+                    //     ascendent (F4).
+                    options.BusinessObject<RandD300>().ConfigureController(c => c.ReadOnly());
+                    options.BusinessObject<MapareD300>().ConfigureController(c => c.ReadOnly());
                 });
 
                 // Paritate de configurare cu `Blazor.Server/Startup.cs` (aceeași

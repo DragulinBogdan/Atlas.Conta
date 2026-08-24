@@ -234,7 +234,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // convenția globală SetNull ar fi golit tăcut structura formularului.
             // `WithMany()` fără colecție: sensurile inverse („copiii", „oglinzile
             // mele") se derivă prin query în proiecție, nu se materializează.
-            modelBuilder.Entity<RandD300>().HasIndex(r => r.Cod).IsUnique();
+            // FILTRAT pe `GCRecord = 0` (fix F5 al review-ului advers), ca toate
+            // unicitățile pe tipuri cu ȘTERGERE AMÂNATĂ (60a): rândul șters din
+            // UI rămâne fizic în tabelă, deci un index unic NEfiltrat l-ar face
+            // să blocheze pentru totdeauna recrearea aceleiași chei — o ștergere
+            // reversibilă prin construcție ar fi devenit definitivă printr-un
+            // efect colateral al schemei, cu un `23505` brut în loc de un mesaj.
+            modelBuilder.Entity<RandD300>().HasIndex(r => r.Cod).IsUnique()
+                .HasFilter("\"GCRecord\" = 0");
             modelBuilder.Entity<RandD300>()
                 .HasOne(r => r.Parinte).WithMany().HasForeignKey(r => r.ParinteId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -244,8 +251,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // D3-D2: tripleta e identitatea mapării — aceeași pereche poate cădea pe
             // mai multe rânduri (TI19 pe achiziție: 16 ȘI 33), dar de două ori pe
             // ACELAȘI rând ar dubla cifra la proiecție.
+            //
+            // Filtrat pe `GCRecord = 0` din același motiv ca `RandD300` de mai sus,
+            // dar aici cazul e cel REAL: maparea e politică editabilă (decizia 4),
+            // deci ștergerea ei din XAF e un flux normal, iar reintroducerea aceleiași
+            // triplete după o ștergere e chiar remediul unei greșeli de culegere.
             modelBuilder.Entity<MapareD300>()
-                .HasIndex(m => new { m.TipTvaId, m.Sens, m.RandId }).IsUnique();
+                .HasIndex(m => new { m.TipTvaId, m.Sens, m.RandId }).IsUnique()
+                .HasFilter("\"GCRecord\" = 0");
 
             AplicaScaraNumerica(modelBuilder);
         }
