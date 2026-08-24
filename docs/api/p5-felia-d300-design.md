@@ -104,7 +104,8 @@ Forma (b) din precedente (`BalantaPlan`): **un formular nu se paginează**, nu
 trece prin `DataSourceLoader`. Pașii, în ordine:
 
 1. **Agregatul de registru**: `RegistruTva` filtrat pe `Data ∈ [dataStart, dataEnd]`,
-   grupat pe `(Sens, TipTvaId, Regim)` — Σ`Baza`, Σ`Tva`, `Count`. `Storno` NU se
+   grupat pe `(Sens, TipTvaId, Regim, Cota)` — Σ`Baza`, Σ`Tva`, `Count` (`Cota` în cheie
+   ca snapshot pentru `Nemapate`, la fel ca `DecontTva`; nu schimbă nicio cifră de rând). `Storno` NU se
    filtrează (suma algebrică e adevărul, 68); un storno de N19 ajunge pe rd. 16
    prin `TipTvaId`-ul snapshot — niciun mecanism nou. `Regim` intră în cheie
    fiindcă rd. 31 îl consumă.
@@ -225,7 +226,10 @@ apare în `Nemapate` la prima cifră — vizibil, nu refuzat (raportare ≠ oper
    avertismente („rd. 14 a primit TVA 210,00 pe care nu-l poate purta").
 5. **Perioada**: filtrul e pe `Data` a rândului de registru (data stornării
    pentru storno, 25d) — coerent cu jurnalele; fără index (59), cifra decide.
-6. **Securitate**: aceeași ușă secured ca jurnalele; proba HTTP cu `User` (403).
+6. **Securitate**: aceeași ușă secured ca jurnalele. **Corectat la implementare**: `User`
+   nu primește 403 — ușa securizată filtrează RÂNDURILE, nu cererea (identic la
+   `jurnal-tva`/`decont-tva`/`balanta-plan`): 200 cu `Randuri: []`, nomenclatorul
+   invizibil, zero scurgere. 403 e al gate-ului de COMANDĂ (55b), nu al citirii.
 
 ## Verificări (ModelCheck, ambele profiluri)
 
@@ -243,7 +247,8 @@ apare în `Nemapate` la prima cifră — vizibil, nu refuzat (raportare ≠ oper
 - **D3-V6** storno în perioadă: operare + storno în aceeași lună ⇒ rândul
   operațiunii net 0, `Randuri` = 2 (nu dispare); storno de N19 în 2026 ⇒ rd. 16.
 - **D3-V7** (bugetar) `Nemapate` gol, toate rândurile 0, 0 `MapareD300`.
-- **HTTP** (calea reală, 66h): Admin 200 cu rânduri; User 403; perioadă lipsă 400.
+- **HTTP** (calea reală, 66h): Admin 200 cu 55 rânduri; User 200 cu `Randuri: []`;
+  perioadă lipsă/inversată, extern negativ, 38∧41 ⇒ 400.
 
 ## Regula de oprire
 
