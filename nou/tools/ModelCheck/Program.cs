@@ -79,10 +79,37 @@ void Rezumat() {
         Check("Metadata clientului e la zi (altfel: rulați ModelCheck --dump-metadata)", identic);
 }
 
-var opts = new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
+// Ștergerea amânată (F13-D2, restanța 69-r7): `UseDeferredDeletion` are DOUĂ
+// suprasarcini, iar ele nu se substituie una alteia.
+//   • pe `ModelBuilder` (`BackOfficeDbContext.OnModelCreating`): pune adnotarea
+//     `IDeferredDeletion` pe model, coloana `GCRecord` și FILTRUL GLOBAL
+//     `GCRecord = 0` pe fiecare entitate. Rulează oricum, în orice proces care
+//     folosește contextul — deci și aici, dinainte de felia asta: de-aia
+//     rândurile marcate șterse erau deja invizibile în interogări.
+//   • pe `DbContextOptionsBuilder` (aici): înregistrează
+//     `EFCoreDeferredDeletionInterceptor` + `DeferredDeletionTemporaryStore`,
+//     adică partea care CONVERTEȘTE la `SaveChanges` un `EntityState.Deleted`
+//     în `UPDATE … SET GCRecord = 1`. Fără ea, `os.Delete` ștergea FIZIC și
+//     cascada prin FK — exact ce NU face host-ul: ambele aplicații o primesc din
+//     `AddEFCore` (`DevExpress.ExpressApp.EFCore/ApplicationBuilder/
+//     ObjectSpaceProviderBuilderExtensions.cs:73` și `:110`). Probele pe calea
+//     reală (66h) cer ca harness-ul să șteargă la fel ca aplicația.
+// Ce NU s-a adus din `AddEFCore` (deliberat, D2 e despre ștergere):
+// `UseXafCalculatedProperties`, `UseXafServiceProviderContainer`,
+// `UseMultipleActiveResultSetEmulation`, `EFCoreOptimisticLockInterceptor` —
+// harness-ul rămâne, pe restul, un provider standalone.
+// Consecință acceptată (F13-D2): ModelCheck nu recreează baza, doar migrează,
+// deci rândurile `GCRecord = 1` se ACUMULEAZĂ între rulări. E în regulă cât timp
+// nicio probă nu numără rânduri pe lângă filtrul global — orice SQL brut care
+// citește o tabelă cu ștergere amânată pune `GCRecord = 0` EXPLICIT (66), iar
+// curățenia de scenă purjează fizic (`Purja`), nu prin `os.Delete`.
+// (`UseDeferredDeletion` întoarce builder-ul NEgeneric, deci se apelează ca
+// instrucțiune ca să nu se piardă `DbContextOptions<BackOfficeEFCoreDbContext>`.)
+var optsBuilder = new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
     .UseNpgsql(connectionString)
-    .UseChangeTrackingProxies()
-    .Options;
+    .UseChangeTrackingProxies();
+optsBuilder.UseDeferredDeletion();
+var opts = optsBuilder.Options;
 
 using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     Console.WriteLine($"Model OK: {ctx.Model.GetEntityTypes().Count()} entity types; profil: {profil}");
@@ -114,7 +141,11 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         .UseNpgsql(connectionString)
         .UseChangeTrackingProxies()
         .UseObjectSpaceLinkProxies()
-        .UseLazyLoadingProxies());
+        .UseLazyLoadingProxies()
+        // Aceeași suprasarcină „options-level" ca la `opts` de mai sus: aici e
+        // builder-ul de care atârnă TOATE ObjectSpace-urile scenelor, deci fără
+        // ea `os.Delete` ar rămâne ștergere fizică tocmai pe calea probelor.
+        .UseDeferredDeletion());
 
 // Seed-ul profilului privat: exact calea updater-ului (ContaSeeder), pe
 // ObjectSpace standalone; idempotent la rulări repetate.
@@ -178,21 +209,23 @@ if (profil == ProfilContabil.Privat) {
     const string MarcajPrv = "E2E-PRV";
 
     void CurataPrv(IObjectSpace os) {
-        var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajPrv)).Select(r => r.ID).ToList();
-        var docs = os.GetObjectsQuery<Document>()
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajPrv)).Select(r => r.ID).ToList();
+        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
             .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
         var docIds = docs.Select(d => d.ID).ToList();
-        os.Delete(os.GetObjectsQuery<Imperechere>()
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
             .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-        os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
         foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-            os.Delete(doc);
-        os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajPrv).ToList());
-        os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajPrv).ToList());
-        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajPrv)).ToList());
-        os.CommitChanges();
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajPrv).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod == MarcajPrv).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajPrv)).ToList());
+        pj.Executa();
     }
 
     using (var os = provider.CreateObjectSpace()) {
@@ -623,24 +656,26 @@ if (profil == ProfilContabil.Privat) {
     const string MarcajDsc = "E2E-DSC";
 
     void CurataDsc(IObjectSpace os) {
-        var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajDsc)).Select(r => r.ID).ToList();
-        var docs = os.GetObjectsQuery<Document>()
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajDsc)).Select(r => r.ID).ToList();
+        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
             .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
         var docIds = docs.Select(d => d.ID).ToList();
-        os.Delete(os.GetObjectsQuery<Imperechere>()
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
             .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-        os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
         // Copiii autogenerați (DSC conex, fără Numar) întâi — DocumentSursa spre FCL.
         foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-            os.Delete(doc);
-        os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajDsc)).ToList());
-        os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajDsc)).ToList());
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajDsc)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajDsc)).ToList());
         // Tipul creat în testul de defect 1 (nu e curățat prin markerul de doc).
-        os.Delete(os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod.StartsWith(MarcajDsc)).ToList());
-        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajDsc)).ToList());
-        os.CommitChanges();
+        pj.Adauga(os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters().Where(t => t.Cod.StartsWith(MarcajDsc)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajDsc)).ToList());
+        pj.Executa();
     }
 
     using (var os = provider.CreateObjectSpace()) {
@@ -756,6 +791,71 @@ if (profil == ProfilContabil.Privat) {
         RefuzFcl("FCL cu linii de stoc fără GestiuneDescarcare → refuz", null, produsA, null);
         RefuzFcl("Pin pe lot care NU aparține produsului liniei → refuz", mag1, produsA, lotC1);
         RefuzFcl("Pin pe lot fără sold în gestiunea de descărcare (MAG2 goală) → refuz «întâi transfer (BTR)»", mag2, produsA, lotA1);
+
+        // ═══ 57f (F13-D2 / 69-r7): ștergerea de linie de draft, văzută de gardian ═══
+        //
+        // `GardianEditare` (55a) trăiește pe familia SECURED a host-urilor și NU e
+        // înregistrat aici (ModelCheck rulează pe un `EFCoreObjectSpaceProvider`
+        // standalone, fără `XafApplication` și fără securitate) — deci nu se poate
+        // proba prin „comite și vezi dacă a refuzat". Proba minimă ECHIVALENTĂ e să
+        // chemi exact funcția pe care host-ul o leagă de `Committing`
+        // (`GardianEditare.Verifica`, publică) DIN `Committing`-ul acestui
+        // ObjectSpace: același obiect, aceeași fază, singurul lucru lipsă fiind cine
+        // apasă butonul.
+        //
+        // Ce se măsoară, și abia acum se POATE măsura (înainte de interceptor
+        // ștergerea era fizică, deci întrebarea n-avea sens): asimetria pe care
+        // `EsteSters` o documentează în sursă — la `Committing`, `IsDeletedObject`
+        // răspunde încă FALS (interceptorul pune `GCRecord` abia în `SavingChanges`,
+        // DUPĂ eveniment), iar `IsObjectToDelete` (starea EF `Deleted`) e cel care
+        // spune adevărul. Dacă gardianul ar fi rămas pe `IsDeletedObject` singur, o
+        // ștergere de linie de draft ar fi fost citită drept editare și REFUZATĂ.
+        {
+            var fSters = os.CreateObject<FacturaIesire>();
+            fSters.Data = new DateOnly(2026, 4, 8);
+            fSters.Predator = sediu; fSters.Primitor = client; fSters.GestiuneDescarcare = mag1;
+            var lRamane = os.CreateObject<FacturaIesireDetaliu>();
+            lRamane.Document = fSters; lRamane.TipMaterial = tip371; lRamane.Cantitate = 1m;
+            lRamane.PretUnitar = 10m; lRamane.TipTva = n21; lRamane.Produs = produsA;
+            var lSters = os.CreateObject<FacturaIesireDetaliu>();
+            lSters.Document = fSters; lSters.TipMaterial = tip371; lSters.Cantitate = 2m;
+            lSters.PretUnitar = 10m; lSters.TipTva = n21; lSters.Produs = produsA;
+            os.CommitChanges();
+            var idSters = lSters.ID;
+
+            bool? peLista = null, dupaIsObjectToDelete = null, dupaIsDeletedObject = null;
+            string refuzGardian = null;
+            void LaCommittingSters(object _, System.ComponentModel.CancelEventArgs __) {
+                peLista = os.ModifiedObjects.OfType<FacturaIesireDetaliu>().Any(l => l.ID == idSters);
+                dupaIsObjectToDelete = os.IsObjectToDelete(lSters);
+                dupaIsDeletedObject = os.IsDeletedObject(lSters);
+                try { GardianEditare.Verifica(os); }
+                catch (OperareException e) { refuzGardian = e.Message.Split('\n')[0]; }
+            }
+            os.Committing += LaCommittingSters;
+            os.Delete(lSters);
+            os.CommitChanges();
+            os.Committing -= LaCommittingSters;
+
+            var maiEVizibila = os.GetObjectsQuery<FacturaIesireDetaliu>().Any(l => l.ID == idSters);
+            var randFizic = ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)os).DbContext.Database
+                .SqlQuery<int>($"SELECT \"GCRecord\" FROM \"DocumentDetalii\" WHERE \"ID\" = {idSters}")
+                .AsEnumerable().Select(x => (int?)x).FirstOrDefault();
+            Console.WriteLine($"     MĂSURAT (57f): la Committing — pe lista ModifiedObjects: {peLista}; "
+                + $"IsObjectToDelete: {dupaIsObjectToDelete}; IsDeletedObject: {dupaIsDeletedObject}; "
+                + $"gardian: „{refuzGardian ?? "tace"}”; după commit — GCRecord: "
+                + $"{randFizic?.ToString() ?? "<rând dispărut>"}, vizibilă în interogări: {maiEVizibila}.");
+            Check("57f (F13-D2): ștergerea AMÂNATĂ a unei linii de draft ajunge la `Committing` pe lista "
+                + "obiectelor modificate, dar `GardianEditare` o TACE — fiindcă `EsteSters` întreabă "
+                + "`IsObjectToDelete` (starea EF `Deleted`), nu doar `IsDeletedObject`, care la `Committing` "
+                + "răspunde încă fals: `GCRecord` îl pune interceptorul abia în `SavingChanges`. După "
+                + "commit rândul RĂMÂNE fizic în tabelă cu `GCRecord = 1` și dispare doar din interogări",
+                peLista == true && dupaIsObjectToDelete == true && dupaIsDeletedObject == false
+                && refuzGardian == null && randFizic == 1 && !maiEVizibila);
+
+            // Artefact de scenă ⇒ purjă FIZICĂ, ca restul curățeniilor (F13-D2).
+            new Purja(os).Adauga(fSters.Detalii.ToList()).Adauga(lSters).Adauga(fSters).Executa();
+        }
 
         // --- FCL: L1 FIFO(A,12), L2 pin(A,A2,5), L3 serviciu, L4 indisponibil(B,7), L5(C,3) ---
         var d3 = new DateOnly(2026, 4, 10);
@@ -997,15 +1097,17 @@ if (profil == ProfilContabil.Privat) {
         const string MarcajNtcPrv = "E2E-NTP";
 
         void CurataNtcPrv(IObjectSpace os) {
-            var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajNtcPrv)).Select(r => r.ID).ToList();
-            var docs = os.GetObjectsQuery<Document>()
+            // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+            var pj = new Purja(os);
+            var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajNtcPrv)).Select(r => r.ID).ToList();
+            var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
-            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
-            os.Delete(docs);
-            os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajNtcPrv)).ToList());
-            os.CommitChanges();
+            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            pj.Adauga(docs);
+            pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajNtcPrv)).ToList());
+            pj.Executa();
         }
 
         using (var os = provider.CreateObjectSpace()) {
@@ -1090,20 +1192,22 @@ if (profil == ProfilContabil.Privat) {
         const string MarcajCmp = "E2E-CMP";
 
         void CurataCmp(IObjectSpace os) {
-            var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajCmp)).Select(r => r.ID).ToList();
-            var docs = os.GetObjectsQuery<Document>()
+            // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+            var pj = new Purja(os);
+            var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajCmp)).Select(r => r.ID).ToList();
+            var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
             // Nota are laturi INTERNE (partenerul stă pe linii), deci nu e prinsă
             // de filtrul pe laturi — se adaugă prin numărul propriu.
-            docs.AddRange(os.GetObjectsQuery<NotaContabila>().Where(d => d.Numar.StartsWith(MarcajCmp)));
+            docs.AddRange(os.GetObjectsQuery<NotaContabila>().IgnoreQueryFilters().Where(d => d.Numar.StartsWith(MarcajCmp)));
             var docIds = docs.Select(d => d.ID).Distinct().ToList();
-            os.Delete(os.GetObjectsQuery<Imperechere>()
+            pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
-            os.Delete(docs);
-            os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajCmp)).ToList());
-            os.CommitChanges();
+            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            pj.Adauga(docs);
+            pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajCmp)).ToList());
+            pj.Executa();
         }
 
         using (var os = provider.CreateObjectSpace()) {
@@ -1261,21 +1365,23 @@ if (profil == ProfilContabil.Privat) {
         const string MarcajItv = "E2E-ITV";
 
         void CurataItv(IObjectSpace os) {
-            var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajItv)).Select(r => r.ID).ToList();
+            // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+            var pj = new Purja(os);
+            var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajItv)).Select(r => r.ID).ToList();
             // Documentele după repartitorii marcați prind și ITV-urile: laturile
             // lor sunt unitatea marcată (predator = primitor).
-            var docs = os.GetObjectsQuery<Document>()
+            var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
-            os.Delete(os.GetObjectsQuery<Imperechere>()
+            pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-            os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-                os.Delete(doc);
-            os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajItv)).ToList());
-            os.CommitChanges();
+                pj.Adauga(doc);
+            pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajItv)).ToList());
+            pj.Executa();
         }
 
         using (var os = provider.CreateObjectSpace()) {
@@ -1470,19 +1576,21 @@ if (profil == ProfilContabil.Privat) {
         const string MarcajAsm = "E2E-ASM";
 
         void CurataAsm(IObjectSpace os) {
-            var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajAsm)).Select(r => r.ID).ToList();
-            var docs = os.GetObjectsQuery<Document>()
+            // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+            var pj = new Purja(os);
+            var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajAsm)).Select(r => r.ID).ToList();
+            var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
-            os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-                os.Delete(doc);
-            os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajAsm)).ToList());
-            os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajAsm)).ToList());
-            os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajAsm)).ToList());
-            os.CommitChanges();
+                pj.Adauga(doc);
+            pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajAsm)).ToList());
+            pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajAsm)).ToList());
+            pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajAsm)).ToList());
+            pj.Executa();
         }
 
         using (var os = provider.CreateObjectSpace()) {
@@ -1719,19 +1827,25 @@ if (profil == ProfilContabil.Privat) {
         const string MarcajRet = "E2E-RET";
 
         void CurataRet(IObjectSpace os) {
-            var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajRet)).Select(r => r.ID).ToList();
-            var docs = os.GetObjectsQuery<Document>()
+            // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+            var pj = new Purja(os);
+            var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajRet)).Select(r => r.ID).ToList();
+            var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
-            os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-                os.Delete(doc);
-            os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajRet)).ToList());
-            os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajRet)).ToList());
-            os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajRet)).ToList());
-            os.CommitChanges();
+                pj.Adauga(doc);
+            pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajRet)).ToList());
+            pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajRet)).ToList());
+            // Tipul „fără regulă" creat de proba de refuz se ștergea în scenă; sub
+            // ștergerea amânată ar fi rămas marcat, câte unul la fiecare rulare — deci
+            // intră în purja de scenă, pe marcaj, ca restul nomenclatoarelor (F13-D2).
+            pj.Adauga(os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters().Where(t => t.Cod.StartsWith(MarcajRet)));
+            pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajRet)).ToList());
+            pj.Executa();
         }
 
         using (var os = provider.CreateObjectSpace()) {
@@ -2143,15 +2257,17 @@ if (profil == ProfilContabil.Privat) {
         const string MarcajApiPrv = "E2E-APIPRV";
         using var os = provider.CreateObjectSpace();
         void CurataApiPrv(IObjectSpace o) {
-            foreach (var d in o.GetObjectsQuery<FacturaIntrare>()
+            // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+            var pj = new Purja(o);
+            foreach (var d in o.GetObjectsQuery<FacturaIntrare>().IgnoreQueryFilters()
                     .Where(x => x.Numar.StartsWith(MarcajApiPrv)).ToList()) {
-                o.Delete(o.GetObjectsQuery<DocumentDetaliu>().Where(l => l.DocumentId == d.ID).ToList());
-                o.Delete(d);
+                pj.Adauga(o.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(l => l.DocumentId == d.ID).ToList());
+                pj.Adauga(d);
             }
-            foreach (var r in o.GetObjectsQuery<Repartitor>()
+            foreach (var r in o.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
                     .Where(x => x.Cod.StartsWith(MarcajApiPrv)).ToList())
-                o.Delete(r);
-            o.CommitChanges();
+                pj.Adauga(r);
+            pj.Executa();
         }
         CurataApiPrv(os);
         var n21Api = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
@@ -2213,17 +2329,19 @@ if (profil == ProfilContabil.Privat) {
         const string MarcajApiDecPrv = "E2E-APIDEC-PRV";
         using var os = provider.CreateObjectSpace();
         void CurataApiDecPrv(IObjectSpace o) {
-            var repIds = o.GetObjectsQuery<Repartitor>()
+            // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+            var pj = new Purja(o);
+            var repIds = o.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
                 .Where(x => x.Cod.StartsWith(MarcajApiDecPrv)).Select(x => x.ID).ToList();
-            var docs = o.GetObjectsQuery<Document>()
+            var docs = o.GetObjectsQuery<Document>().IgnoreQueryFilters()
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
-            o.Delete(o.GetObjectsQuery<RegistruContabil>()
+            pj.Adauga(o.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
                 .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            o.Delete(o.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
-            o.Delete(docs);
-            o.Delete(o.GetObjectsQuery<Repartitor>().Where(x => x.Cod.StartsWith(MarcajApiDecPrv)).ToList());
-            o.CommitChanges();
+            pj.Adauga(o.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            pj.Adauga(docs);
+            pj.Adauga(o.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(x => x.Cod.StartsWith(MarcajApiDecPrv)).ToList());
+            pj.Executa();
         }
         CurataApiDecPrv(os);
 
@@ -2315,30 +2433,32 @@ if (profil == ProfilContabil.Privat) {
         using var os = provider.CreateObjectSpace();
 
         void CurataApiFcl(IObjectSpace o) {
-            var repIds = o.GetObjectsQuery<Repartitor>()
+            // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+            var pj = new Purja(o);
+            var repIds = o.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
                 .Where(r => r.Cod.StartsWith(MarcajApiFcl)).Select(r => r.ID).ToList();
-            var docs = o.GetObjectsQuery<Document>()
+            var docs = o.GetObjectsQuery<Document>().IgnoreQueryFilters()
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
-            o.Delete(o.GetObjectsQuery<Imperechere>()
+            pj.Adauga(o.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-            o.Delete(o.GetObjectsQuery<RegistruStoc>()
+            pj.Adauga(o.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
                 .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            o.Delete(o.GetObjectsQuery<RegistruContabil>()
+            pj.Adauga(o.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
                 .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            o.Delete(o.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+            pj.Adauga(o.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
             // Copiii autogenerați (DSC) întâi — DocumentSursa spre FCL.
             foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-                o.Delete(doc);
+                pj.Adauga(doc);
             // Rândurile de sold de DESCHIDERE n-au document (25e): se prind pe lot.
-            var lotIds = o.GetObjectsQuery<Lot>()
+            var lotIds = o.GetObjectsQuery<Lot>().IgnoreQueryFilters()
                 .Where(l => l.Produs.Cod.StartsWith(MarcajApiFcl)).Select(l => l.ID).ToList();
-            o.Delete(o.GetObjectsQuery<RegistruStoc>().Where(r => lotIds.Contains(r.LotId)).ToList());
-            o.Delete(o.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiFcl)).ToList());
-            o.Delete(o.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajApiFcl)).ToList());
-            o.Delete(o.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(MarcajApiFcl)).ToList());
-            o.Delete(o.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiFcl)).ToList());
-            o.CommitChanges();
+            pj.Adauga(o.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => lotIds.Contains(r.LotId)).ToList());
+            pj.Adauga(o.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajApiFcl)).ToList());
+            pj.Adauga(o.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajApiFcl)).ToList());
+            pj.Adauga(o.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod.StartsWith(MarcajApiFcl)).ToList());
+            pj.Adauga(o.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajApiFcl)).ToList());
+            pj.Executa();
         }
         CurataApiFcl(os);
 
@@ -2837,17 +2957,19 @@ if (profil == ProfilContabil.Privat) {
 const string MarcajProdus = "E2E-PRB";
 
 void Curata(IObjectSpace os) {
-    var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajProdus).Select(l => l.ID).ToList();
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
-    var docs = os.GetObjectsQuery<NotaTransfer>().Where(d => d.NumarPV == "E2E").ToList();
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajProdus).Select(l => l.ID).ToList();
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => loturi.Contains(r.LotId)).ToList());
+    var docs = os.GetObjectsQuery<NotaTransfer>().IgnoreQueryFilters().Where(d => d.NumarPV == "E2E").ToList();
     foreach (var doc in docs) {
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId == doc.ID).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == doc.ID).ToList());
     }
-    os.Delete(docs);
-    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajProdus).ToList());
-    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajProdus).ToList());
-    os.CommitChanges();
+    pj.Adauga(docs);
+    pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajProdus).ToList());
+    pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod == MarcajProdus).ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -3195,27 +3317,29 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajFct = "E2E-FCT-PRB";
 
 void CurataFct(IObjectSpace os) {
-    var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajFct).Select(l => l.ID).ToList();
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
-    foreach (var fct in os.GetObjectsQuery<FacturaIntrare>().Where(d => d.Numar.StartsWith("E2E-FF")).ToList()) {
-        foreach (var copil in os.GetObjectsQuery<Document>().Where(x => x.DocumentSursaId == fct.ID).ToList()) {
-            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == copil.ID).ToList());
-            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == copil.ID).ToList());
-            os.Delete(copil);
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajFct).Select(l => l.ID).ToList();
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => loturi.Contains(r.LotId)).ToList());
+    foreach (var fct in os.GetObjectsQuery<FacturaIntrare>().IgnoreQueryFilters().Where(d => d.Numar.StartsWith("E2E-FF")).ToList()) {
+        foreach (var copil in os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(x => x.DocumentSursaId == fct.ID).ToList()) {
+            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId == copil.ID).ToList());
+            pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == copil.ID).ToList());
+            pj.Adauga(copil);
         }
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fct.ID).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == fct.ID).ToList());
-        os.Delete(fct);
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId == fct.ID).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == fct.ID).ToList());
+        pj.Adauga(fct);
     }
-    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajFct).ToList());
-    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajFct).ToList());
-    os.Delete(os.GetObjectsQuery<Partener>().Where(p => p.Cod.StartsWith("E2E-FURN")).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == "E2E-CE").ToList());
-    os.Delete(os.GetObjectsQuery<SursaFinantare>().Where(c => c.Cod == "E2E-SF").ToList());
-    os.Delete(os.GetObjectsQuery<CodFunctional>().Where(c => c.Cod == "E2E-CF").ToList());
-    os.Delete(os.GetObjectsQuery<Proiect>().Where(c => c.Cod == "E2E-PR").ToList());
-    os.Delete(os.GetObjectsQuery<Angajament>().Where(c => c.Cod == "E2E-ANG").ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajFct).ToList());
+    pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod == MarcajFct).ToList());
+    pj.Adauga(os.GetObjectsQuery<Partener>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith("E2E-FURN")).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == "E2E-CE").ToList());
+    pj.Adauga(os.GetObjectsQuery<SursaFinantare>().IgnoreQueryFilters().Where(c => c.Cod == "E2E-SF").ToList());
+    pj.Adauga(os.GetObjectsQuery<CodFunctional>().IgnoreQueryFilters().Where(c => c.Cod == "E2E-CF").ToList());
+    pj.Adauga(os.GetObjectsQuery<Proiect>().IgnoreQueryFilters().Where(c => c.Cod == "E2E-PR").ToList());
+    pj.Adauga(os.GetObjectsQuery<Angajament>().IgnoreQueryFilters().Where(c => c.Cod == "E2E-ANG").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -3450,25 +3574,27 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajApiFct = "E2E-API-FCT";
 
 void CurataApiFct(IObjectSpace os) {
-    var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiFct)).Select(l => l.ID).ToList();
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
-    foreach (var fct in os.GetObjectsQuery<FacturaIntrare>().Where(d => d.Numar.StartsWith("E2E-AF")).ToList()) {
-        foreach (var copil in os.GetObjectsQuery<Document>().Where(x => x.DocumentSursaId == fct.ID).ToList()) {
-            os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == copil.ID).ToList());
-            os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == copil.ID).ToList());
-            os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == copil.ID).ToList());
-            os.Delete(copil);
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajApiFct)).Select(l => l.ID).ToList();
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => loturi.Contains(r.LotId)).ToList());
+    foreach (var fct in os.GetObjectsQuery<FacturaIntrare>().IgnoreQueryFilters().Where(d => d.Numar.StartsWith("E2E-AF")).ToList()) {
+        foreach (var copil in os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(x => x.DocumentSursaId == fct.ID).ToList()) {
+            pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId == copil.ID).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId == copil.ID).ToList());
+            pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == copil.ID).ToList());
+            pj.Adauga(copil);
         }
-        os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == fct.ID).ToList());
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fct.ID).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == fct.ID).ToList());
-        os.Delete(fct);
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId == fct.ID).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId == fct.ID).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == fct.ID).ToList());
+        pj.Adauga(fct);
     }
-    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiFct)).ToList());
-    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajApiFct)).ToList());
-    os.Delete(os.GetObjectsQuery<Partener>().Where(p => p.Cod == "E2E-AFURN").ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == "E2E-AFCE").ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajApiFct)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajApiFct)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Partener>().IgnoreQueryFilters().Where(p => p.Cod == "E2E-AFURN").ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == "E2E-AFCE").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -3799,18 +3925,20 @@ const string MarcajBcs = "E2E-BCS-PRB";
 const string MarcajLoc = "E2E-BCS-LOC";
 
 void CurataBcs(IObjectSpace os) {
-    var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajBcs).Select(l => l.ID).ToList();
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
-    foreach (var doc in os.GetObjectsQuery<BonConsum>()
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajBcs).Select(l => l.ID).ToList();
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => loturi.Contains(r.LotId)).ToList());
+    foreach (var doc in os.GetObjectsQuery<BonConsum>().IgnoreQueryFilters()
         .Where(d => d.Predator.Cod == MarcajLoc || d.Primitor.Cod == MarcajLoc).ToList()) {
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).ToList());
-        os.Delete(doc);
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId == doc.ID).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == doc.ID).ToList());
+        pj.Adauga(doc);
     }
-    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajBcs).ToList());
-    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajBcs).ToList());
-    os.Delete(os.GetObjectsQuery<UnitateInterna>().Where(u => u.Cod == MarcajLoc).ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajBcs).ToList());
+    pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod == MarcajBcs).ToList());
+    pj.Adauga(os.GetObjectsQuery<UnitateInterna>().IgnoreQueryFilters().Where(u => u.Cod == MarcajLoc).ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -3935,19 +4063,21 @@ const string MarcajLdi = "E2E-LDI-PRB";
 const string MarcajComisie = "E2E-LDI-COM";
 
 void CurataLdi(IObjectSpace os) {
-    var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajLdi).Select(l => l.ID).ToList();
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
-    foreach (var doc in os.GetObjectsQuery<ListaDiferenteInventar>()
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajLdi).Select(l => l.ID).ToList();
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => loturi.Contains(r.LotId)).ToList());
+    foreach (var doc in os.GetObjectsQuery<ListaDiferenteInventar>().IgnoreQueryFilters()
         .Where(d => d.Primitor.Cod == MarcajComisie).ToList()) {
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).ToList());
-        os.Delete(doc);
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId == doc.ID).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == doc.ID).ToList());
+        pj.Adauga(doc);
     }
-    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajLdi).ToList());
-    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajLdi).ToList());
-    os.Delete(os.GetObjectsQuery<UnitateInterna>().Where(u => u.Cod == MarcajComisie).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajLdi + "-CE").ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajLdi).ToList());
+    pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod == MarcajLdi).ToList());
+    pj.Adauga(os.GetObjectsQuery<UnitateInterna>().IgnoreQueryFilters().Where(u => u.Cod == MarcajComisie).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == MarcajLdi + "-CE").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -4106,15 +4236,17 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajFcl = "E2E-FCL";
 
 void CurataFcl(IObjectSpace os) {
-    foreach (var doc in os.GetObjectsQuery<FacturaIesire>()
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    foreach (var doc in os.GetObjectsQuery<FacturaIesire>().IgnoreQueryFilters()
         .Where(d => d.Primitor.Cod.StartsWith(MarcajFcl) || d.Predator.Cod.StartsWith(MarcajFcl)).ToList()) {
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).ToList());
-        os.Delete(doc);
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId == doc.ID).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == doc.ID).ToList());
+        pj.Adauga(doc);
     }
-    os.Delete(os.GetObjectsQuery<Partener>().Where(p => p.Cod.StartsWith(MarcajFcl)).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajFcl + "-CE").ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<Partener>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajFcl)).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == MarcajFcl + "-CE").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -4259,22 +4391,24 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajTrz = "E2E-TRZ";
 
 void CurataTrz(IObjectSpace os) {
-    var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajTrz)).Select(r => r.ID).ToList();
-    var docs = os.GetObjectsQuery<Document>()
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajTrz)).Select(r => r.ID).ToList();
+    var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
         .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
     var docIds = docs.Select(d => d.ID).ToList();
-    os.Delete(os.GetObjectsQuery<Imperechere>()
+    pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
         .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
     foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-        os.Delete(doc);
-    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajTrz).ToList());
-    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod == MarcajTrz).ToList());
-    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajTrz)).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajTrz + "-CE").ToList());
-    os.CommitChanges();
+        pj.Adauga(doc);
+    pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod == MarcajTrz).ToList());
+    pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod == MarcajTrz).ToList());
+    pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajTrz)).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == MarcajTrz + "-CE").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -4533,23 +4667,25 @@ Check("Gardian F3-D5a: TipInstrumentPlata are exact membrii mapați în CASE-ul 
         .SequenceEqual(new[] { "Cec", "Chitanta", "DispozitieCasa", "OrdinPlata" }));
 
 void CurataApiTrz(IObjectSpace os) {
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
     // Toate documentele blocului ating cel puțin un repartitor marcat (inclusiv
     // plata autogenerată: TREZ → furnizorul marcat), deci marcajul de repartitor
     // e cheia de curățenie — ca la CurataTrz.
-    var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiTrz)).Select(r => r.ID).ToList();
-    var docs = os.GetObjectsQuery<Document>()
+    var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajApiTrz)).Select(r => r.ID).ToList();
+    var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
         .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
     var docIds = docs.Select(d => d.ID).ToList();
-    os.Delete(os.GetObjectsQuery<Imperechere>()
+    pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
         .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
     foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-        os.Delete(doc);
-    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiTrz)).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajApiTrz + "-CE").ToList());
-    os.CommitChanges();
+        pj.Adauga(doc);
+    pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajApiTrz)).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == MarcajApiTrz + "-CE").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -4947,31 +5083,33 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajAvir = "E2E-AVIR";
 
 void CurataAvir(IObjectSpace os) {
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
     // Toate documentele blocului ating cel puțin un repartitor marcat (inclusiv
     // latura pereche autogenerată: aceleași laturi ca sursa) — aceeași cheie de
     // curățenie ca la CurataApiTrz.
-    var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajAvir)).Select(r => r.ID).ToList();
-    var docs = os.GetObjectsQuery<Document>()
+    var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajAvir)).Select(r => r.ID).ToList();
+    var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
         .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
     var docIds = docs.Select(d => d.ID).ToList();
-    os.Delete(os.GetObjectsQuery<Imperechere>()
+    pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
         .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
     // Copiii (latura pereche) înaintea părinților — FK-ul DocumentSursa.
     foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-        os.Delete(doc);
-    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajAvir)).ToList());
+        pj.Adauga(doc);
+    pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajAvir)).ToList());
     // Regulile-fixtură ale probei de semn (F2) — înaintea Tipului lor, altfel
     // FK-ul le-ar ține în viață după o rulare întreruptă.
-    var tipuriAvir = os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod.StartsWith(MarcajAvir)).Select(t => t.ID).ToList();
-    os.Delete(os.GetObjectsQuery<RegulaContare>()
+    var tipuriAvir = os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters().Where(t => t.Cod.StartsWith(MarcajAvir)).Select(t => t.ID).ToList();
+    pj.Adauga(os.GetObjectsQuery<RegulaContare>().IgnoreQueryFilters()
         .Where(r => r.TipMaterialId != null && tipuriAvir.Contains(r.TipMaterialId.Value)).ToList());
     // Tipul-fixtură (natura Virament, FĂRĂ regulă) se șterge DUPĂ linii.
-    os.Delete(os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod.StartsWith(MarcajAvir)).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajAvir + "-CE").ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters().Where(t => t.Cod.StartsWith(MarcajAvir)).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == MarcajAvir + "-CE").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -5152,8 +5290,11 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Review advers F2: rândul de virament cu `SemnFiltru = +1` NU e o potrivire (motorul îl exclude, semnul liniei de trezorerie e 0) ⇒ gardul refuză în continuare, în loc să lase documentul pe regula generică",
         eroriSemn.Count == 1 && eroriSemn[0].Contains("nu are regulă de contare potrivită"));
     TrezorerieApply.Sterge<Plata>(os, idRefuzSemn);
-    os.Delete(regulaSemn);
     os.CommitChanges();
+    // F13-D2: regula de probă e artefact de scenă, nu obiect de probă — se duce
+    // FIZIC, altfel ștergerea amânată ar lăsa o `RegulaContare` marcată ștearsă la
+    // fiecare rulare (reziduu măsurat: 2 rânduri/rulare).
+    new Purja(os).Adauga(regulaSemn).Executa();
 
     // ── (d) Ancora 3: operarea piciorului de IEȘIRE ─────────────────────────
     var rezVirPlt = OperareApi.Opereaza(os, idVirPlt);
@@ -5371,18 +5512,20 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajDec = "E2E-DEC";
 
 void CurataDec(IObjectSpace os) {
-    var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajDec)).Select(r => r.ID).ToList();
-    var docs = os.GetObjectsQuery<Document>()
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajDec)).Select(r => r.ID).ToList();
+    var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
         .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
     var docIds = docs.Select(d => d.ID).ToList();
-    os.Delete(os.GetObjectsQuery<Imperechere>()
+    pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
         .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
-    os.Delete(docs);
-    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajDec)).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajDec + "-CE").ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    pj.Adauga(docs);
+    pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajDec)).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == MarcajDec + "-CE").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -5574,17 +5717,19 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajNtc = "E2E-NTC";
 
 void CurataNtc(IObjectSpace os) {
-    var repIds = os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajNtc)).Select(r => r.ID).ToList();
-    var docs = os.GetObjectsQuery<Document>()
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajNtc)).Select(r => r.ID).ToList();
+    var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
         .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
     var docIds = docs.Select(d => d.ID).ToList();
-    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
-    os.Delete(docs);
-    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajNtc)).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == MarcajNtc + "-CE").ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    pj.Adauga(docs);
+    pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajNtc)).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == MarcajNtc + "-CE").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -5836,34 +5981,36 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajApiNir = "E2E-API-NIR";
 
 void CurataApiNir(IObjectSpace os) {
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
     // Documentele probei se găsesc prin marfa lor: NIR-ul n-are număr cules
     // (seria e server-owned), deci ancora e produsul marcat — prin loturile lui
     // și prin `NirDetaliu.ProdusId`. Facturile probei se găsesc pe număr.
-    var idsDoc = os.GetObjectsQuery<DocumentDetaliu>()
+    var idsDoc = os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
         .Where(d => d.Lot.Produs.Cod.StartsWith(MarcajApiNir))
         .Select(d => d.DocumentId).ToList();
-    idsDoc.AddRange(os.GetObjectsQuery<NirDetaliu>()
+    idsDoc.AddRange(os.GetObjectsQuery<NirDetaliu>().IgnoreQueryFilters()
         .Where(d => d.Produs.Cod.StartsWith(MarcajApiNir))
         .Select(d => d.DocumentId).ToList());
-    idsDoc.AddRange(os.GetObjectsQuery<FacturaIntrare>()
+    idsDoc.AddRange(os.GetObjectsQuery<FacturaIntrare>().IgnoreQueryFilters()
         .Where(d => d.Numar.StartsWith("E2E-ANF")).Select(d => d.ID).ToList());
     idsDoc = idsDoc.Distinct().ToList();
     // …plus copiii conecși (NIR-ul generat la operarea facturii).
-    idsDoc.AddRange(os.GetObjectsQuery<Document>()
+    idsDoc.AddRange(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
         .Where(d => d.DocumentSursaId != null && idsDoc.Contains(d.DocumentSursaId.Value))
         .Select(d => d.ID).ToList());
     idsDoc = idsDoc.Distinct().ToList();
 
-    os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => idsDoc.Contains(d.DocumentId)).ToList());
-    os.Delete(os.GetObjectsQuery<Document>().Where(d => idsDoc.Contains(d.ID)).ToList());
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters().Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => idsDoc.Contains(d.DocumentId)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => idsDoc.Contains(d.ID)).ToList());
     os.CommitChanges();
-    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiNir)).ToList());
-    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajApiNir)).ToList());
-    os.Delete(os.GetObjectsQuery<Partener>().Where(p => p.Cod == "E2E-ANFURN").ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == "E2E-ANCE").ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajApiNir)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajApiNir)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Partener>().IgnoreQueryFilters().Where(p => p.Cod == "E2E-ANFURN").ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod == "E2E-ANCE").ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -6134,29 +6281,31 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajApiBcs = "E2E-API-BCS";
 
 void CurataApiBcs(IObjectSpace os) {
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
     // Documentele probei se găsesc prin laturi (BCS n-are număr cules — seria e
     // server-owned), loturile și produsul prin marcaj.
-    var idsDoc = os.GetObjectsQuery<BonConsum>()
+    var idsDoc = os.GetObjectsQuery<BonConsum>().IgnoreQueryFilters()
         .Where(d => d.Predator.Cod.StartsWith(MarcajApiBcs) || d.Primitor.Cod.StartsWith(MarcajApiBcs))
         .Select(d => d.ID).ToList();
-    idsDoc.AddRange(os.GetObjectsQuery<DocumentDetaliu>()
+    idsDoc.AddRange(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
         .Where(d => d.Lot.Produs.Cod.StartsWith(MarcajApiBcs))
         .Select(d => d.DocumentId).ToList());
     idsDoc = idsDoc.Distinct().ToList();
 
-    var idsLot = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiBcs))
+    var idsLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajApiBcs))
         .Select(l => l.ID).ToList();
-    os.Delete(os.GetObjectsQuery<RegistruStoc>()
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
         .Where(r => idsLot.Contains(r.LotId) || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruContabil>()
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
         .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => idsDoc.Contains(d.DocumentId)).ToList());
-    os.Delete(os.GetObjectsQuery<Document>().Where(d => idsDoc.Contains(d.ID)).ToList());
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => idsDoc.Contains(d.DocumentId)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => idsDoc.Contains(d.ID)).ToList());
     os.CommitChanges();
-    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiBcs)).ToList());
-    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajApiBcs)).ToList());
-    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiBcs)).ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajApiBcs)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajApiBcs)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajApiBcs)).ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -6372,31 +6521,33 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajApiLdi = "E2E-API-LDI";
 
 void CurataApiLdi(IObjectSpace os) {
-    var idsDoc = os.GetObjectsQuery<ListaDiferenteInventar>()
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var idsDoc = os.GetObjectsQuery<ListaDiferenteInventar>().IgnoreQueryFilters()
         .Where(d => d.Primitor.Cod.StartsWith(MarcajApiLdi))
         .Select(d => d.ID).ToList();
-    idsDoc.AddRange(os.GetObjectsQuery<DocumentDetaliu>()
+    idsDoc.AddRange(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
         .Where(d => d.Lot.Produs.Cod.StartsWith(MarcajApiLdi))
         .Select(d => d.DocumentId).ToList());
-    idsDoc.AddRange(os.GetObjectsQuery<ListaDiferenteInventarDetaliu>()
+    idsDoc.AddRange(os.GetObjectsQuery<ListaDiferenteInventarDetaliu>().IgnoreQueryFilters()
         .Where(d => d.Produs.Cod.StartsWith(MarcajApiLdi))
         .Select(d => d.DocumentId).ToList());
     idsDoc = idsDoc.Distinct().ToList();
 
-    var idsLot = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiLdi))
+    var idsLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajApiLdi))
         .Select(l => l.ID).ToList();
-    os.Delete(os.GetObjectsQuery<RegistruStoc>()
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
         .Where(r => idsLot.Contains(r.LotId) || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruContabil>()
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
         .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => idsDoc.Contains(d.DocumentId)).ToList());
-    os.Delete(os.GetObjectsQuery<Document>().Where(d => idsDoc.Contains(d.ID)).ToList());
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => idsDoc.Contains(d.DocumentId)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => idsDoc.Contains(d.ID)).ToList());
     os.CommitChanges();
-    os.Delete(os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiLdi)).ToList());
-    os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajApiLdi)).ToList());
-    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiLdi)).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(MarcajApiLdi)).ToList());
-    os.CommitChanges();
+    pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajApiLdi)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajApiLdi)).ToList());
+    pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajApiLdi)).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod.StartsWith(MarcajApiLdi)).ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -6863,22 +7014,36 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajApiDec = "E2E-API-DEC";
 
 void CurataApiDec(IObjectSpace os) {
-    var repIds = os.GetObjectsQuery<Repartitor>()
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
         .Where(r => r.Cod.StartsWith(MarcajApiDec)).Select(r => r.ID).ToList();
-    var docs = os.GetObjectsQuery<Document>()
-        .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
-    var docIds = docs.Select(d => d.ID).ToList();
-    os.Delete(os.GetObjectsQuery<Imperechere>()
-        .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruStoc>()
-        .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruContabil>()
-        .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
-    os.Delete(docs);
-    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiDec)).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(MarcajApiDec)).ToList());
-    os.CommitChanges();
+    // Scena șterge deconturi și pe calea API (`DecontApply.Sterge` ⇒ `os.Delete` ⇒
+    // ștergere AMÂNATĂ, 60a). Documentele acelea NU se prind pe laturi — laturile
+    // decontului de probă sunt repartitori de SEED (angajat/unitate), nu marcați —
+    // dar liniile lor poartă codul economic al scenei, care e marcat. Fără firul
+    // ăsta rândurile rămâneau în tabelă (invizibile, dar prezente) și blocau purja
+    // codului economic pe FK — măsurat pe profilul bugetar la prima rulare cu
+    // interceptorul (F13-D2).
+    var codIds = os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+        .Where(c => c.Cod.StartsWith(MarcajApiDec)).Select(c => c.ID).ToList();
+    var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+        .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).Select(d => d.ID)
+        .Concat(os.GetObjectsQuery<DecontDetaliu>().IgnoreQueryFilters()
+            .Where(l => l.CodEconomicId != null && codIds.Contains(l.CodEconomicId.Value))
+            .Select(l => l.DocumentId))
+        .Distinct().ToList();
+    pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+        .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)));
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+        .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)));
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+        .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)));
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)));
+    pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => docIds.Contains(d.ID)));
+    pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajApiDec)));
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod.StartsWith(MarcajApiDec)));
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -7233,9 +7398,11 @@ using (var os = provider.CreateObjectSpace()) {
 const string MarcajAper = "E2E-APER";
 
 void CurataAper(IObjectSpace os) {
-    var repIds = os.GetObjectsQuery<Repartitor>()
+    // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+    var pj = new Purja(os);
+    var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
         .Where(r => r.Cod.StartsWith(MarcajAper)).Select(r => r.ID).ToList();
-    var docs = os.GetObjectsQuery<Document>()
+    var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
         .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
     // Legăturile de pereche se RUP întâi: FK-ul e `Restrict` (F8-D6) și leagă
     // documentele între ele pe o axă pe care ordinea de ștergere n-o declară
@@ -7246,19 +7413,19 @@ void CurataAper(IObjectSpace os) {
     }
     os.CommitChanges();
     var docIds = docs.Select(d => d.ID).ToList();
-    os.Delete(os.GetObjectsQuery<Imperechere>()
+    pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
         .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruStoc>()
+    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
         .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<RegistruContabil>()
+    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
         .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-    os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
+    pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => docIds.Contains(d.DocumentId)).ToList());
     // Copiii (perechea autogenerată) înaintea părinților — FK-ul DocumentSursa.
     foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
-        os.Delete(doc);
-    os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajAper)).ToList());
-    os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(MarcajAper)).ToList());
-    os.CommitChanges();
+        pj.Adauga(doc);
+    pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajAper)).ToList());
+    pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod.StartsWith(MarcajAper)).ToList());
+    pj.Executa();
 }
 
 using (var os = provider.CreateObjectSpace()) {
@@ -7804,24 +7971,25 @@ void VerificaBalanta() {
     using var os = provider.CreateObjectSpace();
 
     void CurataBal() {
-        var conturiBal = os.GetObjectsQuery<Cont>()
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        // `IgnoreQueryFilters` (în `Purja`) e ce face curățenia să vadă și rândurile pe
+        // care o rulare anterioară le-a marcat șterse: scena D4 marchează deliberat un
+        // `Cont` ca șters, iar fără el nici contul, nici rândurile lui de registru n-ar
+        // fi culese, iar reziduul ar crește cu fiecare rulare. Ordinea respectă FK-ul
+        // (registrul referă conturile).
+        var conturiBal = os.GetObjectsQuery<Cont>().IgnoreQueryFilters()
             .Where(c => c.Simbol.StartsWith(MarcajBal)).Select(c => c.ID).ToList();
-        os.Delete(os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => conturiBal.Contains(r.ContDebitId) || conturiBal.Contains(r.ContCreditId)).ToList());
-        os.Delete(os.GetObjectsQuery<Cont>().Where(c => c.Simbol.StartsWith(MarcajBal)).ToList());
-        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajBal)).ToList());
-        os.Delete(os.GetObjectsQuery<Proiect>().Where(p => p.Cod.StartsWith(MarcajBal)).ToList());
-        os.CommitChanges();
-        // Scena D4 ȘTERGE deliberat un `Cont` (soft delete), iar un obiect deja
-        // șters nu mai iese din `GetObjectsQuery` — deci nici el, nici rândurile
-        // lui de registru n-ar fi culese de curățenia de mai sus, iar reziduul ar
-        // crește cu fiecare rulare. Purja e SQL direct, singurul mod de a atinge
-        // rândurile de sub filtrul global `GCRecord`. Ordinea respectă FK-ul
-        // (registrul referă conturile); rulează după commit, deci EF n-are nimic
-        // în zbor.
-        var db = ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)os).DbContext;
-        db.Database.ExecuteSql($"DELETE FROM \"RegistruContabil\" WHERE \"NumarNota\" = {MarcajBal}");
-        db.Database.ExecuteSql($"DELETE FROM \"Conturi\" WHERE \"Simbol\" LIKE {MarcajBal + "%"}");
+        new Purja(os)
+            .Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+                .Where(r => conturiBal.Contains(r.ContDebitId) || conturiBal.Contains(r.ContCreditId)))
+            // …plus rândurile scenei care n-au mai rămas legate de un cont al ei
+            // (marcajul stă și pe `NumarNota`, ca la forma dinainte a purjei SQL).
+            .Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+                .Where(r => r.NumarNota == MarcajBal))
+            .Adauga(os.GetObjectsQuery<Cont>().IgnoreQueryFilters().Where(c => c.Simbol.StartsWith(MarcajBal)))
+            .Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajBal)))
+            .Adauga(os.GetObjectsQuery<Proiect>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajBal)))
+            .Executa();
     }
     CurataBal();
 
@@ -8092,17 +8260,25 @@ void VerificaBalanta() {
     // în footer, fără nicio explicație — în timp ce fișa aceluiași cont mergea
     // perfect (ea joinează LEFT).
     //
-    // Cum se ajunge în starea asta, măsurat aici, nu presupus: `os.Delete(cont)`
-    // NU e calea — ștergerea prin ObjectSpace CASCADEAZĂ la rândurile de registru
-    // (probat: după ea, contul rămâne fără niciun rând, deci atomul dispare cu
-    // totul și partida dublă rămâne întreagă de la sine). Starea periculoasă e
-    // aceea în care ATOMII SUPRAVIEȚUIESC etichetei: contul invizibil prin
-    // SECURITATE — pe care ModelCheck, rulând pe un provider standalone
-    // NEsecurizat, nu-l poate simula — și, cu aceeași formă exactă pentru
-    // interogare, contul marcat șters direct în bază (import, migrare, script).
-    // Scena o produce deci prin SQL: marcajul de ștergere pe `Cont`, rândurile de
-    // registru neatinse. Din perspectiva interogării, cele două cazuri sunt
-    // identice: join-ul pe etichetă nu găsește nimic.
+    // Cum se ajunge în starea asta: `os.Delete(cont)` NU e calea, dar de la F13-D2
+    // încoace din alt motiv decât la scrierea scenei — atunci ștergerea prin
+    // ObjectSpace era FIZICĂ aici (harness-ul n-avea interceptorul) și cascada prin
+    // FK ducea cu ea rândurile de registru; acum ștergerea e amânată, dar cascada
+    // rămâne, fiindcă rândurile de registru ale contului sunt ÎNCĂRCATE în acest
+    // ObjectSpace (scena tocmai le-a creat), iar EF marchează dependenții încărcați
+    // odată cu principalul — deci ar fi marcați șterși și ei. În ambele lumi
+    // rezultatul e același: atomul dispare cu totul și partida dublă rămâne
+    // întreagă de la sine, adică EXACT cazul nepericulos.
+    //
+    // Starea periculoasă e aceea în care ATOMII SUPRAVIEȚUIESC etichetei: contul
+    // invizibil prin SECURITATE — pe care ModelCheck, rulând pe un provider
+    // standalone NEsecurizat, nu-l poate simula — și, cu aceeași formă exactă
+    // pentru interogare, contul marcat șters direct în bază (import, migrare,
+    // script). Scena o produce deci prin SQL: marcajul de ștergere pe `Cont`,
+    // rândurile de registru neatinse. Din perspectiva interogării, cele două cazuri
+    // sunt identice: join-ul pe etichetă nu găsește nimic. (Că marcajul e chiar
+    // mecanismul real al ștergerii din UI — nu o imitație — o probează F5 din
+    // `VerificaD300Seed`, pe `os.Delete` + `GCRecord = 1` citit din tabelă.)
     var c6Inainte = sintetic.SingleOrDefault(r => r.ContId == c6.ID);
     ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)os).DbContext.Database
         .ExecuteSql($"UPDATE \"Conturi\" SET \"GCRecord\" = 1 WHERE \"ID\" = {c6.ID}");
@@ -8241,11 +8417,13 @@ void VerificaFisaJurnal() {
     // PROPRIU (`E2E-FSA-ORD`), ca rândurile lui să nu intre în numărătorile fixate
     // ale scenariului de bază.
     void CurataFsa() {
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.NumarNota.StartsWith(MarcajFsa)).ToList());
-        os.Delete(os.GetObjectsQuery<NotaTransfer>().Where(d => d.Numar == MarcajFsa).ToList());
-        os.Delete(os.GetObjectsQuery<Cont>().Where(c => c.Simbol.StartsWith(MarcajFsa)).ToList());
-        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajFsa)).ToList());
-        os.CommitChanges();
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters().Where(r => r.NumarNota.StartsWith(MarcajFsa)).ToList());
+        pj.Adauga(os.GetObjectsQuery<NotaTransfer>().IgnoreQueryFilters().Where(d => d.Numar == MarcajFsa).ToList());
+        pj.Adauga(os.GetObjectsQuery<Cont>().IgnoreQueryFilters().Where(c => c.Simbol.StartsWith(MarcajFsa)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajFsa)).ToList());
+        pj.Executa();
     }
     CurataFsa();
 
@@ -8558,37 +8736,46 @@ void VerificaRegistruTva(bool cuTva) {
     // aceea se numără și se strigă ÎNAINTE de a fi purjat, nu se curăță tăcut.
     // Purja e SQL direct: același tipar ca la balanță (singurul mod de a atinge
     // rândurile de sub filtrul global de ștergere amânată).
+    //
+    // F13-D2, cele două SQL-uri au filtre DIFERITE, deliberat: numărătoarea e o
+    // PROBĂ, deci pune `GCRecord = 0` explicit pe `RegistruTva` (66) — un rând
+    // fiscal el însuși marcat șters nu e „orfan viu", e reziduu; purja de după e
+    // INFRASTRUCTURĂ, deci mătură fără filtru, marcate cu tot.
     var orfane = db.Database
-        .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM \"RegistruTva\" WHERE \"DocumentId\" NOT IN (SELECT \"ID\" FROM \"Documente\" WHERE \"GCRecord\" = 0)")
+        .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM \"RegistruTva\" WHERE \"GCRecord\" = 0 AND \"DocumentId\" NOT IN (SELECT \"ID\" FROM \"Documente\" WHERE \"GCRecord\" = 0)")
         .Single();
-    if (orfane > 0) {
+    if (orfane > 0)
         Console.WriteLine($"     (reziduu: {orfane} rânduri fiscale ale unor documente deja șterse de scenele anterioare — purjate)");
-        db.Database.ExecuteSql($"DELETE FROM \"RegistruTva\" WHERE \"DocumentId\" NOT IN (SELECT \"ID\" FROM \"Documente\" WHERE \"GCRecord\" = 0)");
-    }
+    db.Database.ExecuteSql($"DELETE FROM \"RegistruTva\" WHERE \"DocumentId\" NOT IN (SELECT \"ID\" FROM \"Documente\" WHERE \"GCRecord\" = 0)");
 
     void CurataJt() {
-        var idsSursa = os.GetObjectsQuery<Document>()
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var idsSursa = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
             .Where(d => d.Numar.StartsWith(MarcajJt)).Select(d => d.ID).ToList();
-        var ids = idsSursa.Concat(os.GetObjectsQuery<Document>()
+        var ids = idsSursa.Concat(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
             .Where(d => d.DocumentSursaId != null && idsSursa.Contains(d.DocumentSursaId.Value))
             .Select(d => d.ID).ToList()).ToList();
-        os.Delete(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)).ToList());
-        os.Delete(os.GetObjectsQuery<RegistruContabil>()
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters().Where(r => ids.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
             .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
-        var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajJt)).ToList();
+        var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajJt)).ToList();
         var idsLot = loturi.Select(l => l.ID).ToList();
-        os.Delete(os.GetObjectsQuery<RegistruStoc>()
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
             .Where(r => (r.DocumentId != null && ids.Contains(r.DocumentId.Value)) || idsLot.Contains(r.LotId)).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)).ToList());
-        os.Delete(os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList());
-        os.Delete(loturi);
-        os.Delete(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajJt)).ToList());
-        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajJt)).ToList());
-        os.Delete(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(MarcajJt)).ToList());
-        os.CommitChanges();
-        // Rândurile fiscale tocmai șterse rămân fizic în tabelă cu GCRecord setat
-        // (ștergere amânată) — invizibile la citire, purjate hard de interogarea de
-        // mai sus la rularea următoare. Nimic de făcut aici.
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => ids.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => ids.Contains(d.ID)).ToList());
+        pj.Adauga(loturi);
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajJt)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajJt)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod.StartsWith(MarcajJt)).ToList());
+        pj.Executa();
+        // (F13-D2) Nota de dinainte spunea că rândurile fiscale rămân marcate șterse
+        // și se „purjează hard la rularea următoare" — nu era adevărat în niciuna
+        // dintre lumi: până la felia asta `os.Delete` ștergea FIZIC pe loc, iar dacă
+        // ar fi marcat, interogarea de mai sus (filtrată global) nu le-ar mai fi
+        // găsit NICIODATĂ. Acum ștergerea e a `Purja`-ei: `DELETE` brut, iar
+        // culegerea ocolește filtrul global, deci și un reziduu vechi se duce.
     }
     CurataJt();
 
@@ -9422,6 +9609,15 @@ void VerificaD300Seed(bool privat) {
         using var osSql = provider.CreateObjectSpace();
         ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)osSql).DbContext.Database.ExecuteSql(sql);
     }
+    // Marcajul de ștergere al unui rând `MapariD300`, citit PE LÂNGĂ filtrul
+    // global — singurul mod de a deosebi „ștearsă logic" de „dispărută".
+    // `null` = rândul nu mai există fizic.
+    int? GcRecord(Guid id) {
+        using var osSql = provider.CreateObjectSpace();
+        return ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)osSql).DbContext.Database
+            .SqlQuery<int>($"SELECT \"GCRecord\" FROM \"MapariD300\" WHERE \"ID\" = {id}")
+            .AsEnumerable().Select(x => (int?)x).FirstOrDefault();
+    }
     {
         Guid idProba;
         using (var osScrie = provider.CreateObjectSpace()) {
@@ -9465,27 +9661,30 @@ void VerificaD300Seed(bool privat) {
     //      ARUNCA, adică bloca orice release viitor pe baza aceea.
     // Proba le măsoară pe amândouă pe funcțiile REALE, apoi restaurează.
     //
-    // MARCAJUL DE ȘTERGERE SE PUNE PRIN SQL, și e o constatare a harness-ului,
-    // nu o comoditate — aceeași cu cea a scenei D4 a balanței, unde e scrisă pe
-    // larg: ștergerea amânată o face `EFCoreDeferredDeletionInterceptor`, iar
-    // interceptorul e adăugat de `DbContextOptionsBuilder.UseDeferredDeletion()`
-    // pe calea de APLICAȚIE a XAF-ului (`ObjectSpaceProviderBuilderExtensions`,
-    // 26.1.3:73/110). Providerul standalone al lui ModelCheck n-are calea aceea,
-    // deci aici `os.Delete` șterge FIZIC — MĂSURAT, nu presupus: prima formă a
-    // probei a picat exact așa (18 mapări vii după re-seed, tabela fără niciun
-    // rând cu `GCRecord = 1`). Ce se verifică e comportamentul seed-ului în fața
-    // unei baze care ARE rândul marcat șters, iar starea aceea e identică
-    // indiferent cine a scris marcajul: filtrul global (`GCRecord = 0`) e
-    // model-level, deci funcționează și aici.
+    // ȘTERGEREA E CEA REALĂ, NU UN `UPDATE` CARE O IMITĂ (F13-D2/69-r7). Prima
+    // formă a probei punea marcajul prin SQL, fiindcă `os.Delete` ștergea aici
+    // FIZIC: interceptorul care amână ștergerea
+    // (`EFCoreDeferredDeletionInterceptor`) se înregistrează prin suprasarcina pe
+    // `DbContextOptionsBuilder` a lui `UseDeferredDeletion`, iar builder-ele
+    // ModelCheck n-o aveau — numai pe cea de model, care pune doar filtrul global.
+    // Acum o au (vezi comentariul de la builder-e), deci proba merge pe MECANISMUL
+    // REAL: `os.Delete` + `CommitChanges`, exact ce face contabilul din XAF, iar
+    // harness-ul verifică apoi, prin SQL brut, că rândul E ÎNCĂ ACOLO cu
+    // `GCRecord = 1` — adică ștergerea chiar a fost amânată, nu fizică. Fără acel
+    // control, proba ar trece la fel de bine pe o bază unde rândul a dispărut de tot.
     {
         Guid idSters;
         using (var osTinta = provider.CreateObjectSpace()) {
             var sfd = osTinta.FirstOrDefault<TipTva>(t => t.Cod == "SFD");
             var rand29 = osTinta.FirstOrDefault<RandD300>(r => r.Cod == "29");
-            idSters = osTinta.FirstOrDefault<MapareD300>(m =>
-                m.TipTvaId == sfd.ID && m.Sens == SensTva.Achizitie && m.RandId == rand29.ID).ID;
+            var tinta = osTinta.FirstOrDefault<MapareD300>(m =>
+                m.TipTvaId == sfd.ID && m.Sens == SensTva.Achizitie && m.RandId == rand29.ID);
+            idSters = tinta.ID;
+            osTinta.Delete(tinta);
+            osTinta.CommitChanges();
         }
-        SqlBrut($"UPDATE \"MapariD300\" SET \"GCRecord\" = 1 WHERE \"ID\" = {idSters}");
+        // SQL brut, fără filtrul global: rândul trebuie să EXISTE, marcat.
+        var marcajDupaDelete = GcRecord(idSters);
         var dupaStergere = MapariVii();
 
         // Re-seed pe calea reală — aceeași funcție pe care o cheamă profilul.
@@ -9498,19 +9697,26 @@ void VerificaD300Seed(bool privat) {
 
         // Restaurare: ștergerea amânată se ANULEAZĂ (`GCRecord` înapoi la 0), nu
         // se re-creează un rând nou — altfel proba ar fi lăsat în urmă o
-        // tripletă moartă și un ID schimbat.
+        // tripletă moartă și un ID schimbat. Anularea n-are cale prin ObjectSpace
+        // (`GCRecord` e `[NotMapped]` pe `BaseObject`, scris doar de interceptor),
+        // deci ea rămâne SQL — ceea ce e și proba că rândul restaurat e ACELAȘI.
         SqlBrut($"UPDATE \"MapariD300\" SET \"GCRecord\" = 0 WHERE \"ID\" = {idSters}");
         var dupaRestaurare = MapariVii();
         var mesajFinal = RuleazaGardianul();
-        Console.WriteLine($"     MĂSURAT (D3-V1/F5): mapări vii 18 → {dupaStergere} după ștergerea logică a "
-            + $"SFD/Achiziție → rd. 29 → {dupaReseed} după re-seed → {dupaRestaurare} după restaurare; "
+        Console.WriteLine($"     MĂSURAT (D3-V1/F5): mapări vii 18 → {dupaStergere} după `os.Delete` pe "
+            + $"SFD/Achiziție → rd. 29 (rândul rămâne în tabelă cu GCRecord = {marcajDupaDelete?.ToString() ?? "<DISPĂRUT>"}) → "
+            + $"{dupaReseed} după re-seed → {dupaRestaurare} după restaurare; "
             + $"gardian după re-seed: „{mesajVerificare ?? "tace"}”.");
-        Check("D3-V1 (F5) o mapare ȘTEARSĂ LOGIC rămâne ștearsă: re-seed-ul NU o recreează (17 mapări vii, nu "
-            + "18 — decizia utilizatorului bate tabelul de profil), iar gardianul o citește ca „nemapată de "
-            + "utilizator”, nu ca gaură de profil (nu aruncă). După restaurare, ambele revin la 18",
-            dupaStergere == 17 && dupaReseed == 17 && mesajVerificare == null
+        Check("D3-V1 (F5) ștergerea unei mapări din XAF e AMÂNATĂ — `os.Delete` + `CommitChanges` lasă rândul "
+            + "în tabelă cu `GCRecord = 1` (verificat prin SQL, pe lângă filtrul global) — și rămâne ștearsă: "
+            + "re-seed-ul NU o recreează (17 mapări vii, nu 18 — decizia utilizatorului bate tabelul de "
+            + "profil), iar gardianul o citește ca „nemapată de utilizator”, nu ca gaură de profil (nu "
+            + "aruncă). După restaurarea marcajului, ambele revin la 18",
+            marcajDupaDelete == 1
+            && dupaStergere == 17 && dupaReseed == 17 && mesajVerificare == null
             && dupaRestaurare == 18 && mesajFinal == null);
     }
+
 }
 
 // ============ Felia 12 (D300): proiecția decontului — D3-V2…V7 ============
@@ -9555,28 +9761,30 @@ void VerificaD300(bool cuTva) {
     var iunieEnd = new DateOnly(2026, 6, 30);
 
     void CurataD3() {
-        var repIds = os.GetObjectsQuery<Repartitor>()
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
             .Where(r => r.Cod.StartsWith(MarcajD3)).Select(r => r.ID).ToList();
         // Documentele se prind pe DOUĂ căi: numărul marcat (FCT/FCL, unde
         // numărul e cules sau pre-completat) ȘI laturile marcate — închiderea de
         // TVA are numărul server-owned, iar singura ei urmă e unitatea internă.
-        var idsSursa = os.GetObjectsQuery<Document>()
+        var idsSursa = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
             .Where(d => d.Numar.StartsWith(MarcajD3)
                 || repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId))
             .Select(d => d.ID).ToList();
-        var ids = idsSursa.Concat(os.GetObjectsQuery<Document>()
+        var ids = idsSursa.Concat(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
             .Where(d => d.DocumentSursaId != null && idsSursa.Contains(d.DocumentSursaId.Value))
             .Select(d => d.ID).ToList()).Distinct().ToList();
-        os.Delete(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)).ToList());
-        os.Delete(os.GetObjectsQuery<RegistruContabil>()
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters().Where(r => ids.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
             .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
-        os.Delete(os.GetObjectsQuery<RegistruStoc>()
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
             .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
-        os.Delete(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)).ToList());
-        foreach (var doc in os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList()
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => ids.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => ids.Contains(d.ID)).ToList()
                 .OrderByDescending(d => d.DocumentSursaId != null))
-            os.Delete(doc);
-        os.Delete(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajD3)).ToList());
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajD3)).ToList());
         // Maparea de probă a avertismentului (vezi D3-V3), dacă o rulare
         // anterioară a murit între creare și ștergere: altfel ar rămâne politică
         // fantomă care mută TVA-ul lui N21 pe rd. 14 pentru toată lumea.
@@ -9591,10 +9799,10 @@ void VerificaD300(bool cuTva) {
         var randProba = os.FirstOrDefault<RandD300>(r => r.Cod == "14");
         var tipProba = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
         if (randProba != null && tipProba != null)
-            os.Delete(os.GetObjectsQuery<MapareD300>()
+            pj.Adauga(os.GetObjectsQuery<MapareD300>().IgnoreQueryFilters()
                 .Where(m => m.RandId == randProba.ID && m.TipTvaId == tipProba.ID
                     && m.Sens == SensTva.Livrare).ToList());
-        os.CommitChanges();
+        pj.Executa();
     }
     CurataD3();
 
@@ -9967,8 +10175,11 @@ void VerificaD300(bool cuTva) {
     var cuProba = D300Proiectii.D300(os, pStart, pEnd, null);
     var avertismentProba = cuProba.Avertismente
         .FirstOrDefault(a => a.StartsWith("rd. 14 a primit TVA"));
-    os.Delete(mapareProba);
-    os.CommitChanges();
+    // Purjă FIZICĂ, nu `os.Delete` (F13-D2): obiectul probei e proiecția, nu
+    // ștergerea. Sub ștergerea amânată, maparea de probă ar rămâne în tabelă
+    // marcată ștearsă — adică exact ce citește `VerificaMapariD300` drept
+    // „nemapat DELIBERAT de utilizator" (69b), la fiecare rulare încă una.
+    new Purja(os).Adauga(mapareProba).Executa();
     var dupaProba = D300Proiectii.D300(os, pStart, pEnd, null);
     Check("D3-V3, riscul 4 — un gard care tace devine capcană (62f): mapat pe rd. 14 (rând FĂRĂ coloană de "
         + "TVA), N21-livrare își pierde cei 420,00 lei de taxă. Proiecția NU-i strecoară nicăieri și NU tace: "
@@ -10049,10 +10260,9 @@ void VerificaD300(bool cuTva) {
         os.CommitChanges();
         return m;
     }
-    void StergeProba(MapareD300 m) {
-        os.Delete(m);
-        os.CommitChanges();
-    }
+    // Ca mai sus: artefact de scenă ⇒ purjă fizică, ca politica de profil să
+    // rămână neatinsă ȘI ca tabela să nu adune mapări marcate șterse (F13-D2).
+    void StergeProba(MapareD300 m) => new Purja(os).Adauga(m).Executa();
 
     // (a) Țintă în secțiunea Deductibila, dar care NU e operand al rd. 30:
     //     rd. 33 „Regularizări taxă dedusă". Cifra n-a intrat niciodată în
