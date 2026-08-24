@@ -106,6 +106,9 @@ public static class DecontApply {
         // șterge.
         var existente = doc.Detalii.ToDictionary(d => d.ID);
         var pastrate = new HashSet<Guid>();
+        // Latura fiscală a tipului (F13-D1), rezolvată O SINGURĂ DATĂ pentru tot
+        // agregatul: e proprietatea documentului, nu a liniei.
+        var directieTva = TvaService.DirectiePentru(os, doc);
 
         foreach (var l in linii) {
             DecontDetaliu detaliu;
@@ -198,7 +201,7 @@ public static class DecontApply {
             // aceeași formulă — de aceea `Valoare` nu e în WriteDto.
             var bazaNoua = detaliu.PretUnitar * detaliu.Cantitate;
             if (noua || bazaNoua != bazaVeche || detaliu.TipTvaId != tipTvaVechi)
-                TvaService.CalculeazaLaCulegere(os, detaliu, bazaNoua);
+                TvaService.CalculeazaLaCulegere(os, directieTva, detaliu, bazaNoua);
             // Override-ul operatorului, DUPĂ calcul (oglinda fluxului UI): bonul
             // justificat bate rotunjirea noastră (regula 36a, uniformizată prin
             // 48b pe FCT/FCL/DEC). La operare îl păstrează `pastreazaTvaCules`.

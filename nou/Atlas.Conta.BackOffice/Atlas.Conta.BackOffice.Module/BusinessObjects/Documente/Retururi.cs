@@ -32,13 +32,17 @@ public class ReturFurnizor : Document {
     // valoarea culeasă/importată bate rotunjirea noastră.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
+        // RLF stornează o ACHIZIȚIE: politica lui e `Deductibil`, deci taxarea
+        // inversă rămâne autolichidare (F13-D1). Direcția vine tot din politică,
+        // nu din tip — motorul nu are voie s-o presupună.
+        var directie = Motor.TvaService.DirectiePentru(os, this);
         foreach (var linie in Detalii.Where(l => l.LotId != null)) {
             var q = Math.Abs(linie.Cantitate);
             var net = q * os.GetObjectByKey<Lot>(linie.LotId.Value).PretUnitar;
             // Normalizarea la pozitiv ÎNAINTE de calcul face semnarea idempotentă
             // (re-operarea după anulare nu dublează minusul).
             linie.ValoareTva = Math.Abs(linie.ValoareTva);
-            Motor.TvaService.CalculeazaValori(linie, net, tipuri, pastreazaTvaCules: true);
+            Motor.TvaService.CalculeazaValori(linie, net, tipuri, directie, pastreazaTvaCules: true);
             linie.Cantitate = -q;
             linie.Valoare = -linie.Valoare;
             linie.ValoareTva = -linie.ValoareTva;
@@ -97,6 +101,9 @@ public class ReturFurnizor : Document {
 public class ReturClient : Document {
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
+        // RDC stornează o LIVRARE (politica lui e `Colectat`): pe liniile de
+        // venit cu regim de taxare inversă nu există taxă de stornat (F13-D1).
+        var directie = Motor.TvaService.DirectiePentru(os, this);
         foreach (var linie in Detalii) {
             if (linie.LotId == null) {
                 // Cantitatea liniei de venit e pro-formă și rămâne POZITIVĂ
@@ -104,7 +111,7 @@ public class ReturClient : Document {
                 linie.Cantitate = linie.Cantitate == 0m ? 1m : Math.Abs(linie.Cantitate);
                 var net = Math.Abs(linie.Valoare);
                 linie.ValoareTva = Math.Abs(linie.ValoareTva);
-                Motor.TvaService.CalculeazaValori(linie, net, tipuri, pastreazaTvaCules: true);
+                Motor.TvaService.CalculeazaValori(linie, net, tipuri, directie, pastreazaTvaCules: true);
                 linie.Valoare = -linie.Valoare;
                 linie.ValoareTva = -linie.ValoareTva;
             }

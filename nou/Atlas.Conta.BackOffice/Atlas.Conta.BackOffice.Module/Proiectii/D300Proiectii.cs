@@ -308,26 +308,17 @@ public static class D300Proiectii {
                     pierdutBaza[tinta.Id] = pierdutBaza.GetValueOrDefault(tinta.Id) + a.Baza;
                 if (tinta.AreTva)
                     tinta.Tva += a.Tva;
-                // TAXAREA INVERSĂ PE LIVRARE: singurul TVA „pierdut" care NU e
-                // un defect de mapare (fix F2 al review-ului advers).
-                //
-                // `TvaService.CalculeazaValori` (Motor/TvaService.cs:38-44)
-                // calculează taxa pe regimul `TaxareInversa` INDIFERENT de sens,
-                // fiindcă acolo formula e per regim, nu per latură. Pe achiziție
-                // e corect (beneficiarul autolichidează: 4426 = 4427); pe
-                // LIVRARE, furnizorul nu colectează nimic — formularul îi dă
-                // rd. 13, „livrări supuse măsurilor de simplificare", cu o
-                // singură coloană, de bază. Deci taxa CALCULATĂ pe un rând de
-                // registru TI/livrare n-are unde să meargă și nici n-ar trebui
-                // să existe: nu e cifră pierdută, e cifră care nu se declară.
-                //
-                // Rădăcina e în motor și NU se atinge în felia asta (ar cere
-                // recalculul registrului fiscal): restanța D3-r4. Până atunci
-                // proiecția tace DELIBERAT aici — un avertisment pe fiecare
-                // livrare cu taxare inversă ar fi zgomot permanent, iar un gard
-                // care strigă mereu se ignoră la fel de repede ca unul care tace.
-                else if (a.Tva != 0m
-                        && !(a.Regim == RegimTva.TaxareInversa && a.Sens == SensTva.Livrare))
+                // F13-D1 a ȘTERS singura excepție de aici. Taxarea inversă pe
+                // LIVRARE nu mai produce taxă în registru (`TvaService` cunoaște
+                // acum latura: art. 331 — furnizorul emite fără TVA), deci
+                // rd. 13 „livrări supuse măsurilor de simplificare" primește
+                // baza pe singura lui coloană și nu mai rămâne nimic pe dinafară.
+                // Cât timp motorul calcula taxa per REGIM, proiecția o ocolea
+                // deliberat, ca să nu strige la fiecare livrare cu taxare
+                // inversă; acum n-are ce ocoli, iar orice TVA care nu încape pe
+                // o coloană absentă e din nou ce trebuie să fie: un defect de
+                // mapare, raportat.
+                else if (a.Tva != 0m)
                     pierdutTva[tinta.Id] = pierdutTva.GetValueOrDefault(tinta.Id) + a.Tva;
                 tinta.Randuri += a.Randuri;
                 if (eticheta.Cod != null)

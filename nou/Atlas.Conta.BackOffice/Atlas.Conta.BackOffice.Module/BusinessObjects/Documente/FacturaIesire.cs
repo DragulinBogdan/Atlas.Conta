@@ -30,8 +30,12 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
     // agregarea retailului), nu recalculului nostru.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
+        // F13-D1: pe LIVRARE (`Colectat`) o linie cu regim de taxare inversă nu
+        // poartă TVA — furnizorul emite fără taxă, art. 331. Direcția o dă
+        // politica tipului, o dată per document.
+        var directie = Motor.TvaService.DirectiePentru(os, this);
         foreach (var d in Detalii.OfType<FacturaIesireDetaliu>())
-            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, pastreazaTvaCules: true);
+            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, directie, pastreazaTvaCules: true);
     }
 
     // Descărcarea de gestiune (P2 §5): la operarea FCL se generează DSC-ul conex

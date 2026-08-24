@@ -136,6 +136,9 @@ public static class FacturaIntrareApply {
         // agregatului, deci reconcilierea o curăță în loc s-o lase invizibilă.
         var existente = doc.Detalii.ToDictionary(d => d.ID);
         var pastrate = new HashSet<Guid>();
+        // Latura fiscală a tipului (F13-D1), rezolvată O SINGURĂ DATĂ pentru tot
+        // agregatul: e proprietatea documentului, nu a liniei.
+        var directieTva = TvaService.DirectiePentru(os, doc);
 
         foreach (var l in linii) {
             FacturaIntrareDetaliu detaliu;
@@ -237,7 +240,7 @@ public static class FacturaIntrareApply {
             // retrimite — reziduul semnalat la pasul 4 al feliei).
             var bazaNoua = detaliu.PretUnitar * detaliu.Cantitate;
             if (noua || bazaNoua != bazaVeche || detaliu.TipTvaId != tipTvaVechi)
-                TvaService.CalculeazaLaCulegere(os, detaliu, bazaNoua);
+                TvaService.CalculeazaLaCulegere(os, directieTva, detaliu, bazaNoua);
             // Override-ul operatorului, DUPĂ calcul (oglinda fluxului UI): factura
             // furnizorului bate rotunjirea noastră (regula 36a). La operare îl
             // păstrează `pastreazaTvaCules: true` — pe regimurile care postează TVA

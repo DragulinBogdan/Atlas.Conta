@@ -59,7 +59,10 @@ static class RecalculCulegere {
 
         inRecalcul = true;
         try {
-            TvaService.CalculeazaLaCulegere(os, linie, cuPret.PretUnitar * linie.Cantitate);
+            // Documentul-gazdă e deja rezolvat mai sus: seam-ul îl cere ca să
+            // afle latura fiscală a tipului (F13-D1 — taxarea inversă pe livrare
+            // nu poartă TVA), fără să atingă navigația lazy a liniei.
+            TvaService.CalculeazaLaCulegere(os, doc, linie, cuPret.PretUnitar * linie.Cantitate);
         }
         finally {
             inRecalcul = false;

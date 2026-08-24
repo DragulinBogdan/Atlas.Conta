@@ -64,6 +64,16 @@ public static class MotorOperare {
             throw new OperareException("Doar un document în starea Draft poate fi operat.");
         GardianPerioada.VerificaDeschisa(os, doc.Data);
 
+        // F13-D1: TVA-ul CULES pe o linie de taxare inversă la LIVRARE nu are
+        // unde să meargă, iar `PregatesteOperare` îl aduce la 0 (regula D1) —
+        // deci gardul trebuie să vadă valorile ÎNAINTE de pregătire, altfel ar
+        // tăcea exact acolo unde 62f cere să strige. Se capturează aici, se
+        // judecă mai jos, după ce pregătirea a putut să schimbe (sau să
+        // golească) tipul de TVA al liniei.
+        var tvaCulesInainte = doc.Detalii
+            .Select((d, i) => (Linie: d, Pozitie: i + 1, TvaCules: d.ValoareTva))
+            .ToList();
+
         doc.PregatesteOperare(os);
         var tipDoc = GasesteTipDocument(os, doc);
 
@@ -78,6 +88,15 @@ public static class MotorOperare {
         // Obligativitățile per tip (PoliticaValidare — profil de validare, 3d)
         // rulează generic, alături de invariantele proprii tipului din hook.
         var erori = new List<string>();
+        // Gardul F13-D1 stă AICI, nu în `ValideazaOperare` al frunzelor: regula
+        // e a perechii (regim de TVA × direcția politicii), deci a MOTORULUI —
+        // fiecare tip de livrare care ar declara-o singur (FCL, RDC, cele care
+        // vor veni) ar fi o copie în plus care poate rămâne în urmă (42a: o
+        // singură sursă de reguli). Locul acoperă amândouă căile de scriere,
+        // fiindcă amândouă operează prin motor: XAF prin `Opereaza`, API-ul prin
+        // `OperareApi` → `Opereaza`/`Valideaza` (dry-run-ul îl arată clientului
+        // înainte de comandă).
+        TvaService.VerificaTvaCulesTaxareInversa(os, tipDoc, tvaCulesInainte, erori);
         ValideazaDeclarativ(os, doc, tipDoc, claseTip, erori);
         doc.ValideazaOperare(os, erori);
         if (erori.Count > 0)
@@ -231,7 +250,15 @@ public static class MotorOperare {
                     $"Tipul de TVA {tva.Cod} nu are contul de TVA {rol} configurat.");
                 Guid contDebit, contCredit;
                 if (tva.Regim == RegimTva.TaxareInversa) {
-                    // Autolichidare: 4426 = 4427 indiferent de direcție, sold zero.
+                    // Autolichidare: 4426 = 4427, sold zero — dar DOAR pe latura
+                    // care autolichidează. F13-D1: pe `Colectat` (livrare)
+                    // furnizorul emite fără TVA, deci niciun rând, ca la
+                    // `Scutit`. Gard explicit, nu doar consecință a lui
+                    // `ValoareTva = 0` de mai sus: o valoare intrată pe altă cale
+                    // (import, backfill, o linie scrisă direct) n-are voie să
+                    // reînvie corespondența aici.
+                    if (politicaTva.Directie != DirectieTva.Deductibil)
+                        continue;
                     contDebit = ContTva(tva.ContTvaDeductibilId, "deductibilă");
                     contCredit = ContTva(tva.ContTvaColectatId, "colectată");
                 }

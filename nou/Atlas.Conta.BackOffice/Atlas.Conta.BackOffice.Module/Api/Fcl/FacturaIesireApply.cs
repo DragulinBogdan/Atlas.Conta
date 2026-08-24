@@ -114,6 +114,10 @@ public static class FacturaIesireApply {
         // agregatului, deci reconcilierea o curăță în loc s-o lase invizibilă.
         var existente = doc.Detalii.ToDictionary(d => d.ID);
         var pastrate = new HashSet<Guid>();
+        // Latura fiscală a tipului (F13-D1) — pe FCL e `Colectat`, deci liniile
+        // cu regim de taxare inversă rămân cu `ValoareTva = 0` încă de la
+        // culegere; rezolvată o dată pentru tot agregatul.
+        var directieTva = TvaService.DirectiePentru(os, doc);
 
         foreach (var l in linii) {
             FacturaIesireDetaliu detaliu;
@@ -210,7 +214,7 @@ public static class FacturaIesireApply {
             // retrimite).
             var bazaNoua = detaliu.PretUnitar * detaliu.Cantitate;
             if (noua || bazaNoua != bazaVeche || detaliu.TipTvaId != tipTvaVechi)
-                TvaService.CalculeazaLaCulegere(os, detaliu, bazaNoua);
+                TvaService.CalculeazaLaCulegere(os, directieTva, detaliu, bazaNoua);
             // Override-ul operatorului, DUPĂ calcul (oglinda fluxului UI): pe
             // factura EMISĂ rotunjirea aparține documentului (e-Factura, agregarea
             // retailului), nu recalculului nostru — regula 36a, uniformizată prin

@@ -442,6 +442,92 @@ if (profil == ProfilContabil.Privat) {
             stornoTi.Count == 2 && stornoTi.Any(r => r.Valoare == -100m)
             && stornoTi.Any(r => r.Valoare == -21m && r.ContDebitId == cont4426.ID));
 
+        // --- F13-D1: taxarea inversă pe LIVRARE nu poartă TVA ---
+        //
+        // Cealaltă jumătate a perechii de mai sus, și proba că regula e per
+        // (regim × latură), nu per regim. Cod fiscal art. 331: furnizorul emite
+        // factura FĂRĂ taxă, cu mențiunea „taxare inversă"; o declară și o deduce
+        // BENEFICIARUL. Până la F13 motorul îi calcula totuși 21% și posta
+        // 4426 = 4427 pe o factură EMISĂ — taxă inventată, pe care D300 o ocolea
+        // printr-o excepție și pe care Import1C o compensa la sursă.
+        //
+        // Proba e discriminantă pe trei planuri deodată: linia (ValoareTva 0 și
+        // Total = netul), registrul CONTABIL (niciun rând de TVA — nici măcar
+        // unul de zero) și registrul FISCAL (rândul EXISTĂ, cu bază și fără
+        // taxă: 68 — liniile fără TVA postat apar legal în jurnal, și de acolo
+        // pe rd. 13 al decontului).
+        var fclTi = os.CreateObject<FacturaIesire>();
+        fclTi.Data = new DateOnly(2026, 3, 11);
+        fclTi.Predator = sediu;
+        fclTi.Primitor = client;
+        var linieFclTi = os.CreateObject<FacturaIesireDetaliu>();
+        linieFclTi.Document = fclTi;
+        linieFclTi.TipMaterial = tip704;
+        linieFclTi.Cantitate = 1m;
+        linieFclTi.PretUnitar = 300m;
+        linieFclTi.TipTva = ti21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fclTi);
+        var noteFclTi = Note(fclTi);
+        var fiscalFclTi = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == fclTi.ID).ToList();
+        Check("F13-D1 FCL + TI21: livrarea în taxare inversă NU poartă taxă — linia rămâne pe net (300, "
+            + "ValoareTva 0, Total = netul), registrul contabil are DOAR venitul (4111 = 704) fără 4426/4427, "
+            + "iar rândul fiscal există cu bază 300 și TVA 0 (jurnalul îl cere, decontul îl pune pe rd. 13)",
+            linieFclTi.Valoare == 300m && linieFclTi.ValoareTva == 0m && fclTi.Total == 300m
+            && noteFclTi.Count == 1
+            && noteFclTi[0].ContDebitId == cont4111.ID && noteFclTi[0].ContCreditId == tip704.ContImplicitId
+            && noteFclTi[0].Valoare == 300m
+            && !noteFclTi.Any(n => n.ContDebitId == cont4426.ID || n.ContCreditId == cont4427.ID)
+            && fiscalFclTi.Count == 1
+            && fiscalFclTi[0] is { Sens: SensTva.Livrare, Regim: RegimTva.TaxareInversa, Cota: 21m,
+                Baza: 300m, Tva: 0m, Storno: false });
+        MotorOperare.Storneaza(os, fclTi, new DateOnly(2026, 7, 24));
+        var stornoFclTi = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId == fclTi.ID && r.Storno).ToList();
+        Check("F13-D1 storno FCL-TI: se inversează DOAR venitul (−300) — nu există rând de TVA de stornat, "
+            + "nici pe 4426, nici pe 4427 (simetria cu operarea: ce n-a fost postat n-are ce fi inversat)",
+            stornoFclTi.Count == 1 && stornoFclTi[0].Valoare == -300m
+            && !stornoFclTi.Any(r => r.ContDebitId == cont4426.ID || r.ContCreditId == cont4427.ID));
+
+        // --- F13-D1, gardul: TVA CULES pe taxare inversă la livrare = refuz ---
+        //
+        // 62f („un gard care tace devine capcană"): `TvaService` aduce oricum
+        // valoarea la 0, deci fără gard operatorul ar vedea TVA-ul lui dispărând
+        // în tăcere. Ori linia are alt regim decât crede el, ori suma e greșită —
+        // amândouă merită spuse. Gardul stă în MOTOR (o singură sursă de reguli,
+        // 42a), deci acoperă și calea XAF, și PUT-ul de API; citește valorile
+        // CULESE, adică dinainte ca `PregatesteOperare` să le zerorizeze.
+        var fclTiCules = os.CreateObject<FacturaIesire>();
+        fclTiCules.Data = new DateOnly(2026, 3, 12);
+        fclTiCules.Predator = sediu;
+        fclTiCules.Primitor = client;
+        var linieFclTiCules = os.CreateObject<FacturaIesireDetaliu>();
+        linieFclTiCules.Document = fclTiCules;
+        linieFclTiCules.TipMaterial = tip704;
+        linieFclTiCules.Cantitate = 1m;
+        linieFclTiCules.PretUnitar = 300m;
+        linieFclTiCules.TipTva = ti21;
+        linieFclTiCules.ValoareTva = 63m;
+        os.CommitChanges();
+        var eroriFclTiCules = MotorOperare.Valideaza(os, fclTiCules);
+        // Dry-run-ul NU e read-only pe ObjectSpace-ul primit (contract de apelant
+        // `MotorOperare.Valideaza`): `PregatesteOperare` a rulat deja și a adus
+        // TVA-ul cules la 0. Aici, unde OS-ul e partajat, valoarea se reface — a
+        // doua probă trebuie să pornească din ACEEAȘI stare culeasă, altfel ar
+        // trece degeaba.
+        linieFclTiCules.ValoareTva = 63m;
+        CheckRefuza("F13-D1 gard: FCL + TI21 cu ValoareTva CULES (63) → refuz la operare, nu înghițire tăcută",
+            () => MotorOperare.Opereaza(os, fclTiCules));
+        Check("F13-D1 gard: mesajul numește linia și suma culeasă, iar dry-run-ul (`Valideaza`) îl arată "
+            + "clientului ÎNAINTE de comandă — plus nimic materializat (33d)",
+            eroriFclTiCules.Count == 1
+            && eroriFclTiCules[0].StartsWith("Taxarea inversă pe livrare nu poartă TVA;")
+            && eroriFclTiCules[0].Contains("linia 1")
+            && eroriFclTiCules[0].Contains("63")
+            && fclTiCules.Stare == StareDocument.Draft
+            && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == fclTiCules.ID)
+            && !os.GetObjectsQuery<RegistruTva>().Any(r => r.DocumentId == fclTiCules.ID));
+
         // --- Capitalizat (nedeductibil): comportamentul bugetar, ca date ---
         var fctNed = os.CreateObject<FacturaIntrare>();
         fctNed.Numar = "E2E-PRV-FF3";
@@ -1655,6 +1741,7 @@ if (profil == ProfilContabil.Privat) {
             var tip301 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "301");   // alt Tip de stoc (coerență)
             var tip707 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "707");   // venit din vânzarea mărfurilor
             var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+            var ti21 = os.FirstOrDefault<TipTva>(t => t.Cod == "TI21");   // F13-D1
             var tipRlf = os.FirstOrDefault<TipDocument>(t => t.Cod == "RLF");
             var tipRdc = os.FirstOrDefault<TipDocument>(t => t.Cod == "RDC");
             var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
@@ -1997,6 +2084,46 @@ if (profil == ProfilContabil.Privat) {
             Check("Stocul revine după stornarea returului (10 − 4 + 3 + 4 = 13); TVA deductibilă revine la valoarea inițială",
                 SoldStoc(lot, dStorno) == 13m
                 && SoldCont(cont4426) - sold4426Initial == 0m);
+
+            // --- F13-D1: RLF + TI păstrează autolichidarea (latura Deductibil) ---
+            //
+            // Perechea probei de pe FCL (blocul P1 privat): sensul taxării
+            // inverse NU se citește din clasa documentului („e retur, deci n-are
+            // TVA") ci din `PoliticaTva.Directie`. RLF stornează o ACHIZIȚIE —
+            // politica lui e `Deductibil`, exact ca a FCT-ului — deci
+            // autolichidarea rămâne întreagă, cu semnul storno al retururilor:
+            // 4426 = 4427 cu −TVA. Dacă D1 ar fi fost scris pe tipul de document
+            // în loc de latură, checkul ăsta ar fi picat.
+            //
+            // Scenă PROPRIE (NIR + lot separat), la coada blocului: soldurile de
+            // mai sus sunt măsurate cu delte globale pe 4426/4427, iar o probă
+            // nouă strecurată între ele le-ar fi mutat cifrele fără să spună de ce.
+            var nirTi = os.CreateObject<NIR>();
+            nirTi.Data = new DateOnly(2026, 12, 22);
+            nirTi.Predator = furnizor; nirTi.Primitor = gestiune;
+            var linNirTi = os.CreateObject<DocumentDetaliu>();
+            linNirTi.Document = nirTi; linNirTi.TipMaterial = tip371; linNirTi.Cantitate = 5m; linNirTi.Valoare = 50m;
+            var lotTi = linNirTi.CreeazaLot(os, produs, gestiune);
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, nirTi);
+
+            var dRlfTi = new DateOnly(2026, 12, 23);
+            var rlfTi = os.CreateObject<ReturFurnizor>();
+            rlfTi.Data = dRlfTi; rlfTi.Predator = gestiune; rlfTi.Primitor = furnizor;
+            var linRlfTi = os.CreateObject<DocumentDetaliu>();
+            linRlfTi.Document = rlfTi; linRlfTi.TipMaterial = tip371; linRlfTi.Lot = lotTi;
+            linRlfTi.Cantitate = 2m; linRlfTi.TipTva = ti21;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, rlfTi);
+            var noteRlfTi = Note(rlfTi);
+            Check("F13-D1 RLF + TI21: pe latura DEDUCTIBIL (achiziția stornată) autolichidarea RĂMÂNE — "
+                + "371 = 401 cu −20 ȘI 4426 = 4427 cu −4.2 — adică regula e per (regim × direcția politicii), "
+                + "nu per clasă de document; pe FCL aceeași pereche nu postează nimic",
+                noteRlfTi.Count == 2
+                && noteRlfTi.Any(r => r.ContDebitId == cont371.ID && r.ContCreditId == cont401.ID && r.Valoare == -20m)
+                && noteRlfTi.Any(r => r.ContDebitId == cont4426.ID && r.ContCreditId == cont4427.ID && r.Valoare == -4.2m)
+                && linRlfTi.ValoareTva == -4.2m
+                && noteRlfTi.All(r => !r.Storno && r.Data == dRlfTi));
 
             CurataRet(os);
             Check("Curățenie finală retururi (fără reziduuri e2e)",
@@ -2696,6 +2823,7 @@ if (profil == ProfilContabil.Privat) {
     VerificaRegistruTva(cuTva: true);
     VerificaD300Seed(privat: true);
     VerificaD300(cuTva: true);
+    VerificaAxaTaxareInversa();
 
     Rezumat();
     return;
@@ -7621,8 +7749,38 @@ VerificaFisaJurnal();
 VerificaRegistruTva(cuTva: false);
 VerificaD300Seed(privat: false);
 VerificaD300(cuTva: false);
+VerificaAxaTaxareInversa();
 
 Rezumat();
+
+// ============ F13-D1: axa pe care stă regula, pe AMBELE profiluri (56f) ============
+// Scenele de fond ale taxării inverse trăiesc în blocul privat (FCL fără taxă,
+// RLF cu autolichidare, gardul pe TVA-ul cules). Aici se verifică doar PREMISA
+// lor — că sensul vine din `PoliticaTva.Directie`, nu dintr-un câmp al lui
+// `TipTva` sau din clasa documentului — și se spune EXPLICIT de ce profilul
+// bugetar n-are ce proba, în loc ca absența să treacă drept trecere.
+void VerificaAxaTaxareInversa() {
+    using var os = provider.CreateObjectSpace();
+    var tiTest = os.FirstOrDefault<TipTva>(t => t.Cod == "TI21");
+    if (tiTest == null)
+        Console.WriteLine($"SKIP F13-D1 (taxarea inversă pe livrare): profilul {profil} n-are TI21 în "
+            + "nomenclatorul TipTva — bugetarul e neplătitor (nicio PoliticaTva, niciun regim de taxare "
+            + "inversă seed-uit), deci pe latura asta nu există operațiune de probat.");
+    else {
+        var fct = os.FirstOrDefault<TipDocument>(t => t.Cod == "FCT");
+        var fcl = os.FirstOrDefault<TipDocument>(t => t.Cod == "FCL");
+        Check("F13-D1 premisa: latura fiscală a unui tip de document se citește din `PoliticaTva.Directie` "
+            + "(FCT → Deductibil, FCL → Colectat), nu de pe `TipTva` și nu din clasa documentului — "
+            + "`TvaService.DirectiePentruTip` e singura sursă a sensului, pentru culegere și pentru motor",
+            TvaService.DirectiePentruTip(os, fct.ID) == DirectieTva.Deductibil
+            && TvaService.DirectiePentruTip(os, fcl.ID) == DirectieTva.Colectat
+            // …iar un tip fără politică rămâne `null` = „nu e eveniment de TVA":
+            // exact cazul în care motorul nu postează nimic, deci `CalculeazaValori`
+            // păstrează comportamentul dinainte de F13.
+            && TvaService.DirectiePentruTip(os,
+                os.FirstOrDefault<TipDocument>(t => t.Cod == "NIR").ID) == null);
+    }
+}
 
 // ============ Felia 9 (raportare): balanța de verificare (R-D1…R-D4) ============
 // Proiecția e un al DOILEA adevăr dacă nu e legată de primul (precedentul D9:
@@ -9617,13 +9775,18 @@ void VerificaD300(bool cuTva) {
     LinieC(fctIunie, n9, 90m);     // NEMAPAT: formularul 2026 n-are achiziție cu 9%
     var fclIunie = Vanzare("-V2", new DateOnly(2026, 6, 11));
     LinieV(fclIunie, nim, 110m);   // NEMAPAT: în afara sferei TVA, nu se declară
-    // TAXARE INVERSĂ PE LIVRARE (fix F2): mapat pe rd. 13, care n-are coloană de
-    // TVA — iar motorul îi calculează totuși taxa (`TvaService`, regimul e per
-    // regim, nu per latură). Deliberat în IUNIE, nu în mai: luna ITV-ului e a
-    // cusăturii D3-V4, iar un 4426=4427 în plus acolo ar fi mutat o probă în
-    // alta. Aici rândul de registru poartă TVA 63,00 pe care formularul nu-l
-    // cere — iar proiecția trebuie să tacă, nu să strige.
-    LinieV(fclIunie, ti21, 300m);  // → rd. 13, bază 300; TVA 63 calculat și nedeclarat
+    // TAXARE INVERSĂ PE LIVRARE, acum cu regula F13-D1 în motor: rândul de
+    // registru poartă baza și TVA ZERO, fiindcă furnizorul emite fără taxă
+    // (art. 331). Rd. 13 („livrări supuse măsurilor de simplificare") are o
+    // singură coloană, de bază — și exact atât primește. Deliberat în IUNIE, nu
+    // în mai: luna ITV-ului e a cusăturii D3-V4, iar o mișcare de TVA în plus
+    // acolo ar fi mutat o probă în alta.
+    //
+    // Înainte de F13 aici se pierdeau tăcut 63,00 lei de taxă inventată de
+    // motor, iar proiecția avea o excepție anume ca să nu strige la fiecare
+    // livrare cu taxare inversă (fostul „fix F2"). Excepția a dispărut odată cu
+    // cauza; proba de mai jos măsoară că nu mai e nimic de ocolit.
+    LinieV(fclIunie, ti21, 300m);  // → rd. 13, bază 300; TVA 0 (F13-D1)
     var fclStorno = Vanzare("-V3", new DateOnly(2026, 6, 15));
     LinieV(fclStorno, n19, 1000m); // → rd. 16, apoi stornat în ACEEAȘI lună
     os.CommitChanges();
@@ -9752,38 +9915,41 @@ void VerificaD300(bool cuTva) {
     Check("D3-V3 (D3-D4) — NIMIC nu se pierde: Σ rândurilor cu mapări directe + Σ nemapate, minus "
         + "multiplicitatea așezării pe mai multe rânduri, plus ce n-a încăput pe coloane absente, == Σ "
         + "registrului pe perioadă, pe AMBELE coloane. Baza nu pierde nimic, multiplicitatea e exact "
-        + "TI19/achiziție (numărat o dată la rd. 16 și o dată la rd. 33), iar cei 63,00 lei „pierduți” pe "
-        + "coloana TVA sunt taxarea inversă pe LIVRARE (rd. 13) — vezi F2 mai jos",
+        + "TI19/achiziție (numărat o dată la rd. 16 și o dată la rd. 33), iar pierderea pe coloana TVA e "
+        + "ZERO — de la F13-D1 nu mai există taxă calculată pe livrarea în taxare inversă (vezi mai jos)",
         sumaRanduriBaza + sumaNemapateBaza - multiplicitateBaza + pierdutBaza == brut.Sum(r => r.Baza)
         && sumaRanduriTva + sumaNemapateTva - multiplicitateTva + pierdutTva == brut.Sum(r => r.Tva)
-        && pierdutBaza == 0m && pierdutTva == 63m
+        && pierdutBaza == 0m && pierdutTva == 0m
         && multiplicitateBaza == 200m && multiplicitateTva == 38m
         // …și partiția e completă: fiecare grup e ori așezat, ori raportat.
         && grupuriNemapate == d3.Nemapate.Count && grupuriNemapate == 2
         && d3.Avertismente.Count == 0);
 
-    // ══════ F2: taxarea inversă pe LIVRARE nu e o pierdere, e o nedeclarare ══════
+    // ══════ F13-D1: pe rd. 13 nu mai e nimic de ocolit ══════
     //
-    // `TvaService.CalculeazaValori` (Motor/TvaService.cs:38-44) calculează taxa
-    // pe regimul `TaxareInversa` INDIFERENT de sens — corect pe achiziție
-    // (beneficiarul autolichidează), fals pe livrare (furnizorul nu colectează
-    // nimic). Formularul îi dă livrării rd. 13, cu o singură coloană, de bază.
-    // Deci rândul de registru poartă un TVA care n-are unde să meargă și nici
-    // n-ar trebui să existe. Rădăcina e în MOTOR și rămâne restanța D3-r4 (ar
-    // cere recalculul registrului fiscal); până atunci proiecția tace aici,
-    // deliberat: un avertisment pe fiecare livrare cu taxare inversă ar fi
-    // zgomot permanent, iar un gard care strigă mereu se ignoră la fel de
-    // repede ca unul care tace.
+    // Locul unde stătea excepția „F2". Cât timp `TvaService` calcula taxa pe
+    // REGIM, indiferent de latură, o livrare în taxare inversă producea un TVA
+    // pe care formularul nu-l cere (rd. 13, „livrări supuse măsurilor de
+    // simplificare", are o singură coloană, de bază) — iar proiecția îl ocolea
+    // deliberat, ca să nu strige la fiecare astfel de livrare. Excepția era o
+    // cârpă peste un defect de MOTOR, marcată ca restanța D3-r4.
     //
-    // Proba e discriminantă în ambele sensuri: cifra „pierdută” EXISTĂ (63,00,
-    // recalculată mai sus independent de proiecție), dar avertismentul NU — și
-    // rd. 13 poartă baza întreagă, cu `Tva` null, nu 0.
+    // F13-D1 a rezolvat cauza: TI × Colectat ⇒ `ValoareTva = 0` și niciun rând
+    // contabil, deci rândul de registru intră în proiecție cu taxă zero.
+    // Proba e discriminantă: rd. 13 poartă baza întreagă cu `Tva` NULL (coloana
+    // chiar nu există pe rând), NU există avertisment — dar acum fiindcă n-a mai
+    // rămas nicio cifră pe dinafară (`pierdutTva == 0` mai sus, recalculat
+    // independent de proiecție), nu fiindcă proiecția tace. Un TVA care n-ar
+    // încăpea pe o coloană absentă redevine ce trebuie să fie: defect de mapare,
+    // raportat — vezi proba de mai jos, pe rd. 14.
     var randTi = d3.Randuri.Single(r => r.Cod == "13");
-    Check("D3-V2/V3 (F2) taxarea inversă pe LIVRARE: rd. 13 primește baza (300,00) cu `Tva` NULL (rândul n-are "
-        + "coloană), taxa calculată de motor (63,00) nu se strecoară nicăieri — și NU produce avertisment, "
-        + "spre deosebire de o mapare greșită pe un rând fără coloană de TVA: cauza e în `TvaService` "
-        + "(restanța D3-r4), nu în politica de așezare",
-        randTi is { Baza: 300m, Tva: null, Randuri: 1 } && randTi.Surse == "TI21"
+    var registruTi = brut.Where(r => r.Regim == RegimTva.TaxareInversa && r.Sens == SensTva.Livrare).ToList();
+    Check("D3-V2/V3 (F13-D1) taxarea inversă pe LIVRARE: rândul de registru poartă bază 300,00 și TVA 0,00 "
+        + "(motorul nu mai inventează taxa furnizorului), rd. 13 primește baza cu `Tva` NULL — coloana nu "
+        + "există pe rând — și NU se pierde nicio cifră pe drum, deci niciun avertisment; excepția din "
+        + "`D300Proiectii` a dispărut odată cu cauza ei",
+        registruTi.Count == 1 && registruTi[0].Baza == 300m && registruTi[0].Tva == 0m
+        && randTi is { Baza: 300m, Tva: null, Randuri: 1 } && randTi.Surse == "TI21"
         && !d3.Avertismente.Any(a => a.StartsWith("rd. 13"))
         && d3.Avertismente.Count == 0);
 

@@ -62,14 +62,18 @@ public enum RegimTva {
     // TVA intră în `Valoare`, nu se postează separat — comportamentul
     // profilului bugetar neplătitor și al achizițiilor fără drept de deducere.
     Capitalizat = 2,
-    // Autolichidare: un rând 4426 = 4427 pe valoarea TVA, sold zero.
+    // Autolichidare (Cod fiscal art. 331), DOAR pe latura beneficiarului: pe
+    // achiziție (PoliticaTva.Directie = Deductibil) un rând 4426 = 4427 pe
+    // valoarea TVA, sold zero; pe livrare (Colectat) furnizorul emite FĂRĂ TVA
+    // — nicio taxă, niciun rând (F13-D1).
     TaxareInversa = 3,
     Scutit = 4,
     Neimpozabil = 5,
 }
 
 // Direcția postării TVA per tip de document (PoliticaTva): FCT/DEC deduc,
-// FCL colectează. TaxareInversa ignoră direcția (4426 = 4427).
+// FCL colectează. E și SENSUL taxării inverse (F13-D1): pe `Deductibil`
+// autolichidare 4426 = 4427, pe `Colectat` nicio taxă și niciun rând.
 public enum DirectieTva { Deductibil = 1, Colectat = 2 }
 
 // Latura jurnalului de TVA (JT-D1): cumpărări sau vânzări. Sensul NU e o a doua

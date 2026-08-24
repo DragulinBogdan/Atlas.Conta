@@ -75,12 +75,19 @@ static class Venituri1C {
             // **Taxarea inversă pe latura de LIVRARE nu postează nimic**: taxa o
             // autolichidează cumpărătorul, iar `SumaTVA` a secțiunii e informativă
             // (verificat pe rândurile sursei — 1C nu scrie niciun rând de TVA
-            // pentru liniile astea, doar venitul net). Regimul din motor e cel al
-            // ACHIZIȚIEI (4426 = 4427, autolichidare), deci linia rămâne FĂRĂ
-            // TipTva — nu doar cu valoare zero: `PregatesteOperare` recalculează
-            // TVA-ul din cotă exact când valoarea culeasă e zero (36a păstrează
-            // doar un ValoareTva NENUL), iar linia ar reînvia rândul inexistent.
-            // Măsurat pe ianuarie: 70.964,55 lei de 4426 = 4427 inventați așa.
+            // pentru liniile astea, doar venitul net).
+            //
+            // Motorul știe asta de la sine începând cu F13-D1 (`TvaService`
+            // cunoaște latura: TI × Colectat ⇒ ValoareTva = 0, niciun rând
+            // contabil), deci compensarea de aici nu mai apără de un
+            // 4426 = 4427 inventat — istoric, măsurat pe ianuarie: 70.964,55 lei.
+            // Rămâne totuși, cu alt motiv: **ca în sursă**. 1C nu scrie rând de
+            // TVA pentru liniile astea, iar importul e o transcriere fidelă a
+            // evidenței, nu o reinterpretare a ei. Schimbarea (păstrarea lui
+            // TI21/TI19 pe linie) ar muta baza pe rd. 13 al D300 și e o decizie
+            // de IMPORT, nu a feliei de motor. `tva = 0m` e acum redundant cu
+            // ce-ar face motorul, dar rămâne explicit: linia se scrie fără TVA
+            // indiferent de politica bazei-țintă.
             if (cat.EsteTaxareInversa(tipTva)) {
                 TvaLivrareTaxareInversa++;
                 tipTva = null;

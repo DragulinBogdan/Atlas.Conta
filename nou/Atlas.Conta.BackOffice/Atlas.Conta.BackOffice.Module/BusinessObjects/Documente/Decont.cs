@@ -30,10 +30,12 @@ public class Decont : Document, IDocumentCuPV {
     // justificat bate rotunjirea noastră, exact ca la FCT.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
+        // Latura fiscală a tipului (F13-D1) — o dată per document, nu per linie.
+        var directie = Motor.TvaService.DirectiePentru(os, this);
         foreach (var d in Detalii.OfType<DecontDetaliu>()) {
             if (d.Cantitate == 0)
                 d.Cantitate = 1;
-            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, pastreazaTvaCules: true);
+            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, directie, pastreazaTvaCules: true);
         }
     }
 

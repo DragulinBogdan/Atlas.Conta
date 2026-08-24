@@ -54,8 +54,10 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
     // bate rotunjirea noastră — design §3).
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
+        // Latura fiscală a tipului (F13-D1) — o dată per document, nu per linie.
+        var directie = Motor.TvaService.DirectiePentru(os, this);
         foreach (var d in Detalii.OfType<FacturaIntrareDetaliu>())
-            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, pastreazaTvaCules: true);
+            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, directie, pastreazaTvaCules: true);
     }
 
     // Plata automată (00 §7, decizia 31): grupul DECONT_* cules → draft Plata
