@@ -39,9 +39,20 @@ async function trimite(cale: string, init: RequestInit, cuCorp: boolean): Promis
     expiraSesiunea();
     throw new EroareSesiune();
   }
-  if (raspuns.status === 422) {
+  // 422 = refuz de DOMENIU (gardienii motorului). 400 = cerere malformată — dar
+  // proiecțiile o motivează în ACEEAȘI formă (`EroriDto`: „«dataStart» nu poate
+  // fi după «dataEnd»"), iar acele propoziții sunt scrise pentru contabil, nu
+  // pentru log. Distincția de STATUS rămâne a serverului; pentru client, un corp
+  // cu `Erori[]` e un mesaj de arătat, nu o excepție de transport.
+  //
+  // Numai cu `Erori[]` NEGOL: un 400 fără corp (model binding, rută greșită) e o
+  // eroare tehnică și trebuie să rămână una — altfel „Operațiune refuzată de
+  // server" ar înlocui tăcut singurul indiciu util, statusul.
+  if (raspuns.status === 422 || raspuns.status === 400) {
     const corp = (await raspuns.json().catch(() => null)) as { Erori?: string[] | null } | null;
-    throw new EroareDomeniu(corp?.Erori ?? ['Operațiune refuzată de server.']);
+    const erori = corp?.Erori ?? null;
+    if (erori !== null && erori.length > 0) throw new EroareDomeniu(erori);
+    if (raspuns.status === 422) throw new EroareDomeniu(['Operațiune refuzată de server.']);
   }
   if (!raspuns.ok)
     throw new Error(`${init.method ?? 'GET'} ${cale} → ${raspuns.status} ${raspuns.statusText}`);

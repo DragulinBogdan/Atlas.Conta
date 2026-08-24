@@ -180,3 +180,24 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
   border: 1px solid var(--linie);
   border-radius: 4px;
 }
+
+/* ── D300 (felia 12) ─────────────────────────────────────────────────── */
+/* Formularul are trei feluri de rând pe lângă operațiuni, și fiecare trebuie să
+   se vadă ca ALTCEVA decât o cifră culeasă: totalul (formula legii), oglinda
+   (copia rândului din secțiunea cealaltă, la taxare inversă) și externul (cifră
+   fără sursă în model). Marcajul e vizual, nu textual, ca tabloul să rămână
+   citibil pe verticală. */
+.d300 .d300__total > td { font-weight: 600; background: #f3f6fa; }
+.d300 .d300__oglinda > td { font-style: italic; color: #5b6673; }
+.d300 .d300__extern > td { color: #5b6673; }
+/* Sub-rândurile „din care" (3.1, 12.1, 26.1 …) sunt DEJA cuprinse în părintele
+   lor: indentarea spune că nu se adună peste el. */
+.d300__nivel1 { padding-left: 22px; display: inline-block; }
+.d300__eticheta { color: #8a94a0; font-size: 11px; }
+
+.d300__neincluse { margin-top: 18px; }
+.d300__neincluse > h3 { margin-bottom: 4px; }
+.d300__neincluse > .indiciu { margin: 0 0 8px; max-width: 900px; }
+
+/* al treilea fel de panou: avertisment — nici refuz, nici confirmare */
+.panou--atentie { border-color: #b45309; background: #fffaf0; }

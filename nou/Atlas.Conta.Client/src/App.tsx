@@ -28,6 +28,7 @@ import { FisaCont } from './felii/raportare/FisaCont';
 import { RegistruJurnal } from './felii/raportare/RegistruJurnal';
 import { JurnalCumparari, JurnalVanzari } from './felii/tva/JurnalTva';
 import { DecontTva } from './felii/tva/DecontTva';
+import { D300 } from './felii/tva/D300';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
@@ -82,10 +83,14 @@ export function App() {
         {/* Jurnalele de TVA (felia 11): aceeași proiecție pe laturi diferite,
             deci rute proprii — nu un ecran cu comutator. Sunt două rapoarte
             distincte, iar „jurnalul de cumpărări pe februarie" trebuie să fie un
-            link. Decontul e scheletul D300, nu declarația (35c). */}
+            link. `/decont-tva` rămâne SCHELETUL — cifrele perioadei per tip de
+            TVA, cu codurile SAF-T; formularul propriu-zis, cu rândurile și
+            totalurile lui, e `/d300` (felia 12). Nici unul nu produce declarația
+            (35c): fișierul XML e altă unealtă. */}
         <Route path="/jurnal-cumparari" element={<JurnalCumparari />} />
         <Route path="/jurnal-vanzari" element={<JurnalVanzari />} />
         <Route path="/decont-tva" element={<DecontTva />} />
+        <Route path="/d300" element={<D300 />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
     </Routes>
@@ -118,6 +123,7 @@ function Cadru() {
         <NavLink to="/jurnal-cumparari">Jurnal cumpărări</NavLink>
         <NavLink to="/jurnal-vanzari">Jurnal vânzări</NavLink>
         <NavLink to="/decont-tva">Decont TVA</NavLink>
+        <NavLink to="/d300">D300</NavLink>
         <button
           type="button"
           className="buton buton--mic"

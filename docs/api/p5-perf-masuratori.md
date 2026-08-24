@@ -283,3 +283,56 @@ crearea tabelei sunt suficienți.
 HTTP. Prima bază care are ȘI volum, ȘI utilizatori (o bază de client, sau clona
 de import re-creată prin updater) trebuie remăsurată cu metoda standard — până
 atunci, cifrele astea sunt un ordin de mărime, nu un contract.
+
+---
+
+## Addendum 4 (2026-08-24) — D300 (felia 12)
+
+Măsurat pe **`Atlas.Conta.BackOffice.Privat`** — baza cu datele de import 2025
+(**90.739 de rânduri în `RegistruTva`**, 205.184 de documente).
+
+**Metodă: calea REALĂ, spre deosebire de addendumul 3.** Acolo cifrele au fost pe
+SQL echivalent, fiindcă `Atlas.Conta.Import1C.Flax` n-are tabele de securitate și
+deci nu există token. Baza de față le are, așa că D300 s-a măsurat exact cum îl
+cere clientul: `GET https://localhost:5001/api/proiectii/d300` cu JWT de `Admin`,
+prin ușa securizată (`Secured(typeof(RegistruTva))`), WebApi pornit detașat și
+încălzit. Șase rulări per cifră, **prima aruncată** (JIT + primul plan), mediana
+celorlalte cinci.
+
+| Cerere | Rânduri de registru citite | Răspuns | Rulări (ms) | **Mediană** |
+|---|---|---|---|---|
+| `d300` septembrie 2025 | ~7.900 | 55 rd. + 0 nemapate, 13,9 KB | 18, 19, 20, 22, 23 | **20 ms** |
+| `d300` martie 2025 | ~10.100 | 55 rd. + 1 nemapat, 14,0 KB | 18, 19, 20, 21, 24 | **20 ms** |
+| `d300` **anul 2025 întreg** | 90.739 | 55 rd. + 1 nemapat, 14,1 KB | 24, 25, 25, 25, 26 | **25 ms** |
+| `decont-tva` anul 2025 (reper) | 90.739 | 8 grupuri | 23, 23, 24, 26, 28 | **24 ms** |
+
+**Verdict: verde, cu mult sub pragul de ~150 ms (59). Niciun index adăugat** —
+disciplina rămâne „cifra decide", iar cifra nu cere nimic.
+
+Ce spune forma cifrelor, dincolo de faptul că sunt mici: **de la o lună la anul
+întreg (de 9–11 ori mai multe rânduri de registru) costul crește cu 5 ms**, adică
+cu ~25%, nu cu un ordin de mărime. Motivul e structural și merită scris, fiindcă
+ține și în viitor: agregarea pe `(Sens, TipTvaId, Regim, Cota)` se face ÎN
+BAZĂ, iar mulțimea care iese de acolo e mărginită de NOMENCLATOR (câte tipuri de
+TVA × două sensuri × snapshot-uri distincte — 8 grupuri pe tot anul 2025), nu de
+volum. Tot ce urmează — așezarea pe rânduri, părinții „din care", oglinzile,
+totalurile — lucrează pe zeci de rânduri în memorie, deci e constant. Cei 5 ms de
+diferență sunt scanarea, nu proiecția; același profil ca `DecontTva`, care
+împarte primul pas cu el (24 ms pe an, la doar 8 grupuri produse — dovada că
+prețul e al citirii, nu al formularului).
+
+Consecința practică: **D300 nu are creștere liniară de temut.** O bază cu 5 ani
+de volum ca 2025 ar plăti scanarea a ~450 de mii de rânduri fiscale, adică
+undeva la 60–80 ms prin extrapolare pe partea care chiar scalează — încă sub
+prag, și oricum o interogare pe un an, nu pe cinci: perioada fiscală e o lună sau
+un trimestru. Rămâne în afara listei de la 59; singura proiecție cu creștere
+liniară reală e tot `DocumenteCuRest`.
+
+### Reproducere (addendum 4)
+
+WebApi pornit detașat cu profilul lui pe `https://localhost:5001`; token prin
+`POST /api/Authentication/Authenticate` (`Admin`, parolă goală). Cronometrare cu
+`[Diagnostics.Stopwatch]` în jurul lui `Invoke-WebRequest`, deci **latența
+completă client→server→client** (TLS, MVC, EF, serializare), nu doar SQL — de
+aceea cifrele nu sunt comparabile direct cu cele de psql din addendumul 3, ci cu
+cele HTTP din corpul documentului. WebApi oprit la final.
