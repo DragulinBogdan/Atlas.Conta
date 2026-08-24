@@ -5,6 +5,8 @@ import { expiraSesiunea, token } from './auth';
 //   • 401           → sesiune expirată: tokenul moare, UI-ul cade pe /login;
 //   • 422 EroriDto  → REFUZ DE DOMENIU — date, nu excepție de transport: exact
 //                     mesajele gardienilor motorului, afișate ca listă;
+//   • 400 EroriDto  → cerere malformată, motivată în ACEEAȘI formă (F13-D3):
+//                     fie refuzul unei proiecții, fie eșecul de model binding;
 //   • orice altceva → eroare tehnică.
 // Clientul NU interpretează erorile de domeniu (43 §2 — „zero motor de reguli
 // în TS"): le arată.
@@ -39,15 +41,21 @@ async function trimite(cale: string, init: RequestInit, cuCorp: boolean): Promis
     expiraSesiunea();
     throw new EroareSesiune();
   }
-  // 422 = refuz de DOMENIU (gardienii motorului). 400 = cerere malformată — dar
-  // proiecțiile o motivează în ACEEAȘI formă (`EroriDto`: „«dataStart» nu poate
-  // fi după «dataEnd»"), iar acele propoziții sunt scrise pentru contabil, nu
-  // pentru log. Distincția de STATUS rămâne a serverului; pentru client, un corp
-  // cu `Erori[]` e un mesaj de arătat, nu o excepție de transport.
+  // 422 = refuz de DOMENIU (gardienii motorului). 400 = cerere malformată — și
+  // de la F13-D3 e ÎNTOTDEAUNA `EroriDto`, oricare i-ar fi originea: refuzul
+  // motivat al unei proiecții („«dataStart» nu poate fi după «dataEnd»") și
+  // eșecul de model binding trec acum prin aceeași formă
+  // (`InvalidModelStateResponseFactory` din `Startup.cs` traduce `ModelState`
+  // în „{câmp}: {mesaj}"; `ValidationProblemDetails`, al doilea shape de 400,
+  // a dispărut de pe sârmă). Distincția de STATUS rămâne a serverului; pentru
+  // client, un corp cu `Erori[]` e un mesaj de arătat, nu o excepție de
+  // transport.
   //
-  // Numai cu `Erori[]` NEGOL: un 400 fără corp (model binding, rută greșită) e o
-  // eroare tehnică și trebuie să rămână una — altfel „Operațiune refuzată de
-  // server" ar înlocui tăcut singurul indiciu util, statusul.
+  // Ramura rămâne condiționată de `Erori[]` NEGOL — nu fiindcă serverul ar mai
+  // trimite 400-uri fără corp, ci ca PLASĂ: un 400 non-JSON (proxy, rută
+  // inexistentă servită de altcineva decât API-ul) trebuie să rămână eroare
+  // tehnică, altfel „Operațiune refuzată de server" ar înlocui tăcut singurul
+  // indiciu util, statusul.
   if (raspuns.status === 422 || raspuns.status === 400) {
     const corp = (await raspuns.json().catch(() => null)) as { Erori?: string[] | null } | null;
     const erori = corp?.Erori ?? null;

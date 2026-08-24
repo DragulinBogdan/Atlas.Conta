@@ -6943,6 +6943,54 @@ export interface operations {
                     "text/json": components["schemas"]["BcsListDtoPaginaDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "POST_api/bcs": {
@@ -7043,6 +7091,54 @@ export interface operations {
                     "text/plain": components["schemas"]["BcsReadDto"];
                     "application/octet-stream": components["schemas"]["BcsReadDto"];
                     "text/json": components["schemas"]["BcsReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -7152,6 +7248,54 @@ export interface operations {
                     "text/plain": components["schemas"]["BcsReadDto"];
                     "application/octet-stream": components["schemas"]["BcsReadDto"];
                     "text/json": components["schemas"]["BcsReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -7306,6 +7450,54 @@ export interface operations {
                     "text/json": components["schemas"]["BcsReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -7373,6 +7565,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Unprocessable Content */
             422: {
@@ -7483,6 +7723,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -7590,6 +7878,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -7744,6 +8080,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -7807,6 +8191,54 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9156,6 +9588,54 @@ export interface operations {
                     "text/json": components["schemas"]["DecontListDtoPaginaDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "POST_api/dec": {
@@ -9256,6 +9736,54 @@ export interface operations {
                     "text/plain": components["schemas"]["DecontReadDto"];
                     "application/octet-stream": components["schemas"]["DecontReadDto"];
                     "text/json": components["schemas"]["DecontReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -9365,6 +9893,54 @@ export interface operations {
                     "text/plain": components["schemas"]["DecontReadDto"];
                     "application/octet-stream": components["schemas"]["DecontReadDto"];
                     "text/json": components["schemas"]["DecontReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -9519,6 +10095,54 @@ export interface operations {
                     "text/json": components["schemas"]["DecontReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -9586,6 +10210,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Unprocessable Content */
             422: {
@@ -9696,6 +10368,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -9803,6 +10523,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -9957,6 +10725,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -10020,6 +10836,54 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10239,6 +11103,54 @@ export interface operations {
                     "text/json": components["schemas"]["DocumentCuRestRandPaginaDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "GET_api/dsc": {
@@ -10300,6 +11212,54 @@ export interface operations {
                     "text/json": components["schemas"]["DscListDtoPaginaDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "GET_api/dsc/{id}": {
@@ -10359,6 +11319,54 @@ export interface operations {
                     "text/plain": components["schemas"]["DscReadDto"];
                     "application/octet-stream": components["schemas"]["DscReadDto"];
                     "text/json": components["schemas"]["DscReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -10470,6 +11478,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -10577,6 +11633,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -10731,6 +11835,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -10840,6 +11992,54 @@ export interface operations {
                     "text/json": components["schemas"]["EroriDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "GET_api/fct": {
@@ -10899,6 +12099,54 @@ export interface operations {
                     "text/plain": components["schemas"]["FacturaIntrareListDtoPaginaDto"];
                     "application/octet-stream": components["schemas"]["FacturaIntrareListDtoPaginaDto"];
                     "text/json": components["schemas"]["FacturaIntrareListDtoPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
         };
@@ -11001,6 +12249,54 @@ export interface operations {
                     "text/plain": components["schemas"]["FacturaIntrareReadDto"];
                     "application/octet-stream": components["schemas"]["FacturaIntrareReadDto"];
                     "text/json": components["schemas"]["FacturaIntrareReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -11110,6 +12406,54 @@ export interface operations {
                     "text/plain": components["schemas"]["FacturaIntrareReadDto"];
                     "application/octet-stream": components["schemas"]["FacturaIntrareReadDto"];
                     "text/json": components["schemas"]["FacturaIntrareReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -11264,6 +12608,54 @@ export interface operations {
                     "text/json": components["schemas"]["FacturaIntrareReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -11379,6 +12771,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -11537,6 +12977,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -11644,6 +13132,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -11798,6 +13334,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -11907,6 +13491,54 @@ export interface operations {
                     "text/json": components["schemas"]["EroriDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "GET_api/fcl": {
@@ -11966,6 +13598,54 @@ export interface operations {
                     "text/plain": components["schemas"]["FacturaIesireListDtoPaginaDto"];
                     "application/octet-stream": components["schemas"]["FacturaIesireListDtoPaginaDto"];
                     "text/json": components["schemas"]["FacturaIesireListDtoPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
         };
@@ -12068,6 +13748,54 @@ export interface operations {
                     "text/plain": components["schemas"]["FacturaIesireReadDto"];
                     "application/octet-stream": components["schemas"]["FacturaIesireReadDto"];
                     "text/json": components["schemas"]["FacturaIesireReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -12177,6 +13905,54 @@ export interface operations {
                     "text/plain": components["schemas"]["FacturaIesireReadDto"];
                     "application/octet-stream": components["schemas"]["FacturaIesireReadDto"];
                     "text/json": components["schemas"]["FacturaIesireReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -12331,6 +14107,54 @@ export interface operations {
                     "text/json": components["schemas"]["FacturaIesireReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -12446,6 +14270,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -12604,6 +14476,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -12711,6 +14631,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -12865,6 +14833,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -12928,6 +14944,54 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13078,6 +15142,54 @@ export interface operations {
                     "text/json": components["schemas"]["GenerareDescarcareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -13185,6 +15297,54 @@ export interface operations {
                     "text/plain": components["schemas"]["RestNedescarcatRandDto"][];
                     "application/octet-stream": components["schemas"]["RestNedescarcatRandDto"][];
                     "text/json": components["schemas"]["RestNedescarcatRandDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -14684,6 +16844,54 @@ export interface operations {
                     "text/json": components["schemas"]["ImperechereReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -14751,6 +16959,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -14909,6 +17165,54 @@ export interface operations {
                     "text/json": components["schemas"]["StingeriDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -15018,6 +17322,54 @@ export interface operations {
                     "text/json": components["schemas"]["TrezorerieListDtoPaginaDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "POST_api/inc": {
@@ -15118,6 +17470,54 @@ export interface operations {
                     "text/plain": components["schemas"]["TrezorerieReadDto"];
                     "application/octet-stream": components["schemas"]["TrezorerieReadDto"];
                     "text/json": components["schemas"]["TrezorerieReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -15227,6 +17627,54 @@ export interface operations {
                     "text/plain": components["schemas"]["TrezorerieReadDto"];
                     "application/octet-stream": components["schemas"]["TrezorerieReadDto"];
                     "text/json": components["schemas"]["TrezorerieReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -15381,6 +17829,54 @@ export interface operations {
                     "text/json": components["schemas"]["TrezorerieReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -15496,6 +17992,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -15656,6 +18200,54 @@ export interface operations {
                     "text/json": components["schemas"]["CandidatPerecheDto"][];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "POST_api/inc/{id}/opereaza": {
@@ -15715,6 +18307,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -15824,6 +18464,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -15978,6 +18666,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -16041,6 +18777,54 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16260,6 +19044,54 @@ export interface operations {
                     "text/json": components["schemas"]["LdiListDtoPaginaDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "POST_api/ldi": {
@@ -16360,6 +19192,54 @@ export interface operations {
                     "text/plain": components["schemas"]["LdiReadDto"];
                     "application/octet-stream": components["schemas"]["LdiReadDto"];
                     "text/json": components["schemas"]["LdiReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -16469,6 +19349,54 @@ export interface operations {
                     "text/plain": components["schemas"]["LdiReadDto"];
                     "application/octet-stream": components["schemas"]["LdiReadDto"];
                     "text/json": components["schemas"]["LdiReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -16623,6 +19551,54 @@ export interface operations {
                     "text/json": components["schemas"]["LdiReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -16690,6 +19666,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Unprocessable Content */
             422: {
@@ -16800,6 +19824,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -16907,6 +19979,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -17061,6 +20181,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -17124,6 +20292,54 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17984,6 +21200,54 @@ export interface operations {
                     "text/json": components["schemas"]["NirListDtoPaginaDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "POST_api/nir": {
@@ -18084,6 +21348,54 @@ export interface operations {
                     "text/plain": components["schemas"]["NirReadDto"];
                     "application/octet-stream": components["schemas"]["NirReadDto"];
                     "text/json": components["schemas"]["NirReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -18193,6 +21505,54 @@ export interface operations {
                     "text/plain": components["schemas"]["NirReadDto"];
                     "application/octet-stream": components["schemas"]["NirReadDto"];
                     "text/json": components["schemas"]["NirReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -18347,6 +21707,54 @@ export interface operations {
                     "text/json": components["schemas"]["NirReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -18414,6 +21822,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Unprocessable Content */
             422: {
@@ -18524,6 +21980,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -18631,6 +22135,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -18785,6 +22337,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -18894,6 +22494,54 @@ export interface operations {
                     "text/json": components["schemas"]["EroriDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "GET_api/btr": {
@@ -18953,6 +22601,54 @@ export interface operations {
                     "text/plain": components["schemas"]["NotaTransferListDtoPaginaDto"];
                     "application/octet-stream": components["schemas"]["NotaTransferListDtoPaginaDto"];
                     "text/json": components["schemas"]["NotaTransferListDtoPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
         };
@@ -19055,6 +22751,54 @@ export interface operations {
                     "text/plain": components["schemas"]["NotaTransferReadDto"];
                     "application/octet-stream": components["schemas"]["NotaTransferReadDto"];
                     "text/json": components["schemas"]["NotaTransferReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -19164,6 +22908,54 @@ export interface operations {
                     "text/plain": components["schemas"]["NotaTransferReadDto"];
                     "application/octet-stream": components["schemas"]["NotaTransferReadDto"];
                     "text/json": components["schemas"]["NotaTransferReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -19318,6 +23110,54 @@ export interface operations {
                     "text/json": components["schemas"]["NotaTransferReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -19385,6 +23225,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Unprocessable Content */
             422: {
@@ -19495,6 +23383,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -19602,6 +23538,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -19756,6 +23740,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -19819,6 +23851,54 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21008,6 +25088,54 @@ export interface operations {
                     "text/json": components["schemas"]["TrezorerieListDtoPaginaDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "POST_api/plt": {
@@ -21108,6 +25236,54 @@ export interface operations {
                     "text/plain": components["schemas"]["TrezorerieReadDto"];
                     "application/octet-stream": components["schemas"]["TrezorerieReadDto"];
                     "text/json": components["schemas"]["TrezorerieReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -21217,6 +25393,54 @@ export interface operations {
                     "text/plain": components["schemas"]["TrezorerieReadDto"];
                     "application/octet-stream": components["schemas"]["TrezorerieReadDto"];
                     "text/json": components["schemas"]["TrezorerieReadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Not Found */
@@ -21371,6 +25595,54 @@ export interface operations {
                     "text/json": components["schemas"]["TrezorerieReadDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -21486,6 +25758,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -21646,6 +25966,54 @@ export interface operations {
                     "text/json": components["schemas"]["CandidatPerecheDto"][];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
         };
     };
     "POST_api/plt/{id}/opereaza": {
@@ -21705,6 +26073,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -21814,6 +26230,54 @@ export interface operations {
                     "text/plain": components["schemas"]["OperareRezultatDto"];
                     "application/octet-stream": components["schemas"]["OperareRezultatDto"];
                     "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
             /** @description Unprocessable Content */
@@ -21968,6 +26432,54 @@ export interface operations {
                     "text/json": components["schemas"]["OperareRezultatDto"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
             /** @description Unprocessable Content */
             422: {
                 headers: {
@@ -22031,6 +26543,54 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24227,6 +28787,54 @@ export interface operations {
                     "text/plain": components["schemas"]["SoldStocRandPaginaDto"];
                     "application/octet-stream": components["schemas"]["SoldStocRandPaginaDto"];
                     "text/json": components["schemas"]["SoldStocRandPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
                 };
             };
         };

@@ -51,6 +51,14 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 // motor), nu cele din pipeline-ul UI.
 [ApiController]
 [Authorize]
+// Un singur 400 pe sârmă (F13-D3): `[ApiController]` poate răspunde 400 pe
+// ORICE acțiune, fără ca acțiunea s-o declare — eșecul de model binding e al
+// pipeline-ului, nu al codului feliei. `InvalidModelStateResponseFactory`
+// (`Startup.cs`) îl aduce la forma `EroriDto`, iar declarația de aici o pune în
+// `openapi.json` pentru toate acțiunile deodată. Cele per acțiune (proiecțiile,
+// care întorc 400 de domeniu prin `BadRequest(EroriDto.Din(...))`) rămân:
+// Swashbuckle deduplică pe (status × tip), iar tipul e același.
+[ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
 public abstract class ContaApiController : ControllerBase {
     // Plicul răspunsului `DataSourceLoader` — există DOAR ca să apară în
     // `swagger.json`, pentru codegen-ul OpenAPI→TS (D10): acțiunile întorc

@@ -1,4 +1,5 @@
-﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
+﻿using Atlas.Conta.BackOffice.Module.Api;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.WebApi.JWT;
 using DevExpress.ExpressApp;
@@ -9,6 +10,8 @@ using DevExpress.ExpressApp.WebApi.Services;
 using DevExpress.Persistent.BaseImpl.EF.PermissionPolicy;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -246,6 +249,37 @@ namespace Atlas.Conta.BackOffice.WebApi {
                             _routeServices.ConfigureXafWebApiServices();
                         })
                         .EnableQueryFeatures(100);
+                })
+                // ═══ Un singur 400 pe sârmă: `EroriDto` (F13-D3) ═══
+                // `[ApiController]` (pe `ContaApiController`) răspunde automat la
+                // eșecurile de model binding cu `ValidationProblemDetails` —
+                // un al DOILEA shape de 400, nedeclarat în `openapi.json` (toate
+                // răspunsurile 400 ale feliilor referă `EroriDto`) și IGNORAT de
+                // `nucleu/http.ts`, care caută `Erori[]` și cade pe eroarea
+                // tehnică generică, fără detaliul per câmp.
+                //
+                // Fabrica de mai jos traduce `ModelState` în ACEEAȘI formă ca
+                // refuzurile de domeniu ale proiecțiilor: un element per
+                // (câmp, mesaj), textul „{câmp}: {mesaj}". Câmpul gol (erorile
+                // de formatter fără cale, pe cheia "") rămâne doar cu mesajul;
+                // la fel rădăcina JSON "$" (corpul întreg malformat — măsurat:
+                // `$: Expected depth to be zero…`), unde prefixul n-ar spune
+                // nimic; `$.Data` rămâne, fiindcă numește câmpul.
+                //
+                // Statusul rămâne **400**, nu 422: cererea e malformată
+                // SINTACTIC. 422 e al comenzilor — refuzul DOMENIULUI pe o
+                // cerere bine formată (spike D2). Distincția de status rămâne a
+                // serverului; clientul afișează `Erori[]` la fel în ambele.
+                .ConfigureApiBehaviorOptions(options => {
+                    options.InvalidModelStateResponseFactory = context => {
+                        var erori = context.ModelState
+                            .SelectMany(intrare => intrare.Value.Errors
+                                .Select(eroare => string.IsNullOrEmpty(intrare.Key) || intrare.Key == "$"
+                                    ? MesajEroare(eroare)
+                                    : $"{intrare.Key}: {MesajEroare(eroare)}"))
+                            .Where(mesaj => !string.IsNullOrWhiteSpace(mesaj));
+                        return new BadRequestObjectResult(EroriDto.Din(erori));
+                    };
                 });
 
             services.AddAuthentication()
@@ -305,6 +339,18 @@ namespace Atlas.Conta.BackOffice.WebApi {
                 o.JsonSerializerOptions.PropertyNamingPolicy = null;
             });
         }
+
+        // Textul unei erori de `ModelState`. `ErrorMessage` e umplut de binder
+        // pentru erorile de valoare („The value 'x' is not valid for …") ȘI, cu
+        // `AllowInputFormatterExceptionMessages` implicit (true), de
+        // `JsonException` la corp malformat. Când lipsește, sursa e o excepție
+        // de server: NU o punem pe sârmă (aceeași politică ca handler-ul de 500
+        // de mai jos — fără detalii de server în răspuns), ci un mesaj de
+        // domeniu, ca răspunsul să rămână util fără a fi indiscret.
+        static string MesajEroare(ModelError eroare) =>
+            !string.IsNullOrWhiteSpace(eroare.ErrorMessage)
+                ? eroare.ErrorMessage
+                : "Valoare invalidă.";
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env) {
