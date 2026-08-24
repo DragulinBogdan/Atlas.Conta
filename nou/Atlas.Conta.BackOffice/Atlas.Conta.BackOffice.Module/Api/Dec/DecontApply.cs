@@ -185,7 +185,7 @@ public static class DecontApply {
                 "Repartitorul creditor al liniei");
             if (l.RepartitorCreditId == null) detaliu.RepartitorCreditId = null;
 
-            // Default-ul de TipTva al tipului de document (38d/38f) — DOAR pe
+            // Default-ul de TipTva al tipului de document (38d/37f) — DOAR pe
             // liniile noi al căror payload n-a dat un TipTva: pe o linie
             // existentă, golirea lui e decizie explicită a operatorului, iar
             // re-aplicarea default-ului ar face-o imposibilă.
