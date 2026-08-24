@@ -60,6 +60,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<Angajament> Angajamente { get; set; }
         public DbSet<PerioadaFiscala> PerioadeFiscale { get; set; }
         public DbSet<TipTva> TipuriTva { get; set; }
+        // Nomenclatorul rândurilor decontului de TVA (felia 12, D3-D1) — corpul
+        // formularului 300 din OPANAF 174/2026, seed-uit în NUCLEU (e lege, nu profil).
+        public DbSet<RandD300> RanduriD300 { get; set; }
 
         // Documente (TPT)
         public DbSet<Document> Documente { get; set; }
@@ -120,6 +123,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaValidare> PoliticiValidare { get; set; }
         public DbSet<PoliticaTva> PoliticiTva { get; set; }
         public DbSet<PoliticaInchidereTva> PoliticiInchidereTva { get; set; }
+        // Politica de așezare pe decont (D3-D2): (TipTva × Sens) → rând, n rânduri.
+        public DbSet<MapareD300> MapariD300 { get; set; }
         // Setarea de profil a bazei (decizia 51c): un singur rând, scris de seed.
         public DbSet<SetareProfil> SetariProfil { get; set; }
 
@@ -221,6 +226,26 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
             modelBuilder.Entity<MigrareLegatura>()
                 .HasIndex(m => new { m.Tabela, m.CheieLegacy }).IsUnique();
+
+            // D3-D1: `Cod` e cheia de idempotență a seed-ului și identitatea de
+            // raportare a rândului („12.1") — unic. Cele două self-FK-uri sunt
+            // Restrict (ca `DocumentTrezorerie.LaturaPereche` mai sus): un rând nu se
+            // șterge cât timp altul îl declară părinte sau sursă de oglindă, iar
+            // convenția globală SetNull ar fi golit tăcut structura formularului.
+            // `WithMany()` fără colecție: sensurile inverse („copiii", „oglinzile
+            // mele") se derivă prin query în proiecție, nu se materializează.
+            modelBuilder.Entity<RandD300>().HasIndex(r => r.Cod).IsUnique();
+            modelBuilder.Entity<RandD300>()
+                .HasOne(r => r.Parinte).WithMany().HasForeignKey(r => r.ParinteId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<RandD300>()
+                .HasOne(r => r.OglindaA).WithMany().HasForeignKey(r => r.OglindaAId)
+                .OnDelete(DeleteBehavior.Restrict);
+            // D3-D2: tripleta e identitatea mapării — aceeași pereche poate cădea pe
+            // mai multe rânduri (TI19 pe achiziție: 16 ȘI 33), dar de două ori pe
+            // ACELAȘI rând ar dubla cifra la proiecție.
+            modelBuilder.Entity<MapareD300>()
+                .HasIndex(m => new { m.TipTvaId, m.Sens, m.RandId }).IsUnique();
 
             AplicaScaraNumerica(modelBuilder);
         }

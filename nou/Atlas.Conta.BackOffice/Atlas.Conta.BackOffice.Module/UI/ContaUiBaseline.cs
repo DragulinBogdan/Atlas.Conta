@@ -111,6 +111,8 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(r => r.TipTva, c => c.Index = -1);
         registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
         registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId
+        registry.For<RandD300>().HideForeignKeys();                 // ParinteId/OglindaAId
+        registry.For<MapareD300>().HideForeignKeys();               // TipTvaId/RandId
     }
 
     // Layout-ul DetailView-urilor de document (GATE XAF D12), declarat autoritar.

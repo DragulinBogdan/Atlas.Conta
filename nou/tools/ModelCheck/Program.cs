@@ -2694,6 +2694,7 @@ if (profil == ProfilContabil.Privat) {
     VerificaBalanta();
     VerificaFisaJurnal();
     VerificaRegistruTva(cuTva: true);
+    VerificaD300Seed(privat: true);
 
     Rezumat();
     return;
@@ -7617,6 +7618,7 @@ using (var os = provider.CreateObjectSpace()) {
 VerificaBalanta();
 VerificaFisaJurnal();
 VerificaRegistruTva(cuTva: false);
+VerificaD300Seed(privat: false);
 
 Rezumat();
 
@@ -8991,4 +8993,133 @@ void VerificaRegistruTva(bool cuTva) {
         // forma de reziduu pe care o lasă o curățenie care nu știe de registrul
         // ăsta (vezi purja de la începutul feliei).
         && os.GetObjectsQuery<RegistruTva>().All(r => os.GetObjectsQuery<Document>().Any(d => d.ID == r.DocumentId)));
+}
+
+// ================ Felia 12 (D300): seed-ul formularului — D3-V1 ================
+// Nomenclatorul rândurilor și politica de așezare, măsurate ca DATE în bază, nu
+// ca intenție: seed-ul le scrie, `ContaSeeder.VerificaD300` le apără la scriere
+// (aruncă), iar aici se verifică ce a rămas — inclusiv pe o bază care a fost
+// seed-uită de o versiune anterioară a uneltei.
+//
+// Partea de rânduri e comună ambelor profiluri (formularul e al legii, nu al
+// profilului contabil); partea de mapare e a profilului privat — bugetarul n-are
+// `PoliticaTva`, deci nici rânduri de registru fiscal de așezat pe formular.
+//
+// Local function, apelată din AMBELE căi de profil, ca `VerificaRegistruTva`.
+void VerificaD300Seed(bool privat) {
+    using var os = provider.CreateObjectSpace();
+    var randuri = os.GetObjectsQuery<RandD300>().ToList();
+    var dupaCod = randuri.Where(r => r.Cod != null).ToDictionary(r => r.Cod);
+    var dupaId = randuri.ToDictionary(r => r.ID);
+
+    Check("D3-V1 rândurile D300: cele 55 de poziții ale formularului (OPANAF 174/2026 — 45 de rânduri + 10 sub-rânduri)",
+        randuri.Count == ContaSeeder.RanduriD300Asteptate && dupaCod.Count == randuri.Count);
+    // `Ordine` e singura sortare corectă a formularului: `Cod` e TEXT, iar
+    // alfabetic rd. 10 ar veni înaintea lui rd. 9, iar 12.1 nu s-ar așeza nicăieri.
+    Check("D3-V1 ordinea formularului: `Ordine` acoperă exact 1..55, fără duplicate",
+        randuri.Select(r => r.Ordine).OrderBy(o => o).SequenceEqual(Enumerable.Range(1, randuri.Count)));
+
+    // Rândurile-cheie: cele patru totaluri pe care le calculează proiecția, un
+    // sub-rând de operațiuni (12.1 — ținta mapării TI21) și oglinda lui (26.1).
+    Check("D3-V1 felul rândurilor-cheie: 19/30/31/35 = Total, 12.1 = Operațiuni, 26.1 = Oglindă",
+        dupaCod["19"].Fel == FelRandD300.Total
+        && dupaCod["30"].Fel == FelRandD300.Total
+        && dupaCod["31"].Fel == FelRandD300.Total
+        && dupaCod["35"].Fel == FelRandD300.Total
+        && dupaCod["12.1"].Fel == FelRandD300.Operatiuni
+        && dupaCod["26.1"].Fel == FelRandD300.Oglinda);
+    // Numărătoarea pe fel: 28 rânduri de operațiuni, 10 totaluri, 9 oglinzi,
+    // 8 externe (D3-D1). O reclasificare tăcută ar muta cifre între mecanisme.
+    Check("D3-V1 repartiția pe fel: 28 Operațiuni + 10 Total + 9 Oglindă + 8 Extern = 55",
+        randuri.Count(r => r.Fel == FelRandD300.Operatiuni) == 28
+        && randuri.Count(r => r.Fel == FelRandD300.Total) == 10
+        && randuri.Count(r => r.Fel == FelRandD300.Oglinda) == 9
+        && randuri.Count(r => r.Fel == FelRandD300.Extern) == 8);
+    // Secțiunile, pe pozițiile din formular: 1..19 colectată, 20..35 deductibilă,
+    // 36..45 regularizări (cu sub-rândurile în secțiunea părintelui).
+    Check("D3-V1 secțiunile: pozițiile 1-24 colectată, 25-45 deductibilă, 46-55 regularizări",
+        randuri.All(r => r.Sectiune == (r.Ordine <= 24 ? SectiuneD300.Colectata
+            : r.Ordine <= 45 ? SectiuneD300.Deductibila : SectiuneD300.Regularizari)));
+
+    // Coloanele care CHIAR există pe rând (D3-D3: unde nu există, proiecția lasă
+    // null, nu 0 — un ecran care afișează 0,00 într-o casetă inexistentă minte).
+    Check("D3-V1 coloanele absente: rd. 13/14/15/29/29.1 n-au TVA, rd. 27/28/31/32/34/35 și 36-45 n-au bază",
+        new[] { "13", "14", "15", "29", "29.1" }.All(c => dupaCod[c].AreBaza && !dupaCod[c].AreTva)
+        && new[] { "27", "28", "31", "32", "34", "35", "36", "40", "43", "45" }
+            .All(c => !dupaCod[c].AreBaza && dupaCod[c].AreTva));
+
+    // Sub-rândurile „din care": părintele e prefixul codului (12.1 → 12).
+    var subRanduri = randuri.Where(r => r.Cod.Contains('.')).ToList();
+    Check("D3-V1 sub-rândurile: cele 10 poziții „din care” au părintele rezolvat, exact pe prefixul codului",
+        subRanduri.Count == 10
+        && subRanduri.All(r => r.ParinteId != null
+            && dupaId[r.ParinteId.Value].Cod == r.Cod[..r.Cod.IndexOf('.')])
+        && randuri.Where(r => !r.Cod.Contains('.')).All(r => r.ParinteId == null));
+
+    // Oglinzile: zona deductibilă 20…23/26/26.1/26.2 e copia exactă a zonei
+    // colectate 5…8/12/12.1/12.2 (taxarea inversă se colectează și se deduce în
+    // aceeași perioadă — formularul cere egalitatea ca validare blocantă).
+    (string Oglinda, string Sursa)[] oglinzi = [
+        ("20", "5"), ("20.1", "5.1"), ("21", "6"), ("22", "7"), ("22.1", "7.1"),
+        ("23", "8"), ("26", "12"), ("26.1", "12.1"), ("26.2", "12.2"),
+    ];
+    Check("D3-V1 oglinzile: cele 9 rânduri deductibile trimit fiecare la sursa lui colectată, și doar ele au sursă",
+        oglinzi.All(o => dupaCod[o.Oglinda].Fel == FelRandD300.Oglinda
+            && dupaCod[o.Oglinda].OglindaAId is Guid id && dupaId[id].Cod == o.Sursa)
+        && randuri.All(r => (r.Fel == FelRandD300.Oglinda) == (r.OglindaAId != null)));
+
+    // ---------------- Politica de așezare (D3-D2) ----------------
+    var mapari = os.GetObjectsQuery<MapareD300>().ToList();
+    if (!privat) {
+        // Bugetarul n-are `PoliticaTva` ⇒ `RegistruTva` gol ⇒ o mapare acolo ar
+        // fi politică orfană, nu configurare (D3-V7, partea de seed).
+        Check("D3-V1 (bugetar) profilul n-are nicio mapare D300 — nu produce rânduri de registru fiscal",
+            mapari.Count == 0);
+        return;
+    }
+
+    string[] Randuri(string codTip, SensTva sens) => mapari
+        .Where(m => m.TipTva.Cod == codTip && m.Sens == sens)
+        .Select(m => m.Rand.Cod).OrderBy(c => c, StringComparer.Ordinal).ToArray();
+
+    Check("D3-V1 (privat) tabelul D3-D2 e seed-uit integral: 18 mapări, toate către rânduri de operațiuni",
+        mapari.Count == 18 && mapari.All(m => m.Rand.Fel == FelRandD300.Operatiuni));
+    Check("D3-V1 (privat) cotele în vigoare: N21 → 9/24, N11 → 10/25, N9 doar pe livrare → 11",
+        Randuri("N21", SensTva.Livrare).SequenceEqual(["9"])
+        && Randuri("N21", SensTva.Achizitie).SequenceEqual(["24"])
+        && Randuri("N11", SensTva.Livrare).SequenceEqual(["10"])
+        && Randuri("N11", SensTva.Achizitie).SequenceEqual(["25"])
+        && Randuri("N9", SensTva.Livrare).SequenceEqual(["11"])
+        && Randuri("N9", SensTva.Achizitie).Length == 0);
+    // TI21 pe achiziție are O SINGURĂ mapare (12.1); rd. 26.1 e OGLINDĂ, o pune
+    // proiecția — a doua mapare ar fi dublat cifra, nu ar fi completat-o.
+    Check("D3-V1 (privat) taxarea inversă 21%: livrare → 13, achiziție → 12.1 SINGUR (26.1 e oglindă, vine din cod)",
+        Randuri("TI21", SensTva.Livrare).SequenceEqual(["13"])
+        && Randuri("TI21", SensTva.Achizitie).SequenceEqual(["12.1"]));
+    // Cazul „n rânduri" care a cerut nomenclatorul în loc de o coloană pe TipTva:
+    // cotele istorice n-au rânduri proprii în forma 2026, deci taxarea inversă de
+    // 19% se declară prin regularizări pe AMBELE laturi, din aceeași achiziție.
+    Check("D3-V1 (privat) cotele istorice: N19 → 16/33, iar TI19 pe achiziție cade pe DOUĂ rânduri (16 ȘI 33)",
+        Randuri("N19", SensTva.Livrare).SequenceEqual(["16"])
+        && Randuri("N19", SensTva.Achizitie).SequenceEqual(["33"])
+        && Randuri("TI19", SensTva.Livrare).SequenceEqual(["13"])
+        && Randuri("TI19", SensTva.Achizitie).SequenceEqual(["16", "33"]));
+    // NED21 intră în rd. 24 (deci în totalul 30 — taxă DEDUCTIBILĂ), dar
+    // nedeductibilul se scade la rd. 31 pe `Regim = Capitalizat`, în proiecție:
+    // aici NU e o mapare lipsă, ci exact maparea din tabel.
+    Check("D3-V1 (privat) scutirile și nedeductibilul: SDD → 14/29, SFD → 15/29, NIM doar achiziție → 29, NED21 doar achiziție → 24",
+        Randuri("SDD", SensTva.Livrare).SequenceEqual(["14"])
+        && Randuri("SDD", SensTva.Achizitie).SequenceEqual(["29"])
+        && Randuri("SFD", SensTva.Livrare).SequenceEqual(["15"])
+        && Randuri("SFD", SensTva.Achizitie).SequenceEqual(["29"])
+        && Randuri("NIM", SensTva.Livrare).Length == 0
+        && Randuri("NIM", SensTva.Achizitie).SequenceEqual(["29"])
+        && Randuri("NED21", SensTva.Livrare).Length == 0
+        && Randuri("NED21", SensTva.Achizitie).SequenceEqual(["24"]));
+    // Ce NU e mapat e mapat DELIBERAT: cele trei perechi din D3-D2 sunt singurele
+    // găuri admise printre tipurile seed-uite (gardianul din seeder aruncă altfel).
+    Check("D3-V1 (privat) exact 3 perechi (TipTva × Sens) nemapate, toate declarate: N9/Achiziție, NED21/Livrare, NIM/Livrare",
+        os.GetObjectsQuery<TipTva>().ToList()
+            .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, Sens: s)))
+            .Count(p => Randuri(p.Cod, p.Sens).Length == 0) == 3);
 }

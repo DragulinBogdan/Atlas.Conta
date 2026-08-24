@@ -52,6 +52,9 @@ internal static class ProfilPrivat {
         SeedPoliticiTva(os);
         // Default TipTva de CULEGERE: N21 referit — după commit-ul TipTva.
         SeedTipTvaImplicit(os);
+        // Așezarea pe decontul de TVA (D3-D2): referă tipurile comise mai sus și
+        // rândurile D300 comise de nucleu înaintea pachetului de profil.
+        SeedMapareD300(os);
         os.CommitChanges();
     }
 
@@ -344,6 +347,103 @@ internal static class ProfilPrivat {
             var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == cod);
             if (tip != null && tip.TipTvaImplicitId == null)
                 tip.TipTvaImplicitId = n21.ID;
+        }
+    }
+
+    // Tabelul D3-D2 — așezarea operațiunilor profilului privat pe rândurile
+    // decontului. SINGURA sursă: și seed-ul, și gardianul de profil îl citesc,
+    // ca lista nemapatelor deliberate să nu poată diverge de mapările reale.
+    //
+    // Cazurile care nu sunt „un tip → un rând":
+    //   TI21/achiziție → 12.1 singur; rd. 26.1 e OGLINDĂ, o pune proiecția din
+    //     cod (a doua mapare ar fi dublat cifra, nu ar fi completat-o);
+    //   TI19/achiziție → 16 ȘI 33 — cotele istorice n-au rânduri proprii în
+    //     forma 2026, deci taxarea inversă de 19% se declară integral prin
+    //     regularizări, pe ambele laturi (exact cazul „n rânduri");
+    //   N19 → 16 (colectat) / 33 (dedus), din același motiv;
+    //   NED21/achiziție → 24: nedeductibilul intră în rd. 30 (taxă
+    //     DEDUCTIBILĂ), dar nu în rd. 31 (taxă DEDUSĂ) — scăderea o face
+    //     proiecția pe `Regim = Capitalizat`, nu o mapare lipsă.
+    static readonly (string TipTva, SensTva Sens, string Rand)[] MapariD300 = [
+        ("N21", SensTva.Livrare, "9"),
+        ("N21", SensTva.Achizitie, "24"),
+        ("N11", SensTva.Livrare, "10"),
+        ("N11", SensTva.Achizitie, "25"),
+        ("N9", SensTva.Livrare, "11"),
+        ("TI21", SensTva.Livrare, "13"),
+        ("TI21", SensTva.Achizitie, "12.1"),
+        ("N19", SensTva.Livrare, "16"),
+        ("N19", SensTva.Achizitie, "33"),
+        ("TI19", SensTva.Livrare, "13"),
+        ("TI19", SensTva.Achizitie, "16"),
+        ("TI19", SensTva.Achizitie, "33"),
+        ("NED21", SensTva.Achizitie, "24"),
+        ("SDD", SensTva.Livrare, "14"),
+        ("SDD", SensTva.Achizitie, "29"),
+        ("SFD", SensTva.Livrare, "15"),
+        ("SFD", SensTva.Achizitie, "29"),
+        ("NIM", SensTva.Achizitie, "29"),
+    ];
+
+    // Perechile lăsate DELIBERAT nemapate (D3-D2), cu motivul lângă ele — o
+    // gaură fără nume e o gaură pe care nimeni n-o mai găsește (decizia 21:
+    // fiecare gaură de profil = decizie explicită, nu omisiune).
+    static readonly (string TipTva, SensTva Sens, string Motiv)[] NemapateDeliberat = [
+        // Formularul 2026 n-are rând de achiziție cu cota 9% (cea tranzitorie
+        // e doar pentru livrări de locuințe, art. III din Legea 141/2025).
+        ("N9", SensTva.Achizitie, "formularul n-are rând de achiziție cu cota 9%"),
+        // Fără drept de deducere ⇒ nu există latură de livrare cu acest regim.
+        ("NED21", SensTva.Livrare, "regimul e exclusiv de achiziție"),
+        // În afara sferei TVA: nu se declară pe latura de livrare.
+        ("NIM", SensTva.Livrare, "operațiunea e în afara sferei TVA"),
+    ];
+
+    // Politica de așezare pe decont (D3-D2), idempotentă pe tripletă. Rulează
+    // după `SeedTipTva` (referă tipurile prin FK) și după nomenclatorul de
+    // rânduri comis de nucleu (`ContaSeeder.SeedRandD300`).
+    static void SeedMapareD300(IObjectSpace os) {
+        foreach (var m in MapariD300) {
+            var tip = os.FirstOrDefault<TipTva>(t => t.Cod == m.TipTva);
+            var rand = os.FirstOrDefault<RandD300>(r => r.Cod == m.Rand);
+            if (tip == null || rand == null)
+                throw new InvalidOperationException(
+                    $"Maparea D300 {m.TipTva}/{m.Sens} → rd. {m.Rand} nu se poate seed-ui: lipsește din bază "
+                    + (tip == null ? $"tipul de TVA {m.TipTva}" : $"rândul de decont {m.Rand}") + ".");
+            var sens = m.Sens;
+            if (os.GetObjectsQuery<MapareD300>()
+                    .Any(x => x.TipTvaId == tip.ID && x.Sens == sens && x.RandId == rand.ID))
+                continue;
+            var mapare = os.CreateObject<MapareD300>();
+            mapare.TipTva = tip;
+            mapare.Sens = sens;
+            mapare.Rand = rand;
+        }
+    }
+
+    // Jumătatea de profil a gardianului D300 (`ContaSeeder.VerificaD300`):
+    // fiecare pereche `(TipTva seed-uit × Sens)` are cel puțin o mapare SAU e
+    // declarată nemapată. Domeniul e limitat la tipurile pe care le scrie ACEST
+    // seed: un `TipTva` adăugat de client nu e obligat să aibă mapare — apare la
+    // prima cifră în panoul „Operațiuni neincluse în decont" (D3-D8: raportarea
+    // nu refuză ce operarea a acceptat).
+    internal static void VerificaMapariD300(IObjectSpace os, IReadOnlyCollection<MapareD300> mapari) {
+        var coduri = MapariD300.Select(m => m.TipTva)
+            .Concat(NemapateDeliberat.Select(n => n.TipTva)).Distinct().ToList();
+        foreach (var cod in coduri) {
+            var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
+            if (tip == null)
+                throw new InvalidOperationException(
+                    $"Tabelul de mapare D300 referă tipul de TVA {cod}, care nu există în bază.");
+            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+                if (mapari.Any(m => m.TipTvaId == tip.ID && m.Sens == sens))
+                    continue;
+                var deliberat = NemapateDeliberat
+                    .Where(n => n.TipTva == cod && n.Sens == sens).Select(n => n.Motiv).FirstOrDefault();
+                if (deliberat == null)
+                    throw new InvalidOperationException(
+                        $"Tipul de TVA {cod} nu are nicio mapare D300 pe sensul {sens} și nici nu e "
+                        + "declarat nemapat deliberat — operațiunile lui ar cădea tăcut în afara decontului.");
+            }
         }
     }
 

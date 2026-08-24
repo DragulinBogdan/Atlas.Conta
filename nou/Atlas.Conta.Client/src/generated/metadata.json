@@ -33,6 +33,12 @@
       "Deductibil": "Deductibil",
       "Colectat": "Colectat"
     },
+    "FelRandD300": {
+      "Operatiuni": "Operațiuni",
+      "Total": "Total",
+      "Oglinda": "Oglindă",
+      "Extern": "Extern"
+    },
     "LaturaDocument": {
       "Predator": "Predator",
       "Primitor": "Primitor"
@@ -51,6 +57,11 @@
       "TaxareInversa": "TaxareInversa",
       "Scutit": "Scutit",
       "Neimpozabil": "Neimpozabil"
+    },
+    "SectiuneD300": {
+      "Colectata": "TVA colectată",
+      "Deductibila": "TVA deductibilă",
+      "Regularizari": "Regularizări"
     },
     "SensTva": {
       "Achizitie": "Achiziție",
@@ -660,6 +671,18 @@
         "ProdusId": "Produs"
       }
     },
+    "MapareD300": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ID": "ID",
+        "Rand": "Rând D300",
+        "RandEsteDeOperatiuni": "RandEsteDeOperatiuni",
+        "RandId": "Rând D300",
+        "Sens": "Sens",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA"
+      }
+    },
     "MigrareLegatura": {
       "DefaultProperty": null,
       "Membri": {
@@ -920,6 +943,23 @@
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"
+      }
+    },
+    "RandD300": {
+      "DefaultProperty": "Cod",
+      "Membri": {
+        "AreBaza": "AreBaza",
+        "AreTva": "AreTva",
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "Fel": "Fel",
+        "ID": "ID",
+        "OglindaA": "OglindaA",
+        "OglindaAId": "OglindaA",
+        "Ordine": "Ordine",
+        "Parinte": "Parinte",
+        "ParinteId": "Parinte",
+        "Sectiune": "Sectiune"
       }
     },
     "RaportProductie": {

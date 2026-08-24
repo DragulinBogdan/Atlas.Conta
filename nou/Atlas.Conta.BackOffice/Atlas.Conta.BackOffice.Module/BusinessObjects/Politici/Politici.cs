@@ -1,8 +1,10 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
+using DevExpress.Persistent.Validation;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -296,4 +298,55 @@ public class PoliticaNumerotare : BaseObject {
     public virtual string Serie { get; set; }
     public virtual int UrmatorulNumar { get; set; }
     public virtual string Format { get; set; }
+}
+
+// Așezarea unei operațiuni taxabile pe rândul decontului de TVA (felia 12,
+// D3-D2): politica `(TipTva × Sens) → RandD300`, cu N rânduri per pereche.
+//
+// DE CE n rânduri și nu o coloană pe `TipTva` (ca `CodSafTLivrare`): taxarea
+// inversă istorică pe achiziție (TI19) apare ȘI la rd. 16 (regularizări taxă
+// colectată), ȘI la rd. 33 (regularizări taxă dedusă) — o coloană n-ar fi
+// încăput. Iar rândurile formularului se schimbă cu legea (2026 a eliminat 13
+// rânduri și a comprimat numerotarea), deci ținta trebuie să fie o FK
+// verificabilă, nu un string magic.
+//
+// Perechea NEMAPATĂ nu e o eroare: un `TipTva` propriu al clientului, fără
+// mapare, apare la prima proiecție în panoul „Operațiuni neincluse în decont"
+// cu cifrele lui (D3-D4) — raportarea nu refuză ce operarea a acceptat. Ce se
+// REFUZĂ e o mapare care țintește un rând `Total`/`Oglindă`/`Extern`: cifra ar
+// fi suprascrisă tăcut de formulă la prima proiecție, adică exact „un gard care
+// tace devine capcană" (62f).
+[NavigationItem("Politici")]
+public class MapareD300 : BaseObject {
+    // Validare de culegere pe NAVIGAȚII, nu pe Guid-uri (decizia 40b:
+    // `RuleRequiredField` nu poate sta pe un `Guid` nenullabil — o linie culeasă
+    // fără tip ar produce un INSERT cu FK invalid).
+    public virtual Guid TipTvaId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip TVA")]
+    [RuleRequiredField("MapareD300_TipTva_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
+    public virtual TipTva TipTva { get; set; }
+
+    // Latura pe care se aplică maparea — aceeași axă ca `RegistruTva.Sens`
+    // (achiziție/livrare), fiindcă rândul de decont diferă per sens: N21 e rd. 9
+    // pe livrare și rd. 24 pe achiziție.
+    public virtual SensTva Sens { get; set; }
+
+    public virtual Guid RandId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Rând D300")]
+    [RuleRequiredField("MapareD300_Rand_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Rândul de decont este obligatoriu.")]
+    public virtual RandD300 Rand { get; set; }
+
+    // Gardianul D3-D2, ca regulă de fond (nu criteriu în limbaj de criterii:
+    // comparația de enum se scrie o dată, în C#, și nu depinde de parsare).
+    // Ascuns din UI — e purtătorul regulii, nu un câmp de cules.
+    [NotMapped]
+    [Browsable(false)]
+    [RuleFromBoolProperty("MapareD300_RandOperatiuni", DefaultContexts.Save,
+        CustomMessageTemplate = "Rândul de decont trebuie să fie de fel „Operațiuni” — "
+            + "rândurile de total, oglindă și extern se calculează, nu se alimentează din mapări.")]
+    public bool RandEsteDeOperatiuni => Rand == null || Rand.Fel == FelRandD300.Operatiuni;
 }

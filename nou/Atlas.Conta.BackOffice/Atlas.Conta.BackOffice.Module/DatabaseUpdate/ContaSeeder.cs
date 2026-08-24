@@ -29,10 +29,16 @@ public static class ContaSeeder {
         // fixată ÎNAINTE de pachetele de profil, ca nicio cale viitoare de seed
         // care ar rotunji bani să nu apuce să ruleze pe default.
         Scara.FixeazaConventia(rotunjire);
+        // Nomenclatorul rândurilor D300 e al NUCLEULUI (D3-D1: formularul e al
+        // legii, nu al profilului) și se COMITE înaintea pachetelor de profil —
+        // maparea privată îl referă prin FK (30e).
+        SeedRandD300(os);
+        os.CommitChanges();
         if (profil == ProfilContabil.Bugetar)
             ProfilBugetar.Seed(os);
         else
             ProfilPrivat.Seed(os);
+        VerificaD300(os, profil);
     }
 
     // Rândul de setare al bazei (decizia 51c). Gardian dublu: profilul (completează
@@ -137,6 +143,166 @@ public static class ContaSeeder {
             p.Luna = luna;
             p.Inchisa = false;
         }
+    }
+
+    // Corpul formularului 300 (OPANAF nr. 174/2026, M.Of. 105/09.02.2026), în
+    // NUCLEU pentru AMBELE profiluri (D3-D1): formularul e al legii, nu al
+    // profilului contabil — bugetarul are aceleași 55 de poziții, doar fără
+    // nicio mapare. 45 de rânduri numerotate + 10 sub-rânduri „din care";
+    // `Ordine` = poziția în formular, singura sortare corectă (`Cod` e text:
+    // alfabetic „10" ar veni înaintea lui „9").
+    //
+    // Idempotent pe `Cod`. Părinții și oglinzile se leagă din DICȚIONARUL
+    // trecerii curente, nu printr-o a doua interogare: rândurile abia create nu
+    // s-ar găsi la `FirstOrDefault` înainte de commit, iar o dependență de
+    // ordinea de creare ar fi fost o capcană tăcută. Pe rânduri preexistente cu
+    // FK gol legătura se completează (self-healing pe o bază seed-uită parțial),
+    // niciodată nu se rescrie una existentă.
+    internal static void SeedRandD300(IObjectSpace os) {
+        const SectiuneD300 COL = SectiuneD300.Colectata, DED = SectiuneD300.Deductibila,
+            REG = SectiuneD300.Regularizari;
+        const FelRandD300 OP = FelRandD300.Operatiuni, TOT = FelRandD300.Total,
+            OGL = FelRandD300.Oglinda, EXT = FelRandD300.Extern;
+
+        // Cod · Denumire · Secțiune · are Bază · are TVA · Fel · Părinte · OglindaA
+        (string Cod, string Denumire, SectiuneD300 Sectiune, bool Baza, bool Tva,
+            FelRandD300 Fel, string Parinte, string Oglinda)[] randuri = [
+            // ---- TVA COLECTATĂ: comerț intracomunitar și în afara UE (1–8) ----
+            ("1", "Livrări intracomunitare de bunuri, scutite conform art. 294 alin. (2) lit. a) și d) din Codul fiscal", COL, true, false, OP, null, null),
+            ("2", "Regularizări livrări intracomunitare de bunuri, scutite conform art. 294 alin. (2) lit. a) și d) din Codul fiscal", COL, true, false, OP, null, null),
+            ("3", "Livrări de bunuri sau prestări de servicii pentru care locul livrării/prestării este în afara României, precum și livrări intracomunitare de bunuri scutite conform art. 294 alin. (2) lit. b) și c) din Codul fiscal, din care:", COL, true, false, OP, null, null),
+            ("3.1", "Prestări de servicii intracomunitare care nu beneficiază de scutire în statul membru în care taxa este datorată", COL, true, false, OP, "3", null),
+            ("4", "Regularizări privind prestările de servicii intracomunitare care nu beneficiază de scutire în statul membru în care taxa este datorată", COL, true, false, OP, null, null),
+            ("5", "Achiziții intracomunitare de bunuri pentru care cumpărătorul este obligat la plata TVA (taxare inversă), din care:", COL, true, true, OP, null, null),
+            ("5.1", "Achiziții intracomunitare pentru care cumpărătorul este obligat la plata TVA (taxare inversă), iar furnizorul este înregistrat în scopuri de TVA în statul membru din care a avut loc livrarea", COL, true, true, OP, "5", null),
+            ("6", "Regularizări privind achizițiile intracomunitare de bunuri pentru care cumpărătorul este obligat la plata TVA (taxare inversă)", COL, true, true, OP, null, null),
+            ("7", "Achiziții de bunuri, altele decât cele de la rd. 5 și 6, și achiziții de servicii pentru care beneficiarul din România este obligat la plata TVA (taxare inversă), din care:", COL, true, true, OP, null, null),
+            ("7.1", "Achiziții de servicii intracomunitare pentru care beneficiarul este obligat la plata TVA (taxare inversă)", COL, true, true, OP, "7", null),
+            ("8", "Regularizări privind achizițiile de servicii intracomunitare pentru care beneficiarul este obligat la plata TVA (taxare inversă)", COL, true, true, OP, null, null),
+            // ---- TVA COLECTATĂ: livrări în interiorul țării și exporturi (9–16) ----
+            ("9", "Livrări de bunuri și prestări de servicii, taxabile cu cota 21%", COL, true, true, OP, null, null),
+            ("10", "Livrări de bunuri și prestări de servicii, taxabile cu cota 11%", COL, true, true, OP, null, null),
+            ("11", "Livrări de bunuri taxabile cu cota 9% conform art. III din Legea nr. 141/2025", COL, true, true, OP, null, null),
+            ("12", "Achiziții de bunuri și servicii supuse măsurilor de simplificare pentru care beneficiarul este obligat la plata TVA (taxare inversă), din care:", COL, true, true, OP, null, null),
+            ("12.1", "Achiziții de bunuri și servicii, taxabile cu cota 21%", COL, true, true, OP, "12", null),
+            ("12.2", "Achiziții de bunuri, taxabile cu cota 11%", COL, true, true, OP, "12", null),
+            ("13", "Livrări de bunuri și prestări de servicii supuse măsurilor de simplificare (taxare inversă)", COL, true, false, OP, null, null),
+            ("14", "Livrări de bunuri și prestări de servicii scutite cu drept de deducere, altele decât cele de la rd. 1-3", COL, true, false, OP, null, null),
+            ("15", "Livrări de bunuri și prestări de servicii scutite fără drept de deducere", COL, true, false, OP, null, null),
+            ("16", "Regularizări taxă colectată", COL, true, true, OP, null, null),
+            // ---- TVA COLECTATĂ: vânzări la distanță / servicii electronice (17–18) ----
+            ("17", "Vânzări intracomunitare de bunuri la distanță și prestări de servicii de telecomunicații, radiodifuziune, televiziune și electronice către persoane neimpozabile din alt stat membru, cu locul în România, conform art. 278^1 alin. (1) din Codul fiscal", COL, true, true, OP, null, null),
+            ("18", "Regularizări privind vânzările intracomunitare de bunuri la distanță și prestările de servicii de telecomunicații, radiodifuziune, televiziune și electronice către persoane neimpozabile din alt stat membru, conform art. 278^1 alin. (1) din Codul fiscal", COL, true, true, OP, null, null),
+            ("19", "TOTAL TAXĂ COLECTATĂ (sumă de la rd. 1 până la rd. 18, cu excepția celor de la rd. 3.1, 5.1, 7.1, 12.1, 12.2)", COL, true, true, TOT, null, null),
+            // ---- TVA DEDUCTIBILĂ: oglinzile zonei de taxare inversă (20–23) ----
+            ("20", "Achiziții intracomunitare de bunuri pentru care cumpărătorul este obligat la plata TVA (taxare inversă), din care:", DED, true, true, OGL, null, "5"),
+            ("20.1", "Achiziții intracomunitare pentru care cumpărătorul este obligat la plata TVA (taxare inversă), iar furnizorul este înregistrat în scopuri de TVA în statul membru din care a avut loc livrarea", DED, true, true, OGL, "20", "5.1"),
+            ("21", "Regularizări privind achizițiile intracomunitare de bunuri pentru care cumpărătorul este obligat la plata TVA (taxare inversă)", DED, true, true, OGL, null, "6"),
+            ("22", "Achiziții de bunuri, altele decât cele de la rd. 20 și 21, și achiziții de servicii pentru care beneficiarul din România este obligat la plata TVA (taxare inversă), din care:", DED, true, true, OGL, null, "7"),
+            ("22.1", "Achiziții de servicii intracomunitare pentru care beneficiarul este obligat la plata TVA (taxare inversă)", DED, true, true, OGL, "22", "7.1"),
+            ("23", "Regularizări privind achizițiile de servicii intracomunitare pentru care beneficiarul din România este obligat la plata TVA (taxare inversă)", DED, true, true, OGL, null, "8"),
+            // ---- TVA DEDUCTIBILĂ: achiziții în interiorul țării și importuri (24–29.1) ----
+            ("24", "Achiziții de bunuri și servicii taxabile cu cota de 21%, altele decât cele de la rd. 27", DED, true, true, OP, null, null),
+            ("25", "Achiziții de bunuri și servicii, taxabile cu cota de 11%", DED, true, true, OP, null, null),
+            ("26", "Achiziții de bunuri și servicii supuse măsurilor de simplificare pentru care beneficiarul este obligat la plata TVA (taxare inversă), din care:", DED, true, true, OGL, null, "12"),
+            ("26.1", "Achiziții de bunuri, taxabile cu cota 21%", DED, true, true, OGL, "26", "12.1"),
+            ("26.2", "Achiziții de bunuri, taxabile cu cota 11%", DED, true, true, OGL, "26", "12.2"),
+            ("27", "Compensația în cotă forfetară pentru achiziții de produse și servicii agricole de la furnizori care aplică regimul special pentru agricultori", DED, false, true, EXT, null, null),
+            ("28", "Regularizări privind compensația în cotă forfetară", DED, false, true, EXT, null, null),
+            ("29", "Achiziții de bunuri și servicii scutite de taxă sau neimpozabile, din care:", DED, true, false, OP, null, null),
+            ("29.1", "Achiziții de servicii intracomunitare scutite de taxă", DED, true, false, OP, "29", null),
+            // ---- TVA DEDUCTIBILĂ: totalurile și ajustările (30–35) ----
+            ("30", "TOTAL TAXĂ DEDUCTIBILĂ (sumă de la rd. 20 până la rd. 28, cu excepția celor de la rd. 20.1, 22.1, 26.1, 26.2)", DED, true, true, TOT, null, null),
+            ("31", "SUB-TOTAL TAXĂ DEDUSĂ conform art. 297 și art. 298 sau art. 300 și art. 298 din Codul fiscal și compensație în cotă forfetară", DED, false, true, TOT, null, null),
+            ("32", "TVA efectiv restituită cumpărătorilor străini, inclusiv comisionul unităților autorizate", DED, false, true, EXT, null, null),
+            ("33", "Regularizări taxă dedusă", DED, true, true, OP, null, null),
+            ("34", "Ajustări conform pro-rata / ajustări de taxă", DED, false, true, EXT, null, null),
+            ("35", "TOTAL TAXĂ DEDUSĂ (rd. 31 + rd. 32 + rd. 33 + rd. 34)", DED, false, true, TOT, null, null),
+            // ---- REGULARIZĂRI conform art. 303 din Codul fiscal (36–45) ----
+            ("36", "Suma negativă a TVA în perioada de raportare (rd. 35 - rd. 19)", REG, false, true, TOT, null, null),
+            ("37", "Taxa de plată în perioada de raportare (rd. 19 - rd. 35)", REG, false, true, TOT, null, null),
+            ("38", "Soldul TVA de plată din decontul perioadei fiscale precedente (rd. 44), neachitat până la data depunerii decontului de TVA", REG, false, true, EXT, null, null),
+            ("39", "Diferențe de TVA de plată stabilite de organele fiscale prin decizie comunicată și neachitate până la data depunerii decontului de TVA", REG, false, true, EXT, null, null),
+            ("40", "TVA de plată cumulat (rd. 37 + rd. 38 + rd. 39)", REG, false, true, TOT, null, null),
+            ("41", "Soldul sumei negative a TVA reportate din perioada precedentă pentru care nu s-a solicitat rambursare (rd. 45 din decontul perioadei fiscale precedente)", REG, false, true, EXT, null, null),
+            ("42", "Diferențe negative de TVA stabilite de organele de inspecție fiscală prin decizie comunicată până la data depunerii decontului de TVA", REG, false, true, EXT, null, null),
+            ("43", "Suma negativă a TVA cumulate (rd. 36 + rd. 41 + rd. 42)", REG, false, true, TOT, null, null),
+            ("44", "Sold TVA de plată la sfârșitul perioadei de raportare (rd. 40 - rd. 43)", REG, false, true, TOT, null, null),
+            ("45", "Soldul sumei negative de TVA la sfârșitul perioadei de raportare (rd. 43 - rd. 40)", REG, false, true, TOT, null, null),
+        ];
+
+        var dupaCod = new Dictionary<string, RandD300>();
+        for (int i = 0; i < randuri.Length; i++) {
+            var r = randuri[i];
+            var rand = os.FirstOrDefault<RandD300>(x => x.Cod == r.Cod);
+            if (rand == null) {
+                rand = os.CreateObject<RandD300>();
+                rand.Cod = r.Cod;
+                rand.Denumire = r.Denumire;
+                rand.Sectiune = r.Sectiune;
+                rand.Ordine = i + 1;
+                rand.AreBaza = r.Baza;
+                rand.AreTva = r.Tva;
+                rand.Fel = r.Fel;
+            }
+            dupaCod[r.Cod] = rand;
+        }
+        foreach (var r in randuri) {
+            var rand = dupaCod[r.Cod];
+            if (r.Parinte != null && rand.ParinteId == null && rand.Parinte == null)
+                rand.Parinte = dupaCod[r.Parinte];
+            if (r.Oglinda != null && rand.OglindaAId == null && rand.OglindaA == null)
+                rand.OglindaA = dupaCod[r.Oglinda];
+        }
+    }
+
+    // 45 de rânduri numerotate + 10 sub-rânduri „din care" (OPANAF 174/2026).
+    // Public: ModelCheck (alt assembly) verifică aceeași cifra pe calea reala.
+    public const int RanduriD300Asteptate = 55;
+
+    // Gardianul de profil al feliei D300 (D3-D8, în siajul lui 36c). Rulează
+    // DUPĂ pachetele de profil, spre deosebire de `VerificaProfil`, care apără
+    // ancora planului ÎNAINTE de a scrie ceva: aici obiectul verificat e chiar
+    // rezultatul seed-ului, iar o verificare dinaintea lui ar fi fost vacuă.
+    //
+    // Partea de MAPARE e a profilului privat și trăiește în pachetul lui
+    // (`ProfilPrivat.VerificaMapariD300`): nucleul n-are de unde ști ce coduri
+    // de `TipTva` seed-uiește un profil, iar lista nemapatelor deliberate e
+    // exact tabelul D3-D2, care e conținut de profil (29c).
+    static void VerificaD300(IObjectSpace os, ProfilContabil profil) {
+        var randuri = os.GetObjectsQuery<RandD300>().ToList();
+        if (randuri.Count != RanduriD300Asteptate)
+            throw new InvalidOperationException(
+                $"Nomenclatorul rândurilor D300 are {randuri.Count} rânduri, nu {RanduriD300Asteptate} "
+                + "(OPANAF 174/2026: 45 de rânduri + 10 sub-rânduri).");
+        if (randuri.Select(r => r.Ordine).Distinct().Count() != randuri.Count)
+            throw new InvalidOperationException(
+                "Rândurile D300 au poziții (`Ordine`) duplicate — ordinea formularului nu mai e definită.");
+        foreach (var r in randuri) {
+            // Sub-rândul „din care" se recunoaște după cod („12.1"): fără părinte
+            // ar dispărea din agregarea rândului-mamă.
+            if (r.Cod.Contains('.') && r.ParinteId == null)
+                throw new InvalidOperationException($"Sub-rândul D300 {r.Cod} nu are părinte rezolvat.");
+            if ((r.Fel == FelRandD300.Oglinda) != (r.OglindaAId != null))
+                throw new InvalidOperationException(
+                    $"Rândul D300 {r.Cod} are `Fel` = {r.Fel} și "
+                    + (r.OglindaAId == null ? "nicio sursă de oglindă" : "totuși o sursă de oglindă") + ".");
+        }
+        var mapari = os.GetObjectsQuery<MapareD300>().ToList();
+        if (profil == ProfilContabil.Bugetar) {
+            // Bugetarul n-are `PoliticaTva`, deci `RegistruTva` îi rămâne gol:
+            // o mapare acolo ar fi politică orfană, nu configurare.
+            if (mapari.Count > 0)
+                throw new InvalidOperationException(
+                    $"Profilul bugetar are {mapari.Count} mapări D300, deși nu produce rânduri de registru fiscal.");
+            return;
+        }
+        foreach (var m in mapari)
+            if (m.Rand.Fel != FelRandD300.Operatiuni)
+                throw new InvalidOperationException(
+                    $"Maparea D300 {m.TipTva.Cod}/{m.Sens} țintește rd. {m.Rand.Cod}, de fel {m.Rand.Fel} — "
+                    + "doar rândurile de operațiuni se alimentează din mapări (D3-D2).");
+        ProfilPrivat.VerificaMapariD300(os, mapari);
     }
 
     // Minimul pentru fluxurile e2e: două gestiuni, o unitate (loc de consum),

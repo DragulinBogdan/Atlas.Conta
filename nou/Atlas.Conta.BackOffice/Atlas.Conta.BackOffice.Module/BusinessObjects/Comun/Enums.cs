@@ -123,3 +123,28 @@ public enum DimensiuneFlags {
     Proiect = 64,
     CentruCost = 128,
 }
+
+// Secțiunea formularului 300 (OPANAF 174/2026) în care stă un rând. Ordinea
+// valorilor e ordinea din formular; fără valoarea 0 — convenția locală a
+// fișierului (default invalid = protecție la rânduri scrise fără sens).
+public enum SectiuneD300 {
+    [XafDisplayName("TVA colectată")] Colectata = 1,
+    [XafDisplayName("TVA deductibilă")] Deductibila = 2,
+    [XafDisplayName("Regularizări")] Regularizari = 3,
+}
+
+// Cum se alimentează un rând al decontului (D3-D1) — singura axă după care
+// proiecția decide de unde vine cifra:
+//   Operatiuni — primește mapări `(TipTva × Sens)` din registru;
+//   Total      — calculat în cod, din formula legii (19, 30, 31, 35…45);
+//   Oglinda    — copiat din rândul-sursă (`OglindaA`: 20…23, 26, 26.1, 26.2);
+//   Extern     — fără sursă în model (agricultori, restituiri, pro-rata,
+//                soldurile perioadei precedente): parametru sau 0.
+// O mapare care țintește altceva decât `Operatiuni` e REFUZATĂ (D3-D2) — altfel
+// cifra ar fi suprascrisă tăcut de formulă/oglindă la prima proiecție.
+public enum FelRandD300 {
+    [XafDisplayName("Operațiuni")] Operatiuni = 1,
+    [XafDisplayName("Total")] Total = 2,
+    [XafDisplayName("Oglindă")] Oglinda = 3,
+    [XafDisplayName("Extern")] Extern = 4,
+}
