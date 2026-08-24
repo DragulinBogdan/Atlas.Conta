@@ -108,6 +108,11 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 case Imperechere imperechere:
                     VerificaImperechere(os, imperechere, erori);
                     break;
+                // (d) Nomenclatorul de conturi: `Parinte` nu poate închide un
+                // ciclu (F13-D4 / restanța 67e).
+                case Cont cont:
+                    VerificaCont(os, cont, erori);
+                    break;
             }
         }
         if (erori.Count > 0)
@@ -223,6 +228,70 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             erori.Add(ex.Message);
         }
     }
+
+    // (d) Ciclul din `Cont.Parinte` (F13-D4, restanța 67e). Planul de conturi e
+    // un ARBORE: `BalantaPliata` (67) cumulează brutele în sus pe `Parinte`, iar
+    // `Cont.Simbol`/`Sumator` presupun aceeași ierarhie. Un ciclu (A → B → A,
+    // sau A pe el însuși) transformă orice parcurgere într-o buclă infinită.
+    // Garda de VIZITARE din `BalantaPliata` rămâne (apărare în adâncime pentru
+    // datele deja intrate), dar ea OPREȘTE tăcut; aici ciclul se REFUZĂ la
+    // intrare, cu lanțul în mesaj — „un gard care tace devine capcană" (62f).
+    //
+    // Se verifică la fiecare scriere a unui `Cont` cu părinte (nu doar când
+    // `ParinteId` s-a schimbat): un ciclu se poate închide și mutând CELĂLALT
+    // capăt, iar lanțul unui plan sintetic are 3–4 niveluri — costul e neglijabil
+    // față de riscul de a rata cazul.
+    static void VerificaCont(IObjectSpace os, Cont cont, ICollection<string> erori) {
+        if (EsteSters(os, cont))
+            return;
+        var parinte = ParinteleLui(os, cont);
+        if (parinte == null)
+            return;
+        var lant = new List<Cont> { cont };
+        var vizitate = new HashSet<Guid> { cont.ID };
+        for (var pas = 0; pas < LimitaAscendenti; pas++) {
+            lant.Add(parinte);
+            if (!vizitate.Add(parinte.ID)) {
+                // Ciclul poate să nu treacă prin contul scris (X → A → B → A):
+                // atunci nu e „propriul strămoș", dar e tot un ciclu — și tot
+                // pe scrierea asta se vede prima oară.
+                erori.Add(parinte.ID == cont.ID
+                    ? $"Contul {EtichetaCont(cont)} nu poate fi propriul strămoș: "
+                        + $"lanțul {Lant(lant)}."
+                    : $"Contul {EtichetaCont(cont)} are un ciclu pe lanțul de părinți: {Lant(lant)}.");
+                return;
+            }
+            parinte = ParinteleLui(os, parinte);
+            if (parinte == null)
+                return;
+        }
+        // Limita depășită fără repetiție = tot refuz: fie lanțul e mai adânc
+        // decât are sens un plan de conturi, fie ciclul e mai lung decât ce
+        // apucăm să vizităm. În ambele cazuri parcurgerile din raportare n-ar
+        // mai fi de încredere.
+        erori.Add($"Contul {EtichetaCont(cont)} are un lanț de părinți mai lung de "
+            + $"{LimitaAscendenti} niveluri — planul de conturi nu poate fi atât de adânc: "
+            + $"{Lant(lant)} → …");
+    }
+
+    // Adâncimea maximă a unui plan sintetic e de ordinul 4 (clasă → grupă → cont
+    // sintetic gr. I → gr. II); 64 e „imposibil de atins legitim", nu o limită de
+    // produs.
+    const int LimitaAscendenti = 64;
+
+    // FK-ul scalar nu e încă fixat pe obiectele NOI (se completează la
+    // SaveChanges), exact ca la liniile de document mai sus: navigația e sursa
+    // primară, FK-ul e plasa pentru obiectele deja materializate (părintele poate
+    // fi tot nou, în ACELAȘI commit — `GetObjectByKey` îl întoarce din OS).
+    static Cont ParinteleLui(IObjectSpace os, Cont cont) =>
+        cont.Parinte
+            ?? (cont.ParinteId is Guid id && id != Guid.Empty ? os.GetObjectByKey<Cont>(id) : null);
+
+    static string Lant(IEnumerable<Cont> conturi) =>
+        string.Join(" → ", conturi.Select(EtichetaCont));
+
+    static string EtichetaCont(Cont cont) =>
+        string.IsNullOrWhiteSpace(cont.Simbol) ? $"({cont.ID})" : cont.Simbol;
 
     // „Obiectul ăsta e pe cale să fie ȘTERS?" — răspuns valabil ÎN Committing.
     //

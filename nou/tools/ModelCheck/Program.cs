@@ -195,8 +195,14 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     recitita = await ctx.ReguliContare.SingleAsync(r => r.ID == proba.ID);
     Check("Update pe coloana plată → schimbare detectată", recitita.ComunRepartitorId == null);
 
-    ctx.ReguliContare.Remove(recitita);
-    await ctx.SaveChangesAsync();
+    // Proba e artefact de harness, nu obiect de probă ⇒ purjă FIZICĂ (F13-D2).
+    // `Remove` + `SaveChanges` ar trece prin interceptorul de ștergere amânată
+    // (`opts` îl are) și ar lăsa un rând `GCRecord = 1` PER RULARE — o
+    // `RegulaContare` goală (Explicit fără cont debitor), exact forma pe care
+    // `ContaSeeder.StergeReguliContareStricate` o culege la rularea următoare
+    // și o „șterge" din nou, tot logic. Măsurat: +1 rând/rulare pe ambele baze.
+    ctx.ChangeTracker.Clear();
+    await ctx.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM \"ReguliContare\" WHERE \"ID\" = {proba.ID}");
 }
 
 // ========================= Scenariul e2e P1: profil privat =========================
@@ -2944,6 +2950,7 @@ if (profil == ProfilContabil.Privat) {
     VerificaD300Seed(privat: true);
     VerificaD300(cuTva: true);
     VerificaAxaTaxareInversa();
+    VerificaGardianCicluCont();
 
     Rezumat();
     return;
@@ -7917,6 +7924,7 @@ VerificaRegistruTva(cuTva: false);
 VerificaD300Seed(privat: false);
 VerificaD300(cuTva: false);
 VerificaAxaTaxareInversa();
+VerificaGardianCicluCont();
 
 Rezumat();
 
@@ -7947,6 +7955,134 @@ void VerificaAxaTaxareInversa() {
             && TvaService.DirectiePentruTip(os,
                 os.FirstOrDefault<TipDocument>(t => t.Cod == "NIR").ID) == null);
     }
+}
+
+// ============ F13-D4: gardianul de ciclu pe `Cont.Parinte` (restanța 67e) ============
+// Ca la 57f: `GardianEditare` trăiește pe familia SECURED a host-urilor și NU e
+// înregistrat aici (ModelCheck e un provider standalone, fără `XafApplication`),
+// deci proba echivalentă e să chemi exact funcția pe care host-ul o leagă de
+// `Committing` (`GardianEditare.Verifica`) DIN `Committing`-ul acestui
+// ObjectSpace — același obiect, aceeași fază.
+//
+// Nomenclator pur ⇒ nicio dependență de profil: rulează identic pe amândouă.
+// Conturile scenei poartă marcajul `E2E-CIC` și se purjează FIZIC (F13-D2) la
+// început (rulare eșuată anterior) și la sfârșit.
+void VerificaGardianCicluCont() {
+    const string MarcajCic = "E2E-CIC";
+    using var os = provider.CreateObjectSpace();
+
+    void CurataCic() {
+        // `IgnoreQueryFilters` (în `Purja`) ca peste tot: reziduul unei rulări
+        // care a marcat un cont ca șters n-ar fi altfel nici măcar vizibil.
+        // Părinții și copiii intră în ACELAȘI pas: FK-ul `ParinteId` e `NO ACTION`,
+        // verificat la finalul instrucțiunii, deci un singur `DELETE` peste tot
+        // lanțul trece (iar `Purja` are oricum reluarea în pase).
+        new Purja(os).Adauga(os.GetObjectsQuery<Cont>().IgnoreQueryFilters()
+            .Where(c => c.Simbol.StartsWith(MarcajCic))).Executa();
+    }
+    CurataCic();
+
+    Cont ContCic(IObjectSpace o, string sufix, Cont parinte = null) {
+        var c = o.CreateObject<Cont>();
+        c.Simbol = MarcajCic + sufix;
+        c.Denumire = "Cont probă ciclu " + sufix;
+        c.Parinte = parinte;
+        return c;
+    }
+
+    // --- (1) Lanț legitim de 3 niveluri, cu părinții creați în ACELAȘI commit ---
+    // Cele două cerințe ale contractului se suprapun deliberat: pe obiecte NOI
+    // FK-ul scalar nu e încă fixat (se completează la SaveChanges), deci dacă
+    // gardianul ar fi urmărit lanțul doar pe `ParinteId` n-ar fi văzut nimic aici
+    // — nici ciclul, nici lipsa lui. Trecerea probează că sursa primară e
+    // navigația, exact ca la liniile de document.
+    var cRadacina = ContCic(os, "-1");
+    var cMijloc = ContCic(os, "-2", cRadacina);
+    var cFrunza = ContCic(os, "-3", cMijloc);
+    string refuzLegitim = null;
+    void LaCommittingCic(object _, System.ComponentModel.CancelEventArgs __) {
+        try { GardianEditare.Verifica(os); }
+        catch (OperareException e) { refuzLegitim = e.Message; }
+    }
+    os.Committing += LaCommittingCic;
+    os.CommitChanges();
+    os.Committing -= LaCommittingCic;
+    Check("F13-D4: lanț legitim de 3 niveluri, TOATE conturile create în același commit "
+        + "(părintele e el însuși nou, deci vizibil doar prin navigație) — gardianul TACE",
+        refuzLegitim == null
+        && os.GetObjectsQuery<Cont>().Count(c => c.Simbol.StartsWith(MarcajCic)) == 3
+        && cMijloc.ParinteId == cRadacina.ID && cFrunza.ParinteId == cMijloc.ID);
+
+    // Fiecare refuz pe un ObjectSpace PROPRIU, aruncat: comitul nu ajunge
+    // niciodată la `SaveChanges` (gardianul aruncă din `Committing`), deci scena
+    // rămâne exact cum a lăsat-o pasul (1) — nimic de rollback-uit.
+    string RefuzCiclu(Action<IObjectSpace> pregateste) {
+        using var osProba = provider.CreateObjectSpace();
+        osProba.Committing += (_, __) => GardianEditare.Verifica(osProba);
+        pregateste(osProba);
+        try {
+            osProba.CommitChanges();
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+    }
+
+    // --- (2) Ciclu DIRECT: A.Parinte = A, pe un cont deja persistat ---
+    var mesajDirect = RefuzCiclu(o => {
+        var a = o.GetObjectByKey<Cont>(cRadacina.ID);
+        a.Parinte = a;
+    });
+    Check("F13-D4: ciclu DIRECT (A.Parinte = A) → refuz de domeniu, cu lanțul în mesaj",
+        mesajDirect != null && mesajDirect.Contains("propriul strămoș")
+        && mesajDirect.Contains($"{MarcajCic}-1 → {MarcajCic}-1"));
+
+    // --- (3) Ciclu prin DOI: A → B, iar B → A din scena persistată ---
+    var mesajDoi = RefuzCiclu(o => {
+        var a = o.GetObjectByKey<Cont>(cRadacina.ID);
+        a.Parinte = o.GetObjectByKey<Cont>(cMijloc.ID);
+    });
+    Check("F13-D4: ciclu prin DOI (A → B → A, cu B → A deja în bază) → refuz, iar mesajul poartă "
+        + "lanțul ÎNTREG, nu doar contul — gardul spune CE l-a închis",
+        mesajDoi != null && mesajDoi.Contains("propriul strămoș")
+        && mesajDoi.Contains($"{MarcajCic}-1 → {MarcajCic}-2 → {MarcajCic}-1"));
+
+    // --- (4) Ciclu între două conturi NOI, în același commit ---
+    // Cazul pe care numai urmărirea prin navigație îl poate prinde: niciunul
+    // dintre cele două n-are încă rând în bază, deci nicio interogare nu i-ar fi
+    // văzut legătura.
+    var mesajNoi = RefuzCiclu(o => {
+        var x = ContCic(o, "-N1");
+        var y = ContCic(o, "-N2", x);
+        x.Parinte = y;
+    });
+    Check("F13-D4: ciclu între două conturi NOI în ACELAȘI commit → refuz (lanțul se urmărește prin "
+        + "navigație, nu prin FK: rândurile nu există încă în bază)",
+        mesajNoi != null && mesajNoi.Contains("propriul strămoș")
+        && mesajNoi.Contains($"{MarcajCic}-N1") && mesajNoi.Contains($"{MarcajCic}-N2"));
+
+    // --- (5) Contul ȘTERS nu se mai judecă ---
+    // 55a/57f: la `Committing` ștergerea amânată e încă `EntityState.Deleted` cu
+    // `GCRecord` 0. Un cont șters care era prins într-un lanț nu trebuie să
+    // blocheze commitul — ștergerea e chiar ieșirea din lanț.
+    var refuzStergere = RefuzCiclu(o => o.Delete(o.GetObjectByKey<Cont>(cFrunza.ID)));
+    Check("F13-D4: ștergerea (amânată) a unui cont din lanț NU trece prin gardul de ciclu",
+        refuzStergere == null);
+    // …iar ștergerea chiar s-a comis: rândul rămâne fizic (F13-D2), deci
+    // curățenia finală trebuie să-l vadă prin `IgnoreQueryFilters` ca să-l ia.
+    Check("F13-D4: contul șters logic a dispărut din interogări, dar rândul e încă acolo (GCRecord = 1)",
+        !os.GetObjectsQuery<Cont>().Any(c => c.ID == cFrunza.ID)
+        && os.GetObjectsQuery<Cont>().IgnoreQueryFilters().Any(c => c.ID == cFrunza.ID));
+
+    Console.WriteLine("     MĂSURAT (F13-D4) — mesajele de domeniu, exact cum le vede operatorul:\n"
+        + $"       direct:      {mesajDirect?.Replace("\n", " | ") ?? "<gardianul a tăcut>"}\n"
+        + $"       prin doi:    {mesajDoi?.Replace("\n", " | ") ?? "<gardianul a tăcut>"}\n"
+        + $"       două noi:    {mesajNoi?.Replace("\n", " | ") ?? "<gardianul a tăcut>"}");
+
+    CurataCic();
+    Check("Curățenie finală F13-D4 (fără reziduuri E2E-CIC, nici măcar șterse logic)",
+        !os.GetObjectsQuery<Cont>().IgnoreQueryFilters().Any(c => c.Simbol.StartsWith(MarcajCic)));
 }
 
 // ============ Felia 9 (raportare): balanța de verificare (R-D1…R-D4) ============
