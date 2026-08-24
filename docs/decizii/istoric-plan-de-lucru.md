@@ -272,9 +272,19 @@ per felie):
   jurnalul de vânzări + agregarea per cotă (scheletul D300), cu codurile
   SAF-T/D394 ca atribute pe rând; generarea fișierelor rămâne proiect separat
   (35c).
+- **Felia 12 — D300** (EXECUTATĂ, decizia 69; design + închidere:
+  `docs/api/p5-felia-d300-design.md`, formularul în
+  `docs/api/d300-structura-2026.md`): nomenclatorul rândurilor OPANAF 174/2026
+  (55 poziții, seed în nucleu) + maparea `(TipTva × Sens) → rând` ca politică
+  privată + proiecția în memorie cu formulele în cod + `/d300`. Review advers
+  cu 8 constatări, 6 fixate (V_6 la storno de nedeductibil, scăderea rd. 31 pe
+  operanzi, dubla numărare părinte+copil, ștergerea logică vs re-seed, seed-ul
+  care nu corecta, afordanțele). Smoke pe importul 2025: rd. 9/24 = decont la
+  cent, rd. 37 vs ITV explicat integral prin punțile NTC. Perf 25 ms/an.
 - Restul: finisaj de client (listele §Închidere ale contractelor +
   `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului) și
-  feliile de scriere rămase (NTC/ASM/retururi, la cerere).
+  feliile de scriere rămase (NTC/ASM/retururi, la cerere); D394/SAF-T pe
+  tiparul D300.
   Alternativă rămasă: felia C1a a comenzilor
   (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă, la presiune
   de client).

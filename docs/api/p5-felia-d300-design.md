@@ -261,3 +261,48 @@ NTC**. Perf măsurată (addendum în `p5-perf-masuratori.md`). Decizia 69 scris�
 
 Explicit NU în regula de oprire: XML/PDF, versionare de formular, rânduri
 intracomunitare, TVA la încasare, D394.
+
+## Închidere (2026-08-24)
+
+- [x] Contract îndeplinit: ModelCheck **bugetar 677 OK / 0 FAIL, privat 375 OK /
+  0 FAIL** (D3-V1…V7 + probele fixurilor F1–F6); două migrații, strict aditive
+  (`AddD300`, `D300IndexFiltrat`); `--dump-metadata` și driftul openapi verzi.
+- [x] Smoke pe calea reală (browser, baza Privat cu importul 2025): martie 2025
+  → 55 rânduri, avertismentul „formular 2026", panoul „Neincluse" cu N9/Achiziție
+  (1.672,81 / 150,55 / 3). Septembrie 2025 (prima lună cu N21 real): **rd. 9 =
+  7.356.684,42 / 1.544.902,66 și rd. 24 = 4.129.896,21 / 867.470,82 — identice la
+  cent cu `/decont-tva`**; rd. 12/12.1/26/26.1 = TI21; rd. 16 = −90.092,87 /
+  −17.117,67 (N19 + TI19, net NEGATIV, netrunchiat); rd. 37 = 675.726,30 vs ITV
+  548.681,55 — **diferența 127.044,75 atribuită la cent punților NTC ale lunii**
+  (4427: 110.561,60; 4426: 16.483,15), iar rd. 19 == creditul brut 4427 al
+  documentelor operative. Extern rd. 38 = 100 → rd. 40/44 = 675.826,30, deep-link
+  reproductibil; 400 inline pe perioadă inversată și pe 38 ∧ 41.
+- [x] Perf (addendum 4, HTTP + JWT): 20 ms/lună, 25 ms/anul 2025 (90.739 rânduri);
+  niciun index.
+- [x] Decizia 69 scrisă; README, CLAUDE.md §69, istoric.
+
+**Ce a scos review-ul advers — 8 constatări, 6 fixate în cod** (fiecare cu de ce
+cusătura NU putea să-l vadă):
+
+1. **rd. 31 > rd. 30 la storno de NED21 într-o lună ulterioară** (V_6, blocantă la
+   ANAF) — scena stornă în aceeași lună și pe `Normal`; nedeductibilul net negativ
+   nu exista. Fix: avertisment + toate inegalitățile blocante; scenă pe 3 luni.
+2. **TI pe livrare poartă TVA din motor** ⇒ rd. 13 ar fi strigat lunar pe o
+   configurație corectă — scena nu punea TI pe FCL. Fix în proiecție (exclus din
+   avertisment), rădăcina = 69-r4.
+3. **Scăderea rd. 31 pe `Sectiune`** greșea în ambele direcții — singurul
+   `Capitalizat` din seed e mapat pe un operand al rd. 30, fericit prin
+   construcție. Fix: × țintele-operanzi cu coloană TVA; probe (a)/(b).
+4. **Mapare pe părinte ȘI copil = dublă numărare legală** — D3-V3 ar fi prins-o
+   aritmetic, dar ca asertiune de scenă, nu gard de runtime. Fix: gardian + regulă
+   XAF simetrică, probată în browser.
+5. **Ștergere logică + re-seed = violare de index unic** — ModelCheck nu ștergea
+   nicio mapare de profil. Fix: indexuri filtrate, seed-ul respectă ștergerea.
+   Constatare colaterală: `os.Delete` în ModelCheck șterge fizic (69-r7).
+6. **Seed-ul nu actualiza rândurile existente**; D3-V1 verifica eșantioane —
+   permutările treceau. Fix: rescriere + tabel complet în probă.
+7. Lookup filtrat + OData ReadOnly — contract nelivrat la pasul 1; livrat.
+8. 400 pe dată malformată = `ValidationProblemDetails` pe TOATE proiecțiile
+   (convenția `[ApiController]`) — nu s-a schimbat; restanță comună 69-r5.
+
+**Rămase, ne-blocante**: 69-r1…r7 în fișierul deciziei.

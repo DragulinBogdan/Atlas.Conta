@@ -83,3 +83,4 @@
 | 66 | [Pasul 5, felia 9 — raportarea pe registre](066-p5-felia9-raportare.md) | 2026-08-17 | activă |
 | 67 | [Pasul 5, felia 10 — balanța pliată pe planul de conturi](067-p5-felia10-balanta-pliata.md) | 2026-08-17 | activă |
 | 68 | [Pasul 5, felia 11 — jurnalele de TVA](068-p5-felia11-jurnale-tva.md) | 2026-08-19 | activă |
+| 69 | [Pasul 5, felia 12 — D300, decontul de TVA](069-p5-felia12-d300.md) | 2026-08-24 | activă |

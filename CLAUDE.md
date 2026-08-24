@@ -515,6 +515,23 @@ decizia N.
     afișare; backfill = unealtă proprie prin ACEEAȘI funcție a motorului;
     decontul se grupează pe `(Sens × TipTva)`; `Storno` în cheie; linia de cost
     a returului nu poartă `TipTva`. Rămase → jurnal.
+69. **D300 = proiecție peste `RegistruTva`.** (a) Rândurile formularului =
+    nomenclator `RandD300` seed-uit din lege (nucleu, `ForbidCRUD`, seed-ul
+    RESCRIE câmpurile ne-cheie), (b) maparea `(TipTva × Sens) → rând` = politică
+    `MapareD300`, n rânduri per pereche, ținta doar `Operatiuni`, niciodată un
+    rând și un ascendent al lui; nemapatele deliberate = listă cu motiv în
+    profil; politica ștearsă logic rămâne ștearsă la re-seed (indexuri unice
+    filtrate pe `GCRecord = 0`). (c) Formulele = COD: listă în memorie, un rând
+    per poziție, oglinzile = copie, totalurile din nivelul 0, null (nu 0) unde
+    coloana nu există. (d) rd. 31 = rd. 30 − nedeductibil (`Capitalizat`
+    snapshot × țintele-operanzi ai rd. 30); validările blocante ale formularului
+    = AVERTISMENT, nu trunchiere; `max(…,0)` doar pe 36/37/44/45. (e)
+    `Nemapate` e parte din contract; TVA pe coloană absentă = avertisment
+    (excepție: TI pe livrare, 69-r4). (f) rd. 37/36 == liniile ITV pe scenă;
+    pe baza de import diferența = punțile NTC, raportată. (g) Perioada
+    obligatorie; `User` = 200 cu rânduri filtrate (403 e al comenzilor). (h)
+    **`if (e.event)` e necesar, nu suficient**: widget tastabil legat de store
+    asincron cere buffer local. Rămase → jurnal.
 
 ## Stare și roadmap
 
@@ -534,12 +551,13 @@ detaliat în jurnal):
   reconciliere identic byte-cu-byte.
 - **Pasul 5** — spike BTR (55), FCT+NIR (56), trezorerie (57), FCL+DSC (58),
   perf (59), mărunțișuri (60–61), NIR scriere (62), LDI+BCS (63), virament (64),
-  DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68).
+  DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68),
+  D300 (69).
 
 **Următorul pas**: finisajul clientului (listele §Închidere ale contractelor +
 `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului);
 feliile de scriere rămase (NTC/ASM/retururi, la cerere); proiecțiile fiscale
-(D300/D394/SAF-T peste `RegistruTva`).
+rămase (D394/SAF-T peste `RegistruTva`, pe tiparul D300).
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -557,7 +575,11 @@ modelul, `Lot.Eticheta` pe OData · 62g/66j finisaj de client și ecrane XAF
 `MaterializeazaValori` pe BTR · 64h dimensiunea Repartitor pe rândul de bani
 (decizie proprie) · 64k comisionul bancar, valuta · 67e gardian de nomenclator
 pentru ciclul din `Cont.Parinte` · 68j smoke vizual, storno/regimuri fără TVA
-în backfill · C1a fluxul comenzilor
+în backfill · 69-r1 versionarea formularului D300 · 69-r2 rândurile
+intracomunitare/agricultori/pro-rata/secțiunile A-B · 69-r3 regularizările pe
+cauză juridică · 69-r4 `TvaService` calculează TVA pe TI și pe livrare · 69-r5
+două forme de 400 pe același endpoint · 69-r6 fișierul XML D300 · 69-r7
+ștergerea amânată nu se exersează în ModelCheck · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 
 ## Reguli de lucru pentru Claude Code
