@@ -19,7 +19,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
             modelBuilder
                 .HasAnnotation("IDeferredDeletion", true)
                 .HasAnnotation("IOptimisticLock", true)
-                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("ProductVersion", "10.0.11")
                 .HasAnnotation("Proxies:ChangeTracking", true)
                 .HasAnnotation("Proxies:CheckEquality", true)
                 .HasAnnotation("Proxies:LazyLoading", true)
@@ -981,6 +981,72 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasIndex("RepartitorId");
 
                     b.ToTable("RegistruStoc");
+                });
+
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruTva", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Baza")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("Cota")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("DetaliuId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("GCRecord")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("OptimisticLockField")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid?>("PartenerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Regim")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Sens")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Storno")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("TipTvaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Tva")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("DetaliuId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PartenerId");
+
+                    b.HasIndex("TipTvaId");
+
+                    b.ToTable("RegistruTva");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegulaContare", b =>
@@ -2354,11 +2420,16 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<DateOnly?>("DataExtras")
                         .HasColumnType("date");
 
+                    b.Property<Guid?>("LaturaPerecheId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("NumarExtras")
                         .HasColumnType("text");
 
                     b.Property<int>("TipInstrument")
                         .HasColumnType("integer");
+
+                    b.HasIndex("LaturaPerecheId");
 
                     b.ToTable("DocumentTrezorerie");
                 });
@@ -3249,6 +3320,39 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Navigation("Repartitor");
                 });
 
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruTva", b =>
+                {
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentDetaliu", "Detaliu")
+                        .WithMany()
+                        .HasForeignKey("DetaliuId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "Partener")
+                        .WithMany()
+                        .HasForeignKey("PartenerId");
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipTva", "TipTva")
+                        .WithMany()
+                        .HasForeignKey("TipTvaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Detaliu");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Partener");
+
+                    b.Navigation("TipTva");
+                });
+
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegulaContare", b =>
                 {
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "ComunCentruCost")
@@ -3718,6 +3822,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasForeignKey("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentTrezorerie", "ID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentTrezorerie", "LaturaPereche")
+                        .WithMany()
+                        .HasForeignKey("LaturaPerecheId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("LaturaPereche");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.FacturaIesire", b =>

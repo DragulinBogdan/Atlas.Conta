@@ -101,6 +101,16 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Registre + politici
         public DbSet<RegistruStoc> RegistruStoc { get; set; }
         public DbSet<RegistruContabil> RegistruContabil { get; set; }
+        // Fără `AutoInclude` pe navigațiile lui — deliberat, spre deosebire de
+        // `RegistruContabil` (41c). Acolo dimensiunile CHIAR se afișează pe
+        // fiecare rând al grilei, deci lazy însemna N+1 per pagină plus
+        // lazy-load pe OS disposed la render târziu. Aici view-ul XAF e o
+        // suprafață de diagnostic — navigațiile se ascund din ListView
+        // (`ContaUiBaseline`), iar consumatorii reali sunt proiecțiile, care
+        // își fac join-urile explicit în `Select`. Nu există N+1 de prevenit.
+        // Bonus: numele DbSet-ului poate coincide cu al clasei fără să ceară
+        // alias-ul `using ...Entitate =` de care are nevoie `RegistruContabil`.
+        public DbSet<RegistruTva> RegistruTva { get; set; }
         public DbSet<TipDocument> TipuriDocument { get; set; }
         public DbSet<RegulaStoc> ReguliStoc { get; set; }
         public DbSet<RegulaContare> ReguliContare { get; set; }
@@ -160,6 +170,16 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // ștearsă și coloanele ei (TipInstrument/NumarExtras/DataExtras)
             // recreate goale pe frunze. Declarația ține schema neatinsă.
             modelBuilder.Entity<DocumentTrezorerie>();
+
+            // F8-D6: latura pereche a viramentului — FK REAL self-referencing pe
+            // nivelul abstract al trezoreriei. `WithMany()` fără colecție: sensul
+            // invers e derivat prin query (`PerecheId`), nu materializat — o
+            // colecție ar sugera „mai multe perechi", exact ce validarea refuză.
+            // Restrict: piciorul arătat nu se șterge cât timp altcineva îl declară
+            // pereche (ca `DescarcareGestiuneDetaliu.LinieSursa` mai jos).
+            modelBuilder.Entity<DocumentTrezorerie>()
+                .HasOne(d => d.LaturaPereche).WithMany().HasForeignKey(d => d.LaturaPerecheId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Document>()
                 .HasMany(d => d.Detalii)

@@ -38,6 +38,11 @@ public static class OperareApi {
         var mesaje = new List<string>();
         if (conex != null)
             mesaje.Add($"S-a generat documentul conex {Eticheta(os, conex)}.");
+        // Informările proprii tipului (F8-D10), DUPĂ commit-ul motorului: hook-ul
+        // vede lumea finală (inclusiv copiii tocmai generați) și, prin contract,
+        // nu aruncă — o operare cu registre deja comise nu poate eșua din cauza
+        // unui mesaj.
+        mesaje.AddRange(doc.MesajeDupaOperare(os));
         return new OperareRezultat(doc.ID, doc.Stare, conex?.ID, mesaje);
     }
 

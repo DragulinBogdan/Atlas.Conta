@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Security;
 using DevExtreme.AspNet.Data;
@@ -112,7 +113,16 @@ public abstract class ContaApiController : ControllerBase {
     // șabloanele DevExtreme problema nu apare fiindcă `DbContext`-ul e injectat
     // scoped (trăiește până la finalul cererii); aici ObjectSpace-ul e AL NOSTRU
     // și trebuie eliberat deterministic — deci enumerăm cât e viu.
-    protected static object Incarca<T>(IQueryable<T> sursa, DataSourceLoadOptions loadOptions) {
+    //
+    // `ordineImplicita` (opțional): ordinea proiecției, în forma pe care
+    // `DataSourceLoader` o consumă. NU e un lux de stil — biblioteca își inventează
+    // singură o ordine (`Id`-ul, adică ordinea de INSERARE) când cererea n-are
+    // `sort=`, iar în EF Core `OrderBy`-ul ei ȘTERGE ordinea scrisă în proiecție.
+    // Demonstrația mecanică, cu sursele citate: `Proiectii/OrdineLista.cs`.
+    // Proiecțiile a căror ordine e semnificativă (fișa de cont, jurnalul) o
+    // declară aici; restul listelor n-au ordine documentată, deci n-o pasează.
+    protected static object Incarca<T>(IQueryable<T> sursa, DataSourceLoadOptions loadOptions,
+        params SortingInfo[] ordineImplicita) {
         // Plafon pe pagină (review advers, minor 1): fără `take`, DataSourceLoader
         // ar materializa TOATE rândurile (pe clona de import: sute de mii).
         const int TakeImplicit = 100, TakeMaxim = 500;
@@ -120,6 +130,7 @@ public abstract class ContaApiController : ControllerBase {
             loadOptions.Take = TakeImplicit;
         else if (loadOptions.Take > TakeMaxim)
             loadOptions.Take = TakeMaxim;
+        OrdineLista.AplicaOrdineImplicita(loadOptions, ordineImplicita);
         var rezultat = DataSourceLoader.Load(sursa, loadOptions);
         // Cu `requireTotalCount`/`group`/`totalSummary` întoarce `LoadResult`;
         // altfel, direct secvența. Grupurile („Group.items") sunt construite deja
@@ -133,6 +144,23 @@ public abstract class ContaApiController : ControllerBase {
 
     static System.Collections.IEnumerable Materializeaza(System.Collections.IEnumerable sursa) =>
         sursa == null ? Array.Empty<object>() : sursa.Cast<object>().ToList();
+
+    // Rândurile paginii deja materializate de `Incarca` — pentru completările care
+    // NU pot veni din SQL și se fac în memorie, peste pagină (azi: codul de tip al
+    // documentului, R-D8/60b). Instanțele sunt cele care se serializează, deci
+    // mutarea lor aici se vede în răspuns.
+    //
+    // Limitare asumată, nu ascunsă: în modul GRUPAT, `LoadResult.data` conține
+    // obiecte `Group`, nu rânduri, deci `OfType<T>` întoarce gol și completarea nu
+    // se aplică. Fișa forțează `Group = null` (R-D6), iar jurnalul grupat rămâne
+    // fără codul de tip (link-ul se pierde, cifrele nu) — coborârea recursivă în
+    // grupuri se adaugă dacă apare cerința.
+    protected static IEnumerable<T> Randuri<T>(object incarcare) {
+        var sursa = incarcare is LoadResult rezultat
+            ? rezultat.data
+            : incarcare as System.Collections.IEnumerable;
+        return sursa == null ? Enumerable.Empty<T>() : sursa.Cast<object>().OfType<T>();
+    }
 
     // Învelișul unic al acțiunilor: orice `OperareException` (pre-check de felie,
     // gardian de Committing, gardian de motor) devine 422 cu erorile ca listă.

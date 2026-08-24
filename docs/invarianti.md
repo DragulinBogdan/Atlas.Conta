@@ -1,8 +1,9 @@
 # Invarianții Atlas.Conta
 
 Document viu, agreat 2026-08-02 (sesiune de arhitectură). Nu descrie codul —
-îl **judecă**. Jurnalul cronologic de decizii (CLAUDE.md) răspunde la „de ce e
-așa"; pagina asta răspunde la „ce trebuie să rămână adevărat".
+îl **judecă**. Jurnalul de decizii (`docs/decizii/`, un fișier per decizie;
+rezumatul durabil în CLAUDE.md) răspunde la „de ce e așa"; pagina asta
+răspunde la „ce trebuie să rămână adevărat".
 
 **Modul de folosire**: la orice mâncărime arhitecturală, întrebarea e „ce
 invariant e amenințat?". Dacă răspunsul e „niciunul, doar implementarea mă

@@ -118,6 +118,22 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 }
 .cerere-data > .camp__eticheta { margin-bottom: 0; }
 
+/* bara de parametri a unui raport (perioadă, mod, cont) — parametri de
+   PROIECȚIE, nu filtre de grilă, de aceea stau deasupra grilei, nu în ea */
+.bara-raport {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px var(--gol);
+  margin-bottom: var(--gol);
+  background: #ffffff;
+  border: 1px solid var(--linie);
+  border-radius: 6px;
+}
+.bara-raport__camp { display: block; }
+.bara-raport > .indiciu { margin: 0 0 6px; }
+
 /* ── panouri de erori ────────────────────────────────────────────────── */
 .panou {
   border: 1px solid var(--rosu);

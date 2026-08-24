@@ -4,6 +4,102 @@
  */
 
 export interface paths {
+    "/api/odata/Angajament": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Angajament"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Angajament/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Angajament/$count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Angajament({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Angajament({key})"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Angajament/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Angajament/{key}"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Angajament({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Angajament({key})/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Angajament/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Angajament/{key}/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/odata/Angajat": {
         parameters: {
             query?: never;
@@ -178,6 +274,38 @@ export interface paths {
          * @description Refer to the following help topic for more information on authentication methods in the XAF Security System: <a href='https://docs.devexpress.com/eXpressAppFramework/119064/data-security-and-safety/security-system/authentication'>Authentication</a>.
          */
         post: operations["POST_api/Authentication/Authenticate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proiectii/balanta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/proiectii/balanta"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proiectii/balanta-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/proiectii/balanta-plan"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -472,6 +600,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/odata/Cont": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Cont"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Cont/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Cont/$count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Cont({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Cont({key})"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Cont/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Cont/{key}"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Cont({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Cont({key})/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Cont/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Cont/{key}/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/odata/ContPropriu": {
         parameters: {
             query?: never;
@@ -560,6 +784,118 @@ export interface paths {
             cookie?: never;
         };
         get: operations["GET_api/odata/ContPropriu/{key}/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dec": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/dec"];
+        put?: never;
+        post: operations["POST_api/dec"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dec/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/dec/{id}"];
+        put: operations["PUT_api/dec/{id}"];
+        post?: never;
+        delete: operations["DELETE_api/dec/{id}"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dec/{id}/opereaza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST_api/dec/{id}/opereaza"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dec/{id}/anuleaza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST_api/dec/{id}/anuleaza"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dec/{id}/storneaza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST_api/dec/{id}/storneaza"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dec/{id}/valideaza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST_api/dec/{id}/valideaza"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proiectii/decont-tva": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/proiectii/decont-tva"];
         put?: never;
         post?: never;
         delete?: never;
@@ -904,6 +1240,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proiectii/fisa-cont": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/proiectii/fisa-cont"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/odata/Gestiune": {
         parameters: {
             query?: never;
@@ -1144,6 +1496,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inc/candidati-pereche": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/inc/candidati-pereche"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inc/{id}/opereaza": {
         parameters: {
             query?: never;
@@ -1202,6 +1570,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["POST_api/inc/{id}/valideaza"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proiectii/jurnal-tva": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/proiectii/jurnal-tva"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1936,6 +2320,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/plt/candidati-pereche": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/plt/candidati-pereche"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/plt/{id}/opereaza": {
         parameters: {
             query?: never;
@@ -2248,6 +2648,118 @@ export interface paths {
             cookie?: never;
         };
         get: operations["GET_api/odata/Proiect/{key}/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proiectii/registru-jurnal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/proiectii/registru-jurnal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Repartitor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Repartitor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Repartitor/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Repartitor/$count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Repartitor({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Repartitor({key})"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Repartitor/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Repartitor/{key}"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Repartitor({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Repartitor({key})/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Repartitor/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Repartitor/{key}/{navigationProperty}/$ref"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2764,6 +3276,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Angajament: {
+            /** Format: uuid */
+            ID?: string;
+            Cod?: string | null;
+            Denumire?: string | null;
+        };
         Angajat: {
             /** Format: uuid */
             ID?: string;
@@ -2790,6 +3308,67 @@ export interface components {
         AuthenticationStandardLogonParameters: {
             UserName?: string | null;
             Password?: string | null;
+        };
+        BalantaPlanRand: {
+            /** Format: uuid */
+            ContId?: string;
+            /** Format: uuid */
+            ParinteId?: string | null;
+            ContSimbol?: string | null;
+            ContDenumire?: string | null;
+            /** Format: int32 */
+            Nivel?: number;
+            AreCopii?: boolean;
+            AreMiscareProprie?: boolean;
+            /** Format: double */
+            InitialDebit?: number;
+            /** Format: double */
+            InitialCredit?: number;
+            /** Format: double */
+            SoldInitialDebit?: number;
+            /** Format: double */
+            SoldInitialCredit?: number;
+            /** Format: double */
+            RulajDebit?: number;
+            /** Format: double */
+            RulajCredit?: number;
+            /** Format: double */
+            SoldFinalDebit?: number;
+            /** Format: double */
+            SoldFinalCredit?: number;
+        };
+        BalantaRand: {
+            /** Format: uuid */
+            ContId?: string;
+            ContSimbol?: string | null;
+            ContDenumire?: string | null;
+            /** Format: uuid */
+            RepartitorId?: string | null;
+            RepartitorDenumire?: string | null;
+            /** Format: double */
+            InitialDebit?: number;
+            /** Format: double */
+            InitialCredit?: number;
+            /** Format: double */
+            SoldInitialDebit?: number;
+            /** Format: double */
+            SoldInitialCredit?: number;
+            /** Format: double */
+            RulajDebit?: number;
+            /** Format: double */
+            RulajCredit?: number;
+            /** Format: double */
+            SoldFinalDebit?: number;
+            /** Format: double */
+            SoldFinalCredit?: number;
+        };
+        BalantaRandPaginaDto: {
+            data?: components["schemas"]["BalantaRand"][] | null;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            groupCount?: number;
+            summary?: unknown[] | null;
         };
         BcsLinieReadDto: {
             /** Format: uuid */
@@ -2870,6 +3449,17 @@ export interface components {
         };
         /** @enum {string} */
         CalitateRepartitor: "Niciuna" | "Gestionar" | "Comisie" | "Departament" | "CentruCost" | "LocConsum" | "Delegat" | "Cursant";
+        CandidatPerecheDto: {
+            /** Format: uuid */
+            Id?: string;
+            Numar?: string | null;
+            /** Format: date */
+            Data?: string;
+            /** Format: double */
+            Total?: number;
+            Stare?: string | null;
+            PerecheDraftNumar?: string | null;
+        };
         ClasaProdus: {
             /** Format: uuid */
             ID?: string;
@@ -2939,6 +3529,157 @@ export interface components {
             PaginateViaPrimaryKey?: boolean | null;
             SortByPrimaryKey?: boolean | null;
             AllowAsyncOverSync?: boolean;
+        };
+        DecontLinieReadDto: {
+            /** Format: uuid */
+            Id?: string;
+            /** Format: uuid */
+            TipMaterialId?: string;
+            TipMaterialCod?: string | null;
+            TipMaterialDenumire?: string | null;
+            Descriere?: string | null;
+            /** Format: double */
+            Cantitate?: number;
+            /** Format: double */
+            PretUnitar?: number | null;
+            /** Format: double */
+            Valoare?: number;
+            /** Format: double */
+            ValoareTva?: number;
+            /** Format: uuid */
+            TipTvaId?: string | null;
+            TipTvaCod?: string | null;
+            TipTvaDenumire?: string | null;
+            /** Format: double */
+            TipTvaCota?: number | null;
+            /** Format: uuid */
+            CodEconomicId?: string | null;
+            CodEconomicCod?: string | null;
+            /** Format: uuid */
+            AngajamentId?: string | null;
+            AngajamentCod?: string | null;
+            /** Format: uuid */
+            ContDebitId?: string | null;
+            ContDebitSimbol?: string | null;
+            /** Format: uuid */
+            ContCreditId?: string | null;
+            ContCreditSimbol?: string | null;
+            /** Format: uuid */
+            RepartitorDebitId?: string | null;
+            RepartitorDebitDenumire?: string | null;
+            /** Format: uuid */
+            RepartitorCreditId?: string | null;
+            RepartitorCreditDenumire?: string | null;
+        };
+        DecontLinieWriteDto: {
+            /** Format: uuid */
+            Id?: string | null;
+            /** Format: uuid */
+            TipMaterialId?: string;
+            Descriere?: string | null;
+            /** Format: double */
+            Cantitate?: number;
+            /** Format: double */
+            PretUnitar?: number;
+            /** Format: uuid */
+            TipTvaId?: string | null;
+            /** Format: double */
+            ValoareTva?: number | null;
+            /** Format: uuid */
+            CodEconomicId?: string | null;
+            /** Format: uuid */
+            AngajamentId?: string | null;
+            /** Format: uuid */
+            ContDebitId?: string | null;
+            /** Format: uuid */
+            ContCreditId?: string | null;
+            /** Format: uuid */
+            RepartitorDebitId?: string | null;
+            /** Format: uuid */
+            RepartitorCreditId?: string | null;
+        };
+        DecontListDto: {
+            /** Format: uuid */
+            Id?: string;
+            Numar?: string | null;
+            /** Format: date */
+            Data?: string;
+            Stare?: string | null;
+            PredatorDenumire?: string | null;
+            PrimitorDenumire?: string | null;
+            /** Format: double */
+            Total?: number;
+        };
+        DecontListDtoPaginaDto: {
+            data?: components["schemas"]["DecontListDto"][] | null;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            groupCount?: number;
+            summary?: unknown[] | null;
+        };
+        DecontReadDto: {
+            /** Format: uuid */
+            Id?: string;
+            Numar?: string | null;
+            /** Format: date */
+            Data?: string;
+            Stare?: string | null;
+            /** Format: date-time */
+            DataOperare?: string | null;
+            /** Format: uuid */
+            PredatorId?: string;
+            PredatorDenumire?: string | null;
+            /** Format: uuid */
+            PrimitorId?: string;
+            PrimitorDenumire?: string | null;
+            NumarPV?: string | null;
+            /** Format: date */
+            DataPV?: string | null;
+            /** Format: double */
+            Total?: number;
+            Linii?: components["schemas"]["DecontLinieReadDto"][] | null;
+            PoateEdita?: boolean;
+            PoateOpera?: boolean;
+            PoateAnula?: boolean;
+            PoateStorna?: boolean;
+        };
+        DecontTvaRand: {
+            Sens?: string | null;
+            /** Format: uuid */
+            TipTvaId?: string;
+            TipTvaCod?: string | null;
+            TipTvaDenumire?: string | null;
+            Regim?: string | null;
+            /** Format: double */
+            Cota?: number;
+            CodSafT?: string | null;
+            /** Format: int32 */
+            Randuri?: number;
+            /** Format: double */
+            Baza?: number;
+            /** Format: double */
+            Tva?: number;
+        };
+        DecontTvaRandPaginaDto: {
+            data?: components["schemas"]["DecontTvaRand"][] | null;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            groupCount?: number;
+            summary?: unknown[] | null;
+        };
+        DecontWriteDto: {
+            /** Format: date */
+            Data?: string;
+            /** Format: uuid */
+            PredatorId?: string;
+            /** Format: uuid */
+            PrimitorId?: string;
+            NumarPV?: string | null;
+            /** Format: date */
+            DataPV?: string | null;
+            Linii?: components["schemas"]["DecontLinieWriteDto"][] | null;
         };
         /** @enum {string} */
         DeltaItemKind: "Resource" | "DeletedResource" | "DeltaDeletedLink" | "DeltaLink" | "Unknown";
@@ -3348,6 +4089,37 @@ export interface components {
             PlataTipInstrument?: string | null;
             Linii?: components["schemas"]["FacturaIntrareLinieWriteDto"][] | null;
         };
+        FisaContRand: {
+            /** Format: uuid */
+            Id?: string;
+            /** Format: date */
+            Data?: string;
+            NumarNota?: string | null;
+            Sens?: string | null;
+            /** Format: double */
+            Debit?: number;
+            /** Format: double */
+            Credit?: number;
+            /** Format: double */
+            SoldCurent?: number;
+            /** Format: uuid */
+            ContrapartidaId?: string;
+            ContrapartidaSimbol?: string | null;
+            RepartitorDenumire?: string | null;
+            /** Format: uuid */
+            DocumentId?: string | null;
+            DocumentTip?: string | null;
+            DocumentNumar?: string | null;
+            Storno?: boolean;
+        };
+        FisaContRandPaginaDto: {
+            data?: components["schemas"]["FisaContRand"][] | null;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            groupCount?: number;
+            summary?: unknown[] | null;
+        };
         GenerareDescarcareRequestDto: {
             /** Format: date */
             Data?: string;
@@ -3405,6 +4177,74 @@ export interface components {
             DocumentId?: string;
             /** Format: double */
             Suma?: number;
+        };
+        JurnalRand: {
+            /** Format: uuid */
+            Id?: string;
+            /** Format: date */
+            Data?: string;
+            NumarNota?: string | null;
+            /** Format: uuid */
+            ContDebitId?: string;
+            ContDebitSimbol?: string | null;
+            /** Format: uuid */
+            ContCreditId?: string;
+            ContCreditSimbol?: string | null;
+            /** Format: double */
+            Valoare?: number;
+            /** Format: uuid */
+            DocumentId?: string | null;
+            DocumentTip?: string | null;
+            DocumentNumar?: string | null;
+            Storno?: boolean;
+        };
+        JurnalRandPaginaDto: {
+            data?: components["schemas"]["JurnalRand"][] | null;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            groupCount?: number;
+            summary?: unknown[] | null;
+        };
+        JurnalTvaRand: {
+            /** Format: uuid */
+            DocumentId?: string;
+            DocumentNumar?: string | null;
+            DocumentTip?: string | null;
+            /** Format: date */
+            Data?: string;
+            /** Format: uuid */
+            PartenerId?: string | null;
+            PartenerDenumire?: string | null;
+            PartenerCodFiscal?: string | null;
+            /** Format: uuid */
+            TipTvaId?: string;
+            TipTvaCod?: string | null;
+            TipTvaDenumire?: string | null;
+            Regim?: string | null;
+            /** Format: double */
+            Cota?: number;
+            CodSafT?: string | null;
+            /** Format: double */
+            Baza?: number;
+            /** Format: double */
+            Tva?: number;
+            Storno?: boolean;
+        };
+        JurnalTvaRandPaginaDto: {
+            data?: components["schemas"]["JurnalTvaRand"][] | null;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            groupCount?: number;
+            summary?: unknown[] | null;
+        };
+        LaturaPerecheDto: {
+            /** Format: uuid */
+            Id?: string;
+            Tip?: string | null;
+            Numar?: string | null;
+            Stare?: string | null;
         };
         LdiLinieReadDto: {
             /** Format: uuid */
@@ -3816,6 +4656,17 @@ export interface components {
         };
         /** @enum {string} */
         RegimTva: "Normal" | "Capitalizat" | "TaxareInversa" | "Scutit" | "Neimpozabil";
+        Repartitor: {
+            /** Format: uuid */
+            ID?: string;
+            Cod?: string | null;
+            Denumire?: string | null;
+            Calitati?: components["schemas"]["CalitateRepartitor"];
+            Activ?: boolean;
+            /** Format: uuid */
+            ContImplicitId?: string | null;
+            ContImplicit?: components["schemas"]["Cont"];
+        };
         RestNedescarcatRandDto: {
             /** Format: uuid */
             LinieId?: string;
@@ -4038,6 +4889,10 @@ export interface components {
             EsteVirament?: boolean;
             Autogenerat?: boolean;
             /** Format: uuid */
+            LaturaPerecheId?: string | null;
+            Pereche?: components["schemas"]["LaturaPerecheDto"];
+            PerecheActiva?: boolean;
+            /** Format: uuid */
             DocumentSursaId?: string | null;
             DocumentSursaNumar?: string | null;
             DocumentSursaTip?: string | null;
@@ -4059,6 +4914,8 @@ export interface components {
             NumarExtras?: string | null;
             /** Format: date */
             DataExtras?: string | null;
+            /** Format: uuid */
+            LaturaPerecheId?: string | null;
             Linii?: components["schemas"]["TrezorerieLinieWriteDto"][] | null;
         };
         UnitateInterna: {
@@ -4081,6 +4938,288 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "GET_api/odata/Angajament": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=full": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=none": components["schemas"]["Angajament"][];
+                    "application/json;odata.streaming=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.streaming=false": components["schemas"]["Angajament"][];
+                    "application/json": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Angajament"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Angajament"][];
+                    "application/xml": components["schemas"]["Angajament"][];
+                    "text/plain": components["schemas"]["Angajament"][];
+                    "application/octet-stream": components["schemas"]["Angajament"][];
+                    "text/json": components["schemas"]["Angajament"][];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Angajament/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns the number of entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false": number;
+                    "application/json;odata.metadata=minimal": number;
+                    "application/json;odata.metadata=full;odata.streaming=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false": number;
+                    "application/json;odata.metadata=full": number;
+                    "application/json;odata.metadata=none;odata.streaming=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false": number;
+                    "application/json;odata.metadata=none": number;
+                    "application/json;odata.streaming=true": number;
+                    "application/json;odata.streaming=false": number;
+                    "application/json": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;IEEE754Compatible=false": number;
+                    "application/json;IEEE754Compatible=true": number;
+                    "application/xml": number;
+                    "text/plain": number;
+                    "application/octet-stream": number;
+                    "text/json": number;
+                };
+            };
+        };
+    };
+    "GET_api/odata/Angajament({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=true": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=false": components["schemas"]["Angajament"];
+                    "application/json": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/xml": components["schemas"]["Angajament"];
+                    "text/plain": components["schemas"]["Angajament"];
+                    "application/octet-stream": components["schemas"]["Angajament"];
+                    "text/json": components["schemas"]["Angajament"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Angajament/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=true": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=false": components["schemas"]["Angajament"];
+                    "application/json": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Angajament"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Angajament"];
+                    "application/xml": components["schemas"]["Angajament"];
+                    "text/plain": components["schemas"]["Angajament"];
+                    "application/octet-stream": components["schemas"]["Angajament"];
+                    "text/json": components["schemas"]["Angajament"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Angajament({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/Angajament/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "GET_api/odata/Angajat": {
         parameters: {
             query?: never;
@@ -5222,6 +6361,245 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "GET_api/proiectii/balanta": {
+        parameters: {
+            query?: {
+                loadOptions?: components["schemas"]["DataSourceLoadOptions"];
+                dataStart?: string;
+                dataEnd?: string;
+                analitic?: boolean;
+                repartitorId?: string;
+                materialId?: string;
+                codFunctionalId?: string;
+                codEconomicId?: string;
+                sursaFinantareId?: string;
+                unitateId?: string;
+                proiectId?: string;
+                centruCostId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/xml": components["schemas"]["BalantaRandPaginaDto"];
+                    "text/plain": components["schemas"]["BalantaRandPaginaDto"];
+                    "application/octet-stream": components["schemas"]["BalantaRandPaginaDto"];
+                    "text/json": components["schemas"]["BalantaRandPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "GET_api/proiectii/balanta-plan": {
+        parameters: {
+            query?: {
+                dataStart?: string;
+                dataEnd?: string;
+                nivelMaxim?: number;
+                repartitorId?: string;
+                materialId?: string;
+                codFunctionalId?: string;
+                codEconomicId?: string;
+                sursaFinantareId?: string;
+                unitateId?: string;
+                proiectId?: string;
+                centruCostId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["BalantaPlanRand"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["BalantaPlanRand"][];
+                    "application/xml": components["schemas"]["BalantaPlanRand"][];
+                    "text/plain": components["schemas"]["BalantaPlanRand"][];
+                    "application/octet-stream": components["schemas"]["BalantaPlanRand"][];
+                    "text/json": components["schemas"]["BalantaPlanRand"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
         };
     };
@@ -6760,6 +8138,288 @@ export interface operations {
             };
         };
     };
+    "GET_api/odata/Cont": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=full": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=none": components["schemas"]["Cont"][];
+                    "application/json;odata.streaming=true": components["schemas"]["Cont"][];
+                    "application/json;odata.streaming=false": components["schemas"]["Cont"][];
+                    "application/json": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Cont"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Cont"][];
+                    "application/xml": components["schemas"]["Cont"][];
+                    "text/plain": components["schemas"]["Cont"][];
+                    "application/octet-stream": components["schemas"]["Cont"][];
+                    "text/json": components["schemas"]["Cont"][];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Cont/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns the number of entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false": number;
+                    "application/json;odata.metadata=minimal": number;
+                    "application/json;odata.metadata=full;odata.streaming=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false": number;
+                    "application/json;odata.metadata=full": number;
+                    "application/json;odata.metadata=none;odata.streaming=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false": number;
+                    "application/json;odata.metadata=none": number;
+                    "application/json;odata.streaming=true": number;
+                    "application/json;odata.streaming=false": number;
+                    "application/json": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;IEEE754Compatible=false": number;
+                    "application/json;IEEE754Compatible=true": number;
+                    "application/xml": number;
+                    "text/plain": number;
+                    "application/octet-stream": number;
+                    "text/json": number;
+                };
+            };
+        };
+    };
+    "GET_api/odata/Cont({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=true": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=false": components["schemas"]["Cont"];
+                    "application/json": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/xml": components["schemas"]["Cont"];
+                    "text/plain": components["schemas"]["Cont"];
+                    "application/octet-stream": components["schemas"]["Cont"];
+                    "text/json": components["schemas"]["Cont"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Cont/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=true": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=false": components["schemas"]["Cont"];
+                    "application/json": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Cont"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Cont"];
+                    "application/xml": components["schemas"]["Cont"];
+                    "text/plain": components["schemas"]["Cont"];
+                    "application/octet-stream": components["schemas"]["Cont"];
+                    "text/json": components["schemas"]["Cont"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Cont({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/Cont/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "GET_api/odata/ContPropriu": {
         parameters: {
             query?: never;
@@ -7039,6 +8699,1088 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "GET_api/dec": {
+        parameters: {
+            query?: {
+                loadOptions?: components["schemas"]["DataSourceLoadOptions"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/xml": components["schemas"]["DecontListDtoPaginaDto"];
+                    "text/plain": components["schemas"]["DecontListDtoPaginaDto"];
+                    "application/octet-stream": components["schemas"]["DecontListDtoPaginaDto"];
+                    "text/json": components["schemas"]["DecontListDtoPaginaDto"];
+                };
+            };
+        };
+    };
+    "POST_api/dec": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=false": components["schemas"]["DecontWriteDto"];
+                "application/json": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/xml": components["schemas"]["DecontWriteDto"];
+                "text/plain": components["schemas"]["DecontWriteDto"];
+                "text/json": components["schemas"]["DecontWriteDto"];
+                "application/*+json": components["schemas"]["DecontWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/xml": components["schemas"]["DecontReadDto"];
+                    "text/plain": components["schemas"]["DecontReadDto"];
+                    "application/octet-stream": components["schemas"]["DecontReadDto"];
+                    "text/json": components["schemas"]["DecontReadDto"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "GET_api/dec/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/xml": components["schemas"]["DecontReadDto"];
+                    "text/plain": components["schemas"]["DecontReadDto"];
+                    "application/octet-stream": components["schemas"]["DecontReadDto"];
+                    "text/json": components["schemas"]["DecontReadDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=false": components["schemas"]["ProblemDetails"];
+                    "application/json": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/xml": components["schemas"]["ProblemDetails"];
+                    "text/plain": components["schemas"]["ProblemDetails"];
+                    "application/octet-stream": components["schemas"]["ProblemDetails"];
+                    "text/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    "PUT_api/dec/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=false": components["schemas"]["DecontWriteDto"];
+                "application/json": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/json;IEEE754Compatible=false": components["schemas"]["DecontWriteDto"];
+                "application/json;IEEE754Compatible=true": components["schemas"]["DecontWriteDto"];
+                "application/xml": components["schemas"]["DecontWriteDto"];
+                "text/plain": components["schemas"]["DecontWriteDto"];
+                "text/json": components["schemas"]["DecontWriteDto"];
+                "application/*+json": components["schemas"]["DecontWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["DecontReadDto"];
+                    "application/json": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["DecontReadDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["DecontReadDto"];
+                    "application/xml": components["schemas"]["DecontReadDto"];
+                    "text/plain": components["schemas"]["DecontReadDto"];
+                    "application/octet-stream": components["schemas"]["DecontReadDto"];
+                    "text/json": components["schemas"]["DecontReadDto"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "DELETE_api/dec/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "POST_api/dec/{id}/opereaza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/xml": components["schemas"]["OperareRezultatDto"];
+                    "text/plain": components["schemas"]["OperareRezultatDto"];
+                    "application/octet-stream": components["schemas"]["OperareRezultatDto"];
+                    "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "POST_api/dec/{id}/anuleaza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/xml": components["schemas"]["OperareRezultatDto"];
+                    "text/plain": components["schemas"]["OperareRezultatDto"];
+                    "application/octet-stream": components["schemas"]["OperareRezultatDto"];
+                    "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "POST_api/dec/{id}/storneaza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=minimal": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=full": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=none": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.streaming=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.streaming=false": components["schemas"]["StornoRequestDto"];
+                "application/json": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/json;IEEE754Compatible=false": components["schemas"]["StornoRequestDto"];
+                "application/json;IEEE754Compatible=true": components["schemas"]["StornoRequestDto"];
+                "application/xml": components["schemas"]["StornoRequestDto"];
+                "text/plain": components["schemas"]["StornoRequestDto"];
+                "text/json": components["schemas"]["StornoRequestDto"];
+                "application/*+json": components["schemas"]["StornoRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["OperareRezultatDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["OperareRezultatDto"];
+                    "application/xml": components["schemas"]["OperareRezultatDto"];
+                    "text/plain": components["schemas"]["OperareRezultatDto"];
+                    "application/octet-stream": components["schemas"]["OperareRezultatDto"];
+                    "text/json": components["schemas"]["OperareRezultatDto"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "POST_api/dec/{id}/valideaza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "GET_api/proiectii/decont-tva": {
+        parameters: {
+            query?: {
+                loadOptions?: components["schemas"]["DataSourceLoadOptions"];
+                dataStart?: string;
+                dataEnd?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/xml": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "text/plain": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "application/octet-stream": components["schemas"]["DecontTvaRandPaginaDto"];
+                    "text/json": components["schemas"]["DecontTvaRandPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
             };
         };
     };
@@ -10148,6 +12890,223 @@ export interface operations {
             };
         };
     };
+    "GET_api/proiectii/fisa-cont": {
+        parameters: {
+            query?: {
+                loadOptions?: components["schemas"]["DataSourceLoadOptions"];
+                contId?: string;
+                dataStart?: string;
+                dataEnd?: string;
+                repartitorId?: string;
+                materialId?: string;
+                codFunctionalId?: string;
+                codEconomicId?: string;
+                sursaFinantareId?: string;
+                unitateId?: string;
+                proiectId?: string;
+                centruCostId?: string;
+                repartitorNul?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/xml": components["schemas"]["FisaContRandPaginaDto"];
+                    "text/plain": components["schemas"]["FisaContRandPaginaDto"];
+                    "application/octet-stream": components["schemas"]["FisaContRandPaginaDto"];
+                    "text/json": components["schemas"]["FisaContRandPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=false": components["schemas"]["ProblemDetails"];
+                    "application/json": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["ProblemDetails"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["ProblemDetails"];
+                    "application/xml": components["schemas"]["ProblemDetails"];
+                    "text/plain": components["schemas"]["ProblemDetails"];
+                    "application/octet-stream": components["schemas"]["ProblemDetails"];
+                    "text/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     "GET_api/odata/Gestiune": {
         parameters: {
             query?: never;
@@ -12241,6 +15200,69 @@ export interface operations {
             };
         };
     };
+    "GET_api/inc/candidati-pereche": {
+        parameters: {
+            query?: {
+                predatorId?: string;
+                primitorId?: string;
+                exclusId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/xml": components["schemas"]["CandidatPerecheDto"][];
+                    "text/plain": components["schemas"]["CandidatPerecheDto"][];
+                    "application/octet-stream": components["schemas"]["CandidatPerecheDto"][];
+                    "text/json": components["schemas"]["CandidatPerecheDto"][];
+                };
+            };
+        };
+    };
     "POST_api/inc/{id}/opereaza": {
         parameters: {
             query?: never;
@@ -12624,6 +15646,118 @@ export interface operations {
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "GET_api/proiectii/jurnal-tva": {
+        parameters: {
+            query?: {
+                loadOptions?: components["schemas"]["DataSourceLoadOptions"];
+                sens?: string;
+                dataStart?: string;
+                dataEnd?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/xml": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "text/plain": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "application/octet-stream": components["schemas"]["JurnalTvaRandPaginaDto"];
+                    "text/json": components["schemas"]["JurnalTvaRandPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17774,6 +20908,69 @@ export interface operations {
             };
         };
     };
+    "GET_api/plt/candidati-pereche": {
+        parameters: {
+            query?: {
+                predatorId?: string;
+                primitorId?: string;
+                exclusId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["CandidatPerecheDto"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["CandidatPerecheDto"][];
+                    "application/xml": components["schemas"]["CandidatPerecheDto"][];
+                    "text/plain": components["schemas"]["CandidatPerecheDto"][];
+                    "application/octet-stream": components["schemas"]["CandidatPerecheDto"][];
+                    "text/json": components["schemas"]["CandidatPerecheDto"][];
+                };
+            };
+        };
+    };
     "POST_api/plt/{id}/opereaza": {
         parameters: {
             query?: never;
@@ -19549,6 +22746,399 @@ export interface operations {
         };
     };
     "GET_api/odata/Proiect/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/proiectii/registru-jurnal": {
+        parameters: {
+            query?: {
+                loadOptions?: components["schemas"]["DataSourceLoadOptions"];
+                dataStart?: string;
+                dataEnd?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/xml": components["schemas"]["JurnalRandPaginaDto"];
+                    "text/plain": components["schemas"]["JurnalRandPaginaDto"];
+                    "application/octet-stream": components["schemas"]["JurnalRandPaginaDto"];
+                    "text/json": components["schemas"]["JurnalRandPaginaDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Repartitor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=full": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=none": components["schemas"]["Repartitor"][];
+                    "application/json;odata.streaming=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.streaming=false": components["schemas"]["Repartitor"][];
+                    "application/json": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Repartitor"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Repartitor"][];
+                    "application/xml": components["schemas"]["Repartitor"][];
+                    "text/plain": components["schemas"]["Repartitor"][];
+                    "application/octet-stream": components["schemas"]["Repartitor"][];
+                    "text/json": components["schemas"]["Repartitor"][];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Repartitor/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns the number of entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false": number;
+                    "application/json;odata.metadata=minimal": number;
+                    "application/json;odata.metadata=full;odata.streaming=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false": number;
+                    "application/json;odata.metadata=full": number;
+                    "application/json;odata.metadata=none;odata.streaming=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false": number;
+                    "application/json;odata.metadata=none": number;
+                    "application/json;odata.streaming=true": number;
+                    "application/json;odata.streaming=false": number;
+                    "application/json": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;IEEE754Compatible=false": number;
+                    "application/json;IEEE754Compatible=true": number;
+                    "application/xml": number;
+                    "text/plain": number;
+                    "application/octet-stream": number;
+                    "text/json": number;
+                };
+            };
+        };
+    };
+    "GET_api/odata/Repartitor({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=false": components["schemas"]["Repartitor"];
+                    "application/json": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/xml": components["schemas"]["Repartitor"];
+                    "text/plain": components["schemas"]["Repartitor"];
+                    "application/octet-stream": components["schemas"]["Repartitor"];
+                    "text/json": components["schemas"]["Repartitor"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Repartitor/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=false": components["schemas"]["Repartitor"];
+                    "application/json": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Repartitor"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Repartitor"];
+                    "application/xml": components["schemas"]["Repartitor"];
+                    "text/plain": components["schemas"]["Repartitor"];
+                    "application/octet-stream": components["schemas"]["Repartitor"];
+                    "text/json": components["schemas"]["Repartitor"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Repartitor({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/Repartitor/{key}/{navigationProperty}/$ref": {
         parameters: {
             query?: never;
             header?: never;

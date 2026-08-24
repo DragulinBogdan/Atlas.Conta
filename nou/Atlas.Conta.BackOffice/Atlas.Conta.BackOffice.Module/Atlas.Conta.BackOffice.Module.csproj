@@ -37,6 +37,12 @@
     <PackageReference Include="DevExpress.ExpressApp.ViewVariantsModule" />
     <PackageReference Include="DevExpress.Persistent.Base" />
     <PackageReference Include="DevExpress.Persistent.BaseImpl.EFCore" />
+    <!-- Motorul de load options al grilelor: proiecțiile din Module își declară
+         ORDINEA în forma pe care o consumă `DataSourceLoader` (vezi
+         `Proiectii/OrdineLista.cs` — biblioteca ȘTERGE `OrderBy`-ul din LINQ).
+         Pachetul e o bibliotecă pură, fără dependențe ASP.NET, deci nu trage
+         nimic în host-uri. -->
+    <PackageReference Include="DevExtreme.AspNet.Data" />
     <PackageReference Include="Azure.Identity" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" />

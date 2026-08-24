@@ -163,6 +163,18 @@ public abstract class Document : BaseObject {
     // al grupului conex (ștergere la anulare, refuz cât e operat).
     public virtual Document GenereazaSecundar(DevExpress.ExpressApp.IObjectSpace os) => null;
 
+    // Informări pentru operator DUPĂ o operare reușită (F8-D10) — NU e o cale de
+    // refuz: `OperareApi.Opereaza` le adaugă în `OperareRezultat.Mesaje`, lângă
+    // mesajul documentului conex, iar ambele tiere (API + controllerul XAF) le
+    // afișează pe calea existentă. Se apelează DUPĂ commit-ul motorului, deci
+    // vede lumea finală (inclusiv copiii tocmai generați).
+    //
+    // Contract: hook-ul NU are voie să arunce. Un mesaj lipsă e o pierdere de
+    // confort; o excepție aici ar transforma o operare CU REGISTRE DEJA COMISE
+    // într-un eșec aparent pentru apelant. Implementările prind și tac.
+    public virtual IReadOnlyList<string> MesajeDupaOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        Array.Empty<string>();
+
     // Invariantele proprii tipului, verificate de motor înainte de operare.
     // Baza impune doar ce cere orice document; obligativitățile per tip se
     // adaugă în override (validarea declarativă completă vine la 3c/3d).

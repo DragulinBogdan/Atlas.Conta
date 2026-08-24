@@ -19,7 +19,15 @@ import { PltLista } from './felii/plt/PltLista';
 import { PltDetaliu } from './felii/plt/PltDetaliu';
 import { IncLista } from './felii/inc/IncLista';
 import { IncDetaliu } from './felii/inc/IncDetaliu';
+import { DecLista } from './felii/dec/DecLista';
+import { DecDetaliu } from './felii/dec/DecDetaliu';
 import { SoldStoc } from './felii/stoc/SoldStoc';
+import { Balanta } from './felii/raportare/Balanta';
+import { BalantaPlan } from './felii/raportare/BalantaPlan';
+import { FisaCont } from './felii/raportare/FisaCont';
+import { RegistruJurnal } from './felii/raportare/RegistruJurnal';
+import { JurnalCumparari, JurnalVanzari } from './felii/tva/JurnalTva';
+import { DecontTva } from './felii/tva/DecontTva';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
@@ -49,6 +57,9 @@ export function App() {
         <Route path="/inc" element={<IncLista />} />
         <Route path="/inc/nou" element={<IncDetaliu />} />
         <Route path="/inc/:id" element={<IncDetaliu />} />
+        <Route path="/dec" element={<DecLista />} />
+        <Route path="/dec/nou" element={<DecDetaliu />} />
+        <Route path="/dec/:id" element={<DecDetaliu />} />
         <Route path="/btr" element={<BtrLista />} />
         <Route path="/btr/nou" element={<BtrDetaliu />} />
         <Route path="/btr/:id" element={<BtrDetaliu />} />
@@ -59,6 +70,22 @@ export function App() {
         <Route path="/ldi/nou" element={<LdiDetaliu />} />
         <Route path="/ldi/:id" element={<LdiDetaliu />} />
         <Route path="/stoc" element={<SoldStoc />} />
+        {/* Raportarea pe registre (felia 9). Parametrii (perioadă, mod, cont)
+            trăiesc în query string, nu în cale: sunt STARE, nu identitate — un
+            raport e util fiindcă e partajabil ca link (43c). Fișa n-are intrare
+            proprie de meniu: se ajunge la ea din balanță, cu perioada păstrată,
+            dar are selector de cont ca să se poată schimba contul pe loc. */}
+        <Route path="/balanta" element={<Balanta />} />
+        <Route path="/balanta-plan" element={<BalantaPlan />} />
+        <Route path="/fisa-cont" element={<FisaCont />} />
+        <Route path="/jurnal" element={<RegistruJurnal />} />
+        {/* Jurnalele de TVA (felia 11): aceeași proiecție pe laturi diferite,
+            deci rute proprii — nu un ecran cu comutator. Sunt două rapoarte
+            distincte, iar „jurnalul de cumpărări pe februarie" trebuie să fie un
+            link. Decontul e scheletul D300, nu declarația (35c). */}
+        <Route path="/jurnal-cumparari" element={<JurnalCumparari />} />
+        <Route path="/jurnal-vanzari" element={<JurnalVanzari />} />
+        <Route path="/decont-tva" element={<DecontTva />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
     </Routes>
@@ -80,10 +107,17 @@ function Cadru() {
         <NavLink to="/dsc">Descărcări</NavLink>
         <NavLink to="/plt">Plăți</NavLink>
         <NavLink to="/inc">Încasări</NavLink>
+        <NavLink to="/dec">Deconturi</NavLink>
         <NavLink to="/btr">Note de transfer</NavLink>
         <NavLink to="/bcs">Bonuri de consum</NavLink>
         <NavLink to="/ldi">Diferențe inventar</NavLink>
         <NavLink to="/stoc">Sold stoc</NavLink>
+        <NavLink to="/balanta">Balanță</NavLink>
+        <NavLink to="/balanta-plan">Balanță pe plan</NavLink>
+        <NavLink to="/jurnal">Jurnal</NavLink>
+        <NavLink to="/jurnal-cumparari">Jurnal cumpărări</NavLink>
+        <NavLink to="/jurnal-vanzari">Jurnal vânzări</NavLink>
+        <NavLink to="/decont-tva">Decont TVA</NavLink>
         <button
           type="button"
           className="buton buton--mic"

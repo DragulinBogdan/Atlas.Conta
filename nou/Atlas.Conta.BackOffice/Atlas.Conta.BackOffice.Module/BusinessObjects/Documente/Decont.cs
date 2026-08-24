@@ -12,7 +12,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Lanțul avans → decont → regularizare se leagă prin imperechere (decizia 31d).
 [TipDetaliu(typeof(DecontDetaliu))]
 public class Decont : Document, IDocumentCuPV {
+    [XafDisplayName("Număr PV")]
     public virtual string NumarPV { get; set; }
+    [XafDisplayName("Dată PV")]
     public virtual DateOnly? DataPV { get; set; }
 
     // Creditul (contul de avans 542) se dimensionează pe TITULAR, nu pe
@@ -54,22 +56,42 @@ public class Decont : Document, IDocumentCuPV {
 // mecanism generic de override. Contractul ILinieCuPostareExplicita e citit de
 // motor înaintea rezolvării declarative; câmpurile sunt opționale — nerezolvat
 // rămâne pe seama regulii (debit din Tip, credit din titular).
-public class DecontDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
+// F8-D2: aderarea la `ILinieCuPretUnitar` e PURĂ DECLARAȚIE — `PretUnitar` există
+// pe clasă din 3a, deci nicio coloană și nicio migrație. Consecința e seam-ul
+// comun de calcul la culegere (`TvaService.CalculeazaLaCulegere`): pe tierul API
+// îl apelează `DecontApply`, iar în XAF nimic nu se schimbă — controllerul de
+// recalcul e gate-uit pe TIPUL DOCUMENTULUI
+// (`RecalculCulegere.TipCuPretUnitarCules` = FCT + FCL, ecranele gate-ului), nu
+// pe interfața liniei.
+public class DecontDetaliu : DocumentDetaliu, ILinieCuPostareExplicita, ILinieCuPretUnitar {
     public virtual string Descriere { get; set; }
     // Cota și regimul vin din TipTva (bază, P1).
+    [XafDisplayName("Preț unitar")]
     public virtual decimal PretUnitar { get; set; }
 
     // Postarea explicită pe linie alege din planul mare (nomenclator mare —
     // lookup standard; SmartLookup revertat, decizia 40d/gate).
+    //
+    // NOTĂ (review F8): `ContDebit == ContCredit` pe aceeași linie postează un
+    // rând X = X — o notă nulă, care nu mișcă niciun sold. NU se refuză, din
+    // aceeași rațiune ca la contul SUMATOR ales explicit (F8-D14): postarea
+    // explicită e trăsătura tipului, iar operatorul care alege un cont anume îl
+    // primește; ce e afordanță (ce se OFERĂ în lookup) se rafinează în client,
+    // nu se transformă în interdicție de motor. Dacă vreodată devine cerință,
+    // locul e `ValideazaOperare`, nu culegerea.
     public virtual Guid? ContDebitId { get; set; }
+    [XafDisplayName("Cont debit")]
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContDebit { get; set; }
     public virtual Guid? ContCreditId { get; set; }
+    [XafDisplayName("Cont credit")]
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContCredit { get; set; }
     public virtual Guid? RepartitorDebitId { get; set; }
+    [XafDisplayName("Repartitor debit")]
     public virtual Repartitor RepartitorDebit { get; set; }
     public virtual Guid? RepartitorCreditId { get; set; }
+    [XafDisplayName("Repartitor credit")]
     public virtual Repartitor RepartitorCredit { get; set; }
 
     // DIM-2 (decizia 54c, inventar §2): clasificația economică a cheltuielii

@@ -90,6 +90,22 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // (lookup-ul de pin — 37d); scrierea, când va fi nevoie, vine
                     // prin felia documentului care îl creează.
                     options.BusinessObject<Lot>().ConfigureController(c => c.ReadOnly());
+                    // Felia DEC (F8-D4) — postarea explicită pe linie și
+                    // angajamentul au nevoie de lookup-uri proprii:
+                    //   * `Cont` — planul de conturi (1.679 bugetar / 644 privat).
+                    //     Nomenclator de POLITICĂ prin excelență (contarea se
+                    //     rezolvă din el), deci ReadOnly ca `TipTva`.
+                    //   * `Angajament` — entitatea există, tabela e azi GOALĂ
+                    //     (modulul de angajamente e amânat — 22c). Lookup-ul e
+                    //     onest: gol înseamnă gol; datele vor veni din alt modul.
+                    //   * `Repartitor` — BAZA TPT, deliberat: cele două câmpuri
+                    //     `RepartitorDebit/Credit` ale postării explicite acceptă
+                    //     ORICE repartitor (`ILinieCuPostareExplicita` e tipată pe
+                    //     bază), deci un lookup pe una dintre derivatele expuse ar
+                    //     minți prin omisiune.
+                    options.BusinessObject<Cont>().ConfigureController(c => c.ReadOnly());
+                    options.BusinessObject<Angajament>().ConfigureController(c => c.ReadOnly());
+                    options.BusinessObject<Repartitor>().ConfigureController(c => c.ReadOnly());
                 });
 
                 // Paritate de configurare cu `Blazor.Server/Startup.cs` (aceeași
