@@ -379,3 +379,6 @@ lui `Invoke-WebRequest` = latența completă client→server→client). Seed-ul
 grupurile cad în `Neincluse` cu `TipTvaNemapat` și cifra măsurată e a altei
 proiecții. WebApi oprit la final.
 
+### Re-măsurare la închidere (addendum 5, clona Flax reclasificată)
+
+09/2025: mediană **97–177 ms** pe două serii (zgomot 41–254 ms; d300 pe aceeași lună în aceeași sesiune 21 ms); anul 2025: **598 ms**. Agregatul SQL rulat direct în Postgres: 8 ms (5.445 grupuri, lună) / 26 ms (61.411, an) — query-ul e 5–10 % din total; restul e EF (`Parteneri.Where(idsRep.Contains(...))` cu ~2.400 / ~20.000 GUID-uri în lista IN, etichetele, cele două GroupBy în memorie) și serializarea (451 KB / ~3,5 MB). O cifră de ~1 s văzută o singură dată = cold start (JIT + primul plan), nu regresie. Când cifra o va cere (59): lista IN → join pe agregat sau tabel temporar, nu index.

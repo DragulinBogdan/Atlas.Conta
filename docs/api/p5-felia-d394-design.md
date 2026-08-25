@@ -75,6 +75,21 @@ Derivarea `tip_partener`, în cod (`D394Proiectii.TipPartener(p)`):
 `Tara ∈ UE ⇒ 3`; altfel `4`. Lista statelor membre = constantă în cod
 (`Comun/TariUe.cs`, 27 coduri) — e lege, nu politică.
 
+**Corectat la implementare** (review advers, constatările 1–4): regula de
+derivare e **„înregistrat bate tot"** — `InregistratTva ⇒ 1` INDIFERENT de
+`TipPersoana` și de `Tara` (PFA/II/PFI înregistrate și străinii cu cod RO — art.
+316 — sunt tip 1, cartușul C), apoi `Fizica ⇒ 2`, `RO ⇒ 2`, `UE ⇒ 3`, altfel `4`;
+prefixul `RO` se taie când partenerul e înregistrat SAU `Tara == RO`. Tipul se
+decide pe CUI, nu pe nomenclator: rândul `op1` e unit pe CUI normalizat peste
+nomenclatoare, tip 1 dacă vreun partener al CUI-ului e înregistrat. Iar în
+Import1C derivarea din prefixul `RO` singură dă false negative masive (2025: 35
+furnizori / 1.602 documente / 2.742.931,50 TVA cu CUI fără `RO`) — de aceea
+**`--reclasifica`** adaugă **semnalul din registru** (`PartenerId` pe
+`RegistruTva` cu `Sens = Achizitie` și `Tva ≠ 0` ⇒ înregistrat; evidența bate
+eticheta, 34f), peste toți partenerii legați, și rulează ca pas final al
+importului; PF cu `CodUnic` RO păstrează CUI-ul (CNP-ul intră doar când CUI-ul
+e gol). Decizia 71b/h.
+
 `cuiP` = `CodFiscal` normalizat: trim, majuscule, **prefixul `RO` tăiat** (doar
 pentru `Tara == "RO"`; codurile străine rămân întregi). Tip 1 cu `CodFiscal` gol
 = rândul se emite, cu AVERTISMENT (ANAF îl respinge; noi nu ascundem cifra).
@@ -294,3 +309,60 @@ partenerii cu CUI real vizibili pe cartușul C; `Neincluse` explicat integral
 
 Explicit NU în regula de oprire: XML, bonuri fiscale, op11, TVA la încasare,
 adrese, SAF-T.
+
+## Închidere (2026-08-25)
+
+- [x] Contract îndeplinit: ModelCheck **bugetar 694 OK / 0 FAIL, privat 431 OK /
+  0 FAIL** (D4-V1…V7 + probele fixurilor review-ului); o migrație
+  (`20260825060925_AddD394`: 4 coloane pe `Partener` + `UPDATE Tara = 'RO'`,
+  `MapareD394` cu index unic filtrat, drop `TipTva.CategorieD394`);
+  `--dump-metadata` și driftul openapi verzi.
+- [x] Seed privat: 13 mapări + 7 nemapate deliberate cu motiv; bugetar 0;
+  `VerificaD394` în seeder (`TintaPermisa(tip, sens)`).
+- [x] Cusătura cu registrul (D4-V4) și cu D300 (D4-V5) la cent pe scenă ȘI pe
+  septembrie 2025 real: **rd. 9 = 7.356.684,42 / 1.544.902,66; rd. 24 =
+  4.129.896,21 / 867.470,82; rd. 12.1 = 3.931.495,42 / 825.613,92**;
+  `Neincluse` == rd. 14/15/29.
+- [x] HTTP: Admin 200; `User` 200 gol; perioadă lipsă/inversată ⇒ `400 EroriDto`.
+- [x] Perf (addendum 5, HTTP + JWT): 99 ms/lună, 394 ms/anul 2025 (21.936
+  rânduri op1, 3,8 MB — costul e forma răspunsului); niciun index.
+- [x] Import1C: identitatea fiscală din `flax.Partenerii` (pas 4a) +
+  `--reclasifica` cu semnalul din registru; `NuIncludeInDec394` contorizat.
+- [x] **D5** — Import1C re-rulat integral vs baseline-ul DIM-4: Import1C `--recreeaza` (2026-08-25, 01:47:31 total; binarul dinaintea fixurilor review-ului): CONTRACT ÎNDEPLINIT, raportul `reconciliere-20260825-095411.txt` are EXACT aceleași 445 de linii ca baseline-ul DIM-4 `reconciliere-20260807-174221.txt` (diff pe conținut sortat = 0). 979 avertismente față de 956 în F13: cele +23 sunt TOATE ale clasificării partenerilor (nerezidenți/intracomunitari în 1C fără țară — lăsați pe RO, numiți), nicio cifră de reconciliere nu s-a mișcat.
+- [x] **Reclasificarea pe baza de import** (contoarele `--reclasifica`):
+  `--reclasifica` pe `Atlas.Conta.Import1C.Flax` după D5 (binarul cu fixurile review-ului): 20.118 parteneri legați, toți reclasificați din sursă — tip persoană explicit în 1C (0 derivate), statutul de TVA DERIVAT din prefixul RO la 20.107 (sursa tace: `DataLuariiInEvidentaTVA` vidă, `PoliticaTVA=TVAlaEmitere` implicită), TVA la încasare din sursă 11, PFA cu CUI RO 0, țară nerezolvată 23 (nerezidenți/intracomunitari fără țară, lăsați pe RO, numiți), `NuIncludeInDec394` 81 (contorizat, nemodelat); **din registru: 35 marcați înregistrați** (achiziții cu TVA ≠ 0) — exact furnizorii măsurați de review ca false negative ale prefixului.
+- [x] **Smoke pe calea reală** (D394 septembrie 2025 după reclasificare —
+  cartușul C, `Neincluse`, avertismentele): pe clona `Atlas.Conta.Import1C.Flax.Api` (Flax n-are useri; clonă + updater pentru Admin/User, Flax neatinsă), 09/2025, HTTP Admin: 2.340 rânduri `op1` — tip 1: 1.104, tip 2: 1.234, tip 3: 1, tip 4: 1; `nrCui` 1052/1234/1/1; L 2.196, A 116, AI 3, C 25, V 0. **Cusătura cu D300 la cent**: Σ L/21 = 7.356.684,42 / 1.544.902,66 = rd. 9; Σ A+AI/21 = 4.129.896,21 / 867.470,82 = rd. 24; Σ C/21 = 3.931.495,42 / 825.613,92 = rd. 12.1; V = 0 = rd. 13; `Neincluse` gol = rd. 14/15/29 = 0. Avertismente agregate: `CuiUnit` 27, `PfFaraCnp` 785 (Σ 1.102.769,98), `FaraOp11` 1 (3.931.447,52); **`CombinatieRefuzata` = 0** după reclasificare (pe baza neclasificată: 144). Constatare la smoke, fixată pe loc: 3.597 PF cu `CodFiscal = "-"` treceau ca CUI valid și se uneau într-un singur rând — un cod fără nicio literă/cifră e cod LIPSĂ (`NormalizeazaCui` ⇒ null, probă în D4-V2). Browser `/d394`: cartușul C cu CUI-uri reale, avertismentele pe cauze; fără erori în consolă. Perf pe clonă, mediană din 5: 09/2025 **97–177 ms** (zgomot 41–254; d300 aceeași lună 21 ms), anul 2025 **598 ms**; agregatul SQL = 8 ms/lună, 26 ms/an (5.445 / 61.411 grupuri) — restul e EF (lista IN cu ~2.400 / ~20.000 GUID-uri de parteneri) + serializarea (451 KB / ~3,5 MB); cifra de ~1 s văzută o dată = cold start, nu regresie.
+- [x] Decizia 71 scrisă; README, CLAUDE.md §71, istoric; 36 amendată la (d).
+
+**Ce a scos review-ul advers — 8 constatări, TOATE fixate în cod (64ec5bc)**
+(fiecare cu de ce cusătura NU putea să le vadă — cusătura măsoară sume, nu
+identitatea rândului):
+
+1. **[blocant] Același CUI pe două tipuri de partener ⇒ două rânduri `op1` cu
+   aceeași cheie XSD `(cuiP, tip, cota)`**, fără avertisment — cheia includea
+   `TipPartener`; pe baza de import 29 de grupuri cu ambele grafii. Sumele erau
+   corecte. Fix: unirea pe CUI peste nomenclatoare, tipul decis pe CUI.
+2. **[lege] `Fizica ⇒ 2` preceda `InregistratTva`** — PFA înregistrate pe D cu
+   CNP; proba D4-V2 fixa comportamentul greșit. Fix: „înregistrat bate tot";
+   proba inversată; Import1C nu mai suprascrie CUI-ul RO cu CNP-ul.
+3. **[lege] Străin înregistrat în RO ⇒ tip 3/4 cu `cuiP = "RO…"`** — zero
+   cazuri în sursă, defect de regulă. Fix: aceeași regulă + caption „în
+   România". Restanță D4-r11.
+4. **[import, cifre] Derivarea din prefixul `RO` = false negative masive** ⇒
+   cartușul D umflat cu `A`, `rezumat1 ≠ Σ op1`. Fix: `--reclasifica` cu
+   semnalul din registru.
+5. **[fond] `TintaPermisa(tip)` fără `Sens`** — o mapare incoerentă rupea tăcut
+   D4-V4 (ModelCheck deducea sensul din tip). Fix: `TintaPermisa(tip, sens)` +
+   `Sens` pe DTO.
+6. **[fond] Partener șters logic ⇒ `RepartitorNePartener`** — filtrul `GCRecord`
+   îl scotea din lookup; eticheta mințea. Fix: `IgnoreQueryFilters` +
+   `PartenerSters`.
+7. **[fond] Avertismente per rând, nemărginite.** Fix: agregare per cauză
+   (`CodAvertismentD394`, `{Cauza, Numar, Suma, Exemple}`).
+8. **[cosmetic] Unirea cheiată pe denumire** scăpa dublurile cu același nume.
+   Fix: cheie pe `Id`.
+
+„Nimic găsit": nrFact, rezumate, securitate, seed/migrație, client, invarianți.
+
+**Rămase, ne-blocante**: D4-r1…r14 în fișierul deciziei 71 (j).

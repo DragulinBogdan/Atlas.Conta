@@ -1,7 +1,7 @@
 # Decizia 36 — Felia P1 — profil privat + TVA structural
 
 - **Data**: 2026-07-23 (primul commit în jurnal)
-- **Stare**: activă
+- **Stare**: activă; amendată de 71 la (d) — `CategorieD394` a murit (coloana scoasă din `TipTva` de migrația `AddD394`; categoria D394 e politica `MapareD394 (TipTva × Sens) → Tip`, 71c)
 - **Rezumat durabil**: `CLAUDE.md` §36
 - **Docs**: docs/privat/p1-tva-design.md
 

@@ -264,8 +264,8 @@ decizia N.
     4426=4427; dimensiunile rândului TVA fără override de regulă; conexul
     clonează `TipTvaId`, NU ValoareTva (lotul la net). (c) `ContaSeeder` =
     nucleu + pachete de profil; `VerificaProfil`: profilul nu se amestecă pe o
-    bază. Codurile SAF-T sunt direcționale; `CategorieD394` se fixează la
-    proiecție. (f) Amânate → jurnal (închiderea lunară = 46c; jurnalele = 68).
+    bază. Codurile SAF-T sunt direcționale; `CategorieD394` a murit (71c).
+    (f) Amânate → jurnal (închiderea lunară = 46c; jurnalele = 68).
 37. **Descărcarea de gestiune (design).** (a) Tip `DescarcareGestiune` cu
     `LinieSursaId`; laturi gestiune → client, AMBELE dimensiuni pe gestiune;
     Valoare = cost; fără TVA; bugetar inert; reutilizarea BonConsum respinsă
@@ -550,6 +550,31 @@ decizia N.
     neatins); GUID malformat pe rută = 404. (g) Gardian de ciclu pe
     `Cont.Parinte` în `GardianEditare` (navigație → FK, limită 64); `Cont` e
     `ReadOnly` pe OData. (i) Rămase → jurnal.
+71. **D394 = proiecție peste `RegistruTva`, per partener.** (a) Formularul =
+    OPANAF 3769/2015 mod. 2194/2025 (XSD v1.02; fără ordin 2026); tipul de
+    operațiune = ENUM (`TipOperatiuneD394`), maparea = POLITICĂ, tipul de
+    partener = COD (funcție a nomenclatorului, definită de lege). (b)
+    Identitatea fiscală = 4 câmpuri pe `Partener` (`TipPersoana`, `Tara` ISO-2
+    default RO, `InregistratTva`, `TvaLaIncasare`), nu satelit (34g deschis doar
+    cât cere D394); **„înregistrat bate tot"**: `InregistratTva ⇒ 1` indiferent
+    de PF/țară, apoi Fizica/RO ⇒ 2, UE ⇒ 3, altfel 4; CUI normalizat (`RO` tăiat
+    când înregistrat sau RO). (c) `MapareD394 (TipTva × Sens) → Tip`, unic
+    filtrat, `TintaPermisa(tip, sens)` pe AMBELE axe (AI/N niciodată; L/V/LS ⇔
+    Livrare, A/C/AS ⇔ Achiziție); nemapatele deliberate = listă cu motiv;
+    **`CategorieD394` a murit** (amendează 36d). (d) UN query grupat pe
+    (Document, Storno, Partener, Sens, TipTva, Cota), restul în memorie; rândul
+    `op1` UNIT pe CUI peste nomenclatoare (cheia XSD unică; tip 1 dacă vreun
+    partener e înregistrat); `AI` derivat; cota 0 pe V/LS/AS/N; **`nrFact` pe
+    (Document × Storno)** — stornoul e factură proprie; TVA pe V =
+    `TvaNedeclarat`; partenerul șters logic se DECLARĂ. (e) Nimic nu se pierde:
+    Σ op1 + Σ `Neincluse` == Σ registru per sens; cusătura cu D300 (rd.
+    9/24/12.1/13, `Neincluse` == rd. 14/15/29) la cent. (f) Ce cere formularul
+    și modelul nu are ⇒ avertisment AGREGAT per cauză (`CodAvertismentD394`),
+    nu 0, nu string-uri. (g) `GET api/proiectii/d394`, `User` ⇒ 200 gol; ecran
+    `/d394`; bani exacți, rotunjirea e a fișierului. (h) Import1C: sursa ⇒
+    preluare, sursa tace ⇒ derivare RAPORTATĂ; **`--reclasifica` = sursă +
+    semnalul din registru** (TVA ≠ 0 pe achiziție ⇒ înregistrat; evidența bate
+    eticheta, 34f), și ca pas final al importului. (j) Rămase → jurnal.
 
 ## Stare și roadmap
 
@@ -570,12 +595,12 @@ detaliat în jurnal):
 - **Pasul 5** — spike BTR (55), FCT+NIR (56), trezorerie (57), FCL+DSC (58),
   perf (59), mărunțișuri (60–61), NIR scriere (62), LDI+BCS (63), virament (64),
   DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68),
-  D300 (69), motor/structură post-D300 (70).
+  D300 (69), motor/structură post-D300 (70), D394 (71).
 
 **Următorul pas**: finisajul clientului (listele §Închidere ale contractelor +
 `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului);
-feliile de scriere rămase (NTC/ASM/retururi, la cerere); proiecțiile fiscale
-rămase (D394/SAF-T peste `RegistruTva`, pe tiparul D300).
+feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T peste
+`RegistruTva`, pe tiparul D300/D394.
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -598,7 +623,15 @@ intracomunitare/agricultori/pro-rata/secțiunile A-B · 69-r3 regularizările pe
 cauză juridică · 69-r6 fișierul XML D300 · 70-r1 refuzurile gardianului pe scrierile OData ies
 `400 text/plain` (decizie proprie) · 70-r2 smoke XAF al gardianului de ciclu ·
 70-r3 poziția „linia N" fără criteriu · 70-r4 `DirectiePentru` per
-`ObjectChanged` · 70-r5 mesajele de binding în engleză · 70-r6 `TvaSuprascris`
+`ObjectChanged` · 70-r5 mesajele de binding în engleză · 70-r6 `TvaSuprascris` ·
+D4-r1 istoricul statutului de TVA (canonicul = registrul ANAF) · D4-r2 adresa
+PF fără CNP · D4-r3 `N` + `tip_document` · D4-r4 data primirii facturii ·
+D4-r5 op11 / cod NC pe produs · D4-r6 bonurile fiscale (G, I.1) · D4-r7 I.2
+facturi/plaje/autofacturi/anulate/simplificate · D4-r8 I.3 · D4-r9 sumele
+TVA la încasare (I.4/I.5) · D4-r10 antet/reprezentant/CAEN/I.6/opțiune
+(`SetareProfil`) · D4-r11 partenerul cu două coduri (SM + RO) · D4-r12
+achizițiile de pe DEC fără furnizor · D4-r13 XML D394 (35c) · D4-r14
+`FaraOp11` dispare odată cu r5
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

@@ -290,10 +290,29 @@ per felie):
   `Cont.Parinte`. Review advers 0 fond / 3 medii fixate / 4 minore. D5: Import1C
   re-rulat integral (1:47) — CONTRACT ÎNDEPLINIT, raport identic pe conținut cu
   baseline-ul DIM-4 (doar ordinea unor linii de justificare diferă).
+- **Felia 14 — D394** (EXECUTATĂ, decizia 71; design + închidere:
+  `docs/api/p5-felia-d394-design.md`, formularul în
+  `docs/api/d394-structura-2026.md`): identitatea fiscală pe `Partener`
+  (`TipPersoana`/`Tara`/`InregistratTva`/`TvaLaIncasare`) + `MapareD394 (TipTva
+  × Sens) → Tip` ca politică privată (13 mapări + 7 nemapate deliberate;
+  `CategorieD394` scoasă) + proiecția `op1`/rezumate/H/`Neincluse`/avertismente
+  per cauză peste `RegistruTva` + `GET api/proiectii/d394` + `/d394` + Import1C
+  cu identitatea fiscală din `flax.Partenerii` și `--reclasifica` (semnalul din
+  registru). Commit-uri: 8038d18 (pas 1, model), b10249c (pas 4a, Import1C),
+  2cea578 (pas 2, proiecția), 321b740 (pas 3, API + client, perf addendum 5),
+  0d58f1f, 64ec5bc (fixurile review-ului advers: 8 constatări, toate fixate —
+  „înregistrat bate tot", unirea pe CUI peste nomenclatoare, `TintaPermisa(tip,
+  sens)`, partenerul șters declarat, avertismente agregate). Cusătura cu
+  registrul și cu D300 la cent pe scenă și pe septembrie 2025. Perf 99 ms/lună,
+  394 ms/an. Închidere: D5 (Import1C `--recreeaza`,
+  01:47:31) cu raport IDENTIC cu baseline-ul DIM-4 (445 linii, diff sortat 0;
+  +23 avertismente = clasificarea partenerilor); `--reclasifica` 20.118 parteneri,
+  35 înregistrați din registru; smoke 09/2025 pe clona Flax: cusătura cu D300 la
+  cent, `CombinatieRefuzata` 0, fix la smoke pentru CUI „-" ⇒ null. Decizia 71.
 - Restul: finisaj de client (listele §Închidere ale contractelor +
   `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului) și
-  feliile de scriere rămase (NTC/ASM/retururi, la cerere); D394/SAF-T pe
-  tiparul D300.
+  feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T peste
+  `RegistruTva`, pe tiparul D300/D394.
   Alternativă rămasă: felia C1a a comenzilor
   (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă, la presiune
   de client).

@@ -10870,6 +10870,9 @@ void VerificaD394(bool cuTva) {
         && D394Proiectii.NormalizeazaCui("RO999", "DE", false) == "RO999"
         && D394Proiectii.NormalizeazaCui("RO999", "DE", true) == "999"
         && D394Proiectii.NormalizeazaCui("  ", "RO", false) == null
+        && D394Proiectii.NormalizeazaCui("-", "RO", false) == null
+        && D394Proiectii.NormalizeazaCui(" ./ ", "RO", true) == null
+        && D394Proiectii.NormalizeazaCui("RO-", "RO", true) == null
         && D394Proiectii.NormalizeazaCui(null, "RO", true) == null
         && D394Proiectii.NormalizeazaCui("RO", "RO", true) == null);
 

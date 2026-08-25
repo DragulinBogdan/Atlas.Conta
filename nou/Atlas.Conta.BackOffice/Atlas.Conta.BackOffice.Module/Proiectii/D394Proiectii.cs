@@ -212,7 +212,10 @@ public static class D394Proiectii {
         var cui = new string(codFiscal.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
         if ((inregistratTva || Partener.NormalizeazaTara(tara) == "RO") && cui.StartsWith("RO", StringComparison.Ordinal))
             cui = cui[2..];
-        return cui.Length == 0 ? null : cui;
+        // Un „cod" fără nicio literă/cifră („-", „./", „--") e un cod LIPSĂ scris
+        // altfel (3.597 PF în sursa 1C au „-"): dacă ar trece, toți s-ar uni pe
+        // aceeași cheie într-un singur rând op1 — capcană măsurată la smoke.
+        return cui.Any(char.IsLetterOrDigit) ? cui : null;
     }
 
     /// <summary>CNP/NIF = exact 13 cifre (§4.9). Orice altceva pe o PF = identificator lipsă/invalid.</summary>
