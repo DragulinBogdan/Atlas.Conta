@@ -1,0 +1,22 @@
+{
+  "found": [
+    {
+      "date_generale": {
+        "cui": 4221306,
+        "denumire": "MINISTERUL FINANTELOR",
+        "codPostal": "50706",
+        "stare_inregistrare": "MODIFICARE PUBLICI din data 06.07.1993",
+        "nrRegCom": ""
+      },
+      "adresa_sediu_social": {
+        "sdenumire_Localitate": "Sector 5 Mun. Bucureşti",
+        "sdenumire_Strada": "Bld. Libertăţii",
+        "snumar_Strada": "16",
+        "scod_JudetAuto": "B",
+        "scod_Postal": "50706",
+        "sdetalii_Adresa": ""
+      }
+    }
+  ],
+  "notFound": []
+}

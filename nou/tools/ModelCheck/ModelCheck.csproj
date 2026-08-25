@@ -5,6 +5,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Fixture-urile D15-V3: răspunsuri `PlatitorTva` v9 (unul REAL, salvat
+         la implementare) pe care se probează deserializarea, offline. Copiate
+         lângă executabil — se citesc prin `AppContext.BaseDirectory`. -->
+    <Content Include="Fixtures\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\Atlas.Conta.BackOffice\Atlas.Conta.BackOffice.Module\Atlas.Conta.BackOffice.Module.csproj" />
   </ItemGroup>
 </Project>

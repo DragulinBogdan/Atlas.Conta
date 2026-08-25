@@ -23,8 +23,13 @@ bld/
 [Ll]og/
 [Ll]ogs/
 .vs/
-anaf/
-1C/
+# Sursele descarcate (specificatii ANAF, exporturi 1C) — DOAR in radacina.
+# ANCORATE cu `/`: fara el, `anaf/` se potriveste cu ORICE director numit asa,
+# la orice adancime, iar pe Windows si case-insensitive — asa a fost inghitit
+# tacut `nou/.../Module/Anaf/` (codul feliei 15), care nu apare nici macar ca
+# fisier neurmarit in `git status`.
+/anaf/
+/1C/
 
 # .NET Core
 project.lock.json

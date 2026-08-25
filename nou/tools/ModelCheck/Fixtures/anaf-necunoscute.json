@@ -1,0 +1,77 @@
+{
+  "cod": 200,
+  "message": "SUCCESS",
+  "camp_nou_la_nivel_de_raspuns": { "orice": [1, 2, 3] },
+  "found": [
+    {
+      "camp_nou_la_nivel_de_intrare": true,
+      "date_generale": {
+        "data": "2026-08-25",
+        "cui": 12345,
+        "denumire": "PROBĂ CÂMPURI NECUNOSCUTE SRL",
+        "adresa": "MUNICIPIUL CLUJ-NAPOCA, STR. AVRAM IANCU, NR.1",
+        "telefon": "0264111222",
+        "fax": "",
+        "codPostal": "400089",
+        "act": "",
+        "stare_inregistrare": "INREGISTRAT din data 01.02.2003",
+        "data_inreg_Reg_RO_e_Factura": "",
+        "organFiscalCompetent": "Administraţia Judeţeană a Finanţelor Publice Cluj",
+        "forma_de_proprietate": "PROPR.PRIVATA-CAPITAL PRIVAT AUTOHTON",
+        "forma_organizare": "PERSOANA JURIDICA",
+        "forma_juridica": "SOCIETATE CU RASPUNDERE LIMITATA",
+        "data_inregistrare": "2003-02-01",
+        "statusRO_e_Factura": true,
+        "nrRegCom": "J12/999/2003",
+        "cod_CAEN": null,
+        "iban": "",
+        "un_camp_pe_care_anaf_il_adauga_maine": "valoare"
+      },
+      "inregistrare_scop_Tva": {
+        "scpTVA": true,
+        "perioade_TVA": [
+          { "data_inceput_ScpTVA": "2003-02-01", "data_sfarsit_ScpTVA": "", "camp_necunoscut": 7 }
+        ]
+      },
+      "inregistrare_RTVAI": {
+        "statusTvaIncasare": true,
+        "dataInceputTvaInc": "2015-01-01",
+        "alt_camp": null
+      },
+      "stare_inactiv": {
+        "statusInactivi": true,
+        "dataInactivare": "2024-03-15"
+      },
+      "inregistrare_SplitTVA": {
+        "statusSplitTVA": false
+      },
+      "adresa_sediu_social": {
+        "stara": "RO",
+        "sdenumire_Localitate": "Cluj-Napoca",
+        "scod_Postal": "400089",
+        "sdenumire_Strada": "Str. Avram Iancu",
+        "snumar_Strada": "1",
+        "scod_Localitate": "12",
+        "sdenumire_Judet": "CLUJ",
+        "scod_Judet": "12",
+        "scod_JudetAuto": "CJ",
+        "sdetalii_Adresa": "Ap. 3",
+        "sceva_nou": "x"
+      },
+      "adresa_domiciliu_fiscal": {
+        "dtara": "RO",
+        "ddenumire_Localitate": "Cluj-Napoca",
+        "ddenumire_Strada": "Str. Avram Iancu",
+        "dnumar_Strada": "1",
+        "dcod_Localitate": "12",
+        "ddenumire_Judet": "CLUJ",
+        "dcod_Judet": "12",
+        "dcod_JudetAuto": "CJ",
+        "ddetalii_Adresa": "Ap. 3",
+        "dcod_Postal": "400089",
+        "dceva_nou": { "imbricat": true }
+      }
+    }
+  ],
+  "notFound": [999999999]
+}
