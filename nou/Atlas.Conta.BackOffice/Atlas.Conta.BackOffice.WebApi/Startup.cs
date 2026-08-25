@@ -45,6 +45,27 @@ namespace Atlas.Conta.BackOffice.WebApi {
             // — consumate de catch-ul din `ContaApiController.Domeniu`; aceeași
             // sursă ca în Blazor.Server.
             Atlas.Conta.BackOffice.Module.BusinessObjects.MesajeConstraintRo.Aplica();
+            // Clientul registrului ANAF `PlatitorTva` (felia 15, D15-D2) —
+            // singurul apel HTTP IEȘITOR al aplicației, cablat IDENTIC cu
+            // `Blazor.Server/Startup.cs`: modulele XAF nu adaugă servicii în DI
+            // (aceeași constatare ca la `AddContaGardianEditare` de mai sus),
+            // deci `Module` livrează clasa, iar fiecare host o construiește.
+            // `ParteneriController` îl primește prin constructor.
+            //
+            // `AddHttpClient` și nu `new HttpClient()`: fabrica reciclează
+            // conexiunile și handler-ele. URL-ul vine din `Anaf:PlatitorTvaUrl` —
+            // secțiune OPȚIONALĂ, absentă azi din `appsettings.json`: lipsa ei
+            // lasă URL-ul oficial v9 din cod, prezența o folosește (mediu de test
+            // ANAF, proxy de întreprindere).
+            //
+            // Timeout de 60 s: ANAF răspunde lent pe loturi de 100 de coduri, iar
+            // depășirea lui iese ca eroare TRANZITORIE de lot — pe REST, un 503
+            // pe care clientul îl poate reîncerca, nu o excepție de 500.
+            services.AddHttpClient<Atlas.Conta.BackOffice.Module.Anaf.PlatitorTvaClient>(
+                    http => http.Timeout = TimeSpan.FromSeconds(60))
+                .AddTypedClient((http, sp) => new Atlas.Conta.BackOffice.Module.Anaf.PlatitorTvaClient(
+                    http, Configuration["Anaf:PlatitorTvaUrl"]
+                        ?? Atlas.Conta.BackOffice.Module.Anaf.PlatitorTvaClient.UrlImplicit));
 
             services.AddXafWebApi(builder => {
                 builder.ConfigureOptions(options => {

@@ -97,17 +97,70 @@ public abstract class ContaApiController : ControllerBase {
     // rezolvat printr-un ObjectSpace SECURED: inexistent SAU invizibil pentru
     // user → 404 (fără sondare de existență); vizibil dar fără Write → 403;
     // abia apoi comanda primește ușa non-secured.
-    protected IActionResult ComandaAutorizata(Guid documentId, Func<IActionResult> comanda) {
-        using (var os = Secured(typeof(Document))) {
-            var doc = os.GetObjectByKey<Document>(documentId);
-            if (doc == null)
-                return NotFound();
-            if (securitate is not IRequestSecurityStrategy cerinte
-                    || !cerinte.CanWrite(os, doc))
-                return Forbid();
-        }
-        return comanda();
+    //
+    // GENERIC de la felia 15 (D15-D4): comanda de sincronizare ANAF e pe
+    // `Partener`, nu pe un document, dar întrebarea („există pentru mine? am voie
+    // să scriu?") și răspunsurile (404/403) sunt aceleași. Tipul e singurul lucru
+    // care se schimbă, deci intră ca parametru de tip — nu ca a doua copie a
+    // gate-ului. Supraîncărcarea fără parametru de tip de mai jos păstrează
+    // apelurile existente NESCHIMBATE: `T` nu se poate deduce din argumente, iar
+    // un refactor mecanic peste 20 de call-site-uri de documente ar fi fost
+    // zgomot fără câștig.
+    protected IActionResult ComandaAutorizata<T>(Guid id, Func<IActionResult> comanda) where T : class {
+        var refuz = Autorizeaza<T>(id);
+        return refuz ?? comanda();
     }
+
+    protected IActionResult ComandaAutorizata(Guid documentId, Func<IActionResult> comanda) =>
+        ComandaAutorizata<Document>(documentId, comanda);
+
+    // Gate-ul, ca funcție: `null` = are voie, altfel refuzul gata format.
+    // Separat de `ComandaAutorizata` fiindcă LOTUL (D15-D4) are nevoie de verdict
+    // per id — acolo un refuz nu e răspunsul cererii, ci un rând în `Sarite`.
+    protected IActionResult Autorizeaza<T>(Guid id) where T : class {
+        using var os = Secured(typeof(T));
+        var obiect = os.GetObjectByKey<T>(id);
+        if (obiect == null)
+            return NotFound();
+        // Cast explicit la `object`: supraîncărcarea care contează e
+        // `CanWrite(IObjectSpace, object targetObject)` — permisiunea pe
+        // INSTANȚĂ, cea pe care o folosea și varianta pe `Document`. Fără cast,
+        // un `T` care s-ar nimeri `Type` ar aluneca pe supraîncărcarea de TIP
+        // (`CanWrite(Type, IObjectSpace, …)`), adică altă întrebare.
+        if (securitate is not IRequestSecurityStrategy cerinte || !cerinte.CanWrite(os, (object)obiect))
+            return Forbid();
+        return null;
+    }
+
+    // Gate-ul de LOT (D15-D4): fiecare id trece SEPARAT, iar cel refuzat iese cu
+    // motiv, nu aruncă tot lotul. Un 403 pe 500 de parteneri fiindcă unul singur
+    // e invizibil ar fi „totul sau nimic" acolo unde utilizatorul a cerut „ce se
+    // poate" — și ar ascunde exact ce s-ar fi putut face.
+    //
+    // `eticheta` se citește CÂT E OS-UL VIU: după `using` obiectul e detașat, iar
+    // mesajul din UI n-are ce face cu un GUID.
+    protected (List<Guid> Permise, List<IdRefuzat> Refuzate) AutorizeazaLot<T>(
+            IEnumerable<Guid> ids, Func<T, string> eticheta) where T : class {
+        var permise = new List<Guid>();
+        var refuzate = new List<IdRefuzat>();
+        using var os = Secured(typeof(T));
+        var cerinte = securitate as IRequestSecurityStrategy;
+        foreach (var id in (ids ?? []).Distinct()) {
+            var obiect = os.GetObjectByKey<T>(id);
+            // Inexistent SAU invizibil pentru user — aceeași frază, deliberat:
+            // altfel lotul ar fi un oracol de existență pentru rândurile pe care
+            // securitatea le ascunde (motivul lui 404 din gate-ul simplu).
+            if (obiect == null)
+                refuzate.Add(new IdRefuzat(id, null, "nu există sau nu e vizibil pentru utilizatorul curent"));
+            else if (cerinte == null || !cerinte.CanWrite(os, (object)obiect))
+                refuzate.Add(new IdRefuzat(id, eticheta?.Invoke(obiect), "fără drept de scriere"));
+            else
+                permise.Add(id);
+        }
+        return (permise, refuzate);
+    }
+
+    protected sealed record IdRefuzat(Guid Id, string Eticheta, string Motiv);
 
     // Încărcarea unei proiecții prin `DataSourceLoader`, cu MATERIALIZARE
     // explicită înainte de întoarcere.
@@ -176,23 +229,49 @@ public abstract class ContaApiController : ControllerBase {
         try {
             return actiune();
         }
-        catch (OperareException ex) {
-            return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(ex.Message));
+        catch (Exception ex) {
+            // `throw;` rămâne AICI, în catch, ca stiva să nu se piardă: helper-ul
+            // doar traduce, iar `null` înseamnă „nu e o eroare de domeniu".
+            var refuz = RefuzDeDomeniu(ex);
+            if (refuz == null)
+                throw;
+            return refuz;
+        }
+    }
+
+    // Aceeași traducere pe calea ASYNC (felia 15: comanda ANAF face I/O de
+    // rețea, deci acțiunea e `async Task<IActionResult>`). O a doua copie a
+    // catch-urilor ar fi fost exact locul unde contractul de 422 ar începe să
+    // difere între felii — de-aia traducerea e una singură, mai jos.
+    protected async Task<IActionResult> Domeniu(Func<Task<IActionResult>> actiune) {
+        try {
+            return await actiune();
         }
         catch (Exception ex) {
-            // Violările de constraint DB (F4-M2): pe rutele fără pre-check propriu
-            // (ex. DELETE pe un draft FCL ale cărui linii sunt referite de un DSC
-            // manual prin `LinieSursaId` — FK Restrict) commit-ul iese ca
-            // DbUpdateException, care fără traducere ajungea 500 brut. Aceeași
-            // traducere ca în Blazor (39a, `AtlasDxfExceptionService`), același
-            // contract ca orice refuz de domeniu: 422 + EroriDto. Template-urile
-            // RO se aplică la pornire (`MesajeConstraintRo.Aplica`); modelul EF se
-            // deduce din `Entries`-urile excepției — captions XAF cu fallback CLR.
-            var violare = Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationTranslator.TryTranslate(ex);
-            if (violare == null)
+            var refuz = RefuzDeDomeniu(ex);
+            if (refuz == null)
                 throw;
-            return StatusCode(StatusCodes.Status422UnprocessableEntity,
-                EroriDto.DinMesaj(Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationMessages.Format(violare)));
+            return refuz;
         }
+    }
+
+    // `null` = nu e o eroare de domeniu (apelantul o lasă să treacă mai departe,
+    // cu `throw;` din catch-ul lui).
+    IActionResult RefuzDeDomeniu(Exception ex) {
+        if (ex is OperareException)
+            return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(ex.Message));
+        // Violările de constraint DB (F4-M2): pe rutele fără pre-check propriu
+        // (ex. DELETE pe un draft FCL ale cărui linii sunt referite de un DSC
+        // manual prin `LinieSursaId` — FK Restrict) commit-ul iese ca
+        // DbUpdateException, care fără traducere ajungea 500 brut. Aceeași
+        // traducere ca în Blazor (39a, `AtlasDxfExceptionService`), același
+        // contract ca orice refuz de domeniu: 422 + EroriDto. Template-urile
+        // RO se aplică la pornire (`MesajeConstraintRo.Aplica`); modelul EF se
+        // deduce din `Entries`-urile excepției — captions XAF cu fallback CLR.
+        var violare = Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationTranslator.TryTranslate(ex);
+        if (violare == null)
+            return null;
+        return StatusCode(StatusCodes.Status422UnprocessableEntity,
+            EroriDto.DinMesaj(Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationMessages.Format(violare)));
     }
 }
