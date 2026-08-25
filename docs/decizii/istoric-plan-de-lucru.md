@@ -288,7 +288,8 @@ per felie):
   amânată + `Purja` (curățenie fizică; F5/57f pe mecanismul real; scurgerea
   DIM-3 oprită), 69-r5 un singur 400 = `EroriDto`, 67e gardian de ciclu pe
   `Cont.Parinte`. Review advers 0 fond / 3 medii fixate / 4 minore. D5: Import1C
-  re-rulat integral — rezultatul în contract §Închidere.
+  re-rulat integral (1:47) — CONTRACT ÎNDEPLINIT, raport identic pe conținut cu
+  baseline-ul DIM-4 (doar ordinea unor linii de justificare diferă).
 - Restul: finisaj de client (listele §Închidere ale contractelor +
   `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului) și
   feliile de scriere rămase (NTC/ASM/retururi, la cerere); D394/SAF-T pe

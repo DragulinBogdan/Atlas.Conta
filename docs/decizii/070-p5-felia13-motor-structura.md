@@ -1,4 +1,4 @@
-# Decizia 70 — Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)
+﻿# Decizia 70 — Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)
 
 - **Data**: 2026-08-25
 - **Stare**: activă
@@ -111,10 +111,12 @@ refuzurile gardianului pe scrierile OData ies prin `UserFriendlyExceptionFilter`
 al DevExpress ca `400 text/plain`, nu `422 {Erori}` — clauza „OData: 422" din
 contract era falsă; vezi (i).
 
-(h) **Proba supremă (D5)**: Import1C `--recreeaza` integral pe codul feliei —
-rezultatul se consemnează în contract §Închidere (așteptarea argumentată:
-raport identic cu baseline-ul DIM-4 `reconciliere-20260807-174221.txt`,
-fiindcă importul nu trece TI pe FCL).
+(h) **Proba supremă (D5) TRECUTĂ**: Import1C `--recreeaza` integral pe codul
+feliei (2026-08-25, 1:47) — CONTRACT ÎNDEPLINIT, 956 avertismente, raportul
+identic pe conținut cu baseline-ul DIM-4 `reconciliere-20260807-174221.txt`
+(diff sortat = 0; diferă doar timestamp-ul și ordinea unor linii de
+justificare). Așteptarea argumentată — importul nu trece TI pe FCL — s-a
+confirmat.
 
 (i) **Rămase, cu nume**: **70-r1** refuzurile gardianului pe scrierile OData ale
 nomenclatoarelor vii ies `400 text/plain` (filtrul DX), nu `422 EroriDto` —

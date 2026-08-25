@@ -223,5 +223,12 @@ Găsit pe drum: scurgerea de o `RegulaContare` goală per rulare era a probei
 DIM-3 din ModelCheck (nu a seed-ului de producție) — purjează fizic; măsurat
 9 → 9 după rulare.
 
-**D5 (Import1C `--recreeaza`)**: ÎN CURS la momentul închiderii docs — rezultatul
-se consemnează aici la terminare.
+**D5 (Import1C `--recreeaza`, 2026-08-25, 01:47:38 total)**: CONTRACT
+ÎNDEPLINIT, 956 avertismente (aceleași ca în baseline); raportul
+`reconciliere-20260825-021342.txt` are EXACT aceleași 445 de linii ca
+baseline-ul DIM-4 `reconciliere-20260807-174221.txt` (diff pe conținut sortat
+= 0), diferind doar antetul cu timestamp și ORDINEA a 16 linii „explicată exact
+de registrul divergențelor" din interiorul blocurilor lor (enumerare
+nedeterministă a dicționarului, nu cifre). Așteptarea argumentată s-a
+confirmat: importul nu trece TI pe FCL, motorul schimbat produce anul 2025
+identic.
