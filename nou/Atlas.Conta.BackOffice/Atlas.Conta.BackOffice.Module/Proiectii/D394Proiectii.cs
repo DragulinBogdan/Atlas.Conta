@@ -384,12 +384,10 @@ public static class D394Proiectii {
                 && castigatoare.Contains((c.DocumentId, c.Storno, c.Partener.CheieCui, c.Tip, c.Cota)))
                 rand.NrFact++;
         }
-        // Documentul se numără o dată per rând, dar câștigătorul lui e o COTĂ:
-        // rândul cotei câștigătoare primește 1 și abia la prima apariție a
-        // documentului — bucla de mai sus îl adaugă la `Documente` pe fiecare
-        // rând atins și incrementează doar unde cheia e cea câștigătoare.
-        // (Un document atinge un rând o singură dată după agregarea per cotă,
-        // deci `Add` întoarce true exact o dată per (document, rând).)
+        // `Facturi` e memoria „am văzut factura asta pe rândul ăsta": o factură
+        // atinge același rând prin mai multe grupuri când are două `TipTva` pe
+        // aceeași cotă (N21 + NED21), iar incrementul vine o singură dată, doar
+        // unde cota rândului e cea câștigătoare.
 
         var ordonate = randuri.Values
             .OrderBy(r => r.TipPartener).ThenBy(r => r.CuiP ?? "￿", StringComparer.Ordinal)
