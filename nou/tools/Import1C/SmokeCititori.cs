@@ -32,6 +32,8 @@ static class SmokeCititori {
         }
 
         Proba("Partenerii (identitate fiscală, D394)", () => flax.ParteneriEsantion());
+        List<(string PartenerId, FlaxAdresa Adresa)> adrese = null;
+        Proba("Adrese partener (InformatiaDeContact, D15-D6)", () => adrese = flax.AdreseEsantion());
         Proba("Aprovizionari", () => flax.Aprovizionari(an, luna));
         Proba("AprovizionariMarfuri", () => flax.AprovizionariMarfuri(an, luna));
         Proba("AprovizionariServicii", () => flax.AprovizionariServicii(an, luna));
@@ -82,6 +84,30 @@ static class SmokeCititori {
         Proba("CasariMF", () => flax.CasariMF(an, luna));
         Proba("InchideriLuna", () => flax.InchideriLuna(an, luna));
 
+        // Adresele (D15-D6): eșantionul se TIPĂREȘTE, nu doar se numără. Maparea
+        // e pe coloane fizice numerotate (`Field1`, `Field3`, …), al căror
+        // înțeles nu-l apără compilatorul și nici numărul de rânduri — singura
+        // probă onestă e ca omul să vadă că în coloana „județ" scrie un județ.
+        // Și cele două forme (una per partener, una în lot) trebuie să dea
+        // ACELAȘI rând pentru același partener: altfel materializarea și
+        // reclasificarea ar scrie adrese diferite pentru același om.
+        if (adrese is { Count: > 0 }) {
+            Console.WriteLine($"  {"  → eșantion (cod poștal | județ/cod CNP | localitate | stradă | nr | clădire)",-46}");
+            foreach (var (id, a) in adrese.Take(8))
+                Console.WriteLine($"      {id[..8]}… {a.CodPostal ?? "–"} | {a.JudetDenumire ?? "–"}"
+                    + $"/{a.CodJudetCnp?.ToString() ?? "–"} | {a.Localitate ?? "–"} | {a.Strada ?? "–"}"
+                    + $" | {a.Numar ?? "–"} | {a.Cladire ?? "–"}");
+            var (unId, unaAdresa) = adrese[0];
+            var perPartener = flax.AdresaPartener(unId);
+            var inLot = flax.AdreseParteneri(adrese.Select(x => x.PartenerId));
+            check($"Smoke cititori: adresa lui {unId[..8]}… e aceeași pe cele trei căi "
+                + "(eșantion / per partener / în lot)",
+                perPartener == unaAdresa && inLot.GetValueOrDefault(unId) == unaAdresa);
+            check($"Smoke cititori: forma în lot întoarce {inLot.Count} adrese pentru "
+                + $"{adrese.Count} parteneri cu adresă (una per partener, fără dubluri)",
+                inLot.Count == adrese.Count);
+        }
+
         // Registrul contabil: forma PE LUNĂ (cea folosită de handler-e) și cea per
         // document (diagnostic) trebuie să dea EXACT aceleași rânduri — altfel una
         // dintre ele minte, iar identitatea de lot ar depinde de calea aleasă.
@@ -106,7 +132,7 @@ static class SmokeCititori {
                 subPerechi.SequenceEqual(subconto.GetValueOrDefault(doc) ?? []));
         }
 
-        check($"Smoke cititori: toate cele 51 de cititoare ale lunii {luna:00}/{an} rulează pe "
+        check($"Smoke cititori: toate cele 53 de cititoare ale lunii {luna:00}/{an} rulează pe "
             + $"view-urile reale ({esecuri} eșecuri, {randuri} rânduri citite)", esecuri == 0);
     }
 }

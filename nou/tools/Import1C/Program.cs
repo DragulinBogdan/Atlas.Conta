@@ -1,3 +1,4 @@
+using Atlas.Conta.BackOffice.Module.Anaf;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using DevExpress.ExpressApp;
@@ -74,6 +75,14 @@ var deblocari = new List<(string View, string Cheie)>();
 // (din sursă + semnalul din registru), FĂRĂ import de documente; idempotent.
 // Vezi `ImportLaCerere.ReclasificaToti`.
 var reclasifica = false;
+// `--anaf` = pasul final OPȚIONAL al importului (felia 15, D15-D6): registrul
+// ANAF al plătitorilor de TVA peste toți partenerii legați, `suprascrie = false`.
+// Valabil și singur, în `--reclasifica --anaf`. Opt-in fiindcă e singura fază a
+// uneltei care iese pe REȚEA: ~200 de apeluri la 1/s pe Flax (~4 minute), cu un
+// serviciu public care are zile proaste. `--anaf-url` mută interogarea pe altă
+// adresă (oglindă, proxy de test); lipsa lui ⇒ URL-ul oficial v9 din client.
+var anaf = false;
+string anafUrl = null;
 for (var i = 0; i < args.Length; i++) {
     var arg = args[i];
     if (!arg.StartsWith("--")) {
@@ -96,6 +105,16 @@ for (var i = 0; i < args.Length; i++) {
             break;
         case "--reclasifica":
             reclasifica = true;
+            break;
+        case "--anaf":
+            anaf = true;
+            break;
+        case "--anaf-url":
+            anafUrl = valoare ?? (i + 1 < args.Length ? args[++i] : null);
+            if (string.IsNullOrWhiteSpace(anafUrl)) {
+                Console.Error.WriteLine("--anaf-url cere o adresă (implicit: URL-ul oficial v9).");
+                return 2;
+            }
             break;
         case "--diag":
             diagProdus = valoare ?? (i + 1 < args.Length ? args[++i] : null);
@@ -122,7 +141,7 @@ for (var i = 0; i < args.Length; i++) {
         default:
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
                 + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--recreeaza] "
-                + "[--reclasifica] [--deblocheaza <view>:<cheie>]");
+                + "[--reclasifica] [--anaf] [--anaf-url <url>] [--deblocheaza <view>:<cheie>]");
             return 2;
     }
 }
@@ -256,18 +275,95 @@ if (reclasifica) {
     var rec = new ImportLaCerere(provider, flax, Avert);
     rec.ReclasificaToti();
     RaporteazaReclasificare(rec, "--reclasifica");
+    if (anaf)
+        await ExecutaAnaf(rec);
     foreach (var a in avertismente)
         Console.WriteLine($"AVERT {a}");
-    Console.WriteLine($"\nReclasificare încheiată ({avertismente.Count} avertismente).");
-    return 0;
+    Console.WriteLine($"\nReclasificare încheiată ({avertismente.Count} avertismente, {esecuri} eșecuri).");
+    // Verificările fazei `--anaf` (pragul de loturi fatale) contează la ieșire:
+    // altfel o rulare în care ANAF refuză jumătate din loturi ar ieși cu 0 și ar
+    // trece drept succes într-un lanț de comenzi.
+    return esecuri == 0 ? 0 : 1;
 }
 
-void RaporteazaReclasificare(ImportLaCerere lc, string pas) =>
+void RaporteazaReclasificare(ImportLaCerere lc, string pas) {
     Console.WriteLine($"\nReclasificare parteneri D394 ({pas}): {lc.ParteneriLegati} legați, "
         + $"{lc.ReclasificatiDinSursa} reclasificați din sursă (tip persoană derivat {lc.TipPersoanaDerivat}, "
         + $"TVA derivat din prefix RO {lc.InregistratTvaDerivat}, TVA la încasare {lc.TvaLaIncasareDinSursa}, "
         + $"PFA cu CUI RO {lc.PfaInregistrate}, țară nerezolvată {lc.TaraNerezolvata}, NuIncludeInDec394 {lc.NuIncludeInDec394}); "
-        + $"din registru: {lc.InregistratiDinRegistru} marcați înregistrați (achiziții cu TVA ≠ 0).");
+        + $"din registru: {lc.InregistratiDinRegistru} marcați înregistrați (achiziții cu TVA ≠ 0); "
+        + $"canonicul ANAF păstrat pe {lc.PastratiDinAnaf} (axa TVA neatinsă de sursă), "
+        + $"{lc.RegistruContraAnaf} cu TVA în registru dar neînregistrați la ANAF azi (raportați, D4-r1).");
+    RaporteazaAdrese(lc, pas);
+}
+
+// Adresele din 1C (felia 15, D15-D6). Cifra care contează e prima: câți dintre
+// partenerii cu bloc gol au primit adresă. Restul spun DE CE n-au primit-o —
+// „FaraAdresaInSursa" e un fapt al sursei, nu un defect al importului, iar
+// „JudetNerezolvat" e singurul loc unde pierdem structură (denumirea rămâne, dar
+// în `DetaliiAdresa`, nu ca FK).
+void RaporteazaAdrese(ImportLaCerere lc, string pas) {
+    // Procentul se raportează la partenerii cu BLOC GOL (preluate + fără adresă
+    // în sursă) — singurii asupra cărora avea ce lucra. Cei deja completați se
+    // numără separat: pe o re-rulare ei sunt majoritatea, iar „0 din 20.118" ar
+    // citi ca regresie, când e chiar idempotența.
+    var candidati = lc.AdresePreluate + lc.FaraAdresaInSursa;
+    Console.WriteLine($"Adrese partener din 1C ({pas}): {lc.AdresePreluate} preluate din {candidati} cu bloc gol"
+        + $"{(candidati == 0 ? "" : $" ({100.0 * lc.AdresePreluate / candidati:N1}%)")}, "
+        + $"{lc.AdreseDejaCompletate} deja completate (neatinse), "
+        + $"{lc.FaraAdresaInSursa} fără adresă în sursă; județ: {lc.JudetDinCodCnp} din codul CNP, "
+        + $"{lc.JudetDinDenumire} din denumire, {lc.JudetNerezolvat} nerezolvat "
+        + "(denumirea brută intră în DetaliiAdresa); "
+        + $"{lc.AdreseTrunchiate} câmpuri tăiate la lungimea SAF-T.");
+}
+
+// Faza `--anaf`: distribuția D394 a partenerilor ÎNAINTE și DUPĂ, plus raportul
+// agregat. Cele două distribuții sunt proba cerută de D15-V5 — o sincronizare
+// care mișcă `InregistratTva` mișcă implicit cartușele formularului, iar aici se
+// vede cu cât, măsurat pe bază (nu pe HTTP).
+async Task ExecutaAnaf(ImportLaCerere lc) {
+    var inainte = Anaf1C.Distributie(provider);
+    var raport = await Anaf1C.Executa(provider, lc.IdParteneriLegati, anafUrl, Avert,
+        CancellationToken.None);
+    var dupa = Anaf1C.Distributie(provider);
+
+    Console.WriteLine($"\n--- ANAF (--anaf), {raport.Durata:hh\\:mm\\:ss} ---");
+    Console.WriteLine($"AnafCandidati       {raport.Candidati,8} din {lc.ParteneriLegati} parteneri legați"
+        + $"{(raport.Reluate == 0 ? "" : $" ({raport.Reluate} reluați o dată după eroare tranzitorie)")}");
+    Console.WriteLine($"AnafGasiti          {raport.Gasiti,8}");
+    Console.WriteLine($"AnafNegasiti        {raport.Negasiti,8} (CUI-uri care nu figurează în registru)");
+    Scrie("AnafSariti", raport.Sariti);
+    Scrie("AnafModificari", raport.Modificari);
+    Scrie("AnafDiferente", raport.Diferente);
+    Scrie("AnafAvertismente", raport.Avertismente);
+    Console.WriteLine($"AnafErori           {raport.Erori.Count,8} loturi "
+        + $"({raport.Erori.Count(e => e.Tranzitorie)} tranzitorii, "
+        + $"{raport.Erori.Count(e => !e.Tranzitorie)} fatale)");
+    foreach (var e in raport.Erori.Take(10))
+        Console.WriteLine($"    lot de {e.Lot.Count}: {e.Mesaj}");
+
+    Console.WriteLine("\n--- Distribuția D394 a partenerilor (tip · persoană · țară · TVA) ---");
+    foreach (var cheie in inainte.Keys.Union(dupa.Keys).OrderBy(k => k, StringComparer.Ordinal)) {
+        var v = inainte.GetValueOrDefault(cheie);
+        var d = dupa.GetValueOrDefault(cheie);
+        Console.WriteLine($"    {cheie,-52} {v,8} → {d,8} ({(d - v >= 0 ? "+" : "")}{d - v})");
+    }
+
+    // Contractul de oprire (regula feliei): erori FATALE în masă = ANAF nu
+    // răspunde la ce trimitem noi, deci nu se raportează ca „avertisment pe date
+    // reale", ci se strigă. Pragul e cel din spec: peste 5% din loturi.
+    var loturi = Math.Max(1, (raport.Candidati + PlatitorTvaClient.MaximPerLot - 1)
+        / PlatitorTvaClient.MaximPerLot);
+    var fatale = raport.Erori.Count(e => !e.Tranzitorie);
+    Check($"ANAF: {fatale} loturi cu eroare FATALĂ din ~{loturi} ({100.0 * fatale / loturi:N1}%, prag 5%)",
+        100.0 * fatale / loturi <= 5.0);
+
+    void Scrie(string nume, Dictionary<string, int> valori) {
+        Console.WriteLine($"{nume,-19} {valori.Values.Sum(),8}");
+        foreach (var (cheie, cate) in valori.OrderByDescending(x => x.Value))
+            Console.WriteLine($"    {cate,8} × {cheie}");
+    }
+}
 
 var plan1C = flax.PlanConturi();
 
@@ -366,6 +462,7 @@ Console.WriteLine($"Clasificare parteneri (D394): {laCerere.ParteneriClasificati
     + $"tip persoană derivat {laCerere.TipPersoanaDerivat}, TVA derivat din prefix RO {laCerere.InregistratTvaDerivat}, "
     + $"TVA la încasare din sursă {laCerere.TvaLaIncasareDinSursa}, țară nerezolvată {laCerere.TaraNerezolvata}, "
     + $"nerezidenți/intracomunitari {laCerere.NerezidentiSursa}, NuIncludeInDec394 {laCerere.NuIncludeInDec394}.");
+RaporteazaAdrese(laCerere, "deschidere");
 var durataDeschidere = cronometru.Elapsed;
 Console.WriteLine($"Durata fazei de deschidere: {durataDeschidere:hh\\:mm\\:ss}.");
 
@@ -691,6 +788,12 @@ using (var os = provider.CreateObjectSpace()) {
 laCerere.ReclasificaToti();
 RaporteazaReclasificare(laCerere, "pas final");
 
+// Și, dacă s-a cerut, registrul ANAF peste tot ce a rămas (D15-D6): DUPĂ
+// reclasificare, fiindcă ANAF e canonicul pe axa TVA — ce spune el trebuie să
+// fie ultimul cuvânt, nu unul peste care mai trece derivarea din prefixul „RO".
+if (anaf)
+    await ExecutaAnaf(laCerere);
+
 Console.WriteLine($"\nDocumente {anImport}: {luni.Sum(l => l.Documente)} importate, "
     + $"{luni.Sum(l => l.Sarite)} sărite, {luni.Sum(l => l.Copii)} copii autogenerați, "
     + $"{luni.Sum(l => l.Esecuri)} eșecuri, {luni.Sum(l => l.Realocari)} realocări de lot "
@@ -739,6 +842,7 @@ Console.WriteLine($"""
     ║   produse (la cerere)      {rezStoc.Produse,10} / {rezStoc.ProduseNoi}
     ║   parteneri (la cerere)    {laCerere.ParteneriClasificati,10} clasificați / {laCerere.ParteneriNoi} noi (tip persoană derivat {laCerere.TipPersoanaDerivat}, TVA din prefix RO {laCerere.InregistratTvaDerivat}, TVA la încasare {laCerere.TvaLaIncasareDinSursa}, PFA cu CUI RO {laCerere.PfaInregistrate}, țară nerezolvată {laCerere.TaraNerezolvata}, NuIncludeInDec394 {laCerere.NuIncludeInDec394})
     ║   reclasificare finală     {laCerere.ParteneriLegati,10} legați: {laCerere.ReclasificatiDinSursa} reclasificați din sursă, din registru {laCerere.InregistratiDinRegistru} marcați înregistrați (achiziții cu TVA ≠ 0)
+    ║   adrese din 1C            {laCerere.AdresePreluate,10} preluate ({laCerere.FaraAdresaInSursa} fără adresă în sursă, {laCerere.AdreseDejaCompletate} deja completate; județ: {laCerere.JudetDinCodCnp} din cod CNP, {laCerere.JudetDinDenumire} din denumire, {laCerere.JudetNerezolvat} nerezolvat; {laCerere.AdreseTrunchiate} câmpuri tăiate)
     ║ DESCHIDEREA SCRISĂ (DocumentId = null)
     ║   rânduri contabile        {rezContabil.Randuri,10} contra ancorei {Deschidere.Ancora}
     ║   extrabilanțiere sărite   {rezContabil.Extrabilantiere,10} (Σ {rezContabil.SumaExtrabilantiera:N2} lei — clasa 8, alt modul)

@@ -157,7 +157,21 @@ Nomenclatoarele: Partenerii → Partener (CUI/RegCom/flags + identitatea fiscal�
 D394: `PersJurFiz` → `TipPersoana`, `Tara_ID` → `Tari.CodAlfa2` → `Tara`,
 `PoliticaTVA`/`DataLuariiInEvidentaTVA` → `InregistratTva`/`TvaLaIncasare`, PF cu
 `CNP` ⇒ `CodFiscal = CNP`; unde sursa tace se derivă și se RAPORTEAZĂ — vezi
-`ImportLaCerere.AplicaClasificare`), Depozite → Gestiune,
+`ImportLaCerere.AplicaClasificare`; **adresa structurată** din
+`flax.InfoRg_InformatiaDeContact` — `Type = N'Adresa'`,
+`Gen_TipuriDeInformatiiDeContact in (N'Sediu social partener', N'Punct de lucru
+partener')`, un rând per partener cu sediul social înaintea punctului de lucru și
+`SimpleKey desc`: `Field1` → `CodPostal`, `Field4` → `Localitate`, `Field6` →
+`Strada`, `Field7` → `Numar`, `DetaliiAdresa` = segmentele `bl./sc./et./ap.`
+din `Present` (etajul și apartamentul stau DOAR în forma concatenată; fără
+ele, `Field8` = blocul), iar județul din `CodJudet` (codul din CNP) cu `Field3`
+(denumirea; „Sector n" ⇒ București, prefixul „Jud." tăiat) ca rezervă —
+nerezolvat ⇒ denumirea brută intră în `DetaliiAdresa`; se scrie DOAR pe bloc
+gol — vezi `ImportLaCerere.AplicaAdresa`, felia 15/D15-D6. Pe axa TVA, un
+partener cu timbru `DataSincronizareAnaf` NU mai e atins de clasificarea din
+sursă și nici de semnalul din registru: registrul ANAF e canonicul (D4-r1),
+contradicțiile se numără — `--anaf` = pasul final opțional, `Anaf1C.cs`),
+Depozite → Gestiune,
 Casierii + ConturiBancare (proprii) → ContPropriu, PersoaneFizice → Angajat,
 Nomenclator → Produs (loturile la import, per §3), planul de conturi NU se
 importă (planul Atlas = OMFP din seed; maparea codurilor în §8), Clasă/Tip:
@@ -462,3 +476,82 @@ verificarea „zero colapsuri tăcute" din 47f. Rezolvarea descoperirii-în-mers
 - **Progres**: contoare per tip la fiecare 1.000 de documente + durata per
   lună; prima rulare reală = ianuarie singur (`--pana-la`), cu măsurătoare —
   abia cifra de acolo decide dacă se discută performanță (§3).
+
+## 13. Felia 15 (D15-D6) — adresele din 1C + registrul ANAF, pe baza de import
+
+Executat 2026-08-25 (V5 al contractului `docs/api/p5-felia-partener-anaf-contract.md`).
+
+**Ce face unealta**: `AplicaAdresa` la materializare și în `--reclasifica`
+(DOAR pe bloc gol; județ: cod CNP → denumire, cu grafiile 1C „Sector n" /
+„Jud. X"; nerezolvat ⇒ denumirea brută în `DetaliiAdresa`; `bl./sc./et./ap.`
+din `Present`; tăiere la `MaxLength` cu contor); `--anaf` (și
+`--reclasifica --anaf`) = `Anaf1C.cs` peste `SincronizareAnafService`
+(tranșe de 1.000, commit per partener, reluare o dată la eroare tranzitorie,
+`suprascrie = false`, raport agregat per cauză + distribuția D394 înainte/după).
+**Canonicul bate evidența**: un partener cu `DataSincronizareAnaf` nu mai e
+atins pe axa TVA de `AplicaClasificare`, nici de semnalul din registru
+(contoarele `PastratiDinAnaf` / `RegistruContraAnaf`).
+
+**Contractul de coloane** (`--cititori`, 53 de cititoare): `AdreseEsantion` /
+`AdresaPartener` / `AdreseParteneri` dau același rând pentru același partener.
+Constatare pe sursă: `CodJudet` e `nvarchar(10)` (nu int) și e completat pe
+57.336 din 148.443 de rânduri; `Field3` are 143.373; etajul/apartamentul
+există DOAR în `Present`; `Field4` (localitate) depășește 35 de caractere pe
+1.054 de rânduri (SAF-T, tăiere raportată).
+
+**Clona `Atlas.Conta.Import1C.Flax.Api`** (`--reclasifica --anaf`, 4 min 05 s):
+- adrese: **20.034 preluate din 20.114 cu bloc gol (99,6 %)**, 4 deja
+  completate (V4 al pasului 3), 80 fără adresă în sursă; județ **4.011 din
+  codul CNP, 16.015 din denumire, 7 nerezolvate**; 65 câmpuri tăiate.
+- ANAF: 8.232 candidați din 20.118 legați (săriți: 8.103 fără cod fiscal,
+  3.615 cod fără cifre — PF cu „-", 99 CNP, 60 țară ≠ RO, 9 în afara 2–10
+  cifre); **8.230 găsiți, 2 negăsiți, 0 erori de lot**. Modificări 3.364:
+  TvaLaIncasare 1.370, DetaliiAdresa 1.013, InregistratTva 444, CodPostal 367,
+  Numar 77, InactivFiscal 52, Strada 32, RegistruComert 9. Diferențe
+  raportate 25.646: Localitate 7.609, Strada 6.156, Denumire 5.173,
+  RegistruComert 4.949, Numar 781, DetaliiAdresa 617, CodPostal 271, Judet 90.
+  Avertismente 160: 140 trunchieri Localitate (legitime — ANAF întoarce
+  `denumire_Localitate` = „Sat X Com. Y", 36–60 de caractere, peste cei 35 ai
+  `City` din SAF-T; câmpul e mapat corect), 17 trunchieri DetaliiAdresa, 2
+  negăsiți, 1 fără adresă utilizabilă.
+- distribuția D394 a partenerilor: **tip 4 → tip 1: 190** (Juridica · RO ·
+  neînregistrat 2.717 → 2.527; înregistrat 5.540 → 5.730); restul neschimbat.
+- **D394 09/2025 prin WebApi (Admin), înainte → după**: 2.601 rânduri `op1`
+  în ambele; nrCui 1052/1495/1/1 → 1084/1463/1/1. 62 de CUI-uri și-au
+  schimbat cartușul, toate explicate de statutul ANAF de azi: **47 rânduri L
+  tip 2 → tip 1** (PF cu CUI înregistrate — Σ bază 71.615,49 / TVA
+  15.039,31), **13 L + 2 A tip 1 → tip 2** (parteneri marcați PF în 1C,
+  neînregistrați azi — Σ 81.360,45 / 17.085,67 și 1.009,05 / 211,91; cele 2
+  achiziții ies ca `CombinatieRefuzata` = exact D4-r1, statutul la data
+  documentului ≠ statutul de azi), **1 A → AI** (CUI 5310754, TVA la încasare
+  din ANAF, 760,33). Σ pe cartușe: tip 1 L 5.126.130,13 → 5.116.385,17, A
+  4.045.607,36 → 4.043.837,98, AI 4.248,59 → 5.008,92, C neschimbat
+  3.931.447,52; tip 2 L 2.136.904,94 → 2.146.649,90 (+ A 1.009,05); tip 3/4
+  neschimbate. Σ totală pe formular identică (nimic pierdut).
+
+**Baza `Atlas.Conta.Import1C.Flax`** (refăcută cu `--recreeaza --cititori`,
+binarul feliei, 20:35 → 00:13, CONTRACT ÎNDEPLINIT, 0 FAIL; apoi
+`--reclasifica --anaf`, 6 min 42 s):
+- adrese la MATERIALIZARE: **20.038 preluate din 20.118 legați (99,6 %)**, 80
+  fără adresă în sursă; județ 4.013 din codul CNP, 16.017 din denumire, 7
+  nerezolvate; 65 câmpuri tăiate. `--reclasifica` ulterior: 0 preluate,
+  20.038 deja completate (neatinse) — idempotența e chiar cifra asta.
+- ANAF: 8.232 candidați, **8.230 găsiți, 2 negăsiți, 0 erori**; modificări
+  3.365 (TvaLaIncasare 1.371, InregistratTva 444, InactivFiscal 52, restul
+  adresă/RegCom), diferențe 25.655, avertismente 160 (aceleași cauze ca pe
+  clonă); distribuția D394: **tip 4 → tip 1: 190**.
+- **Reconcilierea**: `reconciliere-20260825-203703.txt` vs baseline-ul
+  `reconciliere-20260825-095411.txt` (F14/D5 = DIM-4): 444 de linii, 39.321 B
+  fiecare; diff pe conținut sortat (fără linia 1, timbrul de timp) = **0
+  linii**. Singura permutare în ordine: două categorii cu același număr de
+  chei (3) în „justificate, agregat pe categorii" — egalitate la sortarea pe
+  contor, fără cheie secundară (raportul nu e determinist pe egalități;
+  restanță de cosmetică, nu de cifre). `--anaf` nu atinge registrele
+  (scrie doar `Parteneri`), deci raportul nu se regenerează și nu se poate
+  mișca.
+
+**Rămase / constatări**: `RegistruContraAnaf` a ieșit 0 pe ambele baze doar
+fiindcă în `--reclasifica --anaf` semnalul din registru rulează ÎNAINTEA
+timbrului — la a doua rulare `--reclasifica` cifra devine reală (D4-r1);
+sortarea pe egalitate în raportul de reconciliere; 7 județe nerezolvate
+(denumire liberă) rămân în `DetaliiAdresa`.

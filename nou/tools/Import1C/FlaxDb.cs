@@ -40,6 +40,27 @@ record FlaxPartener(string Id, string Cod, string Denumire, string CodUnic, stri
     string Cnp, string TaraIso, string PoliticaTva, DateTime? DataTva,
     bool Nerezident, bool Intracomunitar, bool NuIncludeInDec394);
 
+// Adresa structurată a partenerului (felia 15, D15-D6). 1C o ține în registrul
+// generic de informații de contact (`InfoRg_InformatiaDeContact`), un rând per
+// (obiect × tip de informație), cu coloane FIZICE numerotate al căror înțeles îl
+// dă tipul: la `Type = N'Adresa'`, `Field1` = cod poștal, `Field3` = județ
+// (DENUMIRE liberă), `Field4` = localitate, `Field6` = stradă, `Field7` = număr,
+// `Field8` = clădire, `Present` = adresa concatenată de 1C pentru afișare.
+//
+// `CodJudetCnp` e coloana proprie `CodJudet` (nvarchar(5) în view): codul de
+// județ din CNP (8 Brașov, 15 Dâmbovița, 29 Prahova, 40 București), completat pe
+// 57.336 din 148.443 de rânduri. E cheia BUNĂ — un cod, nu o denumire liberă —
+// de-aia se încearcă prima (D15-D6); denumirea rămâne rezerva.
+//
+// `Prezentare` (`Present`) e concatenarea întregii adrese, deci NU se scrie
+// ca atare (ar dubla strada și localitatea într-un câmp de „detalii"). Din ea
+// se iau DOAR segmentele `bl./sc./et./ap.` (`ImportLaCerere.DetaliiDinPrezentare`):
+// etajul și apartamentul n-au coloană numerotată, 1C le ține numai aici. Tot
+// ea e singurul câmp completat pe rândurile fără nicio coloană structurată —
+// în proba `--cititori` se vede că acelea nu sunt o adresă, ci o notă.
+record FlaxAdresa(string CodPostal, string JudetDenumire, int? CodJudetCnp,
+    string Localitate, string Strada, string Numar, string Cladire, string Prezentare);
+
 record FlaxNomenclator(string Id, string Cod, string Denumire, string UM,
     bool Produs, bool Serviciu, bool TaxareInversa, string CotaTva);
 
@@ -76,8 +97,17 @@ partial class FlaxDb(string connectionString) : IDisposable {
 
     public void Dispose() => conn.Dispose();
 
+    // Timeout-ul implicit al lui `SqlCommand` e 30 s, iar view-urile SkyConta au
+    // interogări (`BalantaNivel3` per lună, `StocFaraIdentitate`) care pe un SQL
+    // Server încărcat trec de el. Consecința, văzută pe date: o rulare de o oră
+    // și jumătate moare cu `Execution Timeout Expired` în reconcilierea lunii
+    // patru și trebuie reluată — pentru o interogare care avea nevoie de câteva
+    // secunde în plus. Unealta e o rulare de LOT, nu un request: aici răbdarea e
+    // gratuită, iar oprirea e scumpă.
+    const int TimeoutComanda = 600;
+
     List<T> Query<T>(string sql, Func<SqlDataReader, T> map, params (string Nume, object Valoare)[] parametri) {
-        using var cmd = new SqlCommand(sql, conn);
+        using var cmd = new SqlCommand(sql, conn) { CommandTimeout = TimeoutComanda };
         foreach (var (nume, valoare) in parametri)
             cmd.Parameters.AddWithValue(nume, valoare ?? DBNull.Value);
         using var reader = cmd.ExecuteReader();
@@ -161,6 +191,94 @@ partial class FlaxDb(string connectionString) : IDisposable {
     // mijlocul unei luni.
     public List<FlaxPartener> ParteneriEsantion(int cate = 20) =>
         Query(SelectPartener.Replace("select p.KeyField", $"select top {cate} p.KeyField"), CitestePartener);
+
+    // ---------------- Adresele partenerilor (felia 15, D15-D6) ----------------
+    //
+    // Filtrul și ORDINEA sunt exact cele din `vwDetaliiPartener.sql:104-120`
+    // (exportul SAF-T al aplicației vechi, singura mapare demonstrată pe datele
+    // astea): sediul social bate punctul de lucru, iar în interiorul aceluiași
+    // tip câștigă `SimpleKey` cel mai mare — ultima adresă introdusă.
+    //
+    // O singură abatere de la referință, deliberată: acolo apare
+    // `and a.PersJurFiz = N'PersJur'` — adresele persoanelor FIZICE erau excluse
+    // din export. Noi le luăm (D4-r2 e restanța „adresa PF fără CNP", nu o
+    // interdicție): sursa are datele, iar a le arunca la citire ar fi exact
+    // filtrul ascuns în reader pe care nota clasei îl interzice. Cine nu le vrea
+    // le filtrează la scriere, unde decizia se vede.
+    //
+    // `Present` e `ntext` — nu se poate compara și nici sorta, dar se poate
+    // proiecta printr-un `cast` la `nvarchar(max)`.
+    const string SelectAdresa = @"select CodPostal, JudetDenumire, CodJudet, Localitate,
+                       Strada, Numar, Cladire, Prezentare
+                from (select Object_Partenerii_ID as PartenerId,
+                             nullif(ltrim(rtrim(Field1)), N'') as CodPostal,
+                             nullif(ltrim(rtrim(Field3)), N'') as JudetDenumire,
+                             nullif(ltrim(rtrim(CodJudet)), N'') as CodJudet,
+                             nullif(ltrim(rtrim(Field4)), N'') as Localitate,
+                             nullif(ltrim(rtrim(Field6)), N'') as Strada,
+                             nullif(ltrim(rtrim(Field7)), N'') as Numar,
+                             nullif(ltrim(rtrim(Field8)), N'') as Cladire,
+                             nullif(ltrim(rtrim(cast(Present as nvarchar(max)))), N'') as Prezentare,
+                             row_number() over (partition by Object_Partenerii_ID
+                                 order by case when Gen_TipuriDeInformatiiDeContact
+                                                    = N'Sediu social partener' then 0 else 1 end,
+                                          SimpleKey desc) as rn
+                      from flax.InfoRg_InformatiaDeContact
+                      where Type = N'Adresa'
+                        and Gen_TipuriDeInformatiiDeContact in (N'Sediu social partener',
+                                                                N'Punct de lucru partener')
+                        and Object_Partenerii_ID is not null";
+
+    // `CodJudet` e text în view (nvarchar(5)) dar poartă un NUMĂR de județ. Se
+    // parsează aici, nu la consumator: un „08" și un „8" sunt același județ, iar
+    // orice altceva (gunoi, gol) e `null` — sursa nu se corectează, se citește.
+    static int? CodJudet(SqlDataReader r, int i) =>
+        !r.IsDBNull(i) && int.TryParse(r.GetValue(i).ToString().Trim(), out var v) ? v : null;
+
+    static FlaxAdresa CitesteAdresa(SqlDataReader r) =>
+        new(Text(r, 0), Text(r, 1), CodJudet(r, 2), Text(r, 3),
+            Text(r, 4), Text(r, 5), Text(r, 6), Text(r, 7));
+
+    // Un partener, o adresă (materializarea la cerere): ~0,1 s pe view-ul de
+    // 148k rânduri, deci N+1 pe partenerii NOI ai unei rulări e plătibil.
+    public FlaxAdresa AdresaPartener(string hexId) =>
+        Query(SelectAdresa + " and Object_Partenerii_ID = @id) a where a.rn = 1",
+            CitesteAdresa, ("@id", DinHex(hexId))).SingleOrDefault();
+
+    // Forma în LOT, pentru reclasificarea celor ~20k parteneri legați: un query
+    // per tranșă de 1.000 de ID-uri (plafonul de parametri al SQL Server e
+    // 2.100), nu unul per partener. Măsurat pe Flax: fereastra peste TOATE cele
+    // 148.443 de rânduri costă 0,3 s, deci tranșele sunt gratuite.
+    //
+    // Cheia dicționarului e hex-ul 1C; partenerii fără adresă LIPSESC din el
+    // (nu apar cu `null`) — apelantul distinge „n-are" de „n-am întrebat".
+    public Dictionary<string, FlaxAdresa> AdreseParteneri(IEnumerable<string> hexIds) {
+        var rezultat = new Dictionary<string, FlaxAdresa>(StringComparer.Ordinal);
+        foreach (var transa in hexIds.Distinct(StringComparer.Ordinal).Chunk(1000)) {
+            var parametri = transa.Select((h, i) => ($"@p{i}", (object)DinHex(h))).ToArray();
+            var lista = string.Join(", ", parametri.Select(p => p.Item1));
+            // Aceeași proiecție, plus `PartenerId` ca prima coloană: indicii
+            // cititorului se deplasează cu unu, deci maparea e proprie.
+            var sql = SelectAdresa.Replace("select CodPostal", "select PartenerId, CodPostal")
+                + $" and Object_Partenerii_ID in ({lista})) a where a.rn = 1";
+            foreach (var (id, adresa) in Query(sql,
+                    r => (Hex(r, 0), new FlaxAdresa(Text(r, 1), Text(r, 2), CodJudet(r, 3), Text(r, 4),
+                        Text(r, 5), Text(r, 6), Text(r, 7), Text(r, 8))),
+                    parametri))
+                rezultat[id] = adresa;
+        }
+        return rezultat;
+    }
+
+    // Proba contractului de coloane pentru adrese (`--cititori`), pereche cu
+    // `ParteneriEsantion`: primele `cate` adrese, cu partenerul lor. O coloană
+    // dispărută la regenerarea view-ului cade AICI, nu în mijlocul unei rulări
+    // de 20.000 de parteneri.
+    public List<(string PartenerId, FlaxAdresa Adresa)> AdreseEsantion(int cate = 20) =>
+        Query(SelectAdresa.Replace("select CodPostal", $"select top {cate} PartenerId, CodPostal")
+                + ") a where a.rn = 1",
+            r => (Hex(r, 0), new FlaxAdresa(Text(r, 1), Text(r, 2), CodJudet(r, 3), Text(r, 4),
+                Text(r, 5), Text(r, 6), Text(r, 7), Text(r, 8))));
 
     public FlaxNomenclator NomenclatorDupaId(string hexId) =>
         Query(@"select KeyField, ltrim(rtrim(Code)), Description, UM,

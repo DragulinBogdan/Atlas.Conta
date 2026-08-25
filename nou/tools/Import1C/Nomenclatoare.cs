@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using DevExpress.Persistent.BaseImpl.EF;
@@ -314,6 +316,7 @@ class ImportLaCerere {
                 e.CodFiscal = p.CodUnic;
                 e.RegistruComert = p.RegCom;
                 AplicaClasificare(e, p);
+                AplicaAdresa(e, flax.AdresaPartener(hexId));
             });
         parteneri[hexId] = id;
         clasificati.Add(hexId);
@@ -339,6 +342,7 @@ class ImportLaCerere {
         if (e == null)
             return;
         AplicaClasificare(e, p);
+        AplicaAdresa(e, flax.AdresaPartener(hexId));
         os.CommitChanges();
     }
 
@@ -366,7 +370,17 @@ class ImportLaCerere {
     public int PfaInregistrate { get; private set; }
     public int ReclasificatiDinSursa { get; private set; }
     public int InregistratiDinRegistru { get; private set; }
+    // Partenerii cu timbru ANAF pe care clasificarea din sursă NU i-a atins pe
+    // axa TVA (canonicul bate evidența) și, separat, cei la care semnalul din
+    // registru (TVA ≠ 0 pe achiziții) contrazice registrul ANAF de azi — se
+    // RAPORTEAZĂ, nu se rescriu (statutul la data documentului = D4-r1).
+    public int PastratiDinAnaf { get; private set; }
+    public int RegistruContraAnaf { get; private set; }
     public int ParteneriLegati => parteneri.Count;
+    // Candidații fazei `--anaf` (D15-D6): partenerii LEGAȚI de o fișă 1C — nu
+    // toți partenerii bazei. Un partener creat de seed sau de mână nu vine din
+    // import și nu e treaba conectorului să-l atingă.
+    public IReadOnlyCollection<Guid> IdParteneriLegati => parteneri.Values;
     public int TipPersoanaDerivat { get; private set; }
     public int InregistratTvaDerivat { get; private set; }
     public int TvaLaIncasareDinSursa { get; private set; }
@@ -426,6 +440,22 @@ class ImportLaCerere {
             }
         }
 
+        if (p.NuIncludeInDec394)
+            NuIncludeInDec394++;
+        if (p.Nerezident || p.Intracomunitar)
+            NerezidentiSursa++;
+
+        // Axa TVA: dacă partenerul poartă timbrul ANAF, registrul ANAF a vorbit
+        // deja și e CANONICUL (D4-r1, D15-D3) — derivarea din prefixul „RO" și
+        // politica 1C sunt evidență și nu au voie să-l răstoarne. Fără gardul
+        // ăsta, `--reclasifica` de după `--anaf` (sau pasul final al rulării
+        // următoare) ar de-înregistra înapoi partenerii pe care ANAF i-a corectat.
+        // Se numără, ca raportul să spună cât din sursă a fost lăsat deoparte.
+        if (e.DataSincronizareAnaf != null) {
+            PastratiDinAnaf++;
+            return;
+        }
+
         // Înregistrarea în scopuri de TVA: singurul semnal al sursei e politica
         // „la încasare" (implică plătitor) sau o dată de luare în evidență
         // nevidă; altfel derivare din prefixul RO al CUI-ului.
@@ -440,11 +470,169 @@ class ImportLaCerere {
             e.InregistratTva = p.CodUnic != null
                 && p.CodUnic.StartsWith("RO", StringComparison.OrdinalIgnoreCase);
         }
+    }
 
-        if (p.NuIncludeInDec394)
-            NuIncludeInDec394++;
-        if (p.Nerezident || p.Intracomunitar)
-            NerezidentiSursa++;
+    // ---------------- Adresa structurată a partenerului (felia 15, D15-D6) ----------------
+    //
+    // Simetric cu `AplicaClasificare`, cu o singură lege în plus, și e cea care
+    // contează: se scrie DOAR PE BLOC GOL. O adresă culeasă de om sau adusă din
+    // registrul ANAF (`--anaf`) e mai bună decât una din 1C — 1C n-are decât ce
+    // i-a introdus cineva acum ani, fără validare. „Bloc" înseamnă toate cele
+    // șase câmpuri deodată: umplerea câmp-cu-câmp ar amesteca strada ANAF cu
+    // localitatea 1C și ar produce o adresă care n-a existat nicăieri.
+    //
+    // Județul are DOUĂ chei în sursă, în ordinea asta:
+    //  1. `CodJudet` — codul din CNP (un NUMĂR, deci fără ambiguitate); e
+    //     completat pe 57.336 din 148.443 de rânduri;
+    //  2. `Field3` — DENUMIREA, text liber („DAMBOVITA", „Judetul Bistrita -
+    //     Nasaud"); `JudeteRo.DupaDenumire` o normalizează, dar tot o ghicire
+    //     după formă rămâne.
+    // Nerezolvat ⇒ nu se pune nimic (nicio ghicire, D15-D1) și denumirea brută
+    // intră în `DetaliiAdresa`: informația SURSEI nu se pierde, doar nu se
+    // preface în FK. Contorizat separat, ca să se vadă cât ne costă.
+    public int AdresePreluate { get; private set; }
+    public int FaraAdresaInSursa { get; private set; }
+    // Blocul era deja completat (rulare anterioară, culegere de om, `--anaf`) ⇒
+    // nu s-a atins. Contorul EXISTĂ ca raportul unei re-rulări să nu citească
+    // „0 preluate" ca eșec: pe o bază deja importată zero e răspunsul CORECT, iar
+    // fără cifra asta nu s-ar putea deosebi de „sursa n-are adrese".
+    public int AdreseDejaCompletate { get; private set; }
+    public int JudetDinCodCnp { get; private set; }
+    public int JudetDinDenumire { get; private set; }
+    public int JudetNerezolvat { get; private set; }
+    public int AdreseTrunchiate { get; private set; }
+
+    // Lungimile coloanelor, citite din MODEL prin reflecție — aceeași sursă ca
+    // `SincronizareAnafService.Lungimi` și din același motiv: `[MaxLength]` de pe
+    // `Partener` E lungimea SAF-T, iar o a doua listă scrisă cu mâna în conector
+    // ar fi exact locul unde apare deriva. O adresă peste lungime nu se refuză
+    // (importul n-are voie să pice pentru o stradă lungă) — se taie, cu contor.
+    static readonly Dictionary<string, int> LungimiAdresa = typeof(Partener)
+        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        .Select(pi => (pi.Name, Lungime: pi.GetCustomAttribute<MaxLengthAttribute>()?.Length ?? 0))
+        .Where(x => x.Lungime > 0)
+        .ToDictionary(x => x.Name, x => x.Lungime, StringComparer.Ordinal);
+
+    // Nomenclatorul de județe, citit O DATĂ pe rulare ca `cod ISO → ID`. Se
+    // scrie doar FK-ul (`JudetId`), ca peste tot în conector (`ContImplicitId`,
+    // `TipMaterialId`): un Guid n-are context, deci nu poate ajunge entitate a
+    // altui ObjectSpace decât cel în care se comite. Navigația ar fi necesară
+    // doar pentru gardianul XAF, care nu rulează aici (ușa non-secured).
+    // 42 de rânduri — se încarcă la prima adresă, nu la construcția clasei:
+    // o rulare care nu atinge niciun partener nu deschide un OS degeaba.
+    Dictionary<string, Guid> judete;
+
+    Guid? CautaJudet(string cod) {
+        if (judete == null) {
+            using var os = provider.CreateObjectSpace();
+            judete = os.GetObjectsQuery<Judet>().Select(j => new { j.Cod, j.ID })
+                .ToDictionary(j => j.Cod, j => j.ID, StringComparer.Ordinal);
+        }
+        return judete.TryGetValue(cod, out var id) ? id : null;
+    }
+
+    public void AplicaAdresa(Partener e, FlaxAdresa a) {
+        // Un rând de adresă care n-are NICIO coloană structurată (doar `Present`,
+        // ex. „Targoviste, Dambovita") nu e o adresă, e o notă: 1C are 148.443 de
+        // rânduri de tip „Adresa", dar 141.641 cu localitate. Se numără la fel ca
+        // absența — „n-avem adresă" e același fapt, indiferent cum arată rândul.
+        if (a == null || (a.CodPostal == null && a.Localitate == null && a.Strada == null
+                && a.Numar == null && a.Cladire == null
+                && a.JudetDenumire == null && a.CodJudetCnp == null)) {
+            FaraAdresaInSursa++;
+            return;
+        }
+
+        // BLOC GOL: nimic cules și niciun județ. Verificat ÎNAINTE de orice
+        // rezolvare de județ — pe un partener deja completat n-avem ce face cu
+        // răspunsul, iar contoarele de județ ar număra o muncă neaplicată.
+        if (e.Strada != null || e.Numar != null || e.DetaliiAdresa != null
+                || e.Localitate != null || e.CodPostal != null || e.JudetId != null) {
+            AdreseDejaCompletate++;
+            return;
+        }
+
+        // Județul: codul din CNP întâi (cheie), denumirea pe urmă (formă).
+        string codIso = null;
+        if (a.CodJudetCnp != null)
+            codIso = JudeteRo.DupaCodCnp(a.CodJudetCnp.Value);
+        var dinCodCnp = codIso != null;
+        codIso ??= JudetDinDenumire1C(a.JudetDenumire);
+
+        var judet = codIso == null ? null : CautaJudet(codIso);
+        if (judet != null) {
+            e.JudetId = judet;
+            if (dinCodCnp)
+                JudetDinCodCnp++;
+            else
+                JudetDinDenumire++;
+        }
+        else if (a.JudetDenumire != null || a.CodJudetCnp != null)
+            JudetNerezolvat++;
+
+        // `DetaliiAdresa` adună ce n-are coloană proprie: bloc/scară/etaj/ap.
+        // (SAF-T ține `Building` separat, modelul o pliază — D15-D1) și, când
+        // județul n-a putut fi rezolvat, denumirea brută din sursă. Concatenare
+        // simplă cu „, ": nu inventăm o gramatică de adresă.
+        var detalii = DetaliiDinPrezentare(a);
+        if (judet == null && a.JudetDenumire != null)
+            detalii.Add(a.JudetDenumire);
+
+        e.Strada = Taie(nameof(Partener.Strada), a.Strada);
+        e.Numar = Taie(nameof(Partener.Numar), a.Numar);
+        e.Localitate = Taie(nameof(Partener.Localitate), a.Localitate);
+        e.CodPostal = Taie(nameof(Partener.CodPostal), a.CodPostal);
+        e.DetaliiAdresa = Taie(nameof(Partener.DetaliiAdresa),
+            detalii.Count == 0 ? null : string.Join(", ", detalii));
+        AdresePreluate++;
+
+        string Taie(string camp, string valoare) {
+            if (valoare == null || !LungimiAdresa.TryGetValue(camp, out var maxim)
+                    || valoare.Length <= maxim)
+                return valoare;
+            AdreseTrunchiate++;
+            return valoare[..maxim];
+        }
+    }
+
+    // Grafiile PROPRII sursei 1C pentru județ, peste normalizarea generală din
+    // `JudeteRo.DupaDenumire` (care rămâne pură și nu știe de ele — „Sector 3"
+    // dă null acolo, deliberat: sectorul nu e subdiviziune ISO):
+    //  * „Sector 1"…„Sector 6", „SECT 1", „SECTOR1" ⇒ București (toate
+    //    sectoarele sunt aceeași subdiviziune ISO, ca și CNP-ul 41–46);
+    //  * prefixul „Jud." / „JUD " (Field3 = „Jud. Iasi", „JUD.BRASOV").
+    // Nimic altceva — fără potrivire fuzzy: o denumire nerezolvată rămâne în
+    // `DetaliiAdresa`, nu devine un județ ghicit.
+    internal static string JudetDinDenumire1C(string denumire) {
+        if (string.IsNullOrWhiteSpace(denumire))
+            return null;
+        var text = denumire.Trim();
+        if (System.Text.RegularExpressions.Regex.IsMatch(text, @"^SECT(OR)?\.?\s*[1-6]$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            return "RO-B";
+        var cod = JudeteRo.DupaDenumire(text);
+        if (cod != null)
+            return cod;
+        var faraPrefix = System.Text.RegularExpressions.Regex.Replace(text, @"^JUD\.?\s*", "",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return faraPrefix.Length == text.Length ? null : JudeteRo.DupaDenumire(faraPrefix);
+    }
+
+    // Detaliile de adresă: 1C ține etajul și apartamentul DOAR în `Present`
+    // (forma concatenată „cod, județ, localitate, stradă, Nr, număr, bl. X,
+    // sc. Y, et. Z, ap. W"), nu în coloanele numerotate — `Field8` are doar
+    // blocul. Se iau segmentele cu prefixele bl./sc./et./ap. exact cum le-a
+    // scris 1C; dacă `Present` nu le are, rămâne clădirea din `Field8`.
+    internal static List<string> DetaliiDinPrezentare(FlaxAdresa a) {
+        var detalii = new List<string>();
+        if (a.Prezentare != null)
+            foreach (var segment in a.Prezentare.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                if (System.Text.RegularExpressions.Regex.IsMatch(segment, @"^(bl|sc|et|ap)\.\s*\S",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                    detalii.Add(segment);
+        if (detalii.Count == 0 && a.Cladire != null)
+            detalii.Add(a.Cladire);
+        return detalii;
     }
 
     // ---------------- Reclasificarea TUTUROR partenerilor legați ----------------
@@ -464,6 +652,10 @@ class ImportLaCerere {
     // (fără import de documente). Single-operator pe bază, ca toată unealta.
     // Canonicul (registrul ANAF al plătitorilor) rămâne restanță cu nume.
     public void ReclasificaToti() {
+        // Adresele se citesc ÎN LOT, o interogare per tranșă de 1.000 (D15-D6):
+        // pe cei ~20.000 de parteneri legați, un query per partener ar fi 20.000
+        // de dus-întorsuri pentru date pe care sursa le dă din trei mișcări.
+        var adrese = flax.AdreseParteneri(parteneri.Keys);
         foreach (var lot in parteneri.Chunk(500)) {
             using var os = provider.CreateObjectSpace();
             foreach (var (hexId, id) in lot) {
@@ -476,6 +668,7 @@ class ImportLaCerere {
                 if (p == null)
                     continue;
                 AplicaClasificare(e, p);
+                AplicaAdresa(e, adrese.GetValueOrDefault(hexId));
                 clasificati.Add(hexId);
                 ReclasificatiDinSursa++;
             }
@@ -487,9 +680,15 @@ class ImportLaCerere {
                 .Select(r => r.PartenerId.Value)
                 .Distinct()
                 .ToList();
-            var deMarcat = os.GetObjectsQuery<Partener>()
+            var neinregistrati = os.GetObjectsQuery<Partener>()
                 .Where(p => ids.Contains(p.ID) && !p.InregistratTva)
                 .ToList();
+            // Un partener sincronizat cu ANAF care spune „neînregistrat" AZI, dar
+            // ne-a facturat TVA în anul importat: canonicul rămâne ANAF (D15-D3);
+            // contradicția e chiar cazul D4-r1 (statutul la data documentului) și
+            // se numără, nu se ascunde.
+            var deMarcat = neinregistrati.Where(p => p.DataSincronizareAnaf == null).ToList();
+            RegistruContraAnaf = neinregistrati.Count - deMarcat.Count;
             foreach (var p in deMarcat)
                 p.InregistratTva = true;
             InregistratiDinRegistru = deMarcat.Count;
