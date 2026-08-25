@@ -29,6 +29,7 @@ import { RegistruJurnal } from './felii/raportare/RegistruJurnal';
 import { JurnalCumparari, JurnalVanzari } from './felii/tva/JurnalTva';
 import { DecontTva } from './felii/tva/DecontTva';
 import { D300 } from './felii/tva/D300';
+import { D394 } from './felii/tva/D394';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
@@ -91,6 +92,7 @@ export function App() {
         <Route path="/jurnal-vanzari" element={<JurnalVanzari />} />
         <Route path="/decont-tva" element={<DecontTva />} />
         <Route path="/d300" element={<D300 />} />
+        <Route path="/d394" element={<D394 />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
     </Routes>
@@ -124,6 +126,7 @@ function Cadru() {
         <NavLink to="/jurnal-vanzari">Jurnal vânzări</NavLink>
         <NavLink to="/decont-tva">Decont TVA</NavLink>
         <NavLink to="/d300">D300</NavLink>
+        <NavLink to="/d394">D394</NavLink>
         <button
           type="button"
           className="buton buton--mic"

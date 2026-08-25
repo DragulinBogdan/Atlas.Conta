@@ -336,3 +336,46 @@ WebApi pornit detașat cu profilul lui pe `https://localhost:5001`; token prin
 completă client→server→client** (TLS, MVC, EF, serializare), nu doar SQL — de
 aceea cifrele nu sunt comparabile direct cu cele de psql din addendumul 3, ci cu
 cele HTTP din corpul documentului. WebApi oprit la final.
+
+---
+
+## Addendum 5 (2026-08-25) — D394 (felia 14)
+
+Aceeași bază (**`Atlas.Conta.BackOffice.Privat`**, 90.739 de rânduri în
+`RegistruTva`), aceeași metodă ca addendumul 4: calea REALĂ prin
+`GET https://localhost:5001/api/proiectii/d394` cu JWT de `Admin`, ușa
+securizată, WebApi detașat și încălzit; șase rulări, prima aruncată, mediana
+celorlalte cinci. Nomenclatorul de parteneri al bazei e NECLASIFICAT (toți tip
+2) — nu schimbă costul, dar explică cei ~150/500 de avertismente din răspuns.
+
+| Cerere | Rânduri de registru citite | Răspuns | Rulări (ms) | **Mediană** |
+|---|---|---|---|---|
+| `d394` septembrie 2025 | ~7.900 | 2.601 rânduri `op1` + 3 rezumate + 151 avertismente, 482 KB | 56, 98, 99, 100, 101 | **99 ms** |
+| `d394` **anul 2025 întreg** | 90.739 | 21.936 rânduri `op1` + 500 avertismente, 3,8 MB | 347, 390, 394, 409, 564 | **394 ms** |
+| `d300` septembrie 2025 (reper, addendum 4) | ~7.900 | 55 rd., 14 KB | — | 20 ms |
+
+**Verdict: luna — verde (sub 150 ms); anul întreg — peste prag, STRUCTURAL,
+nu de optimizat acum.** Diferența față de D300 pe aceeași lună (99 vs 20 ms) nu e
+a scanării, ci a FORMEI răspunsului: D300 agregă în bază pe `(Sens × TipTva ×
+Regim × Cotă)` și produce 8 grupuri; D394 trebuie să coboare la DOCUMENT (regula
+nrFact 1/0 per factură, D4-D3 pasul 3) și la PARTENER, deci mulțimea care iese
+din bază e mărginită de numărul de facturi (mii pe lună, ~22.000 rânduri `op1`
+pe an), nu de nomenclator, iar serializarea a 3,8 MB de JSON e o parte reală a
+celor 394 ms. Cu alte cuvinte, D394 pe un an e o listă de 22.000 de parteneri ×
+tip × cotă — lucrul pe care declarația chiar îl cere.
+
+Perioada fiscală a formularului 394 e LUNA (sau trimestrul); anul întreg e o
+cerere de control, nu una de depunere. Rămâne în afara listei de la 59 cu
+această justificare; dacă o cifră lunară pe o bază mai mare ajunge la prag,
+primul candidat e agregatul pe document (un singur `GROUP BY` cu `DocumentId`
+în cheie, azi), nu un index.
+
+### Reproducere (addendum 5)
+
+Identic cu addendumul 4 (WebApi detașat, token `Admin`, `Stopwatch` în jurul
+lui `Invoke-WebRequest` = latența completă client→server→client). Seed-ul
+`MapareD394` trebuie să existe pe bază (`--updateDatabase --forceUpdate
+--silent` din Blazor.Server cu `ProfilContabil: Privat`); fără el toate
+grupurile cad în `Neincluse` cu `TipTvaNemapat` și cifra măsurată e a altei
+proiecții. WebApi oprit la final.
+
