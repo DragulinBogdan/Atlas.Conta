@@ -1,4 +1,4 @@
-# Jurnalul de decizii — index (un fișier per decizie)
+﻿# Jurnalul de decizii — index (un fișier per decizie)
 
 > **Cum se folosește.** O trimitere „decizia 42c" = deschide `042-*.md` și caută
 > sub-punctul `(c)`. NU se citește tot directorul — antetul fiecărui fișier
@@ -84,3 +84,4 @@
 | 67 | [Pasul 5, felia 10 — balanța pliată pe planul de conturi](067-p5-felia10-balanta-pliata.md) | 2026-08-17 | activă |
 | 68 | [Pasul 5, felia 11 — jurnalele de TVA](068-p5-felia11-jurnale-tva.md) | 2026-08-19 | activă |
 | 69 | [Pasul 5, felia 12 — D300, decontul de TVA](069-p5-felia12-d300.md) | 2026-08-24 | activă |
+| 70 | [Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)](070-p5-felia13-motor-structura.md) | 2026-08-25 | activă |

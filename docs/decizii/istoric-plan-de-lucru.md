@@ -1,4 +1,4 @@
-# Istoricul de execuție al planului de lucru (snapshot 2026-08-24)
+﻿# Istoricul de execuție al planului de lucru (snapshot 2026-08-24)
 
 > Extras verbatim din `CLAUDE.md` la 2026-08-24 (commit `f18c24c`). Starea
 > curentă compactă e în `CLAUDE.md` §„Stare și roadmap"; deciziile referite
@@ -281,6 +281,14 @@ per felie):
   operanzi, dubla numărare părinte+copil, ștergerea logică vs re-seed, seed-ul
   care nu corecta, afordanțele). Smoke pe importul 2025: rd. 9/24 = decont la
   cent, rd. 37 vs ITV explicat integral prin punțile NTC. Perf 25 ms/an.
+- **Felia 13 — motor/structură post-D300** (EXECUTATĂ, decizia 70; contract +
+  închidere: `docs/api/p5-felia-motor-structura-contract.md`): 69-r4 taxarea
+  inversă cu SENS (`PoliticaTva.Directie` în `TvaService`, gard în motor + la
+  PUT, excepția D300 moartă), 69-r7 ModelCheck cu interceptorul de ștergere
+  amânată + `Purja` (curățenie fizică; F5/57f pe mecanismul real; scurgerea
+  DIM-3 oprită), 69-r5 un singur 400 = `EroriDto`, 67e gardian de ciclu pe
+  `Cont.Parinte`. Review advers 0 fond / 3 medii fixate / 4 minore. D5: Import1C
+  re-rulat integral — rezultatul în contract §Închidere.
 - Restul: finisaj de client (listele §Închidere ale contractelor +
   `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului) și
   feliile de scriere rămase (NTC/ASM/retururi, la cerere); D394/SAF-T pe

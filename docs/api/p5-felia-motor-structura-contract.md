@@ -1,4 +1,4 @@
-# Pasul 5, felia 13 — motor/structură post-D300 (contract)
+﻿# Pasul 5, felia 13 — motor/structură post-D300 (contract)
 
 Data fixării: 2026-08-25. Șablonul feliilor F2–F12 (`p5-felia-*-contract.md`).
 Deciziile F13-D1…F13-D6 sunt **PIN-UITE** — agenții de implementare nu le
@@ -201,8 +201,27 @@ neprevăzut, un test care pică din cauză ne-explicată de contract, un shape d
 nu se normalizează tăcut. Niciun commit de către agenți; nu se ating
 `docs/decizii`, `CLAUDE.md`.
 
-## Închidere
+## Închidere (2026-08-25, decizia 70)
 
-Se completează la review: defectele găsite, ce rămâne deschis (candidați:
-`TvaSuprascris`, filtrarea lookup-ului TipTva pe FCL ca afordanță, 400 pe
-GUID malformat în rută).
+Pașii 1–4 executați și comiși după verificare independentă (ModelCheck privat
+392 OK / bugetar 684 OK la închidere). Abateri de la contract, toate
+consemnate în decizia 70: (1) clauza „OData: 422" din D4 era FALSĂ — `Cont` e
+`ReadOnly` pe OData (F8-D4) și refuzurile gardianului pe OData ies
+`400 text/plain` prin `UserFriendlyExceptionFilter` (→ 70-r1); (2) D2 păstrează
+o simulare prin `UPDATE` (scena D4 a balanței: invizibilitatea prin securitate,
+pe care harness-ul n-o are); (3) proba din D3 acoperă și `AuthenticationController`
+(fabrica e globală) — declarat; (4) smoke-ul vizual XAF al gardianului de ciclu
+n-a putut fi dus la capăt (→ 70-r2).
+
+Review advers: 7 constatări — 0 FOND; MEDII (fixate): gardul TI × Colectat
+lipsea la PUT, datele pre-F13 fără inventar/decizie, fabrica de 400 mai largă
+decât declarația; MINORE: mesajul „linia N" fără ordonare (70-r3),
+`DirectiePentru` per `ObjectChanged` (70-r4), regula de refolosire după `Purja`
+(documentată în cod), simularea din scena D4 (excepție declarată).
+
+Găsit pe drum: scurgerea de o `RegulaContare` goală per rulare era a probei
+DIM-3 din ModelCheck (nu a seed-ului de producție) — purjează fizic; măsurat
+9 → 9 după rulare.
+
+**D5 (Import1C `--recreeaza`)**: ÎN CURS la momentul închiderii docs — rezultatul
+se consemnează aici la terminare.

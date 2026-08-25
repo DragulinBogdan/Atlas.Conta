@@ -1,4 +1,4 @@
-# CLAUDE.md — Atlas.Conta: contabilitate/gestiune (Delphi + SQL → XAF + React)
+﻿# CLAUDE.md — Atlas.Conta: contabilitate/gestiune (Delphi + SQL → XAF + React)
 
 > **Constituția: `docs/invarianti.md`** — cei 6 invarianți (2026-08-02), fiecare
 > cu clauzele lui de interdicție; orice propunere arhitecturală se testează
@@ -532,6 +532,24 @@ decizia N.
     obligatorie; `User` = 200 cu rânduri filtrate (403 e al comenzilor). (h)
     **`if (e.event)` e necesar, nu suficient**: widget tastabil legat de store
     asincron cere buffer local. Rămase → jurnal.
+70. **Motor/structură post-D300.** (a) **Taxarea inversă are SENS**: sursa =
+    `PoliticaTva.Directie` (nu câmp pe `TipTva`, nu hook pe frunză);
+    `TvaService.CalculeazaValori` cere direcția EXPLICIT; TI × Colectat ⇒
+    `ValoareTva = 0`, niciun rând; TI × Deductibil = autolichidare; ramura TI
+    din motor are gard explicit pe `Deductibil`. (b) TVA nenul pe TI × Colectat
+    = refuz în motor (`Opereaza` + dry-run) ȘI la PUT; gardul capturează
+    înainte de `PregatesteOperare`, citește `TipTvaId` după. (c)
+    `RegistruTvaService` neschimbat; excepția din D300 a murit; Import1C
+    păstrează `tipTva = null` „ca în sursă". (d) Datele pre-F13 se RAPORTEAZĂ
+    (inventar în ModelCheck), nu se migrează. (e) **ModelCheck șterge ca
+    host-ul**: interceptorul `UseDeferredDeletion` (suprasarcina pe options) pe
+    ambele builder-e; **curățenia de scenă = purjă FIZICĂ (`Purja`)**,
+    `os.Delete` doar unde ștergerea logică e obiectul probei; SQL brut care
+    citește pune `GCRecord = 0`. (f) **Un singur 400 = `EroriDto`**
+    (`InvalidModelStateResponseFactory`, global pe `[ApiController]`; OData
+    neatins); GUID malformat pe rută = 404. (g) Gardian de ciclu pe
+    `Cont.Parinte` în `GardianEditare` (navigație → FK, limită 64); `Cont` e
+    `ReadOnly` pe OData. (i) Rămase → jurnal.
 
 ## Stare și roadmap
 
@@ -552,7 +570,7 @@ detaliat în jurnal):
 - **Pasul 5** — spike BTR (55), FCT+NIR (56), trezorerie (57), FCL+DSC (58),
   perf (59), mărunțișuri (60–61), NIR scriere (62), LDI+BCS (63), virament (64),
   DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68),
-  D300 (69).
+  D300 (69), motor/structură post-D300 (70).
 
 **Următorul pas**: finisajul clientului (listele §Închidere ale contractelor +
 `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului);
@@ -577,9 +595,11 @@ modelul, `Lot.Eticheta` pe OData · 62g/66j finisaj de client și ecrane XAF
 pentru ciclul din `Cont.Parinte` · 68j smoke vizual, storno/regimuri fără TVA
 în backfill · 69-r1 versionarea formularului D300 · 69-r2 rândurile
 intracomunitare/agricultori/pro-rata/secțiunile A-B · 69-r3 regularizările pe
-cauză juridică · 69-r4 `TvaService` calculează TVA pe TI și pe livrare · 69-r5
-două forme de 400 pe același endpoint · 69-r6 fișierul XML D300 · 69-r7
-ștergerea amânată nu se exersează în ModelCheck · C1a fluxul comenzilor
+cauză juridică · 69-r6 fișierul XML D300 · 70-r1 refuzurile gardianului pe scrierile OData ies
+`400 text/plain` (decizie proprie) · 70-r2 smoke XAF al gardianului de ciclu ·
+70-r3 poziția „linia N" fără criteriu · 70-r4 `DirectiePentru` per
+`ObjectChanged` · 70-r5 mesajele de binding în engleză · 70-r6 `TvaSuprascris`
+· C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 
 ## Reguli de lucru pentru Claude Code
