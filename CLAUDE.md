@@ -556,7 +556,7 @@ decizia N.
     partener = COD (funcție a nomenclatorului, definită de lege). (b)
     Identitatea fiscală = 4 câmpuri pe `Partener` (`TipPersoana`, `Tara` ISO-2
     default RO, `InregistratTva`, `TvaLaIncasare`), nu satelit (34g deschis doar
-    cât cere D394); **„înregistrat bate tot"**: `InregistratTva ⇒ 1` indiferent
+    cât cere D394; adresa a venit tot pe `Partener`, 72a); **„înregistrat bate tot"**: `InregistratTva ⇒ 1` indiferent
     de PF/țară, apoi Fizica/RO ⇒ 2, UE ⇒ 3, altfel 4; CUI normalizat (`RO` tăiat
     când înregistrat sau RO). (c) `MapareD394 (TipTva × Sens) → Tip`, unic
     filtrat, `TintaPermisa(tip, sens)` pe AMBELE axe (AI/N niciodată; L/V/LS ⇔
@@ -575,6 +575,32 @@ decizia N.
     preluare, sursa tace ⇒ derivare RAPORTATĂ; **`--reclasifica` = sursă +
     semnalul din registru** (TVA ≠ 0 pe achiziție ⇒ înregistrat; evidența bate
     eticheta, 34f), și ca pas final al importului. (j) Rămase → jurnal.
+72. **Partener + ANAF.** (a) **Adresa = câmpuri PLATE pe frunza `Partener`**
+    (Strada/Numar/DetaliiAdresa/Localitate/CodPostal/JudetId), `MaxLength` =
+    SAF-T și e SINGURA sursă a lungimilor (reflecție, `Lungimi`, în serviciu
+    și în Import1C); amendează 71b — satelitul 34g rămâne doar pentru
+    IBAN/delegați/contact/adrese multiple. `DataSincronizareAnaf` și
+    `InactivFiscal` = server-owned (gardianul le refuză pe secured). (b)
+    `Judet` = nomenclator de nucleu, `ForbidCRUD`, seed autoritar din
+    `JudeteRo` (ISO 3166-2 + auto + CNP); **județ doar pe `Tara == RO`**, pe
+    toate cele trei uși (gardian, serviciu, Import1C); grafiile 1C se
+    normalizează în conector. (c) `PlatitorTvaClient` v9 = o clasă în Module,
+    fără DI (host-ul dă `HttpClient`): loturi ≤100, 1 apel/s intra-interogare,
+    deserializare tolerantă, erori per lot tranzitorie/fatală; `CuiInterogabil`
+    = doar cifrele, 2–10, CNP și străinii = necandidați. (d) **Merge: „gol se
+    umple, diferit se raportează, canonicul bate"** — axa TVA
+    (`InregistratTva`/`TvaLaIncasare`/`InactivFiscal`) e a ANAF-ului
+    întotdeauna; adresa/denumirea PER CÂMP; `suprascrie` explicit doar pe
+    REST, cu `Modificare(vechi, nou)`; `notFound` = fără timbru. (e) REST =
+    comandă pe partener (single + lot ≤500 cu `Sarite`), `ComandaAutorizata<T>`
+    generalizează gate-ul documentelor FĂRĂ a-l schimba pe `Document`; domeniu
+    ⇒ 422, ANAF tranzitoriu ⇒ 503; V4 măsurat pe HTTP (§Închidere al
+    contractului). (f) XAF: acțiunea pe ușa non-secured, fără `suprascrie`. (g)
+    Import1C: adresa din 1C DOAR pe bloc gol, județ CNP → denumire → brut în
+    `DetaliiAdresa`; `--anaf` peste același serviciu, commit per partener;
+    **canonicul ANAF nu e răsturnat de `--reclasifica`** (timbrații sar axa
+    TVA). V5: reconciliere IDENTICĂ cu baseline-ul, 8.230/2/0 erori, +190 tip
+    1, D394 înainte/după explicat per cauză. (i) Restanțe 72-r1…r10 → jurnal.
 
 ## Stare și roadmap
 
@@ -595,7 +621,7 @@ detaliat în jurnal):
 - **Pasul 5** — spike BTR (55), FCT+NIR (56), trezorerie (57), FCL+DSC (58),
   perf (59), mărunțișuri (60–61), NIR scriere (62), LDI+BCS (63), virament (64),
   DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68),
-  D300 (69), motor/structură post-D300 (70), D394 (71).
+  D300 (69), motor/structură post-D300 (70), D394 (71), partener + ANAF (72).
 
 **Următorul pas**: finisajul clientului (listele §Închidere ale contractelor +
 `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului);
@@ -604,7 +630,7 @@ feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T peste
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
-imperecherea pe poziții · 31e `GenereazaChitanta` (fluxul BF) · 34g satelitul partenerilor (adrese/IBAN/delegați),
+imperecherea pe poziții · 31e `GenereazaChitanta` (fluxul BF) · 34g satelitul partenerilor (IBAN/delegați/contact/adrese multiple; adresa e pe `Partener`, 72a),
 valute · 36f TVA la încasare, facturi nesosite 408/4428, rotunjirea per
 document×cotă, prorata/ajustări · 37g comenzi, regenerarea DSC la recepția
 NIR, multi-gestiune per factură, rezervarea de stoc · 46f imperecherea
@@ -631,7 +657,13 @@ facturi/plaje/autofacturi/anulate/simplificate · D4-r8 I.3 · D4-r9 sumele
 TVA la încasare (I.4/I.5) · D4-r10 antet/reprezentant/CAEN/I.6/opțiune
 (`SetareProfil`) · D4-r11 partenerul cu două coduri (SM + RO) · D4-r12
 achizițiile de pe DEC fără furnizor · D4-r13 XML D394 (35c) · D4-r14
-`FaraOp11` dispare odată cu r5
+`FaraOp11` dispare odată cu r5 · 72-r1 rate-limit ANAF cross-request ·
+72-r2 adresa hibridă 1C + ANAF fără proveniență per câmp · 72-r3
+`IntrariStricate` = fatală după commit · 72-r4 radierea (`StareInregistrare`)
+neconsumată · 72-r5 smoke vizual XAF al acțiunii ANAF · 72-r6
+`RegistruContraAnaf` real abia la a doua rulare · 72-r7 ordinea la egalitate
+în raportul de reconciliere · 72-r8 `CuiInterogabil("00")` · 72-r9 ecranul
+React de partener · 72-r10 `User` ⇒ 404 vs 403 pe comanda ANAF
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

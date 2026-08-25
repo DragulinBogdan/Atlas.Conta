@@ -309,6 +309,21 @@ per felie):
   +23 avertismente = clasificarea partenerilor); `--reclasifica` 20.118 parteneri,
   35 înregistrați din registru; smoke 09/2025 pe clona Flax: cusătura cu D300 la
   cent, `CombinatieRefuzata` 0, fix la smoke pentru CUI „-" ⇒ null. Decizia 71.
+- **Pasul 5, felia 15 — partener + ANAF — executată** (2026-08-25/26; contract
+  `docs/api/p5-felia-partener-anaf-contract.md`): adresa plată pe `Partener`
+  (SAF-T) + nomenclatorul `Judet` + migrația `AddAdresaPartener`; clientul
+  `PlatitorTva` v9 + `SincronizareAnafService` (merge „gol se umple, diferit se
+  raportează, canonicul bate") + acțiunea XAF; REST `POST
+  api/parteneri/{id}/sincronizeaza-anaf` (+ lot) cu `ComandaAutorizata<T>`;
+  Import1C cu adresele din 1C pe bloc gol și `--anaf`. Commit-uri: 7d80bc9
+  (contract), c1d527c (pas 1, model), 56f57f3 (pas 2, serviciu), ab89dfb (pas
+  3, REST), ab614af (HideForeignKeys), 9528811 (pas 4, Import1C), de5c9e4
+  (fix-urile review-ului advers: F1 județ pe străin în Import1C, F2 `InactivFiscal`
+  server-owned, F3 V4 măsurat; R6/R8). Închidere: `--recreeaza` pe Flax (3h38)
+  cu reconciliere IDENTICĂ cu baseline-ul (diff sortat 0), 20.038/20.118
+  adrese preluate; `--anaf` 8.230 găsiți / 2 negăsiți / 0 erori, +190
+  parteneri tip 4 → 1; D394 09/2025 înainte/după pe clona Flax.Api: 62 CUI
+  mutate, toate = statutul ANAF de azi, Σ formular identică. Decizia 72.
 - Restul: finisaj de client (listele §Închidere ale contractelor +
   `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului) și
   feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T peste

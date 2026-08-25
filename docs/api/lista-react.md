@@ -73,3 +73,16 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
   s-a văzut la smoke-ul feliei 5, unde tab-ul a rămas nefolosibil. În React
   soluția e aceeași ca la stingeri: confirmare inline în shell, nu dialog de
   browser.
+
+## Adăugate la felia 15 (partener + ANAF)
+
+- **Ecranul de partener în React** (72-r9): prima felie de nomenclator din
+  client. Ce trebuie să aibă, din ce a fixat felia: grupul de adresă cu lookup
+  pe `Judet` (OData, `ForbidCRUD`) activ DOAR când `Tara == RO` (gardianul
+  refuză altfel — afordanță, nu validare, 65); `DataSincronizareAnaf` și
+  `InactivFiscal` afișate readonly (server-owned); butonul „Sincronizează din
+  ANAF" = `POST api/parteneri/{id}/sincronizeaza-anaf` cu rezultatul ca listă
+  (`Modificari` cu vechi/nou, `Diferente`, `Avertismente`) și `suprascrie` ca
+  opțiune explicită, confirmată inline (57f); 503 = „ANAF n-a răspuns, reia".
+- **Acțiunea XAF e sincronă și blochează ~5 s la 500 selectați** (72-r5): în
+  React comanda de lot e async natural, cu progres per tranșă.
