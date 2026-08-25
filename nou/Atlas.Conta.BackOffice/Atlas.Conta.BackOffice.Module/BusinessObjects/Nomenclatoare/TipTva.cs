@@ -34,6 +34,7 @@ public class TipTva : BaseObject {
     // Maparea D406 (nomenclatorul ANAF de coduri de taxă, direcțional).
     public virtual string CodSafTLivrare { get; set; }
     public virtual string CodSafTAchizitie { get; set; }
-    // Agregarea D394 (tip operațiune × cotă) — atribut, nu calcul.
-    public virtual string CategorieD394 { get; set; }
+    // Fosta `CategorieD394` (36d) a MURIT la felia 14: tipul de operațiune D394
+    // e direcțional (N21 = L pe livrare, A pe achiziție), deci e politică
+    // `(TipTva × Sens) → tip` — `MapareD394` —, nu atribut pe tip (D4-D2).
 }

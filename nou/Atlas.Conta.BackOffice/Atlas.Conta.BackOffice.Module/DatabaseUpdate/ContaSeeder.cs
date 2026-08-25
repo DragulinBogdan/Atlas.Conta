@@ -39,6 +39,7 @@ public static class ContaSeeder {
         else
             ProfilPrivat.Seed(os);
         VerificaD300(os, profil);
+        VerificaD394(os, profil);
     }
 
     // Rândul de setare al bazei (decizia 51c). Gardian dublu: profilul (completează
@@ -324,6 +325,33 @@ public static class ContaSeeder {
     // probat pe FUNCȚIA REALĂ — cea pe care o cheamă `--updateDatabase` —, nu pe
     // o imitație scrisă în probă. Un singur seam, cu numele profilului în el.
     public static void SeedMapareD300Privat(IObjectSpace os) => ProfilPrivat.SeedMapareD300(os);
+
+    // Gardianul D394 (felia 14, D4-D2), geamănul lui `VerificaD300`: bugetarul
+    // n-are registru fiscal ⇒ 0 mapări; la privat ținta nu e niciodată AI/N
+    // (AI se derivă, N n-are sursă) și fiecare tip seed-uit e mapat sau declarat
+    // nemapat (jumătatea de profil, `ProfilPrivat.VerificaMapariD394`).
+    public static void VerificaD394(IObjectSpace os, ProfilContabil profil) {
+        var mapari = os.GetObjectsQuery<MapareD394>().ToList();
+        if (profil == ProfilContabil.Bugetar) {
+            if (mapari.Count > 0)
+                throw new InvalidOperationException(
+                    $"Profilul bugetar are {mapari.Count} mapări D394, deși nu produce rânduri de registru fiscal.");
+            return;
+        }
+        foreach (var m in mapari)
+            if (!MapareD394.TintaPermisa(m.Tip))
+                throw new InvalidOperationException(
+                    $"Maparea D394 {m.TipTva.Cod}/{m.Sens} țintește {m.Tip} — AÎ se derivă din partener, "
+                    + "iar N n-are sursă în registru; se mapează doar L, A, V, C, LS, AS (D4-D2).");
+        ProfilPrivat.VerificaMapariD394(os, mapari);
+    }
+
+    public static void SeedMapareD394Privat(IObjectSpace os) => ProfilPrivat.SeedMapareD394(os);
+
+    // Lista nemapatelor deliberate e parte din contract (D4-D2): proiecția și
+    // ModelCheck o citesc prin nucleu (pachetul de profil rămâne internal).
+    public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD394Privat =>
+        ProfilPrivat.NemapateD394;
 
     // DUBLA NUMĂRARE pe verticala „din care" (fix F4 al review-ului advers) —
     // riscul 1 al designului, rămas cu un singur gard din două.

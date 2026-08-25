@@ -84,6 +84,20 @@
       "DispozitieCasa": "Dispoziție de casă",
       "Chitanta": "Chitanță"
     },
+    "TipOperatiuneD394": {
+      "L": "L — livrări de bunuri/prestări de servicii",
+      "A": "A — achiziții (sistem normal)",
+      "AI": "AÎ — achiziții cu TVA la încasare",
+      "LS": "LS — livrări în regim special",
+      "AS": "AS — achiziții în regim special",
+      "V": "V — livrări cu taxare inversă",
+      "C": "C — achiziții cu taxare inversă",
+      "N": "N — achiziții de la neînregistrați"
+    },
+    "TipPersoana": {
+      "Juridica": "Persoană juridică",
+      "Fizica": "Persoană fizică"
+    },
     "TipStoc": {
       "Magazie": "Magazie",
       "Consum": "Consum",
@@ -685,6 +699,17 @@
         "TipTvaId": "Tip TVA"
       }
     },
+    "MapareD394": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ID": "ID",
+        "Sens": "Sens",
+        "TintaEstePermisa": "TintaEstePermisa",
+        "Tip": "Tip operațiune D394",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA"
+      }
+    },
     "MigrareLegatura": {
       "DefaultProperty": null,
       "Membri": {
@@ -823,7 +848,11 @@
         "ContImplicitId": "ContImplicit",
         "Denumire": "Denumire",
         "ID": "ID",
-        "RegistruComert": "RegistruComert"
+        "InregistratTva": "Înregistrat în scopuri de TVA",
+        "RegistruComert": "RegistruComert",
+        "Tara": "Țară",
+        "TipPersoana": "Tip persoană",
+        "TvaLaIncasare": "TVA la încasare"
       }
     },
     "PerioadaFiscala": {
@@ -1242,7 +1271,6 @@
     "TipTva": {
       "DefaultProperty": "Denumire",
       "Membri": {
-        "CategorieD394": "CategorieD394",
         "Cod": "Cod",
         "CodSafTAchizitie": "CodSafTAchizitie",
         "CodSafTLivrare": "CodSafTLivrare",

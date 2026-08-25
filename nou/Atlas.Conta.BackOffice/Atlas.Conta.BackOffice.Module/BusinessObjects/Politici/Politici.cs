@@ -421,3 +421,49 @@ public class MapareD300 : BaseObject {
         return false;
     }
 }
+
+// Așezarea unei operațiuni taxabile pe tipul de operațiune din secțiunea 2 a
+// D394 (felia 14, D4-D2): politica `(TipTva × Sens) → TipOperatiuneD394`,
+// aceeași logică de la D300 — perechea e DIRECȚIONALĂ (N21 pe livrare = L, pe
+// achiziție = A), deci nu încape într-o coloană pe `TipTva` (fosta
+// `CategorieD394`, moartă odată cu felia). Ținta e enum, nu nomenclator:
+// `Int_tipOpSType` e stabil din 2016.
+//
+// O SINGURĂ mapare per pereche (index unic filtrat pe `GCRecord = 0`): un grup
+// de registru nu poate fi pe două tipuri de operațiune — ar intra de două ori
+// în sumele de control ale formularului. Perechea NEMAPATĂ nu e eroare: apare
+// în panoul `Neincluse` cu cifrele ei (D4-D4). Ce se REFUZĂ e ținta `AI`/`N`:
+// `AI` se DERIVĂ în cod (A × furnizor cu `TvaLaIncasare`) — mapată explicit,
+// ar clasifica un furnizor cu sistem normal ca fiind la încasare —, iar `N`
+// n-are sursă în registru (D4-r3) — mapată, ar promite o coloană goală.
+[NavigationItem("Politici")]
+public class MapareD394 : BaseObject {
+    public virtual Guid TipTvaId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip TVA")]
+    [RuleRequiredField("MapareD394_TipTva_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
+    public virtual TipTva TipTva { get; set; }
+
+    // Aceeași axă ca `RegistruTva.Sens` și `MapareD300.Sens`.
+    public virtual SensTva Sens { get; set; }
+
+    [XafDisplayName("Tip operațiune D394")]
+    public virtual TipOperatiuneD394 Tip { get; set; }
+
+    // Gardianul D4-D2 ca regulă de fond (`RuleFromBoolProperty`, nu
+    // `RuleCriteria`: limbajul de criterii nu acceptă numele unui membru de
+    // enum — vezi comentariul de pe `MapareD300.Rand`). Ascuns din UI — e
+    // purtătorul regulii, nu un câmp de cules. Geamănul lui la seed:
+    // `ContaSeeder.VerificaD394`.
+    [NotMapped]
+    [Browsable(false)]
+    [RuleFromBoolProperty("MapareD394_TintaPermisa", DefaultContexts.Save,
+        CustomMessageTemplate = "Tipul de operațiune AÎ se derivă din partener (TVA la încasare), iar N "
+            + "n-are sursă în registrul de TVA — se mapează doar L, A, V, C, LS, AS.")]
+    public bool TintaEstePermisa => TintaPermisa(Tip);
+
+    public static bool TintaPermisa(TipOperatiuneD394 tip) =>
+        tip is TipOperatiuneD394.L or TipOperatiuneD394.A or TipOperatiuneD394.V
+            or TipOperatiuneD394.C or TipOperatiuneD394.LS or TipOperatiuneD394.AS;
+}

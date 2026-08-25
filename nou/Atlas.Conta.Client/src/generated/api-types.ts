@@ -1976,6 +1976,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/odata/MapareD394": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD394"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD394/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD394/$count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD394({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD394({key})"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD394/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD394/{key}"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD394({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD394({key})/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/MapareD394/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/MapareD394/{key}/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/MediaFile/DownloadStream": {
         parameters: {
             query?: never;
@@ -4629,6 +4725,15 @@ export interface components {
             RandId?: string;
             Rand?: components["schemas"]["RandD300"];
         };
+        MapareD394: {
+            /** Format: uuid */
+            ID?: string;
+            /** Format: uuid */
+            TipTvaId?: string;
+            TipTva?: components["schemas"]["TipTva"];
+            Sens?: components["schemas"]["SensTva"];
+            Tip?: components["schemas"]["TipOperatiuneD394"];
+        };
         /** @enum {string} */
         NaturaClasa: "Stoc" | "Serviciu" | "Cheltuiala" | "Imobilizare" | "Tehnica" | "Virament";
         NirLinieReadDto: {
@@ -4865,6 +4970,10 @@ export interface components {
             ContImplicit?: components["schemas"]["Cont"];
             CodFiscal?: string | null;
             RegistruComert?: string | null;
+            TipPersoana?: components["schemas"]["TipPersoana"];
+            Tara?: string | null;
+            InregistratTva?: boolean;
+            TvaLaIncasare?: boolean;
         };
         PartenerResourceDelta: {
             /** Format: uuid */
@@ -4877,6 +4986,10 @@ export interface components {
             ContImplicitId?: string | null;
             CodFiscal?: string | null;
             RegistruComert?: string | null;
+            TipPersoana?: components["schemas"]["TipPersoana"];
+            Tara?: string | null;
+            InregistratTva?: boolean;
+            TvaLaIncasare?: boolean;
         };
         ProblemDetails: {
             type?: string | null;
@@ -5055,6 +5168,10 @@ export interface components {
             /** Format: uuid */
             ContImplicitId?: string | null;
         };
+        /** @enum {string} */
+        TipOperatiuneD394: "L" | "A" | "AI" | "LS" | "AS" | "V" | "C" | "N";
+        /** @enum {string} */
+        TipPersoana: "Juridica" | "Fizica";
         TipTva: {
             /** Format: uuid */
             ID?: string;
@@ -5074,7 +5191,6 @@ export interface components {
             ContTvaNeexigibil?: components["schemas"]["Cont"];
             CodSafTLivrare?: string | null;
             CodSafTAchizitie?: string | null;
-            CategorieD394?: string | null;
         };
         TrezorerieLinieReadDto: {
             /** Format: uuid */
@@ -21073,6 +21189,288 @@ export interface operations {
         };
     };
     "GET_api/odata/MapareD300/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/MapareD394": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=full": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=none": components["schemas"]["MapareD394"][];
+                    "application/json;odata.streaming=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.streaming=false": components["schemas"]["MapareD394"][];
+                    "application/json": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["MapareD394"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["MapareD394"][];
+                    "application/xml": components["schemas"]["MapareD394"][];
+                    "text/plain": components["schemas"]["MapareD394"][];
+                    "application/octet-stream": components["schemas"]["MapareD394"][];
+                    "text/json": components["schemas"]["MapareD394"][];
+                };
+            };
+        };
+    };
+    "GET_api/odata/MapareD394/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns the number of entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false": number;
+                    "application/json;odata.metadata=minimal": number;
+                    "application/json;odata.metadata=full;odata.streaming=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false": number;
+                    "application/json;odata.metadata=full": number;
+                    "application/json;odata.metadata=none;odata.streaming=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false": number;
+                    "application/json;odata.metadata=none": number;
+                    "application/json;odata.streaming=true": number;
+                    "application/json;odata.streaming=false": number;
+                    "application/json": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;IEEE754Compatible=false": number;
+                    "application/json;IEEE754Compatible=true": number;
+                    "application/xml": number;
+                    "text/plain": number;
+                    "application/octet-stream": number;
+                    "text/json": number;
+                };
+            };
+        };
+    };
+    "GET_api/odata/MapareD394({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=false": components["schemas"]["MapareD394"];
+                    "application/json": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/xml": components["schemas"]["MapareD394"];
+                    "text/plain": components["schemas"]["MapareD394"];
+                    "application/octet-stream": components["schemas"]["MapareD394"];
+                    "text/json": components["schemas"]["MapareD394"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/MapareD394/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=false": components["schemas"]["MapareD394"];
+                    "application/json": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["MapareD394"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["MapareD394"];
+                    "application/xml": components["schemas"]["MapareD394"];
+                    "text/plain": components["schemas"]["MapareD394"];
+                    "application/octet-stream": components["schemas"]["MapareD394"];
+                    "text/json": components["schemas"]["MapareD394"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/MapareD394({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/MapareD394/{key}/{navigationProperty}/$ref": {
         parameters: {
             query?: never;
             header?: never;

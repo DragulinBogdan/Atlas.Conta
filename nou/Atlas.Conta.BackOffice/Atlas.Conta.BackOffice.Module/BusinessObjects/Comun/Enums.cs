@@ -152,3 +152,27 @@ public enum FelRandD300 {
     [XafDisplayName("Oglindă")] Oglinda = 3,
     [XafDisplayName("Extern")] Extern = 4,
 }
+
+// Felul persoanei partenerului (felia 14, D4-D1): singura axă de pe nomenclator
+// pe care D394 o cere EXPLICIT (PF ⇒ `tip_partener = 2`, CUI-ul e CNP). Restul
+// clasificării 1–4 se DERIVĂ din `Tara` + `InregistratTva` (`D394Proiectii.TipPartener`).
+public enum TipPersoana {
+    [XafDisplayName("Persoană juridică")] Juridica = 1,
+    [XafDisplayName("Persoană fizică")] Fizica = 2,
+}
+
+// Tipul de operațiune din secțiunea 2 a D394 (`Int_tipOpSType`, stabil din
+// 2016 — de aceea enum, nu nomenclator ca rândurile D300; D4-D2). Denumirile
+// sunt cele din formular (§4.9 al structurii). Politica `MapareD394` poate
+// ținti doar L/A/V/C/LS/AS: `AI` se DERIVĂ (A × furnizor cu TVA la încasare),
+// iar `N` n-are sursă în registru azi (D4-r3).
+public enum TipOperatiuneD394 {
+    [XafDisplayName("L — livrări de bunuri/prestări de servicii")] L = 1,
+    [XafDisplayName("A — achiziții (sistem normal)")] A = 2,
+    [XafDisplayName("AÎ — achiziții cu TVA la încasare")] AI = 3,
+    [XafDisplayName("LS — livrări în regim special")] LS = 4,
+    [XafDisplayName("AS — achiziții în regim special")] AS = 5,
+    [XafDisplayName("V — livrări cu taxare inversă")] V = 6,
+    [XafDisplayName("C — achiziții cu taxare inversă")] C = 7,
+    [XafDisplayName("N — achiziții de la neînregistrați")] N = 8,
+}

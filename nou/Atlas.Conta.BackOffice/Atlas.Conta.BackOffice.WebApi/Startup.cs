@@ -124,6 +124,10 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     //     ascendent (F4).
                     options.BusinessObject<RandD300>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<MapareD300>().ConfigureController(c => c.ReadOnly());
+                    // Felia D394: aceeași regulă — politica se CITEȘTE din client
+                    // (ecranul arată de ce un grup e „neinclus"), se schimbă în
+                    // back-office, unde are validarea de țintă (D4-D2).
+                    options.BusinessObject<MapareD394>().ConfigureController(c => c.ReadOnly());
                 });
 
                 // Paritate de configurare cu `Blazor.Server/Startup.cs` (aceeași

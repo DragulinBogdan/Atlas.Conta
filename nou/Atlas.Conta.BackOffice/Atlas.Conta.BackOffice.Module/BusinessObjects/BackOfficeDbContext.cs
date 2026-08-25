@@ -125,6 +125,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaInchidereTva> PoliticiInchidereTva { get; set; }
         // Politica de așezare pe decont (D3-D2): (TipTva × Sens) → rând, n rânduri.
         public DbSet<MapareD300> MapariD300 { get; set; }
+        // Politica D394 (D4-D2): (TipTva × Sens) → tip de operațiune, UNA per pereche.
+        public DbSet<MapareD394> MapariD394 { get; set; }
         // Setarea de profil a bazei (decizia 51c): un singur rând, scris de seed.
         public DbSet<SetareProfil> SetariProfil { get; set; }
 
@@ -258,6 +260,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // triplete după o ștergere e chiar remediul unei greșeli de culegere.
             modelBuilder.Entity<MapareD300>()
                 .HasIndex(m => new { m.TipTvaId, m.Sens, m.RandId }).IsUnique()
+                .HasFilter("\"GCRecord\" = 0");
+            // D4-D2: spre deosebire de D300, aici PERECHEA e identitatea — un grup
+            // de registru are un singur tip de operațiune în 394. Filtrat pe
+            // `GCRecord = 0` din același motiv (ștergerea logică e flux normal).
+            modelBuilder.Entity<MapareD394>()
+                .HasIndex(m => new { m.TipTvaId, m.Sens }).IsUnique()
                 .HasFilter("\"GCRecord\" = 0");
 
             AplicaScaraNumerica(modelBuilder);

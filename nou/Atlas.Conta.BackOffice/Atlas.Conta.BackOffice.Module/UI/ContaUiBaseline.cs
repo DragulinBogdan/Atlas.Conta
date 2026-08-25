@@ -113,6 +113,26 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId
         registry.For<RandD300>().HideForeignKeys();                 // ParinteId/OglindaAId
         registry.For<MapareD300>().HideForeignKeys();               // TipTvaId/RandId
+        registry.For<MapareD394>().HideForeignKeys();               // TipTvaId
+
+        // Partenerul (felia 14, D4-D1): identitatea fiscală într-un grup propriu.
+        // Layout-ul e declarat integral (bază-întâi nu se aplică — `Repartitor`
+        // n-are layout propriu), ca membrii bazei să nu cadă în `Unplaced`.
+        registry.For<Partener>()
+            .Layout(l => l
+                .Group("GrupIdentificare", "Identificare", g => g
+                    .Item(x => x.Cod)
+                    .Item(x => x.Denumire)
+                    .Item(x => x.Activ)
+                    .Item(x => x.Calitati)
+                    .Item(x => x.ContImplicit))
+                .Group("GrupFiscal", "Fiscal", g => g
+                    .Item(x => x.CodFiscal)
+                    .Item(x => x.RegistruComert)
+                    .Item(x => x.TipPersoana)
+                    .Item(x => x.Tara)
+                    .Item(x => x.InregistratTva)
+                    .Item(x => x.TvaLaIncasare)));
     }
 
     // Layout-ul DetailView-urilor de document (GATE XAF D12), declarat autoritar.

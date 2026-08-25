@@ -113,6 +113,12 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 case Cont cont:
                     VerificaCont(os, cont, erori);
                     break;
+                // (e) Nomenclatorul de parteneri: `Tara` e cod ISO-2 (felia 14,
+                // D4-D1). Regula XAF n-o vede scrierea prin OData (55b) — aici
+                // e a doua jumătate, pe aceeași ușă secured.
+                case Partener partener:
+                    VerificaPartener(os, partener, erori);
+                    break;
             }
         }
         if (erori.Count > 0)
@@ -273,6 +279,19 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             + $"{LimitaAscendenti} niveluri — planul de conturi nu poate fi atât de adânc: "
             + $"{Lant(lant)} → …");
     }
+
+    static void VerificaPartener(IObjectSpace os, Partener partener, ICollection<string> erori) {
+        if (EsteSters(os, partener))
+            return;
+        // Setterul a normalizat deja (trim/majuscule, gol ⇒ RO) — ce rămâne
+        // greșit e chiar greșit: „ROM", „R0", „Germania".
+        if (!FormatTaraIso2.IsMatch(partener.Tara ?? ""))
+            erori.Add($"Partenerul {partener.Denumire ?? partener.Cod} are țara „{partener.Tara}” — "
+                + "se scrie ca un cod ISO de două litere (RO, DE, US).");
+    }
+
+    static readonly System.Text.RegularExpressions.Regex FormatTaraIso2 =
+        new("^[A-Z]{2}$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
     // Adâncimea maximă a unui plan sintetic e de ordinul 4 (clasă → grupă → cont
     // sintetic gr. I → gr. II); 64 e „imposibil de atins legitim", nu o limită de

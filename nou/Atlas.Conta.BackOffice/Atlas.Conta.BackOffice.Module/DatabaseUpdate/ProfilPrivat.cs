@@ -58,6 +58,8 @@ internal static class ProfilPrivat {
         // Așezarea pe decontul de TVA (D3-D2): referă tipurile comise mai sus și
         // rândurile D300 comise de nucleu înaintea pachetului de profil.
         SeedMapareD300(os);
+        // Așezarea pe D394 (D4-D2): aceeași dependență de tipurile comise.
+        SeedMapareD394(os);
         os.CommitChanges();
     }
 
@@ -261,8 +263,8 @@ internal static class ProfilPrivat {
     // Conturile de TVA sunt DATE per profil; codurile SAF-T (D406) vin din
     // nomenclatorul ANAF (RO_SAFT_SchemaDefCod 16.02.2026), direcționale:
     // livrare (seria 310xxx) / achiziție deductibilă integral (301xxx) /
-    // nedeductibilă (351xxx). Categoriile D394 sunt direcționale la nivel de
-    // operațiune — se fixează la proiecția D394 (checklist 35c), rămân date.
+    // nedeductibilă (351xxx). Tipul de operațiune D394 e direcțional, deci e
+    // politică (`MapareD394`, felia 14), nu atribut al tipului.
     static void SeedTipTva(IObjectSpace os) {
         var conturi = os.GetObjectsQuery<Cont>()
             .Where(c => c.Simbol == "4426" || c.Simbol == "4427" || c.Simbol == "4428")
@@ -482,6 +484,106 @@ internal static class ProfilPrivat {
                     throw new InvalidOperationException(
                         $"Tipul de TVA {cod} nu are nicio mapare D300 pe sensul {sens} și nici nu e "
                         + "declarat nemapat deliberat — operațiunile lui ar cădea tăcut în afara decontului.");
+            }
+        }
+    }
+
+    // ---------------- D394 (felia 14, D4-D2) ----------------
+    //
+    // Tabelul D4-D2: cotele normale = L/A; taxarea inversă = V (livrare, fără
+    // TVA — beneficiarul o autolichidează) / C (achiziție, cu TVA autolichidată);
+    // NED21 doar pe achiziție = A (achiziție taxabilă, se declară cu TVA-ul
+    // facturat de furnizor, chiar dacă noi nu-l deducem). `AI` NU se mapează:
+    // se derivă din `Partener.TvaLaIncasare` la proiecție.
+    static readonly (string TipTva, SensTva Sens, TipOperatiuneD394 Tip)[] MapariD394 = [
+        ("N21", SensTva.Livrare, TipOperatiuneD394.L),
+        ("N21", SensTva.Achizitie, TipOperatiuneD394.A),
+        ("N11", SensTva.Livrare, TipOperatiuneD394.L),
+        ("N11", SensTva.Achizitie, TipOperatiuneD394.A),
+        ("N9", SensTva.Livrare, TipOperatiuneD394.L),
+        ("N9", SensTva.Achizitie, TipOperatiuneD394.A),
+        ("N19", SensTva.Livrare, TipOperatiuneD394.L),
+        ("N19", SensTva.Achizitie, TipOperatiuneD394.A),
+        ("TI21", SensTva.Livrare, TipOperatiuneD394.V),
+        ("TI21", SensTva.Achizitie, TipOperatiuneD394.C),
+        ("TI19", SensTva.Livrare, TipOperatiuneD394.V),
+        ("TI19", SensTva.Achizitie, TipOperatiuneD394.C),
+        ("NED21", SensTva.Achizitie, TipOperatiuneD394.A),
+    ];
+
+    // Perechile lăsate DELIBERAT în afara declarației 394, cu motivul lângă ele
+    // (decizia 21: fiecare gaură de profil = decizie explicită). Cifrele lor
+    // apar în panoul `Neincluse` al proiecției (D4-D4), nu dispar.
+    static readonly (string TipTva, SensTva Sens, string Motiv)[] NemapateDeliberatD394 = [
+        ("NED21", SensTva.Livrare, "nedeductibilul e exclusiv de achiziție — nu se livrează"),
+        // Scutitele și neimpozabilele nu se declară în 394 (formularul cuprinde
+        // doar operațiunile taxabile/cu taxare inversă/regim special).
+        ("SDD", SensTva.Livrare, "operațiune scutită — nu se declară în 394"),
+        ("SDD", SensTva.Achizitie, "operațiune scutită — nu se declară în 394"),
+        ("SFD", SensTva.Livrare, "operațiune scutită — nu se declară în 394"),
+        ("SFD", SensTva.Achizitie, "operațiune scutită — nu se declară în 394"),
+        ("NIM", SensTva.Livrare, "operațiunea e în afara sferei TVA — nu se declară în 394"),
+        ("NIM", SensTva.Achizitie, "operațiunea e în afara sferei TVA — nu se declară în 394"),
+    ];
+
+    // Lista nemapatelor e parte din CONTRACT (69e/D4-D2): proiecția o citește ca
+    // să deosebească „nemapat deliberat" de „nemapat din greșeală" în `Neincluse`.
+    public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD394 =>
+        NemapateDeliberatD394;
+
+    // Idempotent pe PERECHE și cu respectarea ștergerii logice a utilizatorului
+    // (precedentul F5/69b, motivat la `SeedMapareD300`): o mapare ștearsă din
+    // XAF nu se recreează la `--updateDatabase`, dar se SPUNE. Public: ModelCheck
+    // probează re-seed-ul pe funcția reală.
+    public static void SeedMapareD394(IObjectSpace os) {
+        foreach (var m in MapariD394) {
+            if (!MapareD394.TintaPermisa(m.Tip))
+                throw new InvalidOperationException(
+                    $"Tabelul de seed D394 țintește {m.Tip} pentru {m.TipTva}/{m.Sens} — AI/N nu se mapează (D4-D2).");
+            var tip = os.FirstOrDefault<TipTva>(t => t.Cod == m.TipTva)
+                ?? throw new InvalidOperationException(
+                    $"Maparea D394 {m.TipTva}/{m.Sens} → {m.Tip} nu se poate seed-ui: lipsește din bază tipul de TVA {m.TipTva}.");
+            var sens = m.Sens;
+            if (os.GetObjectsQuery<MapareD394>().Any(x => x.TipTvaId == tip.ID && x.Sens == sens))
+                continue;
+            if (os.GetObjectsQuery<MapareD394>().IgnoreQueryFilters()
+                    .Any(x => x.TipTvaId == tip.ID && x.Sens == sens)) {
+                Console.WriteLine($"  Mapare D394 {m.TipTva}/{m.Sens} → {m.Tip}: ȘTEARSĂ de utilizator, "
+                    + "nu se recreează (politica e date — decizia 4).");
+                continue;
+            }
+            var mapare = os.CreateObject<MapareD394>();
+            mapare.TipTva = tip;
+            mapare.Sens = sens;
+            mapare.Tip = m.Tip;
+        }
+    }
+
+    // Jumătatea de profil a gardianului D394 (`ContaSeeder.VerificaD394`): fiecare
+    // pereche `(TipTva seed-uit × Sens)` e mapată, declarată nemapată sau ștearsă
+    // de utilizator (a treia categorie, F5). Domeniul = tipurile scrise de ACEST
+    // seed; un `TipTva` al clientului fără mapare apare în `Neincluse`, nu e refuzat.
+    internal static void VerificaMapariD394(IObjectSpace os, IReadOnlyCollection<MapareD394> mapari) {
+        var coduri = MapariD394.Select(m => m.TipTva)
+            .Concat(NemapateDeliberatD394.Select(n => n.TipTva)).Distinct().ToList();
+        var stersDeUtilizator = os.GetObjectsQuery<MapareD394>().IgnoreQueryFilters()
+            .Select(m => new { m.TipTvaId, m.Sens })
+            .ToList()
+            .Select(m => (m.TipTvaId, m.Sens))
+            .ToHashSet();
+        foreach (var cod in coduri) {
+            var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod)
+                ?? throw new InvalidOperationException(
+                    $"Tabelul de mapare D394 referă tipul de TVA {cod}, care nu există în bază.");
+            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+                if (mapari.Any(m => m.TipTvaId == tip.ID && m.Sens == sens))
+                    continue;
+                if (stersDeUtilizator.Contains((tip.ID, sens)))
+                    continue;
+                if (!NemapateDeliberatD394.Any(n => n.TipTva == cod && n.Sens == sens))
+                    throw new InvalidOperationException(
+                        $"Tipul de TVA {cod} nu are mapare D394 pe sensul {sens} și nici nu e declarat nemapat "
+                        + "deliberat — operațiunile lui ar cădea tăcut în afara declarației.");
             }
         }
     }

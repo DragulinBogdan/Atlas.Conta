@@ -1,4 +1,4 @@
-﻿using Atlas.Conta.BackOffice.ModelCheck;
+using Atlas.Conta.BackOffice.ModelCheck;
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Bcs;
 using Atlas.Conta.BackOffice.Module.Api.Btr;
@@ -2961,6 +2961,7 @@ if (profil == ProfilContabil.Privat) {
     VerificaFisaJurnal();
     VerificaRegistruTva(cuTva: true);
     VerificaD300Seed(privat: true);
+    VerificaD394Seed(privat: true);
     VerificaD300(cuTva: true);
     VerificaAxaTaxareInversa();
     VerificaGardianCicluCont();
@@ -7935,6 +7936,7 @@ VerificaBalanta();
 VerificaFisaJurnal();
 VerificaRegistruTva(cuTva: false);
 VerificaD300Seed(privat: false);
+VerificaD394Seed(privat: false);
 VerificaD300(cuTva: false);
 VerificaAxaTaxareInversa();
 VerificaGardianCicluCont();
@@ -9887,6 +9889,187 @@ void VerificaD300Seed(bool privat) {
             && dupaRestaurare == 18 && mesajFinal == null);
     }
 
+}
+
+// ============ Felia 14 (D394): modelul + politica de așezare — D4-V1 ============
+// Pasul 1 al feliei: identitatea fiscală a partenerului (D4-D1), politica
+// `MapareD394` `(TipTva × Sens) → tip de operațiune` (D4-D2) și moartea coloanei
+// `CategorieD394` (D4-D8). Proiecția (D4-V2…V7) vine în pașii următori.
+//
+// Local function, apelată din AMBELE căi de profil, ca `VerificaD300Seed`.
+void VerificaD394Seed(bool privat) {
+    // ---------------- Modelul EF (D4-D1 / D4-D8) ----------------
+    using (var osModel = provider.CreateObjectSpace()) {
+        var model = ((EFCoreObjectSpace)osModel).DbContext.Model;
+        var tipTva = model.FindEntityType(typeof(TipTva));
+        var partener = model.FindEntityType(typeof(Partener));
+        Check("D4-V1 `CategorieD394` a MURIT: coloana nu mai există în modelul EF al lui `TipTva` "
+            + "(tipul de operațiune e direcțional ⇒ politică `MapareD394`, nu atribut pe tip)",
+            tipTva != null && tipTva.FindProperty("CategorieD394") == null);
+        Check("D4-V1 identitatea fiscală a partenerului = 4 câmpuri pe FRUNZA `Partener` (nu pe `Repartitor`): "
+            + "TipPersoana, Tara, InregistratTva, TvaLaIncasare",
+            partener != null
+            && new[] { nameof(Partener.TipPersoana), nameof(Partener.Tara),
+                    nameof(Partener.InregistratTva), nameof(Partener.TvaLaIncasare) }
+                .All(n => partener.FindProperty(n) != null)
+            && model.FindEntityType(typeof(Repartitor)).FindProperty(nameof(Partener.Tara)) == null);
+        var mapare = model.FindEntityType(typeof(MapareD394));
+        Check("D4-V1 `MapareD394`: o singură mapare per pereche — index UNIC pe (TipTvaId, Sens), filtrat pe `GCRecord = 0`",
+            mapare != null && mapare.GetIndexes().Any(i => i.IsUnique
+                && i.Properties.Select(p => p.Name).SequenceEqual([nameof(MapareD394.TipTvaId), nameof(MapareD394.Sens)])
+                && i.GetFilter() == "\"GCRecord\" = 0"));
+    }
+
+    // ---------------- Lista UE (D4-D1) ----------------
+    Check("D4-V1 `TariUe`: 27 de state membre, cu RO/DE/GR, fără UK/US",
+        TariUe.Coduri.Count == 27 && TariUe.Contine("RO") && TariUe.Contine("DE") && TariUe.Contine("GR")
+        && !TariUe.Contine("GB") && !TariUe.Contine("US") && !TariUe.Contine(null));
+
+    // ---------------- Normalizarea și gardul pe `Tara` (D4-D1) ----------------
+    // În memorie, fără commit: setterul normalizează, `GardianEditare` refuză
+    // formatul greșit — pe aceeași ușă pe care o folosește OData (55b).
+    using (var osTara = provider.CreateObjectSpace()) {
+        var p1 = osTara.CreateObject<Partener>();
+        p1.Cod = "E2E-D394-T1"; p1.Denumire = "Probă țară";
+        var implicitTara = p1.Tara;
+        var implicitTip = p1.TipPersoana;
+        p1.Tara = " de ";
+        var normalizat = p1.Tara;
+        p1.Tara = "";
+        var golit = p1.Tara;
+        string mesajOk = null;
+        try { GardianEditare.Verifica(osTara); } catch (OperareException e) { mesajOk = e.Message; }
+        p1.Tara = "ROM";
+        string mesajRefuz = null;
+        try { GardianEditare.Verifica(osTara); } catch (OperareException e) { mesajRefuz = e.Message; }
+        Console.WriteLine($"     MĂSURAT (D4-V1/Tara): implicit „{implicitTara}”/{implicitTip}; „ de ” → „{normalizat}”; "
+            + $"„” → „{golit}”; gardian pe „ROM” → „{mesajRefuz ?? "<NU A ARUNCAT>"}”.");
+        Check("D4-V1 `Partener.Tara`: default RO, `TipPersoana` default Juridica; setterul normalizează "
+            + "(trim + majuscule, gol ⇒ RO); `GardianEditare` refuză un cod care nu e ISO-2 („ROM”) "
+            + "și tace pe unul valid",
+            implicitTara == "RO" && implicitTip == TipPersoana.Juridica
+            && normalizat == "DE" && golit == "RO"
+            && mesajOk == null && mesajRefuz != null && mesajRefuz.Contains("ROM"));
+        osTara.Rollback();
+    }
+
+    // ---------------- Politica de așezare (D4-D2) ----------------
+    using var os = provider.CreateObjectSpace();
+    var mapari = os.GetObjectsQuery<MapareD394>().ToList();
+    if (!privat) {
+        Check("D4-V1 (bugetar) profilul n-are nicio mapare D394 — nu produce rânduri de registru fiscal",
+            mapari.Count == 0);
+        return;
+    }
+
+    TipOperatiuneD394? Tip(string codTip, SensTva sens) => mapari
+        .Where(m => m.TipTva.Cod == codTip && m.Sens == sens)
+        .Select(m => (TipOperatiuneD394?)m.Tip).SingleOrDefault();
+
+    Check("D4-V1 (privat) tabelul D4-D2 e seed-uit integral: 13 mapări, toate cu ținte permise (niciun AÎ/N), o singură mapare per pereche",
+        mapari.Count == 13 && mapari.All(m => MapareD394.TintaPermisa(m.Tip))
+        && mapari.Select(m => (m.TipTvaId, m.Sens)).Distinct().Count() == 13);
+    Check("D4-V1 (privat) cotele normale N21/N11/N9/N19: livrare → L, achiziție → A",
+        new[] { "N21", "N11", "N9", "N19" }.All(c =>
+            Tip(c, SensTva.Livrare) == TipOperatiuneD394.L && Tip(c, SensTva.Achizitie) == TipOperatiuneD394.A));
+    Check("D4-V1 (privat) taxarea inversă TI21/TI19: livrare → V, achiziție → C",
+        new[] { "TI21", "TI19" }.All(c =>
+            Tip(c, SensTva.Livrare) == TipOperatiuneD394.V && Tip(c, SensTva.Achizitie) == TipOperatiuneD394.C));
+    Check("D4-V1 (privat) NED21 doar pe achiziție → A; SDD/SFD/NIM nemapate pe ambele sensuri",
+        Tip("NED21", SensTva.Achizitie) == TipOperatiuneD394.A && Tip("NED21", SensTva.Livrare) == null
+        && new[] { "SDD", "SFD", "NIM" }.All(c =>
+            Tip(c, SensTva.Livrare) == null && Tip(c, SensTva.Achizitie) == null));
+    Check("D4-V1 (privat) exact 7 perechi (TipTva × Sens) nemapate, toate declarate cu motiv în `ContaSeeder.NemapateD394Privat`",
+        os.GetObjectsQuery<TipTva>().ToList()
+            .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, Sens: s)))
+            .Where(p => Tip(p.Cod, p.Sens) == null)
+            .OrderBy(p => p.Cod).ThenBy(p => p.Sens)
+            .SequenceEqual(ContaSeeder.NemapateD394Privat.Select(n => (n.TipTva, n.Sens))
+                .OrderBy(p => p.Item1).ThenBy(p => p.Item2))
+        && ContaSeeder.NemapateD394Privat.All(n => !string.IsNullOrWhiteSpace(n.Motiv)));
+
+    string RuleazaGardianul() {
+        using var osGard = provider.CreateObjectSpace();
+        try {
+            ContaSeeder.VerificaD394(osGard, ProfilContabil.Privat);
+            return null;
+        }
+        catch (InvalidOperationException e) { return e.Message; }
+    }
+    int MapariVii() {
+        using var osNum = provider.CreateObjectSpace();
+        return osNum.GetObjectsQuery<MapareD394>().Count();
+    }
+    void SqlBrut(FormattableString sql) {
+        using var osSql = provider.CreateObjectSpace();
+        ((EFCoreObjectSpace)osSql).DbContext.Database.ExecuteSql(sql);
+    }
+    int? GcRecord(Guid id) {
+        using var osSql = provider.CreateObjectSpace();
+        return ((EFCoreObjectSpace)osSql).DbContext.Database
+            .SqlQuery<int>($"SELECT \"GCRecord\" FROM \"MapariD394\" WHERE \"ID\" = {id}")
+            .AsEnumerable().Select(x => (int?)x).FirstOrDefault();
+    }
+    Check("D4-V1 (privat) gardianul de seed `ContaSeeder.VerificaD394` tace pe profilul seed-uit",
+        RuleazaGardianul() == null);
+
+    // ══════ Ținta interzisă: AÎ/N nu se mapează (D4-D2) ══════
+    // Regula XAF apără culegerea; gardianul de seed apără `--updateDatabase`.
+    // Proba trece prin funcția reală, pe o pereche liberă (SDD/Livrare — fără
+    // conflict cu indexul unic), și șterge FIZIC în urma ei.
+    {
+        Guid idProba;
+        using (var osScrie = provider.CreateObjectSpace()) {
+            var proba = osScrie.CreateObject<MapareD394>();
+            proba.TipTva = osScrie.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
+            proba.Sens = SensTva.Livrare;
+            proba.Tip = TipOperatiuneD394.AI;
+            osScrie.CommitChanges();
+            idProba = proba.ID;
+        }
+        var mesajGard = RuleazaGardianul();
+        SqlBrut($"DELETE FROM \"MapariD394\" WHERE \"ID\" = {idProba}");
+        var mesajDupa = RuleazaGardianul();
+        Console.WriteLine($"     MĂSURAT (D4-V1/țintă): gardian pe (SDD, Livrare) → AÎ: „{mesajGard ?? "<NU A ARUNCAT>"}”; "
+            + $"după curățare → „{mesajDupa ?? "tace"}”.");
+        Check("D4-V1 (privat) o mapare cu ținta AÎ e REFUZATĂ de `ContaSeeder.VerificaD394` (AÎ se derivă din "
+            + "partener, nu se mapează) și gardul tace după ce proba dispare; `MapareD394.TintaPermisa` refuză și N",
+            mesajGard != null && mesajGard.Contains("SDD") && mesajGard.Contains("AI")
+            && mesajDupa == null && MapariVii() == 13
+            && !MapareD394.TintaPermisa(TipOperatiuneD394.N) && !MapareD394.TintaPermisa(TipOperatiuneD394.AI)
+            && MapareD394.TintaPermisa(TipOperatiuneD394.LS));
+    }
+
+    // ══════ F5 (precedentul 69b): ștergerea LOGICĂ e o decizie, nu o gaură ══════
+    {
+        Guid idSters;
+        using (var osTinta = provider.CreateObjectSpace()) {
+            var ned = osTinta.FirstOrDefault<TipTva>(t => t.Cod == "NED21");
+            var tinta = osTinta.FirstOrDefault<MapareD394>(m => m.TipTvaId == ned.ID && m.Sens == SensTva.Achizitie);
+            idSters = tinta.ID;
+            osTinta.Delete(tinta);
+            osTinta.CommitChanges();
+        }
+        var marcajDupaDelete = GcRecord(idSters);
+        var dupaStergere = MapariVii();
+        using (var osSeed = provider.CreateObjectSpace()) {
+            ContaSeeder.SeedMapareD394Privat(osSeed);
+            osSeed.CommitChanges();
+        }
+        var dupaReseed = MapariVii();
+        var mesajVerificare = RuleazaGardianul();
+        SqlBrut($"UPDATE \"MapariD394\" SET \"GCRecord\" = 0 WHERE \"ID\" = {idSters}");
+        var dupaRestaurare = MapariVii();
+        var mesajFinal = RuleazaGardianul();
+        Console.WriteLine($"     MĂSURAT (D4-V1/F5): mapări vii 13 → {dupaStergere} după `os.Delete` pe NED21/Achiziție "
+            + $"(GCRecord = {marcajDupaDelete?.ToString() ?? "<DISPĂRUT>"}) → {dupaReseed} după re-seed → "
+            + $"{dupaRestaurare} după restaurare; gardian după re-seed: „{mesajVerificare ?? "tace"}”.");
+        Check("D4-V1 (F5) ștergerea unei mapări D394 e AMÂNATĂ (`GCRecord = 1`) și rămâne ștearsă la re-seed "
+            + "(12 vii, nu 13), gardianul o citește ca „nemapată de utilizator”; după restaurare revin la 13",
+            marcajDupaDelete == 1
+            && dupaStergere == 12 && dupaReseed == 12 && mesajVerificare == null
+            && dupaRestaurare == 13 && mesajFinal == null);
+    }
 }
 
 // ============ Felia 12 (D300): proiecția decontului — D3-V2…V7 ============
