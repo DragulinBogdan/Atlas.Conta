@@ -153,7 +153,11 @@ doar tipurile pur contabile trec pe NotaContabila.
 | InchidereLunaDeExercitiu | **NTC parțial** | Rândurile 681=281 și 6xx/7xx=121 se importă ca NTC; **rândurile 4427=4426 și 4427=4423/4424 se SAR** — le generează Atlas (§6), reconcilierea le compară. |
 | BonFiscal, jurnale, registre derivate | — | Nu postează / derivate — nu se importă. |
 
-Nomenclatoarele: Partenerii → Partener (CUI/RegCom/flags), Depozite → Gestiune,
+Nomenclatoarele: Partenerii → Partener (CUI/RegCom/flags + identitatea fiscală
+D394: `PersJurFiz` → `TipPersoana`, `Tara_ID` → `Tari.CodAlfa2` → `Tara`,
+`PoliticaTVA`/`DataLuariiInEvidentaTVA` → `InregistratTva`/`TvaLaIncasare`, PF cu
+`CNP` ⇒ `CodFiscal = CNP`; unde sursa tace se derivă și se RAPORTEAZĂ — vezi
+`ImportLaCerere.AplicaClasificare`), Depozite → Gestiune,
 Casierii + ConturiBancare (proprii) → ContPropriu, PersoaneFizice → Angajat,
 Nomenclator → Produs (loturile la import, per §3), planul de conturi NU se
 importă (planul Atlas = OMFP din seed; maparea codurilor în §8), Clasă/Tip:

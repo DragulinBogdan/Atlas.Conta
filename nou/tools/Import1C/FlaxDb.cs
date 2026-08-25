@@ -29,8 +29,16 @@ record FlaxContBancar(string Id, string Cod, string Denumire, string Iban, strin
 record FlaxPersoana(string Id, string Cod, string Nume, string Cnp,
     bool EsteElement, bool Marcat);
 
+// Identitatea fiscală (felia D394, D4-D1): `PersJurFiz` și `PoliticaTva` sunt
+// NUMELE enum-urilor 1C, așa cum le traduce view-ul („PersJur"/„PersFiz",
+// „TVAlaEmitere"/„TVAlaIncasare", null = necompletat). `TaraIso` = `CodAlfa2`
+// din catalogul `Tari` (join pe `Tara_ID`), NU descrierea — descrierea e text
+// liber („Germania", „ROMANIA"). `DataTva` e null când 1C ține data goală
+// (2001-01-01 = data vidă 1C după deplasarea de +2000 a stocării).
 record FlaxPartener(string Id, string Cod, string Denumire, string CodUnic, string RegCom,
-    string PersJurFiz, bool Client, bool Furnizor);
+    string PersJurFiz, bool Client, bool Furnizor,
+    string Cnp, string TaraIso, string PoliticaTva, DateTime? DataTva,
+    bool Nerezident, bool Intracomunitar, bool NuIncludeInDec394);
 
 record FlaxNomenclator(string Id, string Cod, string Denumire, string UM,
     bool Produs, bool Serviciu, bool TaxareInversa, string CotaTva);
@@ -83,6 +91,10 @@ partial class FlaxDb(string connectionString) : IDisposable {
     static string Text(SqlDataReader r, int i) =>
         r.IsDBNull(i) ? null : r.GetValue(i).ToString().Trim() is { Length: > 0 } s ? s : null;
     static decimal Dec(SqlDataReader r, int i) => r.IsDBNull(i) ? 0m : Convert.ToDecimal(r.GetValue(i));
+    // Data 1C „vidă" = 0001-01-01, stocată cu +2000 ⇒ 2001-01-01 în SQL (view-ul
+    // deplasează înapoi doar anii > 3000, deci vidul rămâne 2001-01-01) ⇒ null.
+    static DateTime? DataVida(SqlDataReader r, int i) =>
+        r.IsDBNull(i) ? null : r.GetDateTime(i) is var d && d <= new DateTime(2001, 1, 1) ? null : d;
     // binary(1) = flag 1C; DBNull și 0x00 sunt false.
     static bool Bit(SqlDataReader r, int i) =>
         !r.IsDBNull(i) && r.GetValue(i) is byte[] { Length: > 0 } b && b[0] != 0;
@@ -127,13 +139,28 @@ partial class FlaxDb(string connectionString) : IDisposable {
     // Importul LA CERERE (pașii următori): partenerii (129k) și nomenclatorul
     // (312k) se aduc pe măsură ce documentele îi referă — nu în bloc
     // (precedentul „doar cele referite de deschidere", decizia 34e).
+    const string SelectPartener = @"select p.KeyField, ltrim(rtrim(p.Code)), p.Description, p.CodUnic, p.RegCom,
+                       p.PersJurFiz, p.Client, p.Furnizor,
+                       p.CNP, t.CodAlfa2, p.PoliticaTVA, p.DataLuariiInEvidentaTVA,
+                       p.Nerezident, p.Intracomunitar, p.NuIncludeInDec394
+                from flax.Partenerii p
+                    left join flax.Tari t on t.KeyField = p.Tara_ID";
+
+    static FlaxPartener CitestePartener(SqlDataReader r) =>
+        new(Hex(r, 0), Text(r, 1), Text(r, 2), Text(r, 3), Text(r, 4),
+            Text(r, 5), Bit(r, 6), Bit(r, 7),
+            Text(r, 8), Text(r, 9), Text(r, 10), DataVida(r, 11),
+            Bit(r, 12), Bit(r, 13), Bit(r, 14));
+
     public FlaxPartener PartenerDupaId(string hexId) =>
-        Query(@"select KeyField, ltrim(rtrim(Code)), Description, CodUnic, RegCom,
-                       PersJurFiz, Client, Furnizor
-                from flax.Partenerii where KeyField = @id",
-            r => new FlaxPartener(Hex(r, 0), Text(r, 1), Text(r, 2), Text(r, 3), Text(r, 4),
-                Text(r, 5), Bit(r, 6), Bit(r, 7)),
+        Query(SelectPartener + " where p.KeyField = @id", CitestePartener,
             ("@id", DinHex(hexId))).SingleOrDefault();
+
+    // Proba contractului de coloane (`--cititori`): aceeași proiecție, primele
+    // rânduri — o coloană dispărută la regenerarea view-urilor cade aici, nu în
+    // mijlocul unei luni.
+    public List<FlaxPartener> ParteneriEsantion(int cate = 20) =>
+        Query(SelectPartener.Replace("select p.KeyField", $"select top {cate} p.KeyField"), CitestePartener);
 
     public FlaxNomenclator NomenclatorDupaId(string hexId) =>
         Query(@"select KeyField, ltrim(rtrim(Code)), Description, UM,

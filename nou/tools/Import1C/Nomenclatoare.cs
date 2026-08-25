@@ -284,11 +284,17 @@ class ImportLaCerere {
         legate = [.. parteneri.Values, .. produse.Values];
     }
 
+    // Partenerii deja legați (rulare anterioară) își primesc câmpurile fiscale
+    // o dată în rularea asta — nu se rescriu la fiecare referință.
+    readonly HashSet<string> clasificati = [];
+
     public Guid? AsiguraPartener(string hexId) {
         if (string.IsNullOrEmpty(hexId))
             return null;
-        if (parteneri.TryGetValue(hexId, out var existent))
+        if (parteneri.TryGetValue(hexId, out var existent)) {
+            ReclasificaExistent(hexId, existent);
             return existent;
+        }
         if (respinse.Contains($"P|{hexId}"))
             return null;
 
@@ -307,11 +313,126 @@ class ImportLaCerere {
                 e.Denumire = p.Denumire ?? cod;
                 e.CodFiscal = p.CodUnic;
                 e.RegistruComert = p.RegCom;
+                AplicaClasificare(e, p);
             });
         parteneri[hexId] = id;
+        clasificati.Add(hexId);
         if (nou)
             ParteneriNoi++;
         return id;
+    }
+
+    // Idempotența câmpurilor fiscale (felia D394): un partener materializat de o
+    // rulare de dinaintea clasificării e legat, deci `Materializeaza` nu-l mai
+    // atinge — câmpurile noi i se scriu aici, o dată per rulare, într-un OS
+    // propriu (aceeași mecanică de commit ca materializarea). Cod/Denumire/
+    // RegistruComert NU se rescriu — clasificarea nu e o re-materializare;
+    // `CodFiscal` se atinge doar la PF cu CNP (D4-D1).
+    void ReclasificaExistent(string hexId, Guid id) {
+        if (!clasificati.Add(hexId))
+            return;
+        var p = flax.PartenerDupaId(hexId);
+        if (p == null)
+            return;
+        using var os = provider.CreateObjectSpace();
+        var e = os.GetObjectByKey<Partener>(id);
+        if (e == null)
+            return;
+        AplicaClasificare(e, p);
+        os.CommitChanges();
+    }
+
+    // ---------------- Clasificarea fiscală a partenerului (D4-D1) ----------------
+    //
+    // Ce spune sursa, verificat pe cei 129.329 de parteneri din `flax`:
+    //  * `PersJurFiz` e completat la toți în afară de 12 ⇒ `TipPersoana` din sursă;
+    //    unde tace, se DERIVĂ (CNP/CodUnic de 13 cifre ⇒ fizică).
+    //  * `CNP` e completat doar la persoane fizice (17.862, din care 11.433 cu 13
+    //    cifre curate); `CodUnic` la fizice e gol (70.983/90.715) ⇒ PF cu CNP
+    //    poartă CNP-ul în `CodFiscal`, PJ păstrează `CodUnic` (neschimbat).
+    //  * `PoliticaTVA` = „TVAlaEmitere" e VALOAREA IMPLICITĂ (118.772, inclusiv
+    //    persoane fizice), deci NU e un semnal de înregistrare în scopuri de TVA;
+    //    doar „TVAlaIncasare" (79) spune ceva: plătitor, în sistemul la încasare.
+    //  * `DataLuariiInEvidentaTVA` e vidă la TOȚI (129.322 × 2001-01-01) — sursa
+    //    tace ⇒ `InregistratTva` se DERIVĂ din prefixul „RO" al CUI-ului (22.409).
+    //  * `Tara` e completată la 251 (restul null ⇒ RO); `CodAlfa2` din `Tari` e
+    //    de obicei ISO, dar catalogul are și gunoi („NY", „TX", „NSW", „752") —
+    //    codul ne-ISO se RAPORTEAZĂ, iar partenerul rămâne pe RO. 82 nerezidenți
+    //    și 32 intracomunitari n-au țară deloc — tot raportate.
+    //  * `NuIncludeInDec394` (281) și `Nerezident`/`Intracomunitar` n-au câmp în
+    //    model (D4-D1 ține doar cele patru date ale clasificării D394): se
+    //    NUMĂRĂ, ca inventar al sursei, nu se pierd tăcut.
+    public int ParteneriClasificati { get; private set; }
+    public int TipPersoanaDerivat { get; private set; }
+    public int InregistratTvaDerivat { get; private set; }
+    public int TvaLaIncasareDinSursa { get; private set; }
+    public int TaraNerezolvata { get; private set; }
+    public int NuIncludeInDec394 { get; private set; }
+    public int NerezidentiSursa { get; private set; }
+
+    static bool TreisprezeceCifre(string s) => s != null && s.Length == 13 && s.All(char.IsDigit);
+
+    void AplicaClasificare(Partener e, FlaxPartener p) {
+        ParteneriClasificati++;
+
+        // Tip persoană: sursa, apoi derivarea.
+        switch (p.PersJurFiz) {
+            case "PersJur": e.TipPersoana = TipPersoana.Juridica; break;
+            case "PersFiz": e.TipPersoana = TipPersoana.Fizica; break;
+            default:
+                TipPersoanaDerivat++;
+                e.TipPersoana = TreisprezeceCifre(p.Cnp) || TreisprezeceCifre(p.CodUnic)
+                    ? TipPersoana.Fizica : TipPersoana.Juridica;
+                break;
+        }
+
+        // PF cu CNP ⇒ identificatorul fiscal e CNP-ul (D4-D1); PJ = CodUnic, ca
+        // înainte (setat de apelant, nu se atinge aici).
+        if (e.TipPersoana == TipPersoana.Fizica && p.Cnp != null)
+            e.CodFiscal = p.Cnp;
+
+        // Țara: ISO-2 din catalog; „UK" e grafia curentă a lui GB, restul ne-ISO
+        // se raportează. Fără țară = RO (default-ul modelului), dar un nerezident
+        // fără țară e o gaură a sursei, nu o certitudine.
+        var iso = p.TaraIso?.Trim().ToUpperInvariant() switch {
+            null or "" => null,
+            "UK" => "GB",
+            var c => c,
+        };
+        if (iso != null && iso.Length == 2 && iso.All(char.IsAsciiLetterUpper))
+            e.Tara = iso;
+        else {
+            e.Tara = "RO";
+            if (iso != null) {
+                TaraNerezolvata++;
+                avert($"Partener {p.Cod} ({p.Denumire}): țara 1C „{p.TaraIso}” nu e cod ISO-2 — lăsat pe RO.");
+            }
+            else if (p.Nerezident || p.Intracomunitar) {
+                TaraNerezolvata++;
+                avert($"Partener {p.Cod} ({p.Denumire}): {(p.Intracomunitar ? "intracomunitar" : "nerezident")} "
+                    + "în 1C, dar fără țară — lăsat pe RO.");
+            }
+        }
+
+        // Înregistrarea în scopuri de TVA: singurul semnal al sursei e politica
+        // „la încasare" (implică plătitor) sau o dată de luare în evidență
+        // nevidă; altfel derivare din prefixul RO al CUI-ului.
+        e.TvaLaIncasare = p.PoliticaTva == "TVAlaIncasare";
+        if (e.TvaLaIncasare || p.DataTva != null) {
+            e.InregistratTva = true;
+            if (e.TvaLaIncasare)
+                TvaLaIncasareDinSursa++;
+        }
+        else {
+            InregistratTvaDerivat++;
+            e.InregistratTva = p.CodUnic != null
+                && p.CodUnic.StartsWith("RO", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (p.NuIncludeInDec394)
+            NuIncludeInDec394++;
+        if (p.Nerezident || p.Intracomunitar)
+            NerezidentiSursa++;
     }
 
     // `simbolContOmfp` vine din contul pe care stă poziția (ex. 371.1 → „371"):

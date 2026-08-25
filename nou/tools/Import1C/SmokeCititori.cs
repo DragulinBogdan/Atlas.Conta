@@ -31,6 +31,7 @@ static class SmokeCititori {
             }
         }
 
+        Proba("Partenerii (identitate fiscală, D394)", () => flax.ParteneriEsantion());
         Proba("Aprovizionari", () => flax.Aprovizionari(an, luna));
         Proba("AprovizionariMarfuri", () => flax.AprovizionariMarfuri(an, luna));
         Proba("AprovizionariServicii", () => flax.AprovizionariServicii(an, luna));

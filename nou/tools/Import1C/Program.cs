@@ -334,6 +334,10 @@ Console.WriteLine($"Registru stoc: {rezStoc.RanduriStoc} rânduri de deschidere;
 Console.WriteLine($"La cerere: {laCerere.ParteneriNoi} parteneri noi, {laCerere.ProduseNoi} produse noi, "
     + $"{laCerere.Recuperate} recuperate, {laCerere.ReferinteMoarte} referințe moarte, "
     + $"{laCerere.ProduseFaraTip} fără TipMaterial.");
+Console.WriteLine($"Clasificare parteneri (D394): {laCerere.ParteneriClasificati} clasificați — "
+    + $"tip persoană derivat {laCerere.TipPersoanaDerivat}, TVA derivat din prefix RO {laCerere.InregistratTvaDerivat}, "
+    + $"TVA la încasare din sursă {laCerere.TvaLaIncasareDinSursa}, țară nerezolvată {laCerere.TaraNerezolvata}, "
+    + $"nerezidenți/intracomunitari {laCerere.NerezidentiSursa}, NuIncludeInDec394 {laCerere.NuIncludeInDec394}.");
 var durataDeschidere = cronometru.Elapsed;
 Console.WriteLine($"Durata fazei de deschidere: {durataDeschidere:hh\\:mm\\:ss}.");
 
@@ -699,6 +703,7 @@ Console.WriteLine($"""
     ║   conturi proprii          {impCasierii.Procesate + impConturi.Procesate,10} / {impCasierii.Noi + impConturi.Noi}  (casierii + bancare)
     ║   angajați                 {impPersoane.Procesate,10} / {impPersoane.Noi}
     ║   produse (la cerere)      {rezStoc.Produse,10} / {rezStoc.ProduseNoi}
+    ║   parteneri (la cerere)    {laCerere.ParteneriClasificati,10} clasificați / {laCerere.ParteneriNoi} noi (tip persoană derivat {laCerere.TipPersoanaDerivat}, TVA din prefix RO {laCerere.InregistratTvaDerivat}, TVA la încasare {laCerere.TvaLaIncasareDinSursa}, țară nerezolvată {laCerere.TaraNerezolvata}, NuIncludeInDec394 {laCerere.NuIncludeInDec394})
     ║ DESCHIDEREA SCRISĂ (DocumentId = null)
     ║   rânduri contabile        {rezContabil.Randuri,10} contra ancorei {Deschidere.Ancora}
     ║   extrabilanțiere sărite   {rezContabil.Extrabilantiere,10} (Σ {rezContabil.SumaExtrabilantiera:N2} lei — clasa 8, alt modul)
