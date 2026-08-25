@@ -118,6 +118,10 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         // Partenerul (felia 14, D4-D1): identitatea fiscală într-un grup propriu.
         // Layout-ul e declarat integral (bază-întâi nu se aplică — `Repartitor`
         // n-are layout propriu), ca membrii bazei să nu cadă în `Unplaced`.
+        // FK-urile brute (`JudetId`, `ContImplicitId`) nu intră în grupuri și
+        // ar cădea în grupul-mătură al layout-ului — se ascund (41b), lookup-ul e
+        // navigația.
+        registry.For<Partener>().HideForeignKeys();
         registry.For<Partener>()
             .Layout(l => l
                 .Group("GrupIdentificare", "Identificare", g => g
