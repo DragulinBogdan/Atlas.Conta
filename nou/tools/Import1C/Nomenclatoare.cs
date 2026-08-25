@@ -363,6 +363,10 @@ class ImportLaCerere {
     //    model (D4-D1 ține doar cele patru date ale clasificării D394): se
     //    NUMĂRĂ, ca inventar al sursei, nu se pierd tăcut.
     public int ParteneriClasificati { get; private set; }
+    public int PfaInregistrate { get; private set; }
+    public int ReclasificatiDinSursa { get; private set; }
+    public int InregistratiDinRegistru { get; private set; }
+    public int ParteneriLegati => parteneri.Count;
     public int TipPersoanaDerivat { get; private set; }
     public int InregistratTvaDerivat { get; private set; }
     public int TvaLaIncasareDinSursa { get; private set; }
@@ -386,10 +390,18 @@ class ImportLaCerere {
                 break;
         }
 
-        // PF cu CNP ⇒ identificatorul fiscal e CNP-ul (D4-D1); PJ = CodUnic, ca
+        // PF: identificatorul fiscal e CUI-ul RO când există (PFA/II ÎNREGISTRATĂ
+        // în scopuri de TVA — fix 2 al review-ului D394: se declară pe tip 1 cu
+        // CUI, nu pe tip 2 cu CNP), altfel CNP-ul (D4-D1). PJ = CodUnic, ca
         // înainte (setat de apelant, nu se atinge aici).
-        if (e.TipPersoana == TipPersoana.Fizica && p.Cnp != null)
-            e.CodFiscal = p.Cnp;
+        if (e.TipPersoana == TipPersoana.Fizica) {
+            if (p.CodUnic != null && p.CodUnic.Trim().StartsWith("RO", StringComparison.OrdinalIgnoreCase)) {
+                e.CodFiscal = p.CodUnic;
+                PfaInregistrate++;
+            }
+            else if (p.Cnp != null)
+                e.CodFiscal = p.Cnp;
+        }
 
         // Țara: ISO-2 din catalog; „UK" e grafia curentă a lui GB, restul ne-ISO
         // se raportează. Fără țară = RO (default-ul modelului), dar un nerezident
@@ -433,6 +445,56 @@ class ImportLaCerere {
             NuIncludeInDec394++;
         if (p.Nerezident || p.Intracomunitar)
             NerezidentiSursa++;
+    }
+
+    // ---------------- Reclasificarea TUTUROR partenerilor legați ----------------
+    //
+    // Fix 4 al review-ului advers D394 (constatarea cu cifre: 16.030 PJ din sursă
+    // au CUI fără prefix „RO", iar derivarea din prefix îi făcea tip 2 ⇒
+    // achiziții pe cartușul D, combinație pe care formularul o refuză). Doi pași,
+    // în ordinea asta:
+    //  1. SURSA: `AplicaClasificare` pe fiecare partener legat (nu doar pe cei
+    //     referiți în rularea curentă — cosmetica 13 a review-ului), sărind pe
+    //     cei clasificați deja în rularea asta (idempotent, aceeași sursă);
+    //  2. REGISTRUL: partenerii care apar ca `PartenerId` pe rânduri `RegistruTva`
+    //     cu `Sens = Achizitie` și `Tva ≠ 0` (A sau C cu TVA deductibilă) sunt
+    //     ÎNREGISTRAȚI în scopuri de TVA — un furnizor care ne-a facturat TVA e
+    //     înregistrat; evidența bate eticheta (34f). Contorizat separat.
+    // Rulează ca pas final al importului normal ȘI ca mod propriu `--reclasifica`
+    // (fără import de documente). Single-operator pe bază, ca toată unealta.
+    // Canonicul (registrul ANAF al plătitorilor) rămâne restanță cu nume.
+    public void ReclasificaToti() {
+        foreach (var lot in parteneri.Chunk(500)) {
+            using var os = provider.CreateObjectSpace();
+            foreach (var (hexId, id) in lot) {
+                if (clasificati.Contains(hexId))
+                    continue;
+                var e = os.GetObjectByKey<Partener>(id);
+                if (e == null)
+                    continue;
+                var p = flax.PartenerDupaId(hexId);
+                if (p == null)
+                    continue;
+                AplicaClasificare(e, p);
+                clasificati.Add(hexId);
+                ReclasificatiDinSursa++;
+            }
+            os.CommitChanges();
+        }
+        using (var os = provider.CreateObjectSpace()) {
+            var ids = os.GetObjectsQuery<RegistruTva>()
+                .Where(r => r.Sens == SensTva.Achizitie && r.Tva != 0m && r.PartenerId != null)
+                .Select(r => r.PartenerId.Value)
+                .Distinct()
+                .ToList();
+            var deMarcat = os.GetObjectsQuery<Partener>()
+                .Where(p => ids.Contains(p.ID) && !p.InregistratTva)
+                .ToList();
+            foreach (var p in deMarcat)
+                p.InregistratTva = true;
+            InregistratiDinRegistru = deMarcat.Count;
+            os.CommitChanges();
+        }
     }
 
     // `simbolContOmfp` vine din contul pe care stă poziția (ex. 371.1 → „371"):

@@ -103319,6 +103319,36 @@
         },
         "additionalProperties": false
       },
+      "D394Avertisment": {
+        "type": "object",
+        "properties": {
+          "Cod": {
+            "type": "string",
+            "nullable": true
+          },
+          "Mesaj": {
+            "type": "string",
+            "nullable": true
+          },
+          "Numar": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Suma": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "Exemple": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "D394Dto": {
         "type": "object",
         "properties": {
@@ -103353,7 +103383,7 @@
           "Avertismente": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/D394Avertisment"
             },
             "nullable": true
           },
@@ -103443,6 +103473,10 @@
             "nullable": true
           },
           "Tip": {
+            "type": "string",
+            "nullable": true
+          },
+          "Sens": {
             "type": "string",
             "nullable": true
           },

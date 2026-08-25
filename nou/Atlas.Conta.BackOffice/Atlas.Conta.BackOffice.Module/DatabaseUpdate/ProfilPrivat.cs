@@ -537,9 +537,10 @@ internal static class ProfilPrivat {
     // probează re-seed-ul pe funcția reală.
     public static void SeedMapareD394(IObjectSpace os) {
         foreach (var m in MapariD394) {
-            if (!MapareD394.TintaPermisa(m.Tip))
+            if (!MapareD394.TintaPermisa(m.Tip, m.Sens))
                 throw new InvalidOperationException(
-                    $"Tabelul de seed D394 țintește {m.Tip} pentru {m.TipTva}/{m.Sens} — AI/N nu se mapează (D4-D2).");
+                    $"Tabelul de seed D394 țintește {m.Tip} pentru {m.TipTva}/{m.Sens} — AI/N nu se mapează, "
+                    + "iar tipul trebuie să fie coerent cu sensul (D4-D2).");
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == m.TipTva)
                 ?? throw new InvalidOperationException(
                     $"Maparea D394 {m.TipTva}/{m.Sens} → {m.Tip} nu se poate seed-ui: lipsește din bază tipul de TVA {m.TipTva}.");

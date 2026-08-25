@@ -60,7 +60,12 @@ public class Partener : Repartitor {
         return string.IsNullOrEmpty(cod) ? "RO" : cod;
     }
 
-    [XafDisplayName("Înregistrat în scopuri de TVA")]
+    // „În România" e parte din semantică (fix 3 al review-ului advers): un
+    // partener din DE înregistrat în DE NU se bifează aici; un DE cu cod RO
+    // (înregistrare directă / reprezentant fiscal, art. 316) DA — și atunci e
+    // tip 1 în D394, cu prefixul RO tăiat. „Înregistrat bate tot" în
+    // `D394Proiectii.TipPartener`: PFA/II înregistrate sunt tot tip 1.
+    [XafDisplayName("Înregistrat în scopuri de TVA în România")]
     public virtual bool InregistratTva { get; set; }
 
     // Furnizor în sistemul TVA la încasare: în D394, `A` devine `AI`. Doar

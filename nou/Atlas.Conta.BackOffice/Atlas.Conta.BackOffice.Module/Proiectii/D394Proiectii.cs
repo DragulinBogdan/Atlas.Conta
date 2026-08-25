@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
@@ -45,6 +46,11 @@ public sealed class D394Operatiune {
     public string Denumire { get; set; }
     // Enum-urile pleacă STRING (57a).
     public string Tip { get; set; }
+    // Sensul rândului de registru din care vine rândul (fix 5 al review-ului):
+    // cusătura per sens se face pe DATA asta, nu pe deducerea din `Tip` —
+    // gardul `MapareD394.TintaPermisa(tip, sens)` garantează coerența, iar
+    // proba o MĂSOARĂ pe ce a ieșit.
+    public string Sens { get; set; }
     // Cota DECLARATĂ: `int(Cota)` din snapshot pentru L/A/AI/C, 0 pentru
     // V/LS/AS/N (regula formularului — §4.9).
     public int Cota { get; set; }
@@ -136,12 +142,27 @@ public sealed class D394Neinclus {
     public int Randuri { get; set; }
 }
 
+// Un avertisment AGREGAT per cauză (D4-D5, fix 7 al review-ului advers): pe
+// baza reală un an ar produce mii de string-uri cu aceeași cauză (fiecare PF
+// cu CNP în alt format, fiecare combinație refuzată) și semnalul util s-ar
+// îneca. Deci un rând per cauză: descrierea o dată, numărul de cazuri, suma
+// (unde are sens) și cel mult 5 exemple nominale — ecranul le pliază.
+public sealed class D394Avertisment {
+    // `CodAvertismentD394` ca string (57a); eticheta din metadata.
+    public string Cod { get; set; }
+    public string Mesaj { get; set; }
+    public int Numar { get; set; }
+    // NULL unde cauza n-are sumă (CUI-uri unite, cote ne-întregi).
+    public decimal? Suma { get; set; }
+    public List<string> Exemple { get; set; } = [];
+}
+
 public sealed class D394Dto {
     public List<D394Operatiune> Operatiuni { get; set; } = [];
     public List<D394Rezumat> Rezumat { get; set; } = [];
     public List<D394RezumatCota> RezumatCote { get; set; } = [];
     public List<D394Neinclus> Neincluse { get; set; } = [];
-    public List<string> Avertismente { get; set; } = [];
+    public List<D394Avertisment> Avertismente { get; set; } = [];
     // `informatii@nrCui1..4`: parteneri DISTINCȚI per tip de partener (§4.2).
     // Pentru tip 2 formularul numără ÎNREGISTRĂRILE `op1` (persoanele fizice
     // fără CNP n-au cheie) — deci `NrCui2` = numărul rândurilor de tip 2.
@@ -157,30 +178,39 @@ public static class D394Proiectii {
     // ── D4-D1: funcțiile nomenclatorului, publice și reutilizabile ──────────
 
     /// <summary>
-    /// `tip_partener` (1–4) din identitatea fiscală a partenerului (D4-D1):
-    /// PF ⇒ 2; RO înregistrat ⇒ 1; RO neînregistrat ⇒ 2; UE ⇒ 3; altfel 4.
+    /// `tip_partener` (1–4) din identitatea fiscală a partenerului (D4-D1, cu
+    /// fixurile 2/3 ale review-ului advers): **ÎNREGISTRAT BATE TOT** —
+    /// înregistrat în scopuri de TVA în România ⇒ 1, indiferent de felul
+    /// persoanei (PFA/II înregistrate) sau de țară (străin cu cod RO, art.
+    /// 316); apoi PF ⇒ 2; RO neînregistrat ⇒ 2; UE ⇒ 3; altfel 4. §4.2: tip 1 =
+    /// „persoane impozabile înregistrate în scopuri de TVA în România", tip 3 =
+    /// „neînregistrate și care nu sunt obligate să se înregistreze".
     /// `Tara` goală se citește ca RO (default-ul nomenclatorului), nu ca 4.
     /// </summary>
     public static int TipPartener(TipPersoana tipPersoana, string tara, bool inregistratTva) {
+        if (inregistratTva)
+            return 1;
         if (tipPersoana == TipPersoana.Fizica)
             return 2;
         var cod = Partener.NormalizeazaTara(tara);
         if (cod == "RO")
-            return inregistratTva ? 1 : 2;
+            return 2;
         return TariUe.Contine(cod) ? 3 : 4;
     }
 
     /// <summary>
     /// `cuiP`: `CodFiscal` normalizat — trim, majuscule, spațiile interioare
-    /// scoase, iar prefixul `RO` tăiat DOAR pentru partenerii din RO (codurile
-    /// străine rămân întregi: `DE123…` e chiar codul de TVA din statul membru).
-    /// NULL pentru cod gol.
+    /// scoase, iar prefixul `RO` tăiat pentru partenerii din RO SAU înregistrați
+    /// în scopuri de TVA în RO (străinul cu cod RO se declară pe tip 1 cu CUI-ul
+    /// românesc fără prefix); codurile străine ale neînregistraților rămân
+    /// întregi (`DE123…` e chiar codul de TVA din statul membru). NULL pentru
+    /// cod gol.
     /// </summary>
-    public static string NormalizeazaCui(string codFiscal, string tara) {
+    public static string NormalizeazaCui(string codFiscal, string tara, bool inregistratTva) {
         if (string.IsNullOrWhiteSpace(codFiscal))
             return null;
         var cui = new string(codFiscal.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
-        if (Partener.NormalizeazaTara(tara) == "RO" && cui.StartsWith("RO", StringComparison.Ordinal))
+        if ((inregistratTva || Partener.NormalizeazaTara(tara) == "RO") && cui.StartsWith("RO", StringComparison.Ordinal))
             cui = cui[2..];
         return cui.Length == 0 ? null : cui;
     }
@@ -205,8 +235,13 @@ public static class D394Proiectii {
     sealed class InfoPartener {
         public Guid Id;
         public string Denumire, CuiP;
-        public int TipPartener;
-        public bool TvaLaIncasare, PersoanaFizica;
+        // `TipPropriu` = clasificarea NOMENCLATORULUI acestui partener;
+        // `TipPartener` = tipul RÂNDULUI, decis pe CUI (fix 1 al review-ului):
+        // un CUI nu poate fi simultan înregistrat și neînregistrat, deci dacă
+        // vreun partener cu CUI-ul X e tip 1, X e tip 1 pentru toți; altfel,
+        // clasificări diferite pe același CUI ⇒ tipul primului (pe Id) + avertisment.
+        public int TipPropriu, TipPartener;
+        public bool TvaLaIncasare, PersoanaFizica, Sters;
         // Cheia rândului: CUI-ul normalizat; fără cod, IDENTITATEA partenerului —
         // două PF fără CNP nu se contopesc într-un rând fiindcă amândouă au
         // codul gol.
@@ -218,13 +253,18 @@ public static class D394Proiectii {
         public int TipPartener;
         public string CheieCui, CuiP;
         public TipOperatiuneD394 Tip;
+        public SensTva Sens;
         public int Cota;
         public int NrFact, Randuri;
-        public bool PersoanaFizica;
         public decimal Baza, Tva;
-        public readonly SortedDictionary<string, string> Parteneri = new(StringComparer.Ordinal); // Denumire → Id
+        // Cheiat pe Id (fix 8 al review-ului): două nomenclatoare cu același CUI
+        // ȘI aceeași denumire sunt tot două nomenclatoare unite.
+        public readonly Dictionary<Guid, InfoPartener> Parteneri = [];
         public readonly HashSet<Guid> Documente = [];
         public readonly HashSet<(Guid, bool)> Facturi = []; // (Document × Storno) = o factură la ANAF
+        public IEnumerable<string> Nume => Parteneri.Values.Select(p => p.Denumire ?? "").Distinct().OrderBy(n => n, StringComparer.Ordinal);
+        public string Denumire => Nume.First();
+        public bool PersoanaFizica => Parteneri.Values.Any(p => p.PersoanaFizica);
     }
 
     /// <summary>
@@ -261,24 +301,44 @@ public static class D394Proiectii {
         // Partenerul: join pe FRUNZA `Partener` (TPT), nu cast pe navigația lazy
         // `Repartitor` (riscul 6). Un `PartenerId` care nu se regăsește aici e
         // un repartitor de alt fel (Angajatul de pe DEC) ⇒ `Neincluse`.
+        // `IgnoreQueryFilters` (fix 6 al review-ului): facturile unui partener
+        // ȘTERS logic din nomenclator se declară — sunt documente operate;
+        // declarația nu depinde de viața nomenclatorului. Rândul lui iese cu
+        // avertisment `PartenerSters`; cauza `RepartitorNePartener` rămâne doar
+        // pentru repartitorii care chiar nu sunt parteneri (Angajatul de pe DEC).
         var idsRep = agregate.Where(a => a.PartenerId != null).Select(a => a.PartenerId.Value).Distinct().ToList();
-        var parteneri = os.GetObjectsQuery<Partener>()
+        var parteneri = os.GetObjectsQuery<Partener>().IgnoreQueryFilters()
             .Where(p => idsRep.Contains(p.ID))
-            .Select(p => new { p.ID, p.Denumire, p.CodFiscal, p.TipPersoana, p.Tara, p.InregistratTva, p.TvaLaIncasare })
+            .Select(p => new { p.ID, p.Denumire, p.CodFiscal, p.TipPersoana, p.Tara, p.InregistratTva, p.TvaLaIncasare, p.GCRecord })
             .ToList()
             .ToDictionary(p => p.ID, p => new InfoPartener {
                 Id = p.ID,
                 Denumire = p.Denumire,
-                CuiP = NormalizeazaCui(p.CodFiscal, p.Tara),
+                CuiP = NormalizeazaCui(p.CodFiscal, p.Tara, p.InregistratTva),
+                TipPropriu = TipPartener(p.TipPersoana, p.Tara, p.InregistratTva),
                 TipPartener = TipPartener(p.TipPersoana, p.Tara, p.InregistratTva),
                 TvaLaIncasare = p.TvaLaIncasare,
-                PersoanaFizica = p.TipPersoana == TipPersoana.Fizica
+                PersoanaFizica = p.TipPersoana == TipPersoana.Fizica,
+                Sters = p.GCRecord != 0
             });
+        // Tipul rândului se decide PE CUI, peste nomenclatoare (fix 1): „înregistrat
+        // bate tot"; fără niciun înregistrat, clasificări diferite ⇒ tipul primului
+        // (ordonat pe Id) și avertisment. Rândurile fără CUI rămân pe identitatea
+        // partenerului, cu tipul lui propriu.
+        var clasificariDiferite = new List<(string CuiP, List<InfoPartener> Parteneri, int Tip)>();
+        foreach (var g in parteneri.Values.Where(p => p.CuiP != null).GroupBy(p => p.CuiP)) {
+            var lista = g.OrderBy(p => p.Id).ToList();
+            var tip = lista.Any(p => p.TipPropriu == 1) ? 1 : lista[0].TipPropriu;
+            if (tip != 1 && lista.Any(p => p.TipPropriu != tip))
+                clasificariDiferite.Add((g.Key, lista, tip));
+            foreach (var p in lista)
+                p.TipPartener = tip;
+        }
         // Etichetele repartitorilor care NU sunt parteneri — pentru `Neincluse`.
         var idsNePartener = idsRep.Where(id => !parteneri.ContainsKey(id)).ToList();
         var repartitori = idsNePartener.Count == 0
             ? new Dictionary<Guid, string>()
-            : os.GetObjectsQuery<Repartitor>()
+            : os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
                 .Where(r => idsNePartener.Contains(r.ID))
                 .Select(r => new { r.ID, r.Denumire })
                 .ToList()
@@ -324,8 +384,8 @@ public static class D394Proiectii {
 
         // Grupul clasificat, încă la granularitatea DOCUMENTULUI — pasul 3 are
         // nevoie de el așa.
-        var clasificate = new List<(Guid DocumentId, bool Storno, InfoPartener Partener, TipOperatiuneD394 Tip, int Cota,
-            decimal Baza, decimal Tva, int Randuri)>();
+        var clasificate = new List<(Guid DocumentId, bool Storno, InfoPartener Partener, TipOperatiuneD394 Tip, SensTva Sens,
+            int Cota, decimal Baza, decimal Tva, int Randuri)>();
         var coteTrunchiate = new SortedSet<decimal>();
 
         foreach (var a in agregate) {
@@ -348,7 +408,7 @@ public static class D394Proiectii {
             var (cota, trunchiat) = CotaDeclarata(tip, a.Cota);
             if (trunchiat)
                 coteTrunchiate.Add(a.Cota);
-            clasificate.Add((a.DocumentId, a.Storno, partener, tip, cota, a.Baza, a.Tva, a.Randuri));
+            clasificate.Add((a.DocumentId, a.Storno, partener, tip, a.Sens, cota, a.Baza, a.Tva, a.Randuri));
         }
 
         // ── 3. Numărul de facturi, per document (§5.2) ──────────────────────
@@ -366,19 +426,23 @@ public static class D394Proiectii {
             castigatoare.Add((g.Key.DocumentId, g.Key.Storno, g.Key.CheieCui, g.Key.Tip, peCota.Cota));
         }
 
-        // ── 4. `op1`: (tip_partener, cuiP, tip, cota) ───────────────────────
-        var randuri = new Dictionary<(int, string, TipOperatiuneD394, int), Rand>();
+        // ── 4. `op1`: (cuiP, tip, cota) — tipul de partener e FUNCȚIE de cheie ──
+        // `TipPartener` e decis pe CUI (mai sus), deci nu mai e o axă a cheii:
+        // unicitatea `(cuiP, tip, cota)` cerută de XSD e garantată prin
+        // construcție. `Sens` intră în cheie doar ca o mapare incoerentă (dacă ar
+        // scăpa de gard) să nu contopească achiziții cu livrări.
+        var randuri = new Dictionary<(string, TipOperatiuneD394, SensTva, int), Rand>();
         foreach (var c in clasificate) {
-            var cheie = (c.Partener.TipPartener, c.Partener.CheieCui, c.Tip, c.Cota);
+            var cheie = (c.Partener.CheieCui, c.Tip, c.Sens, c.Cota);
             if (!randuri.TryGetValue(cheie, out var rand))
                 rand = randuri[cheie] = new Rand {
                     TipPartener = c.Partener.TipPartener, CheieCui = c.Partener.CheieCui,
-                    CuiP = c.Partener.CuiP, Tip = c.Tip, Cota = c.Cota, PersoanaFizica = c.Partener.PersoanaFizica
+                    CuiP = c.Partener.CuiP, Tip = c.Tip, Sens = c.Sens, Cota = c.Cota
                 };
             rand.Baza += c.Baza;
             rand.Tva += c.Tva;
             rand.Randuri += c.Randuri;
-            rand.Parteneri.TryAdd(c.Partener.Denumire ?? "", c.Partener.Id.ToString());
+            rand.Parteneri.TryAdd(c.Partener.Id, c.Partener);
             rand.Documente.Add(c.DocumentId);
             if (rand.Facturi.Add((c.DocumentId, c.Storno))
                 && castigatoare.Contains((c.DocumentId, c.Storno, c.Partener.CheieCui, c.Tip, c.Cota)))
@@ -391,7 +455,7 @@ public static class D394Proiectii {
 
         var ordonate = randuri.Values
             .OrderBy(r => r.TipPartener).ThenBy(r => r.CuiP ?? "￿", StringComparer.Ordinal)
-            .ThenBy(r => r.Parteneri.Keys.First(), StringComparer.Ordinal)
+            .ThenBy(r => r.Denumire, StringComparer.Ordinal)
             .ThenBy(r => r.Tip).ThenBy(r => r.Cota)
             .ToList();
         foreach (var r in ordonate) {
@@ -401,8 +465,9 @@ public static class D394Proiectii {
                 CuiP = r.CuiP,
                 // Denumirea: la parteneri UNIȚI pe același CUI, prima în ordine —
                 // avertismentul de mai jos îi numește pe toți.
-                Denumire = r.Parteneri.Keys.First(),
+                Denumire = r.Denumire,
                 Tip = r.Tip.ToString(),
+                Sens = r.Sens.ToString(),
                 Cota = r.Cota,
                 NrFact = r.NrFact,
                 Baza = r.Baza,
@@ -480,61 +545,102 @@ public static class D394Proiectii {
             .ToList();
 
         // ── 6. Avertismentele (D4-D5): se RAPORTEAZĂ, nu se inventează ──────
-        var av = rezultat.Avertismente;
-
-        // Parteneri distincți uniți pe același CUI normalizat (riscul 2):
-        // formularul cere unicitate pe `cuiP`, deci rândul e unul — dar
-        // contabilul trebuie să știe CARE nomenclatoare s-au contopit.
-        foreach (var g in randuri.Values.Where(r => r.CuiP != null && r.Parteneri.Count > 1)
-                .GroupBy(r => (r.TipPartener, r.CuiP)).OrderBy(g => g.Key.TipPartener).ThenBy(g => g.Key.CuiP)) {
-            var nume = g.SelectMany(r => r.Parteneri.Keys).Distinct().OrderBy(n => n, StringComparer.Ordinal);
-            av.Add($"CUI {g.Key.CuiP}: partenerii {string.Join(", ", nume.Select(n => $"„{n}”"))} s-au unit pe "
-                + "același cod fiscal normalizat — formularul cere un singur rând per CUI. Verificați dacă sunt "
-                + "același partener scris de două ori sau două nomenclatoare cu cod greșit.");
+        // AGREGATE per cauză (fix 7): un rând per cod, cu numărul de cazuri, suma
+        // (unde are sens) și cel mult 5 exemple nominale.
+        void Avert(CodAvertismentD394 cod, string mesaj, IReadOnlyList<(string Exemplu, decimal? Suma)> cazuri) {
+            if (cazuri.Count == 0)
+                return;
+            rezultat.Avertismente.Add(new D394Avertisment {
+                Cod = cod.ToString(),
+                Mesaj = mesaj,
+                Numar = cazuri.Count,
+                Suma = cazuri.Any(c => c.Suma != null) ? cazuri.Sum(c => c.Suma ?? 0m) : null,
+                Exemple = cazuri.Take(5).Select(c => c.Exemplu).ToList()
+            });
         }
+        string N2(decimal v) => v.ToString("N2", Ro);
+        string Nume(IEnumerable<InfoPartener> parts) =>
+            string.Join(", ", parts.Select(p => $"„{p.Denumire}” (tip {p.TipPropriu})"));
+
+        // Parteneri distincți uniți pe același CUI normalizat (riscul 2), peste
+        // TIPURI (fix 1): formularul cere unicitate pe `cuiP`, deci rândul e unul
+        // — dar contabilul trebuie să știe CARE nomenclatoare s-au contopit.
+        var peCui = ordonate.Where(r => r.CuiP != null).GroupBy(r => r.CuiP)
+            .Select(g => (CuiP: g.Key, Parteneri: g.SelectMany(r => r.Parteneri.Values).DistinctBy(p => p.Id).OrderBy(p => p.Id).ToList(),
+                Tip: g.First().TipPartener))
+            .Where(g => g.Parteneri.Count > 1)
+            .OrderBy(g => g.CuiP, StringComparer.Ordinal)
+            .ToList();
+        Avert(CodAvertismentD394.CuiUnit,
+            "Parteneri distincți s-au unit pe același cod fiscal normalizat — formularul cere un singur rând per CUI, "
+            + "iar tipul de partener al rândului e cel al partenerului înregistrat în scopuri de TVA (dacă există). "
+            + "Verificați dacă sunt același partener scris de două ori sau două nomenclatoare cu cod greșit.",
+            peCui.Select(g => ($"CUI {g.CuiP} (rând tip {g.Tip}): {Nume(g.Parteneri)}", (decimal?)null)).ToList());
+        // Același CUI cu clasificări diferite și niciun înregistrat: rândul a luat
+        // tipul primului — decizia se strigă, nu se ia tăcut.
+        var cuiCuRanduri = ordonate.Where(r => r.CuiP != null).Select(r => r.CuiP).ToHashSet();
+        Avert(CodAvertismentD394.ClasificariDiferite,
+            "Același CUI apare pe parteneri cu clasificări diferite (țară/tip persoană) și niciunul înregistrat în "
+            + "scopuri de TVA — rândul a luat tipul primului partener; verificați identitatea fiscală.",
+            clasificariDiferite.Where(c => cuiCuRanduri.Contains(c.CuiP)).OrderBy(c => c.CuiP, StringComparer.Ordinal)
+                .Select(c => ($"CUI {c.CuiP}: parteneri cu clasificări diferite ({Nume(c.Parteneri)}) — rândul pe tip {c.Tip}", (decimal?)null))
+                .ToList());
         // Tip 1 fără CUI / PF fără CNP: ANAF le respinge; noi nu ascundem cifra.
-        foreach (var r in ordonate.Where(r => r.TipPartener == 1 && r.CuiP == null)
-                .GroupBy(r => r.CheieCui).Select(g => g.First()))
-            av.Add($"Partener „{r.Parteneri.Keys.First()}” înregistrat în scopuri de TVA (tip 1) fără cod fiscal — "
-                + "rândurile lui se declară, dar formularul cere `cuiP` valid; completați codul în nomenclator.");
+        Avert(CodAvertismentD394.Tip1FaraCui,
+            "Partener înregistrat în scopuri de TVA (tip 1) fără cod fiscal — rândurile lui se declară, dar formularul "
+            + "cere `cuiP` valid; completați codul în nomenclator.",
+            ordonate.Where(r => r.TipPartener == 1 && r.CuiP == null).GroupBy(r => r.CheieCui)
+                .Select(g => ($"„{g.First().Denumire}”: bază {N2(g.Sum(r => r.Baza))}", (decimal?)g.Sum(r => r.Baza))).ToList());
         // PF fără CNP valid: gol SAU alt format decât 13 cifre — în sursa reală
         // (Import1C, pasul 4a) mii de PF au CNP-ul în alt format, copiat ca atare
         // în `CodFiscal`; rândul se declară cu ce are, avertismentul spune ce-i
         // lipsește.
-        foreach (var r in ordonate.Where(r => r.TipPartener == 2 && r.PersoanaFizica && !EsteCnp(r.CuiP))
-                .GroupBy(r => r.CheieCui).Select(g => g.First()))
-            av.Add($"Persoană fizică „{r.Parteneri.Keys.First()}” fără CNP valid "
-                + $"({(r.CuiP == null ? "cod gol" : $"„{r.CuiP}” nu are 13 cifre")}) — formularul cere CNP-ul sau numele și "
-                + "adresa structurată (D4-r2, neintrodusă în model); rândul se declară cu identificatorul existent.");
+        Avert(CodAvertismentD394.PfFaraCnp,
+            "Persoană fizică fără CNP valid (cod gol sau alt format decât 13 cifre) — formularul cere CNP-ul sau numele "
+            + "și adresa structurată (D4-r2, neintrodusă în model); rândul se declară cu identificatorul existent.",
+            ordonate.Where(r => r.TipPartener == 2 && r.PersoanaFizica && !EsteCnp(r.CuiP)).GroupBy(r => r.CheieCui)
+                .Select(g => ($"„{g.First().Denumire}” ({(g.First().CuiP == null ? "cod gol" : $"„{g.First().CuiP}” nu are 13 cifre")}): bază {N2(g.Sum(r => r.Baza))}",
+                    (decimal?)g.Sum(r => r.Baza))).ToList());
         // V cu TVA ≠ 0 (date pre-F13, 70d): coloana nu există — suma se strigă.
-        foreach (var r in ordonate.Where(r => !AreTva(r.Tip) && r.Tva != 0m))
-            av.Add($"Rândul {r.Tip} pentru „{r.Parteneri.Keys.First()}” (CUI {r.CuiP ?? "—"}) poartă în registru "
-                + $"TVA {r.Tva.ToString("N2", Ro)}, dar tipul n-are coloană de TVA în formular — cifra e a datelor "
-                + "de dinaintea regulii 70a (taxarea inversă pe livrare nu produce taxă) și rămâne în afara "
-                + "declarației, nu se trunchiază tăcut.");
+        Avert(CodAvertismentD394.TvaPeTipFaraColoana,
+            "Rânduri pe un tip FĂRĂ coloană de TVA în formular (V/LS/AS) poartă TVA în registru — cifra e a datelor de "
+            + "dinaintea regulii 70a (taxarea inversă pe livrare nu produce taxă) și rămâne în afara declarației, nu se "
+            + "trunchiază tăcut (`TvaNedeclarat` pe rând).",
+            ordonate.Where(r => !AreTva(r.Tip) && r.Tva != 0m)
+                .Select(r => ($"{r.Tip} „{r.Denumire}” (CUI {r.CuiP ?? "—"}): TVA {N2(r.Tva)}", (decimal?)r.Tva)).ToList());
         // Cotă ne-întreagă: rândul iese cu cota trunchiată, nu se pierde.
-        foreach (var cota in coteTrunchiate)
-            av.Add($"Cota {cota.ToString("0.####", Ro)}% din registru nu e întreagă — formularul acceptă doar cote întregi; "
-                + $"rândurile ei se declară pe cota {decimal.Truncate(cota).ToString("0", Ro)}%, cu sumele exacte.");
+        Avert(CodAvertismentD394.CotaNeintreaga,
+            "Cote din registru care nu sunt întregi — formularul acceptă doar cote întregi; rândurile lor se declară pe "
+            + "cota trunchiată, cu sumele exacte.",
+            coteTrunchiate.Select(c => ($"{c.ToString("0.####", Ro)}% ⇒ {decimal.Truncate(c).ToString("0", Ro)}%", (decimal?)null)).ToList());
         // V/C fără detaliul `op11` (categoria de bunuri + cod NC) — D4-r5.
-        foreach (var tip in new[] { TipOperatiuneD394.V, TipOperatiuneD394.C }) {
-            var cu = ordonate.Where(r => r.Tip == tip).ToList();
-            if (cu.Count == 0)
-                continue;
-            av.Add($"Operațiunile {tip} (bază {cu.Sum(r => r.Baza).ToString("N2", Ro)}, {cu.Count} "
-                + $"{(cu.Count == 1 ? "rând" : "rânduri")}) cer în formular detaliul pe categorii de bunuri "
-                + "(`op11`: categorie + cod NC), pe care modelul nu-l are (D4-r5) — rândurile `op1` se declară, "
-                + "detaliul se completează manual.");
-        }
+        Avert(CodAvertismentD394.FaraOp11,
+            "Operațiunile V și C cer în formular detaliul pe categorii de bunuri (`op11`: categorie + cod NC), pe care "
+            + "modelul nu-l are (D4-r5) — rândurile `op1` se declară, detaliul se completează manual.",
+            new[] { TipOperatiuneD394.V, TipOperatiuneD394.C }
+                .Select(tip => (Tip: tip, Randuri: ordonate.Where(r => r.Tip == tip).ToList()))
+                .Where(x => x.Randuri.Count > 0)
+                .Select(x => ($"{x.Tip}: bază {N2(x.Randuri.Sum(r => r.Baza))} ({x.Randuri.Count} {(x.Randuri.Count == 1 ? "rând" : "rânduri")})",
+                    (decimal?)x.Randuri.Sum(r => r.Baza))).ToList());
         // Combinații partener × tip pe care formularul le refuză (§4.9):
         // achizițiile de la un neînregistrat (tip 2) ar fi `N` — fără sursă azi.
-        foreach (var r in ordonate.Where(r =>
-                (r.TipPartener == 2 && r.Tip is not (TipOperatiuneD394.L or TipOperatiuneD394.LS))
-                || (r.TipPartener is 3 or 4 && r.Tip is not (TipOperatiuneD394.L or TipOperatiuneD394.LS or TipOperatiuneD394.C))))
-            av.Add($"Rândul {r.Tip} pentru „{r.Parteneri.Keys.First()}” (tip partener {r.TipPartener}, bază "
-                + $"{r.Baza.ToString("N2", Ro)}) e o combinație pe care formularul o refuză — pentru "
-                + "neînregistrați achizițiile se declară ca N (D4-r3), pentru străini doar L/LS/C. Verificați "
-                + "identitatea fiscală a partenerului.");
+        Avert(CodAvertismentD394.CombinatieRefuzata,
+            "Combinații partener × tip de operațiune pe care formularul le refuză — pentru neînregistrați achizițiile "
+            + "se declară ca N (D4-r3), pentru străini doar L/LS/C. Verificați identitatea fiscală a partenerului "
+            + "(Import1C: `--reclasifica`).",
+            ordonate.Where(r =>
+                    (r.TipPartener == 2 && r.Tip is not (TipOperatiuneD394.L or TipOperatiuneD394.LS))
+                    || (r.TipPartener is 3 or 4 && r.Tip is not (TipOperatiuneD394.L or TipOperatiuneD394.LS or TipOperatiuneD394.C)))
+                .Select(r => ($"{r.Tip} „{r.Denumire}” (tip partener {r.TipPartener}, CUI {r.CuiP ?? "—"}): bază {N2(r.Baza)}", (decimal?)r.Baza))
+                .ToList());
+        // Partener șters logic din nomenclator (fix 6): rândul se declară, dar
+        // nomenclatorul nu-l mai arată — contabilul trebuie să știe.
+        Avert(CodAvertismentD394.PartenerSters,
+            "Partener șters din nomenclator cu documente operate în perioadă — rândurile lui se declară (declarația nu "
+            + "depinde de viața nomenclatorului), dar identitatea lui fiscală nu se mai poate corecta decât după "
+            + "restaurare.",
+            ordonate.SelectMany(r => r.Parteneri.Values).Where(p => p.Sters).DistinctBy(p => p.Id).OrderBy(p => p.Id)
+                .Select(p => ($"„{p.Denumire}” (CUI {p.CuiP ?? "—"})", (decimal?)null)).ToList());
 
         return rezultat;
     }

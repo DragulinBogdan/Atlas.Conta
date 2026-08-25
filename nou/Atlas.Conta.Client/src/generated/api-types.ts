@@ -3862,12 +3862,21 @@ export interface components {
             Randuri?: number;
             Surse?: string | null;
         };
+        D394Avertisment: {
+            Cod?: string | null;
+            Mesaj?: string | null;
+            /** Format: int32 */
+            Numar?: number;
+            /** Format: double */
+            Suma?: number | null;
+            Exemple?: string[] | null;
+        };
         D394Dto: {
             Operatiuni?: components["schemas"]["D394Operatiune"][] | null;
             Rezumat?: components["schemas"]["D394Rezumat"][] | null;
             RezumatCote?: components["schemas"]["D394RezumatCota"][] | null;
             Neincluse?: components["schemas"]["D394Neinclus"][] | null;
-            Avertismente?: string[] | null;
+            Avertismente?: components["schemas"]["D394Avertisment"][] | null;
             /** Format: int32 */
             NrCui1?: number;
             /** Format: int32 */
@@ -3902,6 +3911,7 @@ export interface components {
             CuiP?: string | null;
             Denumire?: string | null;
             Tip?: string | null;
+            Sens?: string | null;
             /** Format: int32 */
             Cota?: number;
             /** Format: int32 */

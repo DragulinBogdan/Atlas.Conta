@@ -29,6 +29,7 @@ type Operatiune = components['schemas']['D394Operatiune'];
 type Rezumat = components['schemas']['D394Rezumat'];
 type RezumatCota = components['schemas']['D394RezumatCota'];
 type Neinclus = components['schemas']['D394Neinclus'];
+type Avertisment = components['schemas']['D394Avertisment'];
 
 const camp = (n: keyof Operatiune & string) => n;
 const campNeinclus = (n: keyof Neinclus & string) => n;
@@ -64,7 +65,7 @@ export function D394() {
   const rezumat = useMemo(() => citit.data?.Rezumat ?? [], [citit.data]);
   const rezumatCote = useMemo(() => citit.data?.RezumatCote ?? [], [citit.data]);
   const neincluse = useMemo(() => citit.data?.Neincluse ?? [], [citit.data]);
-  const avertismente = citit.data?.Avertismente ?? [];
+  const avertismente: Avertisment[] = citit.data?.Avertismente ?? [];
   // Cheia de remontare: parametrii cererii (gruparea nu se reevaluează pe o
   // instanță vie — lecția `BalantaPlan`).
   const cheie = `${stare.dataStart}|${stare.dataEnd}`;
@@ -84,15 +85,7 @@ export function D394() {
       </div>
 
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Cererea a fost refuzată" />
-      {/* Pe o bază reală avertismentele sunt sute (fiecare partener cu identitatea
-          fiscală neclasificată produce unul): pliate implicit când sunt multe, ca
-          lista să nu împingă declarația sub ecran — dar numărul se vede mereu. */}
-      {avertismente.length > 0 && (
-        <details className="d394__avertismente" open={avertismente.length <= 8}>
-          <summary>Avertismente ({avertismente.length})</summary>
-          <PanouErori erori={avertismente} fel="atentie" />
-        </details>
-      )}
+      <Avertismente lista={avertismente} />
 
       {citit.isPending ? <p className="indiciu">Se încarcă…</p> : (
         <>
@@ -205,6 +198,50 @@ export function D394() {
         rotunjirea la leu întreg, detaliul pe categorii de bunuri, bonurile fiscale și fișierul XML
         sunt altă unealtă.
       </p>
+    </div>
+  );
+}
+
+// Avertismentele (D4-D5), AGREGATE per cauză pe server (fix 7 al review-ului
+// advers): un rând per cauză cu numărul de cazuri și suma, exemplele nominale
+// (cel mult 5) pliate sub rând. Pe o bază reală o cauză poate avea mii de
+// cazuri — tabelul rămâne de câteva rânduri, iar semnalul rar (tip 1 fără CUI,
+// V cu TVA) nu se mai îneacă în cel comun (PF cu CNP în alt format).
+function Avertismente({ lista }: { lista: Avertisment[] }) {
+  if (lista.length === 0) return null;
+  return (
+    <div className="d394__avertismente">
+      <h3>Avertismente ({lista.length} {lista.length === 1 ? 'cauză' : 'cauze'})</h3>
+      <table className="tabel-mic">
+        <thead>
+          <tr>
+            <th>Cauză</th>
+            <th>Cazuri</th>
+            <th>Sumă</th>
+            <th>Descriere</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lista.map((a) => (
+            <tr key={a.Cod ?? ''}>
+              <td><strong>{labelEnum('CodAvertismentD394', a.Cod)}</strong></td>
+              <td className="num">{a.Numar}</td>
+              <td className="num">{a.Suma == null ? '' : bani(a.Suma)}</td>
+              <td>
+                {a.Mesaj}
+                {(a.Exemple?.length ?? 0) > 0 && (
+                  <details>
+                    <summary>
+                      {a.Exemple!.length === a.Numar ? 'Cazurile' : `Primele ${a.Exemple!.length} din ${a.Numar}`}
+                    </summary>
+                    <ul>{a.Exemple!.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                  </details>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

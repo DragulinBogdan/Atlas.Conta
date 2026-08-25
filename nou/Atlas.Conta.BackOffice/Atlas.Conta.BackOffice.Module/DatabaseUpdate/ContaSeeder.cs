@@ -339,10 +339,10 @@ public static class ContaSeeder {
             return;
         }
         foreach (var m in mapari)
-            if (!MapareD394.TintaPermisa(m.Tip))
+            if (!MapareD394.TintaPermisa(m.Tip, m.Sens))
                 throw new InvalidOperationException(
-                    $"Maparea D394 {m.TipTva.Cod}/{m.Sens} țintește {m.Tip} — AÎ se derivă din partener, "
-                    + "iar N n-are sursă în registru; se mapează doar L, A, V, C, LS, AS (D4-D2).");
+                    $"Maparea D394 {m.TipTva.Cod}/{m.Sens} țintește {m.Tip} — pe livrare se mapează doar L/V/LS, "
+                    + "pe achiziție doar A/C/AS; AÎ se derivă din partener, iar N n-are sursă în registru (D4-D2).");
         ProfilPrivat.VerificaMapariD394(os, mapari);
     }
 

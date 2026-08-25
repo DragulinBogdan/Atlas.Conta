@@ -456,14 +456,23 @@ public class MapareD394 : BaseObject {
     // enum — vezi comentariul de pe `MapareD300.Rand`). Ascuns din UI — e
     // purtătorul regulii, nu un câmp de cules. Geamănul lui la seed:
     // `ContaSeeder.VerificaD394`.
+    //
+    // Regula are DOUĂ axe (fix 5 al review-ului advers, precedentul 64: „un gard
+    // care oglindește o potrivire oglindește TOATE axele ei"): ținta e permisă
+    // (nu AI/N) ȘI coerentă cu sensul — L/V/LS sunt tipuri de LIVRARE, A/C/AS de
+    // ACHIZIȚIE. `(N21, Achiziție) → L` ar așeza achiziții în `facturiL` și ar
+    // rupe tăcut cusătura per sens a proiecției.
     [NotMapped]
     [Browsable(false)]
     [RuleFromBoolProperty("MapareD394_TintaPermisa", DefaultContexts.Save,
-        CustomMessageTemplate = "Tipul de operațiune AÎ se derivă din partener (TVA la încasare), iar N "
-            + "n-are sursă în registrul de TVA — se mapează doar L, A, V, C, LS, AS.")]
-    public bool TintaEstePermisa => TintaPermisa(Tip);
+        CustomMessageTemplate = "Tipul de operațiune nu se potrivește cu sensul: pe livrare se mapează doar L, V, LS, "
+            + "pe achiziție doar A, C, AS. AÎ se derivă din partener (TVA la încasare), iar N n-are sursă în "
+            + "registrul de TVA.")]
+    public bool TintaEstePermisa => TintaPermisa(Tip, Sens);
 
-    public static bool TintaPermisa(TipOperatiuneD394 tip) =>
-        tip is TipOperatiuneD394.L or TipOperatiuneD394.A or TipOperatiuneD394.V
-            or TipOperatiuneD394.C or TipOperatiuneD394.LS or TipOperatiuneD394.AS;
+    public static bool TintaPermisa(TipOperatiuneD394 tip, SensTva sens) => sens switch {
+        SensTva.Livrare => tip is TipOperatiuneD394.L or TipOperatiuneD394.V or TipOperatiuneD394.LS,
+        SensTva.Achizitie => tip is TipOperatiuneD394.A or TipOperatiuneD394.C or TipOperatiuneD394.AS,
+        _ => false,
+    };
 }

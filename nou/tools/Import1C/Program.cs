@@ -70,6 +70,10 @@ string diagProdus = null;
 // rularea următoare replanifică documentul integral. Nu se face automat:
 // dezlegarea unei punți vechi înseamnă riscul dublei postări, deci cere o decizie.
 var deblocari = new List<(string View, string Cheie)>();
+// `--reclasifica` = reaplică clasificarea fiscală D394 pe TOȚI partenerii legați
+// (din sursă + semnalul din registru), FĂRĂ import de documente; idempotent.
+// Vezi `ImportLaCerere.ReclasificaToti`.
+var reclasifica = false;
 for (var i = 0; i < args.Length; i++) {
     var arg = args[i];
     if (!arg.StartsWith("--")) {
@@ -89,6 +93,9 @@ for (var i = 0; i < args.Length; i++) {
             break;
         case "--recreeaza":
             recreeaza = true;
+            break;
+        case "--reclasifica":
+            reclasifica = true;
             break;
         case "--diag":
             diagProdus = valoare ?? (i + 1 < args.Length ? args[++i] : null);
@@ -115,7 +122,7 @@ for (var i = 0; i < args.Length; i++) {
         default:
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
                 + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--recreeaza] "
-                + "[--deblocheaza <view>:<cheie>]");
+                + "[--reclasifica] [--deblocheaza <view>:<cheie>]");
             return 2;
     }
 }
@@ -241,6 +248,27 @@ if (diagProdus != null) {
 // în mers. Vezi PreFlight.cs.
 
 using var flax = new FlaxDb(flaxCs);
+
+// `--reclasifica`: reclasificarea fiscală a partenerilor (fix 4 al review-ului
+// D394), pe baza deja importată — după seed, înaintea fazelor scumpe; oprește
+// procesul: nu e o rulare de import.
+if (reclasifica) {
+    var rec = new ImportLaCerere(provider, flax, Avert);
+    rec.ReclasificaToti();
+    RaporteazaReclasificare(rec, "--reclasifica");
+    foreach (var a in avertismente)
+        Console.WriteLine($"AVERT {a}");
+    Console.WriteLine($"\nReclasificare încheiată ({avertismente.Count} avertismente).");
+    return 0;
+}
+
+void RaporteazaReclasificare(ImportLaCerere lc, string pas) =>
+    Console.WriteLine($"\nReclasificare parteneri D394 ({pas}): {lc.ParteneriLegati} legați, "
+        + $"{lc.ReclasificatiDinSursa} reclasificați din sursă (tip persoană derivat {lc.TipPersoanaDerivat}, "
+        + $"TVA derivat din prefix RO {lc.InregistratTvaDerivat}, TVA la încasare {lc.TvaLaIncasareDinSursa}, "
+        + $"PFA cu CUI RO {lc.PfaInregistrate}, țară nerezolvată {lc.TaraNerezolvata}, NuIncludeInDec394 {lc.NuIncludeInDec394}); "
+        + $"din registru: {lc.InregistratiDinRegistru} marcați înregistrați (achiziții cu TVA ≠ 0).");
+
 var plan1C = flax.PlanConturi();
 
 // `panaLa` intră în pre-flight fiindcă una dintre verificări e a FERESTREI, nu a
@@ -657,6 +685,12 @@ using (var os = provider.CreateObjectSpace()) {
     Check($"Idempotență: {orfaneNeautogenerate} documente fără legătură 1C și fără marcaj "
         + "de autogenerare (0 = niciun document dublat)", orfaneNeautogenerate == 0);
 }
+// Pasul final al importului: reclasificarea fiscală a TUTUROR partenerilor
+// legați (sursă + semnalul din registru) — după documente, fiindcă registrul
+// fiscal al anului e cel care spune cine ne-a facturat TVA. Raportat, nu tăcut.
+laCerere.ReclasificaToti();
+RaporteazaReclasificare(laCerere, "pas final");
+
 Console.WriteLine($"\nDocumente {anImport}: {luni.Sum(l => l.Documente)} importate, "
     + $"{luni.Sum(l => l.Sarite)} sărite, {luni.Sum(l => l.Copii)} copii autogenerați, "
     + $"{luni.Sum(l => l.Esecuri)} eșecuri, {luni.Sum(l => l.Realocari)} realocări de lot "
@@ -703,7 +737,8 @@ Console.WriteLine($"""
     ║   conturi proprii          {impCasierii.Procesate + impConturi.Procesate,10} / {impCasierii.Noi + impConturi.Noi}  (casierii + bancare)
     ║   angajați                 {impPersoane.Procesate,10} / {impPersoane.Noi}
     ║   produse (la cerere)      {rezStoc.Produse,10} / {rezStoc.ProduseNoi}
-    ║   parteneri (la cerere)    {laCerere.ParteneriClasificati,10} clasificați / {laCerere.ParteneriNoi} noi (tip persoană derivat {laCerere.TipPersoanaDerivat}, TVA din prefix RO {laCerere.InregistratTvaDerivat}, TVA la încasare {laCerere.TvaLaIncasareDinSursa}, țară nerezolvată {laCerere.TaraNerezolvata}, NuIncludeInDec394 {laCerere.NuIncludeInDec394})
+    ║   parteneri (la cerere)    {laCerere.ParteneriClasificati,10} clasificați / {laCerere.ParteneriNoi} noi (tip persoană derivat {laCerere.TipPersoanaDerivat}, TVA din prefix RO {laCerere.InregistratTvaDerivat}, TVA la încasare {laCerere.TvaLaIncasareDinSursa}, PFA cu CUI RO {laCerere.PfaInregistrate}, țară nerezolvată {laCerere.TaraNerezolvata}, NuIncludeInDec394 {laCerere.NuIncludeInDec394})
+    ║   reclasificare finală     {laCerere.ParteneriLegati,10} legați: {laCerere.ReclasificatiDinSursa} reclasificați din sursă, din registru {laCerere.InregistratiDinRegistru} marcați înregistrați (achiziții cu TVA ≠ 0)
     ║ DESCHIDEREA SCRISĂ (DocumentId = null)
     ║   rânduri contabile        {rezContabil.Randuri,10} contra ancorei {Deschidere.Ancora}
     ║   extrabilanțiere sărite   {rezContabil.Extrabilantiere,10} (Σ {rezContabil.SumaExtrabilantiera:N2} lei — clasa 8, alt modul)

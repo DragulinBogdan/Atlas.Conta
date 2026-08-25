@@ -201,8 +201,11 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 
 /* D394 */
 .d394__avertismente { margin-bottom: var(--gol); }
-.d394__avertismente > summary { cursor: pointer; font-weight: 600; color: #b45309; }
-.d394__avertismente > .panou { margin-top: 6px; max-height: 260px; overflow-y: auto; }
+.d394__avertismente > h3 { margin-bottom: 6px; color: #b45309; }
+.d394__avertismente td { vertical-align: top; }
+.d394__avertismente details { margin-top: 4px; }
+.d394__avertismente details > summary { cursor: pointer; font-weight: 600; color: #b45309; }
+.d394__avertismente details > ul { margin: 4px 0 0 18px; max-height: 200px; overflow-y: auto; }
 /* D394: rândul cu TVA de registru pe un tip fără coloană de TVA (date pre-F13)
    — cifra e în avertisment ȘI pe rând, ca să se vadă unde stă. */
 .d394 .d394__nedeclarat > td { background: #fff4e5; }

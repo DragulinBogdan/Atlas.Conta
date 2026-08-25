@@ -15,6 +15,17 @@
       "RepartitorNePartener": "Contrapartida nu e partener (angajat/intern)",
       "TipTvaNemapat": "Tip de TVA fără mapare D394"
     },
+    "CodAvertismentD394": {
+      "CuiUnit": "Parteneri uniți pe același CUI",
+      "ClasificariDiferite": "Același CUI cu clasificări diferite",
+      "Tip1FaraCui": "Înregistrat în scopuri de TVA fără cod fiscal",
+      "PfFaraCnp": "Persoană fizică fără CNP valid",
+      "TvaPeTipFaraColoana": "TVA pe un tip fără coloană de TVA",
+      "CotaNeintreaga": "Cotă ne-întreagă",
+      "FaraOp11": "V/C fără detaliul pe categorii de bunuri (op11)",
+      "CombinatieRefuzata": "Combinație partener × tip refuzată de formular",
+      "PartenerSters": "Partener șters din nomenclator"
+    },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",
       "Repartitor": "Repartitor",
@@ -853,7 +864,7 @@
         "ContImplicitId": "ContImplicit",
         "Denumire": "Denumire",
         "ID": "ID",
-        "InregistratTva": "Înregistrat în scopuri de TVA",
+        "InregistratTva": "Înregistrat în scopuri de TVA în România",
         "RegistruComert": "RegistruComert",
         "Tara": "Țară",
         "TipPersoana": "Tip persoană",

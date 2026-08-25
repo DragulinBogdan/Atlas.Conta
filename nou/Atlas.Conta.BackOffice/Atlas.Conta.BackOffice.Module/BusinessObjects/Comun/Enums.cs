@@ -188,3 +188,19 @@ public enum CauzaNeincludere {
     // NIM) sau un `TipTva` propriu al clientului, încă nemapat.
     [XafDisplayName("Tip de TVA fără mapare D394")] TipTvaNemapat = 3,
 }
+
+// Cauza unui avertisment D394 (D4-D5, fix 7 al review-ului advers): avertismentele
+// ies AGREGATE per cauză (`{Cod, Mesaj, Numar, Suma, Exemple[≤5]}`), nu ca un
+// string per partener — pe baza reală un an ar produce mii de rânduri cu aceeași
+// cauză și semnalul util s-ar îneca. Pe sârmă string (57a), eticheta din metadata.
+public enum CodAvertismentD394 {
+    [XafDisplayName("Parteneri uniți pe același CUI")] CuiUnit = 1,
+    [XafDisplayName("Același CUI cu clasificări diferite")] ClasificariDiferite = 2,
+    [XafDisplayName("Înregistrat în scopuri de TVA fără cod fiscal")] Tip1FaraCui = 3,
+    [XafDisplayName("Persoană fizică fără CNP valid")] PfFaraCnp = 4,
+    [XafDisplayName("TVA pe un tip fără coloană de TVA")] TvaPeTipFaraColoana = 5,
+    [XafDisplayName("Cotă ne-întreagă")] CotaNeintreaga = 6,
+    [XafDisplayName("V/C fără detaliul pe categorii de bunuri (op11)")] FaraOp11 = 7,
+    [XafDisplayName("Combinație partener × tip refuzată de formular")] CombinatieRefuzata = 8,
+    [XafDisplayName("Partener șters din nomenclator")] PartenerSters = 9,
+}
