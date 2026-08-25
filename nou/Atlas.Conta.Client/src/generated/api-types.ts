@@ -1608,6 +1608,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/odata/Judet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Judet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Judet/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Judet/$count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Judet({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Judet({key})"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Judet/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Judet/{key}"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Judet({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Judet({key})/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/Judet/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/Judet/{key}/{navigationProperty}/$ref"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/proiectii/jurnal-tva": {
         parameters: {
             query?: never;
@@ -4671,6 +4767,15 @@ export interface components {
             /** Format: double */
             Suma?: number;
         };
+        Judet: {
+            /** Format: uuid */
+            ID?: string;
+            Cod?: string | null;
+            Denumire?: string | null;
+            CodAuto?: string | null;
+            /** Format: int32 */
+            CodCnp?: number;
+        };
         JurnalRand: {
             /** Format: uuid */
             Id?: string;
@@ -5123,6 +5228,17 @@ export interface components {
             Tara?: string | null;
             InregistratTva?: boolean;
             TvaLaIncasare?: boolean;
+            Strada?: string | null;
+            Numar?: string | null;
+            DetaliiAdresa?: string | null;
+            Localitate?: string | null;
+            CodPostal?: string | null;
+            /** Format: uuid */
+            JudetId?: string | null;
+            Judet?: components["schemas"]["Judet"];
+            /** Format: date-time */
+            DataSincronizareAnaf?: string | null;
+            InactivFiscal?: boolean;
         };
         PartenerResourceDelta: {
             /** Format: uuid */
@@ -5139,6 +5255,16 @@ export interface components {
             Tara?: string | null;
             InregistratTva?: boolean;
             TvaLaIncasare?: boolean;
+            Strada?: string | null;
+            Numar?: string | null;
+            DetaliiAdresa?: string | null;
+            Localitate?: string | null;
+            CodPostal?: string | null;
+            /** Format: uuid */
+            JudetId?: string | null;
+            /** Format: date-time */
+            DataSincronizareAnaf?: string | null;
+            InactivFiscal?: boolean;
         };
         ProblemDetails: {
             type?: string | null;
@@ -19286,6 +19412,288 @@ export interface operations {
                     "application/octet-stream": components["schemas"]["EroriDto"];
                     "text/json": components["schemas"]["EroriDto"];
                 };
+            };
+        };
+    };
+    "GET_api/odata/Judet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=full": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=none": components["schemas"]["Judet"][];
+                    "application/json;odata.streaming=true": components["schemas"]["Judet"][];
+                    "application/json;odata.streaming=false": components["schemas"]["Judet"][];
+                    "application/json": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Judet"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Judet"][];
+                    "application/xml": components["schemas"]["Judet"][];
+                    "text/plain": components["schemas"]["Judet"][];
+                    "application/octet-stream": components["schemas"]["Judet"][];
+                    "text/json": components["schemas"]["Judet"][];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Judet/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns the number of entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false": number;
+                    "application/json;odata.metadata=minimal": number;
+                    "application/json;odata.metadata=full;odata.streaming=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false": number;
+                    "application/json;odata.metadata=full": number;
+                    "application/json;odata.metadata=none;odata.streaming=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false": number;
+                    "application/json;odata.metadata=none": number;
+                    "application/json;odata.streaming=true": number;
+                    "application/json;odata.streaming=false": number;
+                    "application/json": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;IEEE754Compatible=false": number;
+                    "application/json;IEEE754Compatible=true": number;
+                    "application/xml": number;
+                    "text/plain": number;
+                    "application/octet-stream": number;
+                    "text/json": number;
+                };
+            };
+        };
+    };
+    "GET_api/odata/Judet({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=true": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=false": components["schemas"]["Judet"];
+                    "application/json": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/xml": components["schemas"]["Judet"];
+                    "text/plain": components["schemas"]["Judet"];
+                    "application/octet-stream": components["schemas"]["Judet"];
+                    "text/json": components["schemas"]["Judet"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Judet/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=true": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=false": components["schemas"]["Judet"];
+                    "application/json": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["Judet"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["Judet"];
+                    "application/xml": components["schemas"]["Judet"];
+                    "text/plain": components["schemas"]["Judet"];
+                    "application/octet-stream": components["schemas"]["Judet"];
+                    "text/json": components["schemas"]["Judet"];
+                };
+            };
+        };
+    };
+    "GET_api/odata/Judet({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/Judet/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

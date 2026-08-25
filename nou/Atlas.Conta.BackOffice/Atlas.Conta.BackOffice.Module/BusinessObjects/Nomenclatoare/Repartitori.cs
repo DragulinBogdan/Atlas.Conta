@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Validation;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
@@ -72,6 +74,69 @@ public class Partener : Repartitor {
     // FLAG-ul (D4-D1) — mecanismul 4428/exigibilitatea (36f) nu intră.
     [XafDisplayName("TVA la încasare")]
     public virtual bool TvaLaIncasare { get; set; }
+
+    // ADRESA STRUCTURATĂ (felia 15, D15-D1) — amendamentul la 71b: satelitul
+    // 34g se deschide EXACT cât cere adresa, restul (contact, IBAN, delegați,
+    // adrese multiple) rămâne acolo. Coloane PLATE pe frunză, toate nullable:
+    // forma owned a murit (54c), iar `ModelCheck` creează `Partener` în 16
+    // scene — niciun câmp de adresă nu poate fi obligatoriu în model.
+    //
+    // Lungimile sunt ale lui `AddressStructure` din SAF-T (xlsx 16.02.2026,
+    // foaia „5. Structures"), nu alese de noi: peste ele fișierul e respins la
+    // validare, deci tăierea se face la SCRIERE, cu avertisment (D15-D3), nu la
+    // generare. `[MaxLength]` (DataAnnotations), NU `[FieldSize]`: doar prima
+    // produce `character varying(n)` în migrația EF (constatare din F14).
+    [XafDisplayName("Stradă")]
+    [MaxLength(70)]
+    public virtual string Strada { get; set; }
+
+    // Numărul poștal e TEXT: „12A", „bis", „1-3" — nu un întreg.
+    [XafDisplayName("Număr")]
+    [MaxLength(18)]
+    public virtual string Numar { get; set; }
+
+    // `AdditionalAddressDetail` + `Building` pliate într-un singur câmp:
+    // SAF-T le are separate, dar nicio sursă a noastră (ANAF `*detalii_Adresa`,
+    // 1C `Field8`) nu le desparte, iar o coloană pe care n-o umple nimeni e o
+    // coloană care minte.
+    [XafDisplayName("Bloc, scară, etaj, ap.")]
+    [MaxLength(70)]
+    public virtual string DetaliiAdresa { get; set; }
+
+    // `City` — OBLIGATORIU în SAF-T (împreună cu `Country`). Obligatoriu în
+    // FIȘIER, nu în model: lipsa lui e o gaură raportată de felia SAF-T, nu un
+    // refuz la culegerea unui partener.
+    [XafDisplayName("Localitate")]
+    [MaxLength(35)]
+    public virtual string Localitate { get; set; }
+
+    [XafDisplayName("Cod poștal")]
+    [MaxLength(18)]
+    public virtual string CodPostal { get; set; }
+
+    // `Region` = codul ISO 3166-2, DOAR pentru adresele din România (schema
+    // SAF-T validează valoarea contra listei RO). Gardul pereche
+    // (`GardianEditare.VerificaPartener`) refuză județul pe o țară ≠ RO;
+    // FK-ul nu poate purta regula XAF (40b).
+    public virtual Guid? JudetId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Județ")]
+    public virtual Judet Judet { get; set; }
+
+    // Timbrul sincronizării din registrul ANAF — SERVER-OWNED (55a): îl scrie
+    // doar serviciul, pe ușa non-secured (58c); `GardianEditare` îl refuză pe
+    // cea secured, ca pe `Autogenerat`. Fără el, „datele astea de unde vin?" nu
+    // are răspuns, iar `suprascrie` devine ireversibil fără urmă.
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Sincronizat ANAF la")]
+    public virtual DateTime? DataSincronizareAnaf { get; set; }
+
+    // `stare_inactiv.statusInactivi` din răspunsul ANAF. DOAR evidență: motorul
+    // nu-l consultă și nicio postare nu depinde de el (consecințele fiscale ale
+    // inactivării sunt o decizie a contabilului, nu a motorului).
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Inactiv fiscal (ANAF)")]
+    public virtual bool InactivFiscal { get; set; }
 }
 
 public class Angajat : Repartitor {

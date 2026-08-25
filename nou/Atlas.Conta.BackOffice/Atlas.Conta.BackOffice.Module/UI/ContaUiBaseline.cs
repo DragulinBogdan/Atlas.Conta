@@ -132,7 +132,26 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
                     .Item(x => x.TipPersoana)
                     .Item(x => x.Tara)
                     .Item(x => x.InregistratTva)
-                    .Item(x => x.TvaLaIncasare)));
+                    .Item(x => x.TvaLaIncasare)
+                    // Cele două date ale REGISTRULUI ANAF, lângă statutul pe
+                    // care îl confirmă. Read-only pe ORICE cale de UI prin
+                    // `[ModelDefault("AllowEdit","False")]` pe proprietăți (ca
+                    // `Document.Stare` — 53c): timbrul e server-owned, iar
+                    // inactivarea fiscală e un fapt al ANAF, nu o bifă.
+                    .Item(x => x.DataSincronizareAnaf)
+                    .Item(x => x.InactivFiscal))
+                // Al treilea grup (felia 15, D15-D1): adresa structurată, în
+                // ordinea în care o cere `AddressStructure` din SAF-T și în
+                // care o culege un om (strada → număr → detalii → localitate
+                // → județ → cod poștal). `Tara` rămâne în Fiscal: e cheia de
+                // clasificare D394, nu o linie de adresă.
+                .Group("GrupAdresa", "Adresă", g => g
+                    .Item(x => x.Strada)
+                    .Item(x => x.Numar)
+                    .Item(x => x.DetaliiAdresa)
+                    .Item(x => x.Localitate)
+                    .Item(x => x.Judet)
+                    .Item(x => x.CodPostal)));
     }
 
     // Layout-ul DetailView-urilor de document (GATE XAF D12), declarat autoritar.

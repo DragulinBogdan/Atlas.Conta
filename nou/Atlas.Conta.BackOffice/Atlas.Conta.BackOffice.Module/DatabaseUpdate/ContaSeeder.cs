@@ -33,6 +33,10 @@ public static class ContaSeeder {
         // legii, nu al profilului) și se COMITE înaintea pachetelor de profil —
         // maparea privată îl referă prin FK (30e).
         SeedRandD300(os);
+        // Nomenclatorul de județe (felia 15, D15-D1) — tot al nucleului și tot
+        // înaintea pachetelor de profil: e FK pe `Partener`, deci trebuie să
+        // existe înainte de orice seed care ar culege o adresă.
+        SeedJudete(os);
         os.CommitChanges();
         if (profil == ProfilContabil.Bugetar)
             ProfilBugetar.Seed(os);
@@ -269,6 +273,35 @@ public static class ContaSeeder {
             rand.OglindaA = r.Oglinda != null ? dupaCod[r.Oglinda] : null;
         }
     }
+
+    // Județele (felia 15, D15-D1). Aceeași disciplină ca `SeedRandD300`: `Cod`
+    // e cheia, restul se RESCRIE necondiționat la fiecare trecere — nomenclatorul
+    // e `[ForbidCRUD]` tocmai fiindcă seed-ul e singura lui cale de scriere,
+    // deci seed-ul trebuie să fie și singura lui autoritate (o denumire
+    // corectată la un ordin nou ar fi rămas altfel înghețată în forma primei
+    // seed-uiri, pe toate bazele existente). EF nu emite UPDATE pentru o valoare
+    // identică, deci pe o bază la zi trecerea rămâne fără efect.
+    //
+    // Lista trăiește în `JudeteRo` (lângă conversii), nu aici: conectoarele au
+    // nevoie de `DupaCodAuto`/`DupaCodCnp`/`DupaDenumire` ÎNAINTE de a atinge
+    // baza, iar funcțiile pure se probează fără scenă.
+    // Public: ModelCheck (alt assembly) probează rescrierea pe calea reală.
+    public static void SeedJudete(IObjectSpace os) {
+        foreach (var j in JudeteRo.Toate) {
+            var judet = os.FirstOrDefault<Judet>(x => x.Cod == j.Cod);
+            if (judet == null) {
+                judet = os.CreateObject<Judet>();
+                judet.Cod = j.Cod;
+            }
+            judet.Denumire = j.Denumire;
+            judet.CodAuto = j.CodAuto;
+            judet.CodCnp = j.CodCnp;
+        }
+    }
+
+    // 41 de județe + municipiul București (ISO 3166-2:RO). Public: ModelCheck
+    // (alt assembly) verifică aceeași cifră pe calea reală.
+    public const int JudeteAsteptate = 42;
 
     // 45 de rânduri numerotate + 10 sub-rânduri „din care" (OPANAF 174/2026).
     // Public: ModelCheck (alt assembly) verifică aceeași cifra pe calea reala.

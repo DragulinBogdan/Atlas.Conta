@@ -60,6 +60,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<Angajament> Angajamente { get; set; }
         public DbSet<PerioadaFiscala> PerioadeFiscale { get; set; }
         public DbSet<TipTva> TipuriTva { get; set; }
+        // Nomenclatorul de județe (felia 15, D15-D1): ISO 3166-2:RO, seed-uit tot
+        // în NUCLEU (împărțirea administrativă nu ține de planul de conturi).
+        public DbSet<Judet> Judete { get; set; }
         // Nomenclatorul rândurilor decontului de TVA (felia 12, D3-D1) — corpul
         // formularului 300 din OPANAF 174/2026, seed-uit în NUCLEU (e lege, nu profil).
         public DbSet<RandD300> RanduriD300 { get; set; }
@@ -228,6 +231,20 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
             modelBuilder.Entity<MigrareLegatura>()
                 .HasIndex(m => new { m.Tabela, m.CheieLegacy }).IsUnique();
+
+            // D15-D1: `Cod` („RO-CJ") e cheia de idempotență a seed-ului și
+            // identitatea de raportare (SAF-T `Region`) — unic. Filtrat pe
+            // `GCRecord = 0` ca toate unicitățile pe tipuri cu ștergere amânată
+            // (60a): rândul șters rămâne fizic în tabelă, iar un index NEfiltrat
+            // ar bloca pentru totdeauna re-seed-ul aceluiași județ.
+            modelBuilder.Entity<Judet>().HasIndex(j => j.Cod).IsUnique()
+                .HasFilter("\"GCRecord\" = 0");
+            // Județul unui partener nu se poate șterge din nomenclator cât timp
+            // e referit; convenția globală SetNull ar fi golit tăcut adresa —
+            // exact genul de pierdere pe care SAF-T o descoperă la validare.
+            modelBuilder.Entity<Partener>()
+                .HasOne(p => p.Judet).WithMany().HasForeignKey(p => p.JudetId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // D3-D1: `Cod` e cheia de idempotență a seed-ului și identitatea de
             // raportare a rândului („12.1") — unic. Cele două self-FK-uri sunt

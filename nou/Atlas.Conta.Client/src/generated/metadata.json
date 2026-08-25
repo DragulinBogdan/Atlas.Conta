@@ -639,6 +639,16 @@
         "Total": "Total (brut)"
       }
     },
+    "Judet": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cod": "Cod",
+        "CodAuto": "Indicativ auto",
+        "CodCnp": "Cod CNP",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
     "ListaDiferenteInventar": {
       "DefaultProperty": null,
       "Membri": {
@@ -860,12 +870,21 @@
         "Calitati": "Calitati",
         "Cod": "Cod",
         "CodFiscal": "CodFiscal",
+        "CodPostal": "Cod poștal",
         "ContImplicit": "ContImplicit",
         "ContImplicitId": "ContImplicit",
+        "DataSincronizareAnaf": "Sincronizat ANAF la",
         "Denumire": "Denumire",
+        "DetaliiAdresa": "Bloc, scară, etaj, ap.",
         "ID": "ID",
+        "InactivFiscal": "Inactiv fiscal (ANAF)",
         "InregistratTva": "Înregistrat în scopuri de TVA în România",
+        "Judet": "Județ",
+        "JudetId": "Județ",
+        "Localitate": "Localitate",
+        "Numar": "Număr",
         "RegistruComert": "RegistruComert",
+        "Strada": "Stradă",
         "Tara": "Țară",
         "TipPersoana": "Tip persoană",
         "TvaLaIncasare": "TVA la încasare"

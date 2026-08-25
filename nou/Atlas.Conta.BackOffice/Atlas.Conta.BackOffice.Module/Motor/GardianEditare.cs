@@ -288,6 +288,40 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (!FormatTaraIso2.IsMatch(partener.Tara ?? ""))
             erori.Add($"Partenerul {partener.Denumire ?? partener.Cod} are țara „{partener.Tara}” — "
                 + "se scrie ca un cod ISO de două litere (RO, DE, US).");
+
+        // (felia 15, D15-D1) Județul e al adreselor din România: `Region` din
+        // SAF-T se validează contra listei ISO 3166-2:RO, deci un județ pe o
+        // adresă străină e o valoare care nu poate fi scrisă în niciun fișier.
+        // Regula XAF pereche nu există: FK-ul nu poate purta `RuleRequiredField`
+        // și nici o regulă de coerență între două proprietăți (40b) — gardianul e
+        // singura jumătate, și e pe ambele uși secured (Blazor + OData).
+        //
+        // Navigația e sursa primară, FK-ul plasa: pe un partener NOU scalarul se
+        // completează abia la `SaveChanges` (același tipar ca `ParinteleLui`).
+        var areJudet = partener.Judet != null
+            || (partener.JudetId is Guid judetId && judetId != Guid.Empty);
+        if (areJudet && !string.Equals(partener.Tara, "RO", StringComparison.Ordinal))
+            erori.Add($"Partenerul {partener.Denumire ?? partener.Cod} are județ, dar țara "
+                + $"„{partener.Tara}” — județul e al adreselor din România (SAF-T validează "
+                + "`Region` contra listei ISO 3166-2:RO). Ștergeți județul sau puneți țara RO.");
+
+        // Timbrul sincronizării ANAF e SERVER-OWNED (D15-D1, în siajul lui
+        // `Autogenerat`): îl scrie doar serviciul, în OS-ul lui non-secured (58c).
+        // Pe ușa secured e refuzat în AMBELE forme — schimbat pe un partener
+        // existent și pre-completat pe unul nou (un partener născut prin OData cu
+        // timbru își fabrică provenienața: ar arăta ca verificat la ANAF fără să
+        // fi fost niciodată).
+        if (os.IsNewObject(partener)) {
+            if (partener.DataSincronizareAnaf != null)
+                erori.Add("Data sincronizării ANAF o scrie doar serviciul de sincronizare — "
+                    + "nu se culege pe un partener nou.");
+            return;
+        }
+        var originale = Originale(os, partener);
+        if (originale != null
+                && !Equals(originale[nameof(Partener.DataSincronizareAnaf)], partener.DataSincronizareAnaf))
+            erori.Add($"Data sincronizării ANAF a partenerului {partener.Denumire ?? partener.Cod} "
+                + "o scrie doar serviciul de sincronizare (comanda „Sincronizează din ANAF”).");
     }
 
     static readonly System.Text.RegularExpressions.Regex FormatTaraIso2 =

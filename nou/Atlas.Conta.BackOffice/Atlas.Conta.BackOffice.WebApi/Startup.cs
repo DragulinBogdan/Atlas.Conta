@@ -72,6 +72,10 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // prin OData ar însemna politică editată pe ușa din dos, în
                     // afara oricărei validări de profil (deciziile 4/29).
                     options.BusinessObject<TipTva>().ConfigureController(c => c.ReadOnly());
+                    // Județele (felia 15, D15-D1) sunt LEGE (ISO 3166-2:RO),
+                    // seed-uite de nucleu și `[ForbidCRUD]` în XAF: clientul le
+                    // citește pentru lookup-ul de adresă, nimeni nu le scrie.
+                    options.BusinessObject<Judet>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<CodEconomic>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<SursaFinantare>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<CodFunctional>().ConfigureController(c => c.ReadOnly());
