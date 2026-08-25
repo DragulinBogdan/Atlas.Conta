@@ -10319,8 +10319,19 @@ void VerificaAdresaPartener(bool privat) {
             try { GardianEditare.Verifica(osNou); } catch (OperareException e) { mesajNou = e.Message; }
             osNou.Rollback();
         }
-        // (2) Pe ușa SECURED adresa se culege liber, timbrul NU.
-        string mesajAdresa = null, mesajTimbru = null;
+        // (1b) `InactivFiscal` e din aceeași familie (review F2): pre-completat
+        // pe un partener nou = refuz.
+        string mesajInactivNou = null;
+        using (var osNou = provider.CreateObjectSpace()) {
+            var p = osNou.CreateObject<Partener>();
+            p.Cod = "E2E-F15-ANAF-INACTIV";
+            p.Denumire = "Probă inactiv pe partener nou";
+            p.InactivFiscal = true;
+            try { GardianEditare.Verifica(osNou); } catch (OperareException e) { mesajInactivNou = e.Message; }
+            osNou.Rollback();
+        }
+        // (2) Pe ușa SECURED adresa se culege liber, timbrul NU, inactivul NU.
+        string mesajAdresa = null, mesajTimbru = null, mesajInactiv = null;
         using (var osSecured = provider.CreateObjectSpace()) {
             var p = osSecured.GetObjectByKey<Partener>(idProba);
             p.Localitate = "Cluj-Napoca";
@@ -10328,6 +10339,12 @@ void VerificaAdresaPartener(bool privat) {
             try { GardianEditare.Verifica(osSecured); } catch (OperareException e) { mesajAdresa = e.Message; }
             p.DataSincronizareAnaf = timbru;
             try { GardianEditare.Verifica(osSecured); } catch (OperareException e) { mesajTimbru = e.Message; }
+            osSecured.Rollback();
+        }
+        using (var osSecured = provider.CreateObjectSpace()) {
+            var p = osSecured.GetObjectByKey<Partener>(idProba);
+            p.InactivFiscal = !p.InactivFiscal;
+            try { GardianEditare.Verifica(osSecured); } catch (OperareException e) { mesajInactiv = e.Message; }
             osSecured.Rollback();
         }
         // (3) Pe ușa NON-SECURED (fără gardian) timbrul se scrie și se persistă —
@@ -10363,6 +10380,12 @@ void VerificaAdresaPartener(bool privat) {
             mesajNou != null && mesajAdresa == null
             && mesajTimbru != null && mesajTimbru.Contains("ANAF")
             && citit == timbru && inactivCitit && !ramas);
+        Console.WriteLine($"     MĂSURAT (D15-V1/inactiv): pe partener nou → „{mesajInactivNou ?? "<NU A ARUNCAT>"}”; "
+            + $"schimbat pe secured → „{mesajInactiv ?? "<NU A ARUNCAT>"}”.");
+        Check("D15-V1 (F2) `InactivFiscal` e SERVER-OWNED ca timbrul: refuzat pe ușa secured pre-completat pe "
+            + "un partener nou și schimbat pe unul existent; pe ușa non-secured se scrie (proba de mai sus)",
+            mesajInactivNou != null && mesajInactivNou.Contains("inactiv")
+            && mesajInactiv != null && mesajInactiv.Contains("inactiv") && inactivCitit);
     }
 }
 

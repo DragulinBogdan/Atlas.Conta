@@ -313,7 +313,7 @@ void RaporteazaAdrese(ImportLaCerere lc, string pas) {
         + $"{lc.AdreseDejaCompletate} deja completate (neatinse), "
         + $"{lc.FaraAdresaInSursa} fără adresă în sursă; județ: {lc.JudetDinCodCnp} din codul CNP, "
         + $"{lc.JudetDinDenumire} din denumire, {lc.JudetNerezolvat} nerezolvat "
-        + "(denumirea brută intră în DetaliiAdresa); "
+        + $"(denumirea brută intră în DetaliiAdresa), {lc.JudetPeTaraStraina} pe țară ≠ RO (FK nescris/golit); "
         + $"{lc.AdreseTrunchiate} câmpuri tăiate la lungimea SAF-T.");
 }
 
@@ -339,6 +339,8 @@ async Task ExecutaAnaf(ImportLaCerere lc) {
     Console.WriteLine($"AnafErori           {raport.Erori.Count,8} loturi "
         + $"({raport.Erori.Count(e => e.Tranzitorie)} tranzitorii, "
         + $"{raport.Erori.Count(e => !e.Tranzitorie)} fatale)");
+    Console.WriteLine($"AnafReluari         {raport.Reluari,8} loturi căzute tranzitoriu și re-întrebate "
+        + "(eroarea primei încercări nu e în AnafErori)");
     foreach (var e in raport.Erori.Take(10))
         Console.WriteLine($"    lot de {e.Lot.Count}: {e.Mesaj}");
 
@@ -842,7 +844,7 @@ Console.WriteLine($"""
     ║   produse (la cerere)      {rezStoc.Produse,10} / {rezStoc.ProduseNoi}
     ║   parteneri (la cerere)    {laCerere.ParteneriClasificati,10} clasificați / {laCerere.ParteneriNoi} noi (tip persoană derivat {laCerere.TipPersoanaDerivat}, TVA din prefix RO {laCerere.InregistratTvaDerivat}, TVA la încasare {laCerere.TvaLaIncasareDinSursa}, PFA cu CUI RO {laCerere.PfaInregistrate}, țară nerezolvată {laCerere.TaraNerezolvata}, NuIncludeInDec394 {laCerere.NuIncludeInDec394})
     ║   reclasificare finală     {laCerere.ParteneriLegati,10} legați: {laCerere.ReclasificatiDinSursa} reclasificați din sursă, din registru {laCerere.InregistratiDinRegistru} marcați înregistrați (achiziții cu TVA ≠ 0)
-    ║   adrese din 1C            {laCerere.AdresePreluate,10} preluate ({laCerere.FaraAdresaInSursa} fără adresă în sursă, {laCerere.AdreseDejaCompletate} deja completate; județ: {laCerere.JudetDinCodCnp} din cod CNP, {laCerere.JudetDinDenumire} din denumire, {laCerere.JudetNerezolvat} nerezolvat; {laCerere.AdreseTrunchiate} câmpuri tăiate)
+    ║   adrese din 1C            {laCerere.AdresePreluate,10} preluate ({laCerere.FaraAdresaInSursa} fără adresă în sursă, {laCerere.AdreseDejaCompletate} deja completate; județ: {laCerere.JudetDinCodCnp} din cod CNP, {laCerere.JudetDinDenumire} din denumire, {laCerere.JudetNerezolvat} nerezolvat, {laCerere.JudetPeTaraStraina} pe țară ≠ RO; {laCerere.AdreseTrunchiate} câmpuri tăiate)
     ║ DESCHIDEREA SCRISĂ (DocumentId = null)
     ║   rânduri contabile        {rezContabil.Randuri,10} contra ancorei {Deschidere.Ancora}
     ║   extrabilanțiere sărite   {rezContabil.Extrabilantiere,10} (Σ {rezContabil.SumaExtrabilantiera:N2} lei — clasa 8, alt modul)

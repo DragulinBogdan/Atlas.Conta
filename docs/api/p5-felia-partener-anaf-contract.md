@@ -330,3 +330,29 @@ Agentul se oprește și raportează (nu normalizează tăcut) dacă:
 4. **Import1C**: D6, V5 pe clona Flax (rulare detașată).
 5. **Închidere**: review advers, fix-uri de main, decizia 72 + §71b amendat,
    CLAUDE.md, README jurnal, istoric, `lista-react.md`, memoria de handoff.
+
+## Închidere — V4 măsurat (2026-08-26, pas 5, după fix-urile review-ului)
+
+WebApi pornit detașat pe clona `Atlas.Conta.Import1C.Flax.Api` (connection
+string prin `ConnectionStrings__ConnectionString`, `https://localhost:5001`,
+JWT `Admin`/`User` cu parolă goală), apel REAL la `webservicesp.anaf.ro`;
+partenerul-probă RO = `144 Engineering SRL` (CUI 15527204, sincronizat deja de
+V5), partenerul străin = `AB SPÓŁKA AKCYJNA` (`Tara = PL`).
+
+| Proba | Status | Fragment din body |
+|---|---|---|
+| `User` → `POST api/parteneri/{id}/sincronizeaza-anaf` | **404** | ProblemDetails `Not Found` — `User` n-are nici Read pe `Partener`, deci gate-ul îl vede INVIZIBIL (ramura 404 a lui `Autorizeaza<T>`, cum spune antetul controllerului: 404/403 = inexistent sau invizibil / fără drept de scriere). 403 ar cere un user cu Read fără Write, care nu există pe clonă; refuzul e măsurat, doar codul diferă de cel scris în V4. |
+| `Admin` → același POST (ANAF real) | **200**, 172 ms | `{"Cui":15527204,"Gasit":true,"Modificari":[],"Diferente":[{"Camp":"Denumire","Cules":"144 Engineering SRL","Anaf":"144 ENGINEERING SRL"},{"Camp":"RegistruComert","Cules":"J13/1914/2003","Anaf":"J2003001914138"},{"Camp":"Localitate","Cules":"Mun. Constanta","Anaf":"Mun. Constanţa"}],"Avertismente":[]}` — regula D15-D3 pe viu: diferit se RAPORTEAZĂ, nimic suprascris; timbrul mutat la `2026-08-26 00:40:24`, `InregistratTva = true`, `InactivFiscal = false`. |
+| `Admin` → POST pe partenerul `PL` | **422** | `{"Erori":["Partenerul AB SPÓŁKA AKCYJNA nu poate fi sincronizat cu ANAF: țara „PL” — registrul `PlatitorTva` e al codurilor fiscale românești."]}` |
+| `Admin` → `POST api/parteneri/sincronizeaza-anaf` cu 501 id-uri | **400** | `{"Erori":["Lotul are 501 parteneri, plafonul este 500 (ANAF acceptă 100 coduri pe secundă). Pentru nomenclatorul întreg se folosește conectorul Import1C."]}` |
+| `Admin` → `PATCH api/odata/Partener({id})` `{"DataSincronizareAnaf":"2020-01-01T00:00:00Z"}` | **400** | `Data sincronizării ANAF a partenerului 144 Engineering SRL o scrie doar serviciul de sincronizare (comanda „Sincronizează din ANAF”).` (text/plain — restanța 70-r1) |
+| `Admin` → `PATCH api/odata/Partener({id})` `{"InactivFiscal":true}` (F2, nou) | **400** | `Statutul „inactiv fiscal” al partenerului 144 Engineering SRL îl scrie doar serviciul de sincronizare (comanda „Sincronizează din ANAF”).` |
+| control: `PATCH` `{"Localitate":"Proba V4"}` + revenire | **204 / 204** | câmpul liber trece pe aceeași ușă; citit înapoi `Proba V4`, apoi `Mun. Constanta` — gardianul refuză DOAR câmpurile server-owned. |
+
+Constatare pe date, la aceeași probă: clona avea **1 partener cu `Tara ≠ RO`
+și `JudetId` scris** (din 60 de străini) — exact cazul F1 din review
+(Import1C scria județul indiferent de țară; gardianul i-ar fi refuzat orice
+editare din UI). Fix-ul: `AplicaAdresa` nu scrie FK-ul pe țară ≠ RO (denumirea
+brută rămâne în `DetaliiAdresa`), `AplicaClasificare` golește un `JudetId`
+existent când sursa aduce o țară străină; contor `JudetPeTaraStraina`.
+Rândul de pe clonă se vindecă la următorul `--reclasifica`.

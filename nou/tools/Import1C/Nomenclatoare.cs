@@ -1,5 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-using System.Reflection;
+using Atlas.Conta.BackOffice.Module.Anaf;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using DevExpress.Persistent.BaseImpl.EF;
@@ -440,6 +439,21 @@ class ImportLaCerere {
             }
         }
 
+        // Județul e al adreselor din România (D15-D1; aceeași regulă în
+        // `SincronizareAnafService.Judetul` și în `GardianEditare.VerificaPartener`):
+        // un partener care are deja județ (din ANAF sau dintr-o rulare anterioară)
+        // și primește acum din sursă o țară ≠ RO rămâne cu FK-ul gol — altfel
+        // gardianul i-ar refuza ORICE editare ulterioară din UI. Contorizat la un
+        // loc cu cazul simetric din `AplicaAdresa`.
+        if (!string.Equals(e.Tara, "RO", StringComparison.Ordinal)
+                && (e.JudetId != null || e.Judet != null)) {
+            e.Judet = null;
+            e.JudetId = null;
+            JudetPeTaraStraina++;
+            avert($"Partener {p.Cod} ({p.Denumire}): țara {e.Tara} — județul existent a fost șters "
+                + "(județul e al adreselor din România).");
+        }
+
         if (p.NuIncludeInDec394)
             NuIncludeInDec394++;
         if (p.Nerezident || p.Intracomunitar)
@@ -500,18 +514,18 @@ class ImportLaCerere {
     public int JudetDinCodCnp { get; private set; }
     public int JudetDinDenumire { get; private set; }
     public int JudetNerezolvat { get; private set; }
+    // Județ rezolvat (sau existent), dar partenerul are țara ≠ RO ⇒ FK-ul NU se
+    // scrie (denumirea brută intră în `DetaliiAdresa`, ca la nerezolvat), respectiv
+    // se golește la reclasificare — regula gardianului, nu o a doua regulă.
+    public int JudetPeTaraStraina { get; private set; }
     public int AdreseTrunchiate { get; private set; }
 
-    // Lungimile coloanelor, citite din MODEL prin reflecție — aceeași sursă ca
-    // `SincronizareAnafService.Lungimi` și din același motiv: `[MaxLength]` de pe
-    // `Partener` E lungimea SAF-T, iar o a doua listă scrisă cu mâna în conector
-    // ar fi exact locul unde apare deriva. O adresă peste lungime nu se refuză
-    // (importul n-are voie să pice pentru o stradă lungă) — se taie, cu contor.
-    static readonly Dictionary<string, int> LungimiAdresa = typeof(Partener)
-        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-        .Select(pi => (pi.Name, Lungime: pi.GetCustomAttribute<MaxLengthAttribute>()?.Length ?? 0))
-        .Where(x => x.Lungime > 0)
-        .ToDictionary(x => x.Name, x => x.Lungime, StringComparer.Ordinal);
+    // Lungimile coloanelor = `SincronizareAnafService.Lungimi`, CHIAR obiectul
+    // (nu o a doua reflecție pe același atribut — review R6): `[MaxLength]` de
+    // pe `Partener` E lungimea SAF-T și are o singură citire. O adresă peste
+    // lungime nu se refuză (importul n-are voie să pice pentru o stradă lungă) —
+    // se taie, cu contor.
+    static IReadOnlyDictionary<string, int> LungimiAdresa => SincronizareAnafService.Lungimi;
 
     // Nomenclatorul de județe, citit O DATĂ pe rulare ca `cod ISO → ID`. Se
     // scrie doar FK-ul (`JudetId`), ca peste tot în conector (`ContImplicitId`,
@@ -560,7 +574,16 @@ class ImportLaCerere {
         codIso ??= JudetDinDenumire1C(a.JudetDenumire);
 
         var judet = codIso == null ? null : CautaJudet(codIso);
-        if (judet != null) {
+        // Județul e al adreselor din România (D15-D1) — aceeași regulă ca în
+        // `SincronizareAnafService.Judetul` și în `GardianEditare.VerificaPartener`:
+        // pe o țară ≠ RO FK-ul nu se scrie, denumirea brută rămâne în
+        // `DetaliiAdresa` (informația sursei nu se pierde, doar nu devine FK).
+        var taraStraina = !string.Equals(e.Tara, "RO", StringComparison.Ordinal);
+        if (judet != null && taraStraina) {
+            judet = null;
+            JudetPeTaraStraina++;
+        }
+        else if (judet != null) {
             e.JudetId = judet;
             if (dinCodCnp)
                 JudetDinCodCnp++;

@@ -34,8 +34,11 @@ namespace Atlas.Conta.BackOffice.Module.Anaf;
 public static class SincronizareAnafService {
     // Lungimile coloanelor, citite din MODEL prin reflecție: `[MaxLength]` de pe
     // `Partener` e deja lungimea SAF-T (D15-D1, probat de D15-V1). O a doua
-    // listă scrisă cu mâna aici ar fi exact locul unde apare deriva.
-    static readonly Dictionary<string, int> Lungimi = typeof(Partener)
+    // listă scrisă cu mâna aici ar fi exact locul unde apare deriva. PUBLICĂ
+    // fiindcă e SINGURA sursă a lungimilor și pentru conectoare (Import1C taie
+    // adresele din 1C la aceleași lungimi — review R6: două reflecții pe același
+    // atribut erau tot două liste).
+    public static readonly IReadOnlyDictionary<string, int> Lungimi = typeof(Partener)
         .GetProperties(BindingFlags.Public | BindingFlags.Instance)
         .Select(pi => (pi.Name, Lungime: pi.GetCustomAttribute<MaxLengthAttribute>()?.Length ?? 0))
         .Where(x => x.Lungime > 0)

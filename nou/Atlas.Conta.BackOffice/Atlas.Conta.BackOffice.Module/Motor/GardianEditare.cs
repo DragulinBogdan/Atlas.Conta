@@ -311,17 +311,29 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         // existent și pre-completat pe unul nou (un partener născut prin OData cu
         // timbru își fabrică provenienața: ar arăta ca verificat la ANAF fără să
         // fi fost niciodată).
+        //
+        // `InactivFiscal` e în ACEEAȘI familie (review F2): e statutul din
+        // registrul ANAF al contribuabililor inactivi — canonic pe axa TVA
+        // (D15-D3), scris DOAR de serviciu. Cules de mână ar fi o părere despre
+        // registru, nu registrul; pe nou = doar default-ul (false).
         if (os.IsNewObject(partener)) {
             if (partener.DataSincronizareAnaf != null)
                 erori.Add("Data sincronizării ANAF o scrie doar serviciul de sincronizare — "
                     + "nu se culege pe un partener nou.");
+            if (partener.InactivFiscal)
+                erori.Add("Statutul „inactiv fiscal” îl scrie doar serviciul de sincronizare ANAF — "
+                    + "nu se culege pe un partener nou.");
             return;
         }
         var originale = Originale(os, partener);
-        if (originale != null
-                && !Equals(originale[nameof(Partener.DataSincronizareAnaf)], partener.DataSincronizareAnaf))
+        if (originale == null)
+            return;
+        if (!Equals(originale[nameof(Partener.DataSincronizareAnaf)], partener.DataSincronizareAnaf))
             erori.Add($"Data sincronizării ANAF a partenerului {partener.Denumire ?? partener.Cod} "
                 + "o scrie doar serviciul de sincronizare (comanda „Sincronizează din ANAF”).");
+        if (!Equals(originale[nameof(Partener.InactivFiscal)], partener.InactivFiscal))
+            erori.Add($"Statutul „inactiv fiscal” al partenerului {partener.Denumire ?? partener.Cod} "
+                + "îl scrie doar serviciul de sincronizare (comanda „Sincronizează din ANAF”).");
     }
 
     static readonly System.Text.RegularExpressions.Regex FormatTaraIso2 =

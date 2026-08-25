@@ -67,9 +67,14 @@ static class Anaf1C {
                 await Task.Delay(PauzaReluare, ct).ConfigureAwait(false);
                 var reluat = await Ruleaza(deReluat).ConfigureAwait(false);
                 // Săriții „lot eșuat" ai primei încercări dispar din raport: ei
-                // au fost re-întrebați, iar soarta lor e cea din reluare.
+                // au fost re-întrebați, iar soarta lor e cea din reluare. La fel
+                // erorile TRANZITORII ale primei încercări (review R8): loturile
+                // lor au fost re-întrebate, deci verdictul e cel din `reluat` —
+                // o reluare reușită nu lasă în `AnafErori` o eroare care nu mai e
+                // adevărată. Rămân vizibile ca `Reluari` (loturi).
                 rezultat.Sarite.RemoveAll(s => s.Motiv != null
                     && s.Motiv.StartsWith("lotul ANAF", StringComparison.Ordinal));
+                raport.Reluari += rezultat.Erori.RemoveAll(e => e.Tranzitorie);
                 raport.Reluate += deReluat.Count;
                 Aduna(raport, reluat);
             }
@@ -216,6 +221,9 @@ sealed class RaportAnaf {
     public int Gasiti { get; set; }
     public int Negasiti { get; set; }
     public int Reluate { get; set; }
+    // Loturi ANAF căzute tranzitoriu la prima încercare și RE-ÎNTREBATE; eroarea
+    // primei încercări nu mai e în `Erori` (verdictul e al reluării).
+    public int Reluari { get; set; }
     public TimeSpan Durata { get; set; }
     public Dictionary<string, int> Sariti { get; } = new(StringComparer.Ordinal);
     public Dictionary<string, int> Modificari { get; } = new(StringComparer.Ordinal);

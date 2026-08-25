@@ -133,7 +133,8 @@ public class Partener : Repartitor {
 
     // `stare_inactiv.statusInactivi` din răspunsul ANAF. DOAR evidență: motorul
     // nu-l consultă și nicio postare nu depinde de el (consecințele fiscale ale
-    // inactivării sunt o decizie a contabilului, nu a motorului).
+    // inactivării sunt o decizie a contabilului, nu a motorului). SERVER-OWNED
+    // ca timbrul: `GardianEditare` îl refuză pe ușa secured (review F2).
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Inactiv fiscal (ANAF)")]
     public virtual bool InactivFiscal { get; set; }
