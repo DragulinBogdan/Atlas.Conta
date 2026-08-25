@@ -176,3 +176,15 @@ public enum TipOperatiuneD394 {
     [XafDisplayName("C — achiziții cu taxare inversă")] C = 7,
     [XafDisplayName("N — achiziții de la neînregistrați")] N = 8,
 }
+
+// Cauza pentru care un grup de registru fiscal nu are unde să cadă în D394 —
+// parte din contract (`Neincluse`, D4-D4), cu etichetă pentru ecran.
+public enum CauzaNeincludere {
+    // `RegistruTva.PartenerId` e null: `SursaContrapartida` Explicit/TipMaterial.
+    [XafDisplayName("Fără partener pe rândul de registru")] FaraPartener = 1,
+    // Contrapartida e un `Repartitor` care nu e `Partener` (Angajatul de pe DEC).
+    [XafDisplayName("Contrapartida nu e partener (angajat/intern)")] RepartitorNePartener = 2,
+    // Perechea `(TipTva × Sens)` n-are mapare — scutitele deliberate (SDD/SFD/
+    // NIM) sau un `TipTva` propriu al clientului, încă nemapat.
+    [XafDisplayName("Tip de TVA fără mapare D394")] TipTvaNemapat = 3,
+}

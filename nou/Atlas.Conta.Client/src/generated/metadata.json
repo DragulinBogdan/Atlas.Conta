@@ -10,6 +10,11 @@
       "Delegat": "Delegat",
       "Cursant": "Cursant"
     },
+    "CauzaNeincludere": {
+      "FaraPartener": "Fără partener pe rândul de registru",
+      "RepartitorNePartener": "Contrapartida nu e partener (angajat/intern)",
+      "TipTvaNemapat": "Tip de TVA fără mapare D394"
+    },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",
       "Repartitor": "Repartitor",

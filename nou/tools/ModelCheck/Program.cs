@@ -2963,6 +2963,7 @@ if (profil == ProfilContabil.Privat) {
     VerificaD300Seed(privat: true);
     VerificaD394Seed(privat: true);
     VerificaD300(cuTva: true);
+    VerificaD394(cuTva: true);
     VerificaAxaTaxareInversa();
     VerificaGardianCicluCont();
 
@@ -7938,6 +7939,7 @@ VerificaRegistruTva(cuTva: false);
 VerificaD300Seed(privat: false);
 VerificaD394Seed(privat: false);
 VerificaD300(cuTva: false);
+VerificaD394(cuTva: false);
 VerificaAxaTaxareInversa();
 VerificaGardianCicluCont();
 
@@ -10738,4 +10740,504 @@ void VerificaD300(bool cuTva) {
         // stornarea de la F1 și-a pus rândurile în iulie (data stornării, 25d).
         && !os.GetObjectsQuery<RegistruTva>().Any(r => r.Data >= pStart && r.Data <= new DateOnly(2026, 7, 31))
         && os.GetObjectsQuery<MapareD300>().Count() == 18);
+}
+
+// ============ Felia 14 (D394): proiecția declarației informative — D4-V2…V7 ============
+// CUSĂTURA pe care o probează: registrul fiscal (felia 11) → rândurile `op1`
+// ale formularului 394, prin politica `(TipTva × Sens) → tip` (D4-D2) și prin
+// clasificarea partenerului din nomenclator (D4-D1). Trei mecanisme, o cifră:
+// mapările (DATE), identitatea fiscală (NOMENCLATOR) și regula nrFact (COD).
+//
+// DE CE o scenă proprie și nu D300-ul: acolo un furnizor și un client fără cod
+// fiscal sunt suficienți; aici contează exact CINE e partenerul — cele patru
+// tipuri plus persoana fizică, două grafii ale aceluiași CUI, un furnizor cu
+// TVA la încasare — și regula per document a numărului de facturi, care cere
+// facturi multi-cotă construite deliberat (egalitate de TVA, L + V pe aceeași
+// factură, storno). Luna scenei e AUGUST 2026, pe care nicio altă scenă n-o
+// atinge; stornoul cade în a doua jumătate a lunii, ca perioada să se poată
+// tăia în două fără să iasă din lună.
+//
+// Local function, apelată din AMBELE căi de profil, ca `VerificaD300`.
+void VerificaD394(bool cuTva) {
+    const string MarcajD4 = "E2E-D394";
+    using var os = provider.CreateObjectSpace();
+
+    var pStart = new DateOnly(2026, 8, 1);
+    var pEnd = new DateOnly(2026, 8, 31);
+    // Tăietura pentru storno (D4-V3): operarea în prima jumătate, stornarea în a doua.
+    var mijloc = new DateOnly(2026, 8, 20);
+
+    void CurataD4() {
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(MarcajD4)).Select(r => r.ID).ToList();
+        var idsSursa = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Numar.StartsWith(MarcajD4)
+                || repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId))
+            .Select(d => d.ID).ToList();
+        var ids = idsSursa.Concat(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.DocumentSursaId != null && idsSursa.Contains(d.DocumentSursaId.Value))
+            .Select(d => d.ID).ToList()).Distinct().ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters().Where(r => ids.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => ids.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => ids.Contains(d.ID)).ToList()
+                .OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(MarcajD4)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(MarcajD4)).ToList());
+        // Tipul de TVA de probă (cota ne-întreagă) și maparea lui: artefacte de
+        // scenă, deci purjă fizică — o mapare marcată ștearsă ar fi citită de
+        // `VerificaD394` drept „nemapată de utilizator" (69b/F5).
+        pj.Adauga(os.GetObjectsQuery<MapareD394>().IgnoreQueryFilters().Where(m => m.TipTva.Cod.StartsWith(MarcajD4)).ToList());
+        pj.Adauga(os.GetObjectsQuery<TipTva>().IgnoreQueryFilters().Where(t => t.Cod.StartsWith(MarcajD4)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(MarcajD4)).ToList());
+        pj.Executa();
+    }
+    CurataD4();
+
+    var reziduuPerioada = os.GetObjectsQuery<RegistruTva>().Count(r => r.Data >= pStart && r.Data <= pEnd);
+    Console.WriteLine($"     MĂSURAT (premisa scenei D394): {reziduuPerioada} rânduri fiscale preexistente în {pStart:MM.yyyy}.");
+    Check("D4-V2 premisă: luna scenei e goală înainte de scenă — altfel cifrele exacte și cusăturile de mai jos "
+        + "ar fi măsurate peste conținut străin",
+        reziduuPerioada == 0);
+
+    // ---------------- Funcțiile nomenclatorului (D4-D1), fără bază ----------------
+    Check("D4-V2 `TipPartener`: PF ⇒ 2 (chiar înregistrată); RO înregistrat ⇒ 1; RO neînregistrat ⇒ 2; `Tara` goală/"
+        + "null ⇒ RO (nu 4); UE (DE/GR) ⇒ 3; non-UE (US/GB) ⇒ 4",
+        D394Proiectii.TipPartener(TipPersoana.Fizica, "RO", true) == 2
+        && D394Proiectii.TipPartener(TipPersoana.Juridica, "RO", true) == 1
+        && D394Proiectii.TipPartener(TipPersoana.Juridica, "RO", false) == 2
+        && D394Proiectii.TipPartener(TipPersoana.Juridica, null, true) == 1
+        && D394Proiectii.TipPartener(TipPersoana.Juridica, "", false) == 2
+        && D394Proiectii.TipPartener(TipPersoana.Juridica, "DE", false) == 3
+        && D394Proiectii.TipPartener(TipPersoana.Juridica, "GR", true) == 3
+        && D394Proiectii.TipPartener(TipPersoana.Juridica, "US", false) == 4
+        && D394Proiectii.TipPartener(TipPersoana.Juridica, "GB", false) == 4);
+    Check("D4-V2 `NormalizeazaCui`: trim + majuscule + spații interioare scoase; prefixul RO tăiat DOAR pe RO "
+        + "(„ro 12 345 678” ⇒ „12345678”), codul străin rămâne întreg („DE123456789”), „RO” pe o țară străină "
+        + "nu se taie; gol/spații ⇒ null",
+        D394Proiectii.NormalizeazaCui(" ro 12 345 678 ", "RO") == "12345678"
+        && D394Proiectii.NormalizeazaCui("12345678", null) == "12345678"
+        && D394Proiectii.NormalizeazaCui("DE123456789", "DE") == "DE123456789"
+        && D394Proiectii.NormalizeazaCui("RO999", "DE") == "RO999"
+        && D394Proiectii.NormalizeazaCui("  ", "RO") == null
+        && D394Proiectii.NormalizeazaCui(null, "RO") == null
+        && D394Proiectii.NormalizeazaCui("RO", "RO") == null);
+
+    // ---------------- Bugetarul: liste goale, și atât ----------------
+    if (!cuTva) {
+        var anIntreg = D394Proiectii.D394(os, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31));
+        // Scenele bugetare își purjează documentele, deci „un an cu documente" se
+        // MĂSOARĂ pe tot ce a trecut vreodată prin bază (inclusiv ștersele logic),
+        // nu se presupune; ce contează e că registrul fiscal e gol de FOND.
+        var documenteTrecute = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(2026, 1, 1) && d.Data <= new DateOnly(2026, 12, 31));
+        var randuriFiscale = os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters().Count();
+        Console.WriteLine($"     MĂSURAT (D4-V2 bugetar): {documenteTrecute} documente au trecut prin bază în 2026, {randuriFiscale} rânduri fiscale.");
+        Check("D4-V2 (bugetar): profilul neplătitor n-are `PoliticaTva` ⇒ `RegistruTva` gol ⇒ proiecția întoarce "
+            + "liste GOALE (operațiuni, rezumate, neincluse), zero avertismente și nrCui 0, pe un an prin care AU "
+            + "trecut documente — un neplătitor nu depune 394, iar proiecția nu inventează nimic",
+            documenteTrecute > 0 && randuriFiscale == 0
+            && anIntreg.Operatiuni.Count == 0 && anIntreg.Rezumat.Count == 0 && anIntreg.RezumatCote.Count == 0
+            && anIntreg.Neincluse.Count == 0 && anIntreg.Avertismente.Count == 0
+            && anIntreg.NrCui1 + anIntreg.NrCui2 + anIntreg.NrCui3 + anIntreg.NrCui4 == 0
+            && os.GetObjectsQuery<MapareD394>().Count() == 0);
+        CurataD4();
+        return;
+    }
+
+    // ---------------- Scena privată ----------------
+    var mag = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+    var tip704 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704");
+    var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371");
+    var tip707 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "707");
+    var tipCheltuiala = os.GetObjectsQuery<TipMaterial>()
+        .First(t => t.Clasa.Natura == NaturaClasa.Serviciu && t.ContImplicitId != null);
+    TipTva Tva(string cod) => os.FirstOrDefault<TipTva>(t => t.Cod == cod);
+    var n21 = Tva("N21"); var n11 = Tva("N11"); var ti21 = Tva("TI21"); var ned21 = Tva("NED21"); var sdd = Tva("SDD");
+
+    Partener Part(string sufix, string denumire, string cui, TipPersoana tipPersoana = TipPersoana.Juridica,
+        string tara = "RO", bool inregistrat = true, bool laIncasare = false) {
+        var p = os.CreateObject<Partener>();
+        p.Cod = MarcajD4 + sufix; p.Denumire = denumire; p.CodFiscal = cui;
+        p.TipPersoana = tipPersoana; p.Tara = tara; p.InregistratTva = inregistrat; p.TvaLaIncasare = laIncasare;
+        return p;
+    }
+    // Cele patru tipuri de partener + PF, cu codurile fiscale din contract (D4-V2).
+    var f1 = Part("-F1", "Furnizor tip 1 (RO…)", "RO12345678");
+    var f1bis = Part("-F1B", "Furnizor tip 1 (același CUI, fără prefix)", "12345678");
+    var f2 = Part("-F2", "Furnizor TVA la încasare", "RO22222222", laIncasare: true);
+    var f0 = Part("-F0", "Furnizor tip 1 FĂRĂ cod fiscal", null);
+    var c1 = Part("-C1", "Client tip 1", "RO33333333");
+    var pf = Part("-PF", "Popescu Ion (CNP)", "1800101123456", TipPersoana.Fizica, inregistrat: false);
+    var pf0 = Part("-PF0", "Ionescu Maria (fără CNP)", null, TipPersoana.Fizica, inregistrat: false);
+    // CNP în ALT format decât 13 cifre (Import1C, pasul 4a: `CodFiscal` = CNP-ul copiat ca atare).
+    var pf1 = Part("-PF1", "Georgescu Ana (CNP scurt)", "123", TipPersoana.Fizica, inregistrat: false);
+    var de = Part("-DE", "Kunde GmbH", "DE123456789", tara: "DE", inregistrat: false);
+    var us = Part("-US", "Buyer Inc", "US-999", tara: "US", inregistrat: false);
+    var unitate = os.CreateObject<UnitateInterna>();
+    unitate.Cod = MarcajD4 + "-UNIT"; unitate.Denumire = "Unitate probă D394";
+    var gest = os.CreateObject<Gestiune>();
+    gest.Cod = MarcajD4 + "-G"; gest.Denumire = "Gestiune probă D394";
+    var angajat = os.CreateObject<Angajat>();
+    angajat.Cod = MarcajD4 + "-ANG"; angajat.Denumire = "Titular decont probă D394";
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = MarcajD4 + "-P"; produs.Denumire = "Marfă probă D394"; produs.UM = "BUC"; produs.TipMaterial = tip371;
+    os.CommitChanges();
+
+    FacturaIntrare Cumparare(string sufix, Partener furnizor, DateOnly data) {
+        var f = os.CreateObject<FacturaIntrare>();
+        f.Numar = MarcajD4 + sufix; f.Data = data; f.Predator = furnizor; f.Primitor = mag;
+        return f;
+    }
+    FacturaIesire Vanzare(string sufix, Partener client, DateOnly data) {
+        var f = os.CreateObject<FacturaIesire>();
+        f.Numar = MarcajD4 + sufix; f.Data = data; f.Predator = unitate; f.Primitor = client;
+        return f;
+    }
+    void LinieC(FacturaIntrare f, TipTva tva, decimal pret) {
+        var d = os.CreateObject<FacturaIntrareDetaliu>();
+        d.Document = f; d.TipMaterial = tip628; d.Cantitate = 1m; d.PretUnitar = pret; d.TipTva = tva;
+    }
+    FacturaIesireDetaliu LinieV(FacturaIesire f, TipTva tva, decimal pret) {
+        var d = os.CreateObject<FacturaIesireDetaliu>();
+        d.Document = f; d.TipMaterial = tip704; d.Cantitate = 1m; d.PretUnitar = pret; d.TipTva = tva;
+        return d;
+    }
+    var d5 = new DateOnly(2026, 8, 5);
+    var d10 = new DateOnly(2026, 8, 10);
+
+    // --- Achizițiile ---
+    var fctA1 = Cumparare("-A1", f1, d5);
+    LinieC(fctA1, n21, 1000m);    // A/21  1000 / 210
+    LinieC(fctA1, n11, 500m);     // A/11   500 /  55   ⇒ nrFact 0 (TVA-ul maxim e pe 21)
+    LinieC(fctA1, ned21, 100m);   // A/21 (capitalizat: brut 121 ⇒ 100 / 21) — se adună cu N21 pe același rând
+    LinieC(fctA1, ti21, 400m);    // C/21   400 /  84   ⇒ al doilea tip pe aceeași factură: 1 + 1
+    LinieC(fctA1, sdd, 70m);      // NEINCLUS: SDD nemapat deliberat
+    var fctA2 = Cumparare("-A2", f1bis, d5);
+    LinieC(fctA2, n21, 200m);     // A/21 pe ACELAȘI CUI normalizat ⇒ se unește cu F1, cu avertisment
+    var fctAI = Cumparare("-AI", f2, d5);
+    LinieC(fctAI, n21, 300m);     // AI/21 300 / 63 (furnizor cu TVA la încasare)
+    var fctF0 = Cumparare("-A0", f0, d5);
+    LinieC(fctF0, n21, 90m);      // A/21 90 / 18,9 — tip 1 fără CUI ⇒ avertisment, rândul rămâne
+    // NIR manual: lotul original pentru retururi (10 buc × 10 lei), fără TVA.
+    var nir = os.CreateObject<NIR>();
+    nir.Data = new DateOnly(2026, 8, 2); nir.Predator = f1; nir.Primitor = gest;
+    var linNir = os.CreateObject<DocumentDetaliu>();
+    linNir.Document = nir; linNir.TipMaterial = tip371; linNir.Cantitate = 10m; linNir.Valoare = 100m;
+    var lot = linNir.CreeazaLot(os, produs, gest);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctA1);
+    MotorOperare.Opereaza(os, fctA2);
+    MotorOperare.Opereaza(os, fctAI);
+    MotorOperare.Opereaza(os, fctF0);
+    MotorOperare.Opereaza(os, nir);
+    os.CommitChanges();
+    // RLF către F1: 2 buc din lot ⇒ A/21 −20 / −4,2 (sume negative, factură = 1).
+    var rlf = os.CreateObject<ReturFurnizor>();
+    rlf.Data = d10; rlf.Predator = gest; rlf.Primitor = f1;
+    var linRlf = os.CreateObject<DocumentDetaliu>();
+    linRlf.Document = rlf; linRlf.TipMaterial = tip371; linRlf.Lot = lot; linRlf.Cantitate = 2m; linRlf.TipTva = n21;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, rlf);
+    os.CommitChanges();
+
+    // --- Livrările ---
+    var fclL1 = Vanzare("-L1", c1, d5);
+    LinieV(fclL1, n21, 2000m);    // L/21 2000 / 420 ⇒ 1
+    LinieV(fclL1, n11, 800m);     // L/11  800 /  88 ⇒ 0
+    // EGALITATE de TVA: 100 × 21% = 21,00 și 190,91 × 11% = 21,0001 ⇒ 21,00 ⇒ 1 pe cota MAI MARE (21).
+    var fclEgal = Vanzare("-LE", c1, d5);
+    LinieV(fclEgal, n21, 100m);
+    LinieV(fclEgal, n11, 190.91m);
+    // L + V pe aceeași factură ⇒ 1 + 1 (tipuri diferite se numără separat).
+    var fclLV = Vanzare("-LV", c1, d5);
+    LinieV(fclLV, n21, 500m);
+    var linieTi = LinieV(fclLV, ti21, 700m);   // V/0, bază 700, TVA 0 (70a)
+    // Operată în prima jumătate, STORNATĂ în a doua (D4-V3).
+    var fclStorno = Vanzare("-LS", c1, d5);
+    LinieV(fclStorno, n21, 400m);
+    var fclPf = Vanzare("-PF", pf, d5);
+    LinieV(fclPf, n21, 150m);     // tip 2 (PF cu CNP), L/21 150 / 31,5
+    var fclPf0 = Vanzare("-PF0", pf0, d5);
+    LinieV(fclPf0, n21, 60m);     // tip 2 (PF fără CNP) ⇒ avertisment
+    var fclPf1 = Vanzare("-PF1", pf1, d5);
+    LinieV(fclPf1, n21, 40m);     // tip 2 (CNP „123”), L/21 40 / 8,4 ⇒ avertisment, cuiP = „123”
+    var fclDe = Vanzare("-DE", de, d5);
+    LinieV(fclDe, n21, 250m);     // tip 3, L/21 250 / 52,5
+    var fclUs = Vanzare("-US", us, d5);
+    LinieV(fclUs, n21, 80m);      // tip 4, L/21 80 / 16,8
+    // Cotă NE-ÎNTREAGĂ (5,5%): tip de TVA de probă, mapat pe L ⇒ rând pe cota 5, cu avertisment.
+    var tvaC55 = os.CreateObject<TipTva>();
+    tvaC55.Cod = MarcajD4 + "-C55"; tvaC55.Denumire = "Probă cotă 5,5%"; tvaC55.Cota = 5.5m; tvaC55.Regim = RegimTva.Normal;
+    tvaC55.ContTvaDeductibilId = n21.ContTvaDeductibilId; tvaC55.ContTvaColectatId = n21.ContTvaColectatId;
+    var mapC55 = os.CreateObject<MapareD394>();
+    mapC55.TipTva = tvaC55; mapC55.Sens = SensTva.Livrare; mapC55.Tip = TipOperatiuneD394.L;
+    var fclC55 = Vanzare("-C55", c1, d5);
+    LinieV(fclC55, tvaC55, 100m); // L/5 (trunchiat) 100 / 5,5
+    os.CommitChanges();
+    foreach (var f in new[] { fclL1, fclEgal, fclLV, fclStorno, fclPf, fclPf0, fclPf1, fclDe, fclUs, fclC55 })
+        MotorOperare.Opereaza(os, f);
+    os.CommitChanges();
+    MotorOperare.Storneaza(os, fclStorno, new DateOnly(2026, 8, 25));
+    os.CommitChanges();
+    // RDC de la C1: venit 100 (N21) + cost pe lotul original ⇒ L/21 −100 / −21, factură = 1.
+    var rdc = os.CreateObject<ReturClient>();
+    rdc.Data = d10; rdc.Predator = c1; rdc.Primitor = gest;
+    var linVenit = os.CreateObject<DocumentDetaliu>();
+    linVenit.Document = rdc; linVenit.TipMaterial = tip707; linVenit.Valoare = 100m; linVenit.TipTva = n21;
+    var linCost = os.CreateObject<DocumentDetaliu>();
+    linCost.Document = rdc; linCost.TipMaterial = tip371; linCost.Lot = lot; linCost.Cantitate = 1m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, rdc);
+    os.CommitChanges();
+    // DEC: contrapartida e ANGAJATUL ⇒ `RepartitorNePartener` (riscul 6).
+    var dec = os.CreateObject<Decont>();
+    dec.Data = d10; dec.Predator = angajat; dec.Primitor = unitate;
+    var linDec = os.CreateObject<DecontDetaliu>();
+    linDec.Document = dec; linDec.TipMaterial = tipCheltuiala; linDec.Descriere = "Bon justificat";
+    linDec.PretUnitar = 50m; linDec.TipTva = n21;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, dec);
+    os.CommitChanges();
+
+    // ══════════ D4-V2: fiecare rând, la cifră ══════════
+    var d4 = D394Proiectii.D394(os, pStart, pEnd);
+    Console.WriteLine($"     MĂSURAT (D4-V2, op1 pe {pStart:MM.yyyy}):");
+    foreach (var o in d4.Operatiuni)
+        Console.WriteLine($"         tip{o.TipPartener} {o.CuiP ?? "(fără CUI)",-14} {o.Tip,-2} cota {o.Cota,2}  "
+            + $"nrFact {o.NrFact}  bază {o.Baza,10:N2}  TVA {(o.Tva is decimal t ? t.ToString("N2") : "—"),10}  "
+            + $"n={o.Randuri} doc={o.Documente}  {o.Denumire}");
+    foreach (var n in d4.Neincluse)
+        Console.WriteLine($"         NEINCLUS {n.Cauza} {n.TipTvaCod}/{n.Sens} {n.Cota}% bază {n.Baza:N2} TVA {n.Tva:N2} "
+            + $"n={n.Randuri} {n.RepartitorDenumire}");
+    foreach (var a in d4.Avertismente)
+        Console.WriteLine($"         AVERTISMENT: {a}");
+    D394Operatiune Op(int tipP, string cui, string tip, int cota) =>
+        d4.Operatiuni.SingleOrDefault(o => o.TipPartener == tipP && o.CuiP == cui && o.Tip == tip && o.Cota == cota);
+    D394Operatiune OpDen(string denumire, string tip, int cota) =>
+        d4.Operatiuni.SingleOrDefault(o => o.Denumire == denumire && o.Tip == tip && o.Cota == cota);
+
+    Check("D4-V2 tip 1 / A: F1 și F1-bis se UNESC pe CUI-ul normalizat „12345678” (prefixul RO tăiat): A/21 = "
+        + "N21 1000 + NED21 100 (capitalizat, baza desfăcută) + F1-bis 200 + RLF −20 = 1280 / 268,8, pe 3 "
+        + "documente și 4 rânduri de registru; A/11 = 500 / 55 dintr-un singur document",
+        Op(1, "12345678", "A", 21) is { Baza: 1280m, Tva: 268.8m, Documente: 3, Randuri: 4 }
+        && Op(1, "12345678", "A", 11) is { Baza: 500m, Tva: 55m, Documente: 1 });
+    Check("D4-V2 tip 1 / C: taxarea inversă pe achiziție (TI21) = C/21 400 / 84 — TVA autolichidată, cu coloană; "
+        + "AI: furnizorul cu `TvaLaIncasare` mută A în AI (300 / 63) fără nicio mapare",
+        Op(1, "12345678", "C", 21) is { Baza: 400m, Tva: 84m }
+        && Op(1, "22222222", "AI", 21) is { Baza: 300m, Tva: 63m, NrFact: 1 }
+        && !d4.Operatiuni.Any(o => o.CuiP == "22222222" && o.Tip == "A"));
+    Check("D4-V2 tip 1 / L și V la clientul C1 („33333333”): L/21 = 2000 + 100 + 500 + (400 − 400 storno) − 100 "
+        + "RDC = 2500 / 525 pe 5 documente; L/11 = 800 + 190,91 = 990,91 / 109; V/0 = 700 cu `Tva` NULL "
+        + "(fără coloană) și `TvaNedeclarat` 0 (70a: livrarea în taxare inversă n-are taxă)",
+        Op(1, "33333333", "L", 21) is { Baza: 2500m, Tva: 525m, Documente: 5 }
+        && Op(1, "33333333", "L", 11) is { Baza: 990.91m, Tva: 109m, Documente: 2 }
+        && Op(1, "33333333", "V", 0) is { Baza: 700m, Tva: null, TvaNedeclarat: 0m, NrFact: 1, Documente: 1 });
+    Check("D4-V2 tipurile 2/3/4: PF cu CNP ⇒ tip 2, cuiP = CNP-ul (13 cifre); PF fără CNP ⇒ tip 2, cuiP null, rând "
+        + "PROPRIU (nu se unește cu cealaltă PF); DE ⇒ tip 3, codul ÎNTREG „DE123456789”; US ⇒ tip 4, "
+        + "„US-999” intact",
+        Op(2, "1800101123456", "L", 21) is { Baza: 150m, Tva: 31.5m, NrFact: 1 }
+        && OpDen("Ionescu Maria (fără CNP)", "L", 21) is { TipPartener: 2, CuiP: null, Baza: 60m, Tva: 12.6m }
+        && Op(2, "123", "L", 21) is { Baza: 40m, Tva: 8.4m, NrFact: 1 }
+        && Op(3, "DE123456789", "L", 21) is { Baza: 250m, Tva: 52.5m }
+        && Op(4, "US-999", "L", 21) is { Baza: 80m, Tva: 16.8m });
+    Check("D4-V2 tip 1 fără cod fiscal: rândul se EMITE (A/21 90 / 18,9, cuiP null) — cifra nu se ascunde; cota "
+        + "5,5% iese pe rândul cotei 5 cu sumele exacte (100 / 5,5)",
+        OpDen("Furnizor tip 1 FĂRĂ cod fiscal", "A", 21) is { TipPartener: 1, CuiP: null, Baza: 90m, Tva: 18.9m }
+        && Op(1, "33333333", "L", 5) is { Baza: 100m, Tva: 5.5m, NrFact: 1 });
+    Check("D4-V2 forma: enum-urile pleacă STRING, rândurile ordonate pe tipul de partener, fără dubluri pe cheia "
+        + "(tip_partener, cuiP, tip, cota) — unicitatea cerută de formular",
+        d4.Operatiuni.All(o => o.Tip is "L" or "A" or "AI" or "V" or "C")
+        && d4.Operatiuni.Select(o => o.TipPartener).SequenceEqual(d4.Operatiuni.Select(o => o.TipPartener).OrderBy(t => t))
+        && d4.Operatiuni.Where(o => o.CuiP != null).Select(o => (o.TipPartener, o.CuiP, o.Tip, o.Cota)).Distinct().Count()
+            == d4.Operatiuni.Count(o => o.CuiP != null));
+
+    // ══════════ D4-V3: nrFact — regula 1/0 per document ══════════
+    Check("D4-V3 nrFact: F1 A/21 = 3 (A1 + A2 + RLF — și A1 numără pe 21, nu pe 11, fiindcă 231 > 55) și A/11 = 0; "
+        + "C1 L/21 = 6 (L1, egalitatea pe cota mai mare, LV, factura stornată + factura ei de STORNO, RDC) și L/11 = 0 (L1: 88 < 420; "
+        + "egalitatea: 21 = 21 ⇒ cota 21)",
+        Op(1, "12345678", "A", 21).NrFact == 3 && Op(1, "12345678", "A", 11).NrFact == 0
+        && Op(1, "33333333", "L", 21).NrFact == 6 && Op(1, "33333333", "L", 11).NrFact == 0);
+    Check("D4-V3 nrFact: L + V pe aceeași factură se numără SEPARAT per tip (1 + 1); C pe factura A1 la fel (A: 1, "
+        + "C: 1); Σ nrFact pe rândurile lui F1 = numărul facturilor lui (A1, A2, RLF pe A + A1 încă o dată pe C = 3 + 1)",
+        Op(1, "33333333", "V", 0).NrFact == 1 && Op(1, "12345678", "C", 21).NrFact == 1
+        && d4.Operatiuni.Where(o => o.CuiP == "12345678").Sum(o => o.NrFact) == 4);
+    // Tăietura: prima jumătate (operarea), a doua (stornarea).
+    var jum1 = D394Proiectii.D394(os, pStart, mijloc);
+    var jum2 = D394Proiectii.D394(os, mijloc.AddDays(1), pEnd);
+    var s1 = jum1.Operatiuni.Single(o => o.CuiP == "33333333" && o.Tip == "L" && o.Cota == 21);
+    var s2 = jum2.Operatiuni.SingleOrDefault(o => o.CuiP == "33333333" && o.Tip == "L" && o.Cota == 21);
+    Console.WriteLine($"     MĂSURAT (D4-V3 storno): 1–20.08 L/21 C1 {s1.Baza:N2}/{s1.Tva:N2} nrFact {s1.NrFact}; "
+        + $"21–31.08 {s2?.Baza:N2}/{s2?.Tva:N2} nrFact {s2?.NrFact}; luna întreagă {Op(1, "33333333", "L", 21).Baza:N2} nrFact {Op(1, "33333333", "L", 21).NrFact}.");
+    Check("D4-V3 storno: în perioada stornării rândul L/21 al lui C1 poartă DOAR stornoul — sume NEGATIVE (−400 / "
+        + "−84) și nrFact 1 (factura de storno e o factură); în perioada operării, +400 intră cu 1 (2900 / 609, "
+        + "nrFact 5); pe luna întreagă cele două se netează pe același DOCUMENT (Documente 5, 2500 / 525) dar sunt "
+        + "DOUĂ FACTURI la ANAF — nrFact 6, fiindcă unitatea de numărare e (Document × Storno), nu DocumentId",
+        s2 is { Baza: -400m, Tva: -84m, NrFact: 1, Documente: 1, Randuri: 1 }
+        && s1 is { Baza: 2900m, Tva: 609m, NrFact: 5, Documente: 5 }
+        && Op(1, "33333333", "L", 21) is { Baza: 2500m, Tva: 525m, NrFact: 6, Documente: 5 }
+        && jum2.Operatiuni.Count == 1);
+
+    // ══════════ D4-V4: nimic nu se pierde — cusătura cu registrul ══════════
+    var brut = os.GetObjectsQuery<RegistruTva>()
+        .Where(r => r.Data >= pStart && r.Data <= pEnd)
+        .Select(r => new { r.Sens, r.Baza, r.Tva }).ToList();
+    // Sensul unui rând `op1` se deduce independent din tipul lui (L/V ⇒ Livrare; A/AI/C ⇒ Achiziție).
+    static SensTva SensTip(string tip) => tip is "L" or "V" or "LS" ? SensTva.Livrare : SensTva.Achizitie;
+    decimal OpBaza(SensTva s) => d4.Operatiuni.Where(o => SensTip(o.Tip) == s).Sum(o => o.Baza);
+    decimal OpTva(SensTva s) => d4.Operatiuni.Where(o => SensTip(o.Tip) == s).Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat);
+    decimal NeBaza(SensTva s) => d4.Neincluse.Where(n => n.Sens == s.ToString()).Sum(n => n.Baza);
+    decimal NeTva(SensTva s) => d4.Neincluse.Where(n => n.Sens == s.ToString()).Sum(n => n.Tva);
+    decimal RegBaza(SensTva s) => brut.Where(r => r.Sens == s).Sum(r => r.Baza);
+    decimal RegTva(SensTva s) => brut.Where(r => r.Sens == s).Sum(r => r.Tva);
+    Console.WriteLine($"     MĂSURAT (D4-V4): registru {brut.Count} rânduri; achiziție Σ {RegBaza(SensTva.Achizitie):N2}/{RegTva(SensTva.Achizitie):N2} "
+        + $"= op1 {OpBaza(SensTva.Achizitie):N2}/{OpTva(SensTva.Achizitie):N2} + neincluse {NeBaza(SensTva.Achizitie):N2}/{NeTva(SensTva.Achizitie):N2}; "
+        + $"livrare Σ {RegBaza(SensTva.Livrare):N2}/{RegTva(SensTva.Livrare):N2} = {OpBaza(SensTva.Livrare):N2}/{OpTva(SensTva.Livrare):N2} + {NeBaza(SensTva.Livrare):N2}/{NeTva(SensTva.Livrare):N2}.");
+    Check("D4-V4 (D4-D4) — NIMIC nu se pierde: Σ `Operatiuni` + Σ `Neincluse` == Σ `RegistruTva` pe perioadă, PER SENS, "
+        + "pe AMBELE coloane (sensul rândului dedus independent din tipul lui)",
+        new[] { SensTva.Achizitie, SensTva.Livrare }.All(s =>
+            OpBaza(s) + NeBaza(s) == RegBaza(s) && OpTva(s) + NeTva(s) == RegTva(s))
+        && brut.Count > 0);
+    Check("D4-V4 `Neincluse` cu cauza: DEC ⇒ `RepartitorNePartener` (angajatul, numit — 50 / 10,5 pe achiziție); SDD ⇒ "
+        + "`TipTvaNemapat` (70 / 0); niciun `FaraPartener` pe scenă; partiția e completă (fiecare grup e ori "
+        + "așezat, ori raportat)",
+        d4.Neincluse.Count == 2
+        && d4.Neincluse.Single(n => n.Cauza == "RepartitorNePartener") is
+            { Sens: "Achizitie", TipTvaCod: "N21", Baza: 50m, Tva: 10.5m, Randuri: 1, RepartitorDenumire: "Titular decont probă D394" }
+        && d4.Neincluse.Single(n => n.Cauza == "TipTvaNemapat") is
+            { Sens: "Achizitie", TipTvaCod: "SDD", Baza: 70m, Tva: 0m, Cota: 0m, Randuri: 1, RepartitorId: null });
+
+    // ══════════ D4-V5: cusătura cu D300 — două proiecții, același registru ══════════
+    var d3 = D300Proiectii.D300(os, pStart, pEnd, null);
+    D300Rand R(string cod) => d3.Randuri.Single(r => r.Cod == cod);
+    decimal SumaOp(string tip, int cota, Func<D394Operatiune, decimal> col) =>
+        d4.Operatiuni.Where(o => o.Tip == tip && o.Cota == cota).Sum(col);
+    var neinclusDec = d4.Neincluse.Single(n => n.Cauza == "RepartitorNePartener");
+    var neinclusSdd = d4.Neincluse.Single(n => n.Cauza == "TipTvaNemapat");
+    Console.WriteLine($"     MĂSURAT (D4-V5): rd. 9 {R("9").Baza:N2}/{R("9").Tva:N2} vs Σ L/21 {SumaOp("L", 21, o => o.Baza):N2}/{SumaOp("L", 21, o => o.Tva ?? 0m):N2}; "
+        + $"rd. 24 {R("24").Baza:N2}/{R("24").Tva:N2} vs Σ A+AI/21 {SumaOp("A", 21, o => o.Baza) + SumaOp("AI", 21, o => o.Baza):N2} + DEC {neinclusDec.Baza:N2}; "
+        + $"rd. 12.1 {R("12.1").Baza:N2} vs C {SumaOp("C", 21, o => o.Baza):N2}; rd. 13 {R("13").Baza:N2} vs V {SumaOp("V", 0, o => o.Baza):N2}; rd. 29 {R("29").Baza:N2} vs SDD {neinclusSdd.Baza:N2}.");
+    Check("D4-V5 cusătura cu D300 pe aceeași perioadă: rd. 9 (N21/livrare) == Σ L la 21% (bază ȘI TVA); rd. 12.1 == "
+        + "Σ C la 21%; rd. 13 == Σ V (bază); rd. 10 == Σ L la 11%",
+        R("9").Baza == SumaOp("L", 21, o => o.Baza) && R("9").Tva == SumaOp("L", 21, o => o.Tva ?? 0m)
+        && R("12.1").Baza == SumaOp("C", 21, o => o.Baza) && R("12.1").Tva == SumaOp("C", 21, o => o.Tva ?? 0m)
+        && R("13").Baza == SumaOp("V", 0, o => o.Baza)
+        && R("10").Baza == SumaOp("L", 11, o => o.Baza) && R("10").Tva == SumaOp("L", 11, o => o.Tva ?? 0m)
+        && R("9").Baza > 0m && R("12.1").Baza > 0m && R("13").Baza > 0m);
+    Check("D4-V5 diferența legitimă e EXACT `Neincluse`: rd. 24 (N21 + NED21 pe achiziție) == Σ A + Σ AI la 21% + "
+        + "decontul angajatului (`RepartitorNePartener`, pe ambele coloane); rd. 29 (scutite) == SDD-ul "
+        + "`TipTvaNemapat` — ce D394 nu declară, D300 arată, și cifra e aceeași",
+        R("24").Baza == SumaOp("A", 21, o => o.Baza) + SumaOp("AI", 21, o => o.Baza) + neinclusDec.Baza
+        && R("24").Tva == SumaOp("A", 21, o => o.Tva ?? 0m) + SumaOp("AI", 21, o => o.Tva ?? 0m) + neinclusDec.Tva
+        && R("29").Baza == neinclusSdd.Baza
+        // …iar tipul de TVA de probă (5,5%) e nemapat în D300 și mapat în D394: singura pereche care apare doar într-una.
+        && d3.Nemapate.Single().TipTvaCod == tvaC55.Cod && d3.Nemapate.Single().Baza == 100m);
+
+    // ══════════ D4-V6: rezumatele, recalculate independent din op1 ══════════
+    var rez = d4.Rezumat;
+    bool RezumatCorect(D394Rezumat r) {
+        var g = d4.Operatiuni.Where(o => o.TipPartener == r.TipPartener && o.Cota == r.Cota).ToList();
+        int F(string t) => g.Where(o => o.Tip == t).Sum(o => o.NrFact);
+        decimal B(string t) => g.Where(o => o.Tip == t).Sum(o => o.Baza);
+        decimal T(string t) => g.Where(o => o.Tip == t).Sum(o => o.Tva ?? 0m);
+        bool Col(int? f, decimal? b, decimal? t, bool prezent, string tip, bool cuTvaCol = true) =>
+            prezent
+                ? f == F(tip) && b == B(tip) && (!cuTvaCol || t == T(tip))
+                : f == null && b == null && t == null;
+        var cota0 = r.Cota == 0;
+        return Col(r.FacturiL, r.BazaL, r.TvaL, !cota0, "L")
+            && Col(r.FacturiLS, r.BazaLS, null, cota0, "LS", cuTvaCol: false)
+            && Col(r.FacturiA, r.BazaA, r.TvaA, r.TipPartener == 1 && !cota0, "A")
+            && Col(r.FacturiAI, r.BazaAI, r.TvaAI, r.TipPartener == 1 && !cota0, "AI")
+            && Col(r.FacturiAS, r.BazaAS, null, r.TipPartener == 1 && cota0, "AS", cuTvaCol: false)
+            && Col(r.FacturiV, r.BazaV, null, r.TipPartener == 1 && cota0, "V", cuTvaCol: false)
+            && Col(r.FacturiC, r.BazaC, r.TvaC, r.TipPartener is 1 or 3 or 4 && !cota0, "C")
+            && (r.TipPartener == 2 && cota0 ? r.FacturiN == 0 && r.BazaN == 0m : r.FacturiN == null && r.BazaN == null);
+    }
+    Console.WriteLine($"     MĂSURAT (D4-V6): rezumat1 {rez.Count} rânduri "
+        + $"[{string.Join(", ", rez.Select(r => $"tip{r.TipPartener}/{r.Cota}"))}]; nrCui {d4.NrCui1}/{d4.NrCui2}/{d4.NrCui3}/{d4.NrCui4}; "
+        + $"rezumat2 [{string.Join(", ", d4.RezumatCote.Select(c => $"{c.Cota}%: L {c.NrFacturiL}/{c.BazaL:N2}/{c.TvaL:N2}, A+C {c.NrFacturiA}/{c.BazaA:N2}/{c.TvaA:N2}, AI {c.NrFacturiAI}/{c.BazaAI:N2}"))}].");
+    Check("D4-V6 rezumat1: un rând per (tip_partener, cotă) prezentă în op1 — tip1/0 (V), tip1/5, tip1/11, tip1/21, "
+        + "tip2/21, tip3/21, tip4/21 — fiecare RECALCULAT independent din op1, cu NULL exact unde XSD-ul cere "
+        + "absent (A/AI/C absente pe tipul 2, C prezent pe 3/4, V/AS doar pe tip1 × cota 0)",
+        rez.Select(r => (r.TipPartener, r.Cota)).SequenceEqual([(1, 0), (1, 5), (1, 11), (1, 21), (2, 21), (3, 21), (4, 21)])
+        && rez.All(RezumatCorect)
+        && rez.Single(r => r is { TipPartener: 1, Cota: 0 }) is { FacturiV: 1, BazaV: 700m, FacturiA: null, BazaL: null, FacturiAS: 0 }
+        && rez.Single(r => r is { TipPartener: 2, Cota: 21 }) is { FacturiL: 3, BazaL: 250m, TvaL: 52.5m, FacturiA: null, FacturiC: null, FacturiN: null }
+        && rez.Single(r => r is { TipPartener: 3, Cota: 21 }) is { FacturiC: 0, BazaC: 0m, FacturiA: null }
+        && rez.Single(r => r is { TipPartener: 1, Cota: 21 }) is { FacturiA: 4, BazaA: 1370m, FacturiAI: 1, BazaAI: 300m, TvaAI: 63m, FacturiC: 1, BazaC: 400m });
+    Check("D4-V6 nrCui: tip 1 = 4 persoane DISTINCTE (F1 unit cu F1-bis, F2, F0 fără cod, C1); tip 2 = 2 "
+        + "ÎNREGISTRĂRI (PF cu CNP, fără CNP, cu CNP scurt); tip 3 = 1; tip 4 = 1",
+        d4.NrCui1 == 4 && d4.NrCui2 == 3 && d4.NrCui3 == 1 && d4.NrCui4 == 1);
+    Check("D4-V6 rezumat2 (cartușul H) per cotă ≠ 0: 21% ⇒ L = Σ L/21 pe toate tipurile de partener, A = Σ A + C, "
+        + "AI separat; 11% și 5% cu L; fără rând pentru cota 0",
+        d4.RezumatCote.Select(c => c.Cota).SequenceEqual([5, 11, 21])
+        && d4.RezumatCote.Single(c => c.Cota == 21) is { BazaL: 3080m, TvaL: 646.8m, NrFacturiL: 11,
+            BazaA: 1770m, TvaA: 371.7m, NrFacturiA: 5, BazaAI: 300m, NrFacturiAI: 1 }
+        && d4.RezumatCote.Single(c => c.Cota == 11) is { BazaL: 990.91m, TvaL: 109m, NrFacturiL: 0, BazaA: 500m, NrFacturiA: 0 }
+        && d4.RezumatCote.Single(c => c.Cota == 5) is { BazaL: 100m, TvaL: 5.5m, NrFacturiL: 1 });
+
+    // ══════════ D4-V7: avertismentele — nominale, cu suma ══════════
+    var av = d4.Avertismente;
+    Check("D4-V7 avertismente nominale: tip 1 fără CUI (F0, numit); PF fără CNP valid (gol ȘI „123”, numite; cea cu CNP de 13 cifre NU); V/C fără op11 (D4-r5, cu "
+        + "suma — V 700, C 400); cota 5,5 ne-întreagă; CUI-urile unite (F1 + F1-bis pe 12345678, ambele numite); "
+        + "și NIMIC altceva — fără avertisment de „V cu TVA” pe date post-F13",
+        av.Any(a => a.Contains("Furnizor tip 1 FĂRĂ cod fiscal") && a.Contains("tip 1"))
+        && av.Any(a => a.Contains("Ionescu Maria") && a.Contains("cod gol"))
+        && av.Any(a => a.Contains("Georgescu Ana") && a.Contains("„123” nu are 13 cifre"))
+        && !av.Any(a => a.Contains("Popescu Ion"))
+        && av.Any(a => a.StartsWith("Operațiunile V") && a.Contains("700,00") && a.Contains("op11"))
+        && av.Any(a => a.StartsWith("Operațiunile C") && a.Contains("400,00"))
+        && av.Any(a => a.StartsWith("Cota 5,5%") && a.Contains("cota 5%"))
+        && av.Any(a => a.StartsWith("CUI 12345678") && a.Contains("Furnizor tip 1 (RO…)") && a.Contains("fără prefix"))
+        && !av.Any(a => a.Contains("poartă în registru TVA"))
+        && av.Count == 7);
+
+    // ── V cu TVA ≠ 0 (date pre-F13, 70d): rând injectat prin SQL brut ──
+    // Motorul nu mai produce taxă pe TI × Colectat (70a), deci singura cale de
+    // a proba avertismentul e un rând de registru „ca înainte de F13", scris
+    // direct, cu `GCRecord = 0` (70e), pe linia TI21 a facturii LV.
+    var db = ((EFCoreObjectSpace)os).DbContext.Database;
+    var idInjectat = Guid.NewGuid();
+    db.ExecuteSql($@"INSERT INTO ""RegistruTva"" (""ID"", ""GCRecord"", ""OptimisticLockField"", ""Data"", ""Sens"", ""DocumentId"", ""DetaliuId"",
+            ""PartenerId"", ""TipTvaId"", ""Regim"", ""Cota"", ""Baza"", ""Tva"", ""Storno"")
+        VALUES ({idInjectat}, 0, 0, {d5}, {(int)SensTva.Livrare}, {fclLV.ID}, {linieTi.ID}, {c1.ID}, {ti21.ID},
+            {(int)RegimTva.TaxareInversa}, 21, 100, 21, false)");
+    var cuV = D394Proiectii.D394(os, pStart, pEnd);
+    var vCuTva = cuV.Operatiuni.Single(o => o.CuiP == "33333333" && o.Tip == "V");
+    var avV = cuV.Avertismente.FirstOrDefault(a => a.Contains("poartă în registru TVA"));
+    var brutV = os.GetObjectsQuery<RegistruTva>().Where(r => r.Data >= pStart && r.Data <= pEnd && r.Sens == SensTva.Livrare)
+        .Sum(r => (decimal?)r.Tva) ?? 0m;
+    var opVTva = cuV.Operatiuni.Where(o => SensTip(o.Tip) == SensTva.Livrare).Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat)
+        + cuV.Neincluse.Where(n => n.Sens == "Livrare").Sum(n => n.Tva);
+    db.ExecuteSql($"DELETE FROM \"RegistruTva\" WHERE \"ID\" = {idInjectat}");
+    var dupaV = D394Proiectii.D394(os, pStart, pEnd);
+    Console.WriteLine($"     MĂSURAT (D4-V7/V cu TVA): rând injectat 100/21 ⇒ V bază {vCuTva.Baza:N2}, Tva {(vCuTva.Tva?.ToString("N2") ?? "null")}, "
+        + $"nedeclarat {vCuTva.TvaNedeclarat:N2}; avertisment: „{avV ?? "<NICIUNUL>"}”.");
+    Check("D4-V7 V cu TVA ≠ 0 (rând pre-F13 injectat, 100/21): rândul V urcă la 800 cu `Tva` tot NULL, cei 21,00 "
+        + "ies în AVERTISMENT cu suma ȘI stau în `TvaNedeclarat`, deci cusătura cu registrul pe coloana TVA "
+        + "rămâne exactă; după ștergerea rândului, declarația revine la cifrele dinainte",
+        vCuTva is { Baza: 800m, Tva: null, TvaNedeclarat: 21m, NrFact: 1 }
+        && avV != null && avV.Contains("21,00") && avV.Contains("70a")
+        && opVTva == brutV && brutV > 0m
+        && dupaV.Avertismente.Count == 7
+        && dupaV.Operatiuni.Select(o => (o.TipPartener, o.CuiP, o.Tip, o.Cota, o.NrFact, o.Baza, o.Tva))
+            .SequenceEqual(d4.Operatiuni.Select(o => (o.TipPartener, o.CuiP, o.Tip, o.Cota, o.NrFact, o.Baza, o.Tva))));
+
+    // ---------------- Curățenie ----------------
+    CurataD4();
+    Check("Curățenie finală felia D394 (fără reziduuri e2e: repartitori, documente, lot, produs, tipul de TVA de probă "
+        + "și maparea lui — politica de profil rămâne la 13 mapări)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajD4))
+        && !os.GetObjectsQuery<Document>().Any(d => d.Numar.StartsWith(MarcajD4))
+        && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajD4))
+        && !os.GetObjectsQuery<TipTva>().Any(t => t.Cod.StartsWith(MarcajD4))
+        && !os.GetObjectsQuery<RegistruTva>().Any(r => r.Data >= pStart && r.Data <= pEnd)
+        && os.GetObjectsQuery<MapareD394>().Count() == 13);
 }
