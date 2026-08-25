@@ -1,4 +1,4 @@
-using Atlas.Conta.BackOffice.Module.BusinessObjects;
+﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
@@ -139,7 +139,10 @@ public static class TvaService {
         foreach (var c in candidate)
             if (tipuri.GetValueOrDefault(c.Linie.TipTvaId.Value).Regim == RegimTva.TaxareInversa)
                 erori.Add("Taxarea inversă pe livrare nu poartă TVA; "
-                    + $"linia {c.Pozitie} are TVA cules {c.TvaCules:N2}.");
+                    // „poartă", nu „are cules": pe o factură operată ÎNAINTE de F13
+                    // valoarea a pus-o vechiul motor, nu operatorul — de la gard nu se
+                    // distinge, iar mesajul nu trebuie să acuze (review F13, defect 2).
+                    + $"linia {c.Pozitie} poartă TVA {c.TvaCules:N2} — goliți-o înainte de operare.");
     }
 
     // Datoria P1 (design §8): default TipTva per tip de document, aplicat la

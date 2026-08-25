@@ -1,4 +1,4 @@
-using DevExpress.ExpressApp;
+﻿using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using DevExpress.Persistent.BaseImpl.EF;
 using Microsoft.EntityFrameworkCore;
@@ -60,6 +60,12 @@ sealed class Purja(IObjectSpace os) {
 
     public Purja Adauga<T>(T obiect) where T : BaseObject => Adauga([obiect]);
 
+    // Regulă de folosire (review F13, defect 6): purja detașează DOAR tipurile
+    // purjate explicit; dependenții luați de CASCADE în bază (`RegistruTva`,
+    // `Imperecheri`, derivatele TPT) rămân în tracker dacă scena i-a încărcat
+    // înainte — un commit ulterior pe același OS ar da
+    // `DbUpdateConcurrencyException`. Deci: purja la ÎNCEPUTUL scenei, pe OS
+    // proaspăt, sau la sfârșit, pe un OS care nu se mai folosește.
     public void Executa() {
         if (pasi.Count == 0)
             return;

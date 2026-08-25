@@ -1,12 +1,17 @@
 ﻿using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Security;
 using DevExpress.ExpressApp.Security.Authentication.ClientServer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Atlas.Conta.BackOffice.WebApi.JWT {
     [ApiController]
     [Route("api/[controller]")]
+    // F13-D3: `InvalidModelStateResponseFactory` e global pe TOATE controllerele
+    // `[ApiController]`, deci și aici un corp malformat iese `400 EroriDto` —
+    // declarat, ca openapi-ul să nu mintă (review F13, defect 3).
+    [ProducesResponseType(typeof(Atlas.Conta.BackOffice.Module.Api.EroriDto), StatusCodes.Status400BadRequest)]
     // This is a JWT authentication service sample.
     public class AuthenticationController : ControllerBase {
         readonly IAuthenticationTokenProvider tokenProvider;

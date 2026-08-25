@@ -1,4 +1,4 @@
-using Atlas.Conta.BackOffice.Module.BusinessObjects;
+﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -237,6 +237,14 @@ public static class FacturaIesireApply {
                     throw new OperareException(
                         "Valoarea TVA se completează manual doar pe un tip de TVA cu regim "
                         + "Normal sau Taxare inversă — regimul liniei nu poartă TVA separat.");
+                // F13-D1 (review, defect 1): pe LIVRARE taxarea inversă nu poartă TVA —
+                // motorul ar refuza oricum la operare, dar un draft salvat cu 63 lei de
+                // TVA pe o linie TI ar minți în ReadDto (`Total` = net + TVA) până atunci.
+                // Aceeași propoziție ca în motor, aici la PUT, cât operatorul e pe formular.
+                if (valoareTva != 0 && regim == RegimTva.TaxareInversa && directieTva == DirectieTva.Colectat)
+                    throw new OperareException(
+                        "Taxarea inversă pe livrare nu poartă TVA; linia are TVA "
+                        + $"{valoareTva:N2} — lăsați valoarea goală.");
                 detaliu.ValoareTva = valoareTva;
             }
         }

@@ -2603,6 +2603,19 @@ if (profil == ProfilContabil.Privat) {
             LinieFclDto("Transport") is { Valoare: 200m, ValoareTva: 42m });
         writeFcl.Linii[2].PretUnitar = 100m;
         FacturaIesireApply.Aplica(os, idFcl, writeFcl);
+        // F13-D1 (review, defect 1): pe LIVRARE o linie în taxare inversă cu TVA
+        // cules e refuzată la PUT, nu abia la operare — draftul nu minte în ReadDto.
+        var tipTvaServ = writeFcl.Linii[2].TipTvaId;
+        writeFcl.Linii[2].TipTvaId = os.FirstOrDefault<TipTva>(t => t.Cod == "TI21").ID;
+        writeFcl.Linii[2].ValoareTva = 63m;
+        CheckRefuza("F13-D1 PUT FCL cu linie TI21 + ValoareTva 63 → refuz la salvare («Taxarea inversă pe livrare nu poartă TVA»)",
+            () => FacturaIesireApply.Aplica(os, idFcl, writeFcl));
+        writeFcl.Linii[2].ValoareTva = null;
+        FacturaIesireApply.Aplica(os, idFcl, writeFcl);
+        Check("F13-D1 PUT FCL cu linie TI21 FĂRĂ TVA → acceptat, ValoareTva 0 de la culegere (Colectat × TI)",
+            LinieFclDto("Transport").ValoareTva == 0m);
+        writeFcl.Linii[2].TipTvaId = tipTvaServ;
+        FacturaIesireApply.Aplica(os, idFcl, writeFcl);
 
         writeFcl.Linii[2].ValoareTva = -5m;
         CheckRefuza("Override ValoareTva NEGATIV → refuz (F2-D7)",
@@ -7954,6 +7967,27 @@ void VerificaAxaTaxareInversa() {
             // păstrează comportamentul dinainte de F13.
             && TvaService.DirectiePentruTip(os,
                 os.FirstOrDefault<TipDocument>(t => t.Cod == "NIR").ID) == null);
+
+        // Inventarul datelor de DINAINTE de F13 (review F13, defect 2): o livrare în
+        // taxare inversă operată de vechiul motor are `ValoareTva ≠ 0` pe linie,
+        // 4426 = 4427 în registru și TVA pe rândul fiscal. Felia nu le migrează
+        // (decizia 70): se RAPORTEAZĂ — pe baza asta trebuie să fie zero, fiindcă
+        // scenele își purjează urmele; pe o bază reală cifra e decizia
+        // utilizatorului (anulare + golire + re-operare, sau storno).
+        var candidate = os.GetObjectsQuery<DocumentDetaliu>()
+            .Where(d => d.ValoareTva != 0m && d.TipTva.Regim == RegimTva.TaxareInversa)
+            .Select(d => new { d.ID, d.DocumentId }).ToList();
+        var docIds = candidate.Select(c => c.DocumentId).Distinct().ToList();
+        var peLivrare = 0;
+        foreach (var docId in docIds) {
+            var doc = os.GetObjectByKey<Document>(docId);
+            if (doc != null && TvaService.DirectiePentru(os, doc) == DirectieTva.Colectat)
+                peLivrare += candidate.Count(c => c.DocumentId == docId);
+        }
+        Console.WriteLine($"     MĂSURAT (F13-D1, date pre-F13): {candidate.Count} linii TI cu TVA nenul, "
+            + $"din care {peLivrare} pe tipuri de LIVRARE (moștenire a vechiului motor).");
+        Check("F13-D1 inventar pre-F13: pe baza de probă nicio livrare în taxare inversă nu mai poartă TVA "
+            + "(scenele își purjează urmele; pe o bază reală cifra e raport, nu eșec)", peLivrare == 0);
     }
 }
 
