@@ -707,6 +707,7 @@ public static class SaftProiectii {
         }
 
         var randuriPeDocument = randuri.GroupBy(r => r.DocumentId).ToDictionary(g => g.Key, g => g.ToList());
+        var randuriPeId = randuri.ToDictionary(r => r.Id);
         var jurnale = new Dictionary<string, SaftJurnal>(StringComparer.Ordinal);
         decimal totalDebit = 0m, totalCredit = 0m;
         var numarLinii = 0;
@@ -829,6 +830,50 @@ public static class SaftProiectii {
             .Where(f => idsFacturiCumparare.Contains(f.ID))
             .Select(f => new { f.ID, f.Valuta }).ToList()
             .ToDictionary(f => f.ID, f => f.Valuta);
+
+        // Contrapartida liniilor de STOC ale facturii de intrare, prin NIR-ul
+        // CONEX (amendamentul D16-D4). Recepția contează pe NIR (26a), deci linia
+        // facturii n-are rând contabil propriu — dar are o urmă MATERIALIZATĂ:
+        // linia naște lotul (`Lot.LinieIntrareId`), NIR-ul conex îl recepționează
+        // (`RegistruStoc.LotId` → `DetaliuId` al liniei de NIR), iar rândul
+        // contabil al acelei linii poartă contul de stoc pe DEBIT. Contul NU se
+        // inventează (nici din `TipMaterial.ContImplicit`): se citește din ce s-a
+        // scris efectiv. Fără rând de recepție pe lot ⇒ rămâne `Neincluse`.
+        //
+        // Pe SETURI, nu per linie: trei interogări (loturile născute de liniile
+        // lunii, recepțiile lor, rândurile contabile ale liniilor de recepție).
+        var loturiNascute = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.LinieIntrareId != null && idsLinie.Contains(l.LinieIntrareId.Value))
+            .Select(l => new { l.ID, LinieId = l.LinieIntrareId.Value })
+            .ToList();
+        var idsLotNascut = loturiNascute.Select(l => l.ID).ToList();
+        // Cantitate POZITIVĂ și nestornată = recepție; ieșirile aceluiași lot
+        // (DSC, RLF, BCS) poartă contul de descărcare, nu pe cel de stoc.
+        var receptii = os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => idsLotNascut.Contains(r.LotId) && r.DetaliuId != null
+                && r.Cantitate > 0m && !r.Storno)
+            .Select(r => new { r.LotId, DetaliuId = r.DetaliuId.Value, r.Data })
+            .ToList();
+        var idsDetaliuReceptie = receptii.Select(r => r.DetaliuId).Distinct().ToList();
+        var randuriReceptie = os.GetObjectsQuery<RegistruContabil>().IgnoreAutoIncludes()
+            .Where(r => r.DetaliuId != null && idsDetaliuReceptie.Contains(r.DetaliuId.Value) && !r.Storno)
+            .Select(r => new { r.ID, DetaliuId = r.DetaliuId.Value, r.ContDebitId })
+            .ToList();
+        var receptiePeDetaliu = randuriReceptie
+            .GroupBy(r => r.DetaliuId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(x => x.ID).First());
+        var receptiePeLinie = loturiNascute
+            .Select(l => new {
+                l.LinieId,
+                Rand = receptii
+                    .Where(r => r.LotId == l.ID && receptiePeDetaliu.ContainsKey(r.DetaliuId))
+                    .OrderBy(r => r.Data).ThenBy(r => r.DetaliuId)
+                    .Select(r => receptiePeDetaliu[r.DetaliuId])
+                    .FirstOrDefault(),
+            })
+            .Where(x => x.Rand != null)
+            .GroupBy(x => x.LinieId)
+            .ToDictionary(g => g.Key, g => (g.First().Rand.ID, g.First().Rand.ContDebitId));
 
         var produseFolosite = new HashSet<Guid>();
         decimal bazaFacturiAchizitie = 0m, bazaFacturiLivrare = 0m;
@@ -960,23 +1005,39 @@ public static class SaftProiectii {
                         var randContrapartida = randuriLinie.FirstOrDefault(r =>
                             (r.ContDebitId != contTert.Value && !conturiTva.Contains(r.ContDebitId))
                             || (r.ContCreditId != contTert.Value && !conturiTva.Contains(r.ContCreditId)));
-                        if (randContrapartida == null) {
-                            // Fără contrapartidă, `InvoiceLine.AccountID` (M) n-are
-                            // sursă — și NU se inventează (D16-D4). Cazul real:
-                            // liniile de STOC ale facturii de intrare, a căror
-                            // recepție contează pe NIR-ul conex (26a), deci pe
-                            // factură au doar rândul de TVA.
+                        Guid contLinie;
+                        bool contrapartidaDebit;
+                        // Rândul din care se citesc DIMENSIUNILE liniei de factură:
+                        // al contrapartidei, sau — pe stocul facturii de intrare —
+                        // al recepției de pe NIR-ul conex.
+                        RandGl randDimensiuni;
+                        if (randContrapartida != null) {
+                            contrapartidaDebit = randContrapartida.ContDebitId != contTert.Value
+                                && !conturiTva.Contains(randContrapartida.ContDebitId);
+                            contLinie = contrapartidaDebit
+                                ? randContrapartida.ContDebitId : randContrapartida.ContCreditId;
+                            randDimensiuni = randContrapartida;
+                        }
+                        else if (receptiePeLinie.TryGetValue(l.ID, out var receptie)) {
+                            // Linia de STOC a facturii de intrare: contul vine din
+                            // realitatea materializată a conexului (vezi mai sus),
+                            // pe DEBITUL rândului de recepție.
+                            contLinie = receptie.ContDebitId;
+                            contrapartidaDebit = true;
+                            randDimensiuni = randuriPeId.GetValueOrDefault(receptie.ID);
+                        }
+                        else {
+                            // Fără contrapartidă ȘI fără recepție pe lot,
+                            // `InvoiceLine.AccountID` (M) n-are sursă — și NU se
+                            // inventează (D16-D4). Cazul real: linia de stoc a unei
+                            // facturi al cărei NIR conex n-a fost încă operat.
                             Avert(CodAvertismentSaft.LinieFaraContrapartida,
-                                $"{cod} {doc?.Numar}: o linie n-are cont contrapartidă în registrul contabil "
-                                + "(pe factura de intrare, liniile de stoc contează pe NIR-ul conex) — "
+                                $"{cod} {doc?.Numar}: o linie n-are cont contrapartidă în registrul contabil și "
+                                + "nici recepție pe lotul născut de ea (NIR-ul conex nu e operat) — "
                                 + "linia nu intră în fișier.", semn * l.Valoare);
                             Neinclus(CauzaNeincludere.FaraContrapartida, docId, storno, l.ID, sectiune);
                             continue;
                         }
-                        var contrapartidaDebit = randContrapartida.ContDebitId != contTert.Value
-                            && !conturiTva.Contains(randContrapartida.ContDebitId);
-                        var contLinie = contrapartidaDebit
-                            ? randContrapartida.ContDebitId : randContrapartida.ContCreditId;
 
                         var produsId = produsPeLinie.TryGetValue(l.ID, out var pl)
                             ? pl
@@ -1027,7 +1088,7 @@ public static class SaftProiectii {
                             // S.I.47: semnul stă pe SUME, indicatorul rămâne al
                             // direcției documentului (`C` vânzare / `D` cumpărare).
                             DebitCreditIndicator = rolAsteptat == RolTertCont.Client ? "C" : "D",
-                            Analiza = Analiza(contrapartidaDebit, randContrapartida),
+                            Analiza = randDimensiuni == null ? [] : Analiza(contrapartidaDebit, randDimensiuni),
                             TaxInformation = taxa,
                         });
                         factura.NetTotal += valoare;

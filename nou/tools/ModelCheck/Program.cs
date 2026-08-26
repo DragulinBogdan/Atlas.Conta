@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Xml.Linq;
 using Atlas.Conta.BackOffice.ModelCheck;
 using Atlas.Conta.BackOffice.Module.Anaf;
 using Atlas.Conta.BackOffice.Module.Api;
@@ -10687,6 +10689,42 @@ void VerificaSaftModel(bool privat) {
                 && Rol("4") == RolTertCont.Niciunul);
         }
     }
+
+    // ---------------- `Cont.Functie`: funcția contabilă e a LEGII (pasul 3) ----------------
+    // `AccountType` (MF.GLA.7) are trei valori admise, iar ele se citesc din
+    // `Functie`. La bugetar coloana venea din CPLAN; la privat planul OMFP n-o
+    // purta deloc, deci TOT planul ieșea „Bifunctional" — gaură de DATE, închisă
+    // cu coloana `Functie` (D/C/B) în resursa de seed, din anexa OMFP 1802.
+    using (var osFunctie = provider.CreateObjectSpace()) {
+        var conturi = osFunctie.GetObjectsQuery<Cont>()
+            .Select(c => new { c.Simbol, c.Functie })
+            .ToList();
+        var necunoscute = conturi.Where(c => !SaftReguli.FunctieCunoscuta(c.Functie)).ToList();
+        string F(string simbol) =>
+            conturi.FirstOrDefault(c => c.Simbol == simbol)?.Functie ?? "(lipsă)";
+        Console.WriteLine($"     MĂSURAT (D16-V1/Functie {(privat ? "privat" : "bugetar")}): {conturi.Count} conturi "
+            + $"({conturi.Count(c => c.Functie == "D")} D / {conturi.Count(c => c.Functie == "C")} C / "
+            + $"{conturi.Count(c => c.Functie == "B")} B / {necunoscute.Count} necunoscute"
+            + $"{(necunoscute.Count > 0 ? ": " + string.Join(", ", necunoscute.Take(10).Select(c => c.Simbol)) : "")}); "
+            + $"411={F("411")}, 401={F("401")}, 4426={F("4426")}, 4427={F("4427")}, 4428={F("4428")}, 121={F("121")}.");
+        Check("D16-V1 `Cont.Functie` e completă pe TOT planul, într-o singură convenție (D/C/B — cea a resursei "
+            + "bugetare, adoptată și de cea privată): niciun cont cu funcție necunoscută, deci `AccountType` "
+            + "(MF.GLA.7) nu mai iese „Bifunctional” din lipsă de date",
+            necunoscute.Count == 0 && conturi.Count > 0);
+        if (privat) {
+            Check("D16-V1 (privat) funcția vine din anexa OMFP 1802, pe fiecare cont: clienții `D` (activ), "
+                + "furnizorii `C` (pasiv), TVA-ul deductibil `D` și cel colectat `C` — iar `SaftReguli.TipCont` "
+                + "le traduce în Activ/Pasiv, valorile pe care schema le acceptă",
+                F("411") == "D" && F("4111") == "D" && F("401") == "C" && F("409") == "D"
+                && F("4426") == "D" && F("4427") == "C" && F("607") == "D" && F("707") == "C"
+                && SaftReguli.TipCont(F("411")) == "Activ" && SaftReguli.TipCont(F("401")) == "Pasiv");
+            Check("D16-V1 (privat) conturile pe care anexa OMFP le dă „A/P” rămân bifuncționale — 121 (profit sau "
+                + "pierdere), 117 (rezultatul reportat), 4428 (TVA neexigibilă), 5121 (contul curent) și "
+                + "diferențele de preț: `B` e o valoare a legii, nu o necunoscută",
+                F("121") == "B" && F("117") == "B" && F("4428") == "B" && F("5121") == "B"
+                && F("378") == "B" && F("308") == "B");
+        }
+    }
 }
 
 // ============ Felia 16, pas 2: regulile + proiecția SAF-T — D16-V2 ============
@@ -10801,6 +10839,20 @@ void VerificaSaft(bool privat) {
             && gol.Neincluse.Count == 0 && gol.Avertismente.Count == 0
             && gol.Rezumat.Tranzactii == 0 && gol.Rezumat.RanduriRegistru == 0
             && documenteTrecute > 0);
+        // Refuzul trebuie să fie AL SCRIITORULUI, nu doar al ecranului: un fișier
+        // gol semnat cu CUI-ul cuiva ar fi o declarație falsă, nu o listă goală.
+        string mesajScriere = null;
+        try {
+            using var flux = new MemoryStream();
+            SaftXml.Scrie(gol, flux);
+        }
+        catch (InvalidOperationException e) {
+            mesajScriere = e.Message;
+        }
+        Console.WriteLine($"     MĂSURAT (D16-V3 bugetar): `SaftXml.Scrie` → „{mesajScriere ?? "<A SCRIS FIȘIERUL>"}”.");
+        Check("D16-V3 (bugetar) `SaftXml.Scrie` REFUZĂ o declarație `Neaplicabil`, cu motivul proiecției — "
+            + "traducerea în 422 rămâne a apelantului REST, dar decizia e a scriitorului, nu a ecranului",
+            mesajScriere != null && mesajScriere.Contains("bugetar"));
         return;
     }
 
@@ -10918,7 +10970,12 @@ void VerificaSaft(bool privat) {
         p.TipMaterial = tip371; p.CodNc = codNc; p.UnitateMasura = um;
         return p;
     }
-    var produsA = CreeazaProdusSaft("-A", "Marfă SAF-T A", "12345678", umBucata, "BUC");
+    // Codul NC e REAL (`01012100`, cai de reproducție de rasă pură): validatorul
+    // îl caută în nomenclatorul NC8 al anului, deci un „12345678” inventat pică.
+    // Modelul NU are nomenclatorul (doar forma, 8 cifre — restanța numită în
+    // contract); proba de aici e cea care ține minte că validarea de conținut e a
+    // ANAF-ului.
+    var produsA = CreeazaProdusSaft("-A", "Marfă SAF-T A", "01012100", umBucata, "BUC");
     var produsB = CreeazaProdusSaft("-B", "Marfă SAF-T B", null, null, "navete");
 
     // O dimensiune CULEASĂ, ca `Analysis`/`AnalysisTypeTable` să aibă ce declara
@@ -10977,15 +11034,25 @@ void VerificaSaft(bool privat) {
         + "(linia de stoc a facturii postează DOAR TVA — recepția contează pe NIR, 26a)",
         nirConex is NIR && nirConex.Stare == StareDocument.Operat && lotA.PretUnitar == 30m);
 
-    // FCT în VALUTĂ (avertisment, nu conversie).
+    // FCT în VALUTĂ (avertisment, nu conversie) — și cu o linie de STOC al cărei
+    // NIR conex rămâne DRAFT: lotul se naște, dar nu se recepționează niciodată,
+    // deci linia n-are nici rând contabil propriu, nici recepție din care să-și
+    // ia contul. E singurul caz în care `InvoiceLine.AccountID` chiar n-are
+    // sursă — gardul `FaraContrapartida` trebuie să rămână probat pe el, după ce
+    // liniile de stoc NORMALE și-au găsit contul prin NIR-ul operat.
     var fctEur = os.CreateObject<FacturaIntrare>();
     fctEur.Numar = Marcaj + "-FCT-EUR"; fctEur.Data = dFct; fctEur.Predator = furnizor; fctEur.Primitor = mag1;
     fctEur.Valuta = "EUR"; fctEur.Curs = 5m;
     var linFctEur = os.CreateObject<FacturaIntrareDetaliu>();
     linFctEur.Document = fctEur; linFctEur.TipMaterial = tip628;
     linFctEur.Cantitate = 1m; linFctEur.PretUnitar = 100m; linFctEur.TipTva = n21s;
+    var linFctEurStoc = os.CreateObject<FacturaIntrareDetaliu>();
+    linFctEurStoc.Document = fctEur; linFctEurStoc.TipMaterial = tip371;
+    linFctEurStoc.Cantitate = 5m; linFctEurStoc.PretUnitar = 20m; linFctEurStoc.TipTva = n21s;
+    linFctEurStoc.Produs = produsA;
+    linFctEurStoc.CreeazaLot(os, produsA, mag1);
     os.CommitChanges();
-    MotorOperare.Opereaza(os, fctEur);
+    var nirEurDraft = MotorOperare.Opereaza(os, fctEur);
     os.CommitChanges();
 
     // FCL + DSC: o linie de stoc (produsul A din lotul recepționat) + un serviciu +
@@ -11221,17 +11288,27 @@ void VerificaSaft(bool privat) {
         + $"FCL {fFcl?.InvoiceType} net {fFcl?.NetTotal:N2} ({fFcl?.Linii.Count} linii); PF {fPf?.InvoiceType} "
         + $"{fPf?.NetTotal:N2} / storno {fPfStorno?.InvoiceType} {fPfStorno?.NetTotal:N2}; "
         + $"RDC {fRdc?.InvoiceType} {fRdc?.NetTotal:N2} ({fRdc?.Linii.Count} linii).");
-    Check("D16-V2 PurchaseInvoices: FCT iese `380` pe contul 401, cu SERVICIUL ca linie (1000) — linia de STOC "
-        + "n-are contrapartidă în registru (recepția e pe NIR, 26a) și cade în `Neincluse` cu avertisment, nu cu "
-        + "un cont inventat; RLF e `381` cu valori NEGATIVE (storno prin construcție, 46a)",
+    var linieStocFct = fFct?.Linii.FirstOrDefault(l => l.DetaliuId == linFctStoc.ID);
+    Check("D16-V2 PurchaseInvoices: FCT iese `380` pe contul 401, cu SERVICIUL (1000, contul 628) și cu linia de "
+        + "STOC (300) — contul ei nu e pe factură (recepția contează pe NIR, 26a), ci se citește din realitatea "
+        + "MATERIALIZATĂ a conexului: lotul născut de linie → rândul de recepție al NIR-ului → contul lui de "
+        + "DEBIT; RLF e `381` cu valori NEGATIVE (storno prin construcție, 46a)",
         fFct is { InvoiceType: "380", AccountID: "401", PartenerID: "0033333338" }
-        && fFct.Linii.Count == 1 && fFct.Linii[0].InvoiceLineAmount == 1000m
-        && fFct.Linii[0].DebitCreditIndicator == "D" && fFct.Linii[0].AccountID == "628"
-        && fFct.NetTotal == 1000m && fFct.GrossTotal == 1210m
-        && saft.Neincluse.Any(n => n.Cauza == nameof(CauzaNeincludere.FaraContrapartida)
-            && n.DetaliuId == linFctStoc.ID && n.Baza == 300m)
+        && fFct.Linii.Count == 2 && fFct.NetTotal == 1300m && fFct.GrossTotal == 1573m
+        && fFct.Linii.Any(l => l.InvoiceLineAmount == 1000m && l.AccountID == "628")
+        && fFct.Linii.All(l => l.DebitCreditIndicator == "D")
+        && linieStocFct is { InvoiceLineAmount: 300m, Quantity: 10m, UnitPrice: 30m }
+        && linieStocFct.AccountID == "371"
+        && !saft.Neincluse.Any(n => n.DetaliuId == linFctStoc.ID)
         && fRlf is { InvoiceType: "381" } && fRlf.NetTotal == -12m
         && fRlf.Linii.Single().InvoiceLineAmount == -12m && fRlf.Linii.Single().Quantity == 2m);
+    Check("D16-V2 gardul `FaraContrapartida` rămâne întreg acolo unde nu există nimic de citit: linia de stoc a "
+        + "facturii în valută, al cărei NIR conex a rămas DRAFT, n-are nici rând contabil, nici recepție pe lot — "
+        + "iese în `Neincluse` cu cauza și cu baza ei, nu cu un cont inventat",
+        nirEurDraft is NIR { Stare: StareDocument.Draft }
+        && saft.Neincluse.Any(n => n.Cauza == nameof(CauzaNeincludere.FaraContrapartida)
+            && n.DetaliuId == linFctEurStoc.ID && n.Baza == 100m)
+        && Av(CodAvertismentSaft.LinieFaraContrapartida) is { Numar: 1 });
     Check("D16-V2 SalesInvoices: FCL iese `380` pe 4111 cu 3 linii (marfă 150 + serviciu 500 + linia pe tipul de "
         + "TVA fără cod), `DebitCreditIndicator` = `C` pe vânzare; factura către PF are pereche de STORNO (`381`, "
         + "−400) — stornoul e o FACTURĂ PROPRIE (Document × Storno), nu o corecție a celei dintâi",
@@ -11279,7 +11356,7 @@ void VerificaSaft(bool privat) {
     Check("D16-V2 Products: doar produsele de pe liniile de factură EMISE; codul NC lipsă ⇒ „0” + avertisment, "
         + "unitatea de măsură lipsă ⇒ „H87” + avertisment, `ValuationMethod` = FIFO (51e), factor de conversie 1, "
         + "`GoodsServicesID` = 01 pe natura Stoc",
-        prodA is { ProductCommodityCode: "12345678", UOMBase: "H87", UOMStandard: "H87", GoodsServicesID: "01",
+        prodA is { ProductCommodityCode: "01012100", UOMBase: "H87", UOMStandard: "H87", GoodsServicesID: "01",
             ValuationMethod: "FIFO", UOMToUOMBaseConversionFactor: 1m }
         && prodB is { ProductCommodityCode: "0", UOMBase: "H87" }
         && saft.Produse.Count == 2
@@ -11386,6 +11463,15 @@ void VerificaSaft(bool privat) {
         Console.WriteLine($"     SĂRIT (D16-V2 ITV): {motivItv} — proba codului `380200` rămâne pentru V3/V5.");
     }
 
+    // ---------------- Fișierul + oracolul DUK (D16-V3) ----------------
+    // Se rulează AICI, cât scena e încă pe bază: proiecția se re-măsoară pe ceas,
+    // iar `SaftXml` scrie chiar DTO-ul probat mai sus — fișierul validat de ANAF
+    // e cel al scenei, nu unul fabricat pentru ocazie.
+    var cronometru = Stopwatch.StartNew();
+    var saftCronometrat = SaftProiectii.Saft(os, an, luna, dataCreare);
+    var msProiectie = cronometru.Elapsed.TotalMilliseconds;
+    VerificaSaftXml(saftCronometrat, an, luna, msProiectie);
+
     // ---------------- Curățenie ----------------
     RestaureazaSocietatea();
     Curata();
@@ -11398,6 +11484,139 @@ void VerificaSaft(bool privat) {
         && !os.GetObjectsQuery<Document>().Any(d => d.Numar != null && d.Numar.StartsWith(Marcaj))
         && os.GetObjectsQuery<Societate>().First().CodFiscal == socInainte.CodFiscal
         && os.FirstOrDefault<ContPropriu>(c => c.Cod == "BANCA").Iban == ibanInainte);
+}
+
+// ============ Felia 16, pas 3: fișierul XML + oracolul DUK — D16-V3 ============
+// Ce probează: (a) `SaftXml.Scrie` produce un document care se citește înapoi cu
+// structura cerută (rădăcină, namespace de PRODUCȚIE, cele 12 secțiuni ale
+// modului L, `xs:choice`-urile respectate, ramura `Name` absentă); (b)
+// VALIDATORUL OFICIAL îl acceptă — singura probă care contează pentru un fișier
+// care pleacă la ANAF; (c) riscurile 5–9 ale contractului, MĂSURATE pe fișiere
+// derivate din același DTO, cu verdictul brut al validatorului scris în rezumat.
+//
+// Riscurile 6 (`ExchangeRate` absent pe RON), 7 (segmentarea `1/1`), 8
+// (`ProductCommodityCode = 0`) și 9 (diacriticele) sunt TOATE prezente în
+// fișierul scenei: dacă el trece, ele sunt măsurate acolo, nu în derivate — un
+// fișier „cu diacritice" ar fi fost o copie a celui de bază. Derivatele acoperă
+// exact ce baza NU conține: analiticul de 7 cifre, baza contabilă `ONGE` și un
+// identificator cu caracter special.
+void VerificaSaftXml(SaftDto saft, int an, int luna, double msProiectie) {
+    var director = Duk.DirectorTemporar();
+    var prefix = $"saft-scena-{an}-{luna:00}";
+
+    string Scrie(SaftDto dto, string nume) {
+        var cale = Path.Combine(director, $"{nume}.xml");
+        var cronometru = Stopwatch.StartNew();
+        using (var fisier = File.Create(cale))
+            SaftXml.Scrie(dto, fisier);
+        if (nume == prefix)
+            Console.WriteLine($"     MĂSURAT (D16-V3 timp): proiecția {msProiectie:N0} ms, scrierea "
+                + $"{cronometru.Elapsed.TotalMilliseconds:N0} ms, {new FileInfo(cale).Length:N0} octeți → {cale}");
+        return cale;
+    }
+
+    var caleXml = Scrie(saft, prefix);
+    var doc = XDocument.Load(caleXml);
+    XNamespace ns = SaftXml.SpatiuNume;
+    List<XElement> Toate(string nume) => doc.Descendants(ns + nume).ToList();
+
+    // ---------------- Structura, citită ÎNAPOI ----------------
+    string[] sectiuni = [
+        "Header", "GeneralLedgerAccounts", "Customers", "Suppliers", "TaxTable", "UOMTable",
+        "AnalysisTypeTable", "Products", "GeneralLedgerEntries", "SalesInvoices", "PurchaseInvoices", "Payments",
+    ];
+    var lipsa = sectiuni.Where(s => !doc.Descendants(ns + s).Any()).ToList();
+    var liniiGl = Toate("TransactionLine");
+    var liniiCuAmbele = liniiGl.Count(l =>
+        l.Element(ns + "DebitAmount") != null && l.Element(ns + "CreditAmount") != null);
+    var numeInInfo = Toate("CustomerInfo").Concat(Toate("SupplierInfo"))
+        .Count(i => i.Element(ns + "Name") != null);
+    Console.WriteLine($"     MĂSURAT (D16-V3 structură): rădăcina „{doc.Root?.Name.LocalName}” în „{doc.Root?.Name.NamespaceName}”; "
+        + $"secțiuni lipsă [{string.Join(", ", lipsa)}]; {liniiGl.Count} linii de GL, "
+        + $"{Toate("Invoice").Count} facturi, {Toate("Payment").Count} plăți; "
+        + $"NumberOfEntries GL = {Toate("GeneralLedgerEntries").First().Element(ns + "NumberOfEntries")?.Value}.");
+    Check("D16-V3 fișierul se citește înapoi cu forma cerută: rădăcina `AuditFile` în namespace-ul de PRODUCȚIE "
+        + "(`…d406…`, nu `…d406t…` — greșeala prototipului 1C), cele 12 secțiuni ale modului L prezente, "
+        + "`NumberOfEntries` = numărul de tranzacții, `xs:choice`-ul debit/credit respectat pe FIECARE linie și "
+        + "nicio ramură `Name` în `CustomerInfo`/`SupplierInfo` (validatorul o respinge explicit)",
+        doc.Root?.Name == ns + "AuditFile"
+        && doc.Root.Name.NamespaceName == "mfp:anaf:dgti:d406:declaratie:v1"
+        && lipsa.Count == 0
+        && Toate("GeneralLedgerEntries").First().Element(ns + "NumberOfEntries")?.Value
+            == saft.Rezumat.Tranzactii.ToString()
+        && liniiGl.Count == saft.Rezumat.LiniiGl && liniiCuAmbele == 0 && numeInInfo == 0
+        && Toate("TotalSegmentsInsequence").Single().Value == "1"
+        && Toate("SegmentIndex").Single().Value == "1"
+        && Toate("Invoice").Count == saft.FacturiEmise.Count + saft.FacturiPrimite.Count);
+    // Secțiunile modurilor S/A se emit GOALE (§A.5), nu se omit.
+    Check("D16-V3 secțiunile pe care lunarul nu le raportează (`MovementTypeTable`, `Owners`, `Assets`, "
+        + "`MovementOfGoods`) se emit ca tag deschis/închis — schema le cere prezente, nota metodologică le "
+        + "cere goale",
+        Toate("MovementTypeTable").Single().IsEmpty || !Toate("MovementTypeTable").Single().HasElements);
+
+    // ---------------- Oracolul: validatorul oficial ----------------
+    var rezultat = Duk.Valideaza(caleXml, an, luna);
+    Console.WriteLine($"     MĂSURAT (D16-V3 DUK): {rezultat.Rezumat}");
+    Console.WriteLine($"         COMANDA {rezultat.Comanda}");
+    foreach (var e in rezultat.Erori.Take(30))
+        Console.WriteLine($"         EROARE DUK: {e}");
+    foreach (var a in rezultat.Avertismente.Take(30))
+        Console.WriteLine($"         ATENȚIONARE DUK: {a}");
+    if (!rezultat.Disponibil)
+        Console.WriteLine($"     SĂRIT (D16-V3): validatorul oficial n-a rulat — {rezultat.Motiv}. Fișierul scenei "
+            + $"rămâne la {caleXml}; proba de validitate NU s-a făcut.");
+    else
+        Check("D16-V3 VALIDATORUL OFICIAL (DUKIntegrator, kit local) acceptă fișierul scenei — cu diacritice "
+            + "(riscul 9), fără `ExchangeRate` pe RON (riscul 6), cu `ProductCommodityCode = 0` (riscul 8) și cu "
+            + "segmentarea `1/1` (riscul 7): patru riscuri pin-uite, măsurate pe același fișier",
+            rezultat.Valid);
+
+    // ---------------- Riscurile care cer fișiere DERIVATE ----------------
+    // Fiecare derivată schimbă UN lucru în DTO, se scrie și se validează; verdictul
+    // se RAPORTEAZĂ (nu e o probă de trecut/picat: e o măsurătoare care intră în
+    // §Închidere al contractului).
+    void Masoara(string nume, string intrebare, Action modifica, Action refa) {
+        modifica();
+        try {
+            var cale = Scrie(saft, $"{prefix}-{nume}");
+            var r = Duk.Valideaza(cale, an, luna);
+            Console.WriteLine($"     MĂSURAT (D16-V3 {nume}): {intrebare} → {r.Rezumat}");
+            foreach (var e in r.Erori.Take(5))
+                Console.WriteLine($"         EROARE DUK: {e}");
+        }
+        finally {
+            refa();
+        }
+    }
+
+    if (rezultat.Disponibil) {
+        // Riscul 5: analiticul fără puncte poate depăși „6 cifre" (J2.2.5).
+        var contProba = new SaftCont {
+            AccountID = "3020200", AccountDescription = "Probă analitic de 7 cifre",
+            AccountType = "Activ", OpeningDebitBalance = 0m, ClosingDebitBalance = 0m,
+        };
+        Masoara("cont-7-cifre", "`AccountID` = 3020200 (analitic de 7 cifre, sinteticul 302 există în plan)",
+            () => saft.Conturi.Add(contProba), () => saft.Conturi.Remove(contProba));
+
+        // Baza contabilă `ONGE` a fost adăugată în 05.06.2025; XSD-ul din 2023
+        // n-o are. Dacă validatorul o refuză, kitul local e în urma schemei.
+        var bazaInitiala = saft.Header.TaxAccountingBasis;
+        Masoara("baza-ONGE", "`TaxAccountingBasis` = ONGE (adăugat în schema din 05.06.2025)",
+            () => saft.Header.TaxAccountingBasis = "ONGE",
+            () => saft.Header.TaxAccountingBasis = bazaInitiala);
+
+        // Prefixul `04` cere un cod „fără caractere speciale" (regex-ul
+        // `[^A-Za-z0-9]` din validator) — cratima ar trebui respinsă.
+        var tert = saft.Clienti.FirstOrDefault(c => c.Id.StartsWith("04", StringComparison.Ordinal))
+            ?? saft.Clienti.FirstOrDefault();
+        if (tert != null) {
+            var idInitial = tert.Id;
+            var registruInitial = tert.RegistrationNumber;
+            Masoara("id-cu-cratima", $"`CustomerID` = 04PROBA-1 în loc de {idInitial} (caracter special)",
+                () => { tert.Id = "04PROBA-1"; tert.RegistrationNumber = "04PROBA-1"; },
+                () => { tert.Id = idInitial; tert.RegistrationNumber = registruInitial; });
+        }
+    }
 }
 
 // ============ Felia 15, pas 2: merge-ul ANAF — D15-V2 + D15-V3 ============

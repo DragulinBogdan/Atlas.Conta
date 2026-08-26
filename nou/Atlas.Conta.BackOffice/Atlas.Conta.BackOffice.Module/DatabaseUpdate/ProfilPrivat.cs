@@ -229,35 +229,51 @@ internal static class ProfilPrivat {
     }
 
     // Planul OMFP 1802 (sursa: nomenclatorul ANAF PlanConturiBalSocCom, format
-    // Account,ParentAccount,Denumire — numele poate conține virgule, deci
-    // split cu limită). OMFP nu poartă funcție/defalcare: DimensiuniObligatorii
+    // Account,ParentAccount,Functie,Denumire — numele poate conține virgule, deci
+    // split cu limită). OMFP nu poartă defalcare: DimensiuniObligatorii
     // pornesc goale (design §5 — editabile ca date când apare nevoia);
     // Sumator = are copii.
+    //
+    // `Functie` (felia 16): funcția contabilă e a LEGII (anexa OMFP 1802), nu a
+    // clientului — de aceea stă în resursă, nu în UI. Notația din anexă e
+    // A(ctiv) / P(asiv) / A/P (bifuncțional), notația MODELULUI e D/C/B
+    // (FCTCONT legacy, aceeași cu resursa profilului bugetar): resursa poartă
+    // deja D/C/B, ca modelul să aibă O SINGURĂ convenție și `SaftReguli.TipCont`
+    // să rămână neatins (D ⇒ Activ, C ⇒ Pasiv, B ⇒ Bifunctional — `AccountType`
+    // din MF.GLA.7). Conturile bifuncționale sunt cele pe care anexa le dă „A/P"
+    // (117, 121, 4428, 5121, diferențele de preț, decontările din grup…).
+    //
+    // AUTORITAR pe funcție, ca `SeedRolTert`: câmpul se REscrie la fiecare
+    // trecere (o corectare a resursei trebuie să ajungă pe bazele existente, nu
+    // doar pe cele noi), restul câmpurilor se scriu doar la CREARE — denumirile
+    // și legăturile de părinte sunt deja pe bază, iar planul e nomenclator viu.
     static void SeedPlanConturi(IObjectSpace os) {
-        if (os.GetObjectsCount(typeof(Cont), null) > 0)
-            return;
-
         using var stream = Assembly.GetExecutingAssembly()
             .GetManifestResourceStream("Atlas.Conta.BackOffice.Module.DatabaseUpdate.SeedData.plan-conturi-omfp.csv")
             ?? throw new InvalidOperationException("Resursa plan-conturi-omfp.csv lipsește.");
         using var reader = new StreamReader(stream);
 
-        var conturi = new Dictionary<string, Cont>();
+        var conturi = os.GetObjectsQuery<Cont>().ToList()
+            .GroupBy(c => c.Simbol ?? "", StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         reader.ReadLine(); // header
         string line;
         while ((line = reader.ReadLine()) != null) {
             if (string.IsNullOrWhiteSpace(line))
                 continue;
-            var f = line.Split(',', 3);
-            var cont = os.CreateObject<Cont>();
-            cont.Simbol = f[0];
-            cont.Denumire = f[2];
-            // CSV-ul e ordonat pe nivel (părinții înaintea copiilor).
-            if (f[1].Length > 0 && conturi.TryGetValue(f[1], out var parinte)) {
-                cont.Parinte = parinte;
-                parinte.Sumator = true;
+            var f = line.Split(',', 4);
+            if (!conturi.TryGetValue(f[0], out var cont)) {
+                cont = os.CreateObject<Cont>();
+                cont.Simbol = f[0];
+                cont.Denumire = f[3];
+                // CSV-ul e ordonat pe nivel (părinții înaintea copiilor).
+                if (f[1].Length > 0 && conturi.TryGetValue(f[1], out var parinte)) {
+                    cont.Parinte = parinte;
+                    parinte.Sumator = true;
+                }
+                conturi[f[0]] = cont;
             }
-            conturi[f[0]] = cont;
+            cont.Functie = f[2];
         }
     }
 

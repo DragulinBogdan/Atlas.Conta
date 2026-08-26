@@ -1533,7 +1533,21 @@ lipsește (§F.1).
 - `taxImp.md`, `nom_Tipuri_facturi.md`, `countryCodIso.md`, `is3166_02.md`,
   `ISO_3166_2_RO.md`, `iban.md`, `plan_conturi_bal_soc_com.md` — extrase brute
 - `plan-conturi-omfp.csv` — planul OMFP 1802, folosit efectiv de `ProfilPrivat`
-  (antetul real e `Account,ParentAccount,Romana`)
+  (antetul real e `Account,ParentAccount,Romana`; din F16 pas 3 resursa
+  seed-ului `Module/DatabaseUpdate/SeedData/plan-conturi-omfp.csv` are și
+  coloana `Functie` D/C/B, derivată din A/P/A-P al anexei OMFP)
+- **XSD-ul oficial există local** (găsit în pasul 3): `D:\Dev\Work\EServices\
+  EServices.Web\Ro_SAFT_Schema_v247_20230306.xsd` — v2.4.7, namespace de TEST,
+  structură identică cu producția; sursa ordinii și a numelor de elemente din
+  `SaftXml` (`TotalSegmentsInsequence` cu `s` mic, `TaxAmount` =
+  `AmountStructure`, `PaymentMechanism` în `PaymentSettlement`,
+  `TaxInformationTotals` în `InvoiceDocumentTotals`, `BankAccountStructure` =
+  `xs:choice` IBAN | număr de cont). Măsurat cu DUK J2.2.8 (pas 3): fișierul
+  scenei `ok`; `-d` NU e utilizabil în CLI (procesul se agață — modul grafic);
+  comanda care merge: `jre8\bin\java.exe -jar DUKIntegrator_AnLunaUI.jar -v
+  D406 <xml> !<err> $ an=AAAA luna=LL`; `AccountID` de 7 cifre, `ExchangeRate`
+  absent, `1/1` segmente, `ProductCommodityCode = 0`, diacriticele și `ONGE`
+  TREC; `04` cu cratimă e RESPINS; codul NC e validat contra NC8 al anului.
 
 ---
 

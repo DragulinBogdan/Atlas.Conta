@@ -1,645 +1,645 @@
-Account,ParentAccount,Romana
-1,,Conturi de capitaluri
-10,1,Capital şi rezerve
-101,10,Capital
-1011,101,Capital subscris nevărsat
-1012,101,Capital subscris vărsat
-1015,101,Patrimoniul regiei
-1016,101,Patrimoniul public
-1017,101,Patrimoniul privat
-1018,101,Patrimoniul institutelor naţionale de cercetare-dezvoltare
-103,10,Alte elemente de capitaluri proprii
-1031,103,Beneficii acordate angajaţilor sub forma instrumentelor de capitaluri proprii
-1033,103,Diferenţe de curs valutar în relaţie cu investiţia netă într-o entitate străină
-1038,103,Diferenţe din modificarea valorii juste a activelor financiare disponibile în vederea vânzării şi alte elemente de capitaluri proprii
-104,10,Prime de capital
-1041,104,Prime de emisiune
-1042,104,Prime de fuziune/divizare
-1043,104,Prime de aport
-1044,104,Prime de conversie a obligaţiunilor în acţiuni
-105,10,Rezerve din reevaluare
-106,10,Rezerve
-1061,106,Rezerve legale
-1063,106,Rezerve statutare sau contractuale
-1068,106,Alte rezerve
-107,10,Diferenţe de curs valutar din conversie
-108,10,Interese care nu controlează8
-1081,108,Interese care nu controlează - rezultatul exerciţiului financiar
-1082,108,Interese care nu controlează - alte capitaluri proprii
-109,10,Acţiuni proprii
-1091,109,Acţiuni proprii deţinute pe termen scurt
-1092,109,Acţiuni proprii deţinute pe termen lung
-1095,109,Acţiuni proprii reprezentând titluri deţinute de societatea absorbită la societatea absorbantă
-11,1,Rezultatul reportat
-117,11,Rezultatul reportat
-1171,117,Rezultatul reportat reprezentând profitul nerepartizat sau pierderea neacoperită
-1172,117,"Rezultatul reportat provenit din adoptarea pentru prima dată a IAS, mai puţin IAS 299"
-1173,117,Rezultatul reportat provenit din modificările politicilor contabile
-1174,117,Rezultatul reportat provenit din corectarea erorilor contabile
-1175,117,Rezultatul reportat reprezentând surplusul realizat din rezerve din reevaluare
-1176,117,Rezultatul reportat provenit din trecerea la aplicarea reglementărilor contabile conforme cu directivele europene
-12,1,Rezultatul exerciţiului financiar
-121,12,Profit sau pierdere
-129,12,Repartizarea profitului
-14,1,"Câştiguri sau pierderi legate de emiterea, răscumpărarea, vânzarea, cedarea cu titlu gratuit sau anularea instrumentelor de capitaluri proprii"
-141,14,Câștiguri legate de vânzarea sau anularea instrumentelor de capitaluri proprii
-1411,141,Câştiguri legate de vânzarea instrumentelor de capitaluri proprii
-1412,141,Câştiguri legate de anularea instrumentelor de capitaluri proprii
-149,14,"Pierderi legate de emiterea, răscumpărarea, vânzarea, cedarea cu titlu gratuit sau anularea instrumentelor de capitaluri proprii"
-1491,149,Pierderi rezultate din vânzarea instrumentelor de capitaluri proprii
-1495,149,"Pierderi rezultate din reorganizări, care sunt determinate de anularea titlurilor deţinute"
-1496,149,"Pierderi rezultate din reorganizări de societăți, corespunzătoare activului net negativ al societății absorbite"
-1498,149,Alte pierderi legate de instrumentele de capitaluri proprii
-15,1,Provizioane
-151,15,Provizioane
-1511,151,Provizioane pentru litigii
-1512,151,Provizioane pentru garanţii acordate clienţilor
-1513,151,Provizioane pentru dezafectare imobilizări corporale şi alte acţiuni similare legate de acestea
-1514,151,Provizioane pentru restructurare
-1515,151,Provizioane pentru pensii şi obligaţii similare
-1516,151,Provizioane pentru impozite
-1517,151,Provizioane pentru terminarea contractului de muncă
-1518,151,Alte provizioane
-16,1,Împrumuturi și datorii asimilate
-161,16,Împrumuturi din emisiuni de obligaţiuni
-1614,161,Împrumuturi externe din emisiuni de obligaţiuni garantate de stat
-1615,161,Împrumuturi externe din emisiuni de obligaţiuni garantate de bănci
-1617,161,Împrumuturi interne din emisiuni de obligaţiuni garantate de stat
-1618,161,Alte împrumuturi din emisiuni de obligaţiuni
-162,16,Credite bancare pe termen lung
-1621,162,Credite bancare pe termen lung
-1622,162,Credite bancare pe termen lung nerambursate la scadenţă
-1623,162,Credite externe guvernamentale
-1624,162,Credite bancare externe garantate de stat
-1625,162,Credite bancare externe garantate de bănci
-1626,162,Credite de la trezoreria statului
-1627,162,Credite bancare interne garantate de stat
-166,16,Datorii care privesc imobilizările financiare
-1661,166,Datorii faţă de entităţile afiliate
-1663,166,Datorii faţă de entităţile asociate şi entităţile controlate în comun
-167,16,Alte împrumuturi şi datorii asimilate
-168,16,Dobânzi aferente împrumuturilor şi datoriilor asimilate
-1681,168,Dobânzi aferente împrumuturilor din emisiuni de obligaţiuni
-1682,168,Dobânzi aferente creditelor bancare pe termen lung
-1685,168,Dobânzi aferente datoriilor faţă de entităţile afiliate
-1686,168,Dobânzi aferente datoriilor faţă de entităţile asociate şi entităţile controlate în comun
-1687,168,Dobânzi aferente altor împrumuturi şi datorii asimilate
-169,16,Prime privind rambursarea obligațiunilor și a altor datorii
-1691,169,Prime privind rambursarea obligaţiunilor
-1692,169,Prime privind rambursarea altor datorii
-2,,Conturi de imobilizări
-20,2,Imobilizări necorporale
-201,20,Cheltuieli de constituire
-203,20,Cheltuieli de dezvoltare
-205,20,"Concesiuni, brevete, licenţe, mărci comerciale, drepturi şi active similare"
-206,20,Active necorporale de explorare şi evaluare a resurselor minerale
-207,20,Fond comercial
-2071,207,Fond comercial pozitiv
-2075,207,Fond comercial negativ
-208,20,Alte imobilizări necorporale
-21,2,Imobilizări corporale
-211,21,Terenuri şi amenajări de terenuri
-2111,211,Terenuri
-2112,211,Amenajări de terenuri
-212,21,Construcţii
-213,21,Instalaţii tehnice şi mijloace de transport
-2131,213,"Echipamente tehnologice (maşini, utilaje şi instalaţii de lucru,"
-2132,213,"Aparate şi instalaţii de măsurare, control şi reglare"
-2133,213,Mijloace de transport
-214,21,"Mobilier, aparatură birotică, echipamente de protecţie a valorilor umane şi materiale şi alte active corporale"
-215,21,Investiţii imobiliare
-216,21,Active corporale de explorare şi evaluare a resurselor minerale
-217,21,Active biologice productive
-22,2,Imobilizări corporale în curs de aprovizionare
-223,22,Instalații tehnice şi mijloace de transport în curs de aprovizionare
-224,22,"Mobilier, aparatură birotică, echipamente de protecție a valorilor umane și materiale și alte active corporale în curs de aprovizionare"
-227,22,Active biologice productive în curs de aprovizionare
-23,2,Imobilizări în curs
-231,23,Imobilizări corporale în curs de execuţie
-235,23,Investiţii imobiliare în curs de execuţie
-26,2,Imobilizări financiare
-261,26,Acţiuni deţinute la entităţile afiliate
-262,26,Acţiuni deţinute la entităţi asociate
-263,26,Acţiuni deţinute la entităţi controlate în comun
-264,26,Titluri puse în echivalenţă
-265,26,Alte titluri imobilizate
-266,26,Certificate verzi amânate
-267,26,Creanţe imobilizate
-2671,267,Sume de încasat de la entităţile afiliate
-2672,267,Dobânda aferentă sumelor de încasat de la entităţile afiliate
-2673,267,Creanţe faţă de entităţile asociate şi entităţile controlate în comun
-2674,267,Dobânda aferentă creanţelor faţă de entităţile asociate şi entităţile controlate în comun
-2675,267,Împrumuturi acordate pe termen lung
-2676,267,Dobânda aferentă împrumuturilor acordate pe termen lung
-2677,267,Obligaţiuni achiziţionate cu ocazia emisiunilor efectuate de terți
-2678,267,Alte creanţe imobilizate
-2679,267,Dobânzi aferente altor creanţe imobilizate
-269,26,Vărsăminte de efectuat pentru imobilizări financiare
-2691,269,Vărsăminte de efectuat privind acţiunile deţinute la entităţile afiliate
-2692,269,Vărsăminte de efectuat privind acţiunile deţinute la entităţi asociate
-2693,269,Vărsăminte de efectuat privind acţiunile deţinute la entităţi controlate în comun
-2695,269,Vărsăminte de efectuat pentru alte imobilizări financiare
-28,2,Amortizări privind imobilizările
-280,28,Amortizări privind imobilizările necorporale
-2801,280,Amortizarea cheltuielilor de constituire
-2803,280,Amortizarea cheltuielilor de dezvoltare
-2805,280,"Amortizarea concesiunilor, brevetelor, licenţelor, mărcilor comerciale, drepturilor şi activelor similare"
-2806,280,Amortizarea activelor necorporale de explorare şi evaluare a resurselor minerale
-2807,280,Amortizarea fondului comercial
-2808,280,Amortizarea altor imobilizări necorporale
-281,28,Amortizări privind imobilizările corporale
-2811,281,Amortizarea amenajărilor de terenuri
-2812,281,Amortizarea construcţiilor
-2813,281,Amortizarea instalaţiilor şi mijloacelor de transport
-2814,281,Amortizarea altor imobilizări corporale
-2815,281,Amortizarea investiţiilor imobiliare
-2816,281,Amortizarea activelor corporale de explorare şi evaluare a resurselor minerale
-2817,281,Amortizarea activelor biologice productive
-29,2,Ajustări pentru deprecierea sau pierderea de valoare a imobilizărilor
-290,29,Ajustări pentru deprecierea imobilizărilor necorporale
-2903,290,Ajustări pentru deprecierea cheltuielilor de dezvoltare
-2905,290,"Ajustări pentru deprecierea concesiunilor, brevetelor, licenţelor, mărcilor comerciale, drepturilor şi activelor similare"
-2906,290,Ajustări pentru deprecierea activelor necorporale de explorare şi evaluare a resurselor minerale
-2908,290,Ajustări pentru deprecierea altor imobilizări necorporale
-291,29,Ajustări pentru deprecierea imobilizărilor corporale
-2911,291,Ajustări pentru deprecierea terenurilor şi amenajărilor de terenuri
-2912,291,Ajustări pentru deprecierea construcţiilor
-2913,291,Ajustări pentru deprecierea instalaţiilor și mijloacelor de transport
-2914,291,Ajustări pentru deprecierea altor imobilizări corporale
-2915,291,Ajustări pentru deprecierea investiţiilor imobiliare
-2916,291,Ajustări pentru deprecierea activelor corporale de explorare şi evaluare a resurselor minerale
-2917,291,Ajustări pentru deprecierea activelor biologice productive
-293,29,Ajustări pentru deprecierea imobilizărilor în curs de execuție
-2931,293,Ajustări pentru deprecierea imobilizărilor corporale în curs de execuţie
-2935,293,Ajustări pentru deprecierea investiţiilor imobiliare în curs de execuţie
-296,29,Ajustări pentru pierderea de valoare a imobilizărilor financiare
-2961,296,Ajustări pentru pierderea de valoare a acţiunilor deţinute la entităţile afiliate
-2962,296,Ajustări pentru pierderea de valoare a acţiunilor deţinute la entităţi asociate şi entităţi controlate în comun
-2963,296,Ajustări pentru pierderea de valoare a altor titluri imobilizate
-2964,296,Ajustări pentru pierderea de valoare a sumelor de încasat de la entităţile afiliate
-2965,296,Ajustări pentru pierderea de valoare a creanţelor faţă de entităţile asociate şi entităţile controlate în comun
-2966,296,Ajustări pentru pierderea de valoare a împrumuturilor acordate pe termen lung
-2968,296,Ajustări pentru pierderea de valoare a altor creanţe imobilizate
-3,,- Conturi de stocuri şi producţie în curs de execuţie
-30,3,Stocuri de materii prime şi materiale
-301,30,Materii prime
-302,30,Materiale consumabile
-3021,302,Materiale auxiliare
-3022,302,Combustibili
-3023,302,Materiale pentru ambalat
-3024,302,Piese de schimb
-3025,302,Seminţe şi materiale de plantat
-3026,302,Furaje
-3028,302,Alte materiale consumabile
-303,30,Materiale de natura obiectelor de inventar
-308,30,Diferenţe de preţ la materii prime şi materiale
-32,3,Stocuri în curs de aprovizionare
-321,32,Materii prime în curs de aprovizionare
-322,32,Materiale consumabile în curs de aprovizionare
-323,32,Materiale de natura obiectelor de inventar în curs de aprovizionare
-326,32,Active biologice de natura stocurilor în curs de aprovizionare
-327,32,Mărfuri în curs de aprovizionare
-328,32,Ambalaje în curs de aprovizionare
-33,3,Producţie în curs de execuţie
-331,33,Produse în curs de execuţie
-332,33,Servicii în curs de execuţie
-34,3,Produse
-341,34,Semifabricate
-345,34,Produse finite
-346,34,Produse reziduale
-347,34,Produse agricole
-348,34,Diferenţe de preţ la produse
-35,3,Stocuri aflate la terţi
-351,35,Materii şi materiale aflate la terţi
-354,35,Produse aflate la terţi
-356,35,Active biologice de natura stocurilor aflate la terţi
-357,35,Mărfuri aflate la terţi
-358,35,Ambalaje aflate la terţi
-36,3,Active biologice de natura stocurilor
-361,36,Active biologice de natura stocurilor
-368,36,Diferenţe de preţ la active biologice de natura stocurilor
-37,3,Mărfuri
-371,37,Mărfuri
-378,37,Diferenţe de preţ la mărfuri
-38,3,Ambalaje
-381,38,Ambalaje
-388,38,Diferenţe de preţ la ambalaje
-39,3,Ajustări pentru deprecierea stocurilor şi producţiei în curs de execuţie
-391,39,Ajustări pentru deprecierea materiilor prime
-392,39,Ajustări pentru deprecierea materialelor
-3921,392,Ajustări pentru deprecierea materialelor consumabile
-3922,392,Ajustări pentru deprecierea materialelor de natura obiectelor de inventar
-393,39,Ajustări pentru deprecierea producţiei în curs de execuţie
-394,39,Ajustări pentru deprecierea produselor
-3941,394,Ajustări pentru deprecierea semifabricatelor
-3945,394,Ajustări pentru deprecierea produselor finite
-3946,394,Ajustări pentru deprecierea produselor reziduale
-3947,394,Ajustări pentru deprecierea produselor agricole
-395,39,Ajustări pentru deprecierea stocurilor aflate la terţi
-3951,395,Ajustări pentru deprecierea materiilor şi materialelor aflate la terţi
-3952,395,Ajustări pentru deprecierea semifabricatelor aflate la terţi
-3953,395,Ajustări pentru deprecierea produselor finite aflate la terţi
-3954,395,Ajustări pentru deprecierea produselor reziduale aflate la terţi
-3955,395,Ajustări pentru deprecierea produselor agricole aflate la terţi
-3956,395,Ajustări pentru deprecierea activelor biologice de natura stocurilor aflate la terţi
-3957,395,Ajustări pentru deprecierea mărfurilor aflate la terţi
-3958,395,Ajustări pentru deprecierea ambalajelor aflate la terţi
-396,39,Ajustări pentru deprecierea activelor biologice de natura stocurilor
-397,39,Ajustări pentru deprecierea mărfurilor
-398,39,Ajustări pentru deprecierea ambalajelor
-4,,- Conturi de terţi
-40,4,Furnizori şi conturi asimilate
-401,40,Furnizori
-403,40,Efecte de plătit
-404,40,Furnizori de imobilizări
-405,40,Efecte de plătit pentru imobilizări
-408,40,Furnizori - facturi nesosite
-409,40,Furnizori - debitori
-4091,409,Furnizori-debitori pentru cumpărări de bunuri de natura stocurilor
-4092,409,Furnizori-debitori pentru prestări de servicii
-4093,409,Avansuri acordate pentru imobilizări corporale
-4094,409,Avansuri acordate pentru imobilizări necorporale
-41,4,Clienţi şi conturi asimilate
-411,41,Clienţi
-4111,411,Clienţi
-4118,411,Clienţi incerţi sau în litigiu
-413,41,Efecte de primit de la clienţi
-418,41,Clienţi - facturi de întocmit
-419,41,Clienţi – creditori
-42,4,Personal şi conturi asimilate
-421,42,Personal - salarii datorate
-423,42,Personal - ajutoare materiale datorate
-424,42,Prime reprezentând participarea personalului la profit14
-425,42,Avansuri acordate personalului
-426,42,Drepturi de personal neridicate
-427,42,Reţineri din salarii datorate terţilor
-428,42,Alte datorii şi creanţe în legătură cu personalul
-4281,428,Alte datorii în legătură cu personalul
-4282,428,Alte creanţe în legătură cu personalul
-43,4,"Asigurări sociale, protecţia socială şi conturi asimilate"
-431,43,Asigurări sociale
-4311,431,Contribuţia unităţii la asigurările sociale
-4312,431,Contribuţia personalului la asigurările sociale
-4313,431,Contribuţia angajatorului pentru asigurările sociale de sănătate
-4314,431,Contribuţia angajaţilor pentru asigurările sociale de sănătate
-4315,431,Contribuţia de asigurări sociale
-4316,431,Contribuţia de asigurări sociale de sănătate
-4318,431,Alte contribuţii pentru asigurările sociale de sănătate
-436,43,Contribuţia asiguratorie pentru muncă
-437,43,Ajutor de şomaj
-4371,437,Contribuţia unităţii la fondul de şomaj
-4372,437,Contribuţia personalului la fondul de şomaj
-438,43,Alte datorii şi creanţe sociale
-4381,438,Alte datorii sociale
-4382,438,Alte creanţe sociale
-44,4,"Bugetul statului, fonduri speciale şi conturi asimilate"
-441,44,Impozitul pe profit/venit
-4411,441,Impozitul pe profit
-4415,441,Impozitul specific unor activităţi
-4417,441,Impozitul pe profit la nivelul impozitului minim pe cifra de afaceri
-4418,441,Impozitul pe venit
-442,44,Taxa pe valoarea adăugată
-4423,442,TVA de plată
-4424,442,TVA de recuperat
-4426,442,TVA deductibilă
-4427,442,TVA colectată
-4428,442,TVA neexigibilă
-444,44,Impozitul pe venituri de natura salariilor
-445,44,Subvenţii
-4451,445,Subvenţii guvernamentale
-4452,445,Împrumuturi nerambursabile cu caracter de subvenţii
-4458,445,Alte sume primite cu caracter de subvenţii
-446,44,"Alte impozite, taxe şi vărsăminte asimilate"
-447,44,Fonduri speciale - taxe şi vărsăminte asimilate
-448,44,Alte datorii şi creanţe cu bugetul statului
-4481,448,Alte datorii faţă de bugetul statului
-4482,448,Alte creanţe privind bugetul statului
-45,4,Grup şi actionari / asociaţi
-451,45,Decontări între entităţile afiliate
-4511,451,Decontări între entităţile afiliate
-4518,451,Dobânzi aferente decontărilor între entităţile afiliate
-453,45,Decontări cu entitățile asociate și entitățile controlate în comun
-4531,453,Decontări cu entitățile asociate și entitățile controlate
-4538,453,Dobânzi aferente decontărilor cu entitățile asociate și entitățile controlate în comun
-455,45,Sume datorate acţionarilor/asociaţilor
-4551,455,Acţionari/asociaţi – conturi curente
-4558,455,Acţionari/asociaţi – dobânzi la conturi curente
-456,45,Decontări cu acţionarii/asociaţii privind capitalul
-457,45,Dividende de plată
-458,45,Decontări din operaţii în participaţie
-4581,458,Decontări din operaţii în participaţie - pasiv
-4582,458,Decontări din operaţii în participaţie - activ
-46,4,Debitori şi creditori diverşi
-461,46,Debitori diverşi
-462,46,Creditori diverşi
-463,46,Creanţe reprezentând dividende repartizate în cursul exerciţiului financiar
-466,46,Decontări din operaţiuni de fiducie
-4661,466,Datorii din operaţiuni de fiducie
-4662,466,Creanţe din operaţiuni de fiducie
-467,46,Datorii aferente distribuirior interimare de dividende
-47,4,"Conturi de subvenţii, regularizare şi asimilate"
-471,47,Cheltuieli înregistrate în avans
-472,47,Venituri înregistrate în avans
-473,47,Decontări din operaţii în curs de clarificare
-475,47,Subvenţii pentru investiţii
-4751,475,Subvenţii guvernamentale pentru investiţii
-4752,475,Împrumuturi nerambursabile cu caracter de subvenţii pentru investiţii
-4753,475,Donaţii pentru investiţii
-4754,475,Plusuri de inventar de natura imobilizărilor
-4758,475,Alte sume primite cu caracter de subvenţii pentru investiţii
-478,47,Venituri în avans aferente activelor primite prin transfer de la clienţi
-48,4,Decontări în cadrul unităţii
-481,48,Decontări între unitate şi subunităţi
-482,48,Decontări între subunităţi
-49,4,Ajustări pentru deprecierea creanţelor
-490,49,Ajustări pentru deprecierea creanţelor reprezentând avansuri acordate furnizorilor
-4901,490,Ajustări pentru deprecierea creanţelor aferente cumpărărilor de bunuri de natura stocurilor
-4902,490,Ajustări pentru deprecierea creanţelor aferente prestărilor de servicii
-4903,490,Ajustări pentru deprecierea creanţelor aferente imobilizărilor corporale
-4904,490,Ajustări pentru deprecierea creanţelor aferente imobilizărilor necorporale
-491,49,Ajustări pentru deprecierea creanţelor - clienţi
-495,49,Ajustări pentru deprecierea creanţelor – decontări în cadrul grupului şi cu acţionarii/asociaţii
-496,49,Ajustări pentru deprecierea creanţelor - debitori diverşi
-5,,- Conturi de trezorerie
-50,5,Investiţii pe termen scurt
-501,50,Acţiuni deţinute la entităţile afiliate
-505,50,Obligaţiuni emise şi răscumpărate
-506,50,Obligaţiuni
-507,50,Certificate verzi primite
-508,50,Alte investiţii pe termen scurt şi creanţe asimilate
-5081,508,Alte titluri de plasament
-5088,508,Dobânzi la obligaţiuni şi titluri de plasament
-509,50,Vărsăminte de efectuat pentru investiţiile pe termen scurt
-5091,509,Vărsăminte de efectuat pentru acţiunile deţinute la entităţile afiliate
-5092,509,Vărsăminte de efectuat pentru alte investiţii pe termen scurt
-51,5,Conturi la bănci
-511,51,Valori de încasat
-5112,511,Cecuri de încasat
-5113,511,Efecte de încasat
-5114,511,Efecte remise spre scontare
-512,51,Conturi curente la bănci
-5121,512,Conturi la bănci în lei
-5124,512,Conturi la bănci în valută
-5125,512,Sume în curs de decontare
-5126,512,Conturi la bănci în lei - TVA defalcat
-5127,512,Conturi la bănci în valută - TVA defalcat
-518,51,Dobânzi
-5186,518,Dobânzi de plătit
-5187,518,Dobânzi de încasat
-519,51,Credite bancare pe termen scurt
-5191,519,Credite bancare pe termen scurt
-5192,519,Credite bancare pe termen scurt nerambursate la scadenţă
-5193,519,Credite externe guvernamentale
-5194,519,Credite externe garantate de stat
-5195,519,Credite externe garantate de bănci
-5196,519,Credite de la Trezoreria Statului
-5197,519,Credite interne garantate de stat
-5198,519,Dobânzi aferente creditelor bancare pe termen scurt
-53,5,Casa
-531,53,Casa
-5311,531,Casa în lei
-5314,531,Casa în valută
-532,53,Alte valori
-5321,532,Timbre fiscale şi poştale
-5322,532,Bilete de tratament şi odihnă
-5323,532,Tichete şi bilete de călătorie
-5328,532,Alte valori
-54,5,Acreditive
-541,54,Acreditive
-5411,541,Acreditive în lei
-5414,541,Acreditive în valută
-542,54,Avansuri de trezorerie16
-58,5,Viramente interne
-581,58,Viramente interne
-59,5,Ajustări pentru pierderea de valoare a conturilor de trezorerie
-591,59,Ajustări pentru pierderea de valoare a acţiunilor deţinute la entităţile afiliate
-595,59,Ajustări pentru pierderea de valoare a obligaţiunilor emise şi răscumpărate
-596,59,Ajustări pentru pierderea de valoare a obligaţiunilor
-598,59,Ajustări pentru pierderea de valoare a altor investiţii pe termen scurt şi creanţe asimilate
-6,,Conturi de cheltuieli
-60,6,Cheltuieli privind stocurile si alte consumuri
-601,60,Cheltuieli cu materiile prime
-602,60,Cheltuieli cu materialele consumabile
-6021,602,Cheltuieli cu materialele auxiliare
-6022,602,Cheltuieli privind combustibilii
-6023,602,Cheltuieli privind materialele pentru ambalat
-6024,602,Cheltuieli privind piesele de schimb
-6025,602,Cheltuieli privind seminţele şi materialele de plantat
-6026,602,Cheltuieli privind furajele
-6028,602,Cheltuieli privind alte materiale consumabile
-603,60,Cheltuieli privind materialele de natura obiectelor de inventar
-604,60,Cheltuieli privind materialele nestocate
-605,60,Cheltuieli privind utilitatile
-6051,605,Cheltuieli privind consumul de energie
-6052,605,Cheltuieli privind consumul de apă
-6053,605,Cheltulieli privind consumul de gaze naturale
-6058,605,Cheltuieli cu alte utilitati
-606,60,Cheltuieli privind activele biologice de natura stocurilor
-607,60,Cheltuieli privind mărfurile
-608,60,Cheltuieli privind ambalajele
-609,60,Reduceri comerciale primite
-61,6,Cheltuieli cu serviciile executate de terţi
-611,61,Cheltuieli cu întreţinerea şi reparaţiile
-612,61,"Cheltuieli cu redevenţele, locaţiile de gestiune şi chiriile"
-613,61,Cheltuieli cu primele de asigurare
-614,61,Cheltuieli cu studiile şi cercetările
-615,61,Cheltuieli cu pregătirea personalului
-616,61,Cheltuieli aferente drepturilor de proprietate intelectuală
-617,61,Cheltuieli de management
-618,61,Cheltuieli de consultanță
-62,6,Cheltuieli cu alte servicii executate de terţi
-621,62,Cheltuieli cu colaboratorii
-622,62,Cheltuieli privind comisioanele şi onorariile
-623,62,"Cheltuieli de protocol, reclamă şi publicitate"
-6231,623,Cheltuieli de protocol
-6232,623,Cheltuieli de reclamă şi publicitate
-624,62,Cheltuieli cu transportul de bunuri şi personal
-625,62,"Cheltuieli cu deplasări, detaşări şi transferări"
-626,62,Cheltuieli poştale şi taxe de telecomunicaţii
-627,62,Cheltuieli cu serviciile bancare şi asimilate
-628,62,Alte cheltuieli cu serviciile executate de terţi
-63,6,"Cheltuieli cu alte impozite, taxe şi vărsăminte asimilate"
-635,63,"Cheltuieli cu alte impozite, taxe şi vărsăminte asimilate"
-64,6,Cheltuieli cu personalul
-641,64,Cheltuieli cu salariile personalului
-642,64,Cheltuieli cu avantajele în natură și tichetele acordate salariaţilor
-6421,642,Cheltuieli cu avantajele în natură acordate salariaţilor
-6422,642,Cheltuieli cu tichetele acordate salariaților
-643,64,Cheltuieli cu remunerarea în instrumente de capitaluri proprii
-644,64,Cheltuieli cu primele reprezentând participarea personalului la profit
-645,64,Cheltuieli privind asigurările şi protecţia socială
-6451,645,Cheltuieli privind contribuţia unităţii la asigurările sociale
-6452,645,Cheltuieli privind contribuţia unităţii pentru ajutorul de şomaj
-6453,645,Cheltuieli privind contribuţia angajatorului pentru asigurările sociale de sănătate
-6455,645,Cheltuieli privind contribuţia unităţii la asigurările de viaţă
-6456,645,Cheltuieli privind contribuţia unităţii la fondurile de pensii facultative
-6457,645,Cheltuieli privind contribuția societății la primele de asigurare voluntară de sănătate
-6458,645,Alte cheltuieli privind asigurările și protecția socială
-646,64,Cheltuieli privind contribuţia asiguratorie pentru muncă
-6461,646,Cheltuieli privind contribuţia asiguratorie pentru muncă corespunzătoare salariaţilor
-6462,646,"Cheltuieli privind contribuţia asiguratorie pentru muncă corespunzătoare altor persoane, decât salariaţii"
-65,6,Alte cheltuieli de exploatare
-651,65,Cheltuieli din operaţiuni de fiducie
-6511,651,Cheltuieli ocazionate de constituirea fiduciei
-6512,651,Cheltuieli din derularea operaţiunilor de fiducie
-6513,651,Cheltuieli din lichidarea operaţiunilor de fiducie
-652,65,Cheltuieli cu protecţia mediului înconjurător
-654,65,Pierderi din creanţe şi debitori diverşi
-655,65,Cheltuieli din reevaluarea imobilizărilor corporale
-658,65,Alte cheltuieli de exploatare
-6581,658,"Despăgubiri, amenzi şi penalităţi"
-6582,658,Donaţii acordate
-6583,658,Cheltuieli privind activele cedate şi alte operaţii de capital
-6584,658,Cheltuieli cu sumele sau bunurile acordate ca sponsorizări
-6586,658,Cheltuieli reprezentând transferuri şi contribuţii datorate în baza unor acte normative speciale
-6587,658,Cheltuieli privind calamităţile şi alte evenimente similare
-6588,658,Alte cheltuieli de exploatare
-66,6,Cheltuieli financiare
-663,66,Pierderi din creanţe legate de participaţii
-664,66,Cheltuieli privind investiţiile financiare cedate
-6641,664,Cheltuieli privind imobilizările financiare cedate
-6642,664,Pierderi din investiţiile pe termen scurt cedate
-665,66,Cheltuieli din diferenţe de curs valutar
-6651,665,Diferenţe nefavorabile de curs valutar legate de elementele monetare exprimate în valută
-6652,665,Diferenţe nefavorabile de curs valutar din evaluarea elementelor monetare care fac parte din investiţia netă într-o entitate străină
-666,66,Cheltuieli privind dobânzile
-667,66,Cheltuieli privind sconturile acordate
-668,66,Alte cheltuieli financiare
-68,6,"Cheltuieli cu amortizările, provizioanele şi ajustările pentru depreciere sau pierdere de valoare"
-681,68,"Cheltuieli de exploatare privind amortizările, provizioanele şi ajustările pentru depreciere"
-6811,681,Cheltuieli de exploatare privind amortizarea imobilizărilor
-6812,681,Cheltuieli de exploatare privind provizioanele
-6813,681,Cheltuieli de exploatare privind ajustările pentru deprecierea imobilizărilor
-6814,681,Cheltuieli de exploatare privind ajustările pentru deprecierea activelor circulante
-6817,681,Cheltuieli de exploatare privind ajustările pentru deprecierea fondului comercial
-6818,681,Cheltuieli de exploatare privind ajustările pentru deprecierea creanţelor reprezentând avansuri acordate furnizorilor
-686,68,"Cheltuieli financiare privind amortizările, provizioanele şi ajustările pentru pierdere de valoare"
-6861,686,Cheltuieli privind actualizarea provizioanelor
-6863,686,Cheltuieli financiare privind ajustările pentru pierderea de valoare a imobilizărilor financiare
-6864,686,Cheltuieli financiare privind ajustările pentru pierderea de valoare a activelor circulante
-6865,686,Cheltuieli financiare privind amortizarea diferenţelor aferente titlurilor de stat
-6868,686,Cheltuieli financiare privind amortizarea primelor de rambursare a obligaţiunilor şi a altor datorii
-69,6,Cheltuieli cu impozitul pe profit şi alte impozite
-691,69,Cheltuieli cu impozitul pe profit
-694,69,Cheltuieli cu impozitul pe profit rezultat din decontarile in cadrul grupului fiscal in domeniul impozitului pe profit
-695,69,Cheltuieli cu impozitul specific unor activităţi
-697,69,Cheltuieli cu impozitul pe profit la nivelul impozitului minim pe cifra de afaceri
-698,69,Cheltuieli cu impozitul pe venit şi cu alte impozite care nu apar în elementele de mai sus
-7,,Conturi de venituri
-70,7,Cifra de afaceri netă
-701,70,"Venituri din vânzarea produselor finite, produselor agricole şi a activelor biologice de natura stocurilor"
-7015,701,Venituri din vânzarea produselor finite
-7017,701,Venituri din vânzarea produselor agricole
-7018,701,Venituri din vânzarea activelor biologice de natura stocurilor
-702,70,Venituri din vânzarea semifabricatelor
-703,70,Venituri din vânzarea produselor reziduale
-704,70,Venituri din servicii prestate
-705,70,Venituri din studii şi cercetări
-706,70,"Venituri din redevenţe, locaţii de gestiune şi chirii"
-707,70,Venituri din vânzarea mărfurilor
-708,70,Venituri din activităţi diverse
-709,70,Reduceri comerciale acordate
-71,7,Venituri aferente costului de producţie în curs de execuţie
-711,71,Venituri aferente costurilor stocurilor de produse
-712,71,Venituri aferente costurilor serviciilor în curs de execuţie
-72,7,Venituri din producţia de imobilizări
-721,72,Venituri din producţia de imobilizări necorporale
-722,72,Venituri din producţia de imobilizări corporale
-725,72,Venituri din producţia de investiţii imobiliare
-74,7,Venituri din subvenţii de exploatare
-741,74,Venituri din subvenţii de exploatare
-7411,741,Venituri din subvenţii de exploatare aferente cifrei de afaceri20
-7412,741,Venituri din subvenţii de exploatare pentru materii prime şi materiale
-7413,741,Venituri din subvenţii de exploatare pentru alte cheltuieli externe
-7414,741,Venituri din subvenţii de exploatare pentru plata personalului
-7415,741,Venituri din subvenţii de exploatare pentru asigurări şi protecţie socială
-7416,741,Venituri din subvenţii de exploatare pentru alte cheltuieli de exploatare
-7417,741,Venituri din subvenţii de exploatare în caz de calamităţi şi alte evenimente similare
-7418,741,Venituri din subvenţii de exploatare pentru dobânda datorată
-7419,741,Venituri din subvenţii de exploatare aferente altor venituri
-75,7,Alte venituri din exploatare
-751,75,Venituri din operaţiuni de fiducie
-7511,751,Venituri ocazionate de constituirea fiduciei
-7512,751,Venituri din derularea operaţiunilor de fiducie
-7513,751,Venituri din lichidarea operaţiunilor de fiducie
-754,75,Venituri din creanţe reactivate şi debitori diverşi
-755,75,Venituri din reevaluarea imobilizărilor corporale
-758,75,Alte venituri din exploatare
-7581,758,"Venituri din despăgubiri, amenzi şi penalităţi"
-7582,758,Venituri din donaţii primite
-7583,758,Venituri din vânzarea activelor şi alte operaţiuni de capital
-7584,758,Venituri din subvenţii pentru investiţii
-7586,758,Venituri reprezentând transferuri cuvenite în baza unor acte normative speciale
-7588,758,Alte venituri din exploatare
-76,7,Venituri financiare
-761,76,Venituri din imobilizări financiare
-7611,761,Venituri din acţiuni deţinute la entităţile afiliate
-7612,761,Venituri din acţiuni deţinute la entităţi asociate
-7613,761,Venituri din acţiuni deţinute la entităţi controlate în comun
-7615,761,Venituri din alte imobilizări financiare
-762,76,Venituri din investiţii financiare pe termen scurt
-764,76,Venituri din investiţii financiare cedate
-7641,764,Venituri din imobilizări financiare cedate
-7642,764,Câştiguri din investiţii pe termen scurt cedate
-765,76,Venituri din diferenţe de curs valutar
-7651,765,Diferenţe favorabile de curs valutar legate de elementele monetare exprimate în valută
-7652,765,Diferenţe favorabile de curs valutar din evaluarea elementelor monetare care fac parte din investiţia netă într-o entitate străină
-766,76,Venituri din dobânzi
-767,76,Venituri din sconturi obţinute
-768,76,Alte venituri financiare
-78,7,"Venituri din provizioane, amortizări şi ajustări pentru depreciere sau pierdere de valoare"
-781,78,Venituri din provizioane şi ajustări pentru depreciere privind activitatea de exploatare
-7812,781,Venituri din provizioane
-7813,781,Venituri din ajustări pentru deprecierea imobilizărilor
-7814,781,Venituri din ajustări pentru deprecierea activelor circulante
-7815,781,Venituri din fondul comercial negativ
-7818,781,Venituri din ajustări pentru deprecierea creanţelor reprezentând avansuri acordate furnizorilor
-786,78,Venituri financiare din amortizări şi ajustări pentru pierdere de valoare
-7863,786,Venituri financiare din ajustări pentru pierderea de valoare a imobilizărilor financiare
-7864,786,Venituri financiare din ajustări pentru pierderea de valoare a activelor circulante
-7865,786,Venituri financiare din amortizarea diferenţelor aferente titlurilor de stat
-79,7,Venituri din impozitul pe profit
-794,79,Venituri din impozitul pe profit rezultat din decontarile in cadrul grupului fiscal in domeniul impozitului pe profit
-8,,Conturi speciale
-80,8,Conturi în afara bilanţului
-801,80,Angajamente acordate
-8011,801,Giruri şi garanţii acordate
-8018,801,Alte angajamente acordate
-802,80,Angajamente primite
-8021,802,Giruri şi garanţii primite
-8028,802,Alte angajamente primite
-803,80,Alte conturi în afara bilanţului
-8031,803,Imobilizări corporale luate cu chirie
-8032,803,Valori materiale primite spre prelucrare sau reparare
-8033,803,Valori materiale primite în păstrare sau custodie
-8034,803,"Debitori scoşi din activ, urmăriţi în continuare"
-8035,803,Stocuri de natura obiectelor de inventar date în folosinţă
-8036,803,"Redevenţe, locaţii de gestiune, chirii şi alte datorii asimilate"
-8037,803,Efecte scontate neajunse la scadenţă
-8038,803,"Bunuri primite în administrare, concesiune şi cu chirie"
-8039,803,Alte valori în afara bilanţului
-804,80,Certificate verzi
-805,80,"Dobânzi aferente contractelor de leasing şi altor contracte asimilate, neajunse la scadenţă"
-8051,805,Dobânzi de plătit
-8052,805,Dobânzi de încasat
-806,80,Certificate de emisii de gaze cu efect de seră
-807,80,Active contingente
-808,80,Datorii contingente
-809,80,Creanţe preluate prin cesionare
-89,8,Bilanţ
-891,89,Bilanţ de deschidere
-892,89,Bilanţ de închidere
-9,,Conturi de gestiune
-90,9,Decontări interne
-901,90,Decontări interne privind cheltuielile
-902,90,Decontări interne privind producţia obţinută
-903,90,Decontări interne privind diferenţele de preţ
-92,9,Conturi de calculaţie
-921,92,Cheltuielile activităţii de bază
-922,92,Cheltuielile activităţilor auxiliare
-923,92,Cheltuieli indirecte de producţie
-924,92,Cheltuieli generale de administraţie
-925,92,Cheltuieli de desfacere
-93,9,Costul producţiei
-931,93,Costul producţiei obţinute
-933,93,Costul producţiei în curs de execuţie
+Account,ParentAccount,Functie,Romana
+1,,C,Conturi de capitaluri
+10,1,C,Capital şi rezerve
+101,10,C,Capital
+1011,101,C,Capital subscris nevărsat
+1012,101,C,Capital subscris vărsat
+1015,101,C,Patrimoniul regiei
+1016,101,C,Patrimoniul public
+1017,101,C,Patrimoniul privat
+1018,101,C,Patrimoniul institutelor naţionale de cercetare-dezvoltare
+103,10,B,Alte elemente de capitaluri proprii
+1031,103,C,Beneficii acordate angajaţilor sub forma instrumentelor de capitaluri proprii
+1033,103,B,Diferenţe de curs valutar în relaţie cu investiţia netă într-o entitate străină
+1038,103,B,Diferenţe din modificarea valorii juste a activelor financiare disponibile în vederea vânzării şi alte elemente de capitaluri proprii
+104,10,C,Prime de capital
+1041,104,C,Prime de emisiune
+1042,104,C,Prime de fuziune/divizare
+1043,104,C,Prime de aport
+1044,104,C,Prime de conversie a obligaţiunilor în acţiuni
+105,10,C,Rezerve din reevaluare
+106,10,C,Rezerve
+1061,106,C,Rezerve legale
+1063,106,C,Rezerve statutare sau contractuale
+1068,106,C,Alte rezerve
+107,10,B,Diferenţe de curs valutar din conversie
+108,10,B,Interese care nu controlează8
+1081,108,B,Interese care nu controlează - rezultatul exerciţiului financiar
+1082,108,B,Interese care nu controlează - alte capitaluri proprii
+109,10,D,Acţiuni proprii
+1091,109,D,Acţiuni proprii deţinute pe termen scurt
+1092,109,D,Acţiuni proprii deţinute pe termen lung
+1095,109,D,Acţiuni proprii reprezentând titluri deţinute de societatea absorbită la societatea absorbantă
+11,1,B,Rezultatul reportat
+117,11,B,Rezultatul reportat
+1171,117,B,Rezultatul reportat reprezentând profitul nerepartizat sau pierderea neacoperită
+1172,117,B,"Rezultatul reportat provenit din adoptarea pentru prima dată a IAS, mai puţin IAS 299"
+1173,117,B,Rezultatul reportat provenit din modificările politicilor contabile
+1174,117,B,Rezultatul reportat provenit din corectarea erorilor contabile
+1175,117,B,Rezultatul reportat reprezentând surplusul realizat din rezerve din reevaluare
+1176,117,B,Rezultatul reportat provenit din trecerea la aplicarea reglementărilor contabile conforme cu directivele europene
+12,1,B,Rezultatul exerciţiului financiar
+121,12,B,Profit sau pierdere
+129,12,D,Repartizarea profitului
+14,1,B,"Câştiguri sau pierderi legate de emiterea, răscumpărarea, vânzarea, cedarea cu titlu gratuit sau anularea instrumentelor de capitaluri proprii"
+141,14,C,Câștiguri legate de vânzarea sau anularea instrumentelor de capitaluri proprii
+1411,141,C,Câştiguri legate de vânzarea instrumentelor de capitaluri proprii
+1412,141,C,Câştiguri legate de anularea instrumentelor de capitaluri proprii
+149,14,D,"Pierderi legate de emiterea, răscumpărarea, vânzarea, cedarea cu titlu gratuit sau anularea instrumentelor de capitaluri proprii"
+1491,149,D,Pierderi rezultate din vânzarea instrumentelor de capitaluri proprii
+1495,149,D,"Pierderi rezultate din reorganizări, care sunt determinate de anularea titlurilor deţinute"
+1496,149,D,"Pierderi rezultate din reorganizări de societăți, corespunzătoare activului net negativ al societății absorbite"
+1498,149,D,Alte pierderi legate de instrumentele de capitaluri proprii
+15,1,C,Provizioane
+151,15,C,Provizioane
+1511,151,C,Provizioane pentru litigii
+1512,151,C,Provizioane pentru garanţii acordate clienţilor
+1513,151,C,Provizioane pentru dezafectare imobilizări corporale şi alte acţiuni similare legate de acestea
+1514,151,C,Provizioane pentru restructurare
+1515,151,C,Provizioane pentru pensii şi obligaţii similare
+1516,151,C,Provizioane pentru impozite
+1517,151,C,Provizioane pentru terminarea contractului de muncă
+1518,151,C,Alte provizioane
+16,1,C,Împrumuturi și datorii asimilate
+161,16,C,Împrumuturi din emisiuni de obligaţiuni
+1614,161,C,Împrumuturi externe din emisiuni de obligaţiuni garantate de stat
+1615,161,C,Împrumuturi externe din emisiuni de obligaţiuni garantate de bănci
+1617,161,C,Împrumuturi interne din emisiuni de obligaţiuni garantate de stat
+1618,161,C,Alte împrumuturi din emisiuni de obligaţiuni
+162,16,C,Credite bancare pe termen lung
+1621,162,C,Credite bancare pe termen lung
+1622,162,C,Credite bancare pe termen lung nerambursate la scadenţă
+1623,162,C,Credite externe guvernamentale
+1624,162,C,Credite bancare externe garantate de stat
+1625,162,C,Credite bancare externe garantate de bănci
+1626,162,C,Credite de la trezoreria statului
+1627,162,C,Credite bancare interne garantate de stat
+166,16,C,Datorii care privesc imobilizările financiare
+1661,166,C,Datorii faţă de entităţile afiliate
+1663,166,C,Datorii faţă de entităţile asociate şi entităţile controlate în comun
+167,16,C,Alte împrumuturi şi datorii asimilate
+168,16,C,Dobânzi aferente împrumuturilor şi datoriilor asimilate
+1681,168,C,Dobânzi aferente împrumuturilor din emisiuni de obligaţiuni
+1682,168,C,Dobânzi aferente creditelor bancare pe termen lung
+1685,168,C,Dobânzi aferente datoriilor faţă de entităţile afiliate
+1686,168,C,Dobânzi aferente datoriilor faţă de entităţile asociate şi entităţile controlate în comun
+1687,168,C,Dobânzi aferente altor împrumuturi şi datorii asimilate
+169,16,D,Prime privind rambursarea obligațiunilor și a altor datorii
+1691,169,D,Prime privind rambursarea obligaţiunilor
+1692,169,D,Prime privind rambursarea altor datorii
+2,,D,Conturi de imobilizări
+20,2,D,Imobilizări necorporale
+201,20,D,Cheltuieli de constituire
+203,20,D,Cheltuieli de dezvoltare
+205,20,D,"Concesiuni, brevete, licenţe, mărci comerciale, drepturi şi active similare"
+206,20,D,Active necorporale de explorare şi evaluare a resurselor minerale
+207,20,D,Fond comercial
+2071,207,D,Fond comercial pozitiv
+2075,207,D,Fond comercial negativ
+208,20,D,Alte imobilizări necorporale
+21,2,D,Imobilizări corporale
+211,21,D,Terenuri şi amenajări de terenuri
+2111,211,D,Terenuri
+2112,211,D,Amenajări de terenuri
+212,21,D,Construcţii
+213,21,D,Instalaţii tehnice şi mijloace de transport
+2131,213,D,"Echipamente tehnologice (maşini, utilaje şi instalaţii de lucru,"
+2132,213,D,"Aparate şi instalaţii de măsurare, control şi reglare"
+2133,213,D,Mijloace de transport
+214,21,D,"Mobilier, aparatură birotică, echipamente de protecţie a valorilor umane şi materiale şi alte active corporale"
+215,21,D,Investiţii imobiliare
+216,21,D,Active corporale de explorare şi evaluare a resurselor minerale
+217,21,D,Active biologice productive
+22,2,D,Imobilizări corporale în curs de aprovizionare
+223,22,D,Instalații tehnice şi mijloace de transport în curs de aprovizionare
+224,22,D,"Mobilier, aparatură birotică, echipamente de protecție a valorilor umane și materiale și alte active corporale în curs de aprovizionare"
+227,22,D,Active biologice productive în curs de aprovizionare
+23,2,D,Imobilizări în curs
+231,23,D,Imobilizări corporale în curs de execuţie
+235,23,D,Investiţii imobiliare în curs de execuţie
+26,2,D,Imobilizări financiare
+261,26,D,Acţiuni deţinute la entităţile afiliate
+262,26,D,Acţiuni deţinute la entităţi asociate
+263,26,D,Acţiuni deţinute la entităţi controlate în comun
+264,26,D,Titluri puse în echivalenţă
+265,26,D,Alte titluri imobilizate
+266,26,D,Certificate verzi amânate
+267,26,D,Creanţe imobilizate
+2671,267,D,Sume de încasat de la entităţile afiliate
+2672,267,D,Dobânda aferentă sumelor de încasat de la entităţile afiliate
+2673,267,D,Creanţe faţă de entităţile asociate şi entităţile controlate în comun
+2674,267,D,Dobânda aferentă creanţelor faţă de entităţile asociate şi entităţile controlate în comun
+2675,267,D,Împrumuturi acordate pe termen lung
+2676,267,D,Dobânda aferentă împrumuturilor acordate pe termen lung
+2677,267,D,Obligaţiuni achiziţionate cu ocazia emisiunilor efectuate de terți
+2678,267,D,Alte creanţe imobilizate
+2679,267,D,Dobânzi aferente altor creanţe imobilizate
+269,26,D,Vărsăminte de efectuat pentru imobilizări financiare
+2691,269,D,Vărsăminte de efectuat privind acţiunile deţinute la entităţile afiliate
+2692,269,D,Vărsăminte de efectuat privind acţiunile deţinute la entităţi asociate
+2693,269,D,Vărsăminte de efectuat privind acţiunile deţinute la entităţi controlate în comun
+2695,269,D,Vărsăminte de efectuat pentru alte imobilizări financiare
+28,2,C,Amortizări privind imobilizările
+280,28,C,Amortizări privind imobilizările necorporale
+2801,280,C,Amortizarea cheltuielilor de constituire
+2803,280,C,Amortizarea cheltuielilor de dezvoltare
+2805,280,C,"Amortizarea concesiunilor, brevetelor, licenţelor, mărcilor comerciale, drepturilor şi activelor similare"
+2806,280,C,Amortizarea activelor necorporale de explorare şi evaluare a resurselor minerale
+2807,280,C,Amortizarea fondului comercial
+2808,280,C,Amortizarea altor imobilizări necorporale
+281,28,C,Amortizări privind imobilizările corporale
+2811,281,C,Amortizarea amenajărilor de terenuri
+2812,281,C,Amortizarea construcţiilor
+2813,281,C,Amortizarea instalaţiilor şi mijloacelor de transport
+2814,281,C,Amortizarea altor imobilizări corporale
+2815,281,C,Amortizarea investiţiilor imobiliare
+2816,281,C,Amortizarea activelor corporale de explorare şi evaluare a resurselor minerale
+2817,281,C,Amortizarea activelor biologice productive
+29,2,C,Ajustări pentru deprecierea sau pierderea de valoare a imobilizărilor
+290,29,C,Ajustări pentru deprecierea imobilizărilor necorporale
+2903,290,C,Ajustări pentru deprecierea cheltuielilor de dezvoltare
+2905,290,C,"Ajustări pentru deprecierea concesiunilor, brevetelor, licenţelor, mărcilor comerciale, drepturilor şi activelor similare"
+2906,290,C,Ajustări pentru deprecierea activelor necorporale de explorare şi evaluare a resurselor minerale
+2908,290,C,Ajustări pentru deprecierea altor imobilizări necorporale
+291,29,C,Ajustări pentru deprecierea imobilizărilor corporale
+2911,291,C,Ajustări pentru deprecierea terenurilor şi amenajărilor de terenuri
+2912,291,C,Ajustări pentru deprecierea construcţiilor
+2913,291,C,Ajustări pentru deprecierea instalaţiilor și mijloacelor de transport
+2914,291,C,Ajustări pentru deprecierea altor imobilizări corporale
+2915,291,C,Ajustări pentru deprecierea investiţiilor imobiliare
+2916,291,C,Ajustări pentru deprecierea activelor corporale de explorare şi evaluare a resurselor minerale
+2917,291,C,Ajustări pentru deprecierea activelor biologice productive
+293,29,C,Ajustări pentru deprecierea imobilizărilor în curs de execuție
+2931,293,C,Ajustări pentru deprecierea imobilizărilor corporale în curs de execuţie
+2935,293,C,Ajustări pentru deprecierea investiţiilor imobiliare în curs de execuţie
+296,29,C,Ajustări pentru pierderea de valoare a imobilizărilor financiare
+2961,296,C,Ajustări pentru pierderea de valoare a acţiunilor deţinute la entităţile afiliate
+2962,296,C,Ajustări pentru pierderea de valoare a acţiunilor deţinute la entităţi asociate şi entităţi controlate în comun
+2963,296,C,Ajustări pentru pierderea de valoare a altor titluri imobilizate
+2964,296,C,Ajustări pentru pierderea de valoare a sumelor de încasat de la entităţile afiliate
+2965,296,C,Ajustări pentru pierderea de valoare a creanţelor faţă de entităţile asociate şi entităţile controlate în comun
+2966,296,C,Ajustări pentru pierderea de valoare a împrumuturilor acordate pe termen lung
+2968,296,C,Ajustări pentru pierderea de valoare a altor creanţe imobilizate
+3,,D,- Conturi de stocuri şi producţie în curs de execuţie
+30,3,D,Stocuri de materii prime şi materiale
+301,30,D,Materii prime
+302,30,D,Materiale consumabile
+3021,302,D,Materiale auxiliare
+3022,302,D,Combustibili
+3023,302,D,Materiale pentru ambalat
+3024,302,D,Piese de schimb
+3025,302,D,Seminţe şi materiale de plantat
+3026,302,D,Furaje
+3028,302,D,Alte materiale consumabile
+303,30,D,Materiale de natura obiectelor de inventar
+308,30,B,Diferenţe de preţ la materii prime şi materiale
+32,3,D,Stocuri în curs de aprovizionare
+321,32,D,Materii prime în curs de aprovizionare
+322,32,D,Materiale consumabile în curs de aprovizionare
+323,32,D,Materiale de natura obiectelor de inventar în curs de aprovizionare
+326,32,D,Active biologice de natura stocurilor în curs de aprovizionare
+327,32,D,Mărfuri în curs de aprovizionare
+328,32,B,Ambalaje în curs de aprovizionare
+33,3,D,Producţie în curs de execuţie
+331,33,D,Produse în curs de execuţie
+332,33,D,Servicii în curs de execuţie
+34,3,D,Produse
+341,34,D,Semifabricate
+345,34,D,Produse finite
+346,34,D,Produse reziduale
+347,34,D,Produse agricole
+348,34,B,Diferenţe de preţ la produse
+35,3,D,Stocuri aflate la terţi
+351,35,D,Materii şi materiale aflate la terţi
+354,35,D,Produse aflate la terţi
+356,35,D,Active biologice de natura stocurilor aflate la terţi
+357,35,D,Mărfuri aflate la terţi
+358,35,D,Ambalaje aflate la terţi
+36,3,D,Active biologice de natura stocurilor
+361,36,D,Active biologice de natura stocurilor
+368,36,B,Diferenţe de preţ la active biologice de natura stocurilor
+37,3,D,Mărfuri
+371,37,D,Mărfuri
+378,37,B,Diferenţe de preţ la mărfuri
+38,3,D,Ambalaje
+381,38,D,Ambalaje
+388,38,B,Diferenţe de preţ la ambalaje
+39,3,C,Ajustări pentru deprecierea stocurilor şi producţiei în curs de execuţie
+391,39,C,Ajustări pentru deprecierea materiilor prime
+392,39,C,Ajustări pentru deprecierea materialelor
+3921,392,C,Ajustări pentru deprecierea materialelor consumabile
+3922,392,C,Ajustări pentru deprecierea materialelor de natura obiectelor de inventar
+393,39,C,Ajustări pentru deprecierea producţiei în curs de execuţie
+394,39,C,Ajustări pentru deprecierea produselor
+3941,394,C,Ajustări pentru deprecierea semifabricatelor
+3945,394,C,Ajustări pentru deprecierea produselor finite
+3946,394,C,Ajustări pentru deprecierea produselor reziduale
+3947,394,C,Ajustări pentru deprecierea produselor agricole
+395,39,C,Ajustări pentru deprecierea stocurilor aflate la terţi
+3951,395,C,Ajustări pentru deprecierea materiilor şi materialelor aflate la terţi
+3952,395,C,Ajustări pentru deprecierea semifabricatelor aflate la terţi
+3953,395,C,Ajustări pentru deprecierea produselor finite aflate la terţi
+3954,395,C,Ajustări pentru deprecierea produselor reziduale aflate la terţi
+3955,395,C,Ajustări pentru deprecierea produselor agricole aflate la terţi
+3956,395,C,Ajustări pentru deprecierea activelor biologice de natura stocurilor aflate la terţi
+3957,395,C,Ajustări pentru deprecierea mărfurilor aflate la terţi
+3958,395,C,Ajustări pentru deprecierea ambalajelor aflate la terţi
+396,39,C,Ajustări pentru deprecierea activelor biologice de natura stocurilor
+397,39,C,Ajustări pentru deprecierea mărfurilor
+398,39,C,Ajustări pentru deprecierea ambalajelor
+4,,B,- Conturi de terţi
+40,4,C,Furnizori şi conturi asimilate
+401,40,C,Furnizori
+403,40,C,Efecte de plătit
+404,40,C,Furnizori de imobilizări
+405,40,C,Efecte de plătit pentru imobilizări
+408,40,C,Furnizori - facturi nesosite
+409,40,D,Furnizori - debitori
+4091,409,D,Furnizori-debitori pentru cumpărări de bunuri de natura stocurilor
+4092,409,D,Furnizori-debitori pentru prestări de servicii
+4093,409,D,Avansuri acordate pentru imobilizări corporale
+4094,409,D,Avansuri acordate pentru imobilizări necorporale
+41,4,D,Clienţi şi conturi asimilate
+411,41,D,Clienţi
+4111,411,D,Clienţi
+4118,411,D,Clienţi incerţi sau în litigiu
+413,41,D,Efecte de primit de la clienţi
+418,41,D,Clienţi - facturi de întocmit
+419,41,C,Clienţi – creditori
+42,4,C,Personal şi conturi asimilate
+421,42,C,Personal - salarii datorate
+423,42,C,Personal - ajutoare materiale datorate
+424,42,C,Prime reprezentând participarea personalului la profit14
+425,42,D,Avansuri acordate personalului
+426,42,C,Drepturi de personal neridicate
+427,42,C,Reţineri din salarii datorate terţilor
+428,42,B,Alte datorii şi creanţe în legătură cu personalul
+4281,428,C,Alte datorii în legătură cu personalul
+4282,428,D,Alte creanţe în legătură cu personalul
+43,4,C,"Asigurări sociale, protecţia socială şi conturi asimilate"
+431,43,C,Asigurări sociale
+4311,431,C,Contribuţia unităţii la asigurările sociale
+4312,431,C,Contribuţia personalului la asigurările sociale
+4313,431,C,Contribuţia angajatorului pentru asigurările sociale de sănătate
+4314,431,C,Contribuţia angajaţilor pentru asigurările sociale de sănătate
+4315,431,C,Contribuţia de asigurări sociale
+4316,431,C,Contribuţia de asigurări sociale de sănătate
+4318,431,C,Alte contribuţii pentru asigurările sociale de sănătate
+436,43,C,Contribuţia asiguratorie pentru muncă
+437,43,C,Ajutor de şomaj
+4371,437,C,Contribuţia unităţii la fondul de şomaj
+4372,437,C,Contribuţia personalului la fondul de şomaj
+438,43,B,Alte datorii şi creanţe sociale
+4381,438,C,Alte datorii sociale
+4382,438,D,Alte creanţe sociale
+44,4,B,"Bugetul statului, fonduri speciale şi conturi asimilate"
+441,44,B,Impozitul pe profit/venit
+4411,441,B,Impozitul pe profit
+4415,441,B,Impozitul specific unor activităţi
+4417,441,B,Impozitul pe profit la nivelul impozitului minim pe cifra de afaceri
+4418,441,B,Impozitul pe venit
+442,44,B,Taxa pe valoarea adăugată
+4423,442,C,TVA de plată
+4424,442,D,TVA de recuperat
+4426,442,D,TVA deductibilă
+4427,442,C,TVA colectată
+4428,442,B,TVA neexigibilă
+444,44,C,Impozitul pe venituri de natura salariilor
+445,44,D,Subvenţii
+4451,445,D,Subvenţii guvernamentale
+4452,445,D,Împrumuturi nerambursabile cu caracter de subvenţii
+4458,445,D,Alte sume primite cu caracter de subvenţii
+446,44,C,"Alte impozite, taxe şi vărsăminte asimilate"
+447,44,C,Fonduri speciale - taxe şi vărsăminte asimilate
+448,44,B,Alte datorii şi creanţe cu bugetul statului
+4481,448,C,Alte datorii faţă de bugetul statului
+4482,448,D,Alte creanţe privind bugetul statului
+45,4,B,Grup şi actionari / asociaţi
+451,45,B,Decontări între entităţile afiliate
+4511,451,B,Decontări între entităţile afiliate
+4518,451,B,Dobânzi aferente decontărilor între entităţile afiliate
+453,45,B,Decontări cu entitățile asociate și entitățile controlate în comun
+4531,453,B,Decontări cu entitățile asociate și entitățile controlate
+4538,453,B,Dobânzi aferente decontărilor cu entitățile asociate și entitățile controlate în comun
+455,45,C,Sume datorate acţionarilor/asociaţilor
+4551,455,C,Acţionari/asociaţi – conturi curente
+4558,455,C,Acţionari/asociaţi – dobânzi la conturi curente
+456,45,B,Decontări cu acţionarii/asociaţii privind capitalul
+457,45,C,Dividende de plată
+458,45,B,Decontări din operaţii în participaţie
+4581,458,C,Decontări din operaţii în participaţie - pasiv
+4582,458,D,Decontări din operaţii în participaţie - activ
+46,4,B,Debitori şi creditori diverşi
+461,46,D,Debitori diverşi
+462,46,C,Creditori diverşi
+463,46,D,Creanţe reprezentând dividende repartizate în cursul exerciţiului financiar
+466,46,B,Decontări din operaţiuni de fiducie
+4661,466,C,Datorii din operaţiuni de fiducie
+4662,466,D,Creanţe din operaţiuni de fiducie
+467,46,C,Datorii aferente distribuirior interimare de dividende
+47,4,B,"Conturi de subvenţii, regularizare şi asimilate"
+471,47,D,Cheltuieli înregistrate în avans
+472,47,C,Venituri înregistrate în avans
+473,47,B,Decontări din operaţii în curs de clarificare
+475,47,C,Subvenţii pentru investiţii
+4751,475,C,Subvenţii guvernamentale pentru investiţii
+4752,475,C,Împrumuturi nerambursabile cu caracter de subvenţii pentru investiţii
+4753,475,C,Donaţii pentru investiţii
+4754,475,C,Plusuri de inventar de natura imobilizărilor
+4758,475,C,Alte sume primite cu caracter de subvenţii pentru investiţii
+478,47,C,Venituri în avans aferente activelor primite prin transfer de la clienţi
+48,4,B,Decontări în cadrul unităţii
+481,48,B,Decontări între unitate şi subunităţi
+482,48,B,Decontări între subunităţi
+49,4,C,Ajustări pentru deprecierea creanţelor
+490,49,C,Ajustări pentru deprecierea creanţelor reprezentând avansuri acordate furnizorilor
+4901,490,C,Ajustări pentru deprecierea creanţelor aferente cumpărărilor de bunuri de natura stocurilor
+4902,490,C,Ajustări pentru deprecierea creanţelor aferente prestărilor de servicii
+4903,490,C,Ajustări pentru deprecierea creanţelor aferente imobilizărilor corporale
+4904,490,C,Ajustări pentru deprecierea creanţelor aferente imobilizărilor necorporale
+491,49,C,Ajustări pentru deprecierea creanţelor - clienţi
+495,49,C,Ajustări pentru deprecierea creanţelor – decontări în cadrul grupului şi cu acţionarii/asociaţii
+496,49,C,Ajustări pentru deprecierea creanţelor - debitori diverşi
+5,,D,- Conturi de trezorerie
+50,5,D,Investiţii pe termen scurt
+501,50,D,Acţiuni deţinute la entităţile afiliate
+505,50,D,Obligaţiuni emise şi răscumpărate
+506,50,D,Obligaţiuni
+507,50,D,Certificate verzi primite
+508,50,D,Alte investiţii pe termen scurt şi creanţe asimilate
+5081,508,D,Alte titluri de plasament
+5088,508,D,Dobânzi la obligaţiuni şi titluri de plasament
+509,50,C,Vărsăminte de efectuat pentru investiţiile pe termen scurt
+5091,509,C,Vărsăminte de efectuat pentru acţiunile deţinute la entităţile afiliate
+5092,509,C,Vărsăminte de efectuat pentru alte investiţii pe termen scurt
+51,5,B,Conturi la bănci
+511,51,D,Valori de încasat
+5112,511,D,Cecuri de încasat
+5113,511,D,Efecte de încasat
+5114,511,D,Efecte remise spre scontare
+512,51,B,Conturi curente la bănci
+5121,512,B,Conturi la bănci în lei
+5124,512,B,Conturi la bănci în valută
+5125,512,D,Sume în curs de decontare
+5126,512,B,Conturi la bănci în lei - TVA defalcat
+5127,512,B,Conturi la bănci în valută - TVA defalcat
+518,51,B,Dobânzi
+5186,518,C,Dobânzi de plătit
+5187,518,D,Dobânzi de încasat
+519,51,C,Credite bancare pe termen scurt
+5191,519,C,Credite bancare pe termen scurt
+5192,519,C,Credite bancare pe termen scurt nerambursate la scadenţă
+5193,519,C,Credite externe guvernamentale
+5194,519,C,Credite externe garantate de stat
+5195,519,C,Credite externe garantate de bănci
+5196,519,C,Credite de la Trezoreria Statului
+5197,519,C,Credite interne garantate de stat
+5198,519,C,Dobânzi aferente creditelor bancare pe termen scurt
+53,5,D,Casa
+531,53,D,Casa
+5311,531,D,Casa în lei
+5314,531,D,Casa în valută
+532,53,D,Alte valori
+5321,532,D,Timbre fiscale şi poştale
+5322,532,D,Bilete de tratament şi odihnă
+5323,532,D,Tichete şi bilete de călătorie
+5328,532,D,Alte valori
+54,5,D,Acreditive
+541,54,D,Acreditive
+5411,541,D,Acreditive în lei
+5414,541,D,Acreditive în valută
+542,54,D,Avansuri de trezorerie16
+58,5,B,Viramente interne
+581,58,B,Viramente interne
+59,5,C,Ajustări pentru pierderea de valoare a conturilor de trezorerie
+591,59,C,Ajustări pentru pierderea de valoare a acţiunilor deţinute la entităţile afiliate
+595,59,C,Ajustări pentru pierderea de valoare a obligaţiunilor emise şi răscumpărate
+596,59,C,Ajustări pentru pierderea de valoare a obligaţiunilor
+598,59,C,Ajustări pentru pierderea de valoare a altor investiţii pe termen scurt şi creanţe asimilate
+6,,D,Conturi de cheltuieli
+60,6,D,Cheltuieli privind stocurile si alte consumuri
+601,60,D,Cheltuieli cu materiile prime
+602,60,D,Cheltuieli cu materialele consumabile
+6021,602,D,Cheltuieli cu materialele auxiliare
+6022,602,D,Cheltuieli privind combustibilii
+6023,602,D,Cheltuieli privind materialele pentru ambalat
+6024,602,D,Cheltuieli privind piesele de schimb
+6025,602,D,Cheltuieli privind seminţele şi materialele de plantat
+6026,602,D,Cheltuieli privind furajele
+6028,602,D,Cheltuieli privind alte materiale consumabile
+603,60,D,Cheltuieli privind materialele de natura obiectelor de inventar
+604,60,D,Cheltuieli privind materialele nestocate
+605,60,D,Cheltuieli privind utilitatile
+6051,605,D,Cheltuieli privind consumul de energie
+6052,605,D,Cheltuieli privind consumul de apă
+6053,605,D,Cheltulieli privind consumul de gaze naturale
+6058,605,D,Cheltuieli cu alte utilitati
+606,60,D,Cheltuieli privind activele biologice de natura stocurilor
+607,60,D,Cheltuieli privind mărfurile
+608,60,D,Cheltuieli privind ambalajele
+609,60,C,Reduceri comerciale primite
+61,6,D,Cheltuieli cu serviciile executate de terţi
+611,61,D,Cheltuieli cu întreţinerea şi reparaţiile
+612,61,D,"Cheltuieli cu redevenţele, locaţiile de gestiune şi chiriile"
+613,61,D,Cheltuieli cu primele de asigurare
+614,61,D,Cheltuieli cu studiile şi cercetările
+615,61,D,Cheltuieli cu pregătirea personalului
+616,61,D,Cheltuieli aferente drepturilor de proprietate intelectuală
+617,61,D,Cheltuieli de management
+618,61,D,Cheltuieli de consultanță
+62,6,D,Cheltuieli cu alte servicii executate de terţi
+621,62,D,Cheltuieli cu colaboratorii
+622,62,D,Cheltuieli privind comisioanele şi onorariile
+623,62,D,"Cheltuieli de protocol, reclamă şi publicitate"
+6231,623,D,Cheltuieli de protocol
+6232,623,D,Cheltuieli de reclamă şi publicitate
+624,62,D,Cheltuieli cu transportul de bunuri şi personal
+625,62,D,"Cheltuieli cu deplasări, detaşări şi transferări"
+626,62,D,Cheltuieli poştale şi taxe de telecomunicaţii
+627,62,D,Cheltuieli cu serviciile bancare şi asimilate
+628,62,D,Alte cheltuieli cu serviciile executate de terţi
+63,6,D,"Cheltuieli cu alte impozite, taxe şi vărsăminte asimilate"
+635,63,D,"Cheltuieli cu alte impozite, taxe şi vărsăminte asimilate"
+64,6,D,Cheltuieli cu personalul
+641,64,D,Cheltuieli cu salariile personalului
+642,64,D,Cheltuieli cu avantajele în natură și tichetele acordate salariaţilor
+6421,642,D,Cheltuieli cu avantajele în natură acordate salariaţilor
+6422,642,D,Cheltuieli cu tichetele acordate salariaților
+643,64,D,Cheltuieli cu remunerarea în instrumente de capitaluri proprii
+644,64,D,Cheltuieli cu primele reprezentând participarea personalului la profit
+645,64,D,Cheltuieli privind asigurările şi protecţia socială
+6451,645,D,Cheltuieli privind contribuţia unităţii la asigurările sociale
+6452,645,D,Cheltuieli privind contribuţia unităţii pentru ajutorul de şomaj
+6453,645,D,Cheltuieli privind contribuţia angajatorului pentru asigurările sociale de sănătate
+6455,645,D,Cheltuieli privind contribuţia unităţii la asigurările de viaţă
+6456,645,D,Cheltuieli privind contribuţia unităţii la fondurile de pensii facultative
+6457,645,D,Cheltuieli privind contribuția societății la primele de asigurare voluntară de sănătate
+6458,645,D,Alte cheltuieli privind asigurările și protecția socială
+646,64,D,Cheltuieli privind contribuţia asiguratorie pentru muncă
+6461,646,D,Cheltuieli privind contribuţia asiguratorie pentru muncă corespunzătoare salariaţilor
+6462,646,D,"Cheltuieli privind contribuţia asiguratorie pentru muncă corespunzătoare altor persoane, decât salariaţii"
+65,6,D,Alte cheltuieli de exploatare
+651,65,D,Cheltuieli din operaţiuni de fiducie
+6511,651,D,Cheltuieli ocazionate de constituirea fiduciei
+6512,651,D,Cheltuieli din derularea operaţiunilor de fiducie
+6513,651,D,Cheltuieli din lichidarea operaţiunilor de fiducie
+652,65,D,Cheltuieli cu protecţia mediului înconjurător
+654,65,D,Pierderi din creanţe şi debitori diverşi
+655,65,D,Cheltuieli din reevaluarea imobilizărilor corporale
+658,65,D,Alte cheltuieli de exploatare
+6581,658,D,"Despăgubiri, amenzi şi penalităţi"
+6582,658,D,Donaţii acordate
+6583,658,D,Cheltuieli privind activele cedate şi alte operaţii de capital
+6584,658,D,Cheltuieli cu sumele sau bunurile acordate ca sponsorizări
+6586,658,D,Cheltuieli reprezentând transferuri şi contribuţii datorate în baza unor acte normative speciale
+6587,658,D,Cheltuieli privind calamităţile şi alte evenimente similare
+6588,658,D,Alte cheltuieli de exploatare
+66,6,D,Cheltuieli financiare
+663,66,D,Pierderi din creanţe legate de participaţii
+664,66,D,Cheltuieli privind investiţiile financiare cedate
+6641,664,D,Cheltuieli privind imobilizările financiare cedate
+6642,664,D,Pierderi din investiţiile pe termen scurt cedate
+665,66,D,Cheltuieli din diferenţe de curs valutar
+6651,665,D,Diferenţe nefavorabile de curs valutar legate de elementele monetare exprimate în valută
+6652,665,D,Diferenţe nefavorabile de curs valutar din evaluarea elementelor monetare care fac parte din investiţia netă într-o entitate străină
+666,66,D,Cheltuieli privind dobânzile
+667,66,D,Cheltuieli privind sconturile acordate
+668,66,D,Alte cheltuieli financiare
+68,6,D,"Cheltuieli cu amortizările, provizioanele şi ajustările pentru depreciere sau pierdere de valoare"
+681,68,D,"Cheltuieli de exploatare privind amortizările, provizioanele şi ajustările pentru depreciere"
+6811,681,D,Cheltuieli de exploatare privind amortizarea imobilizărilor
+6812,681,D,Cheltuieli de exploatare privind provizioanele
+6813,681,D,Cheltuieli de exploatare privind ajustările pentru deprecierea imobilizărilor
+6814,681,D,Cheltuieli de exploatare privind ajustările pentru deprecierea activelor circulante
+6817,681,D,Cheltuieli de exploatare privind ajustările pentru deprecierea fondului comercial
+6818,681,D,Cheltuieli de exploatare privind ajustările pentru deprecierea creanţelor reprezentând avansuri acordate furnizorilor
+686,68,D,"Cheltuieli financiare privind amortizările, provizioanele şi ajustările pentru pierdere de valoare"
+6861,686,D,Cheltuieli privind actualizarea provizioanelor
+6863,686,D,Cheltuieli financiare privind ajustările pentru pierderea de valoare a imobilizărilor financiare
+6864,686,D,Cheltuieli financiare privind ajustările pentru pierderea de valoare a activelor circulante
+6865,686,D,Cheltuieli financiare privind amortizarea diferenţelor aferente titlurilor de stat
+6868,686,D,Cheltuieli financiare privind amortizarea primelor de rambursare a obligaţiunilor şi a altor datorii
+69,6,D,Cheltuieli cu impozitul pe profit şi alte impozite
+691,69,D,Cheltuieli cu impozitul pe profit
+694,69,D,Cheltuieli cu impozitul pe profit rezultat din decontarile in cadrul grupului fiscal in domeniul impozitului pe profit
+695,69,D,Cheltuieli cu impozitul specific unor activităţi
+697,69,D,Cheltuieli cu impozitul pe profit la nivelul impozitului minim pe cifra de afaceri
+698,69,D,Cheltuieli cu impozitul pe venit şi cu alte impozite care nu apar în elementele de mai sus
+7,,C,Conturi de venituri
+70,7,C,Cifra de afaceri netă
+701,70,C,"Venituri din vânzarea produselor finite, produselor agricole şi a activelor biologice de natura stocurilor"
+7015,701,C,Venituri din vânzarea produselor finite
+7017,701,C,Venituri din vânzarea produselor agricole
+7018,701,C,Venituri din vânzarea activelor biologice de natura stocurilor
+702,70,C,Venituri din vânzarea semifabricatelor
+703,70,C,Venituri din vânzarea produselor reziduale
+704,70,C,Venituri din servicii prestate
+705,70,C,Venituri din studii şi cercetări
+706,70,C,"Venituri din redevenţe, locaţii de gestiune şi chirii"
+707,70,C,Venituri din vânzarea mărfurilor
+708,70,C,Venituri din activităţi diverse
+709,70,D,Reduceri comerciale acordate
+71,7,C,Venituri aferente costului de producţie în curs de execuţie
+711,71,C,Venituri aferente costurilor stocurilor de produse
+712,71,C,Venituri aferente costurilor serviciilor în curs de execuţie
+72,7,C,Venituri din producţia de imobilizări
+721,72,C,Venituri din producţia de imobilizări necorporale
+722,72,C,Venituri din producţia de imobilizări corporale
+725,72,C,Venituri din producţia de investiţii imobiliare
+74,7,C,Venituri din subvenţii de exploatare
+741,74,C,Venituri din subvenţii de exploatare
+7411,741,C,Venituri din subvenţii de exploatare aferente cifrei de afaceri20
+7412,741,C,Venituri din subvenţii de exploatare pentru materii prime şi materiale
+7413,741,C,Venituri din subvenţii de exploatare pentru alte cheltuieli externe
+7414,741,C,Venituri din subvenţii de exploatare pentru plata personalului
+7415,741,C,Venituri din subvenţii de exploatare pentru asigurări şi protecţie socială
+7416,741,C,Venituri din subvenţii de exploatare pentru alte cheltuieli de exploatare
+7417,741,C,Venituri din subvenţii de exploatare în caz de calamităţi şi alte evenimente similare
+7418,741,C,Venituri din subvenţii de exploatare pentru dobânda datorată
+7419,741,C,Venituri din subvenţii de exploatare aferente altor venituri
+75,7,C,Alte venituri din exploatare
+751,75,C,Venituri din operaţiuni de fiducie
+7511,751,C,Venituri ocazionate de constituirea fiduciei
+7512,751,C,Venituri din derularea operaţiunilor de fiducie
+7513,751,C,Venituri din lichidarea operaţiunilor de fiducie
+754,75,C,Venituri din creanţe reactivate şi debitori diverşi
+755,75,C,Venituri din reevaluarea imobilizărilor corporale
+758,75,C,Alte venituri din exploatare
+7581,758,C,"Venituri din despăgubiri, amenzi şi penalităţi"
+7582,758,C,Venituri din donaţii primite
+7583,758,C,Venituri din vânzarea activelor şi alte operaţiuni de capital
+7584,758,C,Venituri din subvenţii pentru investiţii
+7586,758,C,Venituri reprezentând transferuri cuvenite în baza unor acte normative speciale
+7588,758,C,Alte venituri din exploatare
+76,7,C,Venituri financiare
+761,76,C,Venituri din imobilizări financiare
+7611,761,C,Venituri din acţiuni deţinute la entităţile afiliate
+7612,761,C,Venituri din acţiuni deţinute la entităţi asociate
+7613,761,C,Venituri din acţiuni deţinute la entităţi controlate în comun
+7615,761,C,Venituri din alte imobilizări financiare
+762,76,C,Venituri din investiţii financiare pe termen scurt
+764,76,C,Venituri din investiţii financiare cedate
+7641,764,C,Venituri din imobilizări financiare cedate
+7642,764,C,Câştiguri din investiţii pe termen scurt cedate
+765,76,C,Venituri din diferenţe de curs valutar
+7651,765,C,Diferenţe favorabile de curs valutar legate de elementele monetare exprimate în valută
+7652,765,C,Diferenţe favorabile de curs valutar din evaluarea elementelor monetare care fac parte din investiţia netă într-o entitate străină
+766,76,C,Venituri din dobânzi
+767,76,C,Venituri din sconturi obţinute
+768,76,C,Alte venituri financiare
+78,7,C,"Venituri din provizioane, amortizări şi ajustări pentru depreciere sau pierdere de valoare"
+781,78,C,Venituri din provizioane şi ajustări pentru depreciere privind activitatea de exploatare
+7812,781,C,Venituri din provizioane
+7813,781,C,Venituri din ajustări pentru deprecierea imobilizărilor
+7814,781,C,Venituri din ajustări pentru deprecierea activelor circulante
+7815,781,C,Venituri din fondul comercial negativ
+7818,781,C,Venituri din ajustări pentru deprecierea creanţelor reprezentând avansuri acordate furnizorilor
+786,78,C,Venituri financiare din amortizări şi ajustări pentru pierdere de valoare
+7863,786,C,Venituri financiare din ajustări pentru pierderea de valoare a imobilizărilor financiare
+7864,786,C,Venituri financiare din ajustări pentru pierderea de valoare a activelor circulante
+7865,786,C,Venituri financiare din amortizarea diferenţelor aferente titlurilor de stat
+79,7,C,Venituri din impozitul pe profit
+794,79,C,Venituri din impozitul pe profit rezultat din decontarile in cadrul grupului fiscal in domeniul impozitului pe profit
+8,,B,Conturi speciale
+80,8,B,Conturi în afara bilanţului
+801,80,D,Angajamente acordate
+8011,801,D,Giruri şi garanţii acordate
+8018,801,D,Alte angajamente acordate
+802,80,C,Angajamente primite
+8021,802,C,Giruri şi garanţii primite
+8028,802,C,Alte angajamente primite
+803,80,D,Alte conturi în afara bilanţului
+8031,803,D,Imobilizări corporale luate cu chirie
+8032,803,D,Valori materiale primite spre prelucrare sau reparare
+8033,803,D,Valori materiale primite în păstrare sau custodie
+8034,803,D,"Debitori scoşi din activ, urmăriţi în continuare"
+8035,803,D,Stocuri de natura obiectelor de inventar date în folosinţă
+8036,803,D,"Redevenţe, locaţii de gestiune, chirii şi alte datorii asimilate"
+8037,803,D,Efecte scontate neajunse la scadenţă
+8038,803,D,"Bunuri primite în administrare, concesiune şi cu chirie"
+8039,803,D,Alte valori în afara bilanţului
+804,80,D,Certificate verzi
+805,80,D,"Dobânzi aferente contractelor de leasing şi altor contracte asimilate, neajunse la scadenţă"
+8051,805,D,Dobânzi de plătit
+8052,805,D,Dobânzi de încasat
+806,80,D,Certificate de emisii de gaze cu efect de seră
+807,80,D,Active contingente
+808,80,C,Datorii contingente
+809,80,D,Creanţe preluate prin cesionare
+89,8,B,Bilanţ
+891,89,B,Bilanţ de deschidere
+892,89,B,Bilanţ de închidere
+9,,B,Conturi de gestiune
+90,9,B,Decontări interne
+901,90,B,Decontări interne privind cheltuielile
+902,90,B,Decontări interne privind producţia obţinută
+903,90,B,Decontări interne privind diferenţele de preţ
+92,9,D,Conturi de calculaţie
+921,92,D,Cheltuielile activităţii de bază
+922,92,D,Cheltuielile activităţilor auxiliare
+923,92,D,Cheltuieli indirecte de producţie
+924,92,D,Cheltuieli generale de administraţie
+925,92,D,Cheltuieli de desfacere
+93,9,D,Costul producţiei
+931,93,D,Costul producţiei obţinute
+933,93,D,Costul producţiei în curs de execuţie
