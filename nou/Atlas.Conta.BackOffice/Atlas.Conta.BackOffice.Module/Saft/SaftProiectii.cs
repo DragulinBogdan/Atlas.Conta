@@ -842,8 +842,21 @@ public static class SaftProiectii {
         //
         // Pe SETURI, nu per linie: trei interogări (loturile născute de liniile
         // lunii, recepțiile lor, rândurile contabile ale liniilor de recepție).
+        //
+        // `Nullable.Value` NU se dereferențiază într-o proiecție pe tip ANONIM
+        // peste o ușă securizată (măsurat, V4): pentru un utilizator FĂRĂ drept de
+        // citire pe tip, compilatorul de securitate DevExpress rescrie arborele,
+        // iar funcletizer-ul EF ajunge să evalueze argumentele lui `new { … }` pe
+        // rând — `LinieIntrareId.Value` pe un `null` a ieșit
+        // `InvalidOperationException: Nullable object must have a value`, adică
+        // 500 acolo unde contractul cere 200 cu liste goale. Gardul `!= null` din
+        // `Where` nu ajută: el se evaluează cu scurt-circuit, argumentele lui
+        // `new` nu. Deci nullable-ul trece ca atare, iar despachetarea se face în
+        // memorie, după `ToList()`.
         var loturiNascute = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
             .Where(l => l.LinieIntrareId != null && idsLinie.Contains(l.LinieIntrareId.Value))
+            .Select(l => new { l.ID, l.LinieIntrareId })
+            .ToList()
             .Select(l => new { l.ID, LinieId = l.LinieIntrareId.Value })
             .ToList();
         var idsLotNascut = loturiNascute.Select(l => l.ID).ToList();
@@ -852,11 +865,15 @@ public static class SaftProiectii {
         var receptii = os.GetObjectsQuery<RegistruStoc>()
             .Where(r => idsLotNascut.Contains(r.LotId) && r.DetaliuId != null
                 && r.Cantitate > 0m && !r.Storno)
+            .Select(r => new { r.LotId, r.DetaliuId, r.Data })
+            .ToList()
             .Select(r => new { r.LotId, DetaliuId = r.DetaliuId.Value, r.Data })
             .ToList();
         var idsDetaliuReceptie = receptii.Select(r => r.DetaliuId).Distinct().ToList();
         var randuriReceptie = os.GetObjectsQuery<RegistruContabil>().IgnoreAutoIncludes()
             .Where(r => r.DetaliuId != null && idsDetaliuReceptie.Contains(r.DetaliuId.Value) && !r.Storno)
+            .Select(r => new { r.ID, r.DetaliuId, r.ContDebitId })
+            .ToList()
             .Select(r => new { r.ID, DetaliuId = r.DetaliuId.Value, r.ContDebitId })
             .ToList();
         var receptiePeDetaliu = randuriReceptie
@@ -981,7 +998,7 @@ public static class SaftProiectii {
                         SelfBillingIndicator = "0",
                         AccountID = Simbol(contTert.Value),
                         PartenerID = p.Id406,
-                        PartenerId = p.Id,
+                        PartenerCheie = p.Id,
                         PartenerDenumire = p.Denumire,
                         BillingAddress = AdresaPartener(p),
                     };
@@ -1365,6 +1382,9 @@ public static class SaftProiectii {
             ClosingBalanta = balanta.Sum(b => b.InitialDebit - b.InitialCredit + b.RulajDebit - b.RulajCredit),
             NetTotalEmise = rezultat.FacturiEmise.Sum(f => f.NetTotal),
             NetTotalPrimite = rezultat.FacturiPrimite.Sum(f => f.NetTotal),
+            GrossTotalEmise = rezultat.FacturiEmise.Sum(f => f.GrossTotal),
+            GrossTotalPrimite = rezultat.FacturiPrimite.Sum(f => f.GrossTotal),
+            TotalPlati = rezultat.Plati.Sum(p => p.GrossTotal),
             NumarClienti = rezultat.Clienti.Count,
             NumarFurnizori = rezultat.Furnizori.Count,
             NumarFacturiEmise = rezultat.FacturiEmise.Count,

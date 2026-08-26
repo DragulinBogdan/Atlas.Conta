@@ -219,3 +219,13 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 
 /* al treilea fel de panou: avertisment — nici refuz, nici confirmare */
 .panou--atentie { border-color: #b45309; background: #fffaf0; }
+
+/* SAF-T (felia 16): antetul declarantului + secțiunile/cusăturile, ca tabele
+   mici. Rândul care „diferă" e MARCAT — o cusătură picată nu are voie să arate
+   ca una trecută. */
+.saft__antet { margin-bottom: var(--gol); }
+.saft__antet td { white-space: normal; }
+.saft__sectiune { margin-top: 18px; }
+.saft__sectiune > h3 { margin-bottom: 6px; }
+.saft__sectiune > .indiciu { max-width: 900px; }
+.tabel-mic tr.saft__difera > td { background: #fff4e5; }

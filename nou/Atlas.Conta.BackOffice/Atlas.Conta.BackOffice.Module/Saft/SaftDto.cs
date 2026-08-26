@@ -213,7 +213,13 @@ public sealed class SaftFactura {
     // RESPINSĂ de validator, deci pe sârmă merge identificatorul; denumirea
     // rămâne pentru ecran.
     public string PartenerID { get; set; }
-    public Guid? PartenerId { get; set; }
+    // Cheia entității, pentru ecran (link, filtrare). `PartenerCheie`, nu
+    // `PartenerId` cum e la `SaftTert`: acolo nu există un `PartenerID` alături,
+    // aici da — iar două proprietăți care diferă DOAR prin capitalizare fac
+    // `System.Text.Json` să arunce la serializare
+    // (`SerializerPropertyNameConflict`), adică 500 pe endpoint-ul JSON. Măsurat
+    // pe calea reală (V4), nu presupus.
+    public Guid? PartenerCheie { get; set; }
     public string PartenerDenumire { get; set; }
     public SaftAdresa BillingAddress { get; set; }
     public List<SaftLinieFactura> Linii { get; set; } = [];
@@ -345,6 +351,12 @@ public sealed class SaftRezumat {
 
     public decimal NetTotalEmise { get; set; }
     public decimal NetTotalPrimite { get; set; }
+    // Brutul facturilor și totalul plăților: cifre de REZUMAT pentru ecran, nu
+    // cusături. Stau aici, nu în TS, fiindcă „TS nu calculează niciodată
+    // sold/rest/total" (42c) — clientul numără rânduri, serverul adună bani.
+    public decimal GrossTotalEmise { get; set; }
+    public decimal GrossTotalPrimite { get; set; }
+    public decimal TotalPlati { get; set; }
 
     public int NumarClienti { get; set; }
     public int NumarFurnizori { get; set; }

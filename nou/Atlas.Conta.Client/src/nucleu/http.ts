@@ -92,6 +92,46 @@ export async function sterge(cale: string): Promise<void> {
   await trimite(cale, { method: 'DELETE' }, false);
 }
 
+// ═══ Descărcarea unui FIȘIER (felia 16, D16-D6) ═══
+// De ce nu un simplu `<a href={cale} download>`, cum spera contractul: sesiunea e
+// un JWT din `sessionStorage`, trimis ca antet `Authorization` — o navigare de
+// browser NU poartă antete, deci link-ul ar fi primit 401 și ar fi descărcat…
+// pagina de eroare. (Nici un token în query string nu e o variantă: ar ajunge în
+// istoric, în log-urile serverului și în Referer.)
+//
+// Deci aceeași conductă ca orice cerere — cu 401/422/400 traduse identic, ceea
+// ce e chiar câștigul: 403-ul de pe fișierul SAF-T și 422-ul profilului bugetar
+// ajung în `PanouErori`, nu într-un tab alb. Corpul se ia ca `blob` (adică
+// TOTUL în memoria paginii — costul asumat al autentificării prin antet;
+// fișierul unei luni e de ordinul MB) și se salvează printr-un `<a download>`
+// sintetic peste un `blob:` URL.
+export async function descarcaFisier(cale: string, numeImplicit: string, accept?: string): Promise<void> {
+  const raspuns = await trimite(cale, { method: 'GET', headers: accept ? { Accept: accept } : {} }, false);
+  const blob = await raspuns.blob();
+  const nume = numeDinDispozitie(raspuns.headers.get('Content-Disposition')) ?? numeImplicit;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nume;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revocarea imediată taie descărcarea în unele browsere (salvarea începe după
+  // click, asincron); un minut e mult peste orice fereastră reală.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+// `attachment; filename="SAF-T_12345674_2025-09.xml"` → numele. Serverul e
+// singurul care știe cum se cheamă fișierul (CUI-ul societății e al lui), deci
+// numele lui BATE implicitul clientului.
+function numeDinDispozitie(antet: string | null): string | null {
+  if (!antet) return null;
+  const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(antet);
+  if (utf8) return decodeURIComponent(utf8[1].trim());
+  const simplu = /filename="?([^";]+)"?/i.exec(antet);
+  return simplu ? simplu[1].trim() : null;
+}
+
 // Mesajul de afișat pentru orice eroare prinsă de UI, ca listă (aceeași formă
 // ca `Erori[]` — panoul de erori are un singur mod de randare).
 export function eroriDin(e: unknown): string[] {

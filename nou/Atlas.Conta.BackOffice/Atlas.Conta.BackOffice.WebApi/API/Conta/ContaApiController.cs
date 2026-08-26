@@ -162,6 +162,25 @@ public abstract class ContaApiController : ControllerBase {
 
     protected sealed record IdRefuzat(Guid Id, string Eticheta, string Motiv);
 
+    // ═══ Gate-ul de CITIRE, la nivel de TIP (felia 16, D16-D5) ═══
+    // Proiecțiile de registru n-au nevoie de el: ușa securizată FILTREAZĂ rândurile,
+    // deci cine n-are drept vede o listă goală și primește 200 (69g/71g) — o listă
+    // goală e un răspuns adevărat.
+    //
+    // Fișierul D406 nu e o listă: e o DECLARAȚIE semnată cu CUI-ul societății.
+    // Filtrarea tăcută ar produce acolo un fișier valid sintactic, cu antetul
+    // real și zero tranzacții — adică o declarație FALSĂ, nu un răspuns gol. De
+    // aceea generarea lui cere dreptul de citire pe TIPUL registrului, verificat
+    // înainte de a scrie primul octet, iar lipsa lui e 403.
+    //
+    // `CanRead(Type, IObjectSpace)` (`IsGrantedExtensions`, DevExpress 26.1.3) =
+    // `PermissionRequest(os, tip, SecurityOperations.Read)` — permisiunea pe TIP,
+    // nu pe instanță: exact întrebarea „are voie omul ăsta să citească registrul?".
+    // Gate-ul de comandă (`Autorizeaza<T>`) rămâne NESCHIMBAT: acolo întrebarea e
+    // pe o instanță și are alt răspuns (404 pentru invizibil).
+    protected bool PoateCiti(Type tip, IObjectSpace os) =>
+        securitate is IRequestSecurityStrategy cerinte && cerinte.CanRead(tip, os);
+
     // Încărcarea unei proiecții prin `DataSourceLoader`, cu MATERIALIZARE
     // explicită înainte de întoarcere.
     //

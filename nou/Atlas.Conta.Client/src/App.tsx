@@ -30,6 +30,7 @@ import { JurnalCumparari, JurnalVanzari } from './felii/tva/JurnalTva';
 import { DecontTva } from './felii/tva/DecontTva';
 import { D300 } from './felii/tva/D300';
 import { D394 } from './felii/tva/D394';
+import { Saft } from './felii/tva/Saft';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
@@ -93,6 +94,10 @@ export function App() {
         <Route path="/decont-tva" element={<DecontTva />} />
         <Route path="/d300" element={<D300 />} />
         <Route path="/d394" element={<D394 />} />
+        {/* SAF-T (felia 16): al treilea formular peste registre — și primul care
+            produce un FIȘIER. Perioada e o LUNĂ (`an`+`luna`), nu un interval:
+            `SelectionCriteria` din D406 numără luni. */}
+        <Route path="/saft" element={<Saft />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
     </Routes>
@@ -127,6 +132,7 @@ function Cadru() {
         <NavLink to="/decont-tva">Decont TVA</NavLink>
         <NavLink to="/d300">D300</NavLink>
         <NavLink to="/d394">D394</NavLink>
+        <NavLink to="/saft">SAF-T</NavLink>
         <button
           type="button"
           className="buton buton--mic"

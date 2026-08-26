@@ -98114,6 +98114,1295 @@
         }
       }
     },
+    "/api/proiectii/saft": {
+      "get": {
+        "tags": [
+          "Saft"
+        ],
+        "operationId": "GET_api/proiectii/saft",
+        "parameters": [
+          {
+            "name": "an",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "luna",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaftDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/proiectii/saft/xml": {
+      "get": {
+        "tags": [
+          "Saft"
+        ],
+        "operationId": "GET_api/proiectii/saft/xml",
+        "parameters": [
+          {
+            "name": "an",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "luna",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EroriDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/odata/Societate": {
       "get": {
         "tags": [
@@ -115619,6 +116908,1126 @@
           "Furnizor"
         ],
         "type": "string"
+      },
+      "SaftAdresa": {
+        "type": "object",
+        "properties": {
+          "StreetName": {
+            "type": "string",
+            "nullable": true
+          },
+          "Number": {
+            "type": "string",
+            "nullable": true
+          },
+          "AdditionalAddressDetail": {
+            "type": "string",
+            "nullable": true
+          },
+          "City": {
+            "type": "string",
+            "nullable": true
+          },
+          "PostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "Region": {
+            "type": "string",
+            "nullable": true
+          },
+          "Country": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftAnaliza": {
+        "type": "object",
+        "properties": {
+          "AnalysisType": {
+            "type": "string",
+            "nullable": true
+          },
+          "AnalysisID": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftAvertisment": {
+        "type": "object",
+        "properties": {
+          "Cod": {
+            "type": "string",
+            "nullable": true
+          },
+          "Mesaj": {
+            "type": "string",
+            "nullable": true
+          },
+          "Numar": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Suma": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "Exemple": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftCont": {
+        "type": "object",
+        "properties": {
+          "ContId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "AccountID": {
+            "type": "string",
+            "nullable": true
+          },
+          "AccountDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "AccountType": {
+            "type": "string",
+            "nullable": true
+          },
+          "OpeningDebitBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "OpeningCreditBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "ClosingDebitBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "ClosingCreditBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftDto": {
+        "type": "object",
+        "properties": {
+          "Neaplicabil": {
+            "type": "string",
+            "nullable": true
+          },
+          "An": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Luna": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "DataStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "DataEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "Header": {
+            "$ref": "#/components/schemas/SaftHeader"
+          },
+          "Conturi": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftCont"
+            },
+            "nullable": true
+          },
+          "Clienti": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftTert"
+            },
+            "nullable": true
+          },
+          "Furnizori": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftTert"
+            },
+            "nullable": true
+          },
+          "Taxe": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftTaxCode"
+            },
+            "nullable": true
+          },
+          "Unitati": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftUnitate"
+            },
+            "nullable": true
+          },
+          "TipuriAnaliza": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftTipAnaliza"
+            },
+            "nullable": true
+          },
+          "Produse": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftProdus"
+            },
+            "nullable": true
+          },
+          "Jurnale": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftJurnal"
+            },
+            "nullable": true
+          },
+          "FacturiEmise": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftFactura"
+            },
+            "nullable": true
+          },
+          "FacturiPrimite": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftFactura"
+            },
+            "nullable": true
+          },
+          "Plati": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftPlata"
+            },
+            "nullable": true
+          },
+          "Neincluse": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftNeinclus"
+            },
+            "nullable": true
+          },
+          "Avertismente": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftAvertisment"
+            },
+            "nullable": true
+          },
+          "Rezumat": {
+            "$ref": "#/components/schemas/SaftRezumat"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftFactura": {
+        "type": "object",
+        "properties": {
+          "DocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "Storno": {
+            "type": "boolean"
+          },
+          "DocumentTip": {
+            "type": "string",
+            "nullable": true
+          },
+          "InvoiceNo": {
+            "type": "string",
+            "nullable": true
+          },
+          "InvoiceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "InvoiceType": {
+            "type": "string",
+            "nullable": true
+          },
+          "SelfBillingIndicator": {
+            "type": "string",
+            "nullable": true
+          },
+          "AccountID": {
+            "type": "string",
+            "nullable": true
+          },
+          "PartenerID": {
+            "type": "string",
+            "nullable": true
+          },
+          "PartenerCheie": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "PartenerDenumire": {
+            "type": "string",
+            "nullable": true
+          },
+          "BillingAddress": {
+            "$ref": "#/components/schemas/SaftAdresa"
+          },
+          "Linii": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftLinieFactura"
+            },
+            "nullable": true
+          },
+          "NetTotal": {
+            "type": "number",
+            "format": "double"
+          },
+          "GrossTotal": {
+            "type": "number",
+            "format": "double"
+          },
+          "TaxInformationTotals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftTaxInfo"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftHeader": {
+        "type": "object",
+        "properties": {
+          "AuditFileVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "AuditFileCountry": {
+            "type": "string",
+            "nullable": true
+          },
+          "AuditFileRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "AuditFileDateCreated": {
+            "type": "string",
+            "format": "date"
+          },
+          "SoftwareCompanyName": {
+            "type": "string",
+            "nullable": true
+          },
+          "SoftwareID": {
+            "type": "string",
+            "nullable": true
+          },
+          "SoftwareVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "DefaultCurrencyCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "HeaderComment": {
+            "type": "string",
+            "nullable": true
+          },
+          "SegmentIndex": {
+            "type": "string",
+            "nullable": true
+          },
+          "TotalSegmentsInSequence": {
+            "type": "string",
+            "nullable": true
+          },
+          "TaxAccountingBasis": {
+            "type": "string",
+            "nullable": true
+          },
+          "RegistrationNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "Name": {
+            "type": "string",
+            "nullable": true
+          },
+          "Address": {
+            "$ref": "#/components/schemas/SaftAdresa"
+          },
+          "ContactFirstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "ContactLastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "Telephone": {
+            "type": "string",
+            "nullable": true
+          },
+          "Email": {
+            "type": "string",
+            "nullable": true
+          },
+          "IBANNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "BankAccountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "PeriodStart": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "PeriodStartYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "PeriodEnd": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "PeriodEndYear": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftJurnal": {
+        "type": "object",
+        "properties": {
+          "JournalID": {
+            "type": "string",
+            "nullable": true
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "Type": {
+            "type": "string",
+            "nullable": true
+          },
+          "Tranzactii": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftTranzactie"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftLinieFactura": {
+        "type": "object",
+        "properties": {
+          "DetaliuId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "LineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "AccountID": {
+            "type": "string",
+            "nullable": true
+          },
+          "ProductCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ProductDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "Quantity": {
+            "type": "number",
+            "format": "double"
+          },
+          "InvoiceUOM": {
+            "type": "string",
+            "nullable": true
+          },
+          "UnitPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "TaxPointDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "InvoiceLineAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "DebitCreditIndicator": {
+            "type": "string",
+            "nullable": true
+          },
+          "Analiza": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftAnaliza"
+            },
+            "nullable": true
+          },
+          "TaxInformation": {
+            "$ref": "#/components/schemas/SaftTaxInfo"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftLiniePlata": {
+        "type": "object",
+        "properties": {
+          "DetaliuId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "LineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "SourceDocumentID": {
+            "type": "string",
+            "nullable": true
+          },
+          "AccountID": {
+            "type": "string",
+            "nullable": true
+          },
+          "CustomerID": {
+            "type": "string",
+            "nullable": true
+          },
+          "SupplierID": {
+            "type": "string",
+            "nullable": true
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "DebitCreditIndicator": {
+            "type": "string",
+            "nullable": true
+          },
+          "PaymentLineAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "Analiza": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftAnaliza"
+            },
+            "nullable": true
+          },
+          "TaxInformation": {
+            "$ref": "#/components/schemas/SaftTaxInfo"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftLinieTranzactie": {
+        "type": "object",
+        "properties": {
+          "RandRegistruId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "DetaliuId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "RecordID": {
+            "type": "string",
+            "nullable": true
+          },
+          "AccountID": {
+            "type": "string",
+            "nullable": true
+          },
+          "CustomerID": {
+            "type": "string",
+            "nullable": true
+          },
+          "SupplierID": {
+            "type": "string",
+            "nullable": true
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "DebitCreditIndicator": {
+            "type": "string",
+            "nullable": true
+          },
+          "Amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "CurrencyCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "CurrencyAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "Analiza": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftAnaliza"
+            },
+            "nullable": true
+          },
+          "TaxInformation": {
+            "$ref": "#/components/schemas/SaftTaxInfo"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftNeinclus": {
+        "type": "object",
+        "properties": {
+          "Cauza": {
+            "type": "string",
+            "nullable": true
+          },
+          "Sectiune": {
+            "type": "string",
+            "nullable": true
+          },
+          "Sens": {
+            "type": "string",
+            "nullable": true
+          },
+          "DocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "DocumentNumar": {
+            "type": "string",
+            "nullable": true
+          },
+          "DocumentTip": {
+            "type": "string",
+            "nullable": true
+          },
+          "DetaliuId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "ContId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "ContSimbol": {
+            "type": "string",
+            "nullable": true
+          },
+          "RepartitorId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "RepartitorDenumire": {
+            "type": "string",
+            "nullable": true
+          },
+          "Baza": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "Tva": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "Debit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "Credit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "Randuri": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftPlata": {
+        "type": "object",
+        "properties": {
+          "DocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "DocumentTip": {
+            "type": "string",
+            "nullable": true
+          },
+          "PaymentRefNo": {
+            "type": "string",
+            "nullable": true
+          },
+          "TransactionDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "PaymentMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "PaymentMechanism": {
+            "type": "string",
+            "nullable": true
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "Linii": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftLiniePlata"
+            },
+            "nullable": true
+          },
+          "GrossTotal": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftProdus": {
+        "type": "object",
+        "properties": {
+          "ProdusId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ProductCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "GoodsServicesID": {
+            "type": "string",
+            "nullable": true
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "ProductCommodityCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ValuationMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "UOMBase": {
+            "type": "string",
+            "nullable": true
+          },
+          "UOMStandard": {
+            "type": "string",
+            "nullable": true
+          },
+          "UOMToUOMBaseConversionFactor": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftRezumat": {
+        "type": "object",
+        "properties": {
+          "Tranzactii": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "LiniiGl": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "RanduriRegistru": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "TotalDebit": {
+            "type": "number",
+            "format": "double"
+          },
+          "TotalCredit": {
+            "type": "number",
+            "format": "double"
+          },
+          "ValoareRegistruContabil": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaGl": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaRegistru": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaCapitalizat": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaFaraCodSaft": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaFacturiAchizitie": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaFacturiLivrare": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaNeincluseAchizitie": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaNeincluseLivrare": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaRegistruAchizitie": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaRegistruLivrare": {
+            "type": "number",
+            "format": "double"
+          },
+          "ClosingGla": {
+            "type": "number",
+            "format": "double"
+          },
+          "ClosingBalanta": {
+            "type": "number",
+            "format": "double"
+          },
+          "NetTotalEmise": {
+            "type": "number",
+            "format": "double"
+          },
+          "NetTotalPrimite": {
+            "type": "number",
+            "format": "double"
+          },
+          "GrossTotalEmise": {
+            "type": "number",
+            "format": "double"
+          },
+          "GrossTotalPrimite": {
+            "type": "number",
+            "format": "double"
+          },
+          "TotalPlati": {
+            "type": "number",
+            "format": "double"
+          },
+          "NumarClienti": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "NumarFurnizori": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "NumarFacturiEmise": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "NumarFacturiPrimite": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "NumarPlati": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "NumarProduse": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftTaxCode": {
+        "type": "object",
+        "properties": {
+          "TaxType": {
+            "type": "string",
+            "nullable": true
+          },
+          "TaxCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "TaxPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "BaseRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "Country": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftTaxInfo": {
+        "type": "object",
+        "properties": {
+          "TaxType": {
+            "type": "string",
+            "nullable": true
+          },
+          "TaxCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "TaxPercentage": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "TaxBase": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "TaxAmount": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftTert": {
+        "type": "object",
+        "properties": {
+          "PartenerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "Id": {
+            "type": "string",
+            "nullable": true
+          },
+          "RegistrationNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "Name": {
+            "type": "string",
+            "nullable": true
+          },
+          "Address": {
+            "$ref": "#/components/schemas/SaftAdresa"
+          },
+          "TaxRegistrationNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "TaxType": {
+            "type": "string",
+            "nullable": true
+          },
+          "AccountID": {
+            "type": "string",
+            "nullable": true
+          },
+          "OpeningDebitBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "OpeningCreditBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "ClosingDebitBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "ClosingCreditBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "FelId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftTipAnaliza": {
+        "type": "object",
+        "properties": {
+          "AnalysisType": {
+            "type": "string",
+            "nullable": true
+          },
+          "AnalysisTypeDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "AnalysisID": {
+            "type": "string",
+            "nullable": true
+          },
+          "AnalysisIDDescription": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftTranzactie": {
+        "type": "object",
+        "properties": {
+          "DocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "TransactionID": {
+            "type": "string",
+            "nullable": true
+          },
+          "Period": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "PeriodYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "TransactionDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "SystemEntryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "GLPostingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "CustomerID": {
+            "type": "string",
+            "nullable": true
+          },
+          "SupplierID": {
+            "type": "string",
+            "nullable": true
+          },
+          "Linii": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftLinieTranzactie"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaftUnitate": {
+        "type": "object",
+        "properties": {
+          "UnitOfMeasure": {
+            "type": "string",
+            "nullable": true
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
       },
       "SectiuneD300": {
         "enum": [
