@@ -127,6 +127,47 @@ public static class SaftProiectii {
     readonly record struct FaptTva(Guid TipTvaId, SensTva Sens, RegimTva Regim, decimal Cota, decimal Baza, decimal Tva);
 
     /// <summary>
+    /// Sumarul declarației: antetul, cât are fiecare secțiune, cusăturile,
+    /// `Neincluse` și avertismentele — TOT ce citește omul înainte de a depune,
+    /// FĂRĂ listele care fac fișierul (D16-D5, amendamentul pasului 4).
+    /// <para>
+    /// Funcție PURĂ pe DTO: nicio interogare, niciun `IObjectSpace`. Deci nu
+    /// poate diverge de fișier — sumarul și XML-ul se scriu din același obiect,
+    /// iar un contor greșit ar însemna o listă greșită, nu o a doua numărătoare.
+    /// Contoarele se calculează din LISTE, nu se copiază din `Rezumat`: acolo
+    /// unde `Rezumat` are aceeași cifră (`NumarClienti`, `Tranzactii`…), egalitatea
+    /// e o cusătură probată în ModelCheck, nu o presupunere.
+    /// </para>
+    /// </summary>
+    public static SaftSumarDto Sumar(SaftDto dto) {
+        ArgumentNullException.ThrowIfNull(dto);
+        return new SaftSumarDto {
+            Neaplicabil = dto.Neaplicabil,
+            An = dto.An,
+            Luna = dto.Luna,
+            DataStart = dto.DataStart,
+            DataEnd = dto.DataEnd,
+            Header = dto.Header,
+            Conturi = dto.Conturi.Count,
+            Clienti = dto.Clienti.Count,
+            Furnizori = dto.Furnizori.Count,
+            CoduriTaxa = dto.Taxe.Count,
+            Unitati = dto.Unitati.Count,
+            Produse = dto.Produse.Count,
+            TipuriAnaliza = dto.TipuriAnaliza.Count,
+            Jurnale = dto.Jurnale.Count,
+            Tranzactii = dto.Jurnale.Sum(j => j.Tranzactii.Count),
+            LiniiGl = dto.Jurnale.Sum(j => j.Tranzactii.Sum(t => t.Linii.Count)),
+            FacturiEmise = dto.FacturiEmise.Count,
+            FacturiPrimite = dto.FacturiPrimite.Count,
+            Plati = dto.Plati.Count,
+            Rezumat = dto.Rezumat,
+            Neincluse = dto.Neincluse,
+            Avertismente = dto.Avertismente,
+        };
+    }
+
+    /// <summary>
     /// Declarația D406 (modul L) pe o lună. `dataCreare` există DOAR pentru
     /// determinismul probelor (`AuditFileDateCreated`); în producție e ziua de azi.
     /// </summary>

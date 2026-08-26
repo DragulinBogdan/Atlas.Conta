@@ -19,11 +19,15 @@ import { urlCu, useUrlStare } from '../../nucleu/urlStare';
 //  (4) `Neincluse` — ce n-a putut intra în fișier, cu cauza (nimic nu se pierde);
 //  (5) avertismentele agregate — ce cere formularul și modelul n-are.
 //
-// Ce NU face: nu calculează nicio sumă. Toate cifrele de bani vin din
-// `Rezumat`-ul serverului (42c — „TS nu calculează niciodată sold/rest/total");
-// clientul doar NUMĂRĂ rânduri de listă și compară două cifre pe care serverul
-// le-a trimis pe amândouă.
-type SaftDto = components['schemas']['SaftDto'];
+// Ce NU face: nu calculează nimic — nici sume, nici NUMĂRĂTORI. Ecranul consumă
+// SUMARUL (`SaftSumarDto`), nu declarația: pe o lună reală declarația e de 38,6
+// MiB de JSON din care ecranul n-ar afișa nicio linie, așa că ușa JSON servește
+// antetul, contoarele per secțiune, cusăturile, `Neincluse` și avertismentele —
+// iar listele trăiesc doar în FIȘIER (butonul „Descarcă XML"). Contoarele vin
+// gata numărate de server (42c, în litera lui: „TS nu calculează niciodată
+// sold/rest/total"); clientul doar compară două cifre pe care serverul le-a
+// trimis pe amândouă.
+type SaftSumar = components['schemas']['SaftSumarDto'];
 type Rezumat = components['schemas']['SaftRezumat'];
 type Neinclus = components['schemas']['SaftNeinclus'];
 type Avertisment = components['schemas']['SaftAvertisment'];
@@ -53,12 +57,12 @@ export function Saft() {
     { activa: false, erori: [] });
 
   const cale = urlCu('/api/proiectii/saft', { an: stare.an, luna: stare.luna });
-  const citit = useQuery({ queryKey: ['saft', cale], queryFn: () => ia<SaftDto>(cale) });
+  const citit = useQuery({ queryKey: ['saft', cale], queryFn: () => ia<SaftSumar>(cale) });
 
-  const dto = citit.data;
-  const rezumat: Rezumat = dto?.Rezumat ?? {};
-  const neincluse = dto?.Neincluse ?? [];
-  const avertismente = dto?.Avertismente ?? [];
+  const sumar = citit.data;
+  const rezumat: Rezumat = sumar?.Rezumat ?? {};
+  const neincluse = sumar?.Neincluse ?? [];
+  const avertismente = sumar?.Avertismente ?? [];
 
   async function descarca() {
     setDescarcare({ activa: true, erori: [] });
@@ -100,7 +104,7 @@ export function Saft() {
             ))}
           </select>
         </label>
-        {dto && (
+        {sumar && (
           <button
             type="button"
             className="buton buton--primar"
@@ -117,10 +121,10 @@ export function Saft() {
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Declarația nu se poate genera" />
       <PanouErori erori={descarcare.erori} titlu="Fișierul nu s-a putut genera" />
 
-      {citit.isPending ? <p className="indiciu">Se încarcă…</p> : dto && (
+      {citit.isPending ? <p className="indiciu">Se încarcă…</p> : sumar && (
         <>
-          <Antet dto={dto} />
-          <Sectiuni dto={dto} rezumat={rezumat} />
+          <Antet sumar={sumar} />
+          <Sectiuni sumar={sumar} rezumat={rezumat} />
           <Cusaturi rezumat={rezumat} />
           <Neincluse lista={neincluse} />
           <Avertismente lista={avertismente} />
@@ -147,8 +151,8 @@ function ani(anCurent: number): number[] {
 
 // Antetul: cine declară și pe ce. Vine din `Header`, adică din rândul unic
 // `Societate` — dacă lipsește ceva, avertismentele de jos o spun pe nume.
-function Antet({ dto }: { dto: SaftDto }) {
-  const h = dto.Header;
+function Antet({ sumar }: { sumar: SaftSumar }) {
+  const h = sumar.Header;
   if (!h) return null;
   return (
     <table className="tabel-mic saft__antet">
@@ -176,40 +180,40 @@ function Antet({ dto }: { dto: SaftDto }) {
   );
 }
 
-// Rezumatul per secțiune. Numărul de intrări îl NUMĂRĂ clientul (e lungimea unei
-// liste pe care o are deja), banii vin din `Rezumat` — niciun total nu se adună
-// în TS. Cele două coloane de sumă își schimbă înțelesul de la rând la rând
-// (debit/credit la jurnale, net/brut la facturi), de aceea capul de tabel le
-// numește pe amândouă.
-function Sectiuni({ dto, rezumat }: { dto: SaftDto; rezumat: Rezumat }) {
+// Rezumatul per secțiune. TOATE cifrele vin de pe server: contoarele din sumar
+// (calculate de `SaftProiectii.Sumar`, funcție pură pe declarație), banii din
+// `Rezumat` — nimic nu se numără și nimic nu se adună în TS. Cele două coloane de
+// sumă își schimbă înțelesul de la rând la rând (debit/credit la jurnale,
+// net/brut la facturi), de aceea capul de tabel le numește pe amândouă.
+function Sectiuni({ sumar, rezumat }: { sumar: SaftSumar; rezumat: Rezumat }) {
   const randuri: { nume: string; intrari: number; linii?: number; suma1?: number; suma2?: number }[] = [
-    { nume: 'Conturi (GeneralLedgerAccounts)', intrari: dto.Conturi?.length ?? 0 },
-    { nume: 'Clienți', intrari: rezumat.NumarClienti ?? 0 },
-    { nume: 'Furnizori', intrari: rezumat.NumarFurnizori ?? 0 },
-    { nume: 'Coduri de taxă', intrari: dto.Taxe?.length ?? 0 },
-    { nume: 'Unități de măsură', intrari: dto.Unitati?.length ?? 0 },
-    { nume: 'Produse', intrari: rezumat.NumarProduse ?? 0 },
-    { nume: 'Tipuri de analiză', intrari: dto.TipuriAnaliza?.length ?? 0 },
+    { nume: 'Conturi (GeneralLedgerAccounts)', intrari: sumar.Conturi ?? 0 },
+    { nume: 'Clienți', intrari: sumar.Clienti ?? 0 },
+    { nume: 'Furnizori', intrari: sumar.Furnizori ?? 0 },
+    { nume: 'Coduri de taxă', intrari: sumar.CoduriTaxa ?? 0 },
+    { nume: 'Unități de măsură', intrari: sumar.Unitati ?? 0 },
+    { nume: 'Produse', intrari: sumar.Produse ?? 0 },
+    { nume: 'Tipuri de analiză', intrari: sumar.TipuriAnaliza ?? 0 },
     {
-      nume: `Jurnale (${dto.Jurnale?.length ?? 0}) — tranzacții`,
-      intrari: rezumat.Tranzactii ?? 0,
-      linii: rezumat.LiniiGl ?? 0,
+      nume: `Jurnale (${sumar.Jurnale ?? 0}) — tranzacții`,
+      intrari: sumar.Tranzactii ?? 0,
+      linii: sumar.LiniiGl ?? 0,
       suma1: rezumat.TotalDebit,
       suma2: rezumat.TotalCredit,
     },
     {
       nume: 'Facturi emise',
-      intrari: rezumat.NumarFacturiEmise ?? 0,
+      intrari: sumar.FacturiEmise ?? 0,
       suma1: rezumat.NetTotalEmise,
       suma2: rezumat.GrossTotalEmise,
     },
     {
       nume: 'Facturi primite',
-      intrari: rezumat.NumarFacturiPrimite ?? 0,
+      intrari: sumar.FacturiPrimite ?? 0,
       suma1: rezumat.NetTotalPrimite,
       suma2: rezumat.GrossTotalPrimite,
     },
-    { nume: 'Plăți', intrari: rezumat.NumarPlati ?? 0, suma2: rezumat.TotalPlati },
+    { nume: 'Plăți', intrari: sumar.Plati ?? 0, suma2: rezumat.TotalPlati },
   ];
   return (
     <div className="saft__sectiune">

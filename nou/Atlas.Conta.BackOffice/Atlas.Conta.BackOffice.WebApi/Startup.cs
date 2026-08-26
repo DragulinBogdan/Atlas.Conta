@@ -372,14 +372,16 @@ namespace Atlas.Conta.BackOffice.WebApi {
                 });
             });
 
-            services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(o => {
-                //The code below specifies that the naming of properties in an object serialized to JSON must always exactly match
-                //the property names within the corresponding CLR type so that the property names are displayed correctly in the Swagger UI.
-                //XPO is case-sensitive and requires this setting so that the example request data displayed by Swagger is always valid.
-                //Comment this code out to revert to the default behavior.
-                //See the following article for more information: https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonserializeroptions.propertynamingpolicy
-                o.JsonSerializerOptions.PropertyNamingPolicy = null;
-            });
+            // Numele CLR EXACTE pe sârmă (`PropertyNamingPolicy = null`), moștenit
+            // din scaffold-ul XAF: exemplele Swagger rămân valide, iar codegen-ul e
+            // pin-uit pe ele (`api-types.ts` are `Rezumat`, nu `rezumat`).
+            //
+            // Regula stă în `JsonApi` (Module), nu aici: ModelCheck probează
+            // serializarea DTO-urilor cu ACELEAȘI opțiuni ca host-ul — altfel proba
+            // ar rata exact coliziunile care depind de politica de nume (felia 16:
+            // `PartenerID`/`PartenerId`, 500 pe calea reală).
+            services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(
+                o => Atlas.Conta.BackOffice.Module.Api.JsonApi.Configureaza(o.JsonSerializerOptions));
         }
 
         // Textul unei erori de `ModelState`. `ErrorMessage` e umplut de binder

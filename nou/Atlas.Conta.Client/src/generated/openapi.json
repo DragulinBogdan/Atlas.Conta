@@ -98144,202 +98144,202 @@
             "content": {
               "application/json;odata.metadata=minimal;odata.streaming=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=minimal;odata.streaming=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=minimal": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=full;odata.streaming=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=full;odata.streaming=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=full": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=none;odata.streaming=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=none;odata.streaming=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=none": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.streaming=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.streaming=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=full;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=full;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=none;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.metadata=none;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.streaming=true;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.streaming=true;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.streaming=false;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;odata.streaming=false;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;IEEE754Compatible=false": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/json;IEEE754Compatible=true": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/xml": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "application/octet-stream": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaftDto"
+                  "$ref": "#/components/schemas/SaftSumarDto"
                 }
               }
             }
@@ -116943,20 +116943,6 @@
         },
         "additionalProperties": false
       },
-      "SaftAnaliza": {
-        "type": "object",
-        "properties": {
-          "AnalysisType": {
-            "type": "string",
-            "nullable": true
-          },
-          "AnalysisID": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "SaftAvertisment": {
         "type": "object",
         "properties": {
@@ -116981,246 +116967,6 @@
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftCont": {
-        "type": "object",
-        "properties": {
-          "ContId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "AccountID": {
-            "type": "string",
-            "nullable": true
-          },
-          "AccountDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "AccountType": {
-            "type": "string",
-            "nullable": true
-          },
-          "OpeningDebitBalance": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "OpeningCreditBalance": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "ClosingDebitBalance": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "ClosingCreditBalance": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftDto": {
-        "type": "object",
-        "properties": {
-          "Neaplicabil": {
-            "type": "string",
-            "nullable": true
-          },
-          "An": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "Luna": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "DataStart": {
-            "type": "string",
-            "format": "date"
-          },
-          "DataEnd": {
-            "type": "string",
-            "format": "date"
-          },
-          "Header": {
-            "$ref": "#/components/schemas/SaftHeader"
-          },
-          "Conturi": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftCont"
-            },
-            "nullable": true
-          },
-          "Clienti": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftTert"
-            },
-            "nullable": true
-          },
-          "Furnizori": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftTert"
-            },
-            "nullable": true
-          },
-          "Taxe": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftTaxCode"
-            },
-            "nullable": true
-          },
-          "Unitati": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftUnitate"
-            },
-            "nullable": true
-          },
-          "TipuriAnaliza": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftTipAnaliza"
-            },
-            "nullable": true
-          },
-          "Produse": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftProdus"
-            },
-            "nullable": true
-          },
-          "Jurnale": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftJurnal"
-            },
-            "nullable": true
-          },
-          "FacturiEmise": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftFactura"
-            },
-            "nullable": true
-          },
-          "FacturiPrimite": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftFactura"
-            },
-            "nullable": true
-          },
-          "Plati": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftPlata"
-            },
-            "nullable": true
-          },
-          "Neincluse": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftNeinclus"
-            },
-            "nullable": true
-          },
-          "Avertismente": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftAvertisment"
-            },
-            "nullable": true
-          },
-          "Rezumat": {
-            "$ref": "#/components/schemas/SaftRezumat"
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftFactura": {
-        "type": "object",
-        "properties": {
-          "DocumentId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "Storno": {
-            "type": "boolean"
-          },
-          "DocumentTip": {
-            "type": "string",
-            "nullable": true
-          },
-          "InvoiceNo": {
-            "type": "string",
-            "nullable": true
-          },
-          "InvoiceDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "InvoiceType": {
-            "type": "string",
-            "nullable": true
-          },
-          "SelfBillingIndicator": {
-            "type": "string",
-            "nullable": true
-          },
-          "AccountID": {
-            "type": "string",
-            "nullable": true
-          },
-          "PartenerID": {
-            "type": "string",
-            "nullable": true
-          },
-          "PartenerCheie": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "PartenerDenumire": {
-            "type": "string",
-            "nullable": true
-          },
-          "BillingAddress": {
-            "$ref": "#/components/schemas/SaftAdresa"
-          },
-          "Linii": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftLinieFactura"
-            },
-            "nullable": true
-          },
-          "NetTotal": {
-            "type": "number",
-            "format": "double"
-          },
-          "GrossTotal": {
-            "type": "number",
-            "format": "double"
-          },
-          "TaxInformationTotals": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftTaxInfo"
             },
             "nullable": true
           }
@@ -117332,208 +117078,6 @@
         },
         "additionalProperties": false
       },
-      "SaftJurnal": {
-        "type": "object",
-        "properties": {
-          "JournalID": {
-            "type": "string",
-            "nullable": true
-          },
-          "Description": {
-            "type": "string",
-            "nullable": true
-          },
-          "Type": {
-            "type": "string",
-            "nullable": true
-          },
-          "Tranzactii": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftTranzactie"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftLinieFactura": {
-        "type": "object",
-        "properties": {
-          "DetaliuId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "LineNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "AccountID": {
-            "type": "string",
-            "nullable": true
-          },
-          "ProductCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "ProductDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "Quantity": {
-            "type": "number",
-            "format": "double"
-          },
-          "InvoiceUOM": {
-            "type": "string",
-            "nullable": true
-          },
-          "UnitPrice": {
-            "type": "number",
-            "format": "double"
-          },
-          "TaxPointDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "Description": {
-            "type": "string",
-            "nullable": true
-          },
-          "InvoiceLineAmount": {
-            "type": "number",
-            "format": "double"
-          },
-          "DebitCreditIndicator": {
-            "type": "string",
-            "nullable": true
-          },
-          "Analiza": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftAnaliza"
-            },
-            "nullable": true
-          },
-          "TaxInformation": {
-            "$ref": "#/components/schemas/SaftTaxInfo"
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftLiniePlata": {
-        "type": "object",
-        "properties": {
-          "DetaliuId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "LineNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "SourceDocumentID": {
-            "type": "string",
-            "nullable": true
-          },
-          "AccountID": {
-            "type": "string",
-            "nullable": true
-          },
-          "CustomerID": {
-            "type": "string",
-            "nullable": true
-          },
-          "SupplierID": {
-            "type": "string",
-            "nullable": true
-          },
-          "Description": {
-            "type": "string",
-            "nullable": true
-          },
-          "DebitCreditIndicator": {
-            "type": "string",
-            "nullable": true
-          },
-          "PaymentLineAmount": {
-            "type": "number",
-            "format": "double"
-          },
-          "Analiza": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftAnaliza"
-            },
-            "nullable": true
-          },
-          "TaxInformation": {
-            "$ref": "#/components/schemas/SaftTaxInfo"
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftLinieTranzactie": {
-        "type": "object",
-        "properties": {
-          "RandRegistruId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "DetaliuId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "RecordID": {
-            "type": "string",
-            "nullable": true
-          },
-          "AccountID": {
-            "type": "string",
-            "nullable": true
-          },
-          "CustomerID": {
-            "type": "string",
-            "nullable": true
-          },
-          "SupplierID": {
-            "type": "string",
-            "nullable": true
-          },
-          "Description": {
-            "type": "string",
-            "nullable": true
-          },
-          "DebitCreditIndicator": {
-            "type": "string",
-            "nullable": true
-          },
-          "Amount": {
-            "type": "number",
-            "format": "double"
-          },
-          "CurrencyCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "CurrencyAmount": {
-            "type": "number",
-            "format": "double"
-          },
-          "Analiza": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftAnaliza"
-            },
-            "nullable": true
-          },
-          "TaxInformation": {
-            "$ref": "#/components/schemas/SaftTaxInfo"
-          }
-        },
-        "additionalProperties": false
-      },
       "SaftNeinclus": {
         "type": "object",
         "properties": {
@@ -117608,93 +117152,6 @@
           "Randuri": {
             "type": "integer",
             "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftPlata": {
-        "type": "object",
-        "properties": {
-          "DocumentId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "DocumentTip": {
-            "type": "string",
-            "nullable": true
-          },
-          "PaymentRefNo": {
-            "type": "string",
-            "nullable": true
-          },
-          "TransactionDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "PaymentMethod": {
-            "type": "string",
-            "nullable": true
-          },
-          "PaymentMechanism": {
-            "type": "string",
-            "nullable": true
-          },
-          "Description": {
-            "type": "string",
-            "nullable": true
-          },
-          "Linii": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SaftLiniePlata"
-            },
-            "nullable": true
-          },
-          "GrossTotal": {
-            "type": "number",
-            "format": "double"
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftProdus": {
-        "type": "object",
-        "properties": {
-          "ProdusId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "ProductCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "GoodsServicesID": {
-            "type": "string",
-            "nullable": true
-          },
-          "Description": {
-            "type": "string",
-            "nullable": true
-          },
-          "ProductCommodityCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "ValuationMethod": {
-            "type": "string",
-            "nullable": true
-          },
-          "UOMBase": {
-            "type": "string",
-            "nullable": true
-          },
-          "UOMStandard": {
-            "type": "string",
-            "nullable": true
-          },
-          "UOMToUOMBaseConversionFactor": {
-            "type": "number",
-            "format": "double"
           }
         },
         "additionalProperties": false
@@ -117821,209 +117278,99 @@
         },
         "additionalProperties": false
       },
-      "SaftTaxCode": {
+      "SaftSumarDto": {
         "type": "object",
         "properties": {
-          "TaxType": {
+          "Neaplicabil": {
             "type": "string",
             "nullable": true
           },
-          "TaxCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "Description": {
-            "type": "string",
-            "nullable": true
-          },
-          "TaxPercentage": {
-            "type": "number",
-            "format": "double"
-          },
-          "BaseRate": {
-            "type": "number",
-            "format": "double"
-          },
-          "Country": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftTaxInfo": {
-        "type": "object",
-        "properties": {
-          "TaxType": {
-            "type": "string",
-            "nullable": true
-          },
-          "TaxCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "TaxPercentage": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "TaxBase": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "TaxAmount": {
-            "type": "number",
-            "format": "double"
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftTert": {
-        "type": "object",
-        "properties": {
-          "PartenerId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "Id": {
-            "type": "string",
-            "nullable": true
-          },
-          "RegistrationNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "Name": {
-            "type": "string",
-            "nullable": true
-          },
-          "Address": {
-            "$ref": "#/components/schemas/SaftAdresa"
-          },
-          "TaxRegistrationNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "TaxType": {
-            "type": "string",
-            "nullable": true
-          },
-          "AccountID": {
-            "type": "string",
-            "nullable": true
-          },
-          "OpeningDebitBalance": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "OpeningCreditBalance": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "ClosingDebitBalance": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "ClosingCreditBalance": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "FelId": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftTipAnaliza": {
-        "type": "object",
-        "properties": {
-          "AnalysisType": {
-            "type": "string",
-            "nullable": true
-          },
-          "AnalysisTypeDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "AnalysisID": {
-            "type": "string",
-            "nullable": true
-          },
-          "AnalysisIDDescription": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftTranzactie": {
-        "type": "object",
-        "properties": {
-          "DocumentId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "TransactionID": {
-            "type": "string",
-            "nullable": true
-          },
-          "Period": {
+          "An": {
             "type": "integer",
             "format": "int32"
           },
-          "PeriodYear": {
+          "Luna": {
             "type": "integer",
             "format": "int32"
           },
-          "TransactionDate": {
+          "DataStart": {
             "type": "string",
             "format": "date"
           },
-          "Description": {
-            "type": "string",
-            "nullable": true
-          },
-          "SystemEntryDate": {
+          "DataEnd": {
             "type": "string",
             "format": "date"
           },
-          "GLPostingDate": {
-            "type": "string",
-            "format": "date"
+          "Header": {
+            "$ref": "#/components/schemas/SaftHeader"
           },
-          "CustomerID": {
-            "type": "string",
-            "nullable": true
+          "Conturi": {
+            "type": "integer",
+            "format": "int32"
           },
-          "SupplierID": {
-            "type": "string",
-            "nullable": true
+          "Clienti": {
+            "type": "integer",
+            "format": "int32"
           },
-          "Linii": {
+          "Furnizori": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "CoduriTaxa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Unitati": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Produse": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "TipuriAnaliza": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Jurnale": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Tranzactii": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "LiniiGl": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "FacturiEmise": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "FacturiPrimite": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Plati": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Rezumat": {
+            "$ref": "#/components/schemas/SaftRezumat"
+          },
+          "Neincluse": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SaftLinieTranzactie"
+              "$ref": "#/components/schemas/SaftNeinclus"
             },
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "SaftUnitate": {
-        "type": "object",
-        "properties": {
-          "UnitOfMeasure": {
-            "type": "string",
-            "nullable": true
           },
-          "Description": {
-            "type": "string",
+          "Avertismente": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftAvertisment"
+            },
             "nullable": true
           }
         },

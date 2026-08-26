@@ -205,13 +205,22 @@ public static class D394Proiectii {
     /// românesc fără prefix); codurile străine ale neînregistraților rămân
     /// întregi (`DE123…` e chiar codul de TVA din statul membru). NULL pentru
     /// cod gol.
+    /// <para>
+    /// Tăierea prefixului e REPETATĂ și insensibilă la caz (`RORo1853162` ⇒
+    /// `1853162`): pe baza de import, doi parteneri din 5.536 aveau prefixul pus
+    /// de două ori, în grafii diferite — singura cauză de respingere a fișierului
+    /// SAF-T real la validatorul ANAF (felia 16, V4). O singură tăiere lăsa
+    /// `RO1853162` acolo unde schema cere cifrele. Majusculele sunt deja făcute
+    /// mai sus, deci bucla compară `Ordinal` pe un șir normalizat.
+    /// </para>
     /// </summary>
     public static string NormalizeazaCui(string codFiscal, string tara, bool inregistratTva) {
         if (string.IsNullOrWhiteSpace(codFiscal))
             return null;
         var cui = new string(codFiscal.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
-        if ((inregistratTva || Partener.NormalizeazaTara(tara) == "RO") && cui.StartsWith("RO", StringComparison.Ordinal))
-            cui = cui[2..];
+        if (inregistratTva || Partener.NormalizeazaTara(tara) == "RO")
+            while (cui.StartsWith("RO", StringComparison.Ordinal))
+                cui = cui[2..];
         // Un „cod" fără nicio literă/cifră („-", „./", „--") e un cod LIPSĂ scris
         // altfel (3.597 PF în sursa 1C au „-"): dacă ar trece, toți s-ar uni pe
         // aceeași cheie într-un singur rând op1 — capcană măsurată la smoke.

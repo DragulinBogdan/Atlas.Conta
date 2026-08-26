@@ -5707,10 +5707,6 @@ export interface components {
             Region?: string | null;
             Country?: string | null;
         };
-        SaftAnaliza: {
-            AnalysisType?: string | null;
-            AnalysisID?: string | null;
-        };
         SaftAvertisment: {
             Cod?: string | null;
             Mesaj?: string | null;
@@ -5719,70 +5715,6 @@ export interface components {
             /** Format: double */
             Suma?: number | null;
             Exemple?: string[] | null;
-        };
-        SaftCont: {
-            /** Format: uuid */
-            ContId?: string;
-            AccountID?: string | null;
-            AccountDescription?: string | null;
-            AccountType?: string | null;
-            /** Format: double */
-            OpeningDebitBalance?: number | null;
-            /** Format: double */
-            OpeningCreditBalance?: number | null;
-            /** Format: double */
-            ClosingDebitBalance?: number | null;
-            /** Format: double */
-            ClosingCreditBalance?: number | null;
-        };
-        SaftDto: {
-            Neaplicabil?: string | null;
-            /** Format: int32 */
-            An?: number;
-            /** Format: int32 */
-            Luna?: number;
-            /** Format: date */
-            DataStart?: string;
-            /** Format: date */
-            DataEnd?: string;
-            Header?: components["schemas"]["SaftHeader"];
-            Conturi?: components["schemas"]["SaftCont"][] | null;
-            Clienti?: components["schemas"]["SaftTert"][] | null;
-            Furnizori?: components["schemas"]["SaftTert"][] | null;
-            Taxe?: components["schemas"]["SaftTaxCode"][] | null;
-            Unitati?: components["schemas"]["SaftUnitate"][] | null;
-            TipuriAnaliza?: components["schemas"]["SaftTipAnaliza"][] | null;
-            Produse?: components["schemas"]["SaftProdus"][] | null;
-            Jurnale?: components["schemas"]["SaftJurnal"][] | null;
-            FacturiEmise?: components["schemas"]["SaftFactura"][] | null;
-            FacturiPrimite?: components["schemas"]["SaftFactura"][] | null;
-            Plati?: components["schemas"]["SaftPlata"][] | null;
-            Neincluse?: components["schemas"]["SaftNeinclus"][] | null;
-            Avertismente?: components["schemas"]["SaftAvertisment"][] | null;
-            Rezumat?: components["schemas"]["SaftRezumat"];
-        };
-        SaftFactura: {
-            /** Format: uuid */
-            DocumentId?: string;
-            Storno?: boolean;
-            DocumentTip?: string | null;
-            InvoiceNo?: string | null;
-            /** Format: date */
-            InvoiceDate?: string;
-            InvoiceType?: string | null;
-            SelfBillingIndicator?: string | null;
-            AccountID?: string | null;
-            PartenerID?: string | null;
-            /** Format: uuid */
-            PartenerCheie?: string | null;
-            PartenerDenumire?: string | null;
-            BillingAddress?: components["schemas"]["SaftAdresa"];
-            Linii?: components["schemas"]["SaftLinieFactura"][] | null;
-            /** Format: double */
-            NetTotal?: number;
-            /** Format: double */
-            GrossTotal?: number;
-            TaxInformationTotals?: components["schemas"]["SaftTaxInfo"][] | null;
         };
         SaftHeader: {
             AuditFileVersion?: string | null;
@@ -5816,69 +5748,6 @@ export interface components {
             /** Format: int32 */
             PeriodEndYear?: number;
         };
-        SaftJurnal: {
-            JournalID?: string | null;
-            Description?: string | null;
-            Type?: string | null;
-            Tranzactii?: components["schemas"]["SaftTranzactie"][] | null;
-        };
-        SaftLinieFactura: {
-            /** Format: uuid */
-            DetaliuId?: string;
-            /** Format: int32 */
-            LineNumber?: number;
-            AccountID?: string | null;
-            ProductCode?: string | null;
-            ProductDescription?: string | null;
-            /** Format: double */
-            Quantity?: number;
-            InvoiceUOM?: string | null;
-            /** Format: double */
-            UnitPrice?: number;
-            /** Format: date */
-            TaxPointDate?: string;
-            Description?: string | null;
-            /** Format: double */
-            InvoiceLineAmount?: number;
-            DebitCreditIndicator?: string | null;
-            Analiza?: components["schemas"]["SaftAnaliza"][] | null;
-            TaxInformation?: components["schemas"]["SaftTaxInfo"];
-        };
-        SaftLiniePlata: {
-            /** Format: uuid */
-            DetaliuId?: string;
-            /** Format: int32 */
-            LineNumber?: number;
-            SourceDocumentID?: string | null;
-            AccountID?: string | null;
-            CustomerID?: string | null;
-            SupplierID?: string | null;
-            Description?: string | null;
-            DebitCreditIndicator?: string | null;
-            /** Format: double */
-            PaymentLineAmount?: number;
-            Analiza?: components["schemas"]["SaftAnaliza"][] | null;
-            TaxInformation?: components["schemas"]["SaftTaxInfo"];
-        };
-        SaftLinieTranzactie: {
-            /** Format: uuid */
-            RandRegistruId?: string;
-            /** Format: uuid */
-            DetaliuId?: string | null;
-            RecordID?: string | null;
-            AccountID?: string | null;
-            CustomerID?: string | null;
-            SupplierID?: string | null;
-            Description?: string | null;
-            DebitCreditIndicator?: string | null;
-            /** Format: double */
-            Amount?: number;
-            CurrencyCode?: string | null;
-            /** Format: double */
-            CurrencyAmount?: number;
-            Analiza?: components["schemas"]["SaftAnaliza"][] | null;
-            TaxInformation?: components["schemas"]["SaftTaxInfo"];
-        };
         SaftNeinclus: {
             Cauza?: string | null;
             Sectiune?: string | null;
@@ -5905,33 +5774,6 @@ export interface components {
             Credit?: number | null;
             /** Format: int32 */
             Randuri?: number;
-        };
-        SaftPlata: {
-            /** Format: uuid */
-            DocumentId?: string;
-            DocumentTip?: string | null;
-            PaymentRefNo?: string | null;
-            /** Format: date */
-            TransactionDate?: string;
-            PaymentMethod?: string | null;
-            PaymentMechanism?: string | null;
-            Description?: string | null;
-            Linii?: components["schemas"]["SaftLiniePlata"][] | null;
-            /** Format: double */
-            GrossTotal?: number;
-        };
-        SaftProdus: {
-            /** Format: uuid */
-            ProdusId?: string;
-            ProductCode?: string | null;
-            GoodsServicesID?: string | null;
-            Description?: string | null;
-            ProductCommodityCode?: string | null;
-            ValuationMethod?: string | null;
-            UOMBase?: string | null;
-            UOMStandard?: string | null;
-            /** Format: double */
-            UOMToUOMBaseConversionFactor?: number;
         };
         SaftRezumat: {
             /** Format: int32 */
@@ -5993,74 +5835,46 @@ export interface components {
             /** Format: int32 */
             NumarProduse?: number;
         };
-        SaftTaxCode: {
-            TaxType?: string | null;
-            TaxCode?: string | null;
-            Description?: string | null;
-            /** Format: double */
-            TaxPercentage?: number;
-            /** Format: double */
-            BaseRate?: number;
-            Country?: string | null;
-        };
-        SaftTaxInfo: {
-            TaxType?: string | null;
-            TaxCode?: string | null;
-            /** Format: double */
-            TaxPercentage?: number | null;
-            /** Format: double */
-            TaxBase?: number | null;
-            /** Format: double */
-            TaxAmount?: number;
-        };
-        SaftTert: {
-            /** Format: uuid */
-            PartenerId?: string;
-            Id?: string | null;
-            RegistrationNumber?: string | null;
-            Name?: string | null;
-            Address?: components["schemas"]["SaftAdresa"];
-            TaxRegistrationNumber?: string | null;
-            TaxType?: string | null;
-            AccountID?: string | null;
-            /** Format: double */
-            OpeningDebitBalance?: number | null;
-            /** Format: double */
-            OpeningCreditBalance?: number | null;
-            /** Format: double */
-            ClosingDebitBalance?: number | null;
-            /** Format: double */
-            ClosingCreditBalance?: number | null;
-            FelId?: string | null;
-        };
-        SaftTipAnaliza: {
-            AnalysisType?: string | null;
-            AnalysisTypeDescription?: string | null;
-            AnalysisID?: string | null;
-            AnalysisIDDescription?: string | null;
-        };
-        SaftTranzactie: {
-            /** Format: uuid */
-            DocumentId?: string;
-            TransactionID?: string | null;
+        SaftSumarDto: {
+            Neaplicabil?: string | null;
             /** Format: int32 */
-            Period?: number;
+            An?: number;
             /** Format: int32 */
-            PeriodYear?: number;
+            Luna?: number;
             /** Format: date */
-            TransactionDate?: string;
-            Description?: string | null;
+            DataStart?: string;
             /** Format: date */
-            SystemEntryDate?: string;
-            /** Format: date */
-            GLPostingDate?: string;
-            CustomerID?: string | null;
-            SupplierID?: string | null;
-            Linii?: components["schemas"]["SaftLinieTranzactie"][] | null;
-        };
-        SaftUnitate: {
-            UnitOfMeasure?: string | null;
-            Description?: string | null;
+            DataEnd?: string;
+            Header?: components["schemas"]["SaftHeader"];
+            /** Format: int32 */
+            Conturi?: number;
+            /** Format: int32 */
+            Clienti?: number;
+            /** Format: int32 */
+            Furnizori?: number;
+            /** Format: int32 */
+            CoduriTaxa?: number;
+            /** Format: int32 */
+            Unitati?: number;
+            /** Format: int32 */
+            Produse?: number;
+            /** Format: int32 */
+            TipuriAnaliza?: number;
+            /** Format: int32 */
+            Jurnale?: number;
+            /** Format: int32 */
+            Tranzactii?: number;
+            /** Format: int32 */
+            LiniiGl?: number;
+            /** Format: int32 */
+            FacturiEmise?: number;
+            /** Format: int32 */
+            FacturiPrimite?: number;
+            /** Format: int32 */
+            Plati?: number;
+            Rezumat?: components["schemas"]["SaftRezumat"];
+            Neincluse?: components["schemas"]["SaftNeinclus"][] | null;
+            Avertismente?: components["schemas"]["SaftAvertisment"][] | null;
         };
         /** @enum {string} */
         SectiuneD300: "Colectata" | "Deductibila" | "Regularizari";
@@ -31146,46 +30960,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=minimal": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=full": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=none": components["schemas"]["SaftDto"];
-                    "application/json;odata.streaming=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.streaming=false": components["schemas"]["SaftDto"];
-                    "application/json": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/json;IEEE754Compatible=false": components["schemas"]["SaftDto"];
-                    "application/json;IEEE754Compatible=true": components["schemas"]["SaftDto"];
-                    "application/xml": components["schemas"]["SaftDto"];
-                    "text/plain": components["schemas"]["SaftDto"];
-                    "application/octet-stream": components["schemas"]["SaftDto"];
-                    "text/json": components["schemas"]["SaftDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["SaftSumarDto"];
+                    "application/json": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["SaftSumarDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["SaftSumarDto"];
+                    "application/xml": components["schemas"]["SaftSumarDto"];
+                    "text/plain": components["schemas"]["SaftSumarDto"];
+                    "application/octet-stream": components["schemas"]["SaftSumarDto"];
+                    "text/json": components["schemas"]["SaftSumarDto"];
                 };
             };
             /** @description Bad Request */

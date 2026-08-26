@@ -392,3 +392,56 @@ public sealed class SaftDto {
     public List<SaftAvertisment> Avertismente { get; set; } = [];
     public SaftRezumat Rezumat { get; set; } = new();
 }
+
+// ═══ SUMARUL — ce se servește pe `GET api/proiectii/saft` (D16-D5, amendat) ═══
+//
+// `SaftDto` întreg E FIȘIERUL: pe o lună reală (clona Flax.Api, 09/2025) sunt
+// 38,6 MiB de JSON — 13.966 tranzacții × ~4 linii de GL, 5.638 terți, 5.388
+// facturi, 3.000 plăți. Regula moștenită de la D300/D394 („formularul nu se
+// paginează") spunea că răspunsul e declarația ÎNTREAGĂ; datele au contrazis-o:
+// ecranul nu afișează niciuna dintre liniile alea, iar browserul plătește
+// oricum parsarea lor. Deci ușa JSON servește un SUMAR, iar listele trăiesc în
+// exact două locuri — FIȘIERUL (`saft/xml`, streaming) și `SaftProiectii.Saft()`
+// pentru ModelCheck. Nu e o paginare: e ALTĂ întrebare („cât e declarația?"),
+// cu răspuns complet.
+//
+// Contoarele sunt ale SERVERULUI, nu lungimi numărate în TS (42c): clientul nu
+// primește listele, deci nu le poate număra — iar dacă le-ar primi, tot n-ar
+// avea voie. Totalurile per secțiune (debit/credit, net/brut, plăți) sunt deja
+// în `Rezumat`, care merge întreg: e contractul cusăturilor, neschimbat.
+public sealed class SaftSumarDto {
+    public string Neaplicabil { get; set; }
+    public int An { get; set; }
+    public int Luna { get; set; }
+    public DateOnly DataStart { get; set; }
+    public DateOnly DataEnd { get; set; }
+
+    // Antetul merge ÎNTREG: e un singur rând și e chiar ce se citește prima dată
+    // pe o declarație („cine declară, pe ce perioadă, pe ce bază contabilă").
+    public SaftHeader Header { get; set; }
+
+    // Contoarele per secțiune, în ordinea în care secțiunile apar în fișier.
+    // `Jurnale` = câte jurnale (tipuri de document), `Tranzactii` = câte
+    // documente în total, `LiniiGl` = câte linii de tranzacție.
+    public int Conturi { get; set; }
+    public int Clienti { get; set; }
+    public int Furnizori { get; set; }
+    public int CoduriTaxa { get; set; }
+    public int Unitati { get; set; }
+    public int Produse { get; set; }
+    public int TipuriAnaliza { get; set; }
+    public int Jurnale { get; set; }
+    public int Tranzactii { get; set; }
+    public int LiniiGl { get; set; }
+    public int FacturiEmise { get; set; }
+    public int FacturiPrimite { get; set; }
+    public int Plati { get; set; }
+
+    // Cusăturile, `Neincluse` și avertismentele merg NESCHIMBATE: sunt mărginite
+    // de numărul de CAUZE (avertismentele) sau de ce n-a intrat în fișier
+    // (`Neincluse`) — adică exact partea pe care omul o citește înainte de a
+    // depune. Ele sunt motivul pentru care ecranul există.
+    public SaftRezumat Rezumat { get; set; } = new();
+    public List<SaftNeinclus> Neincluse { get; set; } = [];
+    public List<SaftAvertisment> Avertismente { get; set; } = [];
+}

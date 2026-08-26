@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
 using System.Xml.Linq;
 using Atlas.Conta.BackOffice.ModelCheck;
 using Atlas.Conta.BackOffice.Module.Anaf;
@@ -10853,6 +10855,10 @@ void VerificaSaft(bool privat) {
         Check("D16-V3 (bugetar) `SaftXml.Scrie` REFUZĂ o declarație `Neaplicabil`, cu motivul proiecției — "
             + "traducerea în 422 rămâne a apelantului REST, dar decizia e a scriitorului, nu a ecranului",
             mesajScriere != null && mesajScriere.Contains("bugetar"));
+        // Serializarea DTO-ului `Neaplicabil` (pasul 4b): ușa JSON îl traduce în
+        // 422, dar forma trebuie să fie scriibilă oricum — un `Neaplicabil` care
+        // ar arunca la serializare ar da 500 în loc de refuzul motivat.
+        VerificaSaftJson(gol, "bugetar, Neaplicabil");
         return;
     }
 
@@ -11188,6 +11194,9 @@ void VerificaSaft(bool privat) {
         Console.WriteLine($"         AVERTISMENT {a.Cod} ×{a.Numar}{(a.Suma is decimal s ? $" Σ {s:N2}" : "")}: "
             + $"{string.Join(" | ", a.Exemple)}");
 
+    // ---------------- Serializarea JSON + sumarul (pasul 4b) ----------------
+    VerificaSaftJson(saft, $"privat, {luna:00}.{an}");
+
     // ---------------- Antetul ----------------
     var h = saft.Header;
     Console.WriteLine($"     MĂSURAT (D16-V2 antet): {h.RegistrationNumber} „{h.Name}” {h.TaxAccountingBasis} "
@@ -11484,6 +11493,108 @@ void VerificaSaft(bool privat) {
         && !os.GetObjectsQuery<Document>().Any(d => d.Numar != null && d.Numar.StartsWith(Marcaj))
         && os.GetObjectsQuery<Societate>().First().CodFiscal == socInainte.CodFiscal
         && os.FirstOrDefault<ContPropriu>(c => c.Cod == "BANCA").Iban == ibanInainte);
+}
+
+// ============ Felia 16, pas 4b: serializarea JSON — D16-V2 (d) ============
+// De ce e o PROBĂ și nu un detaliu de host: coliziunea `PartenerID`/`PartenerId`
+// de pe `SaftFactura` a ieșit **500 pe calea reală** (V4) fiindcă
+// `System.Text.Json` refuză două proprietăți ale căror nume diferă doar prin caz
+// — iar suita, care probase fiecare cifră a declarației la cent, nu serializase
+// niciodată DTO-ul. O structură care se calculează corect și nu se poate trimite
+// nu e o proiecție terminată.
+//
+// Opțiunile sunt ALE HOST-ULUI, nu unele „echivalente": `JsonApi.Optiuni` e
+// aceeași configurare pe care `Startup` o dă lui `Mvc.JsonOptions`
+// (`JsonSerializerDefaults.Web` + `PropertyNamingPolicy = null`). Cu altă
+// politică de nume proba ar fi trecut și 500-ul ar fi rămas neatins: exact acele
+// coliziuni DEPIND de politică.
+//
+// Se probează AMBELE forme — declarația întreagă (ce scrie fișierul, ce serveau
+// ușile până la pasul 4b) și SUMARUL (ce pleacă azi pe sârmă) — plus întoarcerea:
+// un JSON care se scrie dar nu se citește înapoi cu aceleași contoare n-ar fi
+// contract, ar fi text.
+void VerificaSaftJson(SaftDto dto, string eticheta) {
+    var sumar = SaftProiectii.Sumar(dto);
+    string jsonIntreg = null, jsonSumar = null, eroare = null;
+    try {
+        jsonIntreg = JsonSerializer.Serialize(dto, JsonApi.Optiuni);
+        jsonSumar = JsonSerializer.Serialize(sumar, JsonApi.Optiuni);
+    }
+    catch (Exception e) {
+        eroare = $"{e.GetType().Name}: {e.Message}";
+    }
+    double KiB(string s) => s == null ? 0 : Encoding.UTF8.GetByteCount(s) / 1024.0;
+    Console.WriteLine($"     MĂSURAT (D16-V2 JSON, {eticheta}): întreg {KiB(jsonIntreg):N1} KiB / sumar "
+        + $"{KiB(jsonSumar):N1} KiB{(eroare == null ? "" : $" — EROARE {eroare}")}.");
+    Check($"D16-V2 (d, {eticheta}) `SaftDto` ȘI `SaftSumarDto` se SERIALIZEAZĂ cu opțiunile host-ului "
+        + "(`JsonApi.Optiuni`: Web + nume CLR exacte) — nicio coliziune de nume, niciun ciclu, niciun tip "
+        + "pe care `System.Text.Json` să nu-l știe scrie",
+        eroare == null && jsonIntreg != null && jsonSumar != null);
+    if (eroare != null)
+        return;
+
+    // Întoarcerea: aceleași contoare după deserializare. Probează implicit și
+    // numele de pe sârmă (`Rezumat`, nu `rezumat`) — cu politica greșită,
+    // proprietățile s-ar pierde tăcut în obiectul întors.
+    var dtoInapoi = JsonSerializer.Deserialize<SaftDto>(jsonIntreg, JsonApi.Optiuni);
+    var sumarInapoi = JsonSerializer.Deserialize<SaftSumarDto>(jsonSumar, JsonApi.Optiuni);
+    Check($"D16-V2 (d, {eticheta}) round-trip: DTO-ul citit înapoi are ACELEAȘI contoare pe fiecare secțiune "
+        + "(conturi, terți, jurnale/tranzacții/linii GL, facturi per sens, plăți, produse, `Neincluse`, "
+        + "avertismente) și același `Rezumat` pe cusăturile de bani",
+        dtoInapoi != null
+        && dtoInapoi.Conturi.Count == dto.Conturi.Count
+        && dtoInapoi.Clienti.Count == dto.Clienti.Count && dtoInapoi.Furnizori.Count == dto.Furnizori.Count
+        && dtoInapoi.Jurnale.Count == dto.Jurnale.Count
+        && dtoInapoi.Jurnale.Sum(j => j.Tranzactii.Count) == dto.Jurnale.Sum(j => j.Tranzactii.Count)
+        && dtoInapoi.Jurnale.Sum(j => j.Tranzactii.Sum(t => t.Linii.Count))
+            == dto.Jurnale.Sum(j => j.Tranzactii.Sum(t => t.Linii.Count))
+        && dtoInapoi.FacturiEmise.Count == dto.FacturiEmise.Count
+        && dtoInapoi.FacturiPrimite.Count == dto.FacturiPrimite.Count
+        && dtoInapoi.Plati.Count == dto.Plati.Count && dtoInapoi.Produse.Count == dto.Produse.Count
+        && dtoInapoi.Taxe.Count == dto.Taxe.Count && dtoInapoi.Unitati.Count == dto.Unitati.Count
+        && dtoInapoi.TipuriAnaliza.Count == dto.TipuriAnaliza.Count
+        && dtoInapoi.Neincluse.Count == dto.Neincluse.Count
+        && dtoInapoi.Avertismente.Count == dto.Avertismente.Count
+        && dtoInapoi.Neaplicabil == dto.Neaplicabil && dtoInapoi.An == dto.An && dtoInapoi.Luna == dto.Luna
+        && dtoInapoi.DataStart == dto.DataStart && dtoInapoi.DataEnd == dto.DataEnd
+        && dtoInapoi.Rezumat.TotalDebit == dto.Rezumat.TotalDebit
+        && dtoInapoi.Rezumat.TotalCredit == dto.Rezumat.TotalCredit
+        && dtoInapoi.Rezumat.TvaRegistru == dto.Rezumat.TvaRegistru
+        && dtoInapoi.Rezumat.ClosingGla == dto.Rezumat.ClosingGla
+        && (dto.Header == null) == (dtoInapoi.Header == null)
+        && (dto.Header == null || dtoInapoi.Header.RegistrationNumber == dto.Header.RegistrationNumber));
+
+    // `Sumar` e funcție PURĂ pe DTO ⇒ contoarele lui TREBUIE să fie lungimile
+    // listelor pe care nu le mai trimite; acolo unde `Rezumat` are aceeași cifră
+    // (`NumarClienti`, `Tranzactii`, `LiniiGl`…), egalitatea e o CUSĂTURĂ, nu o
+    // presupunere — clientul citește o singură sursă și n-are voie să numere (42c).
+    Check($"D16-V2 (d, {eticheta}) `SaftProiectii.Sumar` = numărătoarea serverului: fiecare contor al sumarului "
+        + "e lungimea listei corespunzătoare din declarație, iar unde `Rezumat` are deja cifra ea COINCIDE; "
+        + "`Rezumat`/`Neincluse`/avertismentele trec neschimbate, antetul întreg",
+        sumar.Conturi == dto.Conturi.Count && sumar.Clienti == dto.Clienti.Count
+        && sumar.Furnizori == dto.Furnizori.Count && sumar.CoduriTaxa == dto.Taxe.Count
+        && sumar.Unitati == dto.Unitati.Count && sumar.Produse == dto.Produse.Count
+        && sumar.TipuriAnaliza == dto.TipuriAnaliza.Count && sumar.Jurnale == dto.Jurnale.Count
+        && sumar.FacturiEmise == dto.FacturiEmise.Count && sumar.FacturiPrimite == dto.FacturiPrimite.Count
+        && sumar.Plati == dto.Plati.Count
+        && sumar.Tranzactii == dto.Rezumat.Tranzactii && sumar.LiniiGl == dto.Rezumat.LiniiGl
+        && sumar.Clienti == dto.Rezumat.NumarClienti && sumar.Furnizori == dto.Rezumat.NumarFurnizori
+        && sumar.FacturiEmise == dto.Rezumat.NumarFacturiEmise
+        && sumar.FacturiPrimite == dto.Rezumat.NumarFacturiPrimite
+        && sumar.Plati == dto.Rezumat.NumarPlati && sumar.Produse == dto.Rezumat.NumarProduse
+        && ReferenceEquals(sumar.Rezumat, dto.Rezumat) && ReferenceEquals(sumar.Neincluse, dto.Neincluse)
+        && ReferenceEquals(sumar.Avertismente, dto.Avertismente)
+        && ReferenceEquals(sumar.Header, dto.Header)
+        && sumar.Neaplicabil == dto.Neaplicabil && sumar.An == dto.An && sumar.Luna == dto.Luna
+        && sumar.DataStart == dto.DataStart && sumar.DataEnd == dto.DataEnd
+        && sumarInapoi != null && sumarInapoi.LiniiGl == sumar.LiniiGl
+        // Motivul pentru care sumarul există: e mai MIC decât declarația — cerut
+        // doar acolo unde declarația chiar are liste (pe una `Neaplicabil`, ambele
+        // sunt goale, iar cele 13 contoare o fac cu câțiva octeți mai lungă;
+        // MĂSURAT: 1,1 KiB vs 1,1 KiB). Pe scenă 54,8 → 6,0 KiB; pe o lună reală
+        // 38,6 MiB → zeci de KiB.
+        && (dto.Neaplicabil != null
+            || Encoding.UTF8.GetByteCount(jsonSumar) < Encoding.UTF8.GetByteCount(jsonIntreg)));
 }
 
 // ============ Felia 16, pas 3: fișierul XML + oracolul DUK — D16-V3 ============
@@ -12740,6 +12851,18 @@ void VerificaD394(bool cuTva) {
         && D394Proiectii.NormalizeazaCui("RO-", "RO", true) == null
         && D394Proiectii.NormalizeazaCui(null, "RO", true) == null
         && D394Proiectii.NormalizeazaCui("RO", "RO", true) == null);
+    Check("D4-V2 `NormalizeazaCui`: tăierea prefixului `RO` e REPETATĂ și insensibilă la caz — „RORo1853162” ⇒ "
+        + "„1853162”, „ROro37472851” ⇒ „37472851” (singura cauză de respingere a fișierului SAF-T real la "
+        + "validatorul ANAF: 2 parteneri din 5.536 cu prefixul pus de două ori, în grafii diferite). Se taie DOAR "
+        + "acolo unde se tăia și înainte (RO sau înregistrat): codul străin al neînregistratului rămâne întreg, "
+        + "iar un cod rămas gol după tăiere e tot null",
+        D394Proiectii.NormalizeazaCui("RORo1853162", "RO", false) == "1853162"
+        && D394Proiectii.NormalizeazaCui("ROro37472851", "RO", true) == "37472851"
+        && D394Proiectii.NormalizeazaCui("RORO999", "DE", true) == "999"
+        && D394Proiectii.NormalizeazaCui(" ro 12 345 678 ", "RO", true) == "12345678"
+        && D394Proiectii.NormalizeazaCui("RORO1853162", "DE", false) == "RORO1853162"
+        && D394Proiectii.NormalizeazaCui("RO999", "DE", false) == "RO999"
+        && D394Proiectii.NormalizeazaCui("RORO", "RO", true) == null);
 
     // ---------------- Bugetarul: liste goale, și atât ----------------
     if (!cuTva) {

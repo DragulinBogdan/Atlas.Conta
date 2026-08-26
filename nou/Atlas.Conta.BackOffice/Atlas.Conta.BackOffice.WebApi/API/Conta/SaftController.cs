@@ -9,8 +9,9 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 // SAF-T — declarația D406, modul L (felia 16, D16-D5): proiecția registrelor →
 // formularul ANAF, servit în DOUĂ forme ale ACELUIAȘI conținut.
 //
-//   • `GET api/proiectii/saft?an&luna`      → `SaftDto` (JSON) — ce vede omul:
-//     rezumatul, cusăturile, `Neincluse`, avertismentele, secțiunile întregi;
+//   • `GET api/proiectii/saft?an&luna`      → `SaftSumarDto` (JSON) — ce vede
+//     omul: antetul, CÂT are fiecare secțiune, cusăturile, `Neincluse`,
+//     avertismentele;
 //   • `GET api/proiectii/saft/xml?an&luna`  → fișierul, streaming.
 //
 // Aceeași proiecție în amândouă: fișierul NU e o a doua sursă de adevăr, e
@@ -19,7 +20,12 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 //
 // ═══ Trei contracte moștenite de la D300/D394, unul propriu ═══
 //  • fără `loadOptions`: formularul nu se paginează — o lună fără jumătate din
-//    tranzacții nu e „pagina 1 dintr-o declarație", e o declarație falsă;
+//    tranzacții nu e „pagina 1 dintr-o declarație", e o declarație falsă. Ușa
+//    JSON servește însă SUMARUL, nu declarația întreagă (amendamentul pasului 4,
+//    MĂSURAT: 38,6 MiB pe o lună reală, din care ecranul nu afișa nicio linie).
+//    Nu e o paginare — e altă întrebare, cu răspuns complet: „cât e declarația",
+//    nu „primele n rânduri din ea". Declarația întreagă are exact o formă
+//    servită: FIȘIERUL;
 //  • perioada e OBLIGATORIE și e o LUNĂ (`PeriodStart`/`PeriodEnd` din
 //    `SelectionCriteria` sunt luni, nu date libere): `an`+`luna`, nullable, ca
 //    „lipsă" să se distingă de `0` pe care binding-ul l-ar livra tăcut;
@@ -48,7 +54,7 @@ public class SaftController : ContaApiController {
     const int AnMinim = 2020, AnMaxim = 2100;
 
     [HttpGet]
-    [ProducesResponseType(typeof(SaftDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SaftSumarDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Get([FromQuery] int? an = null, [FromQuery] int? luna = null) {
@@ -63,7 +69,11 @@ public class SaftController : ContaApiController {
         var dto = SaftProiectii.Saft(os, an.Value, luna.Value);
         if (dto.Neaplicabil != null)
             return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(dto.Neaplicabil));
-        return Ok(dto);
+        // Aceeași proiecție ca fișierul, apoi `Sumar` — funcție PURĂ pe DTO. Costul
+        // rămas e al PROIECȚIEI (2,4–3,4 s pe o lună reală), nu al serializării;
+        // ce dispare de pe sârmă sunt cele ~38 MiB de liste pe care ecranul nu le
+        // afișa. Când chiar ai nevoie de linii, ai fișierul.
+        return Ok(SaftProiectii.Sumar(dto));
     }
 
     // FĂRĂ `[Produces("application/xml")]`, deliberat: atributul e un filtru care

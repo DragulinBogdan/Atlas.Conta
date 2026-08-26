@@ -338,6 +338,31 @@ declară, `IgnoreQueryFilters`).
 - D4-r14 făcut: `FaraOp11` doar pe liniile fără produs cu `CodNc`; categoria
   de bunuri/structura `op11` rămân restanța D4-r5.
 
+### D16-D5/D6 — amendamente din pasul 4 (măsurate pe clona Flax.Api, 09/2025)
+
+- **JSON-ul întreg NU e un formular**: 38,6 MiB pe lună (3.950 clienți, 13.966
+  tranzacții × ~4 linii, 3.000 plăți) — „formularul nu se paginează" (69/71) e
+  contrazis de date. Decizie: `GET api/proiectii/saft` servește un **SUMAR**
+  (`SaftSumarDto`: antet, contoare + totaluri per secțiune, cusăturile,
+  `Neincluse`, avertismentele) — nu listele; listele trăiesc DOAR în fișier
+  (`saft/xml`) și în `SaftProiectii.Saft()` pentru ModelCheck. Ecranul `/saft`
+  consumă sumarul (pasul 4b).
+- XML-ul se scrie streaming pe `Response.Body` cu `AllowSynchronousIO` per
+  cerere (Kestrel refuză scrierile sincrone; bufferarea ar ține luna de două
+  ori în RAM; `SaftXml` rămâne sincron — Import1C scrie același fișier pe disc).
+  Răspuns chunked, fără `Content-Length`. 403-ul pe fișier = `CanRead` pe TIPUL
+  `RegistruContabil`, aditiv în `ContaApiController` (`PoateCiti`), gate-ul
+  comenzilor neatins.
+- **Normalizarea CUI e repetată și insensibilă la caz** (`RORo1853162` ⇒
+  `1853162`): singura cauză de respingere DUK pe fișierul real (2 parteneri din
+  5.536). Pasul 4b în `D394Proiectii.NormalizeazaCui` (o singură sursă) +
+  contor în Import1C.
+- **Serializarea JSON a `SaftDto` se probează în ModelCheck** (coliziunea
+  `PartenerID`/`PartenerId` a dat 500 până la V4; nimic din suită nu
+  serializa).
+- `[Produces("application/xml")]` NU se folosește (impune content-type-ul și pe
+  `EroriDto` ⇒ 406); content-type-ul de succes se pune manual.
+
 ## Ce NU intră, cu motiv
 
 - **Declarațiile S și A** (MovementOfGoods/PhysicalStock/Owners — cere
