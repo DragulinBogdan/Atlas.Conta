@@ -34,6 +34,10 @@ static class SmokeCititori {
         Proba("Partenerii (identitate fiscală, D394)", () => flax.ParteneriEsantion());
         List<(string PartenerId, FlaxAdresa Adresa)> adrese = null;
         Proba("Adrese partener (InformatiaDeContact, D15-D6)", () => adrese = flax.AdreseEsantion());
+        List<FlaxOrganizatie> organizatii = null;
+        Proba("Organizatii (societatea raportoare, D16-D6)", () => organizatii = flax.Organizatii());
+        List<FlaxNomenclator> nomenclator = null;
+        Proba("Nomenclator (UM + NIC, D16-D6)", () => nomenclator = flax.NomenclatorEsantion());
         Proba("Aprovizionari", () => flax.Aprovizionari(an, luna));
         Proba("AprovizionariMarfuri", () => flax.AprovizionariMarfuri(an, luna));
         Proba("AprovizionariServicii", () => flax.AprovizionariServicii(an, luna));
@@ -108,6 +112,47 @@ static class SmokeCititori {
                 inLot.Count == adrese.Count);
         }
 
+        // Societatea (D16-D6): cele patru cititoare ale antetului sunt legate de
+        // ACELAȘI obiect (organizația), pe registre diferite. Se tipăresc, la fel
+        // ca eșantionul de adrese și pentru același motiv: adresa societății iese
+        // tot din coloane fizice numerotate, iar singura probă onestă e ca omul să
+        // vadă că în coloana „județ" scrie un județ. Numărul de organizații se
+        // AFIȘEAZĂ, nu se verifică: „câte sunt" e un fapt al bazei-sursă, iar
+        // decizia (care raportează) e a operatorului, nu a smoke-ului.
+        if (organizatii is { Count: > 0 }) {
+            foreach (var o in organizatii) {
+                var a = flax.AdresaOrganizatie(o.Id);
+                var (telefon, email) = flax.ContactOrganizatie(o.Id);
+                var (nume, functie) = flax.ConducatorulOrganizatiei(o.Id);
+                Console.WriteLine($"      {o.Cod} „{o.DenumireCompleta ?? o.Denumire}” CUI {o.CodUnic ?? "–"} "
+                    + $"RegCom {o.RegCom ?? "–"}");
+                Console.WriteLine($"        adresă: {a?.JudetDenumire ?? "–"} | {a?.Localitate ?? "–"} | "
+                    + $"{a?.Strada ?? "–"} | {a?.Numar ?? "–"}; tel {telefon ?? "–"}; "
+                    + $"mail {email ?? "–"}; conducător {nume ?? "–"} ({functie ?? "–"})");
+            }
+            check($"Smoke cititori: cele {organizatii.Count} organizații au KeyField și denumire "
+                + "(contractul de coloane al antetului SAF-T)",
+                organizatii.All(o => o.Id != null && (o.Denumire ?? o.DenumireCompleta) != null));
+        }
+
+        // Nomenclatorul: `NIC` e coloana NOUĂ a feliei 16 și n-are alt apărător
+        // decât proba asta. Cele două forme (una per id, una în lot) trebuie să
+        // dea ACELAȘI rând — altfel materializarea și pasul `--um-nc` ar scrie
+        // unități și coduri NC diferite pentru același produs.
+        if (nomenclator is { Count: > 0 }) {
+            Console.WriteLine($"  {"  → eșantion nomenclator (cod | UM | NIC)",-46}");
+            foreach (var n in nomenclator.Take(8))
+                Console.WriteLine($"      {n.Cod ?? "–"} | {n.UM ?? "–"} | {n.Nic ?? "–"}");
+            var unul = nomenclator[0];
+            var inLot = flax.NomenclatoareDupaIds(nomenclator.Select(n => n.Id));
+            check($"Smoke cititori: nomenclatorul {unul.Cod} e identic pe cele două căi "
+                + "(per id / în lot), inclusiv pe `UM` și `NIC`",
+                flax.NomenclatorDupaId(unul.Id) == unul && inLot.GetValueOrDefault(unul.Id) == unul);
+            check($"Smoke cititori: forma în lot întoarce {inLot.Count} nomenclatoare pentru "
+                + $"{nomenclator.Count} cerute (una per id, fără dubluri)",
+                inLot.Count == nomenclator.Count);
+        }
+
         // Registrul contabil: forma PE LUNĂ (cea folosită de handler-e) și cea per
         // document (diagnostic) trebuie să dea EXACT aceleași rânduri — altfel una
         // dintre ele minte, iar identitatea de lot ar depinde de calea aleasă.
@@ -132,7 +177,7 @@ static class SmokeCititori {
                 subPerechi.SequenceEqual(subconto.GetValueOrDefault(doc) ?? []));
         }
 
-        check($"Smoke cititori: toate cele 53 de cititoare ale lunii {luna:00}/{an} rulează pe "
+        check($"Smoke cititori: toate cele 55 de cititoare ale lunii {luna:00}/{an} rulează pe "
             + $"view-urile reale ({esecuri} eșecuri, {randuri} rânduri citite)", esecuri == 0);
     }
 }

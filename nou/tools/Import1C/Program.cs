@@ -83,6 +83,19 @@ var reclasifica = false;
 // adresă (oglindă, proxy de test); lipsa lui ⇒ URL-ul oficial v9 din client.
 var anaf = false;
 string anafUrl = null;
+// Felia 16 (SAF-T), toate trei idempotente și fără import de documente:
+//  * `--societate` = antetul raportorului din `flax.Organizatii` (+ adresă,
+//    contact, cont bancar), scris DOAR pe câmp gol (72d);
+//  * `--um-nc` = unitatea de măsură UN/ECE și codul NC pe produsele DEJA legate
+//    (materializarea nu le mai atinge: sunt legate), tot doar pe câmp gol;
+//  * `--saft <an> <lună>` = declarația D406 a lunii, scrisă lângă rapoartele de
+//    reconciliere și trecută prin validatorul oficial.
+// Primele două rulează și ca pas de nomenclator al importului normal; ca
+// flag-uri sunt modul „doar nomenclatoare", pentru o bază deja importată.
+var societate = false;
+var umNc = false;
+int? saftAn = null;
+var saftLuna = 0;
 for (var i = 0; i < args.Length; i++) {
     var arg = args[i];
     if (!arg.StartsWith("--")) {
@@ -116,6 +129,26 @@ for (var i = 0; i < args.Length; i++) {
                 return 2;
             }
             break;
+        case "--societate":
+            societate = true;
+            break;
+        case "--um-nc":
+            umNc = true;
+            break;
+        case "--saft":
+            // Perioada e OBLIGATORIE și se citește ca două poziționale imediate
+            // (`--saft 2025 9`), nu ca implicit: un fișier SAF-T generat pe
+            // „luna curentă" e o declarație pe care n-a cerut-o nimeni.
+            var anText = valoare ?? (i + 1 < args.Length ? args[++i] : null);
+            var lunaText = i + 1 < args.Length ? args[++i] : null;
+            if (!int.TryParse(anText, out var anParsat) || anParsat < 2020
+                    || !int.TryParse(lunaText, out saftLuna) || saftLuna is < 1 or > 12) {
+                Console.Error.WriteLine($"--saft cere <an ≥ 2020> <lună 1..12> "
+                    + $"(primit „{anText}” „{lunaText}”).");
+                return 2;
+            }
+            saftAn = anParsat;
+            break;
         case "--diag":
             diagProdus = valoare ?? (i + 1 < args.Length ? args[++i] : null);
             if (string.IsNullOrWhiteSpace(diagProdus)) {
@@ -141,7 +174,8 @@ for (var i = 0; i < args.Length; i++) {
         default:
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
                 + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--recreeaza] "
-                + "[--reclasifica] [--anaf] [--anaf-url <url>] [--deblocheaza <view>:<cheie>]");
+                + "[--reclasifica] [--anaf] [--anaf-url <url>] [--deblocheaza <view>:<cheie>] "
+                + "[--societate] [--um-nc] [--saft <an> <lună>]");
             return 2;
     }
 }
@@ -261,6 +295,15 @@ if (diagProdus != null) {
     return 0;
 }
 
+// `--saft <an> <lună>`: generarea declarației D406 a lunii + validatorul oficial
+// (felia 16, D16-D6). Rulează AICI — după seed, înaintea oricărei faze care
+// atinge SQL Server-ul 1C — fiindcă e o întrebare pusă bazei ȚINTĂ: proiecția
+// citește doar registrele Atlas, sursa 1C nu are niciun rol. Oprește procesul:
+// nu e o rulare de import și nu are voie să devină una.
+if (saftAn is int anSaft) {
+    return Saft1C.Executa(provider, anSaft, saftLuna, Environment.CurrentDirectory);
+}
+
 // ======================= Faza PRE-FLIGHT (decizia 48c) =======================
 // Rulează după seed și ÎNAINTEA oricărui import: triajul conturilor și
 // inventarul tipurilor de document-sursă se emit ca raport unic, nu descoperit
@@ -271,6 +314,29 @@ using var flax = new FlaxDb(flaxCs);
 // `--reclasifica`: reclasificarea fiscală a partenerilor (fix 4 al review-ului
 // D394), pe baza deja importată — după seed, înaintea fazelor scumpe; oprește
 // procesul: nu e o rulare de import.
+// `--societate` / `--um-nc` (felia 16): la fel — moduri de NOMENCLATOR pe o bază
+// deja importată, fără documente. Se pot combina între ele și cu
+// `--reclasifica`; oricare dintre ele oprește procesul după raport.
+if (societate || umNc) {
+    if (societate) {
+        var soc = new Societate1C(provider, flax, Avert);
+        if (soc.Executa())
+            soc.Raporteaza("--societate");
+        else
+            esecuri++;
+    }
+    if (umNc) {
+        var lc = new ImportLaCerere(provider, flax, Avert);
+        lc.AplicaUmSiCodNcTuturor();
+        RaporteazaUmNc(lc, "--um-nc");
+    }
+    foreach (var a in avertismente)
+        Console.WriteLine($"AVERT {a}");
+    Console.WriteLine($"\nNomenclatoare SAF-T încheiate ({avertismente.Count} avertismente, "
+        + $"{esecuri} eșecuri).");
+    return esecuri == 0 ? 0 : 1;
+}
+
 if (reclasifica) {
     var rec = new ImportLaCerere(provider, flax, Avert);
     rec.ReclasificaToti();
@@ -294,7 +360,35 @@ void RaporteazaReclasificare(ImportLaCerere lc, string pas) {
         + $"din registru: {lc.InregistratiDinRegistru} marcați înregistrați (achiziții cu TVA ≠ 0); "
         + $"canonicul ANAF păstrat pe {lc.PastratiDinAnaf} (axa TVA neatinsă de sursă), "
         + $"{lc.RegistruContraAnaf} cu TVA în registru dar neînregistrați la ANAF azi (raportați, D4-r1).");
+    Console.WriteLine($"CUI cu prefixul RO DUBLAT în sursă: {lc.CuiPrefixDublat} "
+        + "(raportați, NU rescriși — normalizarea e în proiecție, `NormalizeazaCui`)"
+        + (lc.ExempleCuiPrefixDublat.Count == 0 ? "."
+            : $": {string.Join("; ", lc.ExempleCuiPrefixDublat)}"));
     RaporteazaAdrese(lc, pas);
+}
+
+// Unitatea de măsură UN/ECE și codul NC pe produse (felia 16, D16-D6). Prima
+// cifră e a lucrului făcut, restul spun de ce n-a putut fi făcut mai mult:
+// `UmNerezolvate` e chiar lista de corectat în nomenclator (grafie × produse),
+// iar `CodNcInvalid` arată ce fel de gunoi are `Nomenclator.NIC` acolo unde nu
+// sunt cele 8 cifre cerute.
+void RaporteazaUmNc(ImportLaCerere lc, string pas) {
+    Console.WriteLine($"\n--- UM (UN/ECE) și cod NC din 1C ({pas}) ---");
+    Console.WriteLine($"Produse atinse: {lc.ProduseAtinseUmNc}.");
+    Console.WriteLine($"UmRezolvate     {lc.UmRezolvate,8} (FK nou scris în rularea asta)");
+    Console.WriteLine($"UmDejaLegate    {lc.UmDejaLegate,8} (neatinse — idempotență)");
+    Console.WriteLine($"UmFaraGrafie    {lc.UmFaraGrafie,8} (sursa n-are `UM`)");
+    Console.WriteLine($"UmNerezolvate   {lc.UmNerezolvate.Values.Sum(),8} pe "
+        + $"{lc.UmNerezolvate.Count} grafii distincte:");
+    foreach (var (grafie, cate) in lc.UmNerezolvate.OrderByDescending(x => x.Value))
+        Console.WriteLine($"    {cate,8} × „{grafie}”");
+    Console.WriteLine($"CodNcPreluate   {lc.CodNcPreluate,8} (exact 8 cifre)");
+    Console.WriteLine($"CodNcCompletate {lc.CodNcDejaCompletate,8} (neatinse — idempotență)");
+    Console.WriteLine($"CodNcAbsent     {lc.CodNcAbsent,8} (`NIC` gol în sursă)");
+    Console.WriteLine($"CodNcInvalid    {lc.CodNcInvalid.Values.Sum(),8} pe "
+        + $"{lc.CodNcInvalid.Count} valori distincte:");
+    foreach (var (valoare, cate) in lc.CodNcInvalid.OrderByDescending(x => x.Value).Take(10))
+        Console.WriteLine($"    {cate,8} × „{valoare}”");
 }
 
 // Adresele din 1C (felia 15, D15-D6). Cifra care contează e prima: câți dintre
@@ -416,6 +510,17 @@ Console.WriteLine($"Casierii → ContPropriu:         {impCasierii.Procesate,5} 
 Console.WriteLine($"Conturi bancare → ContPropriu:  {impConturi.Procesate,5} / {impConturi.Noi}");
 Console.WriteLine($"Persoane fizice → Angajat:      {impPersoane.Procesate,5} / {impPersoane.Noi}");
 
+// Societatea raportoare (felia 16, D16-D6) — DUPĂ conturile bancare, fiindcă
+// `Societate.ContBancarId` referă un `ContPropriu` care tocmai s-a legat. Un
+// eșec aici (mai multe organizații în sursă) NU oprește importul: antetul
+// declarației e ortogonal documentelor, iar rularea de import n-are de ce să
+// pice pentru un câmp de raportare. Se numără ca eșec, deci se vede la ieșire.
+var societate1C = new Societate1C(provider, flax, Avert);
+if (societate1C.Executa())
+    societate1C.Raporteaza("import");
+else
+    esecuri++;
+
 // ======================= Citirea sursei la deschidere =======================
 // Se citește o singură dată, integral, și se folosește de toate fazele care
 // urmează (deschiderea propriu-zisă + smoke-ul de la final).
@@ -465,6 +570,7 @@ Console.WriteLine($"Clasificare parteneri (D394): {laCerere.ParteneriClasificati
     + $"TVA la încasare din sursă {laCerere.TvaLaIncasareDinSursa}, țară nerezolvată {laCerere.TaraNerezolvata}, "
     + $"nerezidenți/intracomunitari {laCerere.NerezidentiSursa}, NuIncludeInDec394 {laCerere.NuIncludeInDec394}.");
 RaporteazaAdrese(laCerere, "deschidere");
+RaporteazaUmNc(laCerere, "deschidere");
 var durataDeschidere = cronometru.Elapsed;
 Console.WriteLine($"Durata fazei de deschidere: {durataDeschidere:hh\\:mm\\:ss}.");
 
@@ -789,6 +895,12 @@ using (var os = provider.CreateObjectSpace()) {
 // fiscal al anului e cel care spune cine ne-a facturat TVA. Raportat, nu tăcut.
 laCerere.ReclasificaToti();
 RaporteazaReclasificare(laCerere, "pas final");
+
+// Tot pas final, din același motiv: UM-ul UN/ECE și codul NC pe TOATE produsele
+// legate. Materializarea le pune doar pe cele NOI, iar produsele aduse de
+// rulările dinaintea feliei 16 sunt deja legate — deci nu le-ar atinge nimeni.
+laCerere.AplicaUmSiCodNcTuturor();
+RaporteazaUmNc(laCerere, "pas final");
 
 // Și, dacă s-a cerut, registrul ANAF peste tot ce a rămas (D15-D6): DUPĂ
 // reclasificare, fiindcă ANAF e canonicul pe axa TVA — ce spune el trebuie să

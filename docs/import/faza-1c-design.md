@@ -555,3 +555,164 @@ fiindcă în `--reclasifica --anaf` semnalul din registru rulează ÎNAINTEA
 timbrului — la a doua rulare `--reclasifica` cifra devine reală (D4-r1);
 sortarea pe egalitate în raportul de reconciliere; 7 județe nerezolvate
 (denumire liberă) rămân în `DetaliiAdresa`.
+
+## 14. Felia 16 (D16-D6) — societatea, UM/cod NC și fișierul SAF-T, pe baza de import
+
+Executat 2026-08-26 (V5 al contractului `docs/api/p5-felia-saft-contract.md`).
+Baza: `Atlas.Conta.Import1C.Flax` — cea de RECONCILIERE, nu clona `.Api` (aceea
+e a lui V4). **Niciun document nu s-a re-importat**: toate cele trei flag-uri
+noi sunt moduri de NOMENCLATOR, iar `--saft` nici măcar nu deschide sursa 1C.
+
+### Ce face unealta
+
+- **`--societate`** (`Societate1C.cs`): `flax.Organizatii` (denumire, CUI,
+  RegCom) + adresa din `InfoRg_InformatiaDeContact` pe `Object_Organizatii_ID`
+  (aceeași fereastră ca la partener, cu tipurile „… societate": sediul social
+  bate punctul de lucru) + telefonul/e-mailul din același registru + conducătorul
+  din `InfoRg_PersoaneResponsabileDinOrganizatia` + contul bancar. Scrie DOAR pe
+  câmp gol (72d), adresa ca BLOC; diferențele se raportează cu ambele valori.
+  Sursa n-are coloană de TVA (verificat pe `sys.columns`: `Code`, `Description`,
+  `DenumireaCompleta`, `CodUnic`, `RegCom`, `CodCAEN` + FK-uri) ⇒ `InregistratTva`
+  se DERIVĂ din prefixul `RO` al CUI-ului și se raportează ca derivat. Mai multe
+  organizații în sursă ⇒ REFUZ cu lista lor (bug-ul §D.6 al exportului vechi:
+  `select … from Organizatii` fără `where`, semnat cu una la întâmplare).
+- **`--um-nc`**: `Produs.UnitateMasuraId` prin `UnitatiMasuraRo.Rezolva(UM)` și
+  `Produs.CodNc` din `Nomenclator.NIC` (doar dacă are EXACT 8 cifre), pe TOATE
+  produsele legate, doar pe câmp gol. Sursa se citește în LOT
+  (`NomenclatoareDupaIds`, tranșe de 1.000), commit per 500 de produse — pereche
+  exactă cu `ReclasificaToti` și pentru același motiv: produsele aduse înaintea
+  feliei 16 sunt deja legate, deci materializarea nu le mai atinge niciodată.
+  Rulează și ca pas final al importului normal, lângă reclasificare.
+- **`--saft <an> <lună>`** (`Saft1C.cs`): `SaftProiectii.Saft` pe ușa
+  non-secured a uneltei → `SaftXml.Scrie` în `saft-<an>-<lună>.xml` → oracolul
+  `Duk.Valideaza`, cu raport în `saft-<an>-<lună>-raport.txt` (secțiuni,
+  cusăturile cu stare, `Neincluse` grupate per cauză, avertismente per cod,
+  verdictul DUK cu erorile grupate pe tipul mesajului, timpi, dimensiune).
+  Oracolul e ACELAȘI fișier ca în suită (`<Compile Include="../ModelCheck/Duk.cs">`),
+  nu o copie. `Neaplicabil` (bugetar) ⇒ mesaj și cod de ieșire ≠ 0; fișier
+  respins de DUK sau oracol lipsă ⇒ tot ≠ 0 (SĂRIT ≠ trecut).
+  Artefactele sunt gitignored, ca jurnalele de reconciliere: 70 MiB cu datele
+  fiscale reale ale unui client n-au ce căuta în repo.
+- **Contorul prefixului RO dublat**: `AplicaClasificare` numără `CodFiscal`-urile
+  care încep cu `RORO` (insensibil la caz) și dă exemple. NU rescrie nimic —
+  normalizarea e în proiecție (`D394Proiectii.NormalizeazaCui`, o singură sursă).
+- **Contractul de coloane** (`--cititori`, acum **55 de cititoare**, 0 eșecuri,
+  48.111 rânduri pe 01/2025): `Organizatii` + `Nomenclator` (cu `NIC`), cu
+  proba că nomenclatorul e identic pe cele două căi (per id / în lot) și cu
+  eșantionul antetului tipărit (adresa societății iese tot din coloane fizice
+  numerotate — singura probă onestă e ca omul să vadă că în „județ" scrie un
+  județ).
+
+### Seed-ul F16 pe Flax
+
+`Blazor.Server --updateDatabase --forceUpdate --silent` cu
+`ConnectionStrings__ConnectionString` pe Flax: **2.163 unități de măsură**, 42
+județe, **1 rând `Societate`** (gol), **16 conturi cu `RolTert`**, **644 cu
+`Functie`**, iar `LeagaUnitatileProduselor` a legat **22.721 din 22.726 de
+produse** (FK-ul de UM era 0 înainte). Documentele și cele trei registre au
+rămas **identice la rând**: 205.131 documente, 305.005 rânduri contabile,
+282.388 de stoc, 90.732 de TVA, 22.726 produse, 20.119 parteneri, 46.602 loturi
+— aceleași cifre înainte și după seed și după toate rulările de mai jos.
+
+### `--societate`
+
+Zece câmpuri umplute dintr-o singură organizație (`00001 FLAX COMPUTERS S.R.L.`):
+`Denumire`, `CodFiscal` = `14639030` (prefixul `RO` tăiat de `NormalizeazaCui`),
+`InregistratTva = true` **derivat** din prefix, `RegistruComert` = `J15/206/2002`,
+`ContactNume`/`ContactPrenume` = `FLORESCU` / `ADRIAN` (conducătorul, rupt la
+primul spațiu — convenție, raportată ca atare), `Telefon` = `0372030474`,
+`Email` = `conta@flax.ro`, adresa-bloc `CALEA DOMNEASCA 345, TARGOVISTE` cu
+județul din DENUMIRE (`DAMBOVITA` ⇒ `RO-DB`), `ContBancar` = `SED000319`
+`RO56INGB0000999904841949` (**contul implicit declarat în 1C**, nu „primul în
+lei"). 0 diferențe, 0 trunchieri. **A doua rulare: 0 umplute, 8 deja completate,
+adresa neatinsă** — idempotența e chiar cifra asta.
+
+### `--um-nc`
+
+22.726 de produse atinse. **UM**: 0 rezolvate în rularea asta / **22.721 deja
+legate** (le legase seed-ul, cu ACELAȘI dicționar) / **5 nerezolvate pe 2
+grafii — `ml` × 4, `pac` × 1**. Distribuția completă a nomenclatorului:
+`buc.` 22.710 ⇒ `H87`, `kg` 4 ⇒ `KGM`, `m` 4 ⇒ `MTR`, `to` 2 ⇒ `TNE`,
+`MC` 1 ⇒ `MTQ`; `ml` rămâne deliberat ambiguu (metru liniar SAU mililitru — un
+cod ghicit ar trece validatorul și ar fi fals), `pac` e necunoscut.
+**Cod NC**: **18.642 preluate** (exact 8 cifre), 4.083 absente în sursă
+(`NIC` gol), **1 invalid** — `8536419040`, un cod TARIC de 10 cifre. A doua
+rulare: 0 preluate, 18.642 deja completate — idempotent.
+
+### `--saft 2025 9` — **DUK: `ok` (J2.2.8), 0 atenționări**
+
+Fișierul REAL al lunii trece validatorul oficial. E prima oară: la V4, pe clonă,
+era respins dintr-o singură cauză (doi parteneri cu prefixul `RO` dublat), pe
+care pasul 4b a închis-o în `NormalizeazaCui`.
+
+| | 09/2025 | 12/2025 |
+|---|---|---|
+| GeneralLedgerAccounts | 99 | 101 |
+| Customers / Suppliers | 3.950 / 228 | 4.589 / 263 |
+| TaxTable / UOMTable / AnalysisTypeTable | 5 / 1 / 0 | 5 / 1 / 0 |
+| Products | 2.325 | 2.136 |
+| Journals / Transactions / linii GL | 12 / 13.966 / 52.932 | 11 / 13.664 / 54.092 |
+| SalesInvoices (net / brut) | 3.700 — 9.459.762,04 / 10.987.556,17 | 3.655 — 8.810.123,19 / 10.597.933,41 |
+| PurchaseInvoices (net / brut) | 1.688 — 4.825.033,98 / 5.795.666,56 | 1.531 — 5.138.063,42 / 6.210.111,52 |
+| Payments (Σ) | 3.000 — 17.401.707,14 | 2.836 — 22.128.067,98 |
+| `Neincluse` | 100 | 131 |
+| **DUK** | **ok (J2.2.8), 0 atenționări** | **ok (J2.2.8), 0 atenționări** |
+| proiecție / XML / validator | 4,5 s / 0,4 s / 3,5 s | 4,3 s / 0,4 s / 3,5 s |
+| dimensiune | 70,9 MiB (74.375.406 B) | 71,6 MiB (75.045.419 B) |
+
+**Cusăturile, toate șase OK la cent, pe ambele luni.** 09/2025: partidă dublă
+80.527.820,95 pe toate trei laturile; TVA 3.238.255,54 (GL) + 0 (capitalizat)
+− 32.788,80 (tipuri fără cod SAF-T) = 3.205.466,74 = registrul; bază achiziție
+4.614.447,99 + 3.366.855,48 (neincluse) = 7.981.303,47 = registrul; bază livrare
+7.266.639,45 + 0 = registrul; `Closing` GLA = balanța; 0 facturi cu partener
+nedeclarat. 12/2025 (luna cu închideri): 83.830.122,19; TVA 3.455.615,92 −
+3.019,03 = 3.452.596,89; achiziție 5.103.669,14 + 2.822.562,59 = 7.926.231,73;
+livrare 8.513.061,91 + 0. Cifrele lui 09/2025 sunt **identice cu V4** pe HTTP
+(13.966 / 52.932 / 3.950 / 228 / 3.700 + 1.688 / 3.000 / 100 / 80.527.820,95).
+
+**`Neincluse` 09/2025, per cauză**: 84 × `ContFaraRol [PurchaseInvoices]`
+(bază 3.366.855,48 / TVA 707.040,03 — facturi de achiziție pe conturi fără rol
+de terț în plan), 5 × `RepartitorNePartener [Suppliers]` și 3 × idem
+`[Customers]` (dimensiunea `Repartitor` e „Sediul central", o `UnitateInterna`,
+nu un partener), 4 + 4 × `FaraPartener` (rânduri de terți fără nicio latură cu
+partener). Cauza dominantă e o gaură de DATE a planului importat, nu a
+proiecției: ea se închide completând `Cont.RolTert`, iar cusătura 3a o
+contabilizează la cent, deci nu se pierde nimic.
+
+**Avertismentele 09/2025** (7 coduri): 1.641 `PartenerFaraCuiValid` (CUI care nu
+trece cifra de control — „CONSUMATOR FINAL" și persoane fizice fără cod; ies cu
+prefixul `04`), 473 `TertFaraPartener` (Σ 1.676.955,21), **167 `FaraCodNc`**
+(din 2.325 de produse declarate; înainte de `--um-nc` coloana `CodNc` era goală
+pe TOATĂ baza, deci avertismentul ar fi ieșit pe toate 2.325 — cifra lui V4 —
+iar acum **2.158 de produse și-au primit codul**), 84 `ContFaraRolPeFactura`, 49 `AdresaIncompleta`,
+16 `PartenerDublat` (parteneri distincți cu același CUI — „Directia Silvica
+Brasov"/„Arges"/„Dambovita" pe `001590120`; se declară o intrare cu solduri
+cumulate), 2 `TipTvaFaraCodSaft` (Σ 0,12 — `N19`/`TI19`, cotele istorice de
+dinainte de 01.08.2025). **Zero `FaraUnitateMasura`**: toate produsele declarate
+au FK de UM.
+
+**`UOMTable` = 1** pe ambele luni, și e corect, nu o regresie: din cele 22.726 de
+produse ale nomenclatorului, **16** au altă unitate decât `buc.` (4 `kg`, 4 `m`,
+2 `to`, 1 `MC`, 4 `ml`, 1 `pac` — cabluri, șuruburi la kilogram, cherestea,
+sorturi de balast), iar niciunul n-a apărut pe facturile lunilor măsurate. Când
+apare, tabelul crește singur (secțiunea e derivată din utilizare).
+
+### Reconcilierea, neatinsă
+
+`reconciliere-*.txt`: **18 fișiere, aceleași, nemodificate** —
+`reconciliere-20260825-203703.txt` are același SHA-256
+(`28F0BD09…A5D62FB1`) și același timestamp (2026-08-26 00:12:46) ca înaintea
+feliei. Niciun flag al feliei 16 nu deschide `JurnalContract` și niciunul nu
+atinge registrele.
+
+### Rămase / constatări
+
+- `ml` și `pac` cer decizia unui om în nomenclator (puntea nu ghicește);
+  `8536419040` e TARIC de 10 cifre, nu NC8 — tot corectură de nomenclator.
+- `ContFaraRol` pe 84–111 facturi de achiziție pe lună = conturi fără
+  `Cont.RolTert` în planul importat; se închide cu date, nu cu cod.
+- Contorul `CuiPrefixDublat` se poate măsura abia la o rulare care reclasifică
+  (`--reclasifica`), nu în modurile feliei 16 — nu s-a rulat pe Flax, ca să nu
+  se atingă partenerii deja timbrați ANAF.
+- Numele conducătorului rupt la primul spațiu (`FLORESCU ADRIAN`) e o convenție
+  a conectorului, nu un fapt al sursei: 1C ține numele într-un singur câmp.

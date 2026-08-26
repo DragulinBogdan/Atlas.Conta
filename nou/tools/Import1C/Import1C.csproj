@@ -11,6 +11,15 @@
     <Content Include="mapari-conturi.csv" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Oracolul DUK (felia 16, D16-D5) se LEAGĂ din suita ModelCheck, nu se
+         copiază: mecanica jar-ului (`-d` care agață procesul, prefixul `!` fără
+         de care atenționările se pierd, citirea lui `ok`) trebuie să aibă un
+         singur loc — două copii l-ar rula diferit exact când contează.
+         Nu s-a mutat în `Module`: pornirea unui proces java nu e treaba unui
+         assembly de domeniu, pe care îl încarcă și host-ul web. -->
+    <Compile Include="..\ModelCheck\Duk.cs" Link="Duk.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.*" />
     <ProjectReference Include="..\..\Atlas.Conta.BackOffice\Atlas.Conta.BackOffice.Module\Atlas.Conta.BackOffice.Module.csproj" />
   </ItemGroup>

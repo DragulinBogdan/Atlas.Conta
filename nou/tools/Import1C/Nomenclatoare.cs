@@ -386,6 +386,10 @@ class ImportLaCerere {
     public int TaraNerezolvata { get; private set; }
     public int NuIncludeInDec394 { get; private set; }
     public int NerezidentiSursa { get; private set; }
+    // Prefixul `RO` scris de două ori în CUI-ul sursei (amendamentul pasului 4).
+    // Se raportează, nu se rescrie — vezi nota din `AplicaClasificare`.
+    public int CuiPrefixDublat { get; private set; }
+    public List<string> ExempleCuiPrefixDublat { get; } = [];
 
     static bool TreisprezeceCifre(string s) => s != null && s.Length == 13 && s.All(char.IsDigit);
 
@@ -401,6 +405,22 @@ class ImportLaCerere {
                 e.TipPersoana = TreisprezeceCifre(p.Cnp) || TreisprezeceCifre(p.CodUnic)
                     ? TipPersoana.Fizica : TipPersoana.Juridica;
                 break;
+        }
+
+        // Prefixul `RO` DUBLAT în CUI-ul sursei („RORo1853162"): singura cauză
+        // de respingere a fișierului SAF-T real de către validatorul oficial
+        // (pasul 4 al feliei 16, 2 parteneri din 5.536). Fixul de fond e în
+        // proiecție — `D394Proiectii.NormalizeazaCui` taie prefixul REPETAT și
+        // insensibil la caz, o singură sursă pentru D394/D406. Aici se NUMĂRĂ
+        // doar: `CodFiscal` e ce a scris omul în 1C, iar conectorul n-are voie
+        // să corecteze tăcut identitatea fiscală a nimănui (21/35b) — dar
+        // „câți sunt" trebuie să se vadă, ca defectul să aibă o cifră.
+        var cuiSursa = e.CodFiscal ?? p.CodUnic;
+        if (cuiSursa != null
+                && cuiSursa.TrimStart().StartsWith("RORO", StringComparison.OrdinalIgnoreCase)) {
+            CuiPrefixDublat++;
+            if (ExempleCuiPrefixDublat.Count < 10)
+                ExempleCuiPrefixDublat.Add($"{p.Cod} ({p.Denumire}): {cuiSursa}");
         }
 
         // PF: identificatorul fiscal e CUI-ul RO când există (PFA/II ÎNREGISTRATĂ
@@ -768,12 +788,125 @@ class ImportLaCerere {
                 e.Denumire = n.Denumire ?? cod;
                 e.UM = n.UM;
                 e.TipMaterialId = tipId;
+                AplicaUmSiCodNc(e, n);
             });
         produse[cheie] = id;
         if (nou)
             ProduseNoi++;
         return id;
     }
+
+    // ---------------- UM normalizată + cod NC pe produs (felia 16, D16-D6) ----------------
+    //
+    // Două câmpuri pe care SAF-T le cere OBLIGATORIU pe `Product` și pe care
+    // modelul le-a primit abia la felia 16: `UOMBase`/`UOMStandard` (codul UN/ECE
+    // al unității) și `ProductCommodityCode` (codul NC, 8 cifre).
+    //
+    // Regula e a lui 72d, ca peste tot în conector: se scrie DOAR pe câmp GOL.
+    // O unitate legată de om (sau corectată după o rezolvare greșită) și un cod
+    // NC cules în Atlas nu se rescriu dintr-o rulare de import — 1C e evidență,
+    // niciodată canonic (21/35b).
+    //
+    // Ce NU se face: nicio ghicire. `UnitatiMasuraRo.Rezolva` întoarce `null`
+    // pentru grafiile ambigue (`ml` = metru liniar SAU mililitru) și pentru cele
+    // necunoscute; produsul rămâne fără FK și iese în fișier cu `H87` +
+    // avertisment agregat (D16-D2), adică golul se VEDE. La fel `NIC`-ul: e
+    // `nvarchar(40)` de text liber în sursă, deci trece doar ce are EXACT 8
+    // cifre — restul se numără, cu exemple, ca să se știe ce anume are de
+    // corectat cineva în nomenclator.
+    public int UmRezolvate { get; private set; }
+    public int UmDejaLegate { get; private set; }
+    public int UmFaraGrafie { get; private set; }
+    // Grafia NErezolvată → numărul de produse. Cifra asta e lista de lucru a
+    // omului: „`ml` × 4" spune exact ce n-a putut decide dicționarul.
+    public Dictionary<string, int> UmNerezolvate { get; } = new(StringComparer.Ordinal);
+    public int CodNcPreluate { get; private set; }
+    public int CodNcDejaCompletate { get; private set; }
+    public int CodNcAbsent { get; private set; }
+    public Dictionary<string, int> CodNcInvalid { get; } = new(StringComparer.Ordinal);
+
+    // Nomenclatorul UN/ECE, citit O DATĂ pe rulare ca `cod → ID`, ca `judete`:
+    // 2.163 de rânduri, încărcate la primul produs (o rulare care nu atinge
+    // niciun produs nu deschide un OS degeaba). Se scrie doar FK-ul, ca peste
+    // tot în conector — un Guid n-are ObjectSpace.
+    Dictionary<string, Guid> unitatiMasura;
+
+    Guid? CautaUnitate(string cod) {
+        if (unitatiMasura == null) {
+            using var os = provider.CreateObjectSpace();
+            unitatiMasura = os.GetObjectsQuery<UnitateMasura>().Select(u => new { u.Cod, u.ID })
+                .ToDictionary(u => u.Cod, u => u.ID, StringComparer.Ordinal);
+        }
+        return unitatiMasura.TryGetValue(cod, out var id) ? id : null;
+    }
+
+    public void AplicaUmSiCodNc(Produs e, FlaxNomenclator n) {
+        if (e.UnitateMasuraId != null)
+            UmDejaLegate++;
+        else if (string.IsNullOrWhiteSpace(n.UM))
+            UmFaraGrafie++;
+        else {
+            var cod = UnitatiMasuraRo.Rezolva(n.UM);
+            var unitate = cod == null ? null : CautaUnitate(cod);
+            if (unitate != null) {
+                e.UnitateMasuraId = unitate;
+                UmRezolvate++;
+            }
+            else {
+                var grafie = n.UM.Trim();
+                UmNerezolvate[grafie] = UmNerezolvate.GetValueOrDefault(grafie) + 1;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(e.CodNc))
+            CodNcDejaCompletate++;
+        else if (string.IsNullOrWhiteSpace(n.Nic))
+            CodNcAbsent++;
+        else {
+            var nic = n.Nic.Trim();
+            if (nic.Length == 8 && nic.All(char.IsAsciiDigit)) {
+                e.CodNc = nic;
+                CodNcPreluate++;
+            }
+            else
+                CodNcInvalid[nic] = CodNcInvalid.GetValueOrDefault(nic) + 1;
+        }
+    }
+
+    // `--um-nc`: aceleași două câmpuri, peste TOATE produsele deja legate — nu
+    // doar peste cele referite de rularea curentă. Pereche exactă cu
+    // `ReclasificaToti` (fix 4 al review-ului D394) și pentru același motiv: o
+    // bază importată înaintea feliei 16 are 22.700 de produse pe care
+    // materializarea nu le mai atinge niciodată, fiindcă sunt deja legate.
+    //
+    // Sursa se citește ÎN LOT (`NomenclatoareDupaIds`), iar commit-ul e per
+    // tranșă de 500 — aceeași mecanică, aceleași motive.
+    public void AplicaUmSiCodNcTuturor() {
+        // Cheia legăturii de produs e `hex|simbolCont` (gemenii pe conturi
+        // separate): sursa se întreabă o dată per NOMENCLATOR, iar cei doi
+        // gemeni primesc aceeași unitate și același cod NC — ceea ce și sunt,
+        // fiindcă e același rând de catalog văzut de pe două conturi.
+        var nomenclatoare = flax.NomenclatoareDupaIds(
+            produse.Keys.Select(NomenclatorDinCheie).Where(x => x != null));
+        foreach (var lot in produse.Chunk(500)) {
+            using var os = provider.CreateObjectSpace();
+            foreach (var (cheie, id) in lot) {
+                var n = nomenclatoare.GetValueOrDefault(NomenclatorDinCheie(cheie));
+                if (n == null) {
+                    ReferinteMoarte++;
+                    continue;
+                }
+                var e = os.GetObjectByKey<Produs>(id);
+                if (e == null)
+                    continue;
+                AplicaUmSiCodNc(e, n);
+                ProduseAtinseUmNc++;
+            }
+            os.CommitChanges();
+        }
+    }
+
+    public int ProduseAtinseUmNc { get; private set; }
 
     (Guid Id, bool Nou) Materializeaza<T>(string view, string cheie,
             Func<IObjectSpace, List<T>> cautaDupaCod, Action<T> aplica) where T : BaseObject {

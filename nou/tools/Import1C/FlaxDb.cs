@@ -61,8 +61,25 @@ record FlaxPartener(string Id, string Cod, string Denumire, string CodUnic, stri
 record FlaxAdresa(string CodPostal, string JudetDenumire, int? CodJudetCnp,
     string Localitate, string Strada, string Numar, string Cladire, string Prezentare);
 
+// `Nic` = `Nomenclator.NIC`, codul din Nomenclatorul Combinat (felia 16, D16-D2
+// / `ProductCommodityCode`). E `nvarchar(40)` în view și text LIBER: exportul
+// vechi îl scria ca atare, cu fallback `0`. Aici se citește neatins — validarea
+// formei (exact 8 cifre) e a importului, nu a cititorului (nota clasei: filtrul
+// ascuns în reader face din date o decizie invizibilă).
 record FlaxNomenclator(string Id, string Cod, string Denumire, string UM,
-    bool Produs, bool Serviciu, bool TaxareInversa, string CotaTva);
+    bool Produs, bool Serviciu, bool TaxareInversa, string CotaTva, string Nic);
+
+// SOCIETATEA RAPORTOARE, din `flax.Organizatii` (felia 16, D16-D6). Catalogul
+// n-are nicio coloană de TVA (verificat pe `sys.columns`: Code, Description,
+// DenumireaCompleta, CodUnic, RegCom, CodCAEN + FK-urile implicite) — deci
+// `InregistratTva` NU se poate prelua, se DERIVĂ din prefixul `RO` al CUI-ului
+// și se raportează, exact ca la partener (D4-D1).
+//
+// `ContBancarImplicitId` e alegerea DECLARATĂ a societății în 1C; e mai bună
+// decât „primul cont în lei" fiindcă e o decizie a omului, nu a ordinii de
+// citire. Rămâne totuși un fallback, pentru bazele care n-o au completată.
+record FlaxOrganizatie(string Id, string Cod, string Denumire, string DenumireCompleta,
+    string CodUnic, string RegCom, string CodCaen, string ContBancarImplicitId);
 
 record FlaxCont(string Cod, string Denumire, bool Sintetic, bool Extrabilantier);
 
@@ -208,9 +225,15 @@ partial class FlaxDb(string connectionString) : IDisposable {
     //
     // `Present` e `ntext` — nu se poate compara și nici sorta, dar se poate
     // proiecta printr-un `cast` la `nvarchar(max)`.
-    const string SelectAdresa = @"select CodPostal, JudetDenumire, CodJudet, Localitate,
+    //
+    // Aceeași fereastră, pentru DOUĂ obiecte: partenerul (`Object_Partenerii_ID`,
+    // tipurile „… partener") și societatea proprie (`Object_Organizatii_ID`,
+    // tipurile „… societate"). Registrul e generic, deci și cititorul: o a doua
+    // copie a ferestrei ar fi însemnat două locuri în care se corectează
+    // ordinea „sediu social bate punct de lucru".
+    static string SelectAdresaPe(string coloanaObiect, params string[] tipuri) => $@"select CodPostal, JudetDenumire, CodJudet, Localitate,
                        Strada, Numar, Cladire, Prezentare
-                from (select Object_Partenerii_ID as PartenerId,
+                from (select {coloanaObiect} as PartenerId,
                              nullif(ltrim(rtrim(Field1)), N'') as CodPostal,
                              nullif(ltrim(rtrim(Field3)), N'') as JudetDenumire,
                              nullif(ltrim(rtrim(CodJudet)), N'') as CodJudet,
@@ -219,15 +242,17 @@ partial class FlaxDb(string connectionString) : IDisposable {
                              nullif(ltrim(rtrim(Field7)), N'') as Numar,
                              nullif(ltrim(rtrim(Field8)), N'') as Cladire,
                              nullif(ltrim(rtrim(cast(Present as nvarchar(max)))), N'') as Prezentare,
-                             row_number() over (partition by Object_Partenerii_ID
+                             row_number() over (partition by {coloanaObiect}
                                  order by case when Gen_TipuriDeInformatiiDeContact
-                                                    = N'Sediu social partener' then 0 else 1 end,
+                                                    = {tipuri[0]} then 0 else 1 end,
                                           SimpleKey desc) as rn
                       from flax.InfoRg_InformatiaDeContact
                       where Type = N'Adresa'
-                        and Gen_TipuriDeInformatiiDeContact in (N'Sediu social partener',
-                                                                N'Punct de lucru partener')
-                        and Object_Partenerii_ID is not null";
+                        and Gen_TipuriDeInformatiiDeContact in ({string.Join(", ", tipuri)})
+                        and {coloanaObiect} is not null";
+
+    static readonly string SelectAdresa = SelectAdresaPe("Object_Partenerii_ID",
+        "N'Sediu social partener'", "N'Punct de lucru partener'");
 
     // `CodJudet` e text în view (nvarchar(5)) dar poartă un NUMĂR de județ. Se
     // parsează aici, nu la consumator: un „08" și un „8" sunt același județ, iar
@@ -280,13 +305,91 @@ partial class FlaxDb(string connectionString) : IDisposable {
             r => (Hex(r, 0), new FlaxAdresa(Text(r, 1), Text(r, 2), CodJudet(r, 3), Text(r, 4),
                 Text(r, 5), Text(r, 6), Text(r, 7), Text(r, 8))));
 
+    const string SelectNomenclator = @"select KeyField, ltrim(rtrim(Code)), Description, UM,
+                       Produs, Serviciu, TaxareInversa, CotaTVA, NIC
+                from flax.Nomenclator";
+
+    static FlaxNomenclator CitesteNomenclator(SqlDataReader r) =>
+        new(Hex(r, 0), Text(r, 1), Text(r, 2), Text(r, 3),
+            Bit(r, 4), Bit(r, 5), Bit(r, 6), Text(r, 7), Text(r, 8));
+
     public FlaxNomenclator NomenclatorDupaId(string hexId) =>
-        Query(@"select KeyField, ltrim(rtrim(Code)), Description, UM,
-                       Produs, Serviciu, TaxareInversa, CotaTVA
-                from flax.Nomenclator where KeyField = @id",
-            r => new FlaxNomenclator(Hex(r, 0), Text(r, 1), Text(r, 2), Text(r, 3),
-                Bit(r, 4), Bit(r, 5), Bit(r, 6), Text(r, 7)),
+        Query(SelectNomenclator + " where KeyField = @id", CitesteNomenclator,
             ("@id", DinHex(hexId))).SingleOrDefault();
+
+    // Forma în LOT, pereche cu `AdreseParteneri` și pentru același motiv: pasul
+    // `--um-nc` atinge cele ~22.700 de produse deja legate, iar un query per
+    // produs ar fi 22.700 de dus-întorsuri pentru două coloane (`UM`, `NIC`) pe
+    // care sursa le dă din 23 de interogări. Tranșa e 1.000 (plafonul de
+    // parametri al SQL Server e 2.100). Cheia = hex-ul 1C; nomenclatoarele
+    // dispărute din sursă LIPSESC din dicționar (apelantul distinge „n-are" de
+    // „n-am întrebat"), ca la adrese.
+    public Dictionary<string, FlaxNomenclator> NomenclatoareDupaIds(IEnumerable<string> hexIds) {
+        var rezultat = new Dictionary<string, FlaxNomenclator>(StringComparer.Ordinal);
+        foreach (var transa in hexIds.Distinct(StringComparer.Ordinal).Chunk(1000)) {
+            var parametri = transa.Select((h, i) => ($"@p{i}", (object)DinHex(h))).ToArray();
+            var lista = string.Join(", ", parametri.Select(p => p.Item1));
+            foreach (var n in Query(SelectNomenclator + $" where KeyField in ({lista})",
+                    CitesteNomenclator, parametri))
+                rezultat[n.Id] = n;
+        }
+        return rezultat;
+    }
+
+    // Proba contractului de coloane pentru nomenclator (`--cititori`): coloana
+    // `NIC` e nouă în proiecție (felia 16) și n-are alt apărător decât asta.
+    public List<FlaxNomenclator> NomenclatorEsantion(int cate = 20) =>
+        Query(SelectNomenclator.Replace("select KeyField", $"select top {cate} KeyField"),
+            CitesteNomenclator);
+
+    // ---------------- Societatea raportoare (felia 16, D16-D6) ----------------
+    //
+    // Se citesc TOATE rândurile, nu `top 1`: `spSAFTHeader.sql:87` din exportul
+    // vechi făcea `from [flax].[Organizatii]` FĂRĂ `where` și, la mai multe
+    // organizații, semna fișierul cu una la întâmplare (bug documentat, §D.6).
+    // Aici alegerea e a apelantului, care se OPREȘTE dacă sunt mai multe —
+    // „care societate raportează" e o decizie, nu o ordine de citire.
+    public List<FlaxOrganizatie> Organizatii() =>
+        Query(@"select KeyField, ltrim(rtrim(Code)), Description, DenumireaCompleta,
+                       CodUnic, RegCom, CodCAEN, ContBancarImplicit_ID
+                from flax.Organizatii",
+            r => new FlaxOrganizatie(Hex(r, 0), Text(r, 1), Text(r, 2), Text(r, 3),
+                Text(r, 4), Text(r, 5), Text(r, 6), Hex(r, 7)));
+
+    // Adresa societății: ACELAȘI registru și aceeași fereastră ca la partener,
+    // cu alt obiect și alte etichete de tip („… societate" în loc de
+    // „… partener"). Sediul social bate punctul de lucru; la egalitate câștigă
+    // `SimpleKey` cel mai mare (ultima introdusă) — vezi nota lui `SelectAdresa`.
+    public FlaxAdresa AdresaOrganizatie(string hexId) =>
+        Query(SelectAdresaPe("Object_Organizatii_ID", "N'Sediu social societate'",
+                    "N'Punct de lucru societate'")
+                + " and Object_Organizatii_ID = @id) a where a.rn = 1",
+            CitesteAdresa, ("@id", DinHex(hexId))).SingleOrDefault();
+
+    // Telefonul și e-mailul societății stau în ACELAȘI registru, pe alte tipuri
+    // (`Type` = `Telefon`/`Email`). Acolo `Present` E valoarea (nu o concatenare
+    // de afișare, ca la adresă), iar `Field1` o repetă la telefon — se ia
+    // `Present`, singura completată pe amândouă.
+    public (string Telefon, string Email) ContactOrganizatie(string hexId) {
+        var randuri = Query(@"select Type, nullif(ltrim(rtrim(cast(Present as nvarchar(max)))), N'')
+                from flax.InfoRg_InformatiaDeContact
+                where Object_Organizatii_ID = @id and Type in (N'Telefon', N'Email')
+                order by SimpleKey desc",
+            r => (Tip: Text(r, 0), Valoare: Text(r, 1)), ("@id", DinHex(hexId)));
+        return (randuri.FirstOrDefault(x => x.Tip == "Telefon").Valoare,
+            randuri.FirstOrDefault(x => x.Tip == "Email").Valoare);
+    }
+
+    // Persoana responsabilă: registrul e periodic (un rând per (organizație ×
+    // rol × dată)), deci se ia ULTIMA perioadă pentru rolul de conducător.
+    // Nimic nu se inventează: fără rând, `Header/Contact` rămâne gol (numele
+    // unui om nu se deduce dintr-un catalog de firme).
+    public (string Nume, string Functie) ConducatorulOrganizatiei(string hexId) =>
+        Query(@"select top 1 PersoanaFizica, Functia
+                from flax.InfoRg_PersoaneResponsabileDinOrganizatia
+                where Organizatia_ID = @id and PersoanaResponsabila = N'Conducator'
+                order by Period desc",
+            r => (Text(r, 0), Text(r, 1)), ("@id", DinHex(hexId))).SingleOrDefault();
 
     // ============================ Balanțele ============================
     // Un rând per cont×valută ⇒ SUM peste valute (lei = coloanele fără sufix).

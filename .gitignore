@@ -69,3 +69,11 @@ nunit-*.xml
 
 # Jurnale de reconciliere Import1C (artefacte de rulare)
 nou/tools/Import1C/reconciliere-*.txt
+
+# Declarațiile SAF-T generate de `Import1C --saft` (felia 16): fișierul lunii e
+# de ~70 MiB și poartă datele fiscale reale ale unui client, iar raportul și
+# ieșirile validatorului sunt artefacte ale rulării, ca jurnalele de mai sus.
+# Cifrele care contează trăiesc în `docs/import/faza-1c-design.md` §14.
+nou/tools/Import1C/saft-*.xml
+nou/tools/Import1C/saft-*.xml.*
+nou/tools/Import1C/saft-*-raport.txt
