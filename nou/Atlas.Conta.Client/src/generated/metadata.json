@@ -13,7 +13,10 @@
     "CauzaNeincludere": {
       "FaraPartener": "Fără partener pe rândul de registru",
       "RepartitorNePartener": "Contrapartida nu e partener (angajat/intern)",
-      "TipTvaNemapat": "Tip de TVA fără mapare D394"
+      "TipTvaNemapat": "Tip de TVA fără mapare D394",
+      "ContFaraRol": "Document de factură fără cont de terț",
+      "FaraContrapartida": "Linie de factură fără cont contrapartidă",
+      "DocumentFaraPartener": "Documentul n-are partener pe laturi"
     },
     "CodAvertismentD394": {
       "CuiUnit": "Parteneri uniți pe același CUI",
@@ -25,6 +28,21 @@
       "FaraOp11": "V/C fără detaliul pe categorii de bunuri (op11)",
       "CombinatieRefuzata": "Combinație partener × tip refuzată de formular",
       "PartenerSters": "Partener șters din nomenclator"
+    },
+    "CodAvertismentSaft": {
+      "FaraCodNc": "Produs fără cod NC",
+      "FaraUnitateMasura": "Produs fără unitate de măsură UN/ECE",
+      "AdresaIncompleta": "Adresă incompletă (localitatea e obligatorie)",
+      "TipTvaFaraCodSaft": "Tip de TVA fără cod SAF-T",
+      "TipContNecunoscut": "Cont cu funcție necunoscută",
+      "PlataCatreAngajat": "Plată către un angajat (fără identitate de partener)",
+      "FacturaInValuta": "Factură în valută",
+      "SocietateIncompleta": "Antetul societății e incomplet",
+      "ContFaraRolPeFactura": "Factură fără cont de terț",
+      "PartenerDublat": "Parteneri cu același identificator SAF-T",
+      "PartenerFaraCuiValid": "Partener fără cod fiscal valid",
+      "LinieFaraContrapartida": "Linie de factură fără cont contrapartidă",
+      "TertFaraPartener": "Rând de registru fără partener pe cont de terț"
     },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",

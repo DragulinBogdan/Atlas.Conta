@@ -616,15 +616,61 @@ public static class D394Proiectii {
             "Cote din registru care nu sunt întregi — formularul acceptă doar cote întregi; rândurile lor se declară pe "
             + "cota trunchiată, cu sumele exacte.",
             coteTrunchiate.Select(c => ($"{c.ToString("0.####", Ro)}% ⇒ {decimal.Truncate(c).ToString("0", Ro)}%", (decimal?)null)).ToList());
-        // V/C fără detaliul `op11` (categoria de bunuri + cod NC) — D4-r5.
+        // V/C fără detaliul `op11` (categoria de bunuri + cod NC) — D4-r5,
+        // RESTRÂNS de D4-r14 (felia 16): jumătate din detaliu — codul NC — există
+        // acum pe `Produs` (D16-D2), deci avertismentul nu mai e despre TOATE
+        // rândurile de taxare inversă, ci doar despre LINIILE care chiar n-au
+        // codul. O factură de taxare inversă cu produse codificate NC nu mai
+        // strigă degeaba; una cu servicii sau cu produse necodificate, da.
+        //
+        // Se citește la nivel de LINIE (`DetaliuId`), nu de rând `op1`: `op11` e
+        // detaliul pe categorii de bunuri al facturii, iar codul NC stă pe produsul
+        // liniei. Ce rămâne deschis (restanța D4-r5 propriu-zisă) e CATEGORIA de
+        // bunuri și structura `op11` însăși — vezi mesajul.
+        var perechiVc = mapari
+            .Where(m => m.Value is TipOperatiuneD394.V or TipOperatiuneD394.C)
+            .Select(m => m.Key).ToHashSet();
+        var idsDetaliuVc = new List<(TipOperatiuneD394 Tip, Guid DetaliuId, decimal Baza)>();
+        if (perechiVc.Count > 0)
+            idsDetaliuVc = os.GetObjectsQuery<RegistruTva>()
+                .Where(r => r.Data >= dataStart && r.Data <= dataEnd)
+                .Select(r => new { r.DetaliuId, r.TipTvaId, r.Sens, r.Baza })
+                .ToList()
+                .Where(r => perechiVc.Contains((r.TipTvaId, r.Sens)))
+                .Select(r => (Tip: mapari[(r.TipTvaId, r.Sens)], r.DetaliuId, r.Baza))
+                .ToList();
+        var codNcPeLinie = new HashSet<Guid>();
+        if (idsDetaliuVc.Count > 0) {
+            var ids = idsDetaliuVc.Select(x => x.DetaliuId).Distinct().ToList();
+            // Produsul liniei: pe frunzele de factură e explicit, pe restul se
+            // citește prin lot (`Lot.Produs`). Un query per sursă, nu per linie.
+            var idsLot = os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.ID))
+                .Select(d => new { d.ID, d.LotId }).ToList();
+            var loturi = idsLot.Where(x => x.LotId != null).Select(x => x.LotId.Value).Distinct().ToList();
+            var ncPeLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+                .Where(l => loturi.Contains(l.ID))
+                .Select(l => new { l.ID, l.Produs.CodNc }).ToList()
+                .ToDictionary(l => l.ID, l => l.CodNc);
+            foreach (var x in idsLot)
+                if (x.LotId is Guid lot && ncPeLot.TryGetValue(lot, out var nc) && !string.IsNullOrWhiteSpace(nc))
+                    codNcPeLinie.Add(x.ID);
+            foreach (var x in os.GetObjectsQuery<FacturaIntrareDetaliu>().Where(d => ids.Contains(d.ID))
+                         .Select(d => new { d.ID, CodNc = d.Produs.CodNc }).ToList())
+                if (!string.IsNullOrWhiteSpace(x.CodNc)) codNcPeLinie.Add(x.ID);
+            foreach (var x in os.GetObjectsQuery<FacturaIesireDetaliu>().Where(d => ids.Contains(d.ID))
+                         .Select(d => new { d.ID, CodNc = d.Produs.CodNc }).ToList())
+                if (!string.IsNullOrWhiteSpace(x.CodNc)) codNcPeLinie.Add(x.ID);
+        }
         Avert(CodAvertismentD394.FaraOp11,
-            "Operațiunile V și C cer în formular detaliul pe categorii de bunuri (`op11`: categorie + cod NC), pe care "
-            + "modelul nu-l are (D4-r5) — rândurile `op1` se declară, detaliul se completează manual.",
-            new[] { TipOperatiuneD394.V, TipOperatiuneD394.C }
-                .Select(tip => (Tip: tip, Randuri: ordonate.Where(r => r.Tip == tip).ToList()))
-                .Where(x => x.Randuri.Count > 0)
-                .Select(x => ($"{x.Tip}: bază {N2(x.Randuri.Sum(r => r.Baza))} ({x.Randuri.Count} {(x.Randuri.Count == 1 ? "rând" : "rânduri")})",
-                    (decimal?)x.Randuri.Sum(r => r.Baza))).ToList());
+            "Operațiunile V și C cer în formular detaliul pe categorii de bunuri (`op11`: categorie + cod NC). "
+            + "Codul NC există pe `Produs` (felia 16), deci se strigă DOAR liniile care n-au produs codificat; "
+            + "categoria de bunuri și structura `op11` rămân de completat manual (D4-r5).",
+            idsDetaliuVc.Where(x => !codNcPeLinie.Contains(x.DetaliuId))
+                .GroupBy(x => x.Tip)
+                .OrderBy(g => g.Key)
+                .Select(g => ($"{g.Key}: bază {N2(g.Sum(x => x.Baza))} ({g.Count()} "
+                        + $"{(g.Count() == 1 ? "linie" : "linii")} fără cod NC)", (decimal?)g.Sum(x => x.Baza)))
+                .ToList());
         // Combinații partener × tip pe care formularul le refuză (§4.9):
         // achizițiile de la un neînregistrat (tip 2) ar fi `N` — fără sursă azi.
         Avert(CodAvertismentD394.CombinatieRefuzata,

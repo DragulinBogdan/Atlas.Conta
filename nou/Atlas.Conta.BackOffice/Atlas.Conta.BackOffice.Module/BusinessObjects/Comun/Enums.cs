@@ -209,6 +209,46 @@ public enum CauzaNeincludere {
     // Perechea `(TipTva × Sens)` n-are mapare — scutitele deliberate (SDD/SFD/
     // NIM) sau un `TipTva` propriu al clientului, încă nemapat.
     [XafDisplayName("Tip de TVA fără mapare D394")] TipTvaNemapat = 3,
+
+    // ── Felia 16 (SAF-T, D16-D4): cauzele proprii fișierului D406 ───────────
+    // Enum-ul e PARTAJAT deliberat cu D394 (același vocabular de „ce nu intră și
+    // de ce"): primele trei cauze sunt aceleași fapte, citite de două formulare.
+    // Documentul de factură n-are niciun cont cu `RolTert` pe rândurile lui, deci
+    // `Invoice.AccountID` (M) n-are sursă — factura nu se emite.
+    [XafDisplayName("Document de factură fără cont de terț")] ContFaraRol = 4,
+    // Linia de factură n-are contrapartidă în registrul contabil: singurele ei
+    // rânduri sunt cel de TVA și cel al contului de terț (cazul liniilor de STOC
+    // ale FCT — recepția contează pe NIR, 26a). `InvoiceLine.AccountID` e
+    // obligatoriu și NU se inventează.
+    [XafDisplayName("Linie de factură fără cont contrapartidă")] FaraContrapartida = 5,
+    // Latura de partener a documentului nu e un `Partener` (nomenclator de alt
+    // fel) — factura/plata n-are `CustomerInfo`/`SupplierInfo`.
+    [XafDisplayName("Documentul n-are partener pe laturi")] DocumentFaraPartener = 6,
+}
+
+// Cauza unui avertisment SAF-T (D16-D4) — aceeași formă agregată ca la D394
+// (`{Cod, Mesaj, Numar, Suma, Exemple[≤5]}`, fixul 7 al review-ului advers): pe o
+// lună reală un cod ar produce mii de rânduri identice, iar semnalul util s-ar
+// îneca. Pe sârmă string (57a), eticheta din metadata.
+//
+// Regula de fond a listei: fiecare cod e un loc în care FORMULARUL cere ceva ce
+// modelul nu are, iar fișierul iese cu valoarea de rezervă declarată de ANAF (0,
+// `H87`, `000000`, „Nespecificat") — niciodată cu o valoare inventată și
+// niciodată tăcut.
+public enum CodAvertismentSaft {
+    [XafDisplayName("Produs fără cod NC")] FaraCodNc = 1,
+    [XafDisplayName("Produs fără unitate de măsură UN/ECE")] FaraUnitateMasura = 2,
+    [XafDisplayName("Adresă incompletă (localitatea e obligatorie)")] AdresaIncompleta = 3,
+    [XafDisplayName("Tip de TVA fără cod SAF-T")] TipTvaFaraCodSaft = 4,
+    [XafDisplayName("Cont cu funcție necunoscută")] TipContNecunoscut = 5,
+    [XafDisplayName("Plată către un angajat (fără identitate de partener)")] PlataCatreAngajat = 6,
+    [XafDisplayName("Factură în valută")] FacturaInValuta = 7,
+    [XafDisplayName("Antetul societății e incomplet")] SocietateIncompleta = 8,
+    [XafDisplayName("Factură fără cont de terț")] ContFaraRolPeFactura = 9,
+    [XafDisplayName("Parteneri cu același identificator SAF-T")] PartenerDublat = 10,
+    [XafDisplayName("Partener fără cod fiscal valid")] PartenerFaraCuiValid = 11,
+    [XafDisplayName("Linie de factură fără cont contrapartidă")] LinieFaraContrapartida = 12,
+    [XafDisplayName("Rând de registru fără partener pe cont de terț")] TertFaraPartener = 13,
 }
 
 // Cauza unui avertisment D394 (D4-D5, fix 7 al review-ului advers): avertismentele

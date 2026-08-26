@@ -302,6 +302,42 @@ declară, `IgnoreQueryFilters`).
   8 cifre. Flag nou `--saft an luna` = generează pe clona Flax fișierul lunii
   și rulează DUK, cu raport per cauză (V5).
 
+### D16-D4 — amendamente din pasul 2 (măsurate pe scenă, 2026-08-26)
+
+- **Partenerul se citește de pe RÂND, nu de pe latură** (constatarea 64h,
+  confirmată): convenția `RepartitorImplicitDebit/Credit` pune pe fiecare
+  latură CONTRAPARTIDA (pe `628 = 401` furnizorul e pe DEBIT). Regula legii
+  rămâne (rolul e al CONTULUI): pentru rândul contabil, `Customer/SupplierID`
+  se decid după `RolTert` al contului cu rol, iar partenerul = cel de pe rând
+  (latura lui dacă e `Partener`, altfel cealaltă) — un singur loc,
+  `PartenerulRandului`. Consecință: `Customers/Suppliers` NU ies din
+  `Balanta(analitic)` (cheia ei e cont × dimensiunea ACELEIAȘI laturi), ci
+  dintr-un agregat propriu pe (pereche de conturi × pereche de repartitori)
+  filtrat pe conturile cu rol. Decizia de model 64h rămâne deschisă.
+- **Liniile de STOC ale FCT** n-au rând contabil propriu (recepția contează pe
+  NIR, 26a) ⇒ `InvoiceLine.AccountID` nu are sursă pe factură. NU se
+  inventează un cont (nici `TipMaterial.ContImplicit`): contrapartida se ia
+  din realitatea MATERIALIZATĂ a conexului — linia FCT naște lotul
+  (`Lot.LinieIntrareId`), NIR-ul conex îl recepționează (`RegistruStoc.LotId`
+  → `DetaliuId` al NIR-ului → `RegistruContabil.DetaliuId` → contul de DEBIT).
+  Fără rând de NIR pe lot ⇒ `Neincluse/FaraContrapartida` (pasul 3).
+- **Cusătura TVA are trei termeni**: Σ `TaxAmount` GL + TVA capitalizat (fără
+  rând contabil de TVA) + taxa tipurilor FĂRĂ cod SAF-T (iese `000000`) ==
+  Σ `RegistruTva.Tva`.
+- **Riscul 3 decis**: `ContTvaNeexigibil` (4428) ⇒ `000/000000` — nu e taxă
+  exigibilă. **Riscul 2 decis**: două nomenclatoare cu același identificator ⇒
+  o intrare cu soldurile CUMULATE + `PartenerDublat`. Partenerul cu factură
+  operată ȘI stornată în lună (rulaj net 0) se declară cu solduri zero —
+  fișierul îl referă. Prefixul `00` cere CUI VALID (altfel `04` + avertisment
+  `PartenerFaraCuiValid`), ca `01` să rămână accesibil străinilor
+  înregistrați. `AdresaIncompleta` se numără per partener.
+- **`Cont.Functie` e GOL pe planul privat** ⇒ `AccountType` iese
+  `Bifunctional` peste tot: gaură de DATE, se închide în pasul 3 cu coloana
+  `Functie` (A/P/B) în resursa `plan-conturi-omfp.csv` a seed-ului privat, din
+  anexa OMFP 1802 (funcția e a legii, nu a clientului). Bugetar: neatins.
+- D4-r14 făcut: `FaraOp11` doar pe liniile fără produs cu `CodNc`; categoria
+  de bunuri/structura `op11` rămân restanța D4-r5.
+
 ## Ce NU intră, cu motiv
 
 - **Declarațiile S și A** (MovementOfGoods/PhysicalStock/Owners — cere

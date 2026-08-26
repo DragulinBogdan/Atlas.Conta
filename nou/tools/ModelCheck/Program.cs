@@ -14,6 +14,7 @@ using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
+using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using DevExtreme.AspNet.Data;
@@ -2968,6 +2969,7 @@ if (profil == ProfilContabil.Privat) {
     VerificaSaftModel(privat: true);
     VerificaD300(cuTva: true);
     VerificaD394(cuTva: true);
+    VerificaSaft(privat: true);
     VerificaAxaTaxareInversa();
     VerificaGardianCicluCont();
 
@@ -7947,6 +7949,7 @@ VerificaSincronizareAnaf();
 VerificaSaftModel(privat: false);
 VerificaD300(cuTva: false);
 VerificaD394(cuTva: false);
+VerificaSaft(privat: false);
 VerificaAxaTaxareInversa();
 VerificaGardianCicluCont();
 
@@ -10686,6 +10689,717 @@ void VerificaSaftModel(bool privat) {
     }
 }
 
+// ============ Felia 16, pas 2: regulile + proiecția SAF-T — D16-V2 ============
+// Ce probează: (a) funcțiile PURE ale legii (`SaftReguli`) pe toate ramurile lor,
+// fără bază — deci identic pe ambele profiluri; (b) proiecția `SaftProiectii.Saft`
+// pe o scenă privată completă (FCT+NIR, FCL+DSC, RDC, RLF, PLT cu imperechere,
+// INC, NTC, DEC, storno, factură în valută, tip de TVA fără cod SAF-T), cu
+// CUSĂTURILE la cent; (c) `Neaplicabil` pe profilul bugetar.
+//
+// Luna scenei e AUGUST 2026, ca la D300/D394 — și scena rulează DUPĂ ele, care își
+// purjează documentele; premisa („luna e goală") se MĂSOARĂ, nu se presupune.
+void VerificaSaft(bool privat) {
+    const string Marcaj = "E2E-SAFT";
+    using var os = provider.CreateObjectSpace();
+
+    const int an = 2026, luna = 8;
+    var pStart = new DateOnly(an, luna, 1);
+    var pEnd = new DateOnly(an, luna, 31);
+    var dataCreare = new DateOnly(2026, 9, 5);
+
+    // ══════════ D16-V2 (a): funcțiile pure ale legii, fără bază ══════════
+    Check("D16-V2 `CuiValid` — cheia 753217532 aliniată la dreapta, (Σ×10) mod 11 cu 10⇒0: CUI-ul real "
+        + "`4221306` (Ministerul Finanțelor, exemplul din §B.4) trece, cu și fără prefixul RO/R; `12345674` trece, "
+        + "`12345678` NU (cifra de control e 4); lungimile în afara [2,10] și literele cad",
+        SaftReguli.CuiValid("4221306") && SaftReguli.CuiValid("RO4221306") && SaftReguli.CuiValid("R4221306")
+        && SaftReguli.CuiValid("12345674") && SaftReguli.CuiValid("33333338") && SaftReguli.CuiValid("22222229")
+        && SaftReguli.CuiValid("66666665")
+        && !SaftReguli.CuiValid("12345678") && !SaftReguli.CuiValid("4221307")
+        && !SaftReguli.CuiValid("1") && !SaftReguli.CuiValid("12345678901")
+        && !SaftReguli.CuiValid("ABC") && !SaftReguli.CuiValid("") && !SaftReguli.CuiValid(null));
+    Check("D16-V2 `CnpValid` — cheia 279146358279, Σ mod 11 cu 10⇒1, prima cifră ≠ 0, exact 13 cifre",
+        SaftReguli.CnpValid("1800101123450")
+        && !SaftReguli.CnpValid("1800101123456") && !SaftReguli.CnpValid("0800101123450")
+        && !SaftReguli.CnpValid("180010112345") && !SaftReguli.CnpValid("18001011234A0")
+        && !SaftReguli.CnpValid(null));
+
+    (string Id, FelIdSaft Fel) Id(TipPersoana tip, string tara, bool inreg, string cui, string cod, bool cnp = false) =>
+        SaftReguli.IdPartener(tip, tara, inreg, cui, cod, Guid.Empty, cnp);
+    Check("D16-V2 `IdPartener` §B.4 — `00`+CUI cere un CUI ROMÂNESC VALID (nu doar flag-ul): RO înregistrat și RO "
+        + "neînregistrat cu CUI valid ⇒ 00; străinul cu cod RO (art. 316) ⇒ tot 00, cu prefixul RO tăiat; "
+        + "UE cu cod propriu ⇒ 01/05 + ISO2 + cod FĂRĂ litera de țară duplicată; non-UE ⇒ 02/06; "
+        + "`EL` e tratat ca stat membru (grafia VIES a Greciei)",
+        Id(TipPersoana.Juridica, "RO", true, "RO33333338", "F1") == ("0033333338", FelIdSaft.CuiRoman)
+        && Id(TipPersoana.Juridica, "RO", false, "33333338", "F2") == ("0033333338", FelIdSaft.CuiRoman)
+        && Id(TipPersoana.Juridica, "DE", true, "RO66666665", "F3") == ("0066666665", FelIdSaft.CuiRoman)
+        && Id(TipPersoana.Juridica, "DE", true, "DE987654321", "F4") == ("01DE987654321", FelIdSaft.UeInregistrat)
+        && Id(TipPersoana.Juridica, "DE", false, "DE123456789", "F5") == ("05DE123456789", FelIdSaft.UeNeinregistrat)
+        && Id(TipPersoana.Juridica, "EL", false, "EL123456789", "F6") == ("05EL123456789", FelIdSaft.UeNeinregistrat)
+        && Id(TipPersoana.Juridica, "US", true, "US-777", "F7") == ("02US777", FelIdSaft.NonUeInregistrat)
+        && Id(TipPersoana.Juridica, "US", false, "US-999", "F8") == ("06US999", FelIdSaft.NonUeNeinregistrat));
+    Check("D16-V2 `IdPartener` — CNP-ul e OPT-IN pe bază (`Societate.RaporteazaCnp`): PF cu CNP valid iese `04`+cod "
+        + "intern când baza nu-l raportează și `03`+CNP când îl raportează; PF fără cod ⇒ `04`+cod; codul intern se "
+        + "filtrează la [A-Za-z0-9]; fără niciun cod ⇒ `04`+Id fără cratime; românul cu CUI INVALID cade tot pe `04` "
+        + "(prefixul 00 ar fi respins de validator)",
+        Id(TipPersoana.Fizica, "RO", false, "1800101123450", "PF-1") == ("04PF1", FelIdSaft.CodIntern)
+        && Id(TipPersoana.Fizica, "RO", false, "1800101123450", "PF-1", cnp: true) == ("031800101123450", FelIdSaft.Cnp)
+        && Id(TipPersoana.Fizica, "RO", false, null, "PF.0", cnp: true) == ("04PF0", FelIdSaft.CodIntern)
+        && Id(TipPersoana.Juridica, "RO", true, "12345678", "X-1") == ("04X1", FelIdSaft.CodIntern)
+        && SaftReguli.IdPartener(TipPersoana.Juridica, "RO", false, null, null,
+                new Guid("11111111-2222-3333-4444-555555555555"), false).Id == "04111111112222333344445555555555");
+    Check("D16-V2 `IdSocietate` / `RegistrationNumberSocietate` — DOUĂ reguli peste aceeași cifră: identificatorul de "
+        + "partener e `00`+CUI, iar antetul cere `RO`+CUI la plătitor și CUI-ul gol la neplătitor (mesajele "
+        + "validatorului, §B.4)",
+        SaftReguli.IdSocietate("RO12345674", "RO") == "0012345674"
+        && SaftReguli.RegistrationNumberSocietate("RO12345674", "RO", true) == "RO12345674"
+        && SaftReguli.RegistrationNumberSocietate("12345674", "RO", false) == "12345674"
+        && SaftReguli.IdSocietate(null, "RO") == null);
+    Check("D16-V2 `InvoiceType` (cele 6 coduri admise, S.I.9): `381` = „factură cu semnul minus INDIFERENT de motiv” "
+        + "⇒ și stornoul meta-operației, și retururile (care sunt storno prin construcție, 46a); altfel `380`",
+        SaftReguli.InvoiceType(storno: false, esteRetur: false) == "380"
+        && SaftReguli.InvoiceType(storno: true, esteRetur: false) == "381"
+        && SaftReguli.InvoiceType(storno: false, esteRetur: true) == "381"
+        && SaftReguli.InvoiceType(storno: true, esteRetur: true) == "381");
+    Check("D16-V2 `MetodaPlata` — tuplele `PaymentMethod ↔ PaymentMechanism` pe care validatorul le IMPUNE: "
+        + "numerar (dispoziție de casă, chitanță) ⇒ 01/10; ordin de plată ⇒ 03/42 (transfer bancar); cec ⇒ 03/20",
+        SaftReguli.MetodaPlata(TipInstrumentPlata.DispozitieCasa) == ("01", "10")
+        && SaftReguli.MetodaPlata(TipInstrumentPlata.Chitanta) == ("01", "10")
+        && SaftReguli.MetodaPlata(TipInstrumentPlata.OrdinPlata) == ("03", "42")
+        && SaftReguli.MetodaPlata(TipInstrumentPlata.Cec) == ("03", "20"));
+    Check("D16-V2 `SimbolSaft` — cifrele fără puncte, FĂRĂ nicio tăiere de segment (`302.02.00` ⇒ `3020200`); "
+        + "`TipCont` — D/C/B ⇒ Activ/Pasiv/Bifuncțional, necunoscut ⇒ Bifuncțional + `FunctieCunoscuta` fals",
+        SaftReguli.SimbolSaft("302.02.00") == "3020200" && SaftReguli.SimbolSaft("4111") == "4111"
+        && SaftReguli.SimbolSaft(null) == null
+        && SaftReguli.TipCont("D") == "Activ" && SaftReguli.TipCont("c") == "Pasiv"
+        && SaftReguli.TipCont("B") == "Bifunctional" && SaftReguli.TipCont("X") == "Bifunctional"
+        && SaftReguli.TipCont(null) == "Bifunctional"
+        && SaftReguli.FunctieCunoscuta("B") && !SaftReguli.FunctieCunoscuta("X") && !SaftReguli.FunctieCunoscuta(null));
+    Check("D16-V2 `RegimFiscalPartener` (`Nomenclator_Regim_fiscal`): `TaxRegistration` există DOAR pe partenerii "
+        + "`00` înregistrați — 100040 la TVA la încasare, 100010 altfel; pe `01`/`04` lipsește cu totul",
+        SaftReguli.RegimFiscalPartener(FelIdSaft.CuiRoman, true, true) == "100040"
+        && SaftReguli.RegimFiscalPartener(FelIdSaft.CuiRoman, true, false) == "100010"
+        && SaftReguli.RegimFiscalPartener(FelIdSaft.CuiRoman, false, false) == null
+        && SaftReguli.RegimFiscalPartener(FelIdSaft.UeInregistrat, true, false) == null
+        && SaftReguli.RegimFiscalPartener(FelIdSaft.CodIntern, true, true) == null);
+
+    // ══════════ D16-V2 (c): bugetarul — `Neaplicabil`, fără nicio interogare ══════════
+    if (!privat) {
+        var gol = SaftProiectii.Saft(os, an, luna, dataCreare);
+        var documenteTrecute = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(an, 1, 1) && d.Data <= new DateOnly(an, 12, 31));
+        Console.WriteLine($"     MĂSURAT (D16-V2 bugetar): „{gol.Neaplicabil}”; "
+            + $"{documenteTrecute} documente au trecut prin bază în {an}; societate completată: "
+            + $"{!string.IsNullOrWhiteSpace(os.GetObjectsQuery<Societate>().First().CodFiscal)}.");
+        Check("D16-V2 (bugetar) SAF-T e NEAPLICABIL: planul instituțiilor publice nu e printre cele 12 "
+            + "`TaxAccountingBasis`, deci proiecția întoarce un DTO GOL cu MOTIV — fără antet, fără secțiuni, "
+            + "fără avertismente — și se oprește ÎNAINTE de orice interogare pe registre (rulează și pe o bază "
+            + "cu societatea necompletată)",
+            gol.Neaplicabil != null && gol.Neaplicabil.Contains("bugetar")
+            && gol.Header == null && gol.Conturi.Count == 0 && gol.Clienti.Count == 0 && gol.Furnizori.Count == 0
+            && gol.Jurnale.Count == 0 && gol.FacturiEmise.Count == 0 && gol.FacturiPrimite.Count == 0
+            && gol.Plati.Count == 0 && gol.Produse.Count == 0 && gol.Taxe.Count == 0 && gol.Unitati.Count == 0
+            && gol.Neincluse.Count == 0 && gol.Avertismente.Count == 0
+            && gol.Rezumat.Tranzactii == 0 && gol.Rezumat.RanduriRegistru == 0
+            && documenteTrecute > 0);
+        return;
+    }
+
+    // ══════════ D16-V2 (b): scena privată ══════════
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+    var banca = os.FirstOrDefault<ContPropriu>(c => c.Cod == "BANCA");
+    var casa = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
+    var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+    var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371");
+    var tip704 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704");
+    var tip707 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "707");
+    var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+    var n21s = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+    Cont ContSimb(string simbol) => os.FirstOrDefault<Cont>(c => c.Simbol == simbol);
+    var judetCj = os.FirstOrDefault<Judet>(j => j.Cod == "RO-CJ");
+    var umBucata = os.FirstOrDefault<UnitateMasura>(u => u.Cod == "H87");
+
+    var societate = os.GetObjectsQuery<Societate>().First();
+    // Antetul e SINGLETONUL bazei — nu se purjează, se pune la loc (ca la D16-V1).
+    var socInainte = (societate.Denumire, societate.CodFiscal, societate.InregistratTva, societate.Tara,
+        societate.Strada, societate.Numar, societate.Localitate, societate.CodPostal, societate.JudetId,
+        societate.ContactNume, societate.ContactPrenume, societate.Telefon, societate.Email,
+        societate.ContBancarId, societate.RaporteazaCnp);
+    var ibanInainte = banca.Iban;
+
+    void Curata() {
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
+        var idsSursa = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Numar.StartsWith(Marcaj)
+                || repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId))
+            .Select(d => d.ID).ToList();
+        var ids = idsSursa.Concat(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.DocumentSursaId != null && idsSursa.Contains(d.DocumentSursaId.Value))
+            .Select(d => d.ID).ToList()).Distinct().ToList();
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => ids.Contains(i.DocumentId) || ids.Contains(i.DocumentStingatorId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters().Where(r => ids.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => ids.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => ids.Contains(d.ID)).ToList()
+                     .OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => l.Produs.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<TipTva>().IgnoreQueryFilters().Where(t => t.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters().Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+    void RestaureazaSocietatea() {
+        var s = os.GetObjectsQuery<Societate>().First();
+        (s.Denumire, s.CodFiscal, s.InregistratTva, s.Tara, s.Strada, s.Numar, s.Localitate, s.CodPostal,
+            s.JudetId, s.ContactNume, s.ContactPrenume, s.Telefon, s.Email, s.ContBancarId, s.RaporteazaCnp) = socInainte;
+        os.FirstOrDefault<ContPropriu>(c => c.Cod == "BANCA").Iban = ibanInainte;
+        os.CommitChanges();
+    }
+    Curata();
+
+    var reziduuContabil = os.GetObjectsQuery<RegistruContabil>()
+        .Count(r => r.Data >= pStart && r.Data <= pEnd && r.DocumentId != null);
+    var reziduuFiscal = os.GetObjectsQuery<RegistruTva>().Count(r => r.Data >= pStart && r.Data <= pEnd);
+    Console.WriteLine($"     MĂSURAT (premisa scenei SAF-T): {reziduuContabil} rânduri contabile și "
+        + $"{reziduuFiscal} rânduri fiscale preexistente în {pStart:MM.yyyy}.");
+    Check("D16-V2 premisă: luna scenei e goală înainte de scenă (D300/D394 și-au purjat documentele) — altfel "
+        + "cifrele exacte de mai jos ar fi măsurate peste conținut străin",
+        reziduuContabil == 0 && reziduuFiscal == 0);
+
+    // ---------------- Societatea raportoare ----------------
+    banca.Iban = "RO49AAAA1B31007593840000";
+    societate.Denumire = "Atlas Probă SAF-T SRL";
+    societate.CodFiscal = "12345674";
+    societate.InregistratTva = true;
+    societate.Tara = "RO";
+    societate.Strada = "Str. Probei";
+    societate.Numar = "1";
+    societate.Localitate = "Cluj-Napoca";
+    societate.CodPostal = "400000";
+    societate.Judet = judetCj;
+    societate.ContactNume = "Popescu";
+    societate.ContactPrenume = "Ion";
+    societate.Telefon = "0264000000";
+    societate.Email = "probe@atlas.test";
+    societate.ContBancar = banca;
+    societate.RaporteazaCnp = false;
+    os.CommitChanges();
+
+    // ---------------- Nomenclatoarele scenei ----------------
+    Partener Part(string sufix, string denumire, string cui, TipPersoana tipPersoana = TipPersoana.Juridica,
+        bool inregistrat = true, bool cuAdresa = true) {
+        var p = os.CreateObject<Partener>();
+        p.Cod = Marcaj + sufix; p.Denumire = denumire; p.CodFiscal = cui;
+        p.TipPersoana = tipPersoana; p.Tara = "RO"; p.InregistratTva = inregistrat;
+        if (cuAdresa) {
+            p.Strada = "Str. Partenerului"; p.Numar = "2"; p.Localitate = "Cluj-Napoca";
+            p.CodPostal = "400001"; p.Judet = judetCj;
+        }
+        return p;
+    }
+    var furnizor = Part("-FURN", "Furnizor SAF-T SRL", "RO33333338");
+    // Clientul fără localitate ⇒ `City` obligatoriu ⇒ avertisment `AdresaIncompleta`.
+    var client = Part("-CL", "Client SAF-T SRL", "22222229", cuAdresa: false);
+    var pf = Part("-PF", "Ionescu Maria", "1800101123450", TipPersoana.Fizica, inregistrat: false);
+    var angajat = os.CreateObject<Angajat>();
+    angajat.Cod = Marcaj + "-ANG"; angajat.Denumire = "Titular decont SAF-T";
+
+    Produs CreeazaProdusSaft(string sufix, string denumire, string codNc, UnitateMasura um, string umText) {
+        var p = os.CreateObject<Produs>();
+        p.Cod = Marcaj + sufix; p.Denumire = denumire; p.UM = umText;
+        p.TipMaterial = tip371; p.CodNc = codNc; p.UnitateMasura = um;
+        return p;
+    }
+    var produsA = CreeazaProdusSaft("-A", "Marfă SAF-T A", "12345678", umBucata, "BUC");
+    var produsB = CreeazaProdusSaft("-B", "Marfă SAF-T B", null, null, "navete");
+
+    // O dimensiune CULEASĂ, ca `Analysis`/`AnalysisTypeTable` să aibă ce declara
+    // (la privat dimensiunile sunt opționale, deci scena și-o aduce pe a ei).
+    var codEconomic = os.CreateObject<CodEconomic>();
+    codEconomic.Cod = Marcaj + "-CE"; codEconomic.Denumire = "Cod economic de probă SAF-T";
+
+    // Tip de TVA de probă FĂRĂ cod SAF-T (N19/TI19 pe perioade istorice au același
+    // profil): rândurile lui ies `000/000000`, cu avertisment — nu refuz.
+    var tvaFaraCod = os.CreateObject<TipTva>();
+    tvaFaraCod.Cod = Marcaj + "-NOSAFT"; tvaFaraCod.Denumire = "Probă fără cod SAF-T";
+    tvaFaraCod.Cota = 21m; tvaFaraCod.Regim = RegimTva.Normal;
+    tvaFaraCod.ContTvaDeductibilId = n21s.ContTvaDeductibilId;
+    tvaFaraCod.ContTvaColectatId = n21s.ContTvaColectatId;
+    os.CommitChanges();
+
+    // ---------------- Documentele lunii ----------------
+    var dNir = new DateOnly(an, luna, 2);
+    var dFct = new DateOnly(an, luna, 3);
+    var dFcl = new DateOnly(an, luna, 10);
+    var dTrz = new DateOnly(an, luna, 15);
+    var dStorno = new DateOnly(an, luna, 25);
+
+    // NIR manual: lotul produsului B (pentru retur).
+    var nirB = os.CreateObject<NIR>();
+    nirB.Numar = Marcaj + "-NIR-B"; nirB.Data = dNir; nirB.Predator = furnizor; nirB.Primitor = mag1;
+    var linNirB = os.CreateObject<DocumentDetaliu>();
+    linNirB.Document = nirB; linNirB.TipMaterial = tip371; linNirB.Cantitate = 10m; linNirB.Valoare = 60m;
+    var lotB = linNirB.CreeazaLot(os, produsB, mag1);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, nirB);
+    os.CommitChanges();
+
+    // FCT: o linie de SERVICIU (628 = 401, postează) + o linie de STOC (recepția
+    // contează pe NIR-ul conex — 26a, deci pe factură are DOAR rândul de TVA).
+    var fct = os.CreateObject<FacturaIntrare>();
+    fct.Numar = Marcaj + "-FCT"; fct.Data = dFct; fct.Predator = furnizor; fct.Primitor = mag1;
+    var linFctServiciu = os.CreateObject<FacturaIntrareDetaliu>();
+    linFctServiciu.Document = fct; linFctServiciu.TipMaterial = tip628;
+    linFctServiciu.Cantitate = 1m; linFctServiciu.PretUnitar = 1000m; linFctServiciu.TipTva = n21s;
+    var linFctStoc = os.CreateObject<FacturaIntrareDetaliu>();
+    linFctStoc.Document = fct; linFctStoc.TipMaterial = tip371;
+    linFctStoc.Cantitate = 10m; linFctStoc.PretUnitar = 30m; linFctStoc.TipTva = n21s;
+    linFctStoc.Produs = produsA;
+    var lotA = linFctStoc.CreeazaLot(os, produsA, mag1);
+    os.CommitChanges();
+    var nirConex = MotorOperare.Opereaza(os, fct);
+    os.CommitChanges();
+    if (nirConex != null) {
+        nirConex.Numar = Marcaj + "-NIR-A";
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nirConex);
+        os.CommitChanges();
+    }
+    Check("D16-V2 premisă de scenă: FCT a generat NIR-ul conex, iar lotul mărfii s-a finalizat la 30 lei/buc "
+        + "(linia de stoc a facturii postează DOAR TVA — recepția contează pe NIR, 26a)",
+        nirConex is NIR && nirConex.Stare == StareDocument.Operat && lotA.PretUnitar == 30m);
+
+    // FCT în VALUTĂ (avertisment, nu conversie).
+    var fctEur = os.CreateObject<FacturaIntrare>();
+    fctEur.Numar = Marcaj + "-FCT-EUR"; fctEur.Data = dFct; fctEur.Predator = furnizor; fctEur.Primitor = mag1;
+    fctEur.Valuta = "EUR"; fctEur.Curs = 5m;
+    var linFctEur = os.CreateObject<FacturaIntrareDetaliu>();
+    linFctEur.Document = fctEur; linFctEur.TipMaterial = tip628;
+    linFctEur.Cantitate = 1m; linFctEur.PretUnitar = 100m; linFctEur.TipTva = n21s;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctEur);
+    os.CommitChanges();
+
+    // FCL + DSC: o linie de stoc (produsul A din lotul recepționat) + un serviciu +
+    // o linie pe tipul de TVA fără cod SAF-T.
+    var fcl = os.CreateObject<FacturaIesire>();
+    fcl.Data = dFcl; fcl.Predator = sediu; fcl.Primitor = client; fcl.GestiuneDescarcare = mag1;
+    var linFclStoc = os.CreateObject<FacturaIesireDetaliu>();
+    linFclStoc.Document = fcl; linFclStoc.TipMaterial = tip371; linFclStoc.Produs = produsA;
+    linFclStoc.Cantitate = 3m; linFclStoc.PretUnitar = 50m; linFclStoc.TipTva = n21s;
+    var linFclServiciu = os.CreateObject<FacturaIesireDetaliu>();
+    linFclServiciu.Document = fcl; linFclServiciu.TipMaterial = tip704;
+    linFclServiciu.Cantitate = 1m; linFclServiciu.PretUnitar = 500m; linFclServiciu.TipTva = n21s;
+    linFclServiciu.Descriere = "Serviciu de probă SAF-T";
+    linFclServiciu.CodEconomic = codEconomic;
+    var linFclFaraCod = os.CreateObject<FacturaIesireDetaliu>();
+    linFclFaraCod.Document = fcl; linFclFaraCod.TipMaterial = tip704;
+    linFclFaraCod.Cantitate = 1m; linFclFaraCod.PretUnitar = 100m; linFclFaraCod.TipTva = tvaFaraCod;
+    os.CommitChanges();
+    var dscDraft = MotorOperare.Opereaza(os, fcl);
+    os.CommitChanges();
+    if (dscDraft != null) {
+        MotorOperare.Opereaza(os, dscDraft);
+        os.CommitChanges();
+    }
+
+    // FCL către PERSOANA FIZICĂ, operată și STORNATĂ (⇒ două facturi: 380 și 381).
+    var fclPf = os.CreateObject<FacturaIesire>();
+    fclPf.Data = dFcl; fclPf.Predator = sediu; fclPf.Primitor = pf;
+    var linFclPf = os.CreateObject<FacturaIesireDetaliu>();
+    linFclPf.Document = fclPf; linFclPf.TipMaterial = tip704;
+    linFclPf.Cantitate = 1m; linFclPf.PretUnitar = 400m; linFclPf.TipTva = n21s;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fclPf);
+    os.CommitChanges();
+    MotorOperare.Storneaza(os, fclPf, dStorno);
+    os.CommitChanges();
+
+    // RLF: 2 buc din lotul B înapoi la furnizor (storno prin construcție ⇒ 381).
+    var rlf = os.CreateObject<ReturFurnizor>();
+    rlf.Data = dFcl; rlf.Predator = mag1; rlf.Primitor = furnizor;
+    var linRlf = os.CreateObject<DocumentDetaliu>();
+    linRlf.Document = rlf; linRlf.TipMaterial = tip371; linRlf.Lot = lotB;
+    linRlf.Cantitate = 2m; linRlf.TipTva = n21s;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, rlf);
+    os.CommitChanges();
+
+    // RDC: venit stornat (linie de factură) + cost pe lotul original (NU e linie
+    // de factură — rămâne în GL, 68).
+    var rdc = os.CreateObject<ReturClient>();
+    rdc.Data = dFcl; rdc.Predator = client; rdc.Primitor = mag1;
+    var linRdcVenit = os.CreateObject<DocumentDetaliu>();
+    linRdcVenit.Document = rdc; linRdcVenit.TipMaterial = tip707; linRdcVenit.Valoare = 100m; linRdcVenit.TipTva = n21s;
+    var linRdcCost = os.CreateObject<DocumentDetaliu>();
+    linRdcCost.Document = rdc; linRdcCost.TipMaterial = tip371; linRdcCost.Lot = lotA; linRdcCost.Cantitate = 1m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, rdc);
+    os.CommitChanges();
+
+    // PLT (ordin de plată) către furnizor, cu imperechere pe FCT ⇒ `SourceDocumentID`.
+    var plt = os.CreateObject<Plata>();
+    plt.Data = dTrz; plt.Predator = banca; plt.Primitor = furnizor;
+    plt.TipInstrument = TipInstrumentPlata.OrdinPlata;
+    var linPlt = os.CreateObject<DocumentTrezorerieDetaliu>();
+    linPlt.Document = plt; linPlt.TipMaterial = tipTrz; linPlt.Valoare = 1190m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, plt);
+    os.CommitChanges();
+    ImperechereService.Imperecheaza(os, plt, fct, 1190m);
+
+    // INC (chitanță) de la client.
+    var inc = os.CreateObject<Incasare>();
+    inc.Data = dTrz; inc.Predator = client; inc.Primitor = casa;
+    inc.TipInstrument = TipInstrumentPlata.Chitanta;
+    var linInc = os.CreateObject<DocumentTrezorerieDetaliu>();
+    linInc.Document = inc; linInc.TipMaterial = tipTrz; linInc.Valoare = 200m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, inc);
+    os.CommitChanges();
+
+    // NTC: descriere pe linie (ajunge în `TransactionLine.Description`), angajatul
+    // pe un cont de CLIENT (⇒ `Neincluse/RepartitorNePartener`) și o compensare
+    // 401 = 4111 pe ACELAȘI partener (⇒ el apare în AMBELE liste de master files).
+    var ntc = os.CreateObject<NotaContabila>();
+    ntc.Numar = Marcaj + "-NTC"; ntc.Data = dTrz; ntc.Predator = sediu; ntc.Primitor = sediu;
+    NotaContabilaDetaliu LinieNtc(string descriere, Cont debit, Cont credit, decimal valoare,
+        Repartitor repDebit = null, Repartitor repCredit = null) {
+        var d = os.CreateObject<NotaContabilaDetaliu>();
+        d.Document = ntc; d.TipMaterial = tipTrz; d.Descriere = descriere;
+        d.ContDebit = debit; d.ContCredit = credit; d.Valoare = valoare;
+        d.RepartitorDebit = repDebit; d.RepartitorCredit = repCredit;
+        return d;
+    }
+    var linNtcDescriere = LinieNtc("Notă de probă SAF-T", ContSimb("628"), ContSimb("5311"), 40m);
+    LinieNtc("Creanță pe titularul de avans", ContSimb("4111"), ContSimb("707"), 50m, repDebit: angajat);
+    LinieNtc("Compensare 401 = 4111 pe același partener", ContSimb("401"), ContSimb("4111"), 10m,
+        repDebit: client, repCredit: client);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, ntc);
+    os.CommitChanges();
+
+    // DEC: descrierea liniei de decont ajunge tot în GL.
+    var tipCheltuiala = os.GetObjectsQuery<TipMaterial>()
+        .First(t => t.Clasa.Natura == NaturaClasa.Serviciu && t.ContImplicitId != null);
+    var dec = os.CreateObject<Decont>();
+    dec.Numar = Marcaj + "-DEC"; dec.Data = dTrz; dec.Predator = angajat; dec.Primitor = sediu;
+    var linDec = os.CreateObject<DecontDetaliu>();
+    linDec.Document = dec; linDec.TipMaterial = tipCheltuiala; linDec.Descriere = "Bon justificat SAF-T";
+    linDec.PretUnitar = 60m; linDec.TipTva = n21s;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, dec);
+    os.CommitChanges();
+
+    // ══════════ Proiecția ══════════
+    var saft = SaftProiectii.Saft(os, an, luna, dataCreare);
+    var rez = saft.Rezumat;
+    Console.WriteLine($"     MĂSURAT (D16-V2, {luna:00}.{an}): {rez.Tranzactii} tranzacții / {rez.LiniiGl} linii GL "
+        + $"peste {rez.RanduriRegistru} rânduri de registru; jurnale [{string.Join(", ", saft.Jurnale.Select(j => $"{j.JournalID}×{j.Tranzactii.Count}"))}]; "
+        + $"{saft.Clienti.Count} clienți / {saft.Furnizori.Count} furnizori; "
+        + $"{saft.FacturiEmise.Count} facturi emise / {saft.FacturiPrimite.Count} primite / {saft.Plati.Count} plăți; "
+        + $"{saft.Produse.Count} produse, {saft.Unitati.Count} UM, {saft.Taxe.Count} coduri de taxă, "
+        + $"{saft.TipuriAnaliza.Count} tipuri de analiză.");
+    Console.WriteLine($"     MĂSURAT (D16-V2 cusături): debit {rez.TotalDebit:N2} / credit {rez.TotalCredit:N2} vs "
+        + $"registru {rez.ValoareRegistruContabil:N2}; TVA GL {rez.TvaGl:N2} + capitalizat {rez.TvaCapitalizat:N2} + "
+        + $"fără cod {rez.TvaFaraCodSaft:N2} vs registru {rez.TvaRegistru:N2}; bază facturi "
+        + $"A {rez.BazaFacturiAchizitie:N2} + neincluse {rez.BazaNeincluseAchizitie:N2} vs {rez.BazaRegistruAchizitie:N2}; "
+        + $"L {rez.BazaFacturiLivrare:N2} + {rez.BazaNeincluseLivrare:N2} vs {rez.BazaRegistruLivrare:N2}; "
+        + $"closing GLA {rez.ClosingGla:N2} vs balanță {rez.ClosingBalanta:N2}.");
+    foreach (var n in saft.Neincluse)
+        Console.WriteLine($"         NEINCLUS {n.Cauza} [{n.Sectiune}] {n.DocumentTip} {n.DocumentNumar} "
+            + $"{n.ContSimbol} {n.RepartitorDenumire} bază {n.Baza:N2} TVA {n.Tva:N2} D {n.Debit:N2} C {n.Credit:N2}");
+    foreach (var a in saft.Avertismente)
+        Console.WriteLine($"         AVERTISMENT {a.Cod} ×{a.Numar}{(a.Suma is decimal s ? $" Σ {s:N2}" : "")}: "
+            + $"{string.Join(" | ", a.Exemple)}");
+
+    // ---------------- Antetul ----------------
+    var h = saft.Header;
+    Console.WriteLine($"     MĂSURAT (D16-V2 antet): {h.RegistrationNumber} „{h.Name}” {h.TaxAccountingBasis} "
+        + $"{h.AuditFileRegion} {h.PeriodStart}/{h.PeriodStartYear} v{h.SoftwareVersion} IBAN {h.IBANNumber}.");
+    Check("D16-V2 antet: constantele de cod (2.0 / RO / Atlas / Atlas.Conta / L / RON / segment 1 din 1), "
+        + "`AuditFileRegion` = județul societății, `TaxAccountingBasis` din nomenclator, `RegistrationNumber` = "
+        + "`RO`+CUI (plătitor), adresa și contactul din `Societate`, IBAN-ul din contul bancar legat",
+        h.AuditFileVersion == "2.0" && h.AuditFileCountry == "RO" && h.HeaderComment == "L"
+        && h.SoftwareCompanyName == "Atlas" && h.SoftwareID == "Atlas.Conta"
+        && !string.IsNullOrWhiteSpace(h.SoftwareVersion) && h.SoftwareVersion.Length <= 18
+        && h.DefaultCurrencyCode == "RON" && h.SegmentIndex == "1" && h.TotalSegmentsInSequence == "1"
+        && h.AuditFileDateCreated == dataCreare && h.AuditFileRegion == "RO-CJ"
+        && h.TaxAccountingBasis == "A" && h.RegistrationNumber == "RO12345674"
+        && h.Name == "Atlas Probă SAF-T SRL" && h.Address.City == "Cluj-Napoca" && h.Address.Region == "RO-CJ"
+        && h.Address.Country == "RO" && h.ContactLastName == "Popescu" && h.ContactFirstName == "Ion"
+        && h.IBANNumber == "RO49AAAA1B31007593840000"
+        && h.PeriodStart == luna && h.PeriodStartYear == an && h.PeriodEnd == luna && h.PeriodEndYear == an
+        && saft.Neaplicabil == null);
+
+    // ---------------- Conturile ----------------
+    SaftCont ContSaft(string simbol) => saft.Conturi.FirstOrDefault(c => c.AccountID == simbol);
+    Check("D16-V2 GeneralLedgerAccounts: `AccountID` = simbolul fără puncte, `AccountType` din `Functie`, iar "
+        + "soldurile respectă `xs:choice` (debit XOR credit, niciodată amândouă) pe TOATE conturile",
+        ContSaft("401") != null && ContSaft("4111") != null && ContSaft("707") != null
+        && saft.Conturi.All(c => !(c.OpeningDebitBalance != null && c.OpeningCreditBalance != null))
+        && saft.Conturi.All(c => !(c.ClosingDebitBalance != null && c.ClosingCreditBalance != null))
+        && saft.Conturi.All(c => c.AccountType is "Activ" or "Pasiv" or "Bifunctional")
+        && saft.Conturi.All(c => c.AccountID != null && !c.AccountID.Contains('.')));
+
+    // ---------------- Clienți / furnizori ----------------
+    SaftTert Tert(List<SaftTert> lista, string id) => lista.FirstOrDefault(t => t.Id == id);
+    var furnizorSaft = Tert(saft.Furnizori, "0033333338");
+    var clientSaft = Tert(saft.Clienti, "0022222229");
+    var pfSaft = saft.Clienti.FirstOrDefault(t => t.PartenerId == pf.ID);
+    Console.WriteLine($"     MĂSURAT (D16-V2 terți): furnizor {furnizorSaft?.Id} cont {furnizorSaft?.AccountID} "
+        + $"C {furnizorSaft?.ClosingCreditBalance:N2}; client {clientSaft?.Id} cont {clientSaft?.AccountID}; "
+        + $"PF {pfSaft?.Id} ({pfSaft?.FelId}); clientul și pe lista de furnizori: "
+        + $"{Tert(saft.Furnizori, "0022222229") != null}.");
+    Check("D16-V2 Customers/Suppliers: partenerul se citește de pe RÂND (64h — dimensiunea laturii poartă "
+        + "contrapartida), deci furnizorul ajunge în `Suppliers` pe contul 401 și clientul în `Customers` pe 4111, "
+        + "fiecare cu `RegistrationNumber` = identificatorul lui și `TaxRegistration` doar la prefixul 00",
+        furnizorSaft is { AccountID: "401", TaxType: "100010", RegistrationNumber: "0033333338" }
+        && furnizorSaft.TaxRegistrationNumber == "33333338"
+        && clientSaft is { AccountID: "4111", TaxType: "100010" }
+        && saft.Furnizori.All(t => t.Id.StartsWith("0") && t.Address != null)
+        && saft.Clienti.All(t => t.Address != null));
+    Check("D16-V2 (decizia 16) ACELAȘI partener poate fi și client, și furnizor — compensarea 401 = 4111 îl pune în "
+        + "AMBELE liste, cu același `RegistrationNumber`; PF-ul iese cu prefixul `04` (baza nu raportează CNP-uri) "
+        + "și cu `AdresaIncompleta` pe clientul fără localitate",
+        Tert(saft.Furnizori, "0022222229") != null && clientSaft != null
+        && pfSaft != null && pfSaft.Id.StartsWith("04") && pfSaft.FelId == nameof(FelIdSaft.CodIntern)
+        && saft.Avertismente.Any(a => a.Cod == nameof(CodAvertismentSaft.AdresaIncompleta))
+        && clientSaft.Address.City == "Nespecificat");
+    Check("D16-V2 `Neincluse`: repartitorul care NU e partener pe un cont de terț (angajatul pe 4111) iese cu "
+        + "cauza și cu numele lui — soldul lui nu ajunge în `Customers`, dar nici nu dispare tăcut",
+        saft.Neincluse.Any(n => n.Cauza == nameof(CauzaNeincludere.RepartitorNePartener)
+            && n.ContSimbol == "4111" && n.RepartitorDenumire == "Titular decont SAF-T"));
+
+    // ---------------- GL ----------------
+    var toateLiniile = saft.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii).ToList();
+    var tranzactii = saft.Jurnale.SelectMany(j => j.Tranzactii).ToList();
+    Check("D16-V2 GeneralLedgerEntries: un jurnal per TIP de document, o tranzacție per document, DOUĂ linii per "
+        + "rând de registru (debit + credit), `RecordID` = 1..n în interiorul tranzacției, `TaxInformation` pe "
+        + "FIECARE linie și `CurrencyAmount == Amount` (totul în RON)",
+        saft.Jurnale.All(j => j.Tranzactii.Count > 0 && j.JournalID == j.Type)
+        && rez.LiniiGl == 2 * rez.RanduriRegistru
+        && tranzactii.All(t => t.Linii.Select(l => l.RecordID)
+            .SequenceEqual(Enumerable.Range(1, t.Linii.Count).Select(i => i.ToString())))
+        && tranzactii.All(t => t.Linii.Count(l => l.DebitCreditIndicator == "D")
+            == t.Linii.Count(l => l.DebitCreditIndicator == "C"))
+        && toateLiniile.All(l => l.TaxInformation != null && l.CurrencyCode == "RON" && l.CurrencyAmount == l.Amount)
+        && saft.Jurnale.Any(j => j.JournalID == "FCT") && saft.Jurnale.Any(j => j.JournalID == "NTC"));
+    Check("D16-V2 latura liberă: `CustomerID` ȘI `SupplierID` sunt NENULE pe fiecare linie și pe fiecare "
+        + "tranzacție — ce nu e partener e raportorul (GL.19/GL.20 COM); pe conturile fără rol ies AMBELE cu "
+        + "codul societății",
+        toateLiniile.All(l => l.CustomerID == "0012345674" || l.SupplierID == "0012345674")
+        && toateLiniile.All(l => !string.IsNullOrEmpty(l.CustomerID) && !string.IsNullOrEmpty(l.SupplierID))
+        && tranzactii.All(t => !string.IsNullOrEmpty(t.CustomerID) && !string.IsNullOrEmpty(t.SupplierID)));
+    var linieDescriere = toateLiniile.FirstOrDefault(l => l.DetaliuId == linNtcDescriere.ID);
+    Check("D16-V2 `Description` pe linia de GL: descrierea LINIEI-SURSĂ acolo unde frunza o are "
+        + "(`NotaContabilaDetaliu`, `DecontDetaliu`, `FacturaIesireDetaliu`), altfel descrierea tranzacției "
+        + "(denumirea tipului + numărul)",
+        linieDescriere?.Description == "Notă de probă SAF-T"
+        && toateLiniile.Any(l => l.Description == "Bon justificat SAF-T")
+        && toateLiniile.All(l => !string.IsNullOrWhiteSpace(l.Description)));
+
+    // ---------------- Facturi ----------------
+    SaftFactura Fact(List<SaftFactura> lista, Guid docId, bool storno = false) =>
+        lista.FirstOrDefault(f => f.DocumentId == docId && f.Storno == storno);
+    var fFct = Fact(saft.FacturiPrimite, fct.ID);
+    var fRlf = Fact(saft.FacturiPrimite, rlf.ID);
+    var fFcl = Fact(saft.FacturiEmise, fcl.ID);
+    var fPf = Fact(saft.FacturiEmise, fclPf.ID);
+    var fPfStorno = Fact(saft.FacturiEmise, fclPf.ID, storno: true);
+    var fRdc = Fact(saft.FacturiEmise, rdc.ID);
+    Console.WriteLine($"     MĂSURAT (D16-V2 facturi): FCT {fFct?.InvoiceType} net {fFct?.NetTotal:N2} "
+        + $"({fFct?.Linii.Count} linii) cont {fFct?.AccountID}; RLF {fRlf?.InvoiceType} net {fRlf?.NetTotal:N2}; "
+        + $"FCL {fFcl?.InvoiceType} net {fFcl?.NetTotal:N2} ({fFcl?.Linii.Count} linii); PF {fPf?.InvoiceType} "
+        + $"{fPf?.NetTotal:N2} / storno {fPfStorno?.InvoiceType} {fPfStorno?.NetTotal:N2}; "
+        + $"RDC {fRdc?.InvoiceType} {fRdc?.NetTotal:N2} ({fRdc?.Linii.Count} linii).");
+    Check("D16-V2 PurchaseInvoices: FCT iese `380` pe contul 401, cu SERVICIUL ca linie (1000) — linia de STOC "
+        + "n-are contrapartidă în registru (recepția e pe NIR, 26a) și cade în `Neincluse` cu avertisment, nu cu "
+        + "un cont inventat; RLF e `381` cu valori NEGATIVE (storno prin construcție, 46a)",
+        fFct is { InvoiceType: "380", AccountID: "401", PartenerID: "0033333338" }
+        && fFct.Linii.Count == 1 && fFct.Linii[0].InvoiceLineAmount == 1000m
+        && fFct.Linii[0].DebitCreditIndicator == "D" && fFct.Linii[0].AccountID == "628"
+        && fFct.NetTotal == 1000m && fFct.GrossTotal == 1210m
+        && saft.Neincluse.Any(n => n.Cauza == nameof(CauzaNeincludere.FaraContrapartida)
+            && n.DetaliuId == linFctStoc.ID && n.Baza == 300m)
+        && fRlf is { InvoiceType: "381" } && fRlf.NetTotal == -12m
+        && fRlf.Linii.Single().InvoiceLineAmount == -12m && fRlf.Linii.Single().Quantity == 2m);
+    Check("D16-V2 SalesInvoices: FCL iese `380` pe 4111 cu 3 linii (marfă 150 + serviciu 500 + linia pe tipul de "
+        + "TVA fără cod), `DebitCreditIndicator` = `C` pe vânzare; factura către PF are pereche de STORNO (`381`, "
+        + "−400) — stornoul e o FACTURĂ PROPRIE (Document × Storno), nu o corecție a celei dintâi",
+        fFcl is { InvoiceType: "380", AccountID: "4111" } && fFcl.Linii.Count == 3
+        && fFcl.NetTotal == 750m && fFcl.Linii.All(l => l.DebitCreditIndicator == "C")
+        && fPf is { InvoiceType: "380", NetTotal: 400m } && fPfStorno is { InvoiceType: "381", NetTotal: -400m }
+        && fPf.PartenerID == fPfStorno.PartenerID);
+    Check("D16-V2 RDC: `381` cu DOAR linia de venit (−100) — linia de COST (fără `TipTva`, cu lot) e mișcare "
+        + "internă venit↔stoc și rămâne în GL, exact cum cere 68",
+        fRdc is { InvoiceType: "381", NetTotal: -100m } && fRdc.Linii.Count == 1
+        && fRdc.Linii.Single().DetaliuId == linRdcVenit.ID
+        && !saft.Neincluse.Any(n => n.DetaliuId == linRdcCost.ID));
+    var identificatoriFacturi = saft.FacturiEmise.Select(f => (Lista: saft.Clienti, f.PartenerID))
+        .Concat(saft.FacturiPrimite.Select(f => (Lista: saft.Furnizori, f.PartenerID))).ToList();
+    Check("D16-V2 cusătura master files: FIECARE `CustomerID`/`SupplierID` de pe facturi și de pe plăți există în "
+        + "`Customers`/`Suppliers` — altfel fișierul ar referi un partener nedeclarat",
+        identificatoriFacturi.All(x => x.Lista.Any(t => t.Id == x.PartenerID))
+        && saft.Plati.SelectMany(p => p.Linii).All(l =>
+            (l.CustomerID == "0012345674" || saft.Clienti.Any(t => t.Id == l.CustomerID))
+            && (l.SupplierID == "0012345674" || saft.Furnizori.Any(t => t.Id == l.SupplierID))));
+
+    // ---------------- Plăți ----------------
+    var pPlt = saft.Plati.FirstOrDefault(p => p.DocumentId == plt.ID);
+    var pInc = saft.Plati.FirstOrDefault(p => p.DocumentId == inc.ID);
+    Console.WriteLine($"     MĂSURAT (D16-V2 plăți): PLT {pPlt?.PaymentMethod}/{pPlt?.PaymentMechanism} "
+        + $"{pPlt?.GrossTotal:N2} sursă „{pPlt?.Linii.FirstOrDefault()?.SourceDocumentID}”; "
+        + $"INC {pInc?.PaymentMethod}/{pInc?.PaymentMechanism} {pInc?.GrossTotal:N2}.");
+    Check("D16-V2 Payments: ordinul de plată iese 03/42 cu `D` pe linie și contul de furnizor, iar chitanța 01/10 "
+        + "cu `C`; `SourceDocumentID` = numărul documentului stins fiindcă imperecherea plății e UNICĂ; "
+        + "`TaxInformation` e `000/000000` (plata nu e operațiune taxabilă)",
+        pPlt is { PaymentMethod: "03", PaymentMechanism: "42", GrossTotal: 1190m }
+        && pPlt.Linii.Single() is { DebitCreditIndicator: "D", AccountID: "401", SupplierID: "0033333338" }
+        && pPlt.Linii.Single().SourceDocumentID == fct.Numar
+        && pInc is { PaymentMethod: "01", PaymentMechanism: "10", GrossTotal: 200m }
+        && pInc.Linii.Single() is { DebitCreditIndicator: "C", AccountID: "4111", CustomerID: "0022222229" }
+        && saft.Plati.SelectMany(p => p.Linii).All(l => l.TaxInformation.TaxCode == "000000"));
+
+    // ---------------- Produse, unități, taxe, analiză ----------------
+    var prodA = saft.Produse.FirstOrDefault(p => p.ProdusId == produsA.ID);
+    var prodB = saft.Produse.FirstOrDefault(p => p.ProdusId == produsB.ID);
+    Console.WriteLine($"     MĂSURAT (D16-V2 produse): A NC „{prodA?.ProductCommodityCode}” UM {prodA?.UOMBase} "
+        + $"{prodA?.GoodsServicesID}; B NC „{prodB?.ProductCommodityCode}” UM {prodB?.UOMBase}; "
+        + $"UOMTable [{string.Join(", ", saft.Unitati.Select(u => $"{u.UnitOfMeasure}=„{u.Description}”"))}]; "
+        + $"TaxTable [{string.Join(", ", saft.Taxe.Select(t => $"{t.TaxType}/{t.TaxCode}@{t.TaxPercentage}"))}].");
+    Check("D16-V2 Products: doar produsele de pe liniile de factură EMISE; codul NC lipsă ⇒ „0” + avertisment, "
+        + "unitatea de măsură lipsă ⇒ „H87” + avertisment, `ValuationMethod` = FIFO (51e), factor de conversie 1, "
+        + "`GoodsServicesID` = 01 pe natura Stoc",
+        prodA is { ProductCommodityCode: "12345678", UOMBase: "H87", UOMStandard: "H87", GoodsServicesID: "01",
+            ValuationMethod: "FIFO", UOMToUOMBaseConversionFactor: 1m }
+        && prodB is { ProductCommodityCode: "0", UOMBase: "H87" }
+        && saft.Produse.Count == 2
+        && saft.Unitati.Single() is { UnitOfMeasure: "H87", Description: "bucată" });
+    Check("D16-V2 AnalysisTypeTable + `Analysis`: câte o intrare per dimensiune FOLOSITĂ pe rândurile perioadei "
+        + "(`AnalysisID` = codul nomenclatorului, descrierea = denumirea lui), iar pe linia de GL și pe linia de "
+        + "factură dimensiunile sunt ale LATURII — nu se declară tipuri nefolosite",
+        saft.TipuriAnaliza.Single() is { AnalysisType: "CE", AnalysisID: "E2E-SAFT-CE",
+            AnalysisIDDescription: "Cod economic de probă SAF-T" }
+        && fFcl.Linii.Any(l => l.Analiza.Any(a => a.AnalysisType == "CE" && a.AnalysisID == "E2E-SAFT-CE"))
+        && toateLiniile.Any(l => l.Analiza.Any(a => a.AnalysisID == "E2E-SAFT-CE")));
+    Check("D16-V2 TaxTable: un rând per cod SAF-T FOLOSIT (`000000` nu se declară), cu cota din nomenclator, "
+        + "`BaseRate` = 1 (`SAFBaseRate` e restricționat [0,1], nu „100”) și țara RO; tipul de TVA FĂRĂ cod iese "
+        + "`000/000000` cu avertisment, iar taxa lui se numără separat în rezumat",
+        saft.Taxe.Count > 0 && saft.Taxe.All(t => t.TaxType == "300" && t.BaseRate == 1m && t.Country == "RO")
+        && !saft.Taxe.Any(t => t.TaxCode == "000000")
+        && saft.Avertismente.Any(a => a.Cod == nameof(CodAvertismentSaft.TipTvaFaraCodSaft))
+        && rez.TvaFaraCodSaft == 21m);
+
+    // ---------------- Cusăturile (D16-D4) ----------------
+    Check("D16-V2 cusătura 1 (partidă dublă): Σ `DebitAmount` == Σ `CreditAmount` == Σ `RegistruContabil.Valoare` "
+        + "pe perioadă, semnat — rândurile de deschidere (fără document) nu intră în GL",
+        rez.TotalDebit == rez.TotalCredit && rez.TotalDebit == rez.ValoareRegistruContabil
+        && rez.ValoareRegistruContabil > 0m);
+    Check("D16-V2 cusătura 2 (TVA): Σ `TaxAmount` de pe rândurile de GL + TVA-ul capitalizat (care n-are rând "
+        + "contabil de TVA) + taxa tipurilor fără cod SAF-T == Σ `RegistruTva.Tva` — nicio cifră fiscală nu se "
+        + "pierde între cele două registre",
+        rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft == rez.TvaRegistru && rez.TvaRegistru != 0m);
+    Check("D16-V2 cusătura 3 (facturi): pe FIECARE sens, Σ bazei rândurilor fiscale AȘEZATE pe linii de factură + "
+        + "Σ bazei celor NEINCLUSE == Σ `RegistruTva.Baza` al documentelor de tip factură",
+        rez.BazaFacturiAchizitie + rez.BazaNeincluseAchizitie == rez.BazaRegistruAchizitie
+        && rez.BazaFacturiLivrare + rez.BazaNeincluseLivrare == rez.BazaRegistruLivrare
+        && rez.BazaRegistruAchizitie != 0m && rez.BazaRegistruLivrare != 0m);
+    Check("D16-V2 cusătura 4 (solduri): Σ soldurilor finale din `GeneralLedgerAccounts` == Σ balanței "
+        + "(`ContabilProiectii.Balanta`) — GLA e chiar agregarea balanței, nu un al doilea adevăr",
+        rez.ClosingGla == rez.ClosingBalanta);
+
+    // ---------------- Avertismentele, agregate ----------------
+    SaftAvertisment Av(CodAvertismentSaft cod) => saft.Avertismente.FirstOrDefault(a => a.Cod == cod.ToString());
+    Check("D16-V2 avertismente AGREGATE per cauză (un rând per cod, cu numărul, suma unde are sens și ≤ 5 exemple "
+        + "nominale): cod NC lipsă, UM lipsă, adresă incompletă, tip de TVA fără cod, factură în valută, linie "
+        + "fără contrapartidă — fiecare NUMIT, niciunul înlocuit cu o valoare tăcută",
+        Av(CodAvertismentSaft.FaraCodNc) is { Numar: 1 } && Av(CodAvertismentSaft.FaraUnitateMasura) is { Numar: 1 }
+        && Av(CodAvertismentSaft.AdresaIncompleta) != null
+        && Av(CodAvertismentSaft.TipTvaFaraCodSaft) is { Numar: 1 }
+        && Av(CodAvertismentSaft.FacturaInValuta) is { Numar: 1 } valuta
+            && valuta.Exemple.Single().Contains("EUR")
+        && Av(CodAvertismentSaft.LinieFaraContrapartida) != null
+        && saft.Avertismente.All(a => !string.IsNullOrWhiteSpace(a.Mesaj)
+            && a.Exemple.Count > 0 && a.Exemple.Count <= 5 && a.Numar >= a.Exemple.Count)
+        && saft.Avertismente.Select(a => a.Cod).Distinct().Count() == saft.Avertismente.Count);
+
+    // ---------------- `RaporteazaCnp`: aceeași PF, alt identificator ----------------
+    societate.RaporteazaCnp = true;
+    os.CommitChanges();
+    var cuCnp = SaftProiectii.Saft(os, an, luna, dataCreare);
+    var pfCuCnp = cuCnp.Clienti.FirstOrDefault(t => t.PartenerId == pf.ID);
+    var facturiPf = cuCnp.FacturiEmise.Where(f => f.DocumentId == fclPf.ID).ToList();
+    Console.WriteLine($"     MĂSURAT (D16-V2 RaporteazaCnp): {pfSaft?.Id} → {pfCuCnp?.Id} ({pfCuCnp?.FelId}).");
+    Check("D16-V2 `Societate.RaporteazaCnp` e o POLITICĂ a bazei, nu o constantă a generatorului: aceeași "
+        + "persoană fizică iese `04`+cod intern cât timp baza nu raportează CNP-uri și `03`+CNP după ce o face — "
+        + "identificatorul se schimbă ODATĂ în master files ȘI pe facturile ei",
+        pfCuCnp is { FelId: nameof(FelIdSaft.Cnp) } && pfCuCnp.Id == "031800101123450"
+        && facturiPf.Count == 2 && facturiPf.All(f => f.PartenerID == "031800101123450")
+        && cuCnp.Rezumat.TotalDebit == rez.TotalDebit);
+    societate.RaporteazaCnp = false;
+    os.CommitChanges();
+
+    // ---------------- Închiderea de TVA (riscul 4): `TaxCode 380200` ----------------
+    // Proba e CONDIȚIONATĂ: generatorul refuză o închidere „în urmă" dacă baza are
+    // deja una vie pentru o lună ulterioară (guard-ul cronologic 46c), iar scenele
+    // anterioare pot lăsa exact asta. Se sare ZGOMOTOS, nu tăcut.
+    InchidereTva itv = null;
+    string motivItv = null;
+    try {
+        itv = InchidereTvaService.Genereaza(os, an, luna, sediu.ID);
+        if (itv != null) {
+            itv.Numar = Marcaj + "-ITV";
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, itv);
+            os.CommitChanges();
+        }
+        else {
+            motivItv = "generatorul n-a avut ce închide (sold zero sau închidere vie pe lună)";
+        }
+    }
+    catch (OperareException e) {
+        motivItv = e.Message.Split('\n')[0];
+    }
+    if (itv != null) {
+        var cuItv = SaftProiectii.Saft(os, an, luna, dataCreare);
+        var liniiItv = cuItv.Jurnale.Where(j => j.JournalID == "ITV")
+            .SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii).ToList();
+        Console.WriteLine($"     MĂSURAT (D16-V2 ITV): {liniiItv.Count} linii de închidere, coduri "
+            + $"[{string.Join(", ", liniiItv.Select(l => l.TaxInformation.TaxCode).Distinct())}].");
+        Check("D16-V2 (riscul 4) rândurile închiderii lunare de TVA ies cu `TaxCode 380200` "
+            + "(`TVA_NoteContabile`) — identificate prin TIPUL documentului (`ITV`), nu prin simbolul contului "
+            + "(decizia 29: motorul și proiecțiile nu cunosc niciun simbol)",
+            liniiItv.Count > 0 && liniiItv.All(l => l.TaxInformation.TaxCode == "380200"
+                && l.TaxInformation.TaxType == "300")
+            && cuItv.Taxe.Any(t => t.TaxCode == "380200"));
+    }
+    else {
+        Console.WriteLine($"     SĂRIT (D16-V2 ITV): {motivItv} — proba codului `380200` rămâne pentru V3/V5.");
+    }
+
+    // ---------------- Curățenie ----------------
+    RestaureazaSocietatea();
+    Curata();
+    Check("Curățenie finală felia SAF-T (fără reziduuri e2e: repartitori, documente, loturi, produse, tipul de "
+        + "TVA de probă; antetul societății și IBAN-ul contului bancar puși la loc)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<TipTva>().Any(t => t.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<CodEconomic>().Any(c => c.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<Document>().Any(d => d.Numar != null && d.Numar.StartsWith(Marcaj))
+        && os.GetObjectsQuery<Societate>().First().CodFiscal == socInainte.CodFiscal
+        && os.FirstOrDefault<ContPropriu>(c => c.Cod == "BANCA").Iban == ibanInainte);
+}
+
 // ============ Felia 15, pas 2: merge-ul ANAF — D15-V2 + D15-V3 ============
 // Ce probează: regula de merge (D15-D3) pe parteneri FABRICAȚI, fără bază și
 // fără rețea, și deserializarea răspunsului v9 (D15-D2) pe fixture-uri, dintre
@@ -12291,6 +13005,36 @@ void VerificaD394(bool cuTva) {
         && dupaV.Avertismente.Count == 6
         && dupaV.Operatiuni.Select(o => (o.TipPartener, o.CuiP, o.Tip, o.Cota, o.NrFact, o.Baza, o.Tva))
             .SequenceEqual(d4s.Operatiuni.Select(o => (o.TipPartener, o.CuiP, o.Tip, o.Cota, o.NrFact, o.Baza, o.Tva))));
+
+    // ══════════ D4-r14 (felia 16): `FaraOp11` tace acolo unde codul NC EXISTĂ ══════════
+    // Jumătate din `op11` (codul NC) a intrat în model odată cu `Produs.CodNc`
+    // (D16-D2), deci avertismentul se restrânge la LINIILE fără produs codificat.
+    // Proba: o achiziție în taxare inversă pe un produs CU cod NC — baza ei intră
+    // normal în `op1` (rândul C urcă), dar NU se mai adaugă la avertisment.
+    var produsNc = os.CreateObject<Produs>();
+    produsNc.Cod = MarcajD4 + "-PNC"; produsNc.Denumire = "Serviciu codificat NC";
+    produsNc.TipMaterial = tip628; produsNc.CodNc = "87654321"; produsNc.UM = "BUC";
+    os.CommitChanges();
+    var fctNc = Cumparare("-CNC", f1, d10);
+    var linNc = os.CreateObject<FacturaIntrareDetaliu>();
+    linNc.Document = fctNc; linNc.TipMaterial = tip628; linNc.Cantitate = 1m;
+    linNc.PretUnitar = 200m; linNc.TipTva = ti21; linNc.Produs = produsNc;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctNc);
+    os.CommitChanges();
+    var cuNc = D394Proiectii.D394(os, pStart, pEnd);
+    var op11Nou = cuNc.Avertismente.SingleOrDefault(a => a.Cod == "FaraOp11");
+    var cNou = cuNc.Operatiuni.Single(o => o.CuiP == "12345678" && o.Tip == "C" && o.Cota == 21);
+    Console.WriteLine($"     MĂSURAT (D4-r14): C urcă la {cNou.Baza:N2}, iar `FaraOp11` rămâne "
+        + $"Σ {op11Nou?.Suma:N2} [{string.Join(" | ", op11Nou?.Exemple ?? [])}].");
+    Check("D4-r14 `FaraOp11` se restrânge la liniile FĂRĂ cod NC: achiziția în taxare inversă pe un produs cu "
+        + "`CodNc` urcă rândul C de la 400 la 600, dar avertismentul rămâne pe 400 (V 700 + C 400 = 1.100) — "
+        + "jumătatea de detaliu pe care modelul o are nu se mai reclamă; categoria de bunuri rămâne restanța D4-r5",
+        cNou.Baza == 600m
+        && op11Nou is { Numar: 2, Suma: 1100m }
+        && op11Nou.Exemple.Any(e => e.StartsWith("V: bază 700,00") && e.Contains("fără cod NC"))
+        && op11Nou.Exemple.Any(e => e.StartsWith("C: bază 400,00"))
+        && op11Nou.Mesaj.Contains("cod NC"));
 
     // ---------------- Curățenie ----------------
     CurataD4();
