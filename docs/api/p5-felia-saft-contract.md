@@ -466,6 +466,62 @@ Agentul se oprește și raportează (nu normalizează tăcut) dacă:
 reale, `FaraCodNc`/`FaraUnitateMasura` în masă pe Flax — se raportează cu
 cifre.
 
+## Închidere (2026-08-26, după fix-urile review-ului advers)
+
+- [x] Pașii 1–5 + 4b comise, fiecare verificat independent; pasul 6a =
+  fix-urile review-ului (14, toate aplicate). ModelCheck final: **bugetar 752,
+  privat 530**, verde; migrația `20260826083001_F16SaftModel` pe 6 baze.
+- [x] **DUK J2.2.8 (kit `1.4.18.3.3`)** — ancora de versiune a feliei;
+  publicat J2.2.15 (73-r8). Fișierul scenei ⇒ `ok`, 0 atenționări.
+  Fișierele REALE Flax: **09/2025 `ok`** (71,5 MiB după fix-uri), **12/2025
+  `ok`** (71,6 MiB), 0 atenționări.
+- Riscurile, MĂSURATE cu oracolul: (5) `AccountID` de 7 cifre TRECE; (6)
+  `ExchangeRate` absent pe RON TRECE (nu se emite); (7) `1/1` TRECE; (8)
+  `ProductCommodityCode = 0` TRECE (`0`, `00000000`, `99999999` sunt literal în
+  NC8 al jar-ului); (9) diacriticele TREC (nu se despiacritizează); `ONGE`
+  TRECE; `04` cu cratimă RESPINS (corect); codul NC e validat contra NC8 al
+  anului (`12345678` respins, `01012100` acceptat); Grecia: `01EL`/`01GR`,
+  `Country EL`/`GR` TREC toate — alegerea ISO `GR` e a noastră
+  (`SaftReguli.CodTaraSaft`, o singură grafie per țară, identificator + adresă);
+  `TotalSegmentsInsequence` cu `s` mic (grafia XSD; cu `S` ar fi picat). (10)
+  cantitatea negativă nemăsurată (73-r11). (11) perf pe Flax 09/2025:
+  proiecție 4,3–4,5 s, XML 0,4 s, DUK 3,5 s; REST JSON (sumar) — întregul era
+  2,4–3,4 s / 38,6 MiB, XML 3,4–6,4 s; 12 luni în 28,3 s. (12) seed-ul nu
+  golește `Societate` completată — probat.
+- **V4 (clona Flax.Api, HTTP real)**: `User` JSON 200 gol / XML **403**;
+  `Admin` 200 + fișier `SAF-T_14639030_2025-09.xml`; `an=2019`, `luna=13`,
+  lipsă, `an=abc` ⇒ 400 `EroriDto`; bugetar ⇒ 422 (JSON și XML); smoke
+  vizual `/saft`. Nemăsurat pe HTTP: 422 pe CUI gol/invalid (F7, probat la
+  nivelul scriitorului) — 73-r19.
+- **V5 (baza Flax de reconciliere)**: registrele identice la rând,
+  `reconciliere-*.txt` SHA neschimbat; `--societate` 10 câmpuri; `--um-nc`
+  18.642 `CodNc` / 5 UM nerezolvate (`ml`×4, `pac`×1) / 1 TARIC de 10 cifre;
+  **09/2025 după fix-uri**: 13.966 tranzacții / 52.932 linii GL, 3.950
+  clienți / 228 furnizori, 3.700 facturi emise (9.459.762,04 / 10.987.556,17),
+  **1.772 primite (8.191.889,46 / 9.869.562,07 — era 1.688 înainte de L1)**,
+  3.000 plăți (17.401.707,14), 2.554 produse; `Neincluse` **100 ⇒ 16**
+  (`ContFaraRol` 84 ⇒ 0); cusăturile 1–6 la cent: partidă dublă
+  80.527.820,95; TVA 3.238.255,54 + 0 − 32.788,80 = 3.205.466,74; achiziții
+  7.981.303,47; livrări 7.266.639,45; **per cont 99 verificate / 0 diferite,
+  Σ|closing| 41.384.123,58**; terți clienți 79.887,56 + 5.296.545,71 =
+  5.376.433,27; furnizori −1.905.584,14 − 7.119.441,10 = −9.025.025,24;
+  master files 0 orfani. Avertismente: `TertFaraPartener` 473 (1.676.955,21),
+  `PartenerFaraCuiValid` 412, `FaraCodNc` 195, `AdresaIncompleta` 49,
+  `PartenerDublat` 16, `TipTvaFaraCodSaft` 2 (−32.788,80: N19/TI19).
+- `verifica:drift` idempotent; `--dump-metadata` comis.
+
+**Ce a scos review-ul advers — 0 blocante, 3 `[lege]`, 12 `[fond]`, 4
+`[cosmetic]`** (decizia 73 §j): L1 FCT all-stock (TI) lipsea din
+`PurchaseInvoices` — 84 facturi/lună, 3,37 M bază, recuperate; L2 Capitalizat
+brut; L3 stornoul fără data lui; F1 plățile stornate pozitive de două ori; F3
+cusăturile 1/4 vide; F4 cusătura terților lipsea; F5 DEC/NTC fără urmă; F6
+`AccountID` gol pe terț; F7 fișier fără CUI = 200; F8 `SeedRolTert` peste
+conturile manuale; F2 pin-uit (latura proprie); F10 măsurat. Toate fixate în
+pasul 6a, cu +9 probe.
+
+**Rămase, ne-blocante**: 73-r1…r19 (decizia 73 §k; r19 = 422 pe CUI
+gol/invalid nemăsurat pe HTTP, `--cititori` C4 nemăsurat pe Flax).
+
 ## Pașii (un agent per pas, verificare independentă + commit după fiecare)
 
 1. **Model + seed**: D1, D2, `Cont.RolTert` (D3, partea de date), migrație pe

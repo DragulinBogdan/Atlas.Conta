@@ -324,10 +324,26 @@ per felie):
   adrese preluate; `--anaf` 8.230 găsiți / 2 negăsiți / 0 erori, +190
   parteneri tip 4 → 1; D394 09/2025 înainte/după pe clona Flax.Api: 62 CUI
   mutate, toate = statutul ANAF de azi, Σ formular identică. Decizia 72.
+- **Pasul 5, felia 16 — SAF-T (D406 L) — executată** (2026-08-26; contract
+  `docs/api/p5-felia-saft-contract.md`, structura oficială
+  `docs/api/d406-structura-2026.md`): `Societate` (un rând, editabil),
+  `UnitateMasura` (UN/ECE, 2.163), `Produs.CodNc` + FK UM, `Cont.RolTert` +
+  `Cont.Functie` seed-uite la privat, migrația `F16SaftModel`; `SaftReguli`
+  (identitatea `00`–`06`, 380/381, metoda de plată), `SaftProiectii` →
+  `SaftDto` cu cusături + `Neincluse` + avertismente agregate, `SaftXml`
+  streaming, `Duk.cs` = validatorul oficial ca oracol în ModelCheck; REST
+  `GET api/proiectii/saft` (sumar) + `saft/xml` (403 pe `User`), ecranul
+  `/saft`; Import1C `--societate`/`--um-nc`/`--saft`. Commit-uri: 82aeec8
+  (contract + structură), c104e05 (pas 1, model), 482f119 (pas 2, proiecție),
+  010909c (pas 3, XML + DUK), 1ad6f1e (pas 4, REST + client), 5c1fc05 (pas
+  4b, sumar JSON + CUI), 55c71b6 (pas 5, Import1C). Închidere: DUK J2.2.8
+  `ok` pe fișierele REALE 09 și 12/2025 de pe Flax (70,9 / 71,6 MiB), 6/6
+  cusături la cent (partidă dublă 80.527.820,95), reconcilierea neatinsă;
+  JSON-ul întreg de 38,6 MiB/lună ⇒ sumar. Decizia 73.
 - Restul: finisaj de client (listele §Închidere ale contractelor +
   `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului) și
-  feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T peste
-  `RegistruTva`, pe tiparul D300/D394.
+  feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T S (stocuri)
+  peste `RegistruStoc` (73-r1).
   Alternativă rămasă: felia C1a a comenzilor
   (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă, la presiune
   de client).

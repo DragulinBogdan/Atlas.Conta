@@ -87,3 +87,4 @@
 | 70 | [Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)](070-p5-felia13-motor-structura.md) | 2026-08-25 | activă |
 | 71 | [Pasul 5, felia 14 — D394, declarația informativă](071-p5-felia14-d394.md) | 2026-08-25 | activă (71b amendată de 72a) |
 | 72 | [Pasul 5, felia 15 — partener + ANAF (adresa, `Judet`, sincronizarea ANAF)](072-p5-felia15-partener-anaf.md) | 2026-08-26 | activă |
+| 73 | [Pasul 5, felia 16 — SAF-T (D406 L): `Societate`, `UnitateMasura`, `CodNc`, `RolTert`, proiecție + fișier XML + DUK](073-p5-felia16-saft.md) | 2026-08-26 | activă |

@@ -74,6 +74,17 @@ public static class SaftXml {
         if (dto.Header == null)
             throw new InvalidOperationException(
                 "Declarația D406 n-are antet — proiecția n-a rulat sau societatea raportoare lipsește.");
+        // Fixul F7 al review-ului: `Company.RegistrationNumber` (S.CMH.1) e
+        // identitatea DECLARANTULUI. Un fișier fără el nu e „un fișier incomplet"
+        // — e o declarație anonimă, pe care validatorul o respinge oricum și pe
+        // care nimeni n-o poate depune. Refuzul se ia AICI, nu în avertismentele
+        // proiecției: apelantul REST îl traduce în 422, cât timp răspunsul e încă
+        // schimbabil (după primul octet scris ar fi ieșit 200 cu corp trunchiat).
+        if (string.IsNullOrWhiteSpace(dto.Header.RegistrationNumber))
+            throw new InvalidOperationException(
+                "Declarația D406 n-are codul fiscal al societății raportoare "
+                + "(`Header.Company.RegistrationNumber`) — completați „Configurare → Societate → Cod fiscal” "
+                + "înainte de a genera fișierul.");
 
         var setari = new XmlWriterSettings {
             // Fără BOM: kitul acceptă ambele, iar absența lui e alegerea care nu
@@ -100,6 +111,18 @@ public static class SaftXml {
         // lipsa printr-un avertisment — fișierul nu inventează o valoare).
         void ElCerut(string nume, string valoare) =>
             w.WriteElementString(nume, SpatiuNume, valoare ?? "");
+        // Obligatoriu ȘI fără valoare de rezervă onestă: un element gol ar face
+        // fișierul INVALID, iar validatorul ar raporta cauza în alt loc decât
+        // este. Mai bine pică generarea, cu numele câmpului și al rândului, decât
+        // să iasă un fișier respins din motive care nu spun nimic (fixul F6 al
+        // review-ului: `Customer`/`Supplier` fără `AccountID`).
+        void ElCerutNenul(string nume, string valoare, string context) {
+            if (string.IsNullOrWhiteSpace(valoare))
+                throw new InvalidOperationException(
+                    $"`{nume}` e obligatoriu și n-are valoare pe {context} — fișierul D406 ar fi ieșit cu un "
+                    + "element gol, adică invalid. Proiecția trebuie să pună rândul în `Neincluse`, nu să-l emită.");
+            w.WriteElementString(nume, SpatiuNume, valoare);
+        }
         void ElBani(string nume, decimal? valoare) {
             if (valoare is decimal v)
                 w.WriteElementString(nume, SpatiuNume, Bani(v));
@@ -417,8 +440,8 @@ public static class SaftXml {
                     Stop();
                 }
                 Stop();
-                ElCerut(numeId, t.Id);
-                ElCerut("AccountID", t.AccountID);
+                ElCerutNenul(numeId, t.Id, $"{element} „{t.Name}”");
+                ElCerutNenul("AccountID", t.AccountID, $"{element} „{t.Name}” ({t.Id})");
                 Solduri(t.OpeningDebitBalance, t.OpeningCreditBalance,
                     t.ClosingDebitBalance, t.ClosingCreditBalance);
                 Stop();

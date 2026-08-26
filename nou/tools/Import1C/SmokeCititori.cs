@@ -133,6 +133,16 @@ static class SmokeCititori {
             check($"Smoke cititori: cele {organizatii.Count} organizații au KeyField și denumire "
                 + "(contractul de coloane al antetului SAF-T)",
                 organizatii.All(o => o.Id != null && (o.Denumire ?? o.DenumireCompleta) != null));
+            // Fixul C4 al review-ului: contractul de coloane nu se termină la
+            // „coloana există". Antetul SAF-T are nevoie de UN raportor cu UN cod
+            // fiscal — `Societate1C` refuză oricum să scrie ceva pe mai multe
+            // organizații, iar un `CodUnic` gol face fișierul nedepozabil. Deci
+            // se VERIFICĂ, nu doar se afișează: dacă baza-sursă are alt număr de
+            // organizații, asta e o ruptură de premisă a importului, nu o
+            // observație de rulare.
+            check($"Smoke cititori: `flax.Organizatii` are EXACT o organizație ({organizatii.Count}) și ea are "
+                + "cod unic — premisa antetului SAF-T (`--societate` scrie un singur raportor)",
+                organizatii.Count == 1 && organizatii.All(o => !string.IsNullOrWhiteSpace(o.CodUnic)));
         }
 
         // Nomenclatorul: `NIC` e coloana NOUĂ a feliei 16 și n-are alt apărător

@@ -212,7 +212,7 @@ public static class SaftProiectii {
         // adrese incomplete" despre una singură.
         var adreseIncomplete = new HashSet<Guid>();
         SaftAdresa AdresaPartener(InfoPartener p) {
-            var taraPartener = Partener.NormalizeazaTara(p.Tara);
+            var taraPartener = SaftReguli.CodTaraSaft(p.Tara);
             var oras = p.Localitate;
             if (string.IsNullOrWhiteSpace(oras)) {
                 oras = LocalitateImplicita;
@@ -270,7 +270,7 @@ public static class SaftProiectii {
 
         var idSocietate = soc == null ? null : SaftReguli.IdSocietate(soc.CodFiscal, soc.Tara);
         var raporteazaCnp = soc?.RaporteazaCnp ?? false;
-        var taraSocietate = Partener.NormalizeazaTara(soc?.Tara);
+        var taraSocietate = SaftReguli.CodTaraSaft(soc?.Tara);
 
         rezultat.Header = new SaftHeader {
             AuditFileVersion = AuditFileVersion,
@@ -500,6 +500,19 @@ public static class SaftProiectii {
 
         // Partenerul unui RÂND (vezi antetul clasei): latura proprie dacă e
         // `Partener`, altfel cealaltă. `null` = rândul n-are niciun partener pe el.
+        //
+        // ═══ Regula pe rândul cu DOI parteneri (fixul F2, pin-uire) ═══
+        // Pe o notă de compensare `401 = 4111` cu partenerul A pe debit și B pe
+        // credit, AMBELE conturi au rol de terț și AMBELE laturi au un partener.
+        // Regula NU e „primul găsit" și nu e „partenerul documentului": fiecare
+        // latură își ia PARTENERUL PROPRIU (`repLatura`), iar rolul îl dă CONTUL
+        // acelei laturi. Deci A, de pe debitul lui 401 (cont de furnizor), iese
+        // FURNIZOR, iar B, de pe creditul lui 4111 (cont de client), iese CLIENT
+        // — chiar dacă intuiția „debitul lui 401 stinge o datorie, deci e
+        // furnizorul de pe factură" ar fi dat același rezultat din alt motiv.
+        // Căderea pe `repCealalta` e REZERVA pentru cazul (majoritar, 64h) în
+        // care latura contului de terț poartă contrapartida, nu titularul: ea se
+        // aplică doar când latura proprie NU e un `Partener`.
         (Guid? Id, bool ExistaRepartitor) PartenerulRandului(Guid? repLatura, Guid? repCealalta) {
             if (repLatura is Guid a && parteneri.ContainsKey(a))
                 return (a, true);
@@ -598,11 +611,17 @@ public static class SaftProiectii {
                 continue;
             }
             terti[cheie] = tert;
+            // Fixul C1 al review-ului: avertismentul e despre un cod fiscal care
+            // NU TRECE cifra de control, deci cere un cod fiscal. O persoană
+            // fizică fără cod (retail, `CodFiscal` gol) nu „pică validarea" — ea
+            // n-are ce valida, iar `04`+cod intern e chiar răspunsul corect al
+            // §B.4 pentru ea. Lipsa codului rămâne vizibilă prin `FelId`.
             if (p.Fel == FelIdSaft.CodIntern
+                    && !string.IsNullOrWhiteSpace(p.CodFiscal)
                     && (p.InregistratTva || Partener.NormalizeazaTara(p.Tara) == "RO"))
                 Avert(CodAvertismentSaft.PartenerFaraCuiValid,
                     $"„{p.Denumire}” e român sau înregistrat în scopuri de TVA, dar codul fiscal "
-                    + $"(„{p.CodFiscal ?? "gol"}”) nu trece cifra de control — se declară cu prefixul 04 "
+                    + $"(„{p.CodFiscal}”) nu trece cifra de control — se declară cu prefixul 04 "
                     + "(cod intern), nu 00.");
         }
         // Partenerii REFERIȚI de facturi și plăți, strânși pe parcurs: master files
@@ -672,7 +691,11 @@ public static class SaftProiectii {
 
         // ── 10. `TaxInformation` pe rândul de GL ─────────────────────────────
         var codTvaFolosit = new Dictionary<string, (decimal Cota, string Denumire)>(StringComparer.Ordinal);
-        var tvaFaraCod = new HashSet<Guid>();
+        // Fixul C1: avertismentul „tip de TVA fără cod SAF-T" e UNUL per tip (nu
+        // per rând — pe o lună reală ar fi mii), dar SUMA lui trebuie să fie a
+        // TUTUROR rândurilor tipului, nu a primului întâlnit. Deci se acumulează
+        // aici și se emite AGREGAT după §11, când s-a terminat de citit GL-ul.
+        var tvaFaraCod = new Dictionary<Guid, (string Cod, string Denumire, SensTva Sens, decimal Suma, int Randuri)>();
         var tvaGl = 0m;
         var tvaFaraCodSaft = 0m;
 
@@ -707,11 +730,9 @@ public static class SaftProiectii {
                         // Cifra nu se pierde: rândul iese `000/000000`, dar taxa lui
                         // se numără separat în rezumat (cusătura de TVA).
                         tvaFaraCodSaft += fapt.Tva;
-                        if (tvaFaraCod.Add(tip.ID))
-                            Avert(CodAvertismentSaft.TipTvaFaraCodSaft,
-                                $"Tipul de TVA „{tip.Cod}” ({tip.Denumire}) n-are cod SAF-T pe "
-                                + $"{(fapt.Sens == SensTva.Livrare ? "livrare" : "achiziție")} — rândurile lui ies "
-                                + "cu `000/000000`.", fapt.Tva);
+                        var acumulat = tvaFaraCod.GetValueOrDefault(tip.ID);
+                        tvaFaraCod[tip.ID] = (tip.Cod, tip.Denumire, fapt.Sens,
+                            acumulat.Suma + fapt.Tva, acumulat.Randuri + 1);
                         return Nefiscal();
                     }
                     tvaGl += fapt.Tva;
@@ -767,16 +788,24 @@ public static class SaftProiectii {
 
             var randuriDoc = randuriPeDocument[docId];
             var descriereDoc = $"{tipuriDocument.GetValueOrDefault(cod) ?? cod} {doc?.Numar}".Trim();
+            // Fixul L3: data tranzacției e a RÂNDURILOR ei, nu a documentului. Un
+            // document operat în luna trecută și STORNAT în luna asta apare aici
+            // doar cu rândurile lui de storno (motorul le scrie la `dataStorno`);
+            // `doc.Data` ar fi pus pe el o dată din afara perioadei declarate,
+            // adică o tranzacție care contrazice `Period`. Pentru documentele
+            // operate și stornate în aceeași lună, minimul E `doc.Data`, deci
+            // nimic nu se schimbă.
+            var dataDoc = randuriDoc.Count > 0 ? randuriDoc.Min(r => r.Data) : doc?.Data ?? dataStart;
             var tranzactie = new SaftTranzactie {
                 DocumentId = docId,
                 TransactionID = docId.ToString(),
                 Period = luna,
                 PeriodYear = an,
-                TransactionDate = doc?.Data ?? dataStart,
+                TransactionDate = dataDoc,
                 Description = descriereDoc,
                 SystemEntryDate = doc?.DataOperare is DateTime dt
-                    ? DateOnly.FromDateTime(dt) : doc?.Data ?? dataStart,
-                GLPostingDate = doc?.Data ?? dataStart,
+                    ? DateOnly.FromDateTime(dt) : dataDoc,
+                GLPostingDate = dataDoc,
                 CustomerID = idSocietate,
                 SupplierID = idSocietate,
             };
@@ -823,19 +852,78 @@ public static class SaftProiectii {
                         },
                     });
                     numarLinii++;
+                    // Fixul F3, cusătura 1: totalurile se numără din LINIILE
+                    // EMISE, fiecare pe latura ei — `DebitAmount` la `D`,
+                    // `CreditAmount` la `C`. Varianta dinainte (`+= r.Valoare` de
+                    // două ori, în afara buclei de laturi) le făcea egale prin
+                    // construcție, deci cusătura „Σ debit == Σ credit" se
+                    // verifica pe sine și n-ar fi prins niciodată o latură
+                    // pierdută la scriere.
+                    if (debit) totalDebit += r.Valoare;
+                    else totalCredit += r.Valoare;
                 }
-                totalDebit += r.Valoare;
-                totalCredit += r.Valoare;
             }
             jurnal.Tranzactii.Add(tranzactie);
         }
         rezultat.Jurnale = jurnale.Values.OrderBy(j => j.JournalID, StringComparer.Ordinal).ToList();
 
+        // Fixul C1: avertismentele „tip de TVA fără cod SAF-T", acum că GL-ul s-a
+        // terminat — unul per TIP, cu Σ pe toate rândurile lui.
+        foreach (var t in tvaFaraCod.Values.OrderBy(t => t.Cod, StringComparer.Ordinal))
+            Avert(CodAvertismentSaft.TipTvaFaraCodSaft,
+                $"Tipul de TVA „{t.Cod}” ({t.Denumire}) n-are cod SAF-T pe "
+                + $"{(t.Sens == SensTva.Livrare ? "livrare" : "achiziție")} — cele {t.Randuri} rânduri ale lui "
+                + "ies cu `000/000000`.", t.Suma);
+
         // ── 12. Liniile documentelor de factură și de plată ──────────────────
         var idsFacturiVanzare = idsDocumente.Where(id => TipuriVanzare.Contains(CodTip(id))).ToList();
         var idsFacturiCumparare = idsDocumente.Where(id => TipuriCumparare.Contains(CodTip(id))).ToList();
         var idsPlati = idsDocumente.Where(id => TipuriPlata.Contains(CodTip(id))).ToList();
-        var idsCuLinii = idsFacturiVanzare.Concat(idsFacturiCumparare).Concat(idsPlati).ToList();
+        var idsFacturi = idsFacturiVanzare.Concat(idsFacturiCumparare).ToList();
+        var idsCuLinii = idsFacturi.Concat(idsPlati).ToList();
+
+        // ═══ Fixul L1: contul de terț al facturii poate sta pe CONEXUL ei ═══
+        // Pe o factură de intrare cu TOATE liniile pe stoc (achiziție intra-
+        // comunitară, taxare inversă, scutită), singurele rânduri contabile ale
+        // FACTURII sunt `4426 = 4427` — recepția, cu tot cu 401-ul, contează pe
+        // NIR-ul conex (26a). Căutat doar pe rândurile facturii, `Invoice.AccountID`
+        // (M) n-avea sursă și factura cădea în `Neincluse/ContFaraRol`: 84 de
+        // facturi reale pe o singură lună a bazei de import, cu bază și TVA cu tot.
+        //
+        // Contul NU se inventează (nici din `Repartitor.ContImplicit`): se citește
+        // din ce s-a scris efectiv pe conexul autogenerat — același principiu ca
+        // `receptiePeLinie` de mai jos, aplicat la nivel de DOCUMENT în loc de
+        // linie. Pe SETURI: două interogări pentru toate facturile lunii.
+        //
+        // Fără filtru pe `Storno`: simbolul contului de terț e același pe ambele
+        // jumătăți ale conexului, iar jumătatea de storno a facturii-sursă poate
+        // exista fără ca cea a conexului să existe (sau invers).
+        var conexe = os.GetObjectsQuery<Document>()
+            .Where(d => d.Autogenerat && d.DocumentSursaId != null
+                && idsFacturi.Contains(d.DocumentSursaId.Value))
+            .Select(d => new { d.ID, d.DocumentSursaId })
+            .ToList()
+            .Select(d => new { d.ID, SursaId = d.DocumentSursaId.Value })
+            .ToList();
+        var idsConex = conexe.Select(c => c.ID).ToList();
+        var randuriPeConex = os.GetObjectsQuery<RegistruContabil>().IgnoreAutoIncludes()
+            .Where(r => r.DocumentId != null && idsConex.Contains(r.DocumentId.Value))
+            .Select(r => new { r.DocumentId, r.ContDebitId, r.ContCreditId })
+            .ToList()
+            .Select(r => new { DocumentId = r.DocumentId.Value, r.ContDebitId, r.ContCreditId })
+            .GroupBy(r => r.DocumentId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var conturiConexePeFactura = new Dictionary<Guid, List<Guid>>();
+        foreach (var c in conexe.OrderBy(c => c.ID)) {
+            if (!randuriPeConex.TryGetValue(c.ID, out var randuriConex))
+                continue;
+            if (!conturiConexePeFactura.TryGetValue(c.SursaId, out var lista))
+                lista = conturiConexePeFactura[c.SursaId] = [];
+            foreach (var r in randuriConex) {
+                lista.Add(r.ContDebitId);
+                lista.Add(r.ContCreditId);
+            }
+        }
 
         var linii = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(d => idsCuLinii.Contains(d.DocumentId))
@@ -992,9 +1080,19 @@ public static class SaftProiectii {
                 foreach (var storno in jumatati) {
                     var randuriJumatate = randuriDoc.Where(r => r.Storno == storno).ToList();
                     var semn = storno ? -1m : 1m;
+                    // Fixul L3: data JUMĂTĂȚII, nu a documentului. Stornoul e o
+                    // factură proprie (`381`), iar motorul îi scrie rândurile la
+                    // `dataStorno` — o factură de storno emisă în luna asta n-are
+                    // voie să poarte data facturii originale, care poate fi în
+                    // altă lună (sau chiar în alt an) decât perioada declarată.
+                    var dataJumatate = randuriJumatate.Count > 0
+                        ? randuriJumatate.Min(r => r.Data)
+                        : doc?.Data ?? dataStart;
 
                     // `Invoice.AccountID` (M): contul de terț de pe rândurile
-                    // documentului. Fără el factura nu se poate emite.
+                    // documentului — sau, dacă factura n-are niciunul, de pe
+                    // rândurile CONEXULUI ei autogenerat (fixul L1, vezi §12).
+                    // Fără el factura nu se poate emite.
                     var contTert = randuriJumatate
                         .SelectMany(r => new[] { r.ContDebitId, r.ContCreditId })
                         .Where(c => Rol(c) == rolAsteptat)
@@ -1002,11 +1100,19 @@ public static class SaftProiectii {
                         .OrderByDescending(gr => gr.Count())
                         .Select(gr => (Guid?)gr.Key)
                         .FirstOrDefault();
+                    if (contTert == null && conturiConexePeFactura.TryGetValue(docId, out var conturiConex))
+                        contTert = conturiConex
+                            .Where(c => Rol(c) == rolAsteptat)
+                            .GroupBy(c => c)
+                            .OrderByDescending(gr => gr.Count())
+                            .Select(gr => (Guid?)gr.Key)
+                            .FirstOrDefault();
                     if (contTert == null) {
                         Avert(CodAvertismentSaft.ContFaraRolPeFactura,
-                            $"{cod} {doc?.Numar} din {doc?.Data:dd.MM.yyyy} n-are pe rândurile lui niciun cont cu "
+                            $"{cod} {doc?.Numar} din {doc?.Data:dd.MM.yyyy} n-are niciun cont cu "
                             + $"rol de {(rolAsteptat == RolTertCont.Client ? "client" : "furnizor")} "
-                            + "(`Cont.RolTert`) — factura nu se poate emite.");
+                            + "(`Cont.RolTert`) nici pe rândurile lui, nici pe cele ale conexelor autogenerate "
+                            + "— factura nu se poate emite.");
                         Neinclus(CauzaNeincludere.ContFaraRol, docId, storno, null, sectiune);
                         continue;
                     }
@@ -1034,7 +1140,7 @@ public static class SaftProiectii {
                         Storno = storno,
                         DocumentTip = cod,
                         InvoiceNo = doc?.Numar,
-                        InvoiceDate = doc?.Data ?? dataStart,
+                        InvoiceDate = dataJumatate,
                         InvoiceType = SaftReguli.InvoiceType(storno, esteRetur),
                         SelfBillingIndicator = "0",
                         AccountID = Simbol(contTert.Value),
@@ -1103,7 +1209,25 @@ public static class SaftProiectii {
                         if (produsId is Guid pidProdus)
                             produseFolosite.Add(pidProdus);
 
-                        var valoare = semn * l.Valoare;
+                        // Faptul fiscal se citește ÎNAINTE de valori: pe regimul
+                        // `Capitalizat` el e singura sursă a NETULUI (fixul L2).
+                        var areFapt = tvaPeDetaliu.TryGetValue((l.ID, storno), out var fapt)
+                            && tipTvaDupaId.ContainsKey(fapt.TipTvaId);
+                        var tip = areFapt ? tipTvaDupaId[fapt.TipTvaId] : null;
+                        // ═══ Fixul L2: `Capitalizat` — `Valoare` de pe linie e BRUTĂ ═══
+                        // Pe NED21 (achiziție fără drept de deducere) `TvaService`
+                        // pune TVA-ul ÎN cost: `DocumentDetaliu.Valoare` = brut,
+                        // `ValoareTva` = 0. `RegistruTva` desface înapoi baza
+                        // (`RegistruTvaService.Cifre`), deci `fapt.Baza + fapt.Tva
+                        // == Valoare` EXACT. `InvoiceLineAmount` e o valoare NETĂ
+                        // (are `TaxInformation` lângă ea, cu baza și taxa), deci
+                        // linia trebuie să iasă cu `fapt.Baza`: altfel factura
+                        // declara brutul ca net, iar `NetTotal` era umflat cu
+                        // TVA-ul nedeductibil. `fapt.Baza`/`fapt.Tva` sunt DEJA
+                        // semnate (rândul de storno le poartă negative), deci
+                        // `semn` nu se mai aplică peste ele.
+                        var capitalizat = areFapt && fapt.Regim == RegimTva.Capitalizat;
+                        var valoare = capitalizat ? fapt.Baza : semn * l.Valoare;
                         var cantitate = Math.Abs(l.Cantitate);
                         var pret = pretUnitar.TryGetValue(l.ID, out var pu) && pu != 0m
                             ? pu
@@ -1114,8 +1238,7 @@ public static class SaftProiectii {
                             cantitate = 1m;
 
                         var taxa = Nefiscal();
-                        if (tvaPeDetaliu.TryGetValue((l.ID, storno), out var fapt)
-                                && tipTvaDupaId.TryGetValue(fapt.TipTvaId, out var tip)) {
+                        if (areFapt) {
                             var codTaxa = fapt.Sens == SensTva.Livrare ? tip.CodSafTLivrare : tip.CodSafTAchizitie;
                             if (!string.IsNullOrWhiteSpace(codTaxa)) {
                                 taxa = new SaftTaxInfo {
@@ -1138,7 +1261,7 @@ public static class SaftProiectii {
                             ProductCode = produsId?.ToString(),
                             Quantity = cantitate,
                             UnitPrice = pret,
-                            TaxPointDate = doc?.Data ?? dataStart,
+                            TaxPointDate = dataJumatate,
                             Description = descrieri.GetValueOrDefault(l.ID)
                                 ?? tipuriMaterial.GetValueOrDefault(l.TipMaterialId)
                                 ?? factura.InvoiceNo,
@@ -1150,7 +1273,11 @@ public static class SaftProiectii {
                             TaxInformation = taxa,
                         });
                         factura.NetTotal += valoare;
-                        factura.GrossTotal += valoare + semn * l.ValoareTva;
+                        // Brutul: net + taxa liniei. Pe `Capitalizat`, `ValoareTva`
+                        // e 0 pe linie (TVA-ul e în cost), iar taxa reală e a
+                        // faptului fiscal — deci brutul se reface din el, ca
+                        // `NetTotal + TVA == GrossTotal` să rămână adevărat (fixul L2).
+                        factura.GrossTotal += valoare + (capitalizat ? fapt.Tva : semn * l.ValoareTva);
                     }
 
                     factura.TaxInformationTotals = factura.Linii
@@ -1204,20 +1331,35 @@ public static class SaftProiectii {
                     && idsContPropriu.Contains(cid) && idsContPropriu.Contains(oid))
                 continue;
 
-            string customer = idSocietate, supplier = idSocietate;
             var randuriDocPlata = randuriPeDocument.GetValueOrDefault(docId) ?? [];
             var contTertPlata = randuriDocPlata
                 .SelectMany(r => new[] { r.ContDebitId, r.ContCreditId })
                 .FirstOrDefault(c => Rol(c) != RolTertCont.Niciunul);
+
+            string customer = idSocietate, supplier = idSocietate;
             if (contrapartidaId is Guid cpid && parteneri.TryGetValue(cpid, out var partenerPlata)) {
-                // Rolul îl dă contul de terț al plății; fallback pe direcția tipului.
-                var rolPlata = contTertPlata == Guid.Empty
-                    ? (estePlata ? RolTertCont.Furnizor : RolTertCont.Client)
-                    : Rol(contTertPlata);
+                // ═══ Fixul F6: terțul REFERIT are nevoie de un `AccountID` ═══
+                // `Customer`/`Supplier` din master files cere `AccountID` (M).
+                // Dacă rândurile plății n-ating niciun cont cu `RolTert` (plata
+                // pe 462 „Creditori diverși", pe un cont de decontare oarecare),
+                // intrarea de terț ar fi ieșit cu `<AccountID/>` gol — adică un
+                // fișier invalid, respins de validator pe o cauză care n-are
+                // nicio legătură cu plata. Contul NU se inventează: plata iese
+                // în `Neincluse`, cu cauză și cu avertisment. Rândurile ei rămân
+                // în GL, cu societatea pe ambele identificatoare (nu e o pierdere
+                // contabilă, e o absență din secțiunea `Payments`).
+                if (contTertPlata == Guid.Empty || Simbol(contTertPlata) == null) {
+                    Avert(CodAvertismentSaft.PlataFaraContTert,
+                        $"{cod} {doc?.Numar} din {doc?.Data:dd.MM.yyyy} către „{partenerPlata.Denumire}” n-are pe "
+                        + "rândurile ei niciun cont cu rol de terț (`Cont.RolTert`) — `Customer`/`Supplier` "
+                        + "n-ar avea ce `AccountID` să declare, deci plata nu intră în `Payments`.");
+                    Neinclus(CauzaNeincludere.ContFaraRol, docId, storno: false, null, "Payments");
+                    continue;
+                }
+                var rolPlata = Rol(contTertPlata);
                 if (rolPlata == RolTertCont.Client) customer = partenerPlata.Id406;
                 else supplier = partenerPlata.Id406;
-                tertiReferiti.Add((rolPlata, partenerPlata.Id,
-                    contTertPlata == Guid.Empty ? null : Simbol(contTertPlata)));
+                tertiReferiti.Add((rolPlata, partenerPlata.Id, Simbol(contTertPlata)));
             }
             else if (contrapartidaId is Guid aid && idsAngajat.Contains(aid)) {
                 Avert(CodAvertismentSaft.PlataCatreAngajat,
@@ -1231,51 +1373,76 @@ public static class SaftProiectii {
             }
 
             var (metoda, mecanism) = SaftReguli.MetodaPlata(trezorerie.GetValueOrDefault(docId));
-            var plata = new SaftPlata {
-                DocumentId = docId,
-                DocumentTip = cod,
-                PaymentRefNo = doc?.Numar,
-                TransactionDate = doc?.Data ?? dataStart,
-                PaymentMethod = metoda,
-                PaymentMechanism = mecanism,
-                Description = $"{tipuriDocument.GetValueOrDefault(cod) ?? cod} {doc?.Numar}".Trim(),
-            };
             var stinse = stingeri.GetValueOrDefault(docId) ?? [];
             var sourceDocumentId = stinse.Count == 1 ? numereStinse.GetValueOrDefault(stinse[0]) : null;
+            var liniiPlata = liniiPeDocument.GetValueOrDefault(docId) ?? [];
 
-            var pozitiePlata = 0;
-            foreach (var l in liniiPeDocument.GetValueOrDefault(docId) ?? []) {
-                var randPlata = randuriDocPlata.FirstOrDefault(r => r.DetaliuId == l.ID);
-                Guid? contLinie = null;
-                var debitLatura = estePlata;
-                if (randPlata != null) {
-                    var cuRol = new[] { (randPlata.ContDebitId, true), (randPlata.ContCreditId, false) }
-                        .FirstOrDefault(x => Rol(x.Item1) != RolTertCont.Niciunul);
-                    if (cuRol.Item1 != Guid.Empty) {
-                        contLinie = cuRol.Item1;
-                        debitLatura = cuRol.Item2;
+            // ═══ Fixul F1: plata STORNATĂ e o plată proprie, cu semnul ei ═══
+            // Aceeași unitate ca la facturi (Document × Storno): motorul scrie
+            // rândurile inverse la `dataStorno`, deci o plată operată și stornată
+            // în aceeași lună are DOUĂ jumătăți. Fără spargere, secțiunea
+            // `Payments` o declara o singură dată, POZITIV — adică declara ca
+            // încasată o sumă care fusese anulată, iar `TotalDebit`/`TotalCredit`
+            // ale secțiunii nu mai băteau cu GL-ul.
+            var jumatatiPlata = randuriDocPlata.Count > 0
+                ? randuriDocPlata.Select(r => r.Storno).Distinct().OrderBy(s => s).ToList()
+                : [false];
+            foreach (var stornoPlata in jumatatiPlata) {
+                var randuriJumatatePlata = randuriDocPlata.Where(r => r.Storno == stornoPlata).ToList();
+                var semnPlata = stornoPlata ? -1m : 1m;
+                var descriereBaza = $"{tipuriDocument.GetValueOrDefault(cod) ?? cod} {doc?.Numar}".Trim();
+                var plata = new SaftPlata {
+                    DocumentId = docId,
+                    Storno = stornoPlata,
+                    DocumentTip = cod,
+                    PaymentRefNo = doc?.Numar,
+                    // Aceeași regulă ca la facturi (fixul L3): data e a rândurilor
+                    // jumătății, nu a documentului.
+                    TransactionDate = randuriJumatatePlata.Count > 0
+                        ? randuriJumatatePlata.Min(r => r.Data)
+                        : doc?.Data ?? dataStart,
+                    PaymentMethod = metoda,
+                    PaymentMechanism = mecanism,
+                    Description = stornoPlata ? $"{descriereBaza} (storno)" : descriereBaza,
+                };
+
+                var pozitiePlata = 0;
+                foreach (var l in liniiPlata) {
+                    var randPlata = randuriJumatatePlata.FirstOrDefault(r => r.DetaliuId == l.ID);
+                    Guid? contLinie = null;
+                    var debitLatura = estePlata;
+                    if (randPlata != null) {
+                        var cuRol = new[] { (randPlata.ContDebitId, true), (randPlata.ContCreditId, false) }
+                            .FirstOrDefault(x => Rol(x.Item1) != RolTertCont.Niciunul);
+                        if (cuRol.Item1 != Guid.Empty) {
+                            contLinie = cuRol.Item1;
+                            debitLatura = cuRol.Item2;
+                        }
+                        else {
+                            contLinie = estePlata ? randPlata.ContDebitId : randPlata.ContCreditId;
+                        }
                     }
-                    else {
-                        contLinie = estePlata ? randPlata.ContDebitId : randPlata.ContCreditId;
-                    }
+                    pozitiePlata++;
+                    plata.Linii.Add(new SaftLiniePlata {
+                        DetaliuId = l.ID,
+                        LineNumber = pozitiePlata,
+                        SourceDocumentID = sourceDocumentId,
+                        AccountID = contLinie is Guid cl ? Simbol(cl) : Simbol(contTertPlata),
+                        CustomerID = customer,
+                        SupplierID = supplier,
+                        Description = descrieri.GetValueOrDefault(l.ID) ?? plata.Description,
+                        // Indicatorul rămâne al DIRECȚIEI documentului, semnul stă
+                        // pe sumă — exact convenția „storno în negru" a schemei,
+                        // aceeași ca pe liniile de factură (S.I.47).
+                        DebitCreditIndicator = estePlata ? "D" : "C",
+                        PaymentLineAmount = semnPlata * (l.Valoare + l.ValoareTva),
+                        Analiza = randPlata == null ? [] : Analiza(debitLatura, randPlata),
+                        TaxInformation = Nefiscal(),
+                    });
+                    plata.GrossTotal += semnPlata * (l.Valoare + l.ValoareTva);
                 }
-                pozitiePlata++;
-                plata.Linii.Add(new SaftLiniePlata {
-                    DetaliuId = l.ID,
-                    LineNumber = pozitiePlata,
-                    SourceDocumentID = sourceDocumentId,
-                    AccountID = contLinie is Guid cl ? Simbol(cl) : null,
-                    CustomerID = customer,
-                    SupplierID = supplier,
-                    Description = descrieri.GetValueOrDefault(l.ID) ?? plata.Description,
-                    DebitCreditIndicator = estePlata ? "D" : "C",
-                    PaymentLineAmount = l.Valoare + l.ValoareTva,
-                    Analiza = randPlata == null ? [] : Analiza(debitLatura, randPlata),
-                    TaxInformation = Nefiscal(),
-                });
-                plata.GrossTotal += l.Valoare + l.ValoareTva;
+                rezultat.Plati.Add(plata);
             }
-            rezultat.Plati.Add(plata);
         }
 
         // ── 13b. Master files: partenerul REFERIT se declară, chiar cu sold zero ──
@@ -1400,6 +1567,74 @@ public static class SaftProiectii {
             var c = CodTip(documentId);
             return TipuriVanzare.Contains(c) || TipuriCumparare.Contains(c);
         }
+
+        // ═══ Fixul F5: faptele fiscale ale tipurilor FĂRĂ secțiune de facturi ═══
+        // Un decont (DEC), o notă contabilă (NTC) sau un bon fiscal poartă TVA în
+        // `RegistruTva`, dar D406 n-are unde le pune: `SalesInvoices` și
+        // `PurchaseInvoices` sunt secțiuni de FACTURI, iar tipurile astea nu emit
+        // una. Cifrele lor sunt în GL (rândul de TVA are cod de taxă), dar nu
+        // într-un `Invoice` — și până acum nu erau nicăieri în contract.
+        //
+        // Consecința: cusătura 3 se măsura pe un registru RESTRÂNS la tipurile de
+        // factură, adică pe exact mulțimea care intra în fișier — o egalitate
+        // care se verifica pe sine. Acum registrul se citește ÎNTREG per sens, iar
+        // ce nu e factură iese numit în `Neincluse`.
+        foreach (var g in randuriTva
+                     .Where(t => !EsteFactura(t.DocumentId))
+                     .GroupBy(t => (t.DocumentId, t.Storno, t.Sens))
+                     .OrderBy(g => documente.TryGetValue(g.Key.DocumentId, out var d) ? d.Data : DateOnly.MinValue)
+                     .ThenBy(g => g.Key.DocumentId)
+                     .ThenBy(g => g.Key.Storno)) {
+            var bazaTip = g.Sum(t => t.Baza);
+            var tvaTip = g.Sum(t => t.Tva);
+            if (bazaTip == 0m && tvaTip == 0m)
+                continue;
+            if (g.Key.Sens == SensTva.Achizitie) bazaNeincluseAchizitie += bazaTip;
+            else bazaNeincluseLivrare += bazaTip;
+            var docTip = documente.GetValueOrDefault(g.Key.DocumentId);
+            neincluse.Add(new SaftNeinclus {
+                Cauza = nameof(CauzaNeincludere.TipFaraSectiuneFacturi),
+                Sectiune = "SourceDocuments",
+                Sens = g.Key.Sens.ToString(),
+                DocumentId = g.Key.DocumentId,
+                DocumentNumar = docTip?.Numar,
+                DocumentTip = CodTip(g.Key.DocumentId),
+                Baza = bazaTip,
+                Tva = tvaTip,
+                Randuri = g.Count(),
+            });
+        }
+
+        // ═══ Fixul F3, cusătura 4: soldurile se compară PER CONT ═══
+        var inchidereBalanta = new Dictionary<Guid, decimal>();
+        foreach (var b in balanta)
+            inchidereBalanta[b.ContId] = inchidereBalanta.GetValueOrDefault(b.ContId)
+                + b.InitialDebit - b.InitialCredit + b.RulajDebit - b.RulajCredit;
+        var conturiDiferite = 0;
+        var sumaAbsolutaClosing = 0m;
+        foreach (var c in rezultat.Conturi) {
+            var inchidereCont = (c.ClosingDebitBalance ?? 0m) - (c.ClosingCreditBalance ?? 0m);
+            sumaAbsolutaClosing += Math.Abs(inchidereCont);
+            if (!inchidereBalanta.TryGetValue(c.ContId, out var dinBalanta) || dinBalanta != inchidereCont)
+                conturiDiferite++;
+        }
+
+        // ═══ Fixul F4: cusătura terților ═══
+        // Ce declară master files (Σ `Closing` pe `Customers`) plus ce n-a putut
+        // fi declarat (Σ soldurilor din `Neincluse[Customers]`) trebuie să fie
+        // exact soldul conturilor de client din GLA. Aceeași ecuație pentru
+        // furnizori. Fără ea, un partener care iese din agregat (repartitor care
+        // nu e partener, rând fără nicio latură de partener) dispărea din fișier
+        // fără ca vreo cifră să scadă undeva.
+        decimal ClosingTerti(List<SaftTert> lista) =>
+            lista.Sum(t => (t.ClosingDebitBalance ?? 0m) - (t.ClosingCreditBalance ?? 0m));
+        decimal NeincluseTerti(string sectiune) => neincluse
+            .Where(n => n.Sectiune == sectiune)
+            .Sum(n => (n.Debit ?? 0m) - (n.Credit ?? 0m));
+        decimal ClosingGlaRol(RolTertCont rol) => rezultat.Conturi
+            .Where(c => Rol(c.ContId) == rol)
+            .Sum(c => (c.ClosingDebitBalance ?? 0m) - (c.ClosingCreditBalance ?? 0m));
+
         rezultat.Rezumat = new SaftRezumat {
             Tranzactii = rezultat.Jurnale.Sum(j => j.Tranzactii.Count),
             LiniiGl = numarLinii,
@@ -1415,12 +1650,21 @@ public static class SaftProiectii {
             BazaFacturiLivrare = bazaFacturiLivrare,
             BazaNeincluseAchizitie = bazaNeincluseAchizitie,
             BazaNeincluseLivrare = bazaNeincluseLivrare,
-            BazaRegistruAchizitie = randuriTva
-                .Where(t => EsteFactura(t.DocumentId) && t.Sens == SensTva.Achizitie).Sum(t => t.Baza),
-            BazaRegistruLivrare = randuriTva
-                .Where(t => EsteFactura(t.DocumentId) && t.Sens == SensTva.Livrare).Sum(t => t.Baza),
+            // Fixul F5: TOATE tipurile, nu doar cele de factură — ce n-are
+            // secțiune de facturi e numit în `Neincluse`, nu scos din numitor.
+            BazaRegistruAchizitie = randuriTva.Where(t => t.Sens == SensTva.Achizitie).Sum(t => t.Baza),
+            BazaRegistruLivrare = randuriTva.Where(t => t.Sens == SensTva.Livrare).Sum(t => t.Baza),
             ClosingGla = rezultat.Conturi.Sum(c => (c.ClosingDebitBalance ?? 0m) - (c.ClosingCreditBalance ?? 0m)),
             ClosingBalanta = balanta.Sum(b => b.InitialDebit - b.InitialCredit + b.RulajDebit - b.RulajCredit),
+            ConturiVerificate = rezultat.Conturi.Count,
+            ConturiDiferite = conturiDiferite,
+            SumaAbsolutaClosing = sumaAbsolutaClosing,
+            ClosingClienti = ClosingTerti(rezultat.Clienti),
+            NeincluseClienti = NeincluseTerti("Customers"),
+            ClosingGlaClienti = ClosingGlaRol(RolTertCont.Client),
+            ClosingFurnizori = ClosingTerti(rezultat.Furnizori),
+            NeincluseFurnizori = NeincluseTerti("Suppliers"),
+            ClosingGlaFurnizori = ClosingGlaRol(RolTertCont.Furnizor),
             NetTotalEmise = rezultat.FacturiEmise.Sum(f => f.NetTotal),
             NetTotalPrimite = rezultat.FacturiPrimite.Sum(f => f.NetTotal),
             GrossTotalEmise = rezultat.FacturiEmise.Sum(f => f.GrossTotal),
@@ -1542,6 +1786,10 @@ public static class SaftProiectii {
             "Linii de factură fără cont contrapartidă în registrul contabil — cazul liniilor de STOC ale facturii "
             + "de intrare, a căror recepție contează pe NIR-ul conex (26a). `InvoiceLine.AccountID` e obligatoriu "
             + "și nu se inventează, deci liniile ies în `Neincluse`.",
+        CodAvertismentSaft.PlataFaraContTert =>
+            "Plăți/încasări către un PARTENER ale căror rânduri n-ating niciun cont cu `RolTert` (462, 461, un cont "
+            + "de decontare oarecare) — `Customer`/`Supplier` cere `AccountID`, iar un element gol face fișierul "
+            + "invalid, deci plata iese în `Neincluse`; puneți rolul pe contul folosit sau plătiți pe contul de terț.",
         CodAvertismentSaft.TertFaraPartener =>
             "Rânduri de registru pe conturi de terți fără niciun partener pe laturi — `CustomerID`/`SupplierID` "
             + "ies cu codul societății, iar soldul lor nu ajunge în `Customers`/`Suppliers`.",

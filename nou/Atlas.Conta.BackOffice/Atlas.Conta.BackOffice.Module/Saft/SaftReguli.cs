@@ -74,7 +74,11 @@ public static class SaftReguli {
                 var fel = ue
                     ? (inregistratTva ? FelIdSaft.UeInregistrat : FelIdSaft.UeNeinregistrat)
                     : (inregistratTva ? FelIdSaft.NonUeInregistrat : FelIdSaft.NonUeNeinregistrat);
-                return (Prefix(fel) + codTara + codStrain, fel);
+                // Grafia de pe fișier e ISO (`CodTaraSaft`): logica de mai sus
+                // lucrează pe codul CULES (ca `CodStrain` să taie și prefixul
+                // `EL` din codul VIES), dar identificatorul iese într-o singură
+                // grafie per țară — vezi fixul F10.
+                return (Prefix(fel) + CodTaraSaft(codTara) + codStrain, fel);
             }
             // Cod gol pe un partener străin: nu există „străin fără cod" în §B.4
             // — cade pe `04` + codul intern, ca orice partener neidentificat.
@@ -116,6 +120,27 @@ public static class SaftReguli {
 
     static string Taie(string valoare, int maxim) =>
         valoare.Length <= maxim ? valoare : valoare[..maxim];
+
+    /// <summary>
+    /// Codul de țară pe FIȘIER: ISO 3166-1 alpha-2, cu singura corecție pe care
+    /// nomenclatoarele o cer — Grecia se scrie `GR` în ISO și `EL` în VIES, iar
+    /// `Partener.Tara` poate purta oricare dintre grafii (conectorul 1C aduce ce
+    /// scrie în sursă).
+    /// <para>
+    /// MĂSURAT cu validatorul oficial (D16-V3, fixul F10 al review-ului):
+    /// `01EL123456789`, `01GR123456789` și chiar `Country = EL` trec TOATE, cu 0
+    /// atenționări. Deci oracolul nu impune alegerea — și tocmai de aceea trebuie
+    /// făcută una: fără ea, doi parteneri greci culeși diferit ar ieși cu două
+    /// grafii în ACELAȘI fișier, iar identitatea lor n-ar mai fi comparabilă. Se
+    /// alege ISO (`GR`), fiindcă `Country` din `AddressStructure` e ISO 3166-1
+    /// prin definiție, iar identificatorul și adresa aceluiași partener n-au
+    /// niciun motiv să se contrazică.
+    /// </para>
+    /// </summary>
+    public static string CodTaraSaft(string tara) {
+        var cod = Partener.NormalizeazaTara(tara);
+        return cod == "EL" ? "GR" : cod;
+    }
 
     /// <summary>
     /// UE fără România (26 de state) — `TariUe` (D4-D1) minus RO, plus grafia

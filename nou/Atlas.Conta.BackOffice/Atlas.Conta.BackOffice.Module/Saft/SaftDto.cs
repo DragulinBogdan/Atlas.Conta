@@ -248,6 +248,9 @@ public sealed class SaftLinieFactura {
 // `SourceDocuments/Payments/Payment` (4.3).
 public sealed class SaftPlata {
     public Guid DocumentId { get; set; }
+    // Ca la `SaftFactura`: jumătatea de STORNO e o plată proprie, cu sumele
+    // negative (fixul F1 al review-ului). Unitatea e (Document × Storno).
+    public bool Storno { get; set; }
     public string DocumentTip { get; set; }
     public string PaymentRefNo { get; set; }
     public DateOnly TransactionDate { get; set; }
@@ -345,9 +348,31 @@ public sealed class SaftRezumat {
     public decimal BazaRegistruAchizitie { get; set; }
     public decimal BazaRegistruLivrare { get; set; }
 
-    // (4) Soldurile finale ale GLA == balanța (`ContabilProiectii.Balanta`), net.
+    // (4) Soldurile finale ale GLA == balanța (`ContabilProiectii.Balanta`),
+    //     PER CONT. Suma netă (`ClosingGla`/`ClosingBalanta`) rămâne raportată,
+    //     dar ea singură nu e o cusătură: două conturi cu erori de semn opus se
+    //     anulează în ea (fixul F3 al review-ului). Cusătura e
+    //     `ConturiDiferite == 0` peste `ConturiVerificate` conturi, cu
+    //     `SumaAbsolutaClosing` ca martor al faptului că s-a verificat ceva —
+    //     zero conturi diferite din zero conturi verificate nu e o probă.
     public decimal ClosingGla { get; set; }
     public decimal ClosingBalanta { get; set; }
+    public int ConturiVerificate { get; set; }
+    public int ConturiDiferite { get; set; }
+    public decimal SumaAbsolutaClosing { get; set; }
+
+    // (6) Terții: Σ soldurilor finale declarate în `Customers` + Σ soldurilor
+    //     rămase în `Neincluse[Customers]` == Σ `Closing` din GLA pe conturile
+    //     cu `RolTert == Client`; idem `Suppliers`/Furnizor. E cusătura care
+    //     leagă master files de planul de conturi: un partener pierdut pe drum
+    //     (repartitor care nu e partener, rând fără nicio latură de partener)
+    //     nu mai poate dispărea tăcut — ori e într-o listă, ori e în `Neincluse`.
+    public decimal ClosingClienti { get; set; }
+    public decimal NeincluseClienti { get; set; }
+    public decimal ClosingGlaClienti { get; set; }
+    public decimal ClosingFurnizori { get; set; }
+    public decimal NeincluseFurnizori { get; set; }
+    public decimal ClosingGlaFurnizori { get; set; }
 
     public decimal NetTotalEmise { get; set; }
     public decimal NetTotalPrimite { get; set; }

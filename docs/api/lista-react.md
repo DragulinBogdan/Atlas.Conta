@@ -86,3 +86,20 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
   opțiune explicită, confirmată inline (57f); 503 = „ANAF n-a răspuns, reia".
 - **Acțiunea XAF e sincronă și blochează ~5 s la 500 selectați** (72-r5): în
   React comanda de lot e async natural, cu progres per tranșă.
+
+## Adăugate la felia 16 (SAF-T)
+
+- **Ecranul `Societate` în React** (73-r6): un singur rând (OData
+  `Societate`, PATCH pe rândul unic — POST-ul al doilea cade pe gardian);
+  adresa cu lookup pe `Judet` activ doar pe `Tara == RO`; `BazaContabila` ca
+  select din `Societate.BazeContabile` (lista e pe tip, gardianul o verifică);
+  `ContBancar` lookup pe `ContPropriu` filtrat `EsteBanca`; `RaporteazaCnp` ca
+  opțiune explicată (confidențialitate: PF ⇒ `04`+cod intern).
+- **`CodNc` + `UnitateMasura` pe ecranul de produs** (73-r6): `CodNc` cu
+  validare de formă (8 cifre) și, când vine 73-r4, lookup pe nomenclatorul
+  NC8; UM = lookup pe `UnitateMasura` (2.163 rânduri ⇒ mod remote, `Lookup`
+  cu `$filter` pe `Cod`/`Denumire`).
+- **`/saft`**: `Neincluse` e plafonat la 200 de rânduri în client — cauza cu 3
+  rânduri se poate ascunde după 200 de `ContFaraRol`; agregarea per cauză pe
+  server (73-r10) + drill-down e forma corectă. Descărcarea trece prin
+  memoria paginii (`blob`, ~70 MiB pe luna Flax) — acceptat pe desktop.

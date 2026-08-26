@@ -451,6 +451,11 @@ public static class ContaSeeder {
     // o imitație scrisă în probă. Un singur seam, cu numele profilului în el.
     public static void SeedMapareD300Privat(IObjectSpace os) => ProfilPrivat.SeedMapareD300(os);
 
+    // Același seam pentru derivarea rolului de terț (felia 16, D16-D3): fixul F8
+    // al review-ului („seed-ul nu mai atinge conturile din afara planului") nu se
+    // poate proba altfel decât rulând FUNCȚIA REALĂ peste un cont adăugat pe bază.
+    public static void SeedRolTertPrivat(IObjectSpace os) => ProfilPrivat.SeedRolTert(os);
+
     // Gardianul D394 (felia 14, D4-D2), geamănul lui `VerificaD300`: bugetarul
     // n-are registru fiscal ⇒ 0 mapări; la privat ținta nu e niciodată AI/N
     // (AI se derivă, N n-are sursă) și fiecare tip seed-uit e mapat sau declarat

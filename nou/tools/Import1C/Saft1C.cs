@@ -97,7 +97,9 @@ static class Saft1C {
             + $"(net {rez.NetTotalEmise:N2}, brut {rez.GrossTotalEmise:N2})");
         s.AppendLine($"  PurchaseInvoices        {dto.FacturiPrimite.Count,10}   "
             + $"(net {rez.NetTotalPrimite:N2}, brut {rez.GrossTotalPrimite:N2})");
-        s.AppendLine($"  Payments                {dto.Plati.Count,10}   (Σ {rez.TotalPlati:N2})");
+        s.AppendLine($"  Payments                {dto.Plati.Count,10}   (Σ {rez.TotalPlati:N2}, din care "
+            + $"{dto.Plati.Count(p => p.Storno)} de storno)");
+        s.AppendLine($"  … facturi de storno     {dto.FacturiEmise.Concat(dto.FacturiPrimite).Count(f => f.Storno),10}");
         s.AppendLine();
 
         // Cusăturile D16-D4, cu STARE: fiecare e o egalitate la cent, iar
@@ -112,7 +114,7 @@ static class Saft1C {
             rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft == rez.TvaRegistru,
             $"GL {rez.TvaGl:N2} + capitalizat {rez.TvaCapitalizat:N2} + fără cod {rez.TvaFaraCodSaft:N2} "
                 + $"= {rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft:N2} vs registru {rez.TvaRegistru:N2}");
-        Cusatura(s, "3a facturi (achiziție): Σ bază linii + Σ bază neincluse == Σ RegistruTva.Baza",
+        Cusatura(s, "3a facturi (achiziție): Σ bază linii + Σ bază neincluse == Σ RegistruTva.Baza (TOATE tipurile)",
             rez.BazaFacturiAchizitie + rez.BazaNeincluseAchizitie == rez.BazaRegistruAchizitie,
             $"{rez.BazaFacturiAchizitie:N2} + {rez.BazaNeincluseAchizitie:N2} "
                 + $"= {rez.BazaFacturiAchizitie + rez.BazaNeincluseAchizitie:N2} vs {rez.BazaRegistruAchizitie:N2}");
@@ -120,9 +122,23 @@ static class Saft1C {
             rez.BazaFacturiLivrare + rez.BazaNeincluseLivrare == rez.BazaRegistruLivrare,
             $"{rez.BazaFacturiLivrare:N2} + {rez.BazaNeincluseLivrare:N2} "
                 + $"= {rez.BazaFacturiLivrare + rez.BazaNeincluseLivrare:N2} vs {rez.BazaRegistruLivrare:N2}");
-        Cusatura(s, "4 solduri: Σ Closing din GLA == Σ balanța",
-            rez.ClosingGla == rez.ClosingBalanta,
-            $"GLA {rez.ClosingGla:N2} vs balanță {rez.ClosingBalanta:N2}");
+        // Cusătura 4 e PER CONT (fixul F3 al review-ului): suma netă se anulează
+        // pe erori de semn opus, deci ea singură nu probează nimic. Cifrele nete
+        // rămân afișate — sunt utile la citire —, dar verdictul e al conturilor.
+        Cusatura(s, "4 solduri PER CONT: closing (semnat) == balanța contului, pe fiecare cont din GLA",
+            rez.ConturiDiferite == 0 && rez.ConturiVerificate > 0,
+            $"{rez.ConturiVerificate} conturi verificate, {rez.ConturiDiferite} diferite; "
+                + $"Σ|closing| {rez.SumaAbsolutaClosing:N2}; net GLA {rez.ClosingGla:N2} vs "
+                + $"balanță {rez.ClosingBalanta:N2}");
+        Cusatura(s, "6a terți (clienți): Σ Closing din Customers + Σ Neincluse[Customers] == Σ Closing GLA pe "
+                + "conturile cu RolTert = Client",
+            rez.ClosingClienti + rez.NeincluseClienti == rez.ClosingGlaClienti,
+            $"{rez.ClosingClienti:N2} + {rez.NeincluseClienti:N2} "
+                + $"= {rez.ClosingClienti + rez.NeincluseClienti:N2} vs GLA {rez.ClosingGlaClienti:N2}");
+        Cusatura(s, "6b terți (furnizori): idem, pe conturile cu RolTert = Furnizor",
+            rez.ClosingFurnizori + rez.NeincluseFurnizori == rez.ClosingGlaFurnizori,
+            $"{rez.ClosingFurnizori:N2} + {rez.NeincluseFurnizori:N2} "
+                + $"= {rez.ClosingFurnizori + rez.NeincluseFurnizori:N2} vs GLA {rez.ClosingGlaFurnizori:N2}");
         // Cusătura „master files" se recalculează AICI, pe listele fișierului:
         // e singura care nu încape într-o cifră de rezumat, dar e exact cea care
         // ar produce un fișier care referă un partener nedeclarat.

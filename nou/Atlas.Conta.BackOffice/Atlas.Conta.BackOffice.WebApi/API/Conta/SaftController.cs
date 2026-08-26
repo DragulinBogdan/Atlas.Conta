@@ -33,7 +33,8 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 //  • PROPRIU: `User` fără drept de citire pe registrul contabil primește JSON
 //    filtrat (200 cu liste goale, ca D394) dar **403 pe XML** — motivul e în
 //    `ContaApiController.PoateCiti`: un fișier gol semnat cu CUI-ul societății
-//    e o declarație falsă, nu o listă goală.
+//    e o declarație falsă, nu o listă goală. Simetric (fixul F7): fără CUI,
+//    fișierul nu pleacă deloc — 422, nu un XML anonim cu status 200.
 //
 // Bugetar ⇒ 422: proiecția întoarce `Neaplicabil` cu motiv (planul instituțiilor
 // publice nu e printre cele 12 `TaxAccountingBasis`), în AMBELE forme. Refuzul e
@@ -102,13 +103,27 @@ public class SaftController : ContaApiController {
         var dto = SaftProiectii.Saft(os, an.Value, luna.Value);
         if (dto.Neaplicabil != null)
             return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(dto.Neaplicabil));
-        // `SaftXml.Scrie` ar arunca oricum — dar după ce am fi trimis deja
-        // antetele, adică pe o cerere cu status 200 și corp trunchiat. Refuzul
-        // se decide cât timp răspunsul e încă schimbabil.
-        if (dto.Header == null)
+        // ═══ Fixul F7 al review-ului: fără CUI nu pleacă niciun fișier ═══
+        // `Header.Company.RegistrationNumber` e identitatea DECLARANTULUI. Fără
+        // el (societatea necompletată) sau cu un cod care nu trece cifra de
+        // control, fișierul e o declarație anonimă — validatorul o respinge, iar
+        // 200 cu un XML nedepozabil e cel mai prost răspuns posibil: pare succes.
+        // Refuzul e AL DOMENIULUI pe o cerere bine formată ⇒ 422, și se ia cât
+        // timp răspunsul e încă schimbabil (`SaftXml.Scrie` ar arunca oricum pe
+        // codul gol, dar abia după ce antetele au plecat, deci pe un 200 cu corp
+        // trunchiat). JSON-ul sumar rămâne 200: acolo lipsa e deja numită prin
+        // avertismentul `SocietateIncompleta`, iar ecranul exact asta trebuie să
+        // arate ÎNAINTE de a încerca descărcarea.
+        var codFiscal = dto.Header.RegistrationNumber;
+        if (string.IsNullOrWhiteSpace(codFiscal))
             return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.Din([
-                "Declarația D406 n-are antet — societatea raportoare lipsește "
-                + "(completați „Configurare → Societate”)."]));
+                "Declarația D406 n-are codul fiscal al societății raportoare — fișierul nu se poate genera "
+                + "(completați „Configurare → Societate → Cod fiscal”)."]));
+        if (!SaftReguli.CuiValid(codFiscal))
+            return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.Din([
+                $"Codul fiscal al societății raportoare („{codFiscal}”) nu trece cifra de control a CUI-ului — "
+                + "validatorul ANAF ar respinge fișierul, deci nu se generează "
+                + "(corectați „Configurare → Societate → Cod fiscal”)."]));
 
         // MĂSURAT, nu presupus: Kestrel refuză scrierile SINCRONE pe corpul
         // răspunsului (`AllowSynchronousIO` = false din .NET 3.0), iar `XmlWriter`

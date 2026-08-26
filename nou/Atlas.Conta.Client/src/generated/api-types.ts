@@ -5812,6 +5812,24 @@ export interface components {
             ClosingGla?: number;
             /** Format: double */
             ClosingBalanta?: number;
+            /** Format: int32 */
+            ConturiVerificate?: number;
+            /** Format: int32 */
+            ConturiDiferite?: number;
+            /** Format: double */
+            SumaAbsolutaClosing?: number;
+            /** Format: double */
+            ClosingClienti?: number;
+            /** Format: double */
+            NeincluseClienti?: number;
+            /** Format: double */
+            ClosingGlaClienti?: number;
+            /** Format: double */
+            ClosingFurnizori?: number;
+            /** Format: double */
+            NeincluseFurnizori?: number;
+            /** Format: double */
+            ClosingGlaFurnizori?: number;
             /** Format: double */
             NetTotalEmise?: number;
             /** Format: double */

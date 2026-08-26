@@ -117231,6 +117231,42 @@
             "type": "number",
             "format": "double"
           },
+          "ConturiVerificate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ConturiDiferite": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "SumaAbsolutaClosing": {
+            "type": "number",
+            "format": "double"
+          },
+          "ClosingClienti": {
+            "type": "number",
+            "format": "double"
+          },
+          "NeincluseClienti": {
+            "type": "number",
+            "format": "double"
+          },
+          "ClosingGlaClienti": {
+            "type": "number",
+            "format": "double"
+          },
+          "ClosingFurnizori": {
+            "type": "number",
+            "format": "double"
+          },
+          "NeincluseFurnizori": {
+            "type": "number",
+            "format": "double"
+          },
+          "ClosingGlaFurnizori": {
+            "type": "number",
+            "format": "double"
+          },
           "NetTotalEmise": {
             "type": "number",
             "format": "double"

@@ -213,9 +213,11 @@ public enum CauzaNeincludere {
     // ── Felia 16 (SAF-T, D16-D4): cauzele proprii fișierului D406 ───────────
     // Enum-ul e PARTAJAT deliberat cu D394 (același vocabular de „ce nu intră și
     // de ce"): primele trei cauze sunt aceleași fapte, citite de două formulare.
-    // Documentul de factură n-are niciun cont cu `RolTert` pe rândurile lui, deci
-    // `Invoice.AccountID` (M) n-are sursă — factura nu se emite.
-    [XafDisplayName("Document de factură fără cont de terț")] ContFaraRol = 4,
+    // Documentul n-are niciun cont cu `RolTert` pe rândurile lui (nici pe cele
+    // ale conexelor lui autogenerate), deci `Invoice.AccountID` (M) — sau
+    // `AccountID` al terțului referit de o plată — n-are sursă. Nici factura,
+    // nici plata nu se emit: un identificator gol face fișierul invalid.
+    [XafDisplayName("Document fără cont de terț")] ContFaraRol = 4,
     // Linia de factură n-are contrapartidă în registrul contabil: singurele ei
     // rânduri sunt cel de TVA și cel al contului de terț (cazul liniilor de STOC
     // ale FCT — recepția contează pe NIR, 26a). `InvoiceLine.AccountID` e
@@ -224,6 +226,11 @@ public enum CauzaNeincludere {
     // Latura de partener a documentului nu e un `Partener` (nomenclator de alt
     // fel) — factura/plata n-are `CustomerInfo`/`SupplierInfo`.
     [XafDisplayName("Documentul n-are partener pe laturi")] DocumentFaraPartener = 6,
+    // Faptul fiscal aparține unui tip care NU are secțiune de facturi în D406
+    // (DEC, NTC, bonurile fiscale…): baza lui e în `RegistruTva` și în GL, dar nu
+    // într-un `Invoice`. Fără cauza asta, cusătura 3 s-ar fi putut ține doar
+    // restrângând registrul la tipurile de factură — adică măsurându-se pe sine.
+    [XafDisplayName("Tip de document fără secțiune de facturi")] TipFaraSectiuneFacturi = 7,
 }
 
 // Cauza unui avertisment SAF-T (D16-D4) — aceeași formă agregată ca la D394
@@ -249,6 +256,11 @@ public enum CodAvertismentSaft {
     [XafDisplayName("Partener fără cod fiscal valid")] PartenerFaraCuiValid = 11,
     [XafDisplayName("Linie de factură fără cont contrapartidă")] LinieFaraContrapartida = 12,
     [XafDisplayName("Rând de registru fără partener pe cont de terț")] TertFaraPartener = 13,
+    // Plata către un PARTENER ale cărei rânduri n-ating niciun cont cu `RolTert`
+    // (462 „Creditori diverși", 461, un cont de decontare oarecare): terțul n-ar
+    // avea ce `AccountID` să declare în master files, iar un `<AccountID/>` gol
+    // face fișierul invalid. Plata iese în `Neincluse`, nu cu un cont inventat.
+    [XafDisplayName("Plată fără cont de terț pe rânduri")] PlataFaraContTert = 14,
 }
 
 // Cauza unui avertisment D394 (D4-D5, fix 7 al review-ului advers): avertismentele

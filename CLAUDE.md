@@ -601,6 +601,34 @@ decizia N.
     **canonicul ANAF nu e răsturnat de `--reclasifica`** (timbrații sar axa
     TVA). V5: reconciliere IDENTICĂ cu baseline-ul, 8.230/2/0 erori, +190 tip
     1, D394 înainte/după explicat per cauză. (i) Restanțe 72-r1…r10 → jurnal.
+73. **SAF-T (D406 L) = proiecție peste registre + FIȘIER.** (a) `Societate` =
+    un rând, nucleu, EDITABIL (nu `SetareProfil`): antetul + identitatea
+    raportorului (`CustomerID` ȘI `SupplierID` sunt obligatorii AMBELE pe
+    orice linie, latura liberă = raportorul); adresa cu aceleași câmpuri/
+    lungimi ca `Partener` (`AdresaSaft.Lungimi`); unicitatea în gardian;
+    seed-ul creează gol, nu rescrie. (b) `UnitateMasura` nucleu, `ForbidCRUD`,
+    seed UN/ECE; `Produs.CodNc` (8 cifre) + `UnitateMasuraId`; `UM` string
+    rămâne; grafia RO → cod fără ghicit (`mc` = metru cub, `ml` nerezolvat).
+    (c) `Cont.RolTert` și `Cont.Functie` = DATE per profil; bugetar =
+    **neaplicabil** (422). (d) Funcțiile legii = COD (`SaftReguli`): identitatea
+    partenerului `00`–`06` (`00` cere CUI VALID), `IdSocietate` ≠
+    `RegistrationNumber`, 380/381, tuplele metodei de plată; `NormalizeazaCui`
+    taie `RO` repetat. (e) Proiecția: jurnal = `TipDocument`, rând contabil ⇒
+    două linii, **partenerul de pe RÂND, rolul al CONTULUI** (64h confirmată);
+    `TaxInformation` din `RegistruTva` pe `Detaliu × Storno`; storno = factură
+    proprie `381` negativă; liniile de stoc FCT își iau contrapartida din
+    NIR-ul conex MATERIALIZAT, niciodată un cont inventat; **nimic nu se
+    pierde**: `Neincluse` + avertismente agregate + cusăturile în DTO (partidă
+    dublă, TVA cu trei termeni, facturi per sens, solduri, master files).
+    (f) `SaftXml` streaming pe XSD-ul oficial; **DUK = oracolul** din
+    ModelCheck (`-d` inutilizabil în CLI); măsurat: 7 cifre de cont,
+    `ExchangeRate` absent, `0` pe NC, diacritice TREC. (g) JSON = **SUMAR**
+    (38,6 MiB/lună a contrazis „nu se paginează"); XML streaming cu
+    `AllowSynchronousIO`; **`User` ⇒ 403 pe fișier** (un fișier gol semnat e o
+    declarație falsă), 200 gol pe sumar. (h) Client: descărcare prin `fetch` +
+    `blob`. (i) Import1C: `Societate` din 1C pe câmp gol, UM/NC, `--saft`;
+    V5: DUK `ok` pe lunile reale, reconcilierea neatinsă. (k) Restanțe
+    73-r1…r18 → jurnal.
 
 ## Stare și roadmap
 
@@ -621,12 +649,13 @@ detaliat în jurnal):
 - **Pasul 5** — spike BTR (55), FCT+NIR (56), trezorerie (57), FCL+DSC (58),
   perf (59), mărunțișuri (60–61), NIR scriere (62), LDI+BCS (63), virament (64),
   DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68),
-  D300 (69), motor/structură post-D300 (70), D394 (71), partener + ANAF (72).
+  D300 (69), motor/structură post-D300 (70), D394 (71), partener + ANAF (72),
+  SAF-T D406 L (73).
 
 **Următorul pas**: finisajul clientului (listele §Închidere ale contractelor +
 `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului);
-feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T peste
-`RegistruTva`, pe tiparul D300/D394.
+feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T S (stocuri)
+peste `RegistruStoc` (73-r1).
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -652,18 +681,29 @@ cauză juridică · 69-r6 fișierul XML D300 · 70-r1 refuzurile gardianului pe 
 `ObjectChanged` · 70-r5 mesajele de binding în engleză · 70-r6 `TvaSuprascris` ·
 D4-r1 istoricul statutului de TVA (canonicul = registrul ANAF) · D4-r2 adresa
 PF fără CNP · D4-r3 `N` + `tip_document` · D4-r4 data primirii facturii ·
-D4-r5 op11 / cod NC pe produs · D4-r6 bonurile fiscale (G, I.1) · D4-r7 I.2
-facturi/plaje/autofacturi/anulate/simplificate · D4-r8 I.3 · D4-r9 sumele
-TVA la încasare (I.4/I.5) · D4-r10 antet/reprezentant/CAEN/I.6/opțiune
-(`SetareProfil`) · D4-r11 partenerul cu două coduri (SM + RO) · D4-r12
-achizițiile de pe DEC fără furnizor · D4-r13 XML D394 (35c) · D4-r14
-`FaraOp11` dispare odată cu r5 · 72-r1 rate-limit ANAF cross-request ·
+D4-r5 categoria `op11` (codul NC e pe produs, 73b) · D4-r6 bonurile fiscale
+(G, I.1) · D4-r7 I.2 facturi/plaje/autofacturi/anulate/simplificate · D4-r8
+I.3 · D4-r9 sumele TVA la încasare (I.4/I.5) · D4-r10 CAEN/I.6/opțiune
+(antetul/reprezentantul sunt pe `Societate`, 73a) · D4-r11 partenerul cu două
+coduri (SM + RO) · D4-r12 achizițiile de pe DEC fără furnizor · D4-r13 XML
+D394 (35c; precedentul `SaftXml`) · 72-r1 rate-limit ANAF cross-request ·
 72-r2 adresa hibridă 1C + ANAF fără proveniență per câmp · 72-r3
 `IntrariStricate` = fatală după commit · 72-r4 radierea (`StareInregistrare`)
 neconsumată · 72-r5 smoke vizual XAF al acțiunii ANAF · 72-r6
 `RegistruContraAnaf` real abia la a doua rulare · 72-r7 ordinea la egalitate
 în raportul de reconciliere · 72-r8 `CuiInterogabil("00")` · 72-r9 ecranul
-React de partener · 72-r10 `User` ⇒ 404 vs 403 pe comanda ANAF
+React de partener · 72-r10 `User` ⇒ 404 vs 403 pe comanda ANAF · 73-r1
+declarația S (stocuri) peste `RegistruStoc` · 73-r2 `T`/`R`/nerezidenți ·
+73-r3 segmentarea · 73-r4 nomenclatorul NC8 + corecturile `ml`/`pac`/TARIC ·
+73-r5 `Produs.UM` string · 73-r6 ecranul React `Societate`, `CodNc`/UM pe
+produs · 73-r7 OpANAF 1783/2021 (termene/praguri) · 73-r8 kitul DUK J2.2.8
+vs J2.2.15, `-d` inutilizabil · 73-r9 `ContFaraRol` pe facturile de achiziție
+Flax (date) · 73-r10 `Neincluse` întreg în sumar · 73-r11 `UnitPrice` la 2
+zecimale, cantitatea negativă nemăsurată · 73-r12 64h (`PartenerulRandului`)
+· 73-r13 `100030` ≠ `InactivFiscal` · 73-r14 conducătorul rupt la spațiu,
+`InregistratTva` derivat · 73-r15 `CuiPrefixDublat` nemăsurat · 73-r16
+multi-valută · 73-r17 categoria `op11` · 73-r18 contact/IBAN parteneri ·
+73-r19 422 pe CUI gol/invalid nemăsurat pe HTTP
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

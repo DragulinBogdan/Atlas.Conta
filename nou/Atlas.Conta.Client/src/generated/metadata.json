@@ -14,9 +14,10 @@
       "FaraPartener": "Fără partener pe rândul de registru",
       "RepartitorNePartener": "Contrapartida nu e partener (angajat/intern)",
       "TipTvaNemapat": "Tip de TVA fără mapare D394",
-      "ContFaraRol": "Document de factură fără cont de terț",
+      "ContFaraRol": "Document fără cont de terț",
       "FaraContrapartida": "Linie de factură fără cont contrapartidă",
-      "DocumentFaraPartener": "Documentul n-are partener pe laturi"
+      "DocumentFaraPartener": "Documentul n-are partener pe laturi",
+      "TipFaraSectiuneFacturi": "Tip de document fără secțiune de facturi"
     },
     "CodAvertismentD394": {
       "CuiUnit": "Parteneri uniți pe același CUI",
@@ -42,7 +43,8 @@
       "PartenerDublat": "Parteneri cu același identificator SAF-T",
       "PartenerFaraCuiValid": "Partener fără cod fiscal valid",
       "LinieFaraContrapartida": "Linie de factură fără cont contrapartidă",
-      "TertFaraPartener": "Rând de registru fără partener pe cont de terț"
+      "TertFaraPartener": "Rând de registru fără partener pe cont de terț",
+      "PlataFaraContTert": "Plată fără cont de terț pe rânduri"
     },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",

@@ -247,11 +247,32 @@ internal static class ProfilPrivat {
     // trecere (o corectare a resursei trebuie să ajungă pe bazele existente, nu
     // doar pe cele noi), restul câmpurilor se scriu doar la CREARE — denumirile
     // și legăturile de părinte sunt deja pe bază, iar planul e nomenclator viu.
-    static void SeedPlanConturi(IObjectSpace os) {
-        using var stream = Assembly.GetExecutingAssembly()
+    // Cititorul resursei: aceeași sursă pentru `SeedPlanConturi` (care creează și
+    // rescrie `Functie`) și pentru `SeedRolTert` (care rescrie `RolTert`) — un al
+    // doilea loc care ar ști „ce e în plan" ar putea rămâne în urmă tăcut.
+    static StreamReader CititorPlanConturi() {
+        var stream = Assembly.GetExecutingAssembly()
             .GetManifestResourceStream("Atlas.Conta.BackOffice.Module.DatabaseUpdate.SeedData.plan-conturi-omfp.csv")
             ?? throw new InvalidOperationException("Resursa plan-conturi-omfp.csv lipsește.");
-        using var reader = new StreamReader(stream);
+        return new StreamReader(stream);
+    }
+
+    /// <summary>Simbolurile care sunt ÎN planul seed-uit (prima coloană a CSV-ului).</summary>
+    static HashSet<string> SimboluriPlan() {
+        using var reader = CititorPlanConturi();
+        var simboluri = new HashSet<string>(StringComparer.Ordinal);
+        reader.ReadLine(); // header
+        string linie;
+        while ((linie = reader.ReadLine()) != null) {
+            if (string.IsNullOrWhiteSpace(linie))
+                continue;
+            simboluri.Add(linie.Split(',', 4)[0]);
+        }
+        return simboluri;
+    }
+
+    static void SeedPlanConturi(IObjectSpace os) {
+        using var reader = CititorPlanConturi();
 
         var conturi = os.GetObjectsQuery<Cont>().ToList()
             .GroupBy(c => c.Simbol ?? "", StringComparer.Ordinal)
@@ -289,11 +310,21 @@ internal static class ProfilPrivat {
     // tăcut. Grupele (40, 41, 46) NU intră: sunt sumatoare, iar soldurile de terți
     // se citesc pe conturile care chiar poartă partenerul.
     //
-    // Idempotent și AUTORITAR: rolul se REscrie la fiecare trecere, inclusiv la
-    // `Niciunul` pe ce nu mai e în listă. E o derivare de seed, ca 6xx=3xx — o
-    // corectare a listei trebuie să ajungă pe bazele existente, nu doar pe cele
+    // Idempotent și AUTORITAR — dar DOAR pe conturile PLANULUI (fixul F8 al
+    // review-ului). Rolul se REscrie la fiecare trecere, inclusiv la `Niciunul`
+    // pe ce nu mai e în listele de mai jos: e o derivare de seed, ca 6xx=3xx, iar
+    // o corectare a listei trebuie să ajungă pe bazele existente, nu doar pe cele
     // noi. EF nu emite UPDATE pentru o valoare identică.
-    static void SeedRolTert(IObjectSpace os) {
+    //
+    // Autoritatea se OPREȘTE însă la granița resursei: `Cont` e nomenclator VIU
+    // (planul se completează pe bază — analitice proprii, conturi de decontare
+    // ale clientului), iar un cont adăugat de operator, cu `RolTert` pus cu mâna,
+    // nu e „ceva ce seed-ul nu mai vrea", ci ceva ce seed-ul n-a văzut niciodată.
+    // Trecerea anterioară îl ștergea la fiecare `--updateDatabase`, tăcut, iar
+    // efectul se vedea abia în D406, ca partener dispărut din `Customers`.
+    // Aceeași regulă ca la `Functie` din `SeedPlanConturi`: se rescrie ce e în
+    // CSV, restul rămâne al bazei.
+    internal static void SeedRolTert(IObjectSpace os) {
         // CLIENȚI — grupa 41 „Clienți și conturi asimilate", fără grupa însăși:
         //   411  Clienți (+ 4111 Clienți, 4118 Clienți incerți sau în litigiu)
         //   413  Efecte de primit de la clienți
@@ -316,8 +347,12 @@ internal static class ProfilPrivat {
         // cu cauză; cu rol pe 461 n-ar mai fi ajuns acolo, ci în listă, greșit.
         // Restul grupei 46 (463, 466, 467) — la fel.
 
+        var plan = SimboluriPlan();
         foreach (var cont in os.GetObjectsQuery<Cont>().ToList()) {
             var simbol = cont.Simbol ?? "";
+            // Contul din afara CSV-ului e al BAZEI, nu al seed-ului: nu se atinge.
+            if (!plan.Contains(simbol))
+                continue;
             cont.RolTert =
                 client.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Client
                 : furnizor.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Furnizor
