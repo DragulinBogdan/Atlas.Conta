@@ -119,6 +119,15 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 case Partener partener:
                     VerificaPartener(os, partener, erori);
                     break;
+                // (f) Societatea raportoare (felia 16, D16-D1): un singur rând,
+                // județ doar pe RO, bază contabilă din lista ANAF.
+                case Societate societate:
+                    VerificaSocietate(os, societate, erori);
+                    break;
+                // (g) Produsul (felia 16, D16-D2): `CodNc` are exact 8 cifre.
+                case Produs produs:
+                    VerificaProdus(produs, erori);
+                    break;
             }
         }
         if (erori.Count > 0)
@@ -335,6 +344,78 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             erori.Add($"Statutul „inactiv fiscal” al partenerului {partener.Denumire ?? partener.Cod} "
                 + "îl scrie doar serviciul de sincronizare (comanda „Sincronizează din ANAF”).");
     }
+
+    // (f) Societatea raportoare (felia 16, D16-D1). Trei reguli, toate de FOND
+    // (nu de ecran), deci toate aici: UI-ul XAF, OData și orice cale secured
+    // viitoare le primesc pe aceeași ușă.
+    static void VerificaSocietate(IObjectSpace os, Societate societate, ICollection<string> erori) {
+        if (EsteSters(os, societate))
+            return;
+
+        // (1) UN SINGUR RÂND. „Societatea care raportează" e unică prin definiție:
+        // un al doilea rând ar face `IdSocietate` ambiguu, iar fișierul ar ieși
+        // semnat cu un CUI ales la întâmplare dintre două. Unicitatea NU se poate
+        // exprima ca index (n-ai pe ce coloană s-o pui), deci gardianul e singura
+        // ei formă — și de-aia trebuie să fie AICI, nu într-un controller de UI:
+        // POST-ul al doilea prin OData trece pe lângă orice ecran.
+        //
+        // Se numără DOAR pe obiectele noi: un rând existent editat nu-și pune
+        // singur problema. Interogarea vede rândurile deja COMISE (`GCRecord = 0`
+        // prin filtrul global), iar `os.ModifiedObjects` dă restul commit-ului
+        // curent — două rânduri noi în același commit se prind pe a doua ramură.
+        if (os.IsNewObject(societate)) {
+            var comise = os.GetObjectsQuery<Societate>().Count();
+            var noiInainte = os.ModifiedObjects.OfType<Societate>()
+                .TakeWhile(s => !ReferenceEquals(s, societate))
+                .Count(s => os.IsNewObject(s) && !EsteSters(os, s));
+            if (comise + noiInainte > 0)
+                erori.Add("Există deja o societate raportoare — baza are UNA singură "
+                    + "(o bază per client). Editați rândul existent în loc să creați altul.");
+        }
+
+        // (2) Județul e al adreselor din România, exact ca la `Partener`: schema
+        // SAF-T validează `Region` contra listei ISO 3166-2:RO, iar aici valoarea
+        // ajunge și în `AuditFileRegion` din `Header`.
+        var areJudet = societate.Judet != null
+            || (societate.JudetId is Guid judetId && judetId != Guid.Empty);
+        if (areJudet && !string.Equals(societate.Tara, "RO", StringComparison.Ordinal))
+            erori.Add($"Societatea are județ, dar țara „{societate.Tara}” — județul e al adreselor "
+                + "din România (SAF-T validează `Region` contra listei ISO 3166-2:RO). "
+                + "Ștergeți județul sau puneți țara RO.");
+
+        // Setterul a normalizat deja țara (trim/majuscule, gol ⇒ RO); ce rămâne
+        // greșit e chiar greșit.
+        if (!FormatTaraIso2.IsMatch(societate.Tara ?? ""))
+            erori.Add($"Societatea are țara „{societate.Tara}” — se scrie ca un cod ISO de două "
+                + "litere (RO, DE, US).");
+
+        // (3) `TaxAccountingBasis` din lista ANAF. Validatorul DUK verifică
+        // `AccountID`-urile contra planului pe care îl declară valoarea asta, deci
+        // o valoare inventată nu produce „un câmp greșit", ci un fișier respins
+        // integral. Lista trăiește pe tip (`Societate.BazeContabile`), nu aici:
+        // e a schemei, nu a gardianului.
+        if (!Societate.BazeContabile.Contains(societate.BazaContabila ?? "", StringComparer.Ordinal))
+            erori.Add($"Baza contabilă „{societate.BazaContabila}” nu e una dintre valorile admise de "
+                + $"SAF-T (`TaxAccountingBasis`): {string.Join(", ", Societate.BazeContabile)}.");
+    }
+
+    // (g) Produsul (felia 16, D16-D2): `CodNc` are exact 8 cifre, sau e gol.
+    //
+    // A DOUA jumătate a lui `[RuleRegularExpression]` de pe proprietate, exact ca
+    // `Partener.Tara`: regula XAF apără culegerea din Blazor, dar NU rulează pe
+    // API (55b) — iar `Produs` e CRUD pe OData (nomenclator viu, F2-D4), deci
+    // fără gardul ăsta un PUT ar fi putut scrie „ABC" în `ProductCommodityCode`.
+    // Gol/null trece: produsul fără NC iese în fișier cu `0` + avertisment
+    // agregat, nu se refuză la culegere.
+    static void VerificaProdus(Produs produs, ICollection<string> erori) {
+        var cod = produs.CodNc;
+        if (!string.IsNullOrWhiteSpace(cod) && !FormatCodNc.IsMatch(cod))
+            erori.Add($"Produsul {produs.Denumire ?? produs.Cod} are codul NC „{cod}” — "
+                + "codul NC are exact 8 cifre (sau rămâne gol).");
+    }
+
+    static readonly System.Text.RegularExpressions.Regex FormatCodNc =
+        new(@"^\d{8}$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
     static readonly System.Text.RegularExpressions.Regex FormatTaraIso2 =
         new("^[A-Z]{2}$", System.Text.RegularExpressions.RegexOptions.Compiled);

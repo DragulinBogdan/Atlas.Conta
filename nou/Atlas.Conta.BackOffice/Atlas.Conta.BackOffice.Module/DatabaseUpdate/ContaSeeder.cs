@@ -37,6 +37,17 @@ public static class ContaSeeder {
         // înaintea pachetelor de profil: e FK pe `Partener`, deci trebuie să
         // existe înainte de orice seed care ar culege o adresă.
         SeedJudete(os);
+        // Nomenclatorul unităților de măsură (felia 16, D16-D2) — tot al
+        // nucleului și tot înaintea pachetelor de profil: e FK pe `Produs`.
+        SeedUnitatiMasura(os);
+        // Rândul societății raportoare (felia 16, D16-D1): se CREEAZĂ gol dacă
+        // lipsește, nu se rescrie niciodată. Referă `Judet` și `ContPropriu`,
+        // dar numai dacă cineva le-a cules — rândul gol n-are FK-uri.
+        SeedSocietate(os);
+        os.CommitChanges();
+        // Puntea de la `Produs.UM` (text liber) la FK-ul nou — DUPĂ commit-ul
+        // nomenclatorului, fiindcă îl interoghează (30e).
+        LeagaUnitatileProduselor(os);
         os.CommitChanges();
         if (profil == ProfilContabil.Bugetar)
             ProfilBugetar.Seed(os);
@@ -302,6 +313,87 @@ public static class ContaSeeder {
     // 41 de județe + municipiul București (ISO 3166-2:RO). Public: ModelCheck
     // (alt assembly) verifică aceeași cifră pe calea reală.
     public const int JudeteAsteptate = 42;
+
+    // Unitățile de măsură UN/ECE (felia 16, D16-D2). Aceeași disciplină ca
+    // `SeedJudete`: `Cod` e cheia, `Denumire` se REscrie necondiționat —
+    // nomenclatorul e `[ForbidCRUD]`, deci seed-ul e singura lui autoritate, iar
+    // o traducere corectată la o publicare nouă trebuie să ajungă pe bazele
+    // existente. EF nu emite UPDATE pentru o valoare identică.
+    //
+    // 2.163 de rânduri, deci se citește tabela O DATĂ, în dicționar, în loc de
+    // 2.163 de `FirstOrDefault` (fiecare = un round-trip; la seed-ul unei baze
+    // noi asta ar fi însemnat minute în loc de secunde). `IgnoreQueryFilters`
+    // NU se folosește: rândurile șterse logic rămân șterse, iar indexul unic e
+    // filtrat pe `GCRecord = 0` tocmai ca re-crearea să fie posibilă.
+    // Public: ModelCheck (alt assembly) probează rescrierea pe calea reală.
+    public static void SeedUnitatiMasura(IObjectSpace os) {
+        var existente = os.GetObjectsQuery<UnitateMasura>()
+            .ToDictionary(u => u.Cod, StringComparer.Ordinal);
+        foreach (var u in UnitatiMasuraUnEce.Toate) {
+            if (!existente.TryGetValue(u.Cod, out var um)) {
+                um = os.CreateObject<UnitateMasura>();
+                um.Cod = u.Cod;
+            }
+            um.Denumire = u.Denumire;
+        }
+    }
+
+    // UN/ECE Rec 20 + Rec 21, așa cum le publică ANAF în foaia `Unitati_masura`
+    // (16.02.2026): 2.164 de rânduri cu cod, dintre care `B30` apare de DOUĂ ori
+    // (o dată în corpul rec20 și o dată în blocul de modificări de la coadă) ⇒
+    // 2.163 de coduri DISTINCTE. Public: ModelCheck verifică aceeași cifră pe
+    // calea reală.
+    public const int UnitatiMasuraAsteptate = 2163;
+
+    // PUNTEA `Produs.UM` → `Produs.UnitateMasuraId` (felia 16, D16-D2).
+    //
+    // DE CE AICI și nu în migrație, deși felia o cerea acolo: la momentul
+    // migrației nomenclatorul `UnitatiMasura` e GOL (migrația tocmai creează
+    // tabela; seed-ul o umple pe urmă), deci orice `UPDATE ... FROM UnitatiMasura`
+    // scris în migrație ar fi fost un no-op garantat — cod care pare să facă
+    // ceva și nu face. Aici puntea rulează după ce nomenclatorul există, cu
+    // ACELAȘI dicționar (`UnitatiMasuraRo.Rezolva`) pe care îl folosesc și
+    // conectoarele, nu cu o transcriere a lui în SQL: două forme ale aceleiași
+    // liste ar fi fost două liste. Intenția instrucțiunii — „niciun cod C# nu
+    // rulează ÎN migrație" — rămâne respectată.
+    //
+    // Umple DOAR unde FK-ul e gol: o legătură pusă de om (sau corectată după o
+    // rezolvare greșită) nu se rescrie niciodată. Ce nu se rezolvă rămâne gol —
+    // NICIODATĂ o ghicire (produsul fără FK iese în fișier cu `H87` +
+    // avertisment agregat, deci golul e vizibil, nu tăcut).
+    //
+    // Se lucrează pe dicționar, nu cu un `FirstOrDefault` per produs: pe baza de
+    // import sunt zeci de mii de produse.
+    static void LeagaUnitatileProduselor(IObjectSpace os) {
+        var faraUnitate = os.GetObjectsQuery<Produs>()
+            .Where(p => p.UnitateMasuraId == null && p.UM != null && p.UM != "")
+            .ToList();
+        if (faraUnitate.Count == 0)
+            return;
+        var unitati = os.GetObjectsQuery<UnitateMasura>()
+            .ToDictionary(u => u.Cod, StringComparer.Ordinal);
+        foreach (var produs in faraUnitate) {
+            var cod = UnitatiMasuraRo.Rezolva(produs.UM);
+            if (cod != null && unitati.TryGetValue(cod, out var unitate))
+                produs.UnitateMasura = unitate;
+        }
+    }
+
+    // Societatea raportoare (felia 16, D16-D1). SINGURUL seed care CREEAZĂ fără
+    // să rescrie — și asta e regula, nu o scăpare: rândul e DATE ale clientului
+    // (nume, CUI, adresă, contact, bază contabilă), culese de om, nu o listă a
+    // legii. `--forceUpdate` pe o bază cu societatea completată n-are voie s-o
+    // golească (riscul 12 al contractului). Ce face seed-ul e doar să existe
+    // rândul, ca ecranul să aibă ce deschide.
+    //
+    // Default-urile (`Tara` RO, `BazaContabila` A) vin de pe tip, nu de aici:
+    // un rând creat din UI trebuie să pornească la fel ca unul creat de seed.
+    // Public: ModelCheck probează pe calea reală că re-seed-ul nu rescrie.
+    public static void SeedSocietate(IObjectSpace os) {
+        if (os.GetObjectsQuery<Societate>().Any())
+            return;
+        os.CreateObject<Societate>();
+    }
 
     // 45 de rânduri numerotate + 10 sub-rânduri „din care" (OPANAF 174/2026).
     // Public: ModelCheck (alt assembly) verifică aceeași cifra pe calea reala.

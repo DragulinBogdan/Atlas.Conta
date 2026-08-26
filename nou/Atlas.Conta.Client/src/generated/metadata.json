@@ -74,6 +74,11 @@
       "Scutit": "Scutit",
       "Neimpozabil": "Neimpozabil"
     },
+    "RolTertCont": {
+      "Niciunul": "Niciunul",
+      "Client": "Client",
+      "Furnizor": "Furnizor"
+    },
     "SectiuneD300": {
       "Colectata": "TVA colectată",
       "Deductibila": "TVA deductibilă",
@@ -262,6 +267,7 @@
         "ID": "ID",
         "Parinte": "Parinte",
         "ParinteId": "Parinte",
+        "RolTert": "Rol de terț (SAF-T)",
         "Simbol": "Simbol",
         "Sumator": "Sumator"
       }
@@ -996,11 +1002,14 @@
       "DefaultProperty": "Denumire",
       "Membri": {
         "Cod": "Cod",
+        "CodNc": "Cod NC",
         "Denumire": "Denumire",
         "ID": "ID",
         "TipMaterial": "TipMaterial",
         "TipMaterialId": "TipMaterial",
-        "UM": "UM"
+        "UM": "UM",
+        "UnitateMasura": "Unitate de măsură (SAF-T)",
+        "UnitateMasuraId": "Unitate de măsură (SAF-T)"
       }
     },
     "Proiect": {
@@ -1272,6 +1281,32 @@
         "RotunjireBani": "RotunjireBani"
       }
     },
+    "Societate": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "BazaContabila": "Bază contabilă (SAF-T)",
+        "CodFiscal": "Cod fiscal",
+        "CodPostal": "Cod poștal",
+        "ContBancar": "Cont bancar",
+        "ContBancarId": "Cont bancar",
+        "ContactNume": "Contact — nume",
+        "ContactPrenume": "Contact — prenume",
+        "Denumire": "Denumire",
+        "DetaliiAdresa": "Bloc, scară, etaj, ap.",
+        "Email": "Email",
+        "ID": "ID",
+        "InregistratTva": "Înregistrat în scopuri de TVA",
+        "Judet": "Județ",
+        "JudetId": "Județ",
+        "Localitate": "Localitate",
+        "Numar": "Număr",
+        "RaporteazaCnp": "Raportează CNP-ul persoanelor fizice",
+        "RegistruComert": "Nr. registrul comerțului",
+        "Strada": "Stradă",
+        "Tara": "Țară",
+        "Telefon": "Telefon"
+      }
+    },
     "SursaFinantare": {
       "DefaultProperty": "Denumire",
       "Membri": {
@@ -1337,6 +1372,14 @@
         "Cod": "Cod",
         "ContImplicit": "ContImplicit",
         "ContImplicitId": "ContImplicit",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
+    "UnitateMasura": {
+      "DefaultProperty": "Cod",
+      "Membri": {
+        "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"
       }

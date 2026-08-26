@@ -30,6 +30,9 @@ internal static class ProfilPrivat {
         SeedPartenerRetail(os);
         // Derivările interoghează BAZA — nomenclatoarele se comit întâi (30e).
         os.CommitChanges();
+        // Rolul de terț al conturilor (felia 16, D16-D3) — tot o DERIVARE peste
+        // planul comis, deci după commit, lângă `SeedContImplicitTipMaterial`.
+        SeedRolTert(os);
         ContaSeeder.SeedContImplicitTipMaterial(os);
         SeedContImplicitPunteStoc(os);
         SeedTipTva(os);
@@ -255,6 +258,54 @@ internal static class ProfilPrivat {
                 parinte.Sumator = true;
             }
             conturi[f[0]] = cont;
+        }
+    }
+
+    // ROLUL DE TERȚ al conturilor (felia 16, D16-D3): pe ce conturi din OMFP
+    // 1802 „stă" un client și pe ce conturi un furnizor. Sursa listelor
+    // `Customers`/`Suppliers` din SAF-T și a perechii `CustomerID`/`SupplierID`
+    // de pe rândul de registru — rolul e al CONTULUI, nu al laturii (partenerul
+    // de pe DEBITUL unui 401, la plata datoriei, iese tot `SupplierID`).
+    //
+    // Potrivirea e pe PREFIX de simbol, ca să prindă și analiticele planului
+    // (411 → 411, 4111, 4118; 409 → 409, 4091…4094) fără să le enumere: OMFP
+    // adaugă grade la fiecare revizuire, iar o listă exhaustivă ar rămâne în urmă
+    // tăcut. Grupele (40, 41, 46) NU intră: sunt sumatoare, iar soldurile de terți
+    // se citesc pe conturile care chiar poartă partenerul.
+    //
+    // Idempotent și AUTORITAR: rolul se REscrie la fiecare trecere, inclusiv la
+    // `Niciunul` pe ce nu mai e în listă. E o derivare de seed, ca 6xx=3xx — o
+    // corectare a listei trebuie să ajungă pe bazele existente, nu doar pe cele
+    // noi. EF nu emite UPDATE pentru o valoare identică.
+    static void SeedRolTert(IObjectSpace os) {
+        // CLIENȚI — grupa 41 „Clienți și conturi asimilate", fără grupa însăși:
+        //   411  Clienți (+ 4111 Clienți, 4118 Clienți incerți sau în litigiu)
+        //   413  Efecte de primit de la clienți
+        //   418  Clienți — facturi de întocmit
+        //   419  Clienți — creditori (avansurile ÎNCASATE: tot ale clientului)
+        string[] client = ["411", "413", "418", "419"];
+        // FURNIZORI — grupa 40 „Furnizori și conturi asimilate", fără grupa însăși:
+        //   401  Furnizori
+        //   403  Efecte de plătit
+        //   404  Furnizori de imobilizări
+        //   405  Efecte de plătit pentru imobilizări
+        //   408  Furnizori — facturi nesosite
+        //   409  Furnizori — debitori (+ 4091…4094: avansurile ACORDATE)
+        string[] furnizor = ["401", "403", "404", "405", "408", "409"];
+        // DELIBERAT în afara listelor: 461 „Debitori diverși" și 462 „Creditori
+        // diverși". Sunt conturi de DECONTĂRI cu oricine (angajați pe decont,
+        // asociați, despăgubiri), nu de terți comerciali — un rol pe ele ar
+        // împinge în `Customers`/`Suppliers` repartitori care nu sunt parteneri.
+        // Contractul cere explicit ca angajatul de pe 461 să iasă în `Neincluse`
+        // cu cauză; cu rol pe 461 n-ar mai fi ajuns acolo, ci în listă, greșit.
+        // Restul grupei 46 (463, 466, 467) — la fel.
+
+        foreach (var cont in os.GetObjectsQuery<Cont>().ToList()) {
+            var simbol = cont.Simbol ?? "";
+            cont.RolTert =
+                client.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Client
+                : furnizor.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Furnizor
+                : RolTertCont.Niciunul;
         }
     }
 

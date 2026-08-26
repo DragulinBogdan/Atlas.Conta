@@ -156,6 +156,46 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
                     .Item(x => x.Localitate)
                     .Item(x => x.Judet)
                     .Item(x => x.CodPostal)));
+
+        // Societatea raportoare (felia 16, D16-D1) — același tipar ca partenerul:
+        // FK-urile brute (`JudetId`, `ContBancarId`) se ascund (41b), iar layout-ul
+        // e declarat integral, în ordinea în care SAF-T cere antetul: cine e →
+        // unde e → cu cine se vorbește → cum se raportează.
+        registry.For<Societate>().HideForeignKeys();
+        registry.For<Societate>()
+            .Layout(l => l
+                .Group("GrupIdentificare", "Identificare", g => g
+                    .Item(x => x.Denumire)
+                    .Item(x => x.CodFiscal)
+                    .Item(x => x.InregistratTva)
+                    .Item(x => x.RegistruComert)
+                    .Item(x => x.Tara))
+                .Group("GrupAdresa", "Adresă", g => g
+                    .Item(x => x.Strada)
+                    .Item(x => x.Numar)
+                    .Item(x => x.DetaliiAdresa)
+                    .Item(x => x.Localitate)
+                    .Item(x => x.Judet)
+                    .Item(x => x.CodPostal))
+                .Group("GrupContact", "Contact", g => g
+                    .Item(x => x.ContactNume)
+                    .Item(x => x.ContactPrenume)
+                    .Item(x => x.Telefon)
+                    .Item(x => x.Email)
+                    .Item(x => x.ContBancar))
+                // Cele două câmpuri care nu sunt „date despre firmă", ci alegeri
+                // de RAPORTARE: care plan de conturi declarăm și dacă punem CNP-ul
+                // în identificatorul persoanelor fizice. Grup propriu tocmai ca să
+                // nu pară adresă sau contact.
+                .Group("GrupRaportare", "Raportare SAF-T", g => g
+                    .Item(x => x.BazaContabila)
+                    .Item(x => x.RaporteazaCnp)));
+
+        // Produsul (felia 16, D16-D2): FK-ul nou `UnitateMasuraId` intră în
+        // convenția de ascundere; lookup-ul e navigația. Fără layout declarat —
+        // `Produs` n-avea unul, iar cele două câmpuri noi cad firesc în arborele
+        // generat, după `UM`.
+        registry.For<Produs>().HideForeignKeys();
     }
 
     // Layout-ul DetailView-urilor de document (GATE XAF D12), declarat autoritar.

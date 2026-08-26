@@ -1,8 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Editors;
 using DevExpress.ExpressApp.Filtering;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
+using DevExpress.Persistent.Validation;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -14,9 +17,37 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 public class Produs : BaseObject {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
+    // Unitatea de măsură ca TEXT LIBER, cum a fost dintotdeauna. RĂMÂNE lângă
+    // FK-ul de mai jos (felia 16, D16-D2) — TECH-DEBT MARCAT, cu prag: se
+    // elimină când toate produsele au FK, nu înainte. Motivul e că migrația
+    // rezolvă doar ce se poate rezolva fără să ghicească (`UnitatiMasuraRo`),
+    // iar restul e text pe care doar un om îl poate traduce; ștergerea coloanei
+    // acum ar arunca informația care spune CE trebuie corectat.
     public virtual string UM { get; set; }
     public virtual Guid? TipMaterialId { get; set; }
     public virtual TipMaterial TipMaterial { get; set; }
+
+    // Unitatea de măsură NORMALIZATĂ, din nomenclatorul UN/ECE (felia 16,
+    // D16-D2): `UOMBase`/`UOMStandard` din `Product` sunt obligatorii în SAF-T,
+    // iar un string liber n-are cum să treacă validarea. Nullable: nomenclatorul
+    // existent n-are cum să fie complet din prima, iar produsul fără UM iese în
+    // fișier cu `H87` + avertisment agregat, nu blochează raportarea.
+    public virtual Guid? UnitateMasuraId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Unitate de măsură (SAF-T)")]
+    public virtual UnitateMasura UnitateMasura { get; set; }
+
+    // Codul din Nomenclatorul Combinat (`ProductCommodityCode`, obligatoriu în
+    // `Product`) — 8 cifre, exact. Fără nomenclator NC8 seed-uit (9.984 de
+    // coduri care se schimbă anual): validarea de fond e a DUK-ului, aici e doar
+    // FORMA. Regula permite gol/null — produsul fără NC iese cu `0` și
+    // avertisment agregat (D16-D2), nu se refuză la culegere.
+    [MaxLength(8)]
+    [XafDisplayName("Cod NC")]
+    [RuleRegularExpression("Produs_CodNc_8Cifre", DefaultContexts.Save, @"^\d{8}$",
+        SkipNullOrEmptyValues = true,
+        CustomMessageTemplate = "Codul NC are exact 8 cifre (sau rămâne gol).")]
+    public virtual string CodNc { get; set; }
 }
 
 [NavigationItem("Nomenclatoare")]

@@ -153,6 +153,28 @@ public enum FelRandD300 {
     [XafDisplayName("Extern")] Extern = 4,
 }
 
+// Rolul de TERȚ al unui cont din plan (felia 16, D16-D3): pe ce conturi „stă"
+// un client și pe ce conturi un furnizor. SAF-T are DOUĂ liste separate
+// (`Customers` / `Suppliers`) și cere pe fiecare rând de registru `CustomerID`
+// SAU `SupplierID` — rolul e al CONTULUI, nu al laturii (riscul 1 al
+// contractului: partenerul de pe DEBITUL unui 401, la plata datoriei, iese
+// `SupplierID`).
+//
+// DE CE date, și nu simboluri în cod: motorul și proiecțiile nu cunosc niciun
+// simbol de cont (decizia 29). Care sunt conturile de clienți e o proprietate a
+// PLANULUI, deci se seed-uiește per profil — la privat OMFP 1802 (411*, 401*…),
+// la bugetar nimic (SAF-T îi e neaplicabil).
+//
+// `Niciunul` = 0, valoarea implicită: un cont nou nu e terț până nu se spune.
+// Aici default-ul e chiar răspunsul corect pentru marea majoritate a planului,
+// spre deosebire de enum-urile fără valoarea 0 (`DirectieDiferenta`), unde
+// default-ul ar fi fost o linie fără rost.
+public enum RolTertCont {
+    [XafDisplayName("Niciunul")] Niciunul = 0,
+    [XafDisplayName("Client")] Client = 1,
+    [XafDisplayName("Furnizor")] Furnizor = 2,
+}
+
 // Felul persoanei partenerului (felia 14, D4-D1): singura axă de pe nomenclator
 // pe care D394 o cere EXPLICIT (PF ⇒ `tip_partener = 2`, CUI-ul e CNP). Restul
 // clasificării 1–4 se DERIVĂ din `Tara` + `InregistratTva` (`D394Proiectii.TipPartener`).

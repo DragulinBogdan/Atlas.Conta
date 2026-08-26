@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 using System.Text;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
@@ -38,11 +36,12 @@ public static class SincronizareAnafService {
     // fiindcă e SINGURA sursă a lungimilor și pentru conectoare (Import1C taie
     // adresele din 1C la aceleași lungimi — review R6: două reflecții pe același
     // atribut erau tot două liste).
-    public static readonly IReadOnlyDictionary<string, int> Lungimi = typeof(Partener)
-        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-        .Select(pi => (pi.Name, Lungime: pi.GetCustomAttribute<MaxLengthAttribute>()?.Length ?? 0))
-        .Where(x => x.Lungime > 0)
-        .ToDictionary(x => x.Name, x => x.Lungime, StringComparer.Ordinal);
+    //
+    // Felia 16 (D16-D1): corpul s-a MUTAT în `AdresaSaft` (`BusinessObjects/
+    // Comun`), fiindcă `Societate` are aceeași adresă și aceleași lungimi, iar
+    // nomenclatorul n-are de ce să depindă de serviciul ANAF. Aici rămâne
+    // ALIAS-ul, ca apelanții (Import1C, probele) să nu se rupă.
+    public static IReadOnlyDictionary<string, int> Lungimi => AdresaSaft.Lungimi;
 
     // ================= Interogabilitatea (D15-D3) =================
 

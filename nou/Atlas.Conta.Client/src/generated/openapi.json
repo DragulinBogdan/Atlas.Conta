@@ -98114,6 +98114,3906 @@
         }
       }
     },
+    "/api/odata/Societate": {
+      "get": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "GET_api/odata/Societate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Societate"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "POST_api/odata/Societate",
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "PATCH_api/odata/Societate",
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IDeltaSetItem"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/odata/Societate/$count": {
+      "get": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "GET_api/odata/Societate/$count",
+        "responses": {
+          "200": {
+            "description": "Returns the number of entities",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/odata/Societate({key})": {
+      "get": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "GET_api/odata/Societate({key})",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "PATCH_api/odata/Societate({key})",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "PUT_api/odata/Societate({key})",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "DELETE_api/odata/Societate({key})",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/odata/Societate/{key}": {
+      "get": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "GET_api/odata/Societate/{key}",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Societate"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "PATCH_api/odata/Societate/{key}",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "PUT_api/odata/Societate/{key}",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocietateResourceDelta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "DELETE_api/odata/Societate/{key}",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/odata/Societate({key})/{navigationProperty}/$ref": {
+      "get": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "GET_api/odata/Societate({key})/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "POST_api/odata/Societate({key})/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "PUT_api/odata/Societate({key})/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "DELETE_api/odata/Societate({key})/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/odata/Societate/{key}/{navigationProperty}/$ref": {
+      "get": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "GET_api/odata/Societate/{key}/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "POST_api/odata/Societate/{key}/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "PUT_api/odata/Societate/{key}/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json;odata.metadata=minimal;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=full;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.metadata=none;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=true;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;odata.streaming=false;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;IEEE754Compatible=false": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/json;IEEE754Compatible=true": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "DELETE_api/odata/Societate/{key}/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/odata/Societate({key})/{navigationProperty}({relatedKey})/$ref": {
+      "delete": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "DELETE_api/odata/Societate({key})/{navigationProperty}({relatedKey})/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "relatedKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/odata/Societate({key})/{navigationProperty}/{relatedKey}/$ref": {
+      "delete": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "DELETE_api/odata/Societate({key})/{navigationProperty}/{relatedKey}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "relatedKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/odata/Societate/{key}/{navigationProperty}({relatedKey})/$ref": {
+      "delete": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "DELETE_api/odata/Societate/{key}/{navigationProperty}({relatedKey})/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "relatedKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/odata/Societate/{key}/{navigationProperty}/{relatedKey}/$ref": {
+      "delete": {
+        "tags": [
+          "Societate"
+        ],
+        "operationId": "DELETE_api/odata/Societate/{key}/{navigationProperty}/{relatedKey}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "relatedKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/proiectii/sold-stoc": {
       "get": {
         "tags": [
@@ -105748,6 +109648,1108 @@
           }
         }
       }
+    },
+    "/api/odata/UnitateMasura": {
+      "get": {
+        "tags": [
+          "UnitateMasura"
+        ],
+        "operationId": "GET_api/odata/UnitateMasura",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitateMasura"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/odata/UnitateMasura/$count": {
+      "get": {
+        "tags": [
+          "UnitateMasura"
+        ],
+        "operationId": "GET_api/odata/UnitateMasura/$count",
+        "responses": {
+          "200": {
+            "description": "Returns the number of entities",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/odata/UnitateMasura({key})": {
+      "get": {
+        "tags": [
+          "UnitateMasura"
+        ],
+        "operationId": "GET_api/odata/UnitateMasura({key})",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/odata/UnitateMasura/{key}": {
+      "get": {
+        "tags": [
+          "UnitateMasura"
+        ],
+        "operationId": "GET_api/odata/UnitateMasura/{key}",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json;odata.metadata=minimal;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=minimal;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=full;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.metadata=none;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=true;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;odata.streaming=false;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;IEEE754Compatible=false": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/json;IEEE754Compatible=true": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitateMasura"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/odata/UnitateMasura({key})/{navigationProperty}/$ref": {
+      "get": {
+        "tags": [
+          "UnitateMasura"
+        ],
+        "operationId": "GET_api/odata/UnitateMasura({key})/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/odata/UnitateMasura/{key}/{navigationProperty}/$ref": {
+      "get": {
+        "tags": [
+          "UnitateMasura"
+        ],
+        "operationId": "GET_api/odata/UnitateMasura/{key}/{navigationProperty}/$ref",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "navigationProperty",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -106349,6 +111351,9 @@
           },
           "DimensiuniObligatorii": {
             "$ref": "#/components/schemas/DimensiuneFlags"
+          },
+          "RolTert": {
+            "$ref": "#/components/schemas/RolTertCont"
           }
         },
         "additionalProperties": false
@@ -110407,6 +115412,19 @@
           },
           "TipMaterial": {
             "$ref": "#/components/schemas/TipMaterial"
+          },
+          "UnitateMasuraId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "UnitateMasura": {
+            "$ref": "#/components/schemas/UnitateMasura"
+          },
+          "CodNc": {
+            "maxLength": 8,
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -110433,6 +115451,16 @@
           "TipMaterialId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "UnitateMasuraId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "CodNc": {
+            "maxLength": 8,
+            "type": "string",
             "nullable": true
           }
         },
@@ -110584,6 +115612,14 @@
         },
         "additionalProperties": false
       },
+      "RolTertCont": {
+        "enum": [
+          "Niciunul",
+          "Client",
+          "Furnizor"
+        ],
+        "type": "string"
+      },
       "SectiuneD300": {
         "enum": [
           "Colectata",
@@ -110682,6 +115718,204 @@
               "$ref": "#/components/schemas/EroareAnafDto"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Societate": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "Denumire": {
+            "maxLength": 70,
+            "type": "string",
+            "nullable": true
+          },
+          "CodFiscal": {
+            "maxLength": 20,
+            "type": "string",
+            "nullable": true
+          },
+          "InregistratTva": {
+            "type": "boolean"
+          },
+          "RegistruComert": {
+            "maxLength": 20,
+            "type": "string",
+            "nullable": true
+          },
+          "Tara": {
+            "maxLength": 2,
+            "type": "string",
+            "nullable": true
+          },
+          "Strada": {
+            "maxLength": 70,
+            "type": "string",
+            "nullable": true
+          },
+          "Numar": {
+            "maxLength": 18,
+            "type": "string",
+            "nullable": true
+          },
+          "DetaliiAdresa": {
+            "maxLength": 70,
+            "type": "string",
+            "nullable": true
+          },
+          "Localitate": {
+            "maxLength": 35,
+            "type": "string",
+            "nullable": true
+          },
+          "CodPostal": {
+            "maxLength": 18,
+            "type": "string",
+            "nullable": true
+          },
+          "JudetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "Judet": {
+            "$ref": "#/components/schemas/Judet"
+          },
+          "ContactNume": {
+            "maxLength": 35,
+            "type": "string",
+            "nullable": true
+          },
+          "ContactPrenume": {
+            "maxLength": 35,
+            "type": "string",
+            "nullable": true
+          },
+          "Telefon": {
+            "maxLength": 35,
+            "type": "string",
+            "nullable": true
+          },
+          "Email": {
+            "maxLength": 70,
+            "type": "string",
+            "nullable": true
+          },
+          "ContBancarId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "ContBancar": {
+            "$ref": "#/components/schemas/ContPropriu"
+          },
+          "BazaContabila": {
+            "maxLength": 18,
+            "type": "string",
+            "nullable": true
+          },
+          "RaporteazaCnp": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SocietateResourceDelta": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "Denumire": {
+            "maxLength": 70,
+            "type": "string",
+            "nullable": true
+          },
+          "CodFiscal": {
+            "maxLength": 20,
+            "type": "string",
+            "nullable": true
+          },
+          "InregistratTva": {
+            "type": "boolean"
+          },
+          "RegistruComert": {
+            "maxLength": 20,
+            "type": "string",
+            "nullable": true
+          },
+          "Tara": {
+            "maxLength": 2,
+            "type": "string",
+            "nullable": true
+          },
+          "Strada": {
+            "maxLength": 70,
+            "type": "string",
+            "nullable": true
+          },
+          "Numar": {
+            "maxLength": 18,
+            "type": "string",
+            "nullable": true
+          },
+          "DetaliiAdresa": {
+            "maxLength": 70,
+            "type": "string",
+            "nullable": true
+          },
+          "Localitate": {
+            "maxLength": 35,
+            "type": "string",
+            "nullable": true
+          },
+          "CodPostal": {
+            "maxLength": 18,
+            "type": "string",
+            "nullable": true
+          },
+          "JudetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "ContactNume": {
+            "maxLength": 35,
+            "type": "string",
+            "nullable": true
+          },
+          "ContactPrenume": {
+            "maxLength": 35,
+            "type": "string",
+            "nullable": true
+          },
+          "Telefon": {
+            "maxLength": 35,
+            "type": "string",
+            "nullable": true
+          },
+          "Email": {
+            "maxLength": 70,
+            "type": "string",
+            "nullable": true
+          },
+          "ContBancarId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "BazaContabila": {
+            "maxLength": 18,
+            "type": "string",
+            "nullable": true
+          },
+          "RaporteazaCnp": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -111399,6 +116633,26 @@
           },
           "ContImplicit": {
             "$ref": "#/components/schemas/Cont"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UnitateMasura": {
+        "type": "object",
+        "properties": {
+          "ID": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "Cod": {
+            "maxLength": 9,
+            "type": "string",
+            "nullable": true
+          },
+          "Denumire": {
+            "maxLength": 256,
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

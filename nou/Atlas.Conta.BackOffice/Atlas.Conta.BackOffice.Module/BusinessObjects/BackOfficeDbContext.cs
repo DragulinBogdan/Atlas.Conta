@@ -63,6 +63,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Nomenclatorul de județe (felia 15, D15-D1): ISO 3166-2:RO, seed-uit tot
         // în NUCLEU (împărțirea administrativă nu ține de planul de conturi).
         public DbSet<Judet> Judete { get; set; }
+        // Nomenclatorul unităților de măsură (felia 16, D16-D2): UN/ECE Rec 20+21,
+        // tot al nucleului — unitățile nu țin de planul de conturi.
+        public DbSet<UnitateMasura> UnitatiMasura { get; set; }
+        // Societatea raportoare (felia 16, D16-D1): UN SINGUR rând per bază
+        // (gardianul îl apără; nu există „index unic pe nimic").
+        public DbSet<Societate> Societati { get; set; }
         // Nomenclatorul rândurilor decontului de TVA (felia 12, D3-D1) — corpul
         // formularului 300 din OPANAF 174/2026, seed-uit în NUCLEU (e lege, nu profil).
         public DbSet<RandD300> RanduriD300 { get; set; }
@@ -244,6 +250,30 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // exact genul de pierdere pe care SAF-T o descoperă la validare.
             modelBuilder.Entity<Partener>()
                 .HasOne(p => p.Judet).WithMany().HasForeignKey(p => p.JudetId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // D16-D2: `Cod` („H87") e cheia de idempotență a seed-ului și
+            // identitatea de raportare (`UOMStandard`) — unic, filtrat pe
+            // `GCRecord = 0` din exact motivul lui `Judet.Cod` de mai sus.
+            modelBuilder.Entity<UnitateMasura>().HasIndex(u => u.Cod).IsUnique()
+                .HasFilter("\"GCRecord\" = 0");
+            // Unitatea unui produs nu se șterge din nomenclator cât e referită
+            // (`[ForbidCRUD]` o face oricum imposibilă din UI); convenția globală
+            // SetNull ar fi golit tăcut câmpul, iar produsul ar fi ieșit în fișier
+            // cu `H87` „implicit" fără ca nimeni să fi decis asta.
+            modelBuilder.Entity<Produs>()
+                .HasOne(p => p.UnitateMasura).WithMany().HasForeignKey(p => p.UnitateMasuraId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // D16-D1: cele două FK-uri ale societății, ambele Restrict din același
+            // motiv ca `Partener.Judet` — județul e `AuditFileRegion` din `Header`,
+            // iar contul bancar e `BankAccount`; o golire tăcută a oricăruia s-ar
+            // descoperi la validarea fișierului, nu la ștergere.
+            modelBuilder.Entity<Societate>()
+                .HasOne(s => s.Judet).WithMany().HasForeignKey(s => s.JudetId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Societate>()
+                .HasOne(s => s.ContBancar).WithMany().HasForeignKey(s => s.ContBancarId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // D3-D1: `Cod` e cheia de idempotență a seed-ului și identitatea de

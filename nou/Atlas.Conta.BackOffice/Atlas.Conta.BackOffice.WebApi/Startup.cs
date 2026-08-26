@@ -97,6 +97,19 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // seed-uite de nucleu și `[ForbidCRUD]` în XAF: clientul le
                     // citește pentru lookup-ul de adresă, nimeni nu le scrie.
                     options.BusinessObject<Judet>().ConfigureController(c => c.ReadOnly());
+                    // Societatea raportoare (felia 16, D16-D1) e SINGURUL rând
+                    // pe care CLIENTUL îl editează: e antetul lui, nu politică
+                    // de sistem — nume, adresă, contact, contul bancar din
+                    // `Header`-ul SAF-T. Deci CRUD, ca `Partener`. POST-ul al
+                    // doilea cade pe `GardianEditare.VerificaSocietate` cu mesaj
+                    // de domeniu (422 prin traducător, 60a) — unicitatea nu e o
+                    // permisiune, e o regulă de fond, și stă pe ușa comună.
+                    options.BusinessObject<Societate>();
+                    // Unitățile de măsură (felia 16, D16-D2) sunt LEGE (UN/ECE,
+                    // publicate de ANAF), seed-uite de nucleu și `[ForbidCRUD]`
+                    // în XAF: clientul le citește pentru lookup-ul de pe produs,
+                    // nimeni nu le scrie — ca `Judet`.
+                    options.BusinessObject<UnitateMasura>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<CodEconomic>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<SursaFinantare>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<CodFunctional>().ConfigureController(c => c.ReadOnly());
