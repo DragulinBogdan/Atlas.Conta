@@ -1659,25 +1659,34 @@ public static class SaftProiectii {
             })
             .ToList();
 
-        // ── 6. Soldurile: DOUĂ interogări GRUPATE, nu una per lot ────────────
-        // Cardinalitatea rezultatului e a stocului (gestiune × lot), nu a
-        // registrului: pe o lună reală registrul are zeci de mii de rânduri, iar
-        // un `SoldStoc` per intrare ar fi fost N interogări.
-        var deschideri = AgregatStoc(os, raportate, dataStart.AddDays(-1));
-        var inchideri = AgregatStoc(os, raportate, dataEnd);
+        // ── 6. Soldurile: O SINGURĂ trecere GRUPATĂ peste istoric (D18-D1) ───
+        // Cardinalitatea rezultatului e a stocului (gestiune × lot × registru),
+        // nu a registrului: pe o lună reală registrul are zeci de mii de rânduri,
+        // iar un `SoldStoc` per intrare ar fi fost N interogări. Până la felia 18
+        // erau TREI scanări ale întregului istoric (deschidere, închidere,
+        // soldurile neraportate); acum e una, cu sume condiționate pe dată
+        // (precedentul: `Saft` L §terți și `ContabilProiectii.Balanta`), iar
+        // deschiderea / închiderea / soldurile pe registrele neraportate se
+        // DERIVĂ în memorie. Nicio cifră nu se schimbă: `Initial + Rulaj` pe
+        // `numeric` e exact, iar cheia (gestiune × lot) se obține adunând
+        // registrele raportate.
+        var agregat = AgregatStoc(os, dataStart, dataEnd);
+        var deschideri = SoldPeCheie(agregat, raportateSet, a => (a.CantitateInitiala, a.ValoareInitiala),
+            a => a.RanduriInitiale > 0);
+        var inchideri = SoldPeCheie(agregat, raportateSet, a => (a.CantitateInitiala + a.CantitateRulaj,
+            a.ValoareInitiala + a.ValoareRulaj), _ => true);
 
         // Soldurile pe `TipStoc`-uri pe care declarația NU le raportează: n-au
         // document, deci nu pot fi `Neincluse` — dar nici n-au voie să dispară.
-        foreach (var g in os.GetObjectsQuery<RegistruStoc>().IgnoreAutoIncludes()
-                     .Where(r => r.Data <= dataEnd && !raportate.Contains(r.TipStoc))
-                     .GroupBy(r => r.TipStoc)
+        foreach (var g in agregat
+                     .Where(a => !raportateSet.Contains(a.TipStoc))
+                     .GroupBy(a => a.TipStoc)
                      .Select(g => new {
                          TipStoc = g.Key,
-                         Cantitate = g.Sum(r => r.Cantitate),
-                         Valoare = g.Sum(r => r.Valoare),
-                         Randuri = g.Count(),
+                         Cantitate = g.Sum(a => a.CantitateInitiala + a.CantitateRulaj),
+                         Valoare = g.Sum(a => a.ValoareInitiala + a.ValoareRulaj),
+                         Randuri = g.Sum(a => a.Randuri),
                      })
-                     .ToList()
                      .OrderBy(x => x.TipStoc)) {
             if (g.Cantitate == 0m && g.Valoare == 0m)
                 continue;
@@ -2395,14 +2404,29 @@ public static class SaftProiectii {
         public string Motiv;
     }
 
-    // Soldul cumulat până la o dată, GRUPAT pe (gestiune × lot), pe
-    // `TipStoc`-urile raportate. Rândurile de deschidere (`DocumentId null`) intră
-    // — ele SUNT sold.
-    sealed class AgregatStocRand {
+    // Soldul (gestiune × lot), derivat în memorie din agregatul unic al
+    // istoricului; forma pe care o consumă `PhysicalStock`.
+    sealed class SoldStocRand {
         public Guid RepartitorId { get; set; }
         public Guid LotId { get; set; }
         public decimal Cantitate { get; set; }
         public decimal Valoare { get; set; }
+    }
+
+    // O grupă a trecerii unice peste istoric (D18-D1): (gestiune × lot ×
+    // registru), cu soldul de DINAINTEA perioadei (`Initial`) și rulajul
+    // perioadei (`Rulaj`) — sume condiționate pe dată, făcute în bază.
+    // Rândurile de deschidere (`DocumentId null`) intră — ele SUNT sold.
+    sealed class AgregatStocRand {
+        public Guid RepartitorId { get; set; }
+        public Guid LotId { get; set; }
+        public TipStoc TipStoc { get; set; }
+        public decimal CantitateInitiala { get; set; }
+        public decimal ValoareInitiala { get; set; }
+        public decimal CantitateRulaj { get; set; }
+        public decimal ValoareRulaj { get; set; }
+        public int RanduriInitiale { get; set; }
+        public int Randuri { get; set; }
     }
 
     /// <summary>
@@ -2553,19 +2577,45 @@ public static class SaftProiectii {
     static List<Guid> IdsDocumenteDeTip<T>(IObjectSpace os) where T : Document =>
         os.GetObjectsQuery<T>().Select(d => d.ID).ToList();
 
-    static List<AgregatStocRand> AgregatStoc(IObjectSpace os, List<TipStoc> tipuri, DateOnly pana) =>
-        tipuri.Count == 0
-            ? []
-            : os.GetObjectsQuery<RegistruStoc>().IgnoreAutoIncludes()
-                .Where(r => r.Data <= pana && tipuri.Contains(r.TipStoc))
-                .GroupBy(r => new { r.RepartitorId, r.LotId })
-                .Select(g => new AgregatStocRand {
-                    RepartitorId = g.Key.RepartitorId,
-                    LotId = g.Key.LotId,
-                    Cantitate = g.Sum(r => r.Cantitate),
-                    Valoare = g.Sum(r => r.Valoare),
-                })
-                .ToList();
+    // O SINGURĂ interogare pe `RegistruStoc` cu `Data <= dataEnd`, grupată pe
+    // (gestiune × lot × registru), cu sume condiționate: ce e ÎNAINTE de
+    // perioadă e `Initial`, ce e în perioadă e `Rulaj`. Nu filtrează pe
+    // `TipStoc`: registrele neraportate ies din același rezultat.
+    static List<AgregatStocRand> AgregatStoc(IObjectSpace os, DateOnly dataStart, DateOnly dataEnd) =>
+        os.GetObjectsQuery<RegistruStoc>().IgnoreAutoIncludes()
+            .Where(r => r.Data <= dataEnd)
+            .GroupBy(r => new { r.RepartitorId, r.LotId, r.TipStoc })
+            .Select(g => new AgregatStocRand {
+                RepartitorId = g.Key.RepartitorId,
+                LotId = g.Key.LotId,
+                TipStoc = g.Key.TipStoc,
+                CantitateInitiala = g.Sum(r => r.Data < dataStart ? r.Cantitate : 0m),
+                ValoareInitiala = g.Sum(r => r.Data < dataStart ? r.Valoare : 0m),
+                CantitateRulaj = g.Sum(r => r.Data >= dataStart ? r.Cantitate : 0m),
+                ValoareRulaj = g.Sum(r => r.Data >= dataStart ? r.Valoare : 0m),
+                RanduriInitiale = g.Sum(r => r.Data < dataStart ? 1 : 0),
+                Randuri = g.Count(),
+            })
+            .ToList();
+
+    // Soldul (gestiune × lot) pe registrele RAPORTATE, la unul dintre capetele
+    // perioadei: `sold` alege capătul, `exista` spune dacă grupa avea rânduri
+    // până la acel capăt (deschiderea unei chei născute în lună nu e un sold
+    // zero, e absență — exact ce întorcea interogarea separată de dinainte).
+    static List<SoldStocRand> SoldPeCheie(
+            List<AgregatStocRand> agregat, HashSet<TipStoc> raportate,
+            Func<AgregatStocRand, (decimal Cantitate, decimal Valoare)> sold,
+            Func<AgregatStocRand, bool> exista) =>
+        agregat
+            .Where(a => raportate.Contains(a.TipStoc) && exista(a))
+            .GroupBy(a => (a.RepartitorId, a.LotId))
+            .Select(g => new SoldStocRand {
+                RepartitorId = g.Key.RepartitorId,
+                LotId = g.Key.LotId,
+                Cantitate = g.Sum(a => sold(a).Cantitate),
+                Valoare = g.Sum(a => sold(a).Valoare),
+            })
+            .ToList();
 
     // `WarehouseID` (`SAFmiddle1textType`, max 35): codul gestiunii, iar acolo
     // unde nomenclatorul n-are cod, denumirea tăiată — niciodată un Guid.

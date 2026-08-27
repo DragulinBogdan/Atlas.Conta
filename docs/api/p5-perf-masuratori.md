@@ -382,3 +382,101 @@ proiecții. WebApi oprit la final.
 ### Re-măsurare la închidere (addendum 5, clona Flax reclasificată)
 
 09/2025: mediană **97–177 ms** pe două serii (zgomot 41–254 ms; d300 pe aceeași lună în aceeași sesiune 21 ms); anul 2025: **598 ms**. Agregatul SQL rulat direct în Postgres: 8 ms (5.445 grupuri, lună) / 26 ms (61.411, an) — query-ul e 5–10 % din total; restul e EF (`Parteneri.Where(idsRep.Contains(...))` cu ~2.400 / ~20.000 GUID-uri în lista IN, etichetele, cele două GroupBy în memorie) și serializarea (451 KB / ~3,5 MB). O cifră de ~1 s văzută o singură dată = cold start (JIT + primul plan), nu regresie. Când cifra o va cere (59): lista IN → join pe agregat sau tabel temporar, nu index.
+
+---
+
+## Addendum 6 (2026-08-27) — SAF-T S, restanța 74-r4 (felia 18, pasul 1, D18-D1)
+
+Baza de import **`Atlas.Conta.Import1C.Flax`** (282.388 de rânduri în
+`RegistruStoc`, 2024-12-31 … 2025-12-31), calea REALĂ a uneltei: `Import1C
+--saft-s 2025 9` / `2025 12` în Release, timpul proiecției din raportul
+`saft-s-<an>-<lună>-raport.txt` (cronometrul din `Saft1C`, adică
+`SaftProiectii.SaftStocuri` cap-coadă, fără XML și fără DUK); șase rulări per
+lună, prima aruncată, mediana celorlalte cinci. Fișierele XML rezultate (36,2 /
+34,4 MiB) diff-uite linie cu linie contra copiilor de la 74.
+
+**Ce s-a schimbat (D18-D1).** `AgregatStoc` era apelat de două ori (deschidere
+`Data ≤ start−1`, închidere `Data ≤ end`, ambele filtrate pe `TipStoc`-urile
+raportate) și mai exista o a treia scanare pentru `SoldPeTipStocNeraportat`
+(`Data ≤ end`, tipurile FĂRĂ cod). Acum e O SINGURĂ interogare pe
+`RegistruStoc` cu `Data ≤ end`, grupată pe `(RepartitorId, LotId, TipStoc)`, cu
+sume condiționate în bază (`Initial = Σ(Data < start)`, `Rulaj = Σ(Data ≥
+start)` pe cantitate și valoare, plus contoarele de rânduri); deschiderea,
+închiderea și soldurile neraportate se derivă în memorie (`SoldPeCheie`).
+Precedentele: `Saft` L §terți, `ContabilProiectii.Balanta`.
+
+| Lună | Proiecție ÎNAINTE (5 calde, s) | **Mediană** | Proiecție DUPĂ (5 calde, s) | **Mediană** |
+|---|---|---|---|---|
+| 09/2025 | 4,2 · 3,9 · 4,2 · 3,9 · 3,9 | **3,9 s** | 4,1 · 3,8 · 4,0 · 4,0 · 4,0 | **4,0 s** |
+| 12/2025 | 4,0 · 4,1 · 4,1 · 4,2 · 4,1 | **4,1 s** | 4,3 · 4,0 · 4,1 · 4,4 · 4,1 | **4,1 s** |
+
+**Identitate:** XML 09 (791.464 de linii) și 12 (751.933) — câte O linie
+diferită, `<SoftwareVersion>1.0.0+<hash git>` (stamp-ul de build, nu date);
+rapoartele (secțiuni, S1–S5, Excluse, Neincluse, avertismente) identice minus
+linia de timp. D18-V1 în ModelCheck: pe scena D17-V2 agregatul unic == suma
+naivă rând cu rând (9 intrări, 0 diferite; `Consum` 1 rând 4/80,00 == avertismentul).
+
+**`EXPLAIN (ANALYZE, BUFFERS)` în Postgres (docker `contapal-postgres-1`),
+09/2025, SQL-ul reconstruit fidel din LINQ (cu `GCRecord = 0` al filtrului
+XAF), a doua rulare (cald):**
+
+- ÎNAINTE, deschiderea (`Data ≤ 2025-08-31`, `TipStoc IN (1,5)`): `Index Scan`
+  pe `IX_RegistruStoc_LotId` (185.968 rânduri trecute, 96.420 eliminate de
+  filtru) → `Incremental Sort` → `GroupAggregate` 73.204 grupe; buffers
+  170.791 hit; **128 ms**.
+- ÎNAINTE, închiderea (`Data ≤ 2025-09-30`): același plan, 210.401 rânduri,
+  82.190 grupe; **133 ms**.
+- ÎNAINTE, neraportatele (`TipStoc NOT IN (1,5)`): `Parallel Seq Scan` (2
+  workers, 1.129 rânduri), buffers 4.928; **9 ms**.
+- DUPĂ, trecerea unică (`Data ≤ 2025-09-30`, fără filtru pe tip, 8 agregate
+  condiționate): același `Index Scan` pe `IX_RegistruStoc_LotId` (211.530
+  rânduri, 70.858 eliminate) → `Incremental Sort` → `GroupAggregate` 83.248
+  grupe; buffers 170.964 hit; **155 ms** (152–159 pe trei rulări).
+
+Adică SQL-ul celor trei scanări era **~270 ms** și a devenit **~155 ms**;
+diferența (≈0,1 s) e sub zgomotul măsurătorii cap-coadă. Planificatorul NU
+face seq-scan pe scanările mari: alege indexul pe `LotId` fiindcă îi dă
+ordinea pentru grupare, iar `Data ≤ end` reține 75 % din tabel — un index pe
+`(Data)` sau `(TipStoc, Data)` n-ar fi fost ales și n-ar fi schimbat nimic.
+
+**Index: NU.** Condiția din contract („seq-scan dominant ȘI > 1 s") nu e
+îndeplinită pe prima parte; a doua parte e adevărată, dar din ALT motiv.
+
+**Unde sunt, de fapt, cele 4 secunde** (cronometru temporar pe secțiunile lui
+`SaftStocuri`, 09/2025, două rulări calde; neconsumat în cod):
+
+| Secțiune | ms (cumulat) | Δ | Ce face |
+|---|---|---|---|
+| 0–5 profil, societate, conturi + balanță, politică, rândurile lunii | 0 → 250–400 | 0,25–0,4 s | `ConturiSiSolduri` ≈ 0,1 s, rândurile lunii (24.510) ≈ 0,1–0,3 s |
+| 6 agregatul unic (D18-D1) | → 650–800 | **0,4 s** | 155 ms SQL + materializarea a 83 k `AgregatStocRand` + `SoldPeCheie` |
+| 7 documentele mișcărilor | → 2.030–2.160 | **1,4 s** | `CoduriTipPeTipuri` (`SaftProiectii.cs`, `IdsDocumenteDeTip<T>`): pentru FIECARE tip de document, `GetObjectsQuery<T>().Select(ID).ToList()` FĂRĂ filtru pe id-urile cerute — ~19 interogări TPT care listează TOATE documentele bazei, filtrate apoi în memorie; e O(documente), nu O(lună) |
+| 8 repartitori + parteneri | → 2.140–2.310 | 0,1–0,15 s | două `IN` cu ~sute de GUID-uri |
+| 9 loturi + produse | → 2.390–2.590 | 0,25–0,3 s | `IN` cu 16,7 k loturi, apoi 7,5 k produse cu join la cont |
+| 10 `PhysicalStock` | → 2.620–2.800 | 0,2 s | 16.723 intrări în memorie |
+| 11 `MovementOfGoods` | → 2.820–3.060 | 0,2–0,25 s | potrivire + grupare + unicitatea referințelor |
+| 12–13 master files | → 2.980–3.240 | 0,15–0,2 s | produse/UM/taxe |
+| 14 cusături, din care `ComponenteS3` | → 3.860–4.060 | **0,8–1,0 s** | agregat pe `RegistruStoc ≤ end` cu join de 4 niveluri (Lot → Produs → TipMaterial → Cont) grupat pe (Simbol, DocumentId) + agregatul GL pe conturile țintă + `CoduriTipPeTipuri` ÎNCĂ O DATĂ pe documentele lor |
+
+**Verdict:** D18-D1 e corect și e curat (un singur pass, cifre identice), dar
+ținta contractului (< 1 s/lună) nu se atinge prin el — și nici prin index:
+scanarea istoricului n-a fost niciodată costul dominant. Cele două cauze reale
+sunt **`CoduriTipPeTipuri` fără filtru de id-uri în SQL** (≈1,4 s, apelat de
+două ori: §7 și în `ComponenteS3`) și **`ComponenteS3`** (≈0,8 s). Prima e o
+schimbare de o linie (`Where(d => cerute.Contains(d.ID))` pe fiecare tip) cu
+aceleași cifre; a doua ar refolosi agregatul unic (are `LotId`; contul se
+rezolvă din dicționarele deja citite), dar S3 e spartă pe DocumentId, deci
+cere o grupare în plus. Ambele sunt în afara lui D18-D1 și se decid explicit
+(restanță sau pasul următor), nu se strecoară aici. Snapshot lunar de solduri:
+rămâne NEDESCHIS — nu are ce rezolva.
+
+### Reproducere (addendum 6)
+
+`cd nou/tools/Import1C; dotnet build -c Release`, apoi de 6 ori per lună
+`dotnet run --project . -c Release --no-build -- --saft-s 2025 9` (și `12`),
+citind linia `proiecție … s` din `saft-s-2025-09-raport.txt`. EXPLAIN:
+`docker exec contapal-postgres-1 psql -U postgres -d Atlas.Conta.Import1C.Flax
+-c "EXPLAIN (ANALYZE, BUFFERS) SELECT r.\"RepartitorId\", r.\"LotId\",
+r.\"TipStoc\", SUM(CASE WHEN r.\"Data\" < DATE '2025-09-01' THEN
+r.\"Cantitate\" ELSE 0.0 END), … FROM \"RegistruStoc\" r WHERE r.\"GCRecord\" =
+0 AND r.\"Data\" <= DATE '2025-09-30' GROUP BY 1, 2, 3"`. Identitatea:
+copiile XML de la 74 diff-uite cu două `StreamReader`-e linie cu linie.

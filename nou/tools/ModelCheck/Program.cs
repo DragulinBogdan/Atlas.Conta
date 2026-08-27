@@ -12850,6 +12850,71 @@ void VerificaSaftStocuri(bool privat) {
         && sumar.MiscariStoc == rez.NumarMiscari && sumar.LiniiMiscare == rez.NumarLiniiMiscare
         && sumar.StocFizic == rez.NumarStocFizic && sumar.TipuriMiscare == rez.NumarTipuriMiscare);
 
+    // ---------------- D18-V1: trecerea UNICĂ peste istoric == recalcularea naivă ----------------
+    // Felia 18, pasul 1 (D18-D1): deschiderea, închiderea și soldurile pe
+    // registrele neraportate ies dintr-un singur agregat cu sume condiționate.
+    // Oracolul de aici e cel mai prost algoritm posibil: TOATE rândurile de
+    // registru ale scenei citite în memorie, sumate rând cu rând, per capăt.
+    {
+        var raportateNaiv = os.GetObjectsQuery<PoliticaMiscareSaft>()
+            .Where(p => p.CodMiscare != null).Select(p => p.TipStoc).Distinct().ToList()
+            .ToHashSet();
+        var randuriNaiv = os.GetObjectsQuery<RegistruStoc>().IgnoreAutoIncludes()
+            .Where(r => r.Data <= pEnd)
+            .Select(r => new { r.RepartitorId, r.LotId, r.TipStoc, r.Data, r.Cantitate, r.Valoare })
+            .ToList();
+        var deschidereNaiv = new Dictionary<(Guid, Guid), (decimal Cantitate, decimal Valoare)>();
+        var inchidereNaiv = new Dictionary<(Guid, Guid), (decimal Cantitate, decimal Valoare)>();
+        var neraportatNaiv = new Dictionary<TipStoc, (decimal Cantitate, decimal Valoare, int Randuri)>();
+        foreach (var r in randuriNaiv) {
+            if (!raportateNaiv.Contains(r.TipStoc)) {
+                var n = neraportatNaiv.GetValueOrDefault(r.TipStoc);
+                neraportatNaiv[r.TipStoc] = (n.Cantitate + r.Cantitate, n.Valoare + r.Valoare, n.Randuri + 1);
+                continue;
+            }
+            var cheie = (r.RepartitorId, r.LotId);
+            var i = inchidereNaiv.GetValueOrDefault(cheie);
+            inchidereNaiv[cheie] = (i.Cantitate + r.Cantitate, i.Valoare + r.Valoare);
+            if (r.Data < pStart) {
+                var d = deschidereNaiv.GetValueOrDefault(cheie);
+                deschidereNaiv[cheie] = (d.Cantitate + r.Cantitate, d.Valoare + r.Valoare);
+            }
+        }
+        var intrariDiferiteNaiv = saft.StocFizic.Count(e => {
+            var d = deschidereNaiv.GetValueOrDefault((e.RepartitorId, e.LotId));
+            var i = inchidereNaiv.GetValueOrDefault((e.RepartitorId, e.LotId));
+            return e.OpeningQuantity != d.Cantitate || e.OpeningValue != d.Valoare
+                || e.ClosingQuantity != i.Cantitate || e.ClosingValue != i.Valoare;
+        });
+        // Cheile cu sold nenul la vreun capăt trebuie să fie TOATE în fișier
+        // (cele cu 0/0 la ambele capete și fără mișcare în lună sunt omise legal).
+        var cheiFisier = saft.StocFizic.Select(e => (e.RepartitorId, e.LotId)).ToHashSet();
+        var cheiLipsaNaiv = deschidereNaiv.Keys.Concat(inchidereNaiv.Keys).Distinct()
+            .Count(k => !cheiFisier.Contains(k)
+                && (deschidereNaiv.GetValueOrDefault(k) != (0m, 0m) || inchidereNaiv.GetValueOrDefault(k) != (0m, 0m)));
+        var neraportatNenul = neraportatNaiv.Where(x => x.Value.Cantitate != 0m || x.Value.Valoare != 0m).ToList();
+        var avertNeraportat = saft.Avertismente
+            .FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.SoldPeTipStocNeraportat));
+        var sumaNeraportatNaiv = neraportatNenul.Sum(x => x.Value.Valoare);
+        var textNeraportatOk = neraportatNenul.All(x => avertNeraportat != null
+            && avertNeraportat.Exemple.Any(ex => ex.StartsWith($"`{x.Key}`: {x.Value.Randuri} rânduri de registru, sold "
+                + $"{x.Value.Cantitate:0.###} / {x.Value.Valoare:0.00} lei")));
+        Console.WriteLine($"     MĂSURAT (D18-V1): {randuriNaiv.Count} rânduri de registru ≤ {pEnd:yyyy-MM-dd} sumate naiv; "
+            + $"{saft.StocFizic.Count} intrări de stoc fizic, {intrariDiferiteNaiv} diferite de recalcularea naivă, "
+            + $"{cheiLipsaNaiv} chei cu sold lipsă din fișier; neraportate: "
+            + $"[{string.Join(", ", neraportatNenul.Select(x => $"{x.Key} {x.Value.Randuri} rd. {x.Value.Cantitate:0.###}/{x.Value.Valoare:0.00}"))}] "
+            + $"vs avertisment {(avertNeraportat == null ? "(absent)" : $"×{avertNeraportat.Numar} Σ {avertNeraportat.Suma:0.00}")}.");
+        Check("D18-V1 trecerea UNICĂ peste istoric (D18-D1: un agregat cu `Initial = Σ(Data < start)` și "
+            + "`Rulaj = Σ(Data ≥ start)`, derivat în memorie) dă EXACT deschiderea și închiderea fiecărei intrări "
+            + "`PhysicalStock` pe care le dă suma naivă rând cu rând a registrului, nu omite nicio cheie cu sold, "
+            + "iar `SoldPeTipStocNeraportat` (rânduri, cantitate, valoare, Σ) iese din același agregat cu aceleași "
+            + "cifre ca a treia scanare de dinainte",
+            intrariDiferiteNaiv == 0 && cheiLipsaNaiv == 0 && saft.StocFizic.Count > 0
+            && neraportatNenul.Count > 0 && textNeraportatOk
+            && avertNeraportat != null && avertNeraportat.Numar == neraportatNenul.Count
+            && avertNeraportat.Suma == sumaNeraportatNaiv);
+    }
+
     // ---------------- Antetul ----------------
     Check("D17-V2 antet: `HeaderComment = C` („la cerere”) — SINGURUL lucru care face din fișier o "
         + "declarație de STOCURI (nu există „D406S”); restul antetului e identic cu al lunarului, din "
