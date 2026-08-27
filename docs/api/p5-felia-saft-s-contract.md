@@ -221,6 +221,38 @@ e nenul și omite `PhysicalStock` când lista e goală.
 - Import1C: `--saft-s <an> <luna>` peste `Saft1C` (parametru `fel`), raport
   per cauză + DUK; nicio schimbare în import/reconciliere.
 
+### D17-D3/D4 — amendamente din pasul 3 (măsurate cu DUK J2.2.8 pe scenă, 2026-08-27)
+
+- **Riscul 1 închis: `Quantity` rămâne SEMNATĂ** ca în registru. DUK acceptă
+  și forma semnată, și |q|; se păstrează semnul registrului (sursa unică, I) —
+  direcția e citibilă și fără nomenclator, iar stornoul iese exact inversul
+  originalului.
+- **Riscul 2 închis în sens tare**: pe `C`, secțiunile lunarului
+  (`GeneralLedgerEntries`, `SalesInvoices`, `PurchaseInvoices`, `Payments`)
+  trebuie să fie tag-uri COMPLET goale — cu `NumberOfEntries 0 / TotalDebit
+  0.00 / TotalCredit 0.00` DUK respinge („elementul 'NumberOfEntries' a
+  depășit numărul maxim de apariții (0)"). `SaftXml.CuTotaluri`: totalurile se
+  scriu dacă secțiunea e a modulului declarat SAU are rânduri; L neatins
+  (probă permanentă în D16-V3).
+- **`PhysicalStock` e OBLIGATORIU prezent pe `C`** deși XSD-ul o are
+  `minOccurs=0` („ar fi trebuit să apară de minimum 1 ori"). Tag gol =
+  invalid de schemă, absent = invalid de profil ⇒ **o declarație S fără nicio
+  intrare de stoc fizic nu se poate depune**. Decizie: `SaftXml.Scrie` pe
+  `C` cu `StocFizic` gol aruncă `InvalidOperationException` (ca
+  `Neaplicabil`), `GET saft/stocuri/xml` ⇒ **422** `EroriDto` cu cauza, sumarul
+  rămâne 200 (contorul `StocFizic = 0` spune de ce). Corolar nemăsurat:
+  `MovementOfGoods` gol pe `C` (fișierul cade oricum înainte) — restanță.
+- Riscul 3: `StockCharacteristic` = text liber (și `blue_35`/`35` trec) —
+  `("0","0")` rămâne. Riscul 4: `StockAccountNo` Guid (36/70) trece;
+  `MovementReference` 36 ⇒ respins („șir mai lung de 35") — trunchierea din
+  `SaftReguli.MovementReference` e necesară. Riscul 5: `ProductType` NU e
+  validat ca `AccountID` (`999999` trece) — simbolul contului rămâne.
+- Schema are două `xs:sequence` interioare (UM + factor) în
+  `PhysicalStockEntry` și `StockMovementLine`; `TransactionID` e pe LINIE
+  (se repetă pe liniile mișcării); `DocumentReference` doar întreg.
+- Măsurat pe scenă: S 32,8 KiB, proiecția 146 ms, scrierea 1 ms; L 121,4 KiB
+  DUK `ok` neschimbat.
+
 ## Ce NU intră, cu motiv
 
 - `Owners` cu terți (`8038`), custodie/consignație — nimic nu le produce azi

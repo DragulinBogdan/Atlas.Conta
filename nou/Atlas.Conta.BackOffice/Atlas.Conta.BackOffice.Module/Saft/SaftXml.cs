@@ -37,6 +37,24 @@ namespace Atlas.Conta.BackOffice.Module.Saft;
 // este nimic de raportat se va transmite doar tag-urile de început și de sfârșit
 // ale sub-secțiunii").
 //
+// ═══ UN scriitor pentru AMBELE declarații (felia 17, D17-D4) ═══
+// L și S nu sunt două fișiere diferite, ci ACELAȘI `AuditFile` cu alte secțiuni
+// pline — tipul îl dă `HeaderComment` („L" lunar / „C" la cerere), nu structura.
+// De aceea aici nu există nicio ramură „dacă e S": fiecare secțiune se scrie din
+// lista ei, iar lista goală dă exact ce dădea înainte. Consecința probată în
+// D17-V3: pentru un DTO de tip L fișierul iese BYTE-IDENTIC cu cel al feliei 16.
+//
+// Două asimetrii, amândouă MĂSURATE cu validatorul, nu deduse din XSD:
+//   • `PhysicalStock` e singura secțiune cu `minOccurs="0"`, iar înăuntru
+//     `PhysicalStockEntry` e obligatoriu — deci „nimic de raportat" se scrie
+//     prin OMISIUNEA secțiunii, nu printr-un tag gol. Pe modulul `C`,
+//     validatorul o cere însă PREZENTĂ („ar fi trebuit sa apara de minimum 1
+//     ori"): o declarație de stocuri fără nicio intrare de stoc fizic nu se
+//     poate depune — faptul e al lui ANAF, nu al schemei.
+//   • Secțiunile lunarului (`GeneralLedgerEntries`, `SalesInvoices`,
+//     `PurchaseInvoices`, `Payments`) n-au voie, pe `C`, să poarte NICI MĂCAR
+//     totalurile la zero (`CuTotaluri`, mai jos).
+//
 // ═══ Detaliile care nu se văd din tabelul de câmpuri ═══
 //   • `TaxAmount` NU e un număr, e o `AmountStructure` (Amount + CurrencyCode +
 //     CurrencyAmount) — la fel `DebitAmount`/`CreditAmount`/`InvoiceLineAmount`/
@@ -98,6 +116,20 @@ public static class SaftXml {
         };
         using var w = XmlWriter.Create(iesire, setari);
         var moneda = dto.Header.DefaultCurrencyCode ?? SaftProiectii.DefaultCurrencyCode;
+        // `HeaderComment` decide MODULUL, iar validatorul are un profil pe fiecare:
+        // pe „C" (la cerere = stocuri) secțiunile lunarului sunt N/A și n-au voie
+        // să poarte NIMIC — nici măcar totalurile la zero. MĂSURAT cu DUK în
+        // D17-V3: `<GeneralLedgerEntries><NumberOfEntries>0</NumberOfEntries>…`
+        // dă „elementul 'NumberOfEntries' a depasit numarul maxim de aparitii (0)",
+        // iar același fișier cu cele patru secțiuni GOLITE trece cu `ok`. Deci
+        // regula §A.5 („doar tag-urile de început și de sfârșit") se aplică
+        // literal, totalurile incluse — ele descriu rânduri care aici nu există.
+        var laCerere = string.Equals(dto.Header.HeaderComment, SaftProiectii.HeaderCommentStocuri,
+            StringComparison.OrdinalIgnoreCase);
+        // Totalurile unei secțiuni se scriu dacă secțiunea e a modulului declarat
+        // SAU dacă are totuși rânduri (o listă plină fără totaluri ar fi mai rea
+        // decât o abatere de profil — și e oricum un semn de proiecție stricată).
+        bool CuTotaluri(int randuri) => !laCerere || randuri > 0;
 
         // ── helper-e de scriere ─────────────────────────────────────────────
         void Start(string nume) => w.WriteStartElement(nume, SpatiuNume);
@@ -299,8 +331,15 @@ public static class SaftXml {
         }
         Stop();
 
-        // Modul S (stocuri), nu L: tag deschis/închis (§A.5).
+        // Modul S (stocuri): codurile FOLOSITE în perioadă. Pe L lista e goală și
+        // iese tag deschis/închis, exact ca înainte (§A.5).
         Start("MovementTypeTable");
+        foreach (var t in dto.TipuriMiscare) {
+            Start("MovementTypeTableEntry");
+            ElCerutNenul("MovementType", t.Cod, "un rând din `MovementTypeTable`");
+            ElCerut("Description", t.Descriere);
+            Stop();
+        }
         Stop();
 
         Start("Products");
@@ -318,7 +357,59 @@ public static class SaftXml {
         }
         Stop();
 
-        // Modul S / A: goale în lunar.
+        // `PhysicalStock` e SINGURA secțiune S opțională în schemă
+        // (`minOccurs="0"`), iar `PhysicalStockEntry` e `minOccurs="1"` înăuntru:
+        // un `<PhysicalStock/>` gol ar fi INVALID, nu „nimic de raportat". De
+        // aceea aici omisiunea e regula, nu excepția — și tot de aceea nota §A.5
+        // („tag-uri goale") NU se aplică: ea vorbește despre secțiunile
+        // obligatorii, care n-au voie să lipsească.
+        //
+        // MĂSURAT (D17-V3): omisiunea e legală în XSD, dar NU în profilul `C` al
+        // validatorului — „elementul 'PhysicalStock' ar fi trebuit sa apara de
+        // minimum 1 ori, dar apare efectiv de 0 ori". Adică o declarație de
+        // stocuri fără NICIO intrare de stoc fizic nu se poate depune. Scriitorul
+        // nu are ce alege (ambele forme ar fi respinse, una de schemă și una de
+        // profil): cine cere fișierul trebuie să afle ÎNAINTE că luna e goală.
+        if (dto.StocFizic.Count > 0) {
+            Start("PhysicalStock");
+            foreach (var e in dto.StocFizic) {
+                var context = $"stocul fizic „{e.ProductCode}” din „{e.WarehouseId}” (lot {e.LotId})";
+                Start("PhysicalStockEntry");
+                ElCerutNenul("WarehouseID", e.WarehouseId, context);
+                // `LocationID` (O): modelul n-are locație în gestiune (contract
+                // §Ce NU intră).
+                ElCerutNenul("ProductCode", e.ProductCode, context);
+                // Identificatorul lotului — prezent DOAR când produsul are mai
+                // multe intrări în aceeași gestiune (ghid p. 36).
+                El("StockAccountNo", e.StockAccountNo);
+                ElCerutNenul("ProductType", e.ProductType, context);
+                // `ProductStatus` (O): fără sursă în model.
+                ElCerutNenul("StockAccountCommodityCode", e.StockAccountCommodityCode, context);
+                ElCerutNenul("OwnerID", e.OwnerId, context);
+                // Perechea UM/factor e un `xs:sequence` INTERIOR (nu două
+                // elemente independente): ordinea lor e fixă și stau împreună,
+                // între `OwnerID` și `UnitPrice`.
+                ElCerutNenul("UOMPhysicalStock", e.UomPhysicalStock, context);
+                ElCerut("UOMToUOMBaseConversionFactor", Factor(e.UomConversionFactor));
+                ElCerut("UnitPrice", Bani(e.UnitPrice));
+                ElCerut("OpeningStockQuantity", Cantitate(e.OpeningQuantity));
+                ElCerut("OpeningStockValue", Bani(e.OpeningValue));
+                ElCerut("ClosingStockQuantity", Cantitate(e.ClosingQuantity));
+                ElCerut("ClosingStockValue", Bani(e.ClosingValue));
+                // `StockCharacteristics` e OBLIGATORIU (`minOccurs` implicit 1),
+                // deși nomenclatorul lui privește doar accizele: perechea
+                // („0",„0") e valoarea neutră a proiecției (riscul 3, măsurat).
+                Start("StockCharacteristics");
+                ElCerutNenul("StockCharacteristic", e.StockCharacteristic, context);
+                ElCerutNenul("StockCharacteristicValue", e.StockCharacteristicValue, context);
+                Stop();
+                Stop();
+            }
+            Stop();
+        }
+
+        // Modul S (terții cu bunuri în custodie) / A: goale — tot stocul e al
+        // raportorului (ghid p. 36), iar activele sunt alt modul (decizia 9).
         Start("Owners");
         Stop();
         Start("Assets");
@@ -327,9 +418,11 @@ public static class SaftXml {
 
         // ── 3. GeneralLedgerEntries ─────────────────────────────────────────
         Start("GeneralLedgerEntries");
-        ElInt("NumberOfEntries", dto.Rezumat.Tranzactii);
-        ElCerut("TotalDebit", Bani(dto.Rezumat.TotalDebit));
-        ElCerut("TotalCredit", Bani(dto.Rezumat.TotalCredit));
+        if (CuTotaluri(dto.Jurnale.Count)) {
+            ElInt("NumberOfEntries", dto.Rezumat.Tranzactii);
+            ElCerut("TotalDebit", Bani(dto.Rezumat.TotalDebit));
+            ElCerut("TotalCredit", Bani(dto.Rezumat.TotalCredit));
+        }
         foreach (var j in dto.Jurnale) {
             Start("Journal");
             ElCerut("JournalID", j.JournalID);
@@ -372,11 +465,13 @@ public static class SaftXml {
         ScrieFacturi("PurchaseInvoices", dto.FacturiPrimite, vanzare: false);
 
         Start("Payments");
-        ElInt("NumberOfEntries", dto.Plati.Count);
-        ElCerut("TotalDebit", Bani(dto.Plati.Where(p => p.Linii.Any(l => l.DebitCreditIndicator == "D"))
-            .Sum(p => p.Linii.Where(l => l.DebitCreditIndicator == "D").Sum(l => l.PaymentLineAmount))));
-        ElCerut("TotalCredit", Bani(dto.Plati.Where(p => p.Linii.Any(l => l.DebitCreditIndicator == "C"))
-            .Sum(p => p.Linii.Where(l => l.DebitCreditIndicator == "C").Sum(l => l.PaymentLineAmount))));
+        if (CuTotaluri(dto.Plati.Count)) {
+            ElInt("NumberOfEntries", dto.Plati.Count);
+            ElCerut("TotalDebit", Bani(dto.Plati.Where(p => p.Linii.Any(l => l.DebitCreditIndicator == "D"))
+                .Sum(p => p.Linii.Where(l => l.DebitCreditIndicator == "D").Sum(l => l.PaymentLineAmount))));
+            ElCerut("TotalCredit", Bani(dto.Plati.Where(p => p.Linii.Any(l => l.DebitCreditIndicator == "C"))
+                .Sum(p => p.Linii.Where(l => l.DebitCreditIndicator == "C").Sum(l => l.PaymentLineAmount))));
+        }
         foreach (var p in dto.Plati) {
             Start("Payment");
             ElCerut("PaymentRefNo", p.PaymentRefNo);
@@ -414,8 +509,75 @@ public static class SaftXml {
         }
         Stop();
 
-        // Modul S: gol în lunar.
+        // Modul S. Fără mișcări (lunarul L, sau o lună fără stoc) rămâne tag
+        // deschis/închis (§A.5) — inclusiv totalurile, care sunt `minOccurs="0"`:
+        // un `NumberOfMovementLines` de 0 într-un fișier care nu raportează
+        // stocuri ar fi o afirmație, nu o absență. Pe `L` forma asta e MĂSURATĂ
+        // (D16-V3 trece cu `ok`); pe `C` cu zero mișcări NU e — dar acolo
+        // fișierul cade oricum pe `PhysicalStock` obligatoriu, deci întrebarea
+        // nu s-a putut pune singură.
         Start("MovementOfGoods");
+        if (dto.MiscariStoc.Count > 0) {
+            ElInt("NumberOfMovementLines", dto.NumberOfMovementLines);
+            ElCerut("TotalQuantityReceived", Cantitate(dto.TotalQuantityReceived));
+            ElCerut("TotalQuantityIssued", Cantitate(dto.TotalQuantityIssued));
+            foreach (var m in dto.MiscariStoc) {
+                Start("StockMovement");
+                ElCerutNenul("MovementReference", m.MovementReference,
+                    $"mișcarea documentului {m.DocumentType} {m.DocumentNumber}");
+                ElData("MovementDate", m.MovementDate);
+                if (m.MovementPostingDate is DateOnly postare)
+                    ElData("MovementPostingDate", postare);
+                // `MovementPostingTime` (O) și `TaxPointDate` (O): fără sursă în
+                // model — stocul n-are oră de postare, iar faptul generator e al
+                // facturii, nu al mișcării.
+                ElCerutNenul("MovementType", m.MovementType,
+                    $"mișcarea „{m.MovementReference}”");
+                // `SourceID`/`SystemID` (O): nu se inventează un operator.
+                // `DocumentReference` e opțional, dar AMBELE câmpuri dinăuntru
+                // sunt obligatorii: fie se scrie întreg, fie deloc.
+                if (!string.IsNullOrEmpty(m.DocumentType) && !string.IsNullOrEmpty(m.DocumentNumber)) {
+                    Start("DocumentReference");
+                    ElCerut("DocumentType", m.DocumentType);
+                    ElCerut("DocumentNumber", m.DocumentNumber);
+                    Stop();
+                }
+                foreach (var l in m.Linii) {
+                    var context = $"linia {l.LineNumber} a mișcării „{m.MovementReference}”";
+                    Start("StockMovementLine");
+                    ElCerut("LineNumber", l.LineNumber.ToString(Inv));
+                    // Contul de stoc: obligatoriu ȘI neinventabil (73e) — dacă
+                    // lipsea, proiecția a scos deja linia în `Neincluse`.
+                    ElCerutNenul("AccountID", l.AccountId, context);
+                    // `TransactionID` stă pe LINIE în schemă, dar în model e al
+                    // documentului (o mișcare = un document × storno × cod), deci
+                    // se repetă pe toate liniile ei — exact ca `TransactionID`-ul
+                    // de pe `Transaction` în GL.
+                    El("TransactionID", m.TransactionId);
+                    // Convenția S (xlsx SD.MG.21/22): latura liberă e literalul
+                    // „0", nu raportorul — invers decât pe GL. Validatorul
+                    // refuză doar cazul „ambele 0"; ambele goale ar fi invalid.
+                    ElCerutNenul("CustomerID", l.CustomerId, context);
+                    ElCerutNenul("SupplierID", l.SupplierId, context);
+                    // `ShipTo`/`ShipFrom` (O): gestiunile transferului rămân
+                    // restanță (contract §Ce NU intră).
+                    ElCerutNenul("ProductCode", l.ProductCode, context);
+                    El("StockAccountNo", l.StockAccountNo);
+                    ElCerut("Quantity", Cantitate(l.Quantity));
+                    // Al doilea `xs:sequence` interior al schemei: UM + factor,
+                    // între `Quantity` și `BookValue`.
+                    ElCerutNenul("UnitOfMeasure", l.UnitOfMeasure, context);
+                    ElCerut("UOMToUOMPhysicalStockConversionFactor", Factor(l.UomConversionFactor));
+                    ElCerut("BookValue", Bani(l.BookValue));
+                    ElCerutNenul("MovementSubType", l.MovementSubType, context);
+                    El("MovementComments", l.MovementComments);
+                    // `TaxInformation` (O, 0..n) pe linia de stoc: taxa e a
+                    // facturii (declarația L), nu a mișcării.
+                    Stop();
+                }
+                Stop();
+            }
+        }
         Stop();
         Stop(); // SourceDocuments
 
@@ -451,12 +613,14 @@ public static class SaftXml {
 
         void ScrieFacturi(string colectie, List<SaftFactura> lista, bool vanzare) {
             Start(colectie);
-            ElInt("NumberOfEntries", lista.Count);
-            // Totalurile secțiunii, pe convenția liniilor: vânzarea e pe credit,
-            // cumpărarea pe debit (schema le cere, fără să enunțe vreo regulă de
-            // egalitate — §C.2).
-            ElCerut("TotalDebit", Bani(vanzare ? 0m : lista.Sum(f => f.NetTotal)));
-            ElCerut("TotalCredit", Bani(vanzare ? lista.Sum(f => f.NetTotal) : 0m));
+            if (CuTotaluri(lista.Count)) {
+                ElInt("NumberOfEntries", lista.Count);
+                // Totalurile secțiunii, pe convenția liniilor: vânzarea e pe credit,
+                // cumpărarea pe debit (schema le cere, fără să enunțe vreo regulă de
+                // egalitate — §C.2).
+                ElCerut("TotalDebit", Bani(vanzare ? 0m : lista.Sum(f => f.NetTotal)));
+                ElCerut("TotalCredit", Bani(vanzare ? lista.Sum(f => f.NetTotal) : 0m));
+            }
             foreach (var f in lista) {
                 Start("Invoice");
                 ElCerut("InvoiceNo", f.InvoiceNo);
