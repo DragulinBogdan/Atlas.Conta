@@ -1,4 +1,4 @@
-﻿using Atlas.Conta.BackOffice.Module.Api;
+using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.WebApi.JWT;
@@ -166,6 +166,8 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // (ecranul arată de ce un grup e „neinclus"), se schimbă în
                     // back-office, unde are validarea de țintă (D4-D2).
                     options.BusinessObject<MapareD394>().ConfigureController(c => c.ReadOnly());
+                // Politica de mișcare SAF-T S (felia 17, D17-D1): politicile sunt ReadOnly pe OData (56).
+                options.BusinessObject<PoliticaMiscareSaft>().ConfigureController(c => c.ReadOnly());
                 });
 
                 // Paritate de configurare cu `Blazor.Server/Startup.cs` (aceeași

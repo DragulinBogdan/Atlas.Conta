@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Core;
 using DevExpress.ExpressApp.EFCore;
@@ -127,6 +128,12 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 // (g) Produsul (felia 16, D16-D2): `CodNc` are exact 8 cifre.
                 case Produs produs:
                     VerificaProdus(produs, erori);
+                    break;
+                // (h) Politica de mișcare SAF-T (felia 17, D17-D1): codul din
+                // nomenclator, motivul obligatoriu la excluderea deliberată,
+                // semnul din {−1, null, +1}.
+                case PoliticaMiscareSaft politica:
+                    VerificaPoliticaMiscareSaft(os, politica, erori);
                     break;
             }
         }
@@ -412,6 +419,48 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (!string.IsNullOrWhiteSpace(cod) && !FormatCodNc.IsMatch(cod))
             erori.Add($"Produsul {produs.Denumire ?? produs.Cod} are codul NC „{cod}” — "
                 + "codul NC are exact 8 cifre (sau rămâne gol).");
+    }
+
+    // (h) Politica de mișcare SAF-T (felia 17, D17-D1). Trei reguli de FOND, pe
+    // ușa comună: politica e editabilă (`[NavigationItem("Politici")]`, fără
+    // `ForbidCRUD`), deci ajunge aici și din XAF, și de pe orice cale secured
+    // viitoare — iar validarea XAF nu rulează pe API (55b).
+    //
+    // Ce NU e aici: unicitatea tripletei. Aceea E exprimabilă ca index (spre
+    // deosebire de `Societate`), și e exprimată — două indexuri parțiale în
+    // `BackOfficeDbContext`, fiindcă `Semn` e nullabil și în Postgres
+    // `NULL <> NULL`. Violarea lor iese ca mesaj de domeniu prin
+    // `ConstraintViolationTranslator` (39a), nu ca 23505 brut.
+    static void VerificaPoliticaMiscareSaft(
+            IObjectSpace os, PoliticaMiscareSaft politica, ICollection<string> erori) {
+        if (EsteSters(os, politica))
+            return;
+        var eticheta = politica.TipDocument?.Cod ?? politica.TipDocument?.Denumire ?? "(fără tip)";
+
+        // (1) Codul e din nomenclatorul legii. O valoare din afara listei nu e o
+        // „coloană greșită": validatorul ANAF respinge fișierul ÎNTREG pe ea, deci
+        // greșeala trebuie prinsă la culegere, nu la depunere.
+        if (!string.IsNullOrEmpty(politica.CodMiscare) && !SaftReguli.EsteCodMiscare(politica.CodMiscare))
+            erori.Add($"Politica de mișcare SAF-T pe {eticheta}/{politica.TipStoc} are codul "
+                + $"„{politica.CodMiscare}”, care nu e în nomenclatorul D406 "
+                + $"({string.Join(", ", SaftReguli.CoduriMiscare.Keys)}) — "
+                + "un cod inventat face fișierul respins integral.");
+
+        // (2) Codul gol e o AFIRMAȚIE („registrul ăsta nu se raportează"), și o
+        // afirmație are nevoie de motiv: rândurile ei ies în `Excluse` deliberate,
+        // iar acolo se citește tocmai motivul. Fără el, excluderea ar fi
+        // indistinguibilă de o politică uitată la jumătate.
+        if (string.IsNullOrEmpty(politica.CodMiscare) && string.IsNullOrWhiteSpace(politica.Motiv))
+            erori.Add($"Politica de mișcare SAF-T pe {eticheta}/{politica.TipStoc} n-are cod de mișcare — "
+                + "asta EXCLUDE deliberat rândurile din declarație, deci cere un motiv scris "
+                + "(el apare lângă cifrele excluse).");
+
+        // (3) Semnul e −1, +1 sau „orice" (null). Aceeași axă ca
+        // `RegulaContare.SemnFiltru`, deci aceeași formă de gard: un `2` ar face
+        // politica să nu se potrivească NICIODATĂ, tăcut.
+        if (politica.Semn is not (null or -1 or 1))
+            erori.Add($"Politica de mișcare SAF-T pe {eticheta}/{politica.TipStoc} are semnul "
+                + $"{politica.Semn} — semnul e −1 (ieșire), +1 (intrare) sau gol (orice semn).");
     }
 
     static readonly System.Text.RegularExpressions.Regex FormatCodNc =

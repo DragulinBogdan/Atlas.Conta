@@ -136,6 +136,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<MapareD300> MapariD300 { get; set; }
         // Politica D394 (D4-D2): (TipTva × Sens) → tip de operațiune, UNA per pereche.
         public DbSet<MapareD394> MapariD394 { get; set; }
+        // Politica SAF-T S (felia 17, D17-D1): (TipDocument × TipStoc × Semn?) →
+        // cod de mișcare + rolul terțului; cod null = excludere deliberată.
+        public DbSet<PoliticaMiscareSaft> PoliticiMiscareSaft { get; set; }
         // Setarea de profil a bazei (decizia 51c): un singur rând, scris de seed.
         public DbSet<SetareProfil> SetariProfil { get; set; }
 
@@ -314,6 +317,24 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<MapareD394>()
                 .HasIndex(m => new { m.TipTvaId, m.Sens }).IsUnique()
                 .HasFilter("\"GCRecord\" = 0");
+
+            // D17-D1: tripleta `(TipDocument, TipStoc, Semn)` e identitatea
+            // politicii de mișcare SAF-T — un rând de registru se potrivește pe
+            // exact una, altfel codul de mișcare ar depinde de ordinea rândurilor.
+            // Filtrat pe `GCRecord = 0` din același motiv ca la D300/D394:
+            // politica e date editabile (decizia 4), deci ștergerea e flux normal,
+            // iar reintroducerea aceleiași chei e chiar remediul unei greșeli.
+            modelBuilder.Entity<PoliticaMiscareSaft>()
+                .HasIndex(p => new { p.TipDocumentId, p.TipStoc, p.Semn }).IsUnique()
+                .HasFilter("\"GCRecord\" = 0");
+            // A DOUA jumătate a unicității, cerută de semantica lui NULL în SQL:
+            // în Postgres `NULL <> NULL`, deci indexul de mai sus NU oprește două
+            // rânduri „orice semn" pe aceeași pereche (tip, TipStoc) — exact
+            // dublura care ar face potrivirea nedeterministă. Indexul parțial de
+            // aici o prinde: unic pe pereche, PRINTRE rândurile cu `Semn` null.
+            modelBuilder.Entity<PoliticaMiscareSaft>()
+                .HasIndex(p => new { p.TipDocumentId, p.TipStoc }).IsUnique()
+                .HasFilter("\"Semn\" IS NULL AND \"GCRecord\" = 0");
 
             AplicaScaraNumerica(modelBuilder);
         }

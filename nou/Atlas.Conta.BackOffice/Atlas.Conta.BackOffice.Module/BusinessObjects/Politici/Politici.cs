@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.Data.Filtering;
 using DevExpress.ExpressApp;
@@ -475,4 +476,73 @@ public class MapareD394 : BaseObject {
         SensTva.Achizitie => tip is TipOperatiuneD394.A or TipOperatiuneD394.C or TipOperatiuneD394.AS,
         _ => false,
     };
+}
+
+// Tipul de mișcare SAF-T al unui rând de registru de stoc (felia 17, D17-D1):
+// `(TipDocument × TipStoc × Semn?) → cod de mișcare + rolul terțului`.
+//
+// DE CE politică, și nu cod: codul de mișcare (`MovementType`/`MovementSubType`,
+// nomenclatorul de 19 valori din `SaftReguli.CoduriMiscare`) e o funcție a
+// TIPULUI de document și a registrului pe care îl atinge — NIR aduce marfă de la
+// furnizor (`10`), BCS o consumă (`70`), BTR o mută (`80`) —, nu a produsului și
+// nu a liniei. Exact criteriul deciziei 4 („structura e cod, politica e date") și
+// exact cheia lui `RegulaStoc`, care decide ce rând se scrie: politica de față
+// decide cum se CITEȘTE rândul scris de ea. Un tip nou de document (producție,
+// reduceri comerciale, ajustări de depreciere) își primește codul fără release.
+//
+// Ce NU e aici, fiindcă e al legii: formatul identității terților, convenția
+// `0`/raportor pe cele două laturi, granularitatea per preț unitar — toate în
+// `SaftReguli` (cod). Politica alege ROLUL, legea îl traduce în identificatori.
+//
+// CHEIA e tripleta, cu `Semn` NULLABIL:
+//   * `Semn = null` = „orice semn" (NIR: intrarea e mereu +; BTR: aceeași
+//     mișcare `80` pe ambele picioare ±);
+//   * `Semn = ±1` = codurile diferă pe direcție (LDI: plus `110`, minus `120`;
+//     ASM: produsul `20`, consumul `70`).
+// Potrivirea în proiecție: semnul EXACT bate `null` (D17-D1).
+//
+// `CodMiscare` e NULLABIL, și asta e o afirmație, nu o scăpare: un rând cu cod
+// null spune „registrul ăsta NU se raportează în S, din motivul următor" —
+// rândurile lui ies în `Excluse` DELIBERATE (agregat cu motivul), nu în
+// `Neincluse`. Cazul real e `+Consum` de pe bonul de consum: consumul rămâne pe
+// responsabil (27a), dar nu mai e stoc în magazie, deci nu e patrimoniu de
+// declarat. Un rând FĂRĂ nicio politică e altceva — acela iese în `Neincluse`,
+// cu cauza lui. „Nimic nu se pierde" cere ca cele două să se deosebească.
+[NavigationItem("Politici")]
+public class PoliticaMiscareSaft : BaseObject {
+    public virtual Guid TipDocumentId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip document")]
+    // Validare de culegere pe NAVIGAȚIE, nu pe `Guid` (decizia 40b), ca la
+    // `MapareD300`/`MapareD394`.
+    [RuleRequiredField("PoliticaMiscareSaft_TipDocument_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Tipul de document este obligatoriu.")]
+    public virtual TipDocument TipDocument { get; set; }
+
+    // Aceeași axă ca `RegulaStoc.TipStoc` și `RegistruStoc.TipStoc`: registrul
+    // atins e jumătate din identitatea mișcării (BCS scoate din `Magazie` și
+    // pune în `Consum` — două rânduri, două răspunsuri diferite).
+    [XafDisplayName("Tip stoc")]
+    public virtual TipStoc TipStoc { get; set; }
+
+    // `null` = orice semn; altfel −1 sau +1. Valorile admise le apără
+    // `GardianEditare` (un `int?` nu poate purta un enum fără să schimbe schema,
+    // iar `RegulaContare.SemnFiltru` are deja exact forma asta).
+    public virtual int? Semn { get; set; }
+
+    // 9 = lungimea maximă a lui `MovementType`/`MovementSubType` în XSD;
+    // nomenclatorul real n-are cod mai lung de 3 caractere, dar coloana urmează
+    // schema, nu datele de azi.
+    [MaxLength(9)]
+    [XafDisplayName("Cod mișcare")]
+    public virtual string CodMiscare { get; set; }
+
+    [XafDisplayName("Rol terț")]
+    public virtual RolTertSaft RolTert { get; set; }
+
+    // Obligatoriu când `CodMiscare` e null: excluderea deliberată trebuie să
+    // poată fi CITITĂ pe ecran, lângă cifrele ei. Gardul e în `GardianEditare`
+    // (regulă de fond, pe toate ușile), nu doar `RuleRequiredField`.
+    [MaxLength(256)]
+    public virtual string Motiv { get; set; }
 }

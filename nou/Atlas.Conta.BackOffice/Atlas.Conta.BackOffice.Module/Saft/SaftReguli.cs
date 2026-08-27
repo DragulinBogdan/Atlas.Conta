@@ -297,6 +297,55 @@ public static class SaftReguli {
             control = 1;
         return control == cnp[12] - '0';
     }
+
+    // ── Nomenclatorul mișcărilor de stoc (felia 17, D17-D2) ─────────────────
+
+    /// <summary>
+    /// Cele 19 tipuri de mișcare admise de D406 S — ACELAȘI nomenclator pentru
+    /// `MovementType` ȘI pentru `MovementSubType` (xlsx `SAFT_Nomenclator`,
+    /// foaia „Nomenclator stocuri"); o valoare din afara listei e eroare FATALĂ
+    /// la validare, nu avertisment.
+    ///
+    /// Sursa UNICĂ a două lucruri: descrierea din `MovementTypeTable` (fișierul o
+    /// cere lângă cod) și gardianul politicii (`PoliticaMiscareSaft.CodMiscare`).
+    /// Deci cod, nu date: lista e a legii, nu variază per client și nu are
+    /// variantă per profil — exact criteriul lui `IdPartener`/`MetodaPlata` de
+    /// mai sus. Ce variază per client e CARE tip de document produce care cod, și
+    /// aia e politica.
+    ///
+    /// Cheile sunt string, nu int, fiindcă asta e forma din fișier (`100` și
+    /// `101` sunt coduri distincte, iar comparația se face pe text).
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string> CoduriMiscare =
+        new Dictionary<string, string>(StringComparer.Ordinal) {
+            ["10"] = "Achiziție",
+            ["20"] = "Producție",
+            ["30"] = "Vânzare",
+            ["40"] = "Retur produse vândute",
+            ["50"] = "Retur produse achiziționate",
+            ["60"] = "Reduceri comerciale primite",
+            ["70"] = "Consum",
+            ["80"] = "Transfer intern",
+            ["90"] = "Cheltuieli ulterioare capitalizate",
+            ["100"] = "Diferențe de preț în plus",
+            ["101"] = "Diferențe de preț în minus",
+            ["110"] = "Plus de inventar",
+            ["120"] = "Minus de inventar",
+            ["130"] = "Ajustări pentru depreciere",
+            ["140"] = "Reluări ale ajustărilor pentru depreciere",
+            ["150"] = "Bunuri acordate cu titlu gratuit",
+            ["160"] = "Bunuri degradate",
+            ["170"] = "Bunuri expirate",
+            ["180"] = "Alte tranzacții (fără cantitate)",
+        };
+
+    /// <summary>
+    /// Codul e din nomenclator. Gol/null ⇒ FALS: absența codului e o decizie
+    /// proprie (excludere deliberată, cu motiv), nu un cod valid — cine o admite
+    /// o tratează explicit, nu prin această funcție.
+    /// </summary>
+    public static bool EsteCodMiscare(string cod) =>
+        !string.IsNullOrEmpty(cod) && CoduriMiscare.ContainsKey(cod);
 }
 
 // Motivul pentru care un identificator a ieșit cum a ieșit — enum MIC, intern

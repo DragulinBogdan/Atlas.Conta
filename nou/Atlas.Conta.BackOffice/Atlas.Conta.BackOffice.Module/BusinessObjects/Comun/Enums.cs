@@ -175,6 +175,28 @@ public enum RolTertCont {
     [XafDisplayName("Furnizor")] Furnizor = 2,
 }
 
+// Cine e terțul unei MIȘCĂRI de stoc în SAF-T S (felia 17, D17-D1) — și DE CE nu
+// se refolosește `RolTertCont` de mai sus, deși are exact aceleași trei valori.
+//
+// Convenția secțiunii S e ALTA decât a lui L (xlsx SD.MG.21/22, verbatim):
+// livrarea către client pune `CustomerID` = partenerul și `SupplierID` = „0";
+// achiziția, simetric; mișcarea internă pune AMBELE = identitatea raportorului.
+// La L, latura liberă e raportorul, nu „0" — deci un enum comun ar fi ascuns
+// două reguli diferite sub un singur nume și ar fi invitat refolosirea greșită.
+//
+// Iar SURSA e alta: la L rolul e al CONTULUI (`Cont.RolTert`, un fapt al
+// planului); aici e al TIPULUI de document × registrului atins (NIR aduce de la
+// furnizor, DSC dă către client, BTR nu iese din patrimoniu) — un fapt al
+// politicii, cules pe `PoliticaMiscareSaft`.
+//
+// `Niciunul` = 0, valoarea implicită: mișcarea e internă până nu se spune
+// altceva — răspunsul corect pentru majoritatea tipurilor (BTR/BCS/LDI/ASM).
+public enum RolTertSaft {
+    [XafDisplayName("Niciunul (mișcare internă)")] Niciunul = 0,
+    [XafDisplayName("Client")] Client = 1,
+    [XafDisplayName("Furnizor")] Furnizor = 2,
+}
+
 // Felul persoanei partenerului (felia 14, D4-D1): singura axă de pe nomenclator
 // pe care D394 o cere EXPLICIT (PF ⇒ `tip_partener = 2`, CUI-ul e CNP). Restul
 // clasificării 1–4 se DERIVĂ din `Tara` + `InregistratTva` (`D394Proiectii.TipPartener`).

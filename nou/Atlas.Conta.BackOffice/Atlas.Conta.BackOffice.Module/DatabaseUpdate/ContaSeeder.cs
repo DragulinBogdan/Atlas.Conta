@@ -478,6 +478,16 @@ public static class ContaSeeder {
 
     public static void SeedMapareD394Privat(IObjectSpace os) => ProfilPrivat.SeedMapareD394(os);
 
+    // Același seam pentru politica de mișcare SAF-T S (felia 17, D17-D1):
+    // idempotența și respectarea ștergerii logice se probează pe FUNCȚIA REALĂ,
+    // iar tabelul se citește tot de aici — ModelCheck nu-și scrie o a doua copie
+    // a cifrelor pe care le verifică.
+    public static void SeedPoliticiMiscareSaftPrivat(IObjectSpace os) =>
+        ProfilPrivat.SeedPoliticiMiscareSaft(os);
+
+    public static IReadOnlyCollection<(string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv)>
+        MiscariSaftPrivat => ProfilPrivat.MiscariSaft;
+
     // Lista nemapatelor deliberate e parte din contract (D4-D2): proiecția și
     // ModelCheck o citesc prin nucleu (pachetul de profil rămâne internal).
     public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD394Privat =>

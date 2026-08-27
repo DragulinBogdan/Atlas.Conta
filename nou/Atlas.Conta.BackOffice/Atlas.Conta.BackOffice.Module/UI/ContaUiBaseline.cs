@@ -114,6 +114,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<RandD300>().HideForeignKeys();                 // ParinteId/OglindaAId
         registry.For<MapareD300>().HideForeignKeys();               // TipTvaId/RandId
         registry.For<MapareD394>().HideForeignKeys();               // TipTvaId
+        registry.For<PoliticaMiscareSaft>().HideForeignKeys();      // TipDocumentId (felia 17, D17-D1)
 
         // Partenerul (felia 14, D4-D1): identitatea fiscală într-un grup propriu.
         // Layout-ul e declarat integral (bază-întâi nu se aplică — `Repartitor`

@@ -1,5 +1,6 @@
 using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
 // `IgnoreQueryFilters` — singurul loc din seed care întreabă tabela ÎNTREAGĂ,
 // peste filtrul global de ștergere amânată pus de XAF (`GCRecord = 0`).
@@ -53,6 +54,10 @@ internal static class ProfilPrivat {
         // Retururile derivă 6xx = 3xx pe RDC (independent de FCL/DSC — cheia e
         // TipDocument), deci pot sta oriunde după nomenclatoare.
         SeedPoliticiRetururi(os);
+        // Cum se citește în SAF-T S ce a scris politica de stoc de mai sus
+        // (felia 17, D17-D1): cheia e `TipDocument`, deci trebuie să vină după
+        // tipurile de document (comise de nucleu), nu după regulile de stoc.
+        SeedPoliticiMiscareSaft(os);
         os.CommitChanges();
         // PoliticaTva referă TipTva comise mai sus.
         SeedPoliticiTva(os);
@@ -688,6 +693,103 @@ internal static class ProfilPrivat {
                         $"Tipul de TVA {cod} nu are mapare D394 pe sensul {sens} și nici nu e declarat nemapat "
                         + "deliberat — operațiunile lui ar cădea tăcut în afara declarației.");
             }
+        }
+    }
+
+    // ── Politica de mișcare SAF-T S (felia 17, D17-D1) ──────────────────────
+    //
+    // Tabelul e derivat pe FUNCȚIONALITATE (decizia 21), din perechea
+    // „ce scrie tipul în registru" (`SeedReguliStoc` de mai jos) × „cum se
+    // numește mișcarea aia în D406": NIR aduce marfă de la furnizor (`10`), DSC o
+    // dă clientului (`30`), BTR o mută între gestiuni (`80`), BCS o consumă
+    // (`70`), LDI o găsește în plus (`110`) sau în minus (`120`), ASM produce
+    // (`20`) consumând (`70`), RLF o întoarce furnizorului (`50`), RDC o
+    // primește înapoi de la client (`40`).
+    //
+    // `Semn` NULL = „orice semn" acolo unde tipul are o singură direcție per
+    // registru (NIR intră mereu, BTR are ACEEAȘI mișcare pe ambele picioare);
+    // ±1 acolo unde direcția schimbă codul (LDI, ASM).
+    //
+    // Registrele: `Magazie` + `Marfuri` peste tot, fiindcă exact aceeași pereche
+    // o scrie `SeedReguliStoc` la privat (genericul + clasa MF). Singura excepție
+    // e `Consum`, pe care doar BCS îl atinge.
+    //
+    // Cod NULL pe `BCS/Consum/+1`: rândul de intrare în consum e o mutare de
+    // RESPONSABILITATE (27a), nu o mișcare de stoc în magazie — declarat, ar
+    // dubla ieșirea `70` a aceleiași linii. Excludere DELIBERATĂ, cu motiv, nu
+    // omisiune: cifrele ei apar în `Excluse`.
+    //
+    // Codurile fără sursă în model azi (60 reduceri comerciale, 90 capitalizări,
+    // 100/101 diferențe de preț, 130–180) NU se seed-uiesc: niciun tip de
+    // document nu le produce. Politica le poate primi fără release când apar.
+    static readonly (string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv)[]
+        PoliticiMiscareSaft = [
+            ("NIR", TipStoc.Magazie, null, "10", RolTertSaft.Furnizor, null),
+            ("NIR", TipStoc.Marfuri, null, "10", RolTertSaft.Furnizor, null),
+            ("BTR", TipStoc.Magazie, null, "80", RolTertSaft.Niciunul, null),
+            ("BTR", TipStoc.Marfuri, null, "80", RolTertSaft.Niciunul, null),
+            ("BCS", TipStoc.Magazie, -1, "70", RolTertSaft.Niciunul, null),
+            ("BCS", TipStoc.Marfuri, -1, "70", RolTertSaft.Niciunul, null),
+            ("BCS", TipStoc.Consum, +1, null, RolTertSaft.Niciunul,
+                "Consumul pe responsabil nu e stoc în magazie (27a)"),
+            ("LDI", TipStoc.Magazie, +1, "110", RolTertSaft.Niciunul, null),
+            ("LDI", TipStoc.Marfuri, +1, "110", RolTertSaft.Niciunul, null),
+            ("LDI", TipStoc.Magazie, -1, "120", RolTertSaft.Niciunul, null),
+            ("LDI", TipStoc.Marfuri, -1, "120", RolTertSaft.Niciunul, null),
+            ("DSC", TipStoc.Magazie, -1, "30", RolTertSaft.Client, null),
+            ("DSC", TipStoc.Marfuri, -1, "30", RolTertSaft.Client, null),
+            ("ASM", TipStoc.Magazie, +1, "20", RolTertSaft.Niciunul, null),
+            ("ASM", TipStoc.Marfuri, +1, "20", RolTertSaft.Niciunul, null),
+            ("ASM", TipStoc.Magazie, -1, "70", RolTertSaft.Niciunul, null),
+            ("ASM", TipStoc.Marfuri, -1, "70", RolTertSaft.Niciunul, null),
+            ("RLF", TipStoc.Magazie, -1, "50", RolTertSaft.Furnizor, null),
+            ("RLF", TipStoc.Marfuri, -1, "50", RolTertSaft.Furnizor, null),
+            ("RDC", TipStoc.Magazie, +1, "40", RolTertSaft.Client, null),
+            ("RDC", TipStoc.Marfuri, +1, "40", RolTertSaft.Client, null),
+        ];
+
+    // Tabelul e parte din contract (D17-D1): ModelCheck îl citește prin nucleu
+    // (`ContaSeeder`), ca să nu-și scrie propria copie a cifrelor.
+    public static IReadOnlyCollection<(string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv)>
+        MiscariSaft => PoliticiMiscareSaft;
+
+    // Idempotent pe CHEIE (tip × TipStoc × Semn) și cu respectarea ștergerii
+    // logice a utilizatorului — același tipar ca `SeedMapareD394` (precedentul
+    // F5/69b): politica e date (decizia 4), deci un rând șters din XAF nu se
+    // recreează la `--updateDatabase`, dar se SPUNE. Public: ModelCheck probează
+    // re-seed-ul pe funcția reală.
+    public static void SeedPoliticiMiscareSaft(IObjectSpace os) {
+        foreach (var p in PoliticiMiscareSaft) {
+            if (p.Cod != null && !SaftReguli.EsteCodMiscare(p.Cod))
+                throw new InvalidOperationException(
+                    $"Tabelul de seed al mișcărilor SAF-T dă codul „{p.Cod}” pe {p.Tip}/{p.TipStoc} — "
+                    + "codul nu e în nomenclatorul D406 (D17-D2).");
+            if (p.Cod == null && string.IsNullOrWhiteSpace(p.Motiv))
+                throw new InvalidOperationException(
+                    $"Tabelul de seed al mișcărilor SAF-T exclude {p.Tip}/{p.TipStoc} fără motiv — "
+                    + "excluderea deliberată se citește pe ecran lângă cifrele ei (D17-D1).");
+            var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == p.Tip)
+                ?? throw new InvalidOperationException(
+                    $"Politica de mișcare SAF-T {p.Tip}/{p.TipStoc} nu se poate seed-ui: "
+                    + $"lipsește din bază tipul de document {p.Tip}.");
+            var tipStoc = p.TipStoc;
+            var semn = p.Semn;
+            if (os.GetObjectsQuery<PoliticaMiscareSaft>()
+                    .Any(x => x.TipDocumentId == tip.ID && x.TipStoc == tipStoc && x.Semn == semn))
+                continue;
+            if (os.GetObjectsQuery<PoliticaMiscareSaft>().IgnoreQueryFilters()
+                    .Any(x => x.TipDocumentId == tip.ID && x.TipStoc == tipStoc && x.Semn == semn)) {
+                Console.WriteLine($"  Politica de mișcare SAF-T {p.Tip}/{p.TipStoc}/{p.Semn?.ToString() ?? "orice"}: "
+                    + "ȘTEARSĂ de utilizator, nu se recreează (politica e date — decizia 4).");
+                continue;
+            }
+            var politica = os.CreateObject<PoliticaMiscareSaft>();
+            politica.TipDocument = tip;
+            politica.TipStoc = tipStoc;
+            politica.Semn = semn;
+            politica.CodMiscare = p.Cod;
+            politica.RolTert = p.Rol;
+            politica.Motiv = p.Motiv;
         }
     }
 
