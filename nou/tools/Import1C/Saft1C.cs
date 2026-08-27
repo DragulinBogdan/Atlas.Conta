@@ -26,15 +26,26 @@ namespace Import1C;
 // Ușa e cea NON-SECURED a uneltei (44: conectoarele n-au nevoie de tierul API),
 // deci proiecția vede tot — spre deosebire de REST, unde `User` primește sumar
 // gol și 403 pe fișier (D16-D5).
+//
+// Felia 17 adaugă `--saft-s <an> <lună>`: ACEEAȘI comandă pe modulul S
+// (stocuri). Nu e o a doua unealtă — e un PARAMETRU (`SaftFel`), fiindcă tot ce
+// e în jurul proiecției (fișierul, oracolul, codul de ieșire, gruparea erorilor
+// DUK) e identic; ce diferă e proiecția și, în raport, ce cusături se citesc.
+enum SaftFel { Lunar, Stocuri }
+
 static class Saft1C {
 
-    public static int Executa(IObjectSpaceProvider provider, int an, int luna, string director) {
+    public static int Executa(IObjectSpaceProvider provider, int an, int luna, string director,
+            SaftFel fel = SaftFel.Lunar) {
+        var stocuri = fel == SaftFel.Stocuri;
+        var numeModul = stocuri ? "S (stocuri, „la cerere”)" : "L (lunar)";
         var cronometru = Stopwatch.StartNew();
-        Console.WriteLine($"\n=== SAF-T (D406) {luna:00}/{an} — proiecție, fișier, validator ===");
+        Console.WriteLine($"\n=== SAF-T (D406), modul {numeModul} {luna:00}/{an} — "
+            + "proiecție, fișier, validator ===");
 
         SaftDto dto;
         using (var os = provider.CreateObjectSpace())
-            dto = SaftProiectii.Saft(os, an, luna);
+            dto = stocuri ? SaftProiectii.SaftStocuri(os, an, luna) : SaftProiectii.Saft(os, an, luna);
         var durataProiectie = cronometru.Elapsed;
 
         // Bugetarul n-are bază contabilă printre cele 12 ale ANAF ⇒ declarația
@@ -46,10 +57,23 @@ static class Saft1C {
             return 1;
         }
 
-        var caleXml = Path.Combine(director, $"saft-{an}-{luna:00}.xml");
+        var radacina = stocuri ? $"saft-s-{an}-{luna:00}" : $"saft-{an}-{luna:00}";
+        var caleXml = Path.Combine(director, $"{radacina}.xml");
         cronometru.Restart();
-        using (var fisier = File.Create(caleXml))
+        try {
+            using var fisier = File.Create(caleXml);
             SaftXml.Scrie(dto, fisier);
+        }
+        // Pe modulul S, o lună fără nicio intrare de stoc fizic nu produce o
+        // declarație depozabilă (`PhysicalStock` e obligatoriu prezent pe „C",
+        // măsurat cu DUK la pasul 3) — scriitorul refuză, exact ca pe
+        // `Neaplicabil`. Aici se spune de ce și se iese cu cod ≠ 0: un fișier
+        // trunchiat lăsat pe disc ar fi cea mai proastă urmă posibilă.
+        catch (InvalidOperationException ex) {
+            File.Delete(caleXml);
+            Console.Error.WriteLine($"Fișierul NU s-a scris: {ex.Message}");
+            return 1;
+        }
         var durataScriere = cronometru.Elapsed;
         var dimensiune = new FileInfo(caleXml).Length;
 
@@ -57,9 +81,10 @@ static class Saft1C {
         var duk = Duk.Valideaza(caleXml, an, luna);
         var durataDuk = cronometru.Elapsed;
 
-        var caleRaport = Path.Combine(director, $"saft-{an}-{luna:00}-raport.txt");
-        var raport = Compune(dto, duk, caleXml, dimensiune,
-            durataProiectie, durataScriere, durataDuk);
+        var caleRaport = Path.Combine(director, $"{radacina}-raport.txt");
+        var raport = stocuri
+            ? ComuneStocuri(dto, duk, caleXml, dimensiune, durataProiectie, durataScriere, durataDuk)
+            : Compune(dto, duk, caleXml, dimensiune, durataProiectie, durataScriere, durataDuk);
         File.WriteAllText(caleRaport, raport, new UTF8Encoding(false));
         Console.Write(raport);
         Console.WriteLine($"\nFișierul: {caleXml} ({dimensiune / 1024.0 / 1024.0:N1} MiB)");
@@ -170,6 +195,125 @@ static class Saft1C {
         }
         s.AppendLine();
 
+        Avertismente(s, dto);
+        Validator(s, duk);
+        TimpiSiDimensiune(s, caleXml, dimensiune, proiectie, scriere, validare);
+        return s.ToString();
+    }
+
+    // ═══════════════ Modulul S (stocuri) — felia 17, D17-D4/V5 ═══════════════
+    // Aceleași patru capitole ca la L (secțiuni, cusături cu STARE, ce n-a intrat,
+    // validator), pe alt conținut: cusăturile S1–S4, `Excluse` (excluderile
+    // DELIBERATE ale politicii) separate de `Neincluse` (ce n-a găsit politică —
+    // adică o gaură), iar S3 per cont, fiindcă acolo diferența nu e o eroare, ci
+    // un fapt de citit (registrul contabil poartă 3xx și din NTC/deschideri fără
+    // lot).
+    static string ComuneStocuri(SaftDto dto, DukRezultat duk, string caleXml, long dimensiune,
+            TimeSpan proiectie, TimeSpan scriere, TimeSpan validare) {
+        var s = new StringBuilder();
+        var rez = dto.Rezumat;
+        s.AppendLine($"SAF-T (D406, modul S — stocuri, „la cerere”) {dto.Luna:00}/{dto.An} — "
+            + $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        s.AppendLine($"Perioada: {dto.DataStart:yyyy-MM-dd} … {dto.DataEnd:yyyy-MM-dd}");
+        s.AppendLine($"Raportor: {dto.Header?.Name ?? "(fără denumire)"} · "
+            + $"{dto.Header?.RegistrationNumber ?? "(fără CUI)"} · bază {dto.Header?.TaxAccountingBasis ?? "–"} · "
+            + $"`HeaderComment` {dto.Header?.HeaderComment ?? "–"}");
+        s.AppendLine();
+
+        s.AppendLine("--- Secțiuni (număr de intrări) ---");
+        s.AppendLine($"  GeneralLedgerAccounts   {dto.Conturi.Count,10}");
+        s.AppendLine($"  TaxTable                {dto.Taxe.Count,10}");
+        s.AppendLine($"  UOMTable                {dto.Unitati.Count,10}");
+        s.AppendLine($"  AnalysisTypeTable       {dto.TipuriAnaliza.Count,10}");
+        s.AppendLine($"  MovementTypeTable       {dto.TipuriMiscare.Count,10}   "
+            + $"[{string.Join(", ", dto.TipuriMiscare.Select(t => t.Cod))}]");
+        s.AppendLine($"  Products                {dto.Produse.Count,10}");
+        s.AppendLine($"  PhysicalStock           {dto.StocFizic.Count,10}   "
+            + $"(deschidere {rez.StocOpeningValoare:N2} → închidere {rez.StocClosingValoare:N2})");
+        s.AppendLine($"  MovementOfGoods         {dto.MiscariStoc.Count,10}   "
+            + $"(linii {dto.NumberOfMovementLines}, peste {rez.RanduriRegistruStoc} rânduri de registru; "
+            + $"din care {dto.MiscariStoc.Count(m => m.Storno)} de storno)");
+        s.AppendLine($"  … recepționat / eliberat {dto.TotalQuantityReceived:0.###} / "
+            + $"{dto.TotalQuantityIssued:0.###}");
+        s.AppendLine($"  Owners                  {0,10}   (bunuri proprii — ghidul cere secțiunea GOALĂ)");
+        s.AppendLine();
+
+        // Cusăturile D17-D3, cu STARE. DUK nu face NICIO aritmetică pe S
+        // (`Opening + intrări − ieșiri = Closing` nu e verificat, totalurile
+        // n-au regulă) — deci un fișier care trece validatorul și pierde
+        // cantități între registre e tot un fișier greșit. Cusăturile sunt
+        // singurul lucru care-l prinde.
+        s.AppendLine("--- Cusăturile (D17-D3), la cent și la a 3-a zecimală pe cantități ---");
+        Cusatura(s, "S1 stoc fizic: Opening + Σ mișcările lunii == Closing, PE FIECARE intrare (lot × gestiune)",
+            rez.StocFizicBate && rez.StocIntrariDiferite == 0 && rez.StocIntrari > 0,
+            $"{rez.StocIntrari} intrări, {rez.StocIntrariDiferite} diferite; cantitate "
+                + $"{rez.StocOpeningCantitate:0.###} + {rez.StocMiscariCantitate:0.###} = "
+                + $"{rez.StocOpeningCantitate + rez.StocMiscariCantitate:0.###} vs "
+                + $"{rez.StocClosingCantitate:0.###}; valoare {rez.StocOpeningValoare:N2} + "
+                + $"{rez.StocMiscariValoare:N2} = {rez.StocOpeningValoare + rez.StocMiscariValoare:N2} vs "
+                + $"{rez.StocClosingValoare:N2}");
+        Cusatura(s, "S2 nimic nu se pierde: Σ mișcări + Σ Excluse (deliberat) + Σ Neincluse == Σ RegistruStoc "
+                + "pe documentele lunii (TOATE tipurile de stoc)",
+            rez.RegistruStocBate,
+            $"valoare {rez.MiscariValoare:N2} + {rez.ExcluseValoare:N2} + {rez.NeincluseStocValoare:N2} = "
+                + $"{rez.MiscariValoare + rez.ExcluseValoare + rez.NeincluseStocValoare:N2} vs registru "
+                + $"{rez.RegistruStocValoare:N2}; cantitate {rez.MiscariCantitate:0.###} + "
+                + $"{rez.ExcluseCantitate:0.###} + {rez.NeincluseStocCantitate:0.###} = "
+                + $"{rez.MiscariCantitate + rez.ExcluseCantitate + rez.NeincluseStocCantitate:0.###} vs "
+                + $"{rez.RegistruStocCantitate:0.###}");
+        s.AppendLine($"  [RAPORTATĂ, NU BLOCANTĂ] S3 stoc fizic vs balanță, PER CONT de stoc: "
+            + $"{rez.ConturiStocDiferite}/{rez.ConturiStocVerificate} conturi diferite");
+        s.AppendLine($"           Σ închidere stoc fizic {rez.ClosingStocFizic:N2} vs Σ balanță "
+            + $"{rez.ClosingBalantaStoc:N2} ⇒ {rez.ClosingStocFizic - rez.ClosingBalantaStoc:N2}");
+        s.AppendLine("           (diferența e legitimă: registrul CONTABIL poartă conturile de stoc și din "
+            + "note contabile / solduri de deschidere fără lot — vezi §D17-D3)");
+        foreach (var c in rez.StocPerCont.OrderByDescending(c => Math.Abs(c.Diferenta)))
+            s.AppendLine($"           cont {c.Cont,-10} stoc {c.ClosingStocFizic,18:N2} · balanță "
+                + $"{c.ClosingBalanta,18:N2} · diferență {c.Diferenta,18:N2}");
+        Cusatura(s, "S4 referințe: fiecare `ProductCode` e în `Products`, fiecare cod de mișcare în "
+                + "`MovementTypeTable`, fiecare `CustomerID`/`SupplierID` ≠ 0 are format valid",
+            rez.ReferinteBat,
+            $"{rez.ProduseLipsa}/{rez.ProduseReferite} produse nedeclarate · {rez.CoduriMiscareLipsa}/"
+                + $"{rez.CoduriMiscareFolosite} coduri nedeclarate · {rez.IdentitatiTertInvalide} identități "
+                + "de terț cu format invalid");
+        s.AppendLine();
+
+        // `Excluse` ≠ `Neincluse`, și distincția e chiar contractul: primele sunt
+        // rânduri pe care POLITICA le lasă deliberat afară, cu motiv scris de om
+        // (BCS/Consum: consumul pe responsabil nu e stoc în magazie); a doua listă
+        // e ce n-a găsit nicio politică — adică o gaură care se închide cu un rând
+        // de politică, fără release.
+        s.AppendLine($"--- Excluse DELIBERAT (rânduri de politică cu cod null): {dto.Excluse.Count} politici ---");
+        if (dto.Excluse.Count == 0)
+            s.AppendLine("  (niciuna — nicio politică de excludere n-a fost atinsă în lună)");
+        foreach (var x in dto.Excluse.OrderByDescending(x => x.Numar))
+            s.AppendLine($"  {x.Numar,8} × {x.TipDocument}/{x.TipStoc}/{x.Semn?.ToString() ?? "±"}  "
+                + $"cantitate {x.Cantitate:0.###} · valoare {x.Valoare:N2}\n           motiv: {x.Motiv}");
+        s.AppendLine();
+
+        s.AppendLine($"--- Neincluse (fără politică sau fără cont): {dto.Neincluse.Count} intrări, "
+            + "GRUPATE per cauză ---");
+        if (dto.Neincluse.Count == 0)
+            s.AppendLine("  (niciuna — tot ce e în registrul de stoc a intrat în fișier)");
+        foreach (var g in dto.Neincluse.GroupBy(n => $"{n.Cauza} [{n.Sectiune}]")
+                     .OrderByDescending(g => g.Sum(n => n.Randuri))) {
+            s.AppendLine($"  {g.Sum(n => n.Randuri),8} rânduri ({g.Count()} intrări) × {g.Key}  "
+                + $"cantitate {g.Sum(n => n.Cantitate ?? 0m):0.###} · valoare {g.Sum(n => n.Valoare ?? 0m):N2}");
+            foreach (var n in g.Take(3))
+                s.AppendLine($"           ex. {n.DocumentTip} {n.DocumentNumar} produs {n.ProdusCod} "
+                    + $"{n.TipStoc}/{n.Semn?.ToString() ?? "±"} ×{n.Randuri} "
+                    + $"{n.Cantitate ?? 0m:0.###}/{n.Valoare ?? 0m:N2}");
+        }
+        s.AppendLine();
+
+        Avertismente(s, dto);
+        Validator(s, duk);
+        TimpiSiDimensiune(s, caleXml, dimensiune, proiectie, scriere, validare);
+        return s.ToString();
+    }
+
+    // ─── Capitolele comune celor două module ────────────────────────────────
+    static void Avertismente(StringBuilder s, SaftDto dto) {
         s.AppendLine($"--- Avertismente: {dto.Avertismente.Count} coduri ---");
         if (dto.Avertismente.Count == 0)
             s.AppendLine("  (niciunul)");
@@ -179,7 +323,9 @@ static class Saft1C {
                 s.AppendLine($"           ex. {ex}");
         }
         s.AppendLine();
+    }
 
+    static void Validator(StringBuilder s, DukRezultat duk) {
         s.AppendLine($"--- Validatorul oficial (DUKIntegrator): {duk.Rezumat} ---");
         s.AppendLine($"  comanda: {duk.Comanda ?? "(n-a rulat)"}");
         if (!duk.Disponibil)
@@ -198,12 +344,14 @@ static class Saft1C {
                 s.AppendLine($"           {a}");
         }
         s.AppendLine();
+    }
 
+    static void TimpiSiDimensiune(StringBuilder s, string caleXml, long dimensiune,
+            TimeSpan proiectie, TimeSpan scriere, TimeSpan validare) {
         s.AppendLine("--- Timpi și dimensiune ---");
         s.AppendLine($"  proiecție {proiectie.TotalSeconds:N1} s · scriere XML {scriere.TotalSeconds:N1} s · "
             + $"validator {validare.TotalSeconds:N1} s");
         s.AppendLine($"  fișier {caleXml} — {dimensiune:N0} octeți ({dimensiune / 1024.0 / 1024.0:N1} MiB)");
-        return s.ToString();
     }
 
     static void Cusatura(StringBuilder s, string nume, bool ok, string cifre) =>

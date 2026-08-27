@@ -14,6 +14,12 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 //     avertismentele;
 //   • `GET api/proiectii/saft/xml?an&luna`  → fișierul, streaming.
 //
+// Modulul S (stocuri, „la cerere" — felia 17, D17-D4) are aceleași două uși pe
+// `…/saft/stocuri` și `…/saft/stocuri/xml`, cu ACELEAȘI gărzi în ACEEAȘI ordine:
+// singura diferență e proiecția (`SaftStocuri`) și, în fișier, `HeaderComment`.
+// Gărzile trăiesc o singură dată (`Sumar` și `Fisier`, mai jos) — două copii ar
+// fi divergat exact acolo unde contează.
+//
 // Aceeași proiecție în amândouă: fișierul NU e o a doua sursă de adevăr, e
 // aceeași declarație scrisă altfel (D16: „fișierul se generează din proiecție,
 // nu invers"). Ecranul poate deci verifica înainte de a descărca.
@@ -58,7 +64,28 @@ public class SaftController : ContaApiController {
     [ProducesResponseType(typeof(SaftSumarDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Get([FromQuery] int? an = null, [FromQuery] int? luna = null) {
+    public IActionResult Get([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
+        Sumar(an, luna, SaftProiectii.Saft);
+
+    // ═══ Modulul S (la cerere = STOCURI), felia 17 ═══
+    // Aceleași două uși, aceeași ordine a gărzilor, alt modul: singura diferență
+    // e PROIECȚIA (`SaftStocuri` în loc de `Saft`) și, în fișier,
+    // `HeaderComment = C`. Rutele sunt separate, nu un parametru `fel` pe
+    // aceeași rută, fiindcă cele două declarații se depun separat (un fișier per
+    // lună, per modul — §2 al contractului) și fiindcă un client care cere „S"
+    // are altă listă de secțiuni de arătat: contractul e altul, deci și ușa.
+    [HttpGet("stocuri")]
+    [ProducesResponseType(typeof(SaftSumarDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult GetStocuri([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
+        Sumar(an, luna, SaftProiectii.SaftStocuri);
+
+    // Ușa JSON, o singură dată pentru ambele module: perioada → proiecție →
+    // `Neaplicabil` → sumar. Diferența dintre L și S intră ca FUNCȚIE de
+    // proiecție, nu ca `if` pe un parametru — cele două uși n-au voie să înceapă
+    // să difere prin altceva decât modulul.
+    IActionResult Sumar(int? an, int? luna, Func<IObjectSpace, int, int, DateOnly?, SaftDto> proiectie) {
         var erori = Perioada(an, luna);
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
@@ -67,7 +94,7 @@ public class SaftController : ContaApiController {
         // citească registrul contabil nu-l citește nici așezat pe formular.
         // Proiecția întoarce liste materializate — nimic deferred după `using`.
         using var os = Secured(typeof(RegistruContabil));
-        var dto = SaftProiectii.Saft(os, an.Value, luna.Value);
+        var dto = proiectie(os, an.Value, luna.Value, null);
         if (dto.Neaplicabil != null)
             return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(dto.Neaplicabil));
         // Aceeași proiecție ca fișierul, apoi `Sumar` — funcție PURĂ pe DTO. Costul
@@ -88,7 +115,28 @@ public class SaftController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Xml([FromQuery] int? an = null, [FromQuery] int? luna = null) {
+    public IActionResult Xml([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
+        Fisier(an, luna, SaftProiectii.Saft, PrefixL);
+
+    // Fișierul modulului S. ACEEAȘI ordine a gărzilor ca la L (`PoateCiti` ⇒ 403,
+    // `Neaplicabil` ⇒ 422, CUI lipsă/invalid ⇒ 422), plus una PROPRIE modulului:
+    // stocul fizic gol ⇒ 422. Vezi `Fisier`.
+    [HttpGet("stocuri/xml")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult XmlStocuri([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
+        Fisier(an, luna, SaftProiectii.SaftStocuri, PrefixS);
+
+    const string PrefixL = "SAF-T", PrefixS = "SAF-T-S";
+
+    // Ușa FIȘIER, o singură dată pentru ambele module: gărzile sunt aceleași și
+    // în ACEEAȘI ordine, iar asta e chiar motivul pentru care metoda e una. Două
+    // copii ar fi divergat exact acolo unde contează (F7 s-ar fi aplicat doar pe
+    // una), și n-ar fi existat niciun loc în care să se citească ordinea.
+    IActionResult Fisier(int? an, int? luna,
+            Func<IObjectSpace, int, int, DateOnly?, SaftDto> proiectie, string prefixNume) {
         var erori = Perioada(an, luna);
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
@@ -100,7 +148,7 @@ public class SaftController : ContaApiController {
         if (!PoateCiti(typeof(RegistruContabil), os))
             return Forbid();
 
-        var dto = SaftProiectii.Saft(os, an.Value, luna.Value);
+        var dto = proiectie(os, an.Value, luna.Value, null);
         if (dto.Neaplicabil != null)
             return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(dto.Neaplicabil));
         // ═══ Fixul F7 al review-ului: fără CUI nu pleacă niciun fișier ═══
@@ -124,6 +172,24 @@ public class SaftController : ContaApiController {
                 $"Codul fiscal al societății raportoare („{codFiscal}”) nu trece cifra de control a CUI-ului — "
                 + "validatorul ANAF ar respinge fișierul, deci nu se generează "
                 + "(corectați „Configurare → Societate → Cod fiscal”)."]));
+        // ═══ Propriu modulului S: declarația fără stoc fizic nu se poate depune ═══
+        // MĂSURAT la pasul 3 cu DUK: pe profilul „la cerere" secțiunea
+        // `PhysicalStock` e OBLIGATORIU prezentă (deși XSD-ul o are `minOccurs=0`),
+        // iar un tag gol pică schema fiindcă `PhysicalStockEntry` e obligatoriu
+        // înăuntru. Nu există deci formă validă a unei declarații S fără nicio
+        // intrare de stoc — de aceea refuzul e AICI, ca pe `Neaplicabil` și pe CUI:
+        // cerere bine formată, refuz al domeniului ⇒ 422. Sumarul rămâne 200, cu
+        // `StocFizic = 0`, care spune exact de ce. Garda oglindește refuzul lui
+        // `SaftXml.Scrie` — dar se ia înainte de primul octet, ca răspunsul să nu
+        // fie un 200 cu corp trunchiat. Scrisă pe `HeaderComment`, nu pe ruta
+        // apelată: condiția e a MODULULUI declarat în fișier, ca și în scriitor.
+        if (string.Equals(dto.Header.HeaderComment, SaftProiectii.HeaderCommentStocuri,
+                StringComparison.OrdinalIgnoreCase) && dto.StocFizic.Count == 0)
+            return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.Din([
+                $"Luna {dto.Luna:00}/{dto.An} n-are nicio intrare de stoc fizic, iar declarația D406 „la cerere” "
+                + "(stocuri) fără secțiunea `PhysicalStock` nu se poate depune — validatorul ANAF o cere "
+                + "prezentă, cu cel puțin o intrare. Verificați soldurile de stoc ale perioadei "
+                + "(sumarul declarației arată ce a intrat în calcul)."]));
 
         // MĂSURAT, nu presupus: Kestrel refuză scrierile SINCRONE pe corpul
         // răspunsului (`AllowSynchronousIO` = false din .NET 3.0), iar `XmlWriter`
@@ -144,7 +210,7 @@ public class SaftController : ContaApiController {
 
         Response.ContentType = "application/xml; charset=utf-8";
         Response.Headers.ContentDisposition =
-            $"attachment; filename=\"{NumeFisier(dto)}\"";
+            $"attachment; filename=\"{NumeFisier(dto, prefixNume)}\"";
         // STREAMING pe corpul răspunsului: `SaftXml` scrie cu `XmlWriter` peste
         // `Stream` și are `CloseOutput = false` (fluxul e al apelantului), deci
         // fișierul nu trece niciodată printr-un string sau un `MemoryStream`
@@ -155,17 +221,19 @@ public class SaftController : ContaApiController {
         return new EmptyResult();
     }
 
-    // `SAF-T_{CUI}_{an}-{luna}.xml` — CUI-ul e cel din antet (`RO` tăiat: e
-    // prefixul de TVA, nu parte din cod), fiindcă asta identifică declarantul
-    // într-un director cu fișierele mai multor firme.
-    static string NumeFisier(SaftDto dto) {
+    // `SAF-T_{CUI}_{an}-{luna}.xml` (L) / `SAF-T-S_{CUI}_{an}-{luna}.xml` (S) —
+    // CUI-ul e cel din antet (`RO` tăiat: e prefixul de TVA, nu parte din cod),
+    // fiindcă asta identifică declarantul într-un director cu fișierele mai multor
+    // firme; modulul e în prefix fiindcă cele două declarații ale ACELEIAȘI luni
+    // ar fi altfel două fișiere cu același nume.
+    static string NumeFisier(SaftDto dto, string prefix) {
         var cui = dto.Header?.RegistrationNumber ?? "";
         if (cui.StartsWith("RO", StringComparison.OrdinalIgnoreCase))
             cui = cui[2..];
         cui = new string(cui.Where(char.IsLetterOrDigit).ToArray());
         if (cui.Length == 0)
             cui = "fara-cui";
-        return $"SAF-T_{cui}_{dto.An:0000}-{dto.Luna:00}.xml";
+        return $"{prefix}_{cui}_{dto.An:0000}-{dto.Luna:00}.xml";
     }
 
     // Perioada, ca listă de refuzuri (aceeași formă în ambele acțiuni — o
@@ -181,7 +249,8 @@ public class SaftController : ContaApiController {
         if (luna == null)
             erori.Add("Parametrul „luna” este obligatoriu (luna perioadei de raportare, 1–12).");
         else if (luna < 1 || luna > 12)
-            erori.Add("„luna” trebuie să fie între 1 și 12 — declarația D406 „L” se depune pe o lună.");
+            erori.Add("„luna” trebuie să fie între 1 și 12 — declarația D406 se depune pe o lună "
+                + "(și „L” lunară, și „S” la cerere: un fișier per lună).");
         return erori;
     }
 }

@@ -104,6 +104,33 @@ public static class SaftXml {
                 + "(`Header.Company.RegistrationNumber`) — completați „Configurare → Societate → Cod fiscal” "
                 + "înainte de a genera fișierul.");
 
+        // `HeaderComment` decide MODULUL, iar validatorul are un profil pe fiecare:
+        // pe „C" (la cerere = stocuri) secțiunile lunarului sunt N/A și n-au voie
+        // să poarte NIMIC — nici măcar totalurile la zero. MĂSURAT cu DUK în
+        // D17-V3: `<GeneralLedgerEntries><NumberOfEntries>0</NumberOfEntries>…`
+        // dă „elementul 'NumberOfEntries' a depasit numarul maxim de aparitii (0)",
+        // iar același fișier cu cele patru secțiuni GOLITE trece cu `ok`. Deci
+        // regula §A.5 („doar tag-urile de început și de sfârșit") se aplică
+        // literal, totalurile incluse — ele descriu rânduri care aici nu există.
+        var laCerere = string.Equals(dto.Header.HeaderComment, SaftProiectii.HeaderCommentStocuri,
+            StringComparison.OrdinalIgnoreCase);
+        // ═══ `PhysicalStock` e OBLIGATORIU pe „C" (măsurat, D17-V3) ═══
+        // XSD-ul îl are `minOccurs=0`, dar profilul validatorului îl cere: fără
+        // el, DUK spune „elementul 'PhysicalStock' ar fi trebuit sa apara de
+        // minimum 1 ori", iar cu el prezent și gol pică schema. Nu există deci
+        // formă validă a unei declarații S fără nicio intrare de stoc fizic —
+        // ceea ce înseamnă că fișierul NU se poate depune, nu că se depune gol.
+        // Refuzul se ia aici, ca `Neaplicabil`: apelantul REST îl traduce în 422
+        // cât timp răspunsul e încă schimbabil, iar sumarul rămâne 200 (contorul
+        // `StocFizic = 0` spune de ce). A scrie totuși fișierul ar fi însemnat să
+        // livrezi cu status 200 un XML pe care ANAF îl respinge — cel mai prost
+        // răspuns posibil, fiindcă pare succes.
+        if (laCerere && dto.StocFizic.Count == 0)
+            throw new InvalidOperationException(
+                "Declarația S (D406 „la cerere”, stocuri) fără nicio intrare de stoc fizic nu se poate depune — "
+                + "validatorul ANAF cere secțiunea `PhysicalStock` prezentă, cu cel puțin o intrare "
+                + $"(luna {dto.Luna:00}/{dto.An} n-are niciun sold de stoc pe tipurile de stoc raportate).");
+
         var setari = new XmlWriterSettings {
             // Fără BOM: kitul acceptă ambele, iar absența lui e alegerea care nu
             // are nevoie de justificare.
@@ -116,16 +143,6 @@ public static class SaftXml {
         };
         using var w = XmlWriter.Create(iesire, setari);
         var moneda = dto.Header.DefaultCurrencyCode ?? SaftProiectii.DefaultCurrencyCode;
-        // `HeaderComment` decide MODULUL, iar validatorul are un profil pe fiecare:
-        // pe „C" (la cerere = stocuri) secțiunile lunarului sunt N/A și n-au voie
-        // să poarte NIMIC — nici măcar totalurile la zero. MĂSURAT cu DUK în
-        // D17-V3: `<GeneralLedgerEntries><NumberOfEntries>0</NumberOfEntries>…`
-        // dă „elementul 'NumberOfEntries' a depasit numarul maxim de aparitii (0)",
-        // iar același fișier cu cele patru secțiuni GOLITE trece cu `ok`. Deci
-        // regula §A.5 („doar tag-urile de început și de sfârșit") se aplică
-        // literal, totalurile incluse — ele descriu rânduri care aici nu există.
-        var laCerere = string.Equals(dto.Header.HeaderComment, SaftProiectii.HeaderCommentStocuri,
-            StringComparison.OrdinalIgnoreCase);
         // Totalurile unei secțiuni se scriu dacă secțiunea e a modulului declarat
         // SAU dacă are totuși rânduri (o listă plină fără totaluri ar fi mai rea
         // decât o abatere de profil — și e oricum un semn de proiecție stricată).

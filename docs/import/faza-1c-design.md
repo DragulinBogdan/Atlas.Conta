@@ -593,6 +593,15 @@ noi sunt moduri de NOMENCLATOR, iar `--saft` nici măcar nu deschide sursa 1C.
   respins de DUK sau oracol lipsă ⇒ tot ≠ 0 (SĂRIT ≠ trecut).
   Artefactele sunt gitignored, ca jurnalele de reconciliere: 70 MiB cu datele
   fiscale reale ale unui client n-au ce căuta în repo.
+- **`--saft-s <an> <lună>`** (felia 17, același `Saft1C.cs`): ACEEAȘI comandă pe
+  modulul **S** (stocuri, „la cerere") — `SaftProiectii.SaftStocuri` →
+  `saft-s-<an>-<lună>.xml` + `-raport.txt` cu contoarele S, cusăturile **S1–S4**
+  (S3 per cont, raportată, nu blocantă), `Excluse` deliberat (politica cu cod
+  null) separate de `Neincluse`, avertismente, verdictul DUK. Un PARAMETRU
+  (`SaftFel`), nu o a doua unealtă: fișierul, oracolul, gruparea erorilor și
+  codul de ieșire sunt identice. O lună fără nicio intrare de stoc fizic ⇒
+  fișierul NU se scrie (`PhysicalStock` e obligatoriu prezent pe „C") și codul
+  de ieșire e ≠ 0.
 - **Contorul prefixului RO dublat**: `AplicaClasificare` numără `CodFiscal`-urile
   care încep cu `RORO` (insensibil la caz) și dă exemple. NU rescrie nimic —
   normalizarea e în proiecție (`D394Proiectii.NormalizeazaCui`, o singură sursă).

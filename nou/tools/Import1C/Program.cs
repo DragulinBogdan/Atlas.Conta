@@ -89,13 +89,19 @@ string anafUrl = null;
 //  * `--um-nc` = unitatea de măsură UN/ECE și codul NC pe produsele DEJA legate
 //    (materializarea nu le mai atinge: sunt legate), tot doar pe câmp gol;
 //  * `--saft <an> <lună>` = declarația D406 a lunii, scrisă lângă rapoartele de
-//    reconciliere și trecută prin validatorul oficial.
+//    reconciliere și trecută prin validatorul oficial;
+//  * `--saft-s <an> <lună>` (felia 17) = ACEEAȘI comandă pe modulul S (stocuri,
+//    „la cerere"): altă proiecție, același scriitor, același oracol.
 // Primele două rulează și ca pas de nomenclator al importului normal; ca
 // flag-uri sunt modul „doar nomenclatoare", pentru o bază deja importată.
 var societate = false;
 var umNc = false;
 int? saftAn = null;
 var saftLuna = 0;
+// Modulul cerut: `L` (lunar) sau `S` (stocuri). Un singur câmp, nu două perechi
+// an/lună — cele două declarații se generează separat, iar a le cere pe amândouă
+// într-o rulare ar fi însemnat două fișiere și un singur cod de ieșire.
+var saftFel = SaftFel.Lunar;
 for (var i = 0; i < args.Length; i++) {
     var arg = args[i];
     if (!arg.StartsWith("--")) {
@@ -136,14 +142,19 @@ for (var i = 0; i < args.Length; i++) {
             umNc = true;
             break;
         case "--saft":
+        case "--saft-s":
             // Perioada e OBLIGATORIE și se citește ca două poziționale imediate
             // (`--saft 2025 9`), nu ca implicit: un fișier SAF-T generat pe
-            // „luna curentă" e o declarație pe care n-a cerut-o nimeni.
+            // „luna curentă" e o declarație pe care n-a cerut-o nimeni. Modulul
+            // S se cere pe aceeași formă (`--saft-s 2025 9`) — aceeași
+            // parametrizare fiindcă și el se depune pe o LUNĂ (§2 al
+            // contractului F17), nu pe „stocul de azi".
+            saftFel = nume == "--saft-s" ? SaftFel.Stocuri : SaftFel.Lunar;
             var anText = valoare ?? (i + 1 < args.Length ? args[++i] : null);
             var lunaText = i + 1 < args.Length ? args[++i] : null;
             if (!int.TryParse(anText, out var anParsat) || anParsat < 2020
                     || !int.TryParse(lunaText, out saftLuna) || saftLuna is < 1 or > 12) {
-                Console.Error.WriteLine($"--saft cere <an ≥ 2020> <lună 1..12> "
+                Console.Error.WriteLine($"{nume} cere <an ≥ 2020> <lună 1..12> "
                     + $"(primit „{anText}” „{lunaText}”).");
                 return 2;
             }
@@ -175,7 +186,7 @@ for (var i = 0; i < args.Length; i++) {
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
                 + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--recreeaza] "
                 + "[--reclasifica] [--anaf] [--anaf-url <url>] [--deblocheaza <view>:<cheie>] "
-                + "[--societate] [--um-nc] [--saft <an> <lună>]");
+                + "[--societate] [--um-nc] [--saft <an> <lună>] [--saft-s <an> <lună>]");
             return 2;
     }
 }
@@ -295,13 +306,14 @@ if (diagProdus != null) {
     return 0;
 }
 
-// `--saft <an> <lună>`: generarea declarației D406 a lunii + validatorul oficial
-// (felia 16, D16-D6). Rulează AICI — după seed, înaintea oricărei faze care
-// atinge SQL Server-ul 1C — fiindcă e o întrebare pusă bazei ȚINTĂ: proiecția
-// citește doar registrele Atlas, sursa 1C nu are niciun rol. Oprește procesul:
-// nu e o rulare de import și nu are voie să devină una.
+// `--saft` / `--saft-s <an> <lună>`: generarea declarației D406 a lunii (modulul
+// L sau S) + validatorul oficial (feliile 16 și 17). Rulează AICI — după seed,
+// înaintea oricărei faze care atinge SQL Server-ul 1C — fiindcă e o întrebare
+// pusă bazei ȚINTĂ: proiecția citește doar registrele Atlas, sursa 1C nu are
+// niciun rol. Oprește procesul: nu e o rulare de import și nu are voie să devină
+// una.
 if (saftAn is int anSaft) {
-    return Saft1C.Executa(provider, anSaft, saftLuna, Environment.CurrentDirectory);
+    return Saft1C.Executa(provider, anSaft, saftLuna, Environment.CurrentDirectory, saftFel);
 }
 
 // ======================= Faza PRE-FLIGHT (decizia 48c) =======================

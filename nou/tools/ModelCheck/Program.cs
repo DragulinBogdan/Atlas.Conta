@@ -13403,6 +13403,38 @@ void VerificaSaftStocuriXml(SaftDto saft, int an, int luna, double msProiectie) 
         }
     }
 
+    // ═══ `PhysicalStock` gol pe „C": fișierul NU se mai scrie (D17-D4) ═══
+    // Pasul 3 a MĂSURAT că profilul „la cerere" cere secțiunea PREZENTĂ
+    // („elementul 'PhysicalStock' ar fi trebuit sa apara de minimum 1 ori"), deși
+    // XSD-ul o are `minOccurs=0`, iar un tag gol pică schema (`PhysicalStockEntry`
+    // e obligatoriu înăuntru). Nu există deci formă validă a unei declarații S
+    // fără nicio intrare de stoc fizic — ceea ce înseamnă că fișierul nu se poate
+    // DEPUNE, nu că se depune gol. Proba de la pasul 3 („omisă ⇒ trece") a fost
+    // înlocuită cu asta: scriitorul REFUZĂ, exact ca pe `Neaplicabil`, iar
+    // `GET api/proiectii/saft/stocuri/xml` îl traduce în 422 cât timp răspunsul e
+    // încă schimbabil. Nu cere DUK — e o probă de contract al scriitorului, deci
+    // stă ÎNAINTEA ieșirii pe kit lipsă.
+    var stocInitial = saft.StocFizic;
+    string mesajFaraStoc = null;
+    saft.StocFizic = [];
+    try {
+        using var fluxFaraStoc = new MemoryStream();
+        SaftXml.Scrie(saft, fluxFaraStoc);
+    }
+    catch (InvalidOperationException ex) {
+        mesajFaraStoc = ex.Message;
+    }
+    finally {
+        saft.StocFizic = stocInitial;
+    }
+    Console.WriteLine($"     MĂSURAT (D17-V3 fără stoc fizic): `SaftXml.Scrie` → "
+        + $"„{mesajFaraStoc ?? "<A SCRIS FIȘIERUL>"}”.");
+    Check("D17-V3 `SaftXml.Scrie` REFUZĂ o declarație S (`HeaderComment = C`) cu `StocFizic` GOL, cu mesaj de "
+        + "domeniu — `PhysicalStock` e obligatoriu prezent pe profilul „la cerere” (măsurat la pasul 3), deci "
+        + "fișierul n-ar fi depozabil; un XML scris cu status 200 ar părea succes",
+        mesajFaraStoc != null && mesajFaraStoc.Contains("stoc fizic", StringComparison.OrdinalIgnoreCase)
+        && mesajFaraStoc.Contains("PhysicalStock", StringComparison.Ordinal));
+
     if (!rezultat.Disponibil)
         return;
 
@@ -13488,13 +13520,6 @@ void VerificaSaftStocuriXml(SaftDto saft, int an, int luna, double msProiectie) 
         () => intrareProba.ProductType = "999999",
         () => intrareProba.ProductType = tipInitial);
 
-    // ═══ `PhysicalStock` OMIS: singura secțiune S opțională ═══
-    var stocInitial = saft.StocFizic;
-    Masoara("fara-stoc-fizic",
-        "`PhysicalStock` OMIS cu totul (lista goală ⇒ secțiunea lipsește, fiindcă `PhysicalStockEntry` e "
-        + "obligatoriu înăuntru)",
-        () => saft.StocFizic = [],
-        () => saft.StocFizic = stocInitial);
 }
 
 // ============ Felia 15, pas 2: merge-ul ANAF — D15-V2 + D15-V3 ============
