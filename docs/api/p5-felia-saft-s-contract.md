@@ -90,7 +90,10 @@ PROIECȚIE a lui; niciun calcul nou de stoc, doar agregare.
   **nullable**), `RolTert` (enum nou `RolTertSaft { Niciunul, Client,
   Furnizor }`), `Motiv` (`string?`, cerut când `CodMiscare` e null).
   Unic filtrat pe `(TipDocumentId, TipStoc, Semn)` cu `GCRecord = 0` (ca
-  `MapareD300`, 69b); gardian: `CodMiscare` din nomenclatorul de cod
+  `MapareD300`, 69b) **+ al doilea index unic pe `(TipDocumentId, TipStoc)`
+  filtrat `Semn IS NULL AND GCRecord = 0`** (în Postgres `NULL <> NULL`, altfel
+  dublura „orice semn" trece; amendat la pasul 1, probat pe calea reală);
+  gardian: `CodMiscare` din nomenclatorul de cod
   (`SaftReguli.CoduriMiscare`, lista din 3), `Motiv` obligatoriu la cod null.
 - Semantica: rând cu cod ⇒ rândurile de registru potrivite se emit cu acel
   cod; rând cu cod **null** ⇒ **`Excluse` DELIBERATE** (agregat per politică:

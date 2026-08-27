@@ -253,6 +253,18 @@ public enum CauzaNeincludere {
     // într-un `Invoice`. Fără cauza asta, cusătura 3 s-ar fi putut ține doar
     // restrângând registrul la tipurile de factură — adică măsurându-se pe sine.
     [XafDisplayName("Tip de document fără secțiune de facturi")] TipFaraSectiuneFacturi = 7,
+
+    // ── Felia 17 (SAF-T S, D17-D3): cauzele proprii declarației de stocuri ──
+    // Rândul de registru de stoc n-are NICIO politică de mișcare pe cheia lui
+    // (tip × TipStoc × semn), deci `MovementType` n-are sursă. Se deosebește
+    // DELIBERAT de excludere: un rând cu politică FĂRĂ cod e o decizie luată
+    // (iese în `Excluse`, cu motivul ei), unul fără politică e o gaură de profil
+    // — „nimic nu se pierde” cere ca cele două să nu arate la fel.
+    [XafDisplayName("Rând de stoc fără cod de mișcare")] FaraCodMiscare = 8,
+    // Produsul mișcat n-are cont de stoc (`TipMaterial.ContImplicit`), iar
+    // `MovementLine.AccountID` e obligatoriu. Un cont inventat e interzis (73e),
+    // deci linia iese din fișier și intră aici, cu cantitatea și valoarea ei.
+    [XafDisplayName("Produs fără cont de stoc")] FaraContStoc = 9,
 }
 
 // Cauza unui avertisment SAF-T (D16-D4) — aceeași formă agregată ca la D394
@@ -283,6 +295,28 @@ public enum CodAvertismentSaft {
     // avea ce `AccountID` să declare în master files, iar un `<AccountID/>` gol
     // face fișierul invalid. Plata iese în `Neincluse`, nu cu un cont inventat.
     [XafDisplayName("Plată fără cont de terț pe rânduri")] PlataFaraContTert = 14,
+
+    // ── Felia 17 (SAF-T S, D17-D3) ──────────────────────────────────────────
+    // Politica cere un rol de terț (NIR ⇒ furnizor, DSC ⇒ client), dar
+    // documentul n-are niciun `Partener` pe laturi — nici pe ale lui, nici pe
+    // ale documentului-sursă când e autogenerat. Ambele identificatoare ies cu
+    // ale raportorului (mișcare internă), ceea ce e onest, nu inventat.
+    [XafDisplayName("Mișcare cu rol de terț, fără partener")] TertLipsaPeMiscare = 15,
+    // `PhysicalStock.ProductType` cere contul de stoc al produsului; lipsă ⇒ `0`.
+    // Pe MIȘCĂRI aceeași gaură e mai gravă (`AccountID` e obligatoriu), deci
+    // acolo iese `Neincluse/FaraContStoc`, nu avertisment.
+    [XafDisplayName("Produs fără cont de stoc")] ProdusFaraContStoc = 16,
+    // Sold final negativ pe (gestiune × lot): gardianul de sold (25d) n-ar
+    // trebui să-l lase să existe, dar registrul e sursa — se declară CA ATARE
+    // și se strigă, nu se ajustează la zero.
+    [XafDisplayName("Sold de stoc negativ")] SoldNegativ = 17,
+    // Sold de deschidere pe un `TipStoc` fără nicio politică cu cod (Custodie,
+    // Gratuit, ProductieNeterminata): `PhysicalStock` nu-l declară. N-are
+    // document, deci nu poate fi `Neincluse` — dar nici nu are voie să dispară.
+    [XafDisplayName("Sold pe tip de stoc neraportat")] SoldPeTipStocNeraportat = 18,
+    // `MovementReference` (max 35) n-a încăput cu sufixele ei: numărul s-a tăiat
+    // de la început. Identitatea rămâne unică prin sufixe, dar e scurtată.
+    [XafDisplayName("Referință de mișcare trunchiată")] MovementReferenceTrunchiat = 19,
 }
 
 // Cauza unui avertisment D394 (D4-D5, fix 7 al review-ului advers): avertismentele

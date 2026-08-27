@@ -17,7 +17,9 @@
       "ContFaraRol": "Document fără cont de terț",
       "FaraContrapartida": "Linie de factură fără cont contrapartidă",
       "DocumentFaraPartener": "Documentul n-are partener pe laturi",
-      "TipFaraSectiuneFacturi": "Tip de document fără secțiune de facturi"
+      "TipFaraSectiuneFacturi": "Tip de document fără secțiune de facturi",
+      "FaraCodMiscare": "Rând de stoc fără cod de mișcare",
+      "FaraContStoc": "Produs fără cont de stoc"
     },
     "CodAvertismentD394": {
       "CuiUnit": "Parteneri uniți pe același CUI",
@@ -44,7 +46,12 @@
       "PartenerFaraCuiValid": "Partener fără cod fiscal valid",
       "LinieFaraContrapartida": "Linie de factură fără cont contrapartidă",
       "TertFaraPartener": "Rând de registru fără partener pe cont de terț",
-      "PlataFaraContTert": "Plată fără cont de terț pe rânduri"
+      "PlataFaraContTert": "Plată fără cont de terț pe rânduri",
+      "TertLipsaPeMiscare": "Mișcare cu rol de terț, fără partener",
+      "ProdusFaraContStoc": "Produs fără cont de stoc",
+      "SoldNegativ": "Sold de stoc negativ",
+      "SoldPeTipStocNeraportat": "Sold pe tip de stoc neraportat",
+      "MovementReferenceTrunchiat": "Referință de mișcare trunchiată"
     },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",

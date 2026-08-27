@@ -300,6 +300,134 @@ public sealed class SaftNeinclus {
     public decimal? Debit { get; set; }
     public decimal? Credit { get; set; }
     public int Randuri { get; set; }
+
+    // ── Felia 17 (SAF-T S): identitatea rândului de STOC care n-a intrat ─────
+    // Aceeași clasă, nu una nouă: „ce nu intră și de ce" e UN vocabular, iar
+    // ecranul îl citește la fel pe ambele declarații. Câmpurile rămân null pe L,
+    // exact ca `Baza`/`Tva` pe S.
+    public Guid? ProdusId { get; set; }
+    public string ProdusCod { get; set; }
+    // `TipStoc` ca string (57a) și semnul REGULII (nu al rândului: pe storno
+    // semnul din registru e inversat) — împreună cu `DocumentTip` sunt exact
+    // cheia politicii care lipsește.
+    public string TipStoc { get; set; }
+    public int? Semn { get; set; }
+    public decimal? Cantitate { get; set; }
+    public decimal? Valoare { get; set; }
+}
+
+// ═══ SAF-T S (stocuri) — felia 17, D17-D3 ═══════════════════════════════════
+//
+// ACELAȘI `SaftDto` (un DTO, un scriitor): S nu e un al doilea arbore, e ALTE
+// secțiuni ale aceluiași `AuditFile`, selectate de `Header.HeaderComment` („C" =
+// la cerere). Listele lui L rămân goale, listele de mai jos rămân goale pe L.
+
+// `MasterFiles/MovementTypeTable/MovementTypeTableEntry` — codurile FOLOSITE în
+// perioadă, cu descrierea din `SaftReguli.CoduriMiscare` (sursă unică).
+public sealed class SaftTipMiscare {
+    public string Cod { get; set; }
+    public string Descriere { get; set; }
+}
+
+// `SourceDocuments/MovementOfGoods/StockMovement` (4.4). Unitatea e
+// `(Document × Storno × CodMiscare)`: un document cu două coduri (ASM: produce
+// `20`, consumă `70`) se SPARGE, iar jumătatea de storno e o mișcare proprie —
+// exact convenția lui `381` de la facturi.
+public sealed class SaftMiscareStoc {
+    public Guid DocumentId { get; set; }
+    public bool Storno { get; set; }
+    public string MovementReference { get; set; }
+    public DateOnly MovementDate { get; set; }
+    // `DataOperare` a documentului (opțional în schemă) — null = absent.
+    public DateOnly? MovementPostingDate { get; set; }
+    public string MovementType { get; set; }
+    // `DocumentReference` = tipul + numărul documentului din model.
+    public string DocumentType { get; set; }
+    public string DocumentNumber { get; set; }
+    public string TransactionId { get; set; }
+    public List<SaftLinieMiscareStoc> Linii { get; set; } = [];
+}
+
+// `StockMovementLine` — un rând de `RegistruStoc`, unu la unu.
+public sealed class SaftLinieMiscareStoc {
+    public Guid RandRegistruId { get; set; }
+    public Guid? DetaliuId { get; set; }
+    public int LineNumber { get; set; }
+    // Contul de stoc al produsului (`TipMaterial.ContImplicit`). Obligatoriu —
+    // lipsa lui scoate linia în `Neincluse`, nu inventează un cont (73e).
+    public string AccountId { get; set; }
+    // Convenția S: latura liberă e `"0"`, nu raportorul (vezi `TertiLinieStoc`).
+    public string CustomerId { get; set; }
+    public string SupplierId { get; set; }
+    public Guid ProdusId { get; set; }
+    public string ProductCode { get; set; }
+    public Guid LotId { get; set; }
+    public Guid RepartitorId { get; set; }
+    // Identificatorul lotului — DOAR când produsul are > 1 lot în gestiune
+    // (ghid p. 36); altfel absent.
+    public string StockAccountNo { get; set; }
+    // SEMNATĂ ca în registru (intrare +, ieșire −, stornoul inversat).
+    public decimal Quantity { get; set; }
+    public string UnitOfMeasure { get; set; }
+    public decimal UomConversionFactor { get; set; }
+    public decimal BookValue { get; set; }
+    // Același nomenclator ca `MovementType` — schema le cere pe amândouă.
+    public string MovementSubType { get; set; }
+    public string MovementComments { get; set; }
+}
+
+// `MasterFiles/PhysicalStock/PhysicalStockEntry` (2.10) — o intrare per
+// `(gestiune × lot)` pe `TipStoc`-urile RAPORTATE: lotul E „prețul unitar
+// aplicabil" al ghidului (p. 36), iar identificarea specifică (decizia 13) face
+// granularitatea asta exactă, nu aproximativă.
+public sealed class SaftStocFizic {
+    public Guid RepartitorId { get; set; }
+    public Guid LotId { get; set; }
+    public Guid ProdusId { get; set; }
+    public string WarehouseId { get; set; }
+    public string ProductCode { get; set; }
+    public string StockAccountNo { get; set; }
+    public string ProductType { get; set; }
+    public string StockAccountCommodityCode { get; set; }
+    public string OwnerId { get; set; }
+    public string UomPhysicalStock { get; set; }
+    public decimal UomConversionFactor { get; set; }
+    public decimal UnitPrice { get; set; }
+    public decimal OpeningQuantity { get; set; }
+    public decimal OpeningValue { get; set; }
+    public decimal ClosingQuantity { get; set; }
+    public decimal ClosingValue { get; set; }
+    public string StockCharacteristic { get; set; }
+    public string StockCharacteristicValue { get; set; }
+}
+
+// Ce nu intră în fișier fiindcă AȘA S-A DECIS — agregat per politică, cu
+// motivul scris de om lângă cifre. Deosebirea de `Neincluse` e de FOND: acolo e
+// o gaură (politică lipsă), aici e o alegere (`PoliticaMiscareSaft.CodMiscare`
+// null + `Motiv`). Cazul real: `+Consum` de pe bonul de consum — consumul rămâne
+// pe responsabil (27a), dar nu mai e stoc în magazie.
+public sealed class SaftExclus {
+    public string TipDocument { get; set; }
+    public string TipStoc { get; set; }
+    // Semnul REGULII (`null` = orice semn), nu al rândului.
+    public int? Semn { get; set; }
+    public string Motiv { get; set; }
+    // Câte rânduri de registru — ca `SaftAvertisment.Numar`, nu un număr de
+    // document.
+    public int Numar { get; set; }
+    public decimal Cantitate { get; set; }
+    public decimal Valoare { get; set; }
+}
+
+// O linie a cusăturii S3: soldul de stoc declarat pe un cont vs. `Balanta` pe
+// ACELAȘI cont. Raportată, NU blocantă — registrul contabil poate purta 3xx și
+// din note contabile sau deschideri fără lot, iar diferența e un fapt de citit,
+// nu o eroare de generare.
+public sealed class SaftDiferentaCont {
+    public string Cont { get; set; }
+    public decimal ClosingStocFizic { get; set; }
+    public decimal ClosingBalanta { get; set; }
+    public decimal Diferenta { get; set; }
 }
 
 // Avertisment AGREGAT per cauză — aceeași formă ca `D394Avertisment`.
@@ -389,6 +517,67 @@ public sealed class SaftRezumat {
     public int NumarFacturiPrimite { get; set; }
     public int NumarPlati { get; set; }
     public int NumarProduse { get; set; }
+
+    // ══ Cusăturile declarației S (felia 17, D17-D3) ══════════════════════════
+    // Validatorul ANAF nu face NICIO aritmetică pe stocuri (Opening + intrări −
+    // ieșiri = Closing nu e verificat, totalurile n-au regulă). Deci cusăturile
+    // de mai jos sunt SINGURA garanție că fișierul spune adevărul — de aceea
+    // sunt cifre în contract, nu aserțiuni ascunse în proiecție.
+
+    public int NumarMiscari { get; set; }
+    public int NumarLiniiMiscare { get; set; }
+    public int NumarStocFizic { get; set; }
+    public int NumarTipuriMiscare { get; set; }
+    public int RanduriRegistruStoc { get; set; }
+
+    // (S1) Pe FIECARE intrare de `PhysicalStock`: `Opening + Σ Quantity (lot ×
+    //      gestiune, mișcările lunii) == Closing`, pe cantitate ȘI pe valoare.
+    //      `StocIntrariDiferite == 0` peste `StocIntrari` intrări e cusătura;
+    //      sumele globale sunt martorul că s-a verificat ceva. Un rând de
+    //      registru al lunii care N-A intrat în fișier (fără politică, sau
+    //      exclus pe un `TipStoc` raportat) se vede AICI, ca diferență.
+    public int StocIntrari { get; set; }
+    public int StocIntrariDiferite { get; set; }
+    public decimal StocOpeningCantitate { get; set; }
+    public decimal StocOpeningValoare { get; set; }
+    public decimal StocMiscariCantitate { get; set; }
+    public decimal StocMiscariValoare { get; set; }
+    public decimal StocClosingCantitate { get; set; }
+    public decimal StocClosingValoare { get; set; }
+    public bool StocFizicBate { get; set; }
+
+    // (S2) Nimic nu se pierde: `Σ mișcări + Σ Excluse + Σ Neincluse == Σ
+    //      RegistruStoc` pe documentele lunii, pe TOATE `TipStoc`-urile
+    //      (inclusiv cele neraportate — altfel egalitatea s-ar măsura pe sine).
+    public decimal MiscariCantitate { get; set; }
+    public decimal MiscariValoare { get; set; }
+    public decimal ExcluseCantitate { get; set; }
+    public decimal ExcluseValoare { get; set; }
+    public decimal NeincluseStocCantitate { get; set; }
+    public decimal NeincluseStocValoare { get; set; }
+    public decimal RegistruStocCantitate { get; set; }
+    public decimal RegistruStocValoare { get; set; }
+    public bool RegistruStocBate { get; set; }
+
+    // (S3) Σ `ClosingStockValue` per cont de stoc vs. `Closing` din `Balanta` pe
+    //      același cont — MĂSURATĂ ȘI RAPORTATĂ, nu blocantă: registrul contabil
+    //      poartă 3xx și din note contabile ori deschideri fără lot.
+    public List<SaftDiferentaCont> StocPerCont { get; set; } = [];
+    public decimal ClosingStocFizic { get; set; }
+    public decimal ClosingBalantaStoc { get; set; }
+    public int ConturiStocVerificate { get; set; }
+    public int ConturiStocDiferite { get; set; }
+
+    // (S4) Integritatea referințelor din fișier: fiecare `ProductCode` de pe
+    //      mișcări și din stocul fizic e în `Products`, fiecare cod de mișcare e
+    //      în `MovementTypeTable`, fiecare identificator de terț nenul are
+    //      format valid (prefix `00`–`06` sau literalul `0`).
+    public int ProduseReferite { get; set; }
+    public int ProduseLipsa { get; set; }
+    public int CoduriMiscareFolosite { get; set; }
+    public int CoduriMiscareLipsa { get; set; }
+    public int IdentitatiTertInvalide { get; set; }
+    public bool ReferinteBat { get; set; }
 }
 
 public sealed class SaftDto {
@@ -413,7 +602,21 @@ public sealed class SaftDto {
     public List<SaftFactura> FacturiEmise { get; set; } = [];
     public List<SaftFactura> FacturiPrimite { get; set; } = [];
     public List<SaftPlata> Plati { get; set; } = [];
+
+    // ── Secțiunile modulului S (goale pe L, ca `Jurnale` pe S) ──────────────
+    public List<SaftTipMiscare> TipuriMiscare { get; set; } = [];
+    public List<SaftStocFizic> StocFizic { get; set; } = [];
+    public List<SaftMiscareStoc> MiscariStoc { get; set; } = [];
+    // Totalurile lui `MovementOfGoods` (schema le cere lângă listă). Calculate de
+    // SERVER, ca tot restul: „TS nu calculează niciodată sold/rest/total" (42c).
+    public int NumberOfMovementLines { get; set; }
+    public decimal TotalQuantityReceived { get; set; }
+    public decimal TotalQuantityIssued { get; set; }
+
     public List<SaftNeinclus> Neincluse { get; set; } = [];
+    // Excluderile DELIBERATE (politică fără cod, cu motiv) — altă listă decât
+    // `Neincluse`, fiindcă sunt alt fapt: o alegere, nu o gaură.
+    public List<SaftExclus> Excluse { get; set; } = [];
     public List<SaftAvertisment> Avertismente { get; set; } = [];
     public SaftRezumat Rezumat { get; set; } = new();
 }
@@ -461,6 +664,16 @@ public sealed class SaftSumarDto {
     public int FacturiEmise { get; set; }
     public int FacturiPrimite { get; set; }
     public int Plati { get; set; }
+
+    // Contoarele modulului S (zero pe L, ca cele de mai sus pe S). `Excluse`
+    // merge ÎNTREG, ca `Neincluse`: e mărginit de numărul de POLITICI (21 la
+    // privat), nu de volumul registrului, și e exact partea pe care omul o
+    // citește înainte de a depune.
+    public int TipuriMiscare { get; set; }
+    public int StocFizic { get; set; }
+    public int MiscariStoc { get; set; }
+    public int LiniiMiscare { get; set; }
+    public List<SaftExclus> Excluse { get; set; } = [];
 
     // Cusăturile, `Neincluse` și avertismentele merg NESCHIMBATE: sunt mărginite
     // de numărul de CAUZE (avertismentele) sau de ce n-a intrat în fișier

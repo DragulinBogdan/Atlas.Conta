@@ -346,6 +346,126 @@ public static class SaftReguli {
     /// </summary>
     public static bool EsteCodMiscare(string cod) =>
         !string.IsNullOrEmpty(cod) && CoduriMiscare.ContainsKey(cod);
+
+    // ── Terții pe linia de mișcare (felia 17, D17-D2) ───────────────────────
+
+    /// <summary>
+    /// Latura de terț NEAPLICABILĂ pe o linie de mișcare: literal `"0"`.
+    /// <para>
+    /// E o convenție DIFERITĂ de a modulului L, unde latura liberă poartă
+    /// identitatea RAPORTORULUI (GL.19/GL.20 COM). Aici xlsx-ul ANAF
+    /// (SD.MG.21/22) o spune verbatim: la livrarea către client `SupplierID`
+    /// este `0`, la achiziție `CustomerID` este `0`. Singura regulă comună e
+    /// cea a validatorului — „`CustomerID` și `SupplierID` nu pot fi ambele 0”
+    /// —, iar mișcarea internă o respectă punând raportorul pe AMBELE.
+    /// </para>
+    /// </summary>
+    public const string TertNeaplicabil = "0";
+
+    /// <summary>
+    /// `(CustomerID, SupplierID)` ale unei linii de `MovementOfGoods`, din rolul
+    /// dat de politică (`PoliticaMiscareSaft.RolTert`) și identitatea
+    /// partenerului documentului.
+    /// <para>
+    /// `Client` ⇒ `(partener, "0")`; `Furnizor` ⇒ `("0", partener)`; `Niciunul`
+    /// ⇒ `(raportor, raportor)`. Rol CERUT dar partener lipsă (NIR manual fără
+    /// factură-sursă, document intern cu ambele laturi gestiuni) ⇒ tot
+    /// `(raportor, raportor)`: fișierul spune „mișcare internă”, ceea ce e
+    /// onest, iar apelantul pune avertismentul `TertLipsaPeMiscare` — un
+    /// identificator inventat ar fi minciună, un element gol ar fi fișier
+    /// invalid.
+    /// </para>
+    /// </summary>
+    public static (string CustomerId, string SupplierId) TertiLinieStoc(
+        RolTertSaft rol, string idPartener, string idSocietate) {
+        if (!string.IsNullOrEmpty(idPartener)) {
+            if (rol == RolTertSaft.Client)
+                return (idPartener, TertNeaplicabil);
+            if (rol == RolTertSaft.Furnizor)
+                return (TertNeaplicabil, idPartener);
+        }
+        return (idSocietate, idSocietate);
+    }
+
+    /// <summary>
+    /// `OwnerID` al bunurilor PROPRII (ghid p. 36): `00` + CUI-ul raportorului —
+    /// exact identificatorul lui de partener, deci se refolosește
+    /// <see cref="IdSocietate(string, string)"/> în loc să se scrie a doua oară.
+    /// Nu e o funcție redundantă, e un NUME: în secțiunea S câmpul se cheamă
+    /// `OwnerID`, iar `Owners` rămâne GOL cât timp tot stocul e al raportorului.
+    /// </summary>
+    public static string OwnerIdRaportor(string codFiscal, string tara) =>
+        IdSocietate(codFiscal, tara);
+
+    /// <summary>Suprasarcina pe entitate.</summary>
+    public static string OwnerIdRaportor(Societate societate) => IdSocietate(societate);
+
+    /// <summary>
+    /// Valoarea de rezervă a lui `ProductType`/`AccountID` — produsul fără cont
+    /// de stoc. Pe `PhysicalStock` iese cu avertisment (`ProdusFaraContStoc`);
+    /// pe linia de mișcare NU se folosește niciodată (acolo `AccountID` e
+    /// obligatoriu și un cont inventat e interzis — 73e ⇒ `Neincluse`).
+    /// </summary>
+    public const string ProductTypeImplicit = "0";
+
+    /// <summary>
+    /// `ProductType` (`SAFshorttextType`, max 18) = simbolul contului de stoc al
+    /// produsului. Nu e un nomenclator: ghidul îl lasă text liber, iar simbolul
+    /// contului e singurul „tip de produs” pe care modelul îl cunoaște și care
+    /// spune ceva verificabil (marfa e pe 371, materia primă pe 301).
+    /// </summary>
+    public static string ProductTypeDinCont(string simbol) {
+        var curat = SimbolSaft(simbol);
+        if (string.IsNullOrEmpty(curat))
+            return ProductTypeImplicit;
+        return Taie(curat, 18);
+    }
+
+    /// <summary>
+    /// `StockCharacteristics` = `(cheie, valoare)`. Perechea are nomenclator
+    /// (`SAFT_Nomenclator_StockChar`) DOAR la accizabile (`blue_35`,
+    /// `yellow_124`); în rest ghidul cere `0`/`0`. Modelul n-are azi axa
+    /// accizelor, deci constanta e singurul răspuns onest.
+    /// </summary>
+    public static (string Cheie, string Valoare) StockCharacteristic => ("0", "0");
+
+    /// <summary>
+    /// Lungimea maximă a lui `MovementReference` (`SAFmiddle1textType`).
+    /// </summary>
+    public const int LungimeMovementReference = 35;
+
+    /// <summary>
+    /// `MovementReference` — identitatea mișcării în fișier:
+    /// `{CodTip}-{Numar}`, plus `/{cod}` DOAR când documentul se sparge în mai
+    /// multe mișcări (ASM: `/20` și `/70`), plus `/S` pe jumătatea de storno.
+    /// <para>
+    /// Sufixele nu sunt decor: unitatea unei mișcări e `(Document × Storno ×
+    /// CodMiscare)`, deci două mișcări ale aceluiași document TREBUIE să aibă
+    /// referințe diferite. Când totul nu încape în 35 de caractere se taie
+    /// NUMĂRUL, de la ÎNCEPUT (coada unui număr de document e partea care
+    /// distinge — prefixul de serie se repetă), iar apelantul raportează
+    /// `MovementReferenceTrunchiat`. NU se aruncă: un fișier care nu se
+    /// generează e mai rău decât o referință scurtată și declarată.
+    /// </para>
+    /// </summary>
+    public static (string Referinta, bool Trunchiat) MovementReference(
+        string codTip, string numar, string codMiscare, bool storno) {
+        var prefix = string.IsNullOrWhiteSpace(codTip) ? "" : codTip.Trim() + "-";
+        var sufix = (string.IsNullOrEmpty(codMiscare) ? "" : "/" + codMiscare)
+            + (storno ? "/S" : "");
+        var corp = (numar ?? "").Trim();
+        var disponibil = LungimeMovementReference - prefix.Length - sufix.Length;
+        if (disponibil >= corp.Length)
+            return (prefix + corp + sufix, false);
+        if (disponibil > 0)
+            // Coada numărului: prefixul de serie („FCL-2025-”) se repetă pe toate
+            // documentele, cifrele finale sunt cele care le deosebesc.
+            return (prefix + corp[^disponibil..] + sufix, true);
+        // Prefixul și sufixele singure depășesc limita (cod de tip absurd de
+        // lung): se taie rezultatul întreg, tot de la început.
+        var intreg = prefix + corp + sufix;
+        return (intreg[^LungimeMovementReference..], true);
+    }
 }
 
 // Motivul pentru care un identificator a ieșit cum a ieșit — enum MIC, intern
