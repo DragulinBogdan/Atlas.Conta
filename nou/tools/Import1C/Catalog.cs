@@ -55,13 +55,18 @@ sealed class Catalog {
     readonly Dictionary<string, string> tipRefPeNume = new(StringComparer.Ordinal);
 
     // Indexul de loturi: cheia canonică (convenția `Deschidere.CheieLot`) →
-    // lotul Atlas. Aliasurile de reclasificare stau într-o tabelă SEPARATĂ de
-    // legături („1C:LotAlias"), tocmai ca indexul canonic să rămână fără
-    // ambiguitate — simbolul de naștere al lotului se citește din cheia
-    // canonică, iar un alias scris peste ea l-ar face nedeterminabil la reluare.
+    // lotul Atlas. Aliasurile (returul de la client care recreează lotul-sursă
+    // absent — `HandlerReturClient`) stau într-o tabelă SEPARATĂ de legături
+    // („1C:LotAlias"), tocmai ca indexul canonic să rămână fără ambiguitate —
+    // simbolul de naștere al lotului se citește din cheia canonică, iar un alias
+    // scris peste ea l-ar face nedeterminabil la reluare. Reclasificarea de cont
+    // la transfer NU mai scrie alias (D18-D3): cheia cu simbolul nou E lotul nou.
     readonly Dictionary<string, LotImport> loturi = new(StringComparer.Ordinal);
     // Prefixul (document creator × nomenclator) → loturile lui, pentru pin-urile
-    // care vin cu ALT cont decât cel de naștere (reclasificările BTR).
+    // care vin cu ALT cont decât cel al cheii cunoscute. De la D18-D3 perechile
+    // (lot vechi, lot reclasificat) stau sub ACELAȘI prefix, deci prefixul e
+    // ambiguu exact acolo și pin-ul cade în supapa 48a — se numără
+    // (`LoturiNerezolvate`), nu se ghicește.
     readonly Dictionary<string, List<LotImport>> loturiPePrefix = new(StringComparer.Ordinal);
     // Lotul după ID-ul Atlas: aliasurile trebuie să trimită la simbolul CANONIC,
     // nu la cel din cheia lor. De când produsul e (nomenclator × cont), simbolul
@@ -420,11 +425,12 @@ sealed class Catalog {
     }
 
     // Lotul pin-uit de un rând 1C. Întâi cheia exactă; dacă lipsește, prefixul
-    // (document × nomenclator) — cazul reclasificării, unde 1C mută lotul pe alt
-    // cont fără să-i schimbe identitatea. Prefixul rezolvă doar când e
-    // NEAMBIGUU: cele 46 de perechi document×produs de pe mai multe conturi
-    // (fix-ul de review 1C-b) rămân nerezolvate aici și cad în supapa de
-    // realocare FIFO (48a), care e exact locul lor.
+    // (document × nomenclator) — cazul în care 1C referă lotul de pe alt cont
+    // decât cel al cheii cunoscute. Prefixul rezolvă doar când e NEAMBIGUU:
+    // cele 46 de perechi document×produs de pe mai multe conturi (fix-ul de
+    // review 1C-b) și, de la D18-D3, perechile (lot vechi, lot reclasificat)
+    // rămân nerezolvate aici și cad în supapa de realocare FIFO (48a), care e
+    // exact locul lor.
     public LotImport Lot(string tipRefDoc, string docId, string nomenclatorId, string simbol) {
         var cheie = CheieLot(tipRefDoc, docId, nomenclatorId, simbol);
         if (loturi.TryGetValue(cheie, out var lot))
@@ -460,37 +466,29 @@ sealed class Catalog {
         loturiPeId.Remove(lotId);
     }
 
-    // Lotul născut de o linie de import (factură de intrare, plus de inventar):
-    // legătura se scrie în ACELAȘI ObjectSpace cu documentul, deci în același
-    // commit — ca legătura documentului (§12.4).
+    // Lotul născut de o linie de import (factură de intrare, plus de inventar,
+    // produs de asamblare, lotul reclasificat — D18-D3): legătura se scrie în
+    // ACELAȘI ObjectSpace cu documentul, deci în același commit — ca legătura
+    // documentului (§12.4).
     public void LeagaLotNou(IObjectSpace os, string cheie, Guid lotId) {
         Legaturi.Leaga(os, "Lot", cheie, lotId);
         IndexeazaLot(cheie, lotId);
     }
 
-    // Aliasul de reclasificare: cheia cu simbolul NOU trimite la ACELAȘI lot
-    // Atlas, ca pin-urile ulterioare de sub contul nou să rezolve. Lotul își
-    // păstrează simbolul canonic (deci și registrul de stoc în care îi stă
-    // soldul). Aliasurile stau într-o tabelă de legături PROPRIE, ca indexul
-    // canonic să rămână fără ambiguitate la reluare; se scriu într-un
-    // ObjectSpace propriu (sunt nomenclator, nu parte din documentul curent).
-    public bool LeagaAliasLot(string cheie, LotImport lot) {
-        if (!loturi.TryAdd(cheie, lot))
-            return false;
-        using var os = provider.CreateObjectSpace();
-        Legaturi.Leaga(os, "LotAlias", cheie, lot.Id);
-        os.CommitChanges();
-        return true;
-    }
+    // Cheia e deja a unui lot (canonic sau alias)? Reclasificarea (D18-D3) o
+    // întreabă înainte să nască lotul nou: o cheie deja luată cere discriminant.
+    public bool AreCheieLot(string cheie) => loturi.ContainsKey(cheie);
 
-    // Varianta pentru loturile care se NASC odată cu documentul (returul de la
-    // client, care recreează lotul-sursă absent): aliasul se scrie în
-    // ObjectSpace-ul documentului, deci în ACELAȘI commit cu lotul — altfel o
-    // rulare întreruptă între cele două ar lăsa un alias către un lot inexistent,
-    // pe care pin-urile ulterioare l-ar rezolva și operarea l-ar refuza.
-    // Simbolul rămâne cel CANONIC al lotului (apelantul îl leagă cu `LeagaLotNou`
-    // înainte), nu cel din cheia aliasului: pin-urile care ajung aici trebuie să
-    // cadă pe produsul geamăn al lotului, nu pe cel al contului 1C de pe rând.
+    // Aliasul de lot, pentru loturile care se NASC odată cu documentul (returul
+    // de la client, care recreează lotul-sursă absent): cheia cu identitatea
+    // lotului original trimite la lotul recreat. Se scrie în ObjectSpace-ul
+    // documentului, deci în ACELAȘI commit cu lotul — altfel o rulare întreruptă
+    // între cele două ar lăsa un alias către un lot inexistent, pe care pin-urile
+    // ulterioare l-ar rezolva și operarea l-ar refuza. Simbolul rămâne cel
+    // CANONIC al lotului (apelantul îl leagă cu `LeagaLotNou` înainte), nu cel
+    // din cheia aliasului: pin-urile care ajung aici trebuie să cadă pe produsul
+    // geamăn al lotului, nu pe cel al contului 1C de pe rând. (Varianta cu
+    // ObjectSpace propriu, a reclasificării BTR, a murit odată cu ea — D18-D3.)
     public bool LeagaAliasLot(IObjectSpace os, string cheie, Guid lotId) {
         if (!loturiPeId.TryGetValue(lotId, out var canonic))
             throw new InvalidOperationException(

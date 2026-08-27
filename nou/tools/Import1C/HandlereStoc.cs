@@ -90,6 +90,9 @@ sealed record LiniePeLot(Guid LotId, Guid TipMaterialId, decimal Cantitate);
 // la deschidere din simbolul lotului (47d); dacă 1C a reclasificat lotul între
 // timp (BTR cu NewContEvidenta), contul rândului ar trimite ieșirea în altă cutie
 // decât cea în care e marfa, iar gardianul de sold ar refuza-o pe bună dreptate.
+// (De la D18-D3 reclasificarea NAȘTE lotul pe contul nou și îl leagă pe cheia cu
+// simbolul nou, deci un rând 1C de pe contul nou rezolvă exact lotul nou — regula
+// de aici rămâne cea care alege registrul ȘI produsul geamăn din lotul găsit.)
 // Și, de la amendamentul „produs = nomenclator × cont" (`ImportLaCerere`),
 // simbolul alege și PRODUSUL geamăn: un Tip luat din contul rândului ar cere
 // produsul altui geamăn decât cel al lotului, iar motorul refuză linia explicit
@@ -117,34 +120,114 @@ static class MiscareStoc1C {
     }
 }
 
-// ======================= 2. TransferDeMarfuri → BTR =======================
+// ======================= 2. TransferDeMarfuri → BTR (+ ASM la reclasificare) =======================
+//
+// D18-D3 (felia 18): rândul 1C de transfer care schimbă CONTUL lotului
+// (`simbolDebit ≠ simbolCredit`, 556 de rânduri pe an) nu mai e doar o punte
+// contabilă peste un BTR pe lotul vechi. 1C mută marfa 381→371 fără să-i
+// schimbe identitatea de lot; Atlas nu poate (contul lotului = Tipul
+// produsului, identitatea produsului de import = nomenclator × cont — 50a),
+// deci reclasificarea e o MIȘCARE de stoc: un ASM (46d: n→m, |Σ| ≤ 0,005, zero
+// contare) în gestiunea sursei consumă lotul de pe `produs@contVechi` și naște
+// lotul pe `produs@contNou` cu aceeași cantitate și exact valoarea consumului
+// (D18-D2: lotul vechi ajunge la 0/0,00 dacă e golit); NTC-puntea rămâne
+// (`contNou = contVechi` la valoarea ASM-ului — acum ARE mișcarea în spate);
+// iar BTR-ul mută lotul NOU în gestiunea destinație, dacă gestiunile diferă.
+// Cheile: `#reclas` (ASM), `#punte` (NTC), cheia plată (BTR); toate trei sunt
+// ale aceleiași unități, executate în ordinea asta — ASM înaintea BTR-ului, ca
+// lotul nou să existe (operat) când transferul îl mută.
+//
+// Înainte (F1C-c … F17): puntea transcria contabil o mișcare pe care stocul n-o
+// făcea, iar cheia cu simbolul NOU era un ALIAS spre același lot (`1C:LotAlias`);
+// `MiscareStoc1C.Rezolva` lua contul din simbolul canonic al lotului, deci DSC-ul
+// descărca 381 pentru un rând 1C pe 371 — 381 creditat de două ori (NTC + DSC),
+// S3 pe 371/381 în SAF-T S (74-r9). Aliasul de reclasificare a murit: cheia
+// `1C:Lot` cu simbolul nou E lotul nou (canonic, `Simbol = contNou`); cheia cu
+// simbolul vechi rămâne pe lotul vechi (restul, la reclasificare parțială).
 static class HandlerTransfer {
     public const string View = "TransferDeMarfuri";
 
     public static readonly HandlerTip Handler = new(View, "Notă de transfer", Importa);
 
     public static int Reclasificari { get; private set; }
-    public static int AliasuriLot { get; private set; }
+    // Reclasificări devenite MIȘCARE (ASM #reclas): rânduri, loturi noi născute.
+    public static int ReclasificariCaMiscare { get; private set; }
+    public static int LoturiReclasificate { get; private set; }
+    // Cheia lotului nou exista deja (același lot 1C reclasificat a doua oară pe
+    // același cont): lotul nou primește cheie discriminată, pin-urile ulterioare
+    // pe cheia exactă cad pe primul lot și, dacă e gol, în supapa 48a.
+    public static int CheiLotDiscriminate { get; private set; }
+    // 1C reclasifică, dar lotul Atlas E deja pe contul nou (rezolvat pe prefix):
+    // nu e nimic de mutat în stoc, rămâne doar puntea (comportamentul de până acum).
+    public static int ReclasificariDejaPeContNou { get; private set; }
+    // Contul nou n-are TipMaterial de stoc în profil (gaură, 21): rămâne
+    // comportamentul vechi (BTR pe lotul vechi + punte), fără alias — raportat.
+    public static int ReclasificariFaraTipNou { get; private set; }
+    // Lotul reclasificat are valoare 0 (ASM cere preț de evaluare pozitiv):
+    // rămâne pe contul vechi, raportat — invariantul 46d nu se relaxează.
+    public static int ReclasificariValoareZero { get; private set; }
     public static int DocumenteAceeasiGestiune { get; private set; }
     public static int RanduriNerezolvate { get; private set; }
+    public static int LiniiReclasNetransferate { get; private set; }
+
+    // Produsul reclasificării: lotul NOU pe `produs@contNou`, per cheie 1C cu
+    // simbolul nou (mai multe rânduri ale aceluiași document pe același lot 1C
+    // se adună — un singur lot nou).
+    sealed class ProdusReclas {
+        public string CheieLot;
+        public Guid ProdusId;
+        public TipInfo Tip;
+        public decimal Cantitate;
+        public decimal Valoare;
+    }
 
     sealed class Plan {
         public Guid PredatorId;
         public Guid PrimitorId;
         public DateOnly Data;
         public List<LiniePeLot> Linii = [];
+        // ASM #reclas: consumurile (loturi vechi) și produsele (loturi noi).
+        public List<LiniePeLot> ReclasConsumuri = [];
+        public Dictionary<string, ProdusReclas> ReclasProduse = new(StringComparer.Ordinal);
         public Punte Punte;
         public bool FaraDocument;
 
-        public bool AreDocument => !FaraDocument && Linii.Count > 0;
+        public bool AreReclas => ReclasProduse.Count > 0;
+        // BTR-ul mută liniile pe loturi existente ȘI loturile noi ale
+        // reclasificării (rezolvate abia la materializare, după ASM).
+        public bool AreBtr => !FaraDocument && (Linii.Count > 0 || AreReclas);
+        public bool AreDocument => AreBtr || AreReclas;
     }
+
+    public const string SufixReclas = "#reclas";
 
     static void Importa(ContextLuna ctx) {
         var bucla = ctx.Bucla;
         foreach (var h in bucla.Flax.Transferuri(ctx.An, ctx.Luna))
             ctx.Planifica(h.Data, h.Numar, () => {
+                var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+                // Gardul reluării se calculează DIN SURSĂ (tiparul asamblării, D1):
+                // unitatea poate produce DOUĂ documente de stoc (ASM + BTR), iar o
+                // rulare întreruptă între ele nu are voie să replanifice peste
+                // mișcările deja comise — cheile lipsă se refuză zgomotos, cu
+                // remediul `--deblocheaza`.
+                var (cereReclas, cereBtr) = Cere(bucla.Catalog, h, randuri);
+                var chei = new List<string>();
+                if (cereBtr)
+                    chei.Add(h.Id);
+                if (cereReclas)
+                    chei.Add(h.Id + SufixReclas);
+                var partiala = Reluare1C.UnitatePartiala(bucla, View, h.Id, chei, chei,
+                    "unitate parțial importată de o rulare anterioară (necesită --deblocheaza)");
+                if (partiala == Reluare1C.Partiala.Refuzata)
+                    return;
                 Plan plan = null;
-                if (!bucla.EsteCunoscut(View, h.Id)) {
+                // Fără nicio cheie de stoc (aceeași gestiune, fără reclasificare)
+                // puntea preia cheia sursei — ca înainte.
+                var necunoscut = chei.Count == 0
+                    ? !bucla.EsteCunoscut(View, h.Id)
+                    : chei.Any(c => !bucla.EsteCunoscut(View, c));
+                if (partiala != Reluare1C.Partiala.DoarDrafturi && necunoscut) {
                     try {
                         plan = Planifica(ctx, h);
                     }
@@ -157,11 +240,50 @@ static class HandlerTransfer {
                     if (!plan.AreDocument && !plan.Punte.AreCeva)
                         bucla.NumaraSursaFaraCorespondent();
                 }
-                if (plan == null || plan.AreDocument)
-                    bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, plan),
+                if (plan != null && !plan.AreDocument)
+                    return;
+                // 1. ASM #reclas — ÎNAINTEA transferului: lotul nou trebuie să fie
+                //    operat (cu sold) când BTR-ul îl mută. Aceeași dată, aceeași
+                //    unitate; gardianul de sold lucrează pe zile (25d), deci +q și
+                //    −q pe aceeași zi trec.
+                if (plan == null ? cereReclas : plan.AreReclas)
+                    bucla.ImportaDocument(View, h.Id + SufixReclas,
+                        os => MaterializeazaReclas(os, bucla.Catalog, plan, h.Numar),
                         motivFaraDraft: Motive.FaraPlan(plan,
-                            "transferul n-a rămas cu nicio linie de stoc"));
+                            "reclasificarea n-a rămas cu nicio linie acoperită"));
+                // 2. BTR — pe loturile existente + loturile noi ale reclasificării.
+                if (plan == null ? cereBtr : plan.AreBtr) {
+                    // Gardul dependentului (ca la asamblare): dacă ASM-ul n-a ajuns
+                    // operat, loturile noi n-au sold și transferul ar pica la
+                    // gardian — se refuză curat, cu motiv, nu se transferă pe
+                    // jumătate (o cheie legată nu se mai revizitează).
+                    var reclas = plan == null ? cereReclas : plan.AreReclas;
+                    var asmId = reclas ? bucla.Tinta(View, h.Id + SufixReclas) : null;
+                    if (reclas && (asmId is not { } a || bucla.Stare(a) != StareDocument.Operat))
+                        bucla.ImportaDocument(View, h.Id, _ => null,
+                            motivFaraDraft: "reclasificarea (ASM #reclas) n-a ajuns operată "
+                                + "(loturile noi n-au sold de transferat)");
+                    else
+                        bucla.ImportaDocument(View, h.Id, os => Materializeaza(os, bucla.Catalog, plan),
+                            motivFaraDraft: Motive.FaraPlan(plan,
+                                "transferul n-a rămas cu nicio linie de stoc"));
+                }
             });
+    }
+
+    // Ce chei de stoc ar scrie unitatea, derivat DOAR din sursă (fără alocare):
+    // reclasificare = vreun rând cu conturi mapate diferite; transfer = gestiuni
+    // diferite (un depozit nelegat întoarce „da", conservator — planificarea
+    // eșuează zgomotos pe el).
+    static (bool Reclas, bool Btr) Cere(Catalog cat, FlaxTransfer h, IReadOnlyList<FlaxRandNota> randuri) {
+        var btr = !cat.Gestiuni.TryGetValue(h.DepozitExpeditorId ?? "", out var e)
+            || !cat.Gestiuni.TryGetValue(h.DepozitDestinatarId ?? "", out var d) || e != d;
+        var reclas = randuri.Any(r => {
+            var debit = cat.Mapeaza(r.ContDebit);
+            var credit = cat.Mapeaza(r.ContCredit);
+            return debit != null && credit != null && debit != credit && cat.EsteContDeStoc(debit);
+        });
+        return (reclas, btr);
     }
 
     static Plan Planifica(ContextLuna ctx, FlaxTransfer h) {
@@ -175,7 +297,8 @@ static class HandlerTransfer {
         plan.PrimitorId = Gestiune(cat, h.DepozitDestinatarId, "destinatarul transferului");
         // 169 de transferuri pe an au aceeași gestiune pe ambele laturi: sunt
         // pure reclasificări de cont, iar motorul refuză (pe drept) un transfer
-        // în aceeași gestiune. Stocul nu se mișcă nicăieri; rămâne puntea.
+        // în aceeași gestiune. Nu se scrie BTR; reclasificarea rămâne ASM-ul
+        // #reclas în gestiunea aia (D18-D3), fără transfer.
         plan.FaraDocument = plan.PredatorId == plan.PrimitorId;
         if (plan.FaraDocument)
             DocumenteAceeasiGestiune++;
@@ -189,8 +312,8 @@ static class HandlerTransfer {
             var simbolDebit = cat.Mapeaza(r.ContDebit);
             var context = $"1C:{View}/{h.Id} rândul {r.Linie}";
             var nomRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Nomenclator);
-            var rezolvat = MiscareStoc1C.Rezolva(bucla,
-                index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi), nomRef, simbolCredit, context);
+            var lotRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi);
+            var rezolvat = MiscareStoc1C.Rezolva(bucla, lotRef, nomRef, simbolCredit, context);
             if (rezolvat is not var (lot, tip, produsId)) {
                 // Rând pe care nu-l putem duce nici în stoc, nici în contabilitate:
                 // se măsoară, altfel ar fi singura mișcare a sursei complet
@@ -205,33 +328,98 @@ static class HandlerTransfer {
                 continue;
             }
 
+            // Reclasificarea ca MIȘCARE (D18-D3): se decide contra simbolului
+            // CANONIC al lotului Atlas (`tip.Simbol`), nu contra contului de credit
+            // al rândului 1C — un lot rezolvat pe prefix poate fi deja pe contul
+            // nou, și atunci n-are ce muta. Puntea contabilă rămâne pe forma 1C
+            // (`simbolDebit ≠ simbolCredit`), ca până acum.
+            var reclasificare = simbolDebit != null && simbolDebit != simbolCredit;
+            TipInfo tipNou = null;
+            if (reclasificare && simbolDebit != tip.Simbol) {
+                tipNou = cat.TipStocPentru(simbolDebit);
+                if (tipNou == null)
+                    ReclasificariFaraTipNou++;
+            }
+            else if (reclasificare)
+                ReclasificariDejaPeContNou++;
+            var miscaStoc = !plan.FaraDocument || tipNou != null;
+
             decimal valoareAtlas = 0m;
             // Partea pe care Atlas n-o mișcă deloc: e înregistrată separat mai jos
             // ca nepostată, deci trebuie scoasă din ținta evaluată — altfel ar fi
             // explicată de două ori.
             var valoareNeacoperita = 0m;
-            if (!plan.FaraDocument) {
+            if (miscaStoc) {
                 var (alocari, ramas) = bucla.Alocare.Aloca(os, lot?.Id, produsId, plan.PredatorId,
                     tip.Registru, plan.Data, r.CantitateCredit, dejaAlocat);
-                foreach (var (lotId, cantitate, valoareLinie) in alocari) {
-                    plan.Linii.Add(new LiniePeLot(lotId, tip.Id, cantitate));
-                    // Valoarea prezisă de `Aloca` = ce scrie motorul pe linie (D18-D2).
-                    valoareAtlas += valoareLinie;
+                // ASM cere preț de evaluare POZITIV pe produs (46d): un lot cu
+                // valoare 0 (celulă „bucăți fără bani" a deschiderii, sau lot golit
+                // valoric) nu se poate re-identifica prin ASM — invariantul nu se
+                // relaxează (regula de oprire), cazul se numără și rămâne pe calea
+                // veche (BTR pe lotul vechi + punte la 0). Măsurat pe clona Flax:
+                // 03/2025, 1 buc / 0,00 lei (refuz „preț de evaluare pozitiv").
+                if (tipNou != null && alocari.Count > 0 && alocari.Sum(a => a.Valoare) <= 0m) {
+                    ReclasificariValoareZero++;
+                    bucla.Avert($"{context}: reclasificare a unui lot cu valoare 0 "
+                        + $"({alocari.Sum(a => a.Cantitate):N3} buc) — ASM-ul cere preț pozitiv; lotul "
+                        + "rămâne pe contul vechi (BTR pe lotul vechi + punte).");
+                    tipNou = null;
                 }
+                if (tipNou != null && alocari.Count > 0) {
+                    var produsNouId = bucla.LaCerere.AsiguraProdus(nomRef.Id, tipNou.Cod)
+                        ?? throw new InvalidOperationException(
+                            $"{context}: nomenclatorul {nomRef.Id} nu s-a putut importa pe Tipul {tipNou.Cod} "
+                            + "(contul nou al reclasificării).");
+                    // Cheia lotului NOU = identitatea 1C a lotului cu simbolul NOU:
+                    // exact cheia pe care rândurile 1C ulterioare (DSC/RLF/BTR pe
+                    // contul nou) o vor pin-ui. Când există deja (același lot 1C
+                    // reclasificat a doua oară pe același cont), lotul de acum
+                    // primește un discriminant pe documentul creator: pin-urile
+                    // exacte cad pe primul lot, iar dacă e gol, supapa 48a le
+                    // realocă FIFO în produs × gestiune — și găsește lotul ăsta.
+                    var cheieNoua = Catalog.CheieLot(lotRef.TipRef, lotRef.Id, nomRef.Id, simbolDebit);
+                    if (!plan.ReclasProduse.ContainsKey(cheieNoua) && cat.AreCheieLot(cheieNoua)) {
+                        cheieNoua = Catalog.CheieLot(lotRef.TipRef, $"{lotRef.Id}~{h.Id}", nomRef.Id, simbolDebit);
+                        CheiLotDiscriminate++;
+                    }
+                    if (!plan.ReclasProduse.TryGetValue(cheieNoua, out var produs))
+                        plan.ReclasProduse[cheieNoua] = produs = new ProdusReclas {
+                            CheieLot = cheieNoua, ProdusId = produsNouId, Tip = tipNou,
+                        };
+                    foreach (var (lotId, cantitate, valoareLinie) in alocari) {
+                        plan.ReclasConsumuri.Add(new LiniePeLot(lotId, tip.Id, cantitate));
+                        // Valoarea prezisă de `Aloca` = ce scrie motorul pe consum
+                        // (D18-D2); produsul primește EXACT suma consumului, deci
+                        // invariantul ASM (|Σ| ≤ 0,005) trece la zero.
+                        valoareAtlas += valoareLinie;
+                        produs.Cantitate += cantitate;
+                        produs.Valoare += valoareLinie;
+                    }
+                    ReclasificariCaMiscare++;
+                }
+                else
+                    foreach (var (lotId, cantitate, valoareLinie) in alocari) {
+                        plan.Linii.Add(new LiniePeLot(lotId, tip.Id, cantitate));
+                        // Valoarea prezisă de `Aloca` = ce scrie motorul pe linie (D18-D2).
+                        valoareAtlas += valoareLinie;
+                    }
                 if (ramas > 0) {
                     bucla.Avert($"{context}: {ramas:N3} din {r.CantitateCredit:N3} n-au acoperire "
-                        + "în gestiunea expeditoare — linia se transferă parțial.");
+                        + "în gestiunea expeditoare — linia se "
+                        + (plan.FaraDocument ? "reclasifică" : "transferă") + " parțial.");
                     // Măsurătoarea, pe DOUĂ chei: marfa netransferată rămâne la
                     // expeditor ȘI lipsește de la destinatar. Contabil, un transfer
                     // nu postează nimic — mai puțin reclasificarea de mai jos, a
                     // cărei punte transcrie doar partea transferată, deci restul e
                     // exact ce nu se postează (când conturile coincid se anulează
-                    // singur în agregarea contractului).
+                    // singur în agregarea contractului). În aceeași gestiune (doar
+                    // reclasificare) stocul contractului 3 nu se mișcă între chei
+                    // — rămâne numai partea contabilă.
                     var valoareRamas = valoareNeacoperita = r.CantitateCredit == 0m
                         ? r.Suma : r.Suma * ramas / r.CantitateCredit;
                     bucla.Divergenta($"{View}/{h.Id}",
                         "BTR: linie transferată parțial (lipsă acoperire la expeditor)",
-                        nomRef == null ? null : [
+                        nomRef == null || plan.FaraDocument ? null : [
                             new EfectStoc(nomRef.Id, h.DepozitExpeditorId, ramas, valoareRamas),
                             new EfectStoc(nomRef.Id, h.DepozitDestinatarId, -ramas, -valoareRamas),
                         ],
@@ -280,20 +468,17 @@ static class HandlerTransfer {
             }
 
             // Reclasificarea (556 de rânduri pe an): 1C mută lotul pe alt cont
-            // fără să-i schimbe identitatea. Atlas nu contează transferul deloc
-            // (23c), deci rândul 1C se transcrie ca atare — la valoarea ATLAS a
-            // mișcării, ca soldul contabil să rămână în pas cu registrul de stoc.
-            if (simbolDebit != simbolCredit) {
+            // fără să-i schimbe identitatea. Nici ASM-ul, nici BTR-ul nu contează
+            // (23c/46d), deci rândul 1C se transcrie ca atare — la valoarea ATLAS
+            // a mișcării (cea a consumului ASM-ului, când reclasificarea e
+            // mișcare), ca soldul contabil să rămână în pas cu registrul de stoc.
+            if (reclasificare) {
                 Reclasificari++;
                 plan.Punte.Categoria("BTR: reclasificare de cont pe transfer")
                     .Tinta1C(simbolDebit, simbolCredit, valoareAtlas);
-                if (lot != null && simbolDebit != null) {
-                    var lotRef = index.Ia(r.Linie, Subconto.Credit, Subconto.Loturi);
-                    if (cat.LeagaAliasLot(Catalog.CheieLot(lotRef.TipRef, lotRef.Id, nomRef.Id, simbolDebit), lot))
-                        AliasuriLot++;
-                }
             }
         }
+        LoturiReclasificate += plan.ReclasProduse.Count;
         return plan;
     }
 
@@ -305,27 +490,87 @@ static class HandlerTransfer {
     internal static decimal PretLot(IObjectSpace os, Guid lotId) =>
         os.GetObjectByKey<Lot>(lotId)?.PretUnitar ?? 0m;
 
-    static Document Materializeaza(IObjectSpace os, Plan plan) {
-        if (plan == null || !plan.AreDocument)
+    // ASM-ul reclasificării (D18-D3): în gestiunea SURSEI, consumă loturile
+    // vechi și naște loturile noi pe `produs@contNou`. Tiparul e al
+    // `HandlerAsamblare.Materializeaza`: lotul produsului se naște pe linie
+    // (`CreeazaLot`) și se leagă în ACELAȘI commit pe cheia lui 1C — cea pe care
+    // pin-urile ulterioare de pe contul nou o caută. `PretEvaluare` = valoarea
+    // consumului / cantitate: motorul scrie `round(q × preț)` pe produs, iar
+    // consumul (D18-D2) e exact suma prezisă — invariantul 46d trece la zero.
+    static Document MaterializeazaReclas(IObjectSpace os, Catalog cat, Plan plan, string numar1C) {
+        if (plan == null || !plan.AreReclas)
+            return null;
+        var asm = os.CreateObject<Asamblare>();
+        asm.Data = plan.Data;
+        asm.Numar = $"{numar1C}-R";
+        asm.PredatorId = plan.PredatorId;
+        asm.PrimitorId = plan.PredatorId;
+        var gestiune = os.GetObjectByKey<Gestiune>(plan.PredatorId);
+        foreach (var c in plan.ReclasConsumuri) {
+            var d = os.CreateObject<AsamblareDetaliu>();
+            d.Document = asm;
+            d.TipMaterialId = c.TipMaterialId;
+            d.Directie = DirectieAsamblare.Consum;
+            d.LotId = c.LotId;
+            d.Cantitate = c.Cantitate;
+        }
+        foreach (var p in plan.ReclasProduse.Values) {
+            var d = os.CreateObject<AsamblareDetaliu>();
+            d.Document = asm;
+            d.TipMaterialId = p.Tip.Id;
+            d.Directie = DirectieAsamblare.Produs;
+            d.Cantitate = p.Cantitate;
+            d.PretEvaluare = p.Valoare / p.Cantitate;
+            var lot = d.CreeazaLot(os, os.GetObjectByKey<Produs>(p.ProdusId), gestiune);
+            cat.LeagaLotNou(os, p.CheieLot, lot.ID);
+        }
+        return asm;
+    }
+
+    static Document Materializeaza(IObjectSpace os, Catalog cat, Plan plan) {
+        if (plan == null || !plan.AreBtr)
             return null;
         var btr = os.CreateObject<NotaTransfer>();
         btr.Data = plan.Data;
         btr.PredatorId = plan.PredatorId;
         btr.PrimitorId = plan.PrimitorId;
+        var linii = 0;
         foreach (var l in plan.Linii) {
             var d = os.CreateObject<DocumentDetaliu>();
             d.Document = btr;
             d.TipMaterialId = l.TipMaterialId;
             d.LotId = l.LotId;
             d.Cantitate = l.Cantitate;
+            linii++;
         }
-        return btr;
+        // Loturile NOI ale reclasificării: există abia acum (ASM-ul #reclas e
+        // operat) — se regăsesc în index pe cheia lor 1C, ca orice pin
+        // (tiparul `HandlerAsamblare.TransferaProduse`).
+        foreach (var p in plan.ReclasProduse.Values) {
+            var parti = p.CheieLot.Split(':');
+            var lot = cat.Lot(parti[0], parti[1], parti[2], parti[3]);
+            if (lot == null) {
+                LiniiReclasNetransferate++;
+                continue;
+            }
+            var d = os.CreateObject<DocumentDetaliu>();
+            d.Document = btr;
+            d.TipMaterialId = p.Tip.Id;
+            d.LotId = lot.Id;
+            d.Cantitate = p.Cantitate;
+            linii++;
+        }
+        return linii == 0 ? null : btr;
     }
 
     public static void Raporteaza() =>
-        Console.WriteLine($"  BTR: {Reclasificari} rânduri de reclasificare de cont (punte + "
-            + $"{AliasuriLot} aliasuri de lot), {DocumenteAceeasiGestiune} documente cu aceeași "
-            + $"gestiune pe ambele laturi (doar punte), {RanduriNerezolvate} rânduri nerezolvate.");
+        Console.WriteLine($"  BTR: {Reclasificari} rânduri de reclasificare de cont (punte), din care "
+            + $"{ReclasificariCaMiscare} ca MIȘCARE (ASM #reclas: {LoturiReclasificate} loturi noi, "
+            + $"{CheiLotDiscriminate} chei discriminate, {LiniiReclasNetransferate} linii noi netransferate), "
+            + $"{ReclasificariDejaPeContNou} cu lotul deja pe contul nou, {ReclasificariFaraTipNou} fără Tip "
+            + $"de stoc pe contul nou, {ReclasificariValoareZero} cu lotul la valoare 0 (comportamentul vechi); "
+            + $"{DocumenteAceeasiGestiune} documente cu aceeași "
+            + $"gestiune pe ambele laturi (fără BTR), {RanduriNerezolvate} rânduri nerezolvate.");
 }
 
 // ======================= 3. BonDeConsum → BCS =======================

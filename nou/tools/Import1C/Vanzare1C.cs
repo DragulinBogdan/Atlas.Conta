@@ -211,9 +211,11 @@ static class Descarcare1C {
             // perechea de conturi a regulii DSC pe Tipul lotului, la costul lotului
             // ATLAS, rotunjit cum rotunjește materializarea. Declararea închide
             // cercul deschis de `Rand.Evaluat`: diferența față de cifra sursei
-            // devine divergență MĂSURATĂ, nu „încape în plafon". Ea acoperă și
-            // cazul în care 1C a reclasificat lotul (rândul sursei spune 607 = 371,
-            // Atlas postează 608 = 381 fiindcă lotul a rămas pe geamănul lui).
+            // devine divergență MĂSURATĂ, nu „încape în plafon". (Până la D18-D3
+            // acoperea și cazul în care 1C reclasificase lotul — rândul sursei
+            // spunea 607 = 371, Atlas posta 608 = 381 fiindcă lotul rămânea pe
+            // geamănul vechi; de atunci reclasificarea naște lotul pe contul nou,
+            // iar pin-ul pe cheia cu contul rândului îl găsește pe EL.)
             var contare = cat.Contare("DSC", tip.Id);
             var valoareAtlas = 0m;
             foreach (var (lotId, q, valoareLinie) in alocari) {

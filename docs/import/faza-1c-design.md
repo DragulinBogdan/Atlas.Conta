@@ -725,3 +725,106 @@ atinge registrele.
   se atingă partenerii deja timbrați ANAF.
 - Numele conducătorului rupt la primul spațiu (`FLORESCU ADRIAN`) e o convenție
   a conectorului, nu un fapt al sursei: 1C ține numele într-un singur câmp.
+
+## 15. Felia 18 (D18-D3/D4) — reclasificarea la transfer ca MIȘCARE + reziduul absorbit
+
+Contractul: `docs/api/p5-felia-restante-s-contract.md` (§Închidere, pasul 3
+are cifrele). Executat pe clona `Atlas.Conta.Import1C.Flax.Api`
+(`--recreeaza --pana-la 3`, 30 min 31 s, contract îndeplinit, 0 eșecuri;
+169 reclasificări ca mișcare, 1 cu lotul la valoare 0 rămasă pe calea veche;
+`--saft-s 2025 3` DUK ok, S3 pe 371 fără componenta de reclasificare, 381 la
+zero), baza `Flax` neatinsă până la pasul 4. **`--continua` pe o bază deja
+importată e fals-roșu** pe contractele 1/3 și replanifică cu efect real
+unitățile fără document legat (vezi contractul, abaterea (a)) — proba de
+idempotență se face prin re-rulare integrală.
+
+### Reclasificarea de cont la transfer (D18-D3) — amendează §4 (BTR) și §12.1
+
+Rândul 1C `TransferDeMarfuri` cu `contDebit ≠ contCredit` (556/an) mută marfa
+între conturi de stoc FĂRĂ să-i schimbe identitatea de lot. Atlas nu poate:
+contul lotului e Tipul produsului, iar identitatea produsului de import e
+`nomenclator × cont` (50a). Până la F17, `HandlerTransfer` scria un BTR pe
+lotul VECHI + o NTC-punte `contNou = contVechi` + un ALIAS (`1C:LotAlias`,
+cheia cu simbolul nou → același lot), iar `MiscareStoc1C.Rezolva` lua contul
+din simbolul canonic al lotului: DSC-ul descărca 381 pentru un rând 1C pe 371,
+381 era creditat de două ori (punte + DSC), iar în SAF-T S cusătura S3 pe
+371/381 purta toate reclasificările anului (74-r9).
+
+De acum reclasificarea e o **mișcare de stoc**, într-o singură unitate de
+import, în ordinea asta:
+
+1. **ASM `#reclas`** (`h.Id + "#reclas"`) în gestiunea SURSEI: consumă lotul de
+   pe `produs@contVechi` (rezoluția de azi + `Alocare.Aloca`, deci supapa 48a
+   dacă pinul e gol) și naște lotul pe `produs@contNou` (`AsiguraProdus`),
+   aceeași cantitate, `PretEvaluare = Σ consum / cantitate` — valoarea
+   consumului e cea prezisă de `Aloca` prin `StocService.ValoareGolire`
+   (D18-D2), deci invariantul 46d trece la zero și lotul vechi ajunge exact la
+   0/0,00 când e golit.
+2. **NTC-punte** `#punte` — neschimbată ca formă (categoria „BTR: reclasificare
+   de cont pe transfer"), la valoarea ASM-ului; acum ARE mișcarea în spate.
+3. **BTR** pe cheia plată, DOAR dacă gestiunile diferă: mută lotul NOU
+   (rezolvat la materializare pe cheia lui 1C, după ce ASM-ul e operat —
+   tiparul `HandlerAsamblare.TransferaProduse`), alături de liniile
+   nereclasificate pe loturile lor. Aceeași gestiune ⇒ fără BTR (169/an).
+
+**Legătura**: cheia `1C:Lot` cu simbolul NOU = lotul NOU (canonic, `Simbol =
+contNou`) — exact cheia pe care rândurile 1C ulterioare de pe contul nou
+(DSC/RLF/BTR) o pin-uiesc; cheia cu simbolul vechi rămâne pe lotul vechi
+(restul, la reclasificare parțială). `1C:LotAlias` NU se mai scrie pentru
+transferuri (rămâne DOAR al returului de la client, `HandlerReturClient`,
+care recreează lotul-sursă absent — `Catalog.LeagaAliasLot(os, …)`; varianta
+cu ObjectSpace propriu a murit). Prefixul `document × nomenclator` devine
+ambiguu pe perechile (vechi, nou) ⇒ `Catalog.Lot` nu mai rezolvă pe prefix
+acolo, pinul cade în supapa 48a (`LoturiNerezolvate` se raportează).
+
+**Decizia de mișcare se ia contra simbolului CANONIC al lotului Atlas**
+(`tip.Simbol`), nu contra creditului rândului 1C: un lot rezolvat pe prefix
+poate fi deja pe contul nou (`ReclasificariDejaPeContNou`) — atunci nu e nimic
+de mutat, rămâne doar puntea. Contul nou fără Tip de stoc în profil
+(`ReclasificariFaraTipNou`) = gaură (21): comportamentul vechi (BTR pe lotul
+vechi + punte), fără alias, raportat. Aceeași cheie de lot nou deja luată
+(același lot 1C reclasificat a doua oară pe același cont) ⇒ discriminant pe
+documentul creator (`{lotId}~{transferId}`, `CheiLotDiscriminate`): pinurile
+exacte cad pe primul lot și, gol, în supapa 48a. Lanțuri (lot reclasificat de
+mai multe ori): lotul nou e sursa următoarei (cheia exactă cu simbolul lui).
+RLF pe contul vechi după reclasificare totală ⇒ lotul vechi are 0 ⇒ backorder
+raportat (comportamentul de azi, nu se inventează).
+
+**Reluarea** (D1): cheile unității se derivă din sursă (`Cere`: reclasificare
+= vreun rând cu conturi mapate diferite și debit de stoc; BTR = gestiuni
+diferite) și trec prin `Reluare1C.UnitatePartiala` — o rulare întreruptă
+între ASM și BTR refuză zgomotos cu `--deblocheaza`. BTR-ul refuză curat dacă
+ASM-ul `#reclas` n-a ajuns operat (loturile noi n-ar avea sold). Limitare
+moștenită de la asamblare: o unitate care a cerut `#reclas` dar n-a produs
+ASM (nicio linie acoperită) rămâne „parțială" la rulările următoare (refuz cu
+motiv), fiindcă o cheie fără document nu se poate lega.
+
+Gardul din `HandlerAsamblare` care refuză „asamblarea care reclasifică"
+rămâne: e al asamblărilor REALE ale sursei (formă nouă, fără caz pe 2025);
+reclasificarea de transfer are calea ei în `HandlerTransfer`.
+
+Contractul 3 (`nomenclator × gestiune`) e neatins prin construcție: gemenii
+`produs@371`/`produs@381` cad pe aceeași cheie 1C. Contractul 1: 381/608 nu
+mai poartă Δ-ul punții (DSC descarcă lotul nou pe 371 ⇒ 607 = 371).
+
+### Reziduul per lot absorbit la golire (D18-D4) — amendează §8 (1)
+
+D2 mută cenții de rotunjire de pe conturile de stoc pe cheltuială/venit față
+de 1C (care își poartă reziduurile pe loturi). Cifra e deja în explicația
+contractului 1 — handlerele de ieșire declară în punte valoarea PREZISĂ de
+`Aloca` contra cifrei sursei, restul intră ca divergență „Evaluare" per
+cont —, deci o categorie ADITIVĂ ar dubla explicația. `ReconciliereLuna.
+ReziduuAbsorbit` o DEFALCĂ, cu cifră exactă recitită din registru (47e):
+liniile de ieșire (`Cantitate < 0`, ne-storno) cu `Valoare −
+RotunjesteBani(Cantitate × Lot.PretUnitar) ≠ 0`, pe chei golite cu convenția
+EXACTĂ a motorului (rândurile cu `Data <` ziua rândului + cele din aceeași zi
+ale documentelor cu `DataOperare ≤` + deschiderea; golirea se VERIFICĂ — un
+reziduu pe cheie negolită e altă cauză și se strigă: proba `--sabotaj` îl
+prinde exact așa), contul de stoc din
+`Lot.Produs.TipMaterial.ContImplicit`, contrapartida = cealaltă latură a
+rândului `RegistruContabil` al ACELEIAȘI linii (`DetaliuId`), cu semn invers.
+BTR-ul (fără rând contabil — restul se mută pe destinație, același cont) nu
+atinge contractul 1 și se numără separat. Raportul integral primește blocul
+`[1] D18-D4` per cont: reziduul absorbit și `Δ fără reziduu` (= Δ-ul de
+dinainte de D2 pe conturile neatinse de D3) — atribuirea diff-ului față de
+baseline, linie cu linie.

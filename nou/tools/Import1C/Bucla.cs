@@ -476,6 +476,12 @@ sealed class BuclaImport {
             realocari, cantitate, cronometruLuna.Elapsed,
             contract.Picate, contract.TvaDePlata, durataContract);
         Handlere.Raporteaza();
+        // Rezoluția pin-urilor de lot (cumulat pe rulare): pe prefix = cheia
+        // exactă lipsea și prefixul (document × nomenclator) era neambiguu;
+        // nerezolvate = prefix ambiguu (de la D18-D3 și perechile lot vechi /
+        // lot reclasificat) ⇒ supapa 48a.
+        Console.WriteLine($"  Loturi (cumulat): {Catalog.LoturiRezolvatePePrefix} pin-uri rezolvate pe prefix, "
+            + $"{Catalog.LoturiNerezolvate} nerezolvate (prefix ambiguu sau lipsă ⇒ supapa 48a).");
         ContorPunti.Raporteaza();
         if (DrafturiSterse > 0 || DrafturiRefuzate > 0 || Alocare.MarcajeAbandonate > 0)
             Console.WriteLine($"  Reluare (cumulat pe rulare): {DrafturiSterse} drafturi ale rulărilor "

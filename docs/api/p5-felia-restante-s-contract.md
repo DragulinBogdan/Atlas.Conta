@@ -334,3 +334,118 @@ ReadDto 10,00; (g) RLF −10,00, 3xx=401 −10,00; (h) ASM refuz la 10,01, trece
 la 10,00, kit 10,00; nicio cheie golită cu valoare ≠ 0. Scena D17-V2/V6 are
 prețuri exacte ⇒ nicio cifră veche schimbată (F6 injectează reziduul direct
 în registru, rămâne). ModelCheck verde (bugetar 778, privat 613).
+
+**Pasul 3 (D18-D3 + D18-D4, 2026-08-27).** Doar Import1C (Module neatins);
+detaliul mecanicii în `docs/import/faza-1c-design.md` §15.
+
+*D3 — reclasificarea ca mișcare* (`HandlereStoc.cs`, `HandlerTransfer`):
+rândul `TransferDeMarfuri` cu `contDebit ≠ contCredit` produce, în aceeași
+unitate și în ordinea asta, ASM `#reclas` în gestiunea sursei (consum = lotul
+de pe `produs@contVechi` prin `Alocare.Aloca`, produs = lot NOU pe
+`produs@contNou`, `PretEvaluare = Σ consum / cantitate` ⇒ invariantul 46d la
+zero), NTC-punte `#punte` (categoria de azi, la valoarea ASM-ului), BTR pe
+lotul nou doar când gestiunile diferă (rezolvat la materializare pe cheia lui
+1C, după ASM — tiparul `TransferaProduse`). Cheia `1C:Lot` cu simbolul nou =
+lotul nou (`LeagaLotNou`), cea cu simbolul vechi rămâne pe lotul vechi;
+`1C:LotAlias` nu se mai scrie la transfer (rămâne DOAR al returului de la
+client — `HandlerReturClient`; varianta `Catalog.LeagaAliasLot(cheie, lot)`
+cu ObjectSpace propriu ștearsă). Decizia de mișcare se ia contra simbolului
+CANONIC al lotului (`tip.Simbol`), puntea contra formei 1C. Gardul reluării:
+cheile derivate din sursă (`Cere`) prin `Reluare1C.UnitatePartiala`; BTR-ul
+refuză curat dacă ASM-ul nu e operat. Gardul din `HandlerAsamblare` (asamblare
+1C care reclasifică) rămâne, cu comentariul re-țintit.
+
+*D4 — reziduul absorbit* (`ReconciliereLuna.ReziduuAbsorbit`): DEFALCARE, nu
+categorie aditivă — cifra e deja în explicația contractului 1 (handlerele
+declară în punte valoarea prezisă de `Aloca`, restul e „Evaluare"), o a doua
+explicație ar fi dublat-o. Din registru: linii de ieșire ne-storno cu
+`Valoare − RotunjesteBani(Cantitate × PretUnitar) ≠ 0`, golirea verificată cu
+convenția EXACTĂ a motorului (rândurile cu `Data <` + cele din aceeași zi ale
+documentelor cu `DataOperare ≤`; prefix-sum-ul pe ziua întreagă dădea 3/9/14
+fals-pozitive BTR pe clonă — chei golite și re-încărcate în aceeași zi),
+contul de stoc din `Lot.Produs.TipMaterial.ContImplicit`, contrapartida din
+`RegistruContabil.DetaliuId` al aceleiași linii; BTR (fără rând contabil) se
+numără separat. Blocul `[1] D18-D4` din raportul integral: per cont, reziduul
+și `Δ fără reziduu`.
+
+*D18-V3 pe clona `Atlas.Conta.Import1C.Flax.Api`* (`--recreeaza --pana-la 3`,
+baza `Flax` neatinsă; seed-ul profilului îl face Import1C singur): **contract
+îndeplinit, 0 eșecuri**, 49.498 documente, 4.328 copii, 1.102 realocări;
+**30 min 31 s** (ian 8:47 / feb 9:35 / mar 11:09; anul întreg pe codul de
+dinainte 1h40 ⇒ ~25 min pe 3 luni: +20 %, sub regula 2×).
+Reclasificări (cumulat ian/feb/mar): 59/117/170 rânduri de punte, din care
+**59/117/169 ca MIȘCARE** (169 loturi noi, 17 chei discriminate — același lot
+1C reclasificat a doua oară pe același cont, 0 linii noi netransferate, 0
+„deja pe contul nou", 0 fără Tip), 13/33/48 documente în aceeași gestiune
+(fără BTR), **1 cu lotul la valoare 0** (03/2025, `BEDB…717E`, 1 buc / 0,00
+lei: ASM cere preț pozitiv — invariantul NU s-a relaxat, rândul rămâne pe
+calea veche BTR + punte la 0, contor `ReclasificariValoareZero` + avert;
+descoperit ca EȘEC în prima rulare, fix-ul e chiar gardul ăsta). Loturile
+vechi consumate: 169, 45 cu rest (reclasificare parțială), **0 cu rezidu
+valoric la cantitate 0**; loturile noi: 4 golite până în martie, 2 cu DSC, 0
+cu RLF. Aliasuri rămase: 70, toate ale returului de la client. Lanțul
+(371→3028→371 în aceeași zi, 06.03: `SED00056123-R` naște lotul pe 3028,
+`SED00056180-R` îl consumă și naște din nou pe 371) merge prin cheia exactă.
+**Cazul 10.03 (74-r9)**: ASM `SED00056436-R` consumă lotul `SED000097087/381`
+−4 / −80,00 (preț 20,00) și naște `SED000097087/371` +4 / 80,00; BTR-8676 îl
+mută SED000073 → SED000001; DSC `FLXONL000098622-D` din aceeași zi îl descarcă
+pe lotul NOU (−4 / −80,00) și postează **607 = 371** 80,00 (nu 608 = 381);
+puntea `SED00056436-P` 371 = 381 80,00; **381 nu mai e creditat de două ori**:
+contractul 1 nu mai are Δ pe 381/608 (baseline 03: 381 −80 / 608 +80),
+soldul 381 = 2.900,00 debitor = balanța 1C. Contractul 3: 0 chei
+nejustificate în toate cele 3 luni (gemenii pe aceeași cheie 1C).
+D4 (din registru, cumulat): 371 **32,07 / 30,25 / 20,09**, 607 −32,07 /
+−30,25 / −20,08, 3024 0,03 / 6024 −0,03 pe toate, martie și 3028 −0,02 / 6028
+0,02 / 401 −0,01; 0 contrapartide ambigue; liniile BTR fără contrapartidă
+93/210/319. `Δ fără reziduu` vs baseline-ul de dinainte de D2/D3
+(`reconciliere-20260825-203703.txt`): 607 ian −466,94 vs −466,93, feb −335,47
+vs −335,44, mar −586,16 vs −585,65 (= −665,65 + 80 mutat de pe 608) —
+diferențele de cenți sunt efectele lui D3 pe evaluare (prețul lotului nou =
+Σ consum / cantitate, DSC-urile ulterioare pe el), deja în categoria
+„Evaluare"; 371 ian 496,79 vs 486,93 (+9,86 = 3028 → 371 mutat de punțile
+reclasificării: 3028 de la 9,85 la −0,01).
+`--saft-s 2025 3` pe clonă: **DUK ok (J2.2.8), 0 atenționări**, 37,1 MiB,
+proiecție 1,9 s; S1/S5/S2/S4 verzi, `MovementTypeTable` 8 coduri (a apărut
+20/70 — reclasificarea iese în S ca asamblare, riscul 8: DUK n-o contrazice;
+sensul rămâne de decis la închidere); **S3 pe 371 spartă**: NTC −58.663,63 =
+punți de reclasificare **−25.748,59 (== ASM #reclas pe 371, la cent)** + RLF
+fără acoperire −27.884,34 + `Operatia` (note care mută stoc, 95 rânduri)
+−3.533,78 + FCT −736,08 + DSC nerezolvabil −761,29 + BCS 0,45; restul S3 371
+= deschidere 4.852,19 ⇒ componenta „reclasificare" e **0**; **381: stoc
+2.900 = balanță 2.900, diferență 0** (era creditor); 3028: 0,46 = alte note.
+`ReziduValoricFaraCantitate` 129 / 6.265,25 la 31.03 — TOATE pe loturi ale
+deschiderii (`SED000004`, `SERSER001`…, preț rotunjit la 4 zecimale la
+netare, 47d); 0 pe loturile golite de D2 (verificat: nicio cheie golită în
+ian–mar cu valoare ≠ 0 în afara deschiderii — `SoldNegativ` nu apare).
+`--sabotaj --pana-la 1` pe clonă (după importul complet, 38 s): **ambele
+probe detectate** (contabilă de contractul 1, de stoc de contractul 3, exit
+1 = succesul auto-testului); colateral, gardul de golire al lui D4 a prins
+rândul de stoc sabotat ca „reziduu pe cheie NEGOLITĂ — altă cauză" (1 linie),
+adică exact ce trebuie să facă. Contorul `Loturi (cumulat)` (pin-uri pe
+prefix / nerezolvate ⇒ supapa 48a) a intrat în raportul lunii abia după
+run-ul integral (0 / 15 pe rularea de sabotaj, care replanifică doar
+unitățile fără document) — cifra pe anul întreg vine din pasul 4.
+
+*Abateri și restanțe (pas 3)*: (a) `--continua` pe o bază deja importată dă
+**fals-roșu** pe contractele 1/3 și RE-PLANIFICĂ cu efect real: unitățile
+fără document legat (BCS/RLF „fără acoperire", RLF blocate de punte) se
+replanifică contra registrului complet al lunii (nu al celui de la momentul
+cronologic al primei rulări; `Disponibil ≤ dată` vede și documentele aceleiași
+zile importate DUPĂ), pot găsi acoperire și se OPEREAZĂ (măsurat: BCS-161 din
+01.02, 607 = 371 777,66), iar `RegistruDivergente.Persista` purjează rândurile
+vechi ale sursei la primul rând nou (cheia 9424D067… × 941B… 1 buc / 304,67
+și-a pierdut justificarea „măsurat"; 401 −65.222 neexplicat) — limitare a
+MODULUI (comentariul „de ce nu există purjează la orice replanificare" din
+`Divergente.cs` o descrie), nu a pasului 3: idempotența NU s-a probat prin
+`--continua`, rămâne restanță (proba validă = re-rulare integrală, cum s-a
+făcut). (b) O unitate care a cerut `#reclas` (din sursă) dar n-a produs ASM
+(nicio linie acoperită / valoare 0) rămâne „parțială" la rulările următoare
+dacă BTR-ul ei s-a operat (refuz cu motiv, `--deblocheaza`) — limitare
+moștenită de la `HandlerAsamblare` (`#btr`). (c) Lotul cu valoare 0 nu se
+poate re-identifica prin ASM (preț pozitiv, 46d) — rămâne pe contul vechi,
+contorizat. (d) `PretEvaluare` la 6 zecimale: pe cantități ≥ ~10.000 `round(q
+× preț)` poate diferi cu un ban de Σ consum ⇒ invariantul ar refuza
+(nemăsurat pe Flax, 0 eșecuri pe 3 luni; același risc în `HandlerAsamblare`).
+(e) Reclasificări din alte tipuri 1C decât `TransferDeMarfuri`: 0 (gardul
+`HandlerAsamblare` n-a lovit nimic). (f) Codul S al reclasificării (20/70) —
+de decis la închidere (riscul 8).

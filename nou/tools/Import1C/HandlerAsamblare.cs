@@ -216,10 +216,13 @@ static class HandlerAsamblare {
 
             // Asamblarea nu contează în Atlas (marfă→marfă la sintetic e zgomot —
             // 46d), ceea ce e corect cât timp cele două conturi coincid: rândul se
-            // anulează singur. O asamblare care RECLASIFICĂ (371 = 302) ar lăsa o
-            // mișcare contabilă reală neacoperită și ar cere o punte la valoarea
-            // Atlas (mecanica reclasificării de la transfer) — sursa n-are niciun
-            // caz pe 2025, deci nu se scrie cod pe presupuneri: eșec zgomotos.
+            // anulează singur. O asamblare 1C care RECLASIFICĂ (371 = 302) ar lăsa
+            // o mișcare contabilă reală neacoperită și ar cere o punte la valoarea
+            // Atlas — sursa n-are niciun caz pe 2025, deci nu se scrie cod pe
+            // presupuneri: eșec zgomotos. (Reclasificarea de cont la TRANSFER e
+            // alt caz și are calea ei — `HandlerTransfer`, ASM `#reclas` + punte,
+            // D18-D3; gardul de aici e al asamblărilor REALE ale sursei, unde
+            // un produs pe alt cont decât consumurile ar fi formă nouă.)
             if (simbolDebit != simbolCredit)
                 throw new InvalidOperationException(
                     $"{context}: asamblare care reclasifică ({simbolDebit} = {simbolCredit}) — "

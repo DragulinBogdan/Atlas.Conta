@@ -293,6 +293,17 @@ static partial class ReconciliereLuna {
             Explica(d.ContCredit, d.ValoareNepostata);
         }
 
+        // (a') D18-D4: reziduul per lot ABSORBIT LA GOLIRE, din REGISTRU. Nu e o
+        // explicație în plus (ar dubla): cifra e deja în (a), fiindcă fiecare
+        // handler de ieșire declară în punte valoarea PREZISĂ de `Aloca` (D18-D2)
+        // contra cifrei sursei, iar restul intră ca „Evaluare" per cont. E o
+        // DEFALCARE cu cifră exactă, recitită din Postgres (47e): cât din
+        // explicația contului e reziduul de cenți pe care motorul l-a mutat de pe
+        // contul de stoc pe cheltuială/venit când a golit un lot — ca diff-ul
+        // față de rapoartele dinaintea lui D2 să fie atribuibil linie cu linie
+        // (`Δ − reziduu` = Δ-ul de dinainte, pe conturile neatinse de D3).
+        var reziduu = ReziduuAbsorbit(os, ctx, cat, avert);
+
         // (b) Plafonul MĂSURAT al contului: diferența de EVALUARE JUSTIFICATĂ de
         // contractul 3 și atribuită contului (produs → Tip → cont de stoc) sau
         // conturilor de stoc a căror oglindă de cheltuială este (citite din
@@ -385,6 +396,26 @@ static partial class ReconciliereLuna {
         foreach (var x in justificate.OrderByDescending(x => Math.Abs(x.Delta)))
             stare.Jurnalizeaza($"  ok   cont {x.Simbol}: Δ {x.Delta:N2} — {x.Motiv}");
 
+        // D18-D4 — defalcarea, per cont: reziduul absorbit la golire (din
+        // registru) și Δ-ul FĂRĂ el (cifra comparabilă cu rapoartele de dinainte
+        // de D2). Conturile ale căror linii n-au contrapartidă contabilă (BTR:
+        // restul se mută pe destinație, nu pe un cont de cheltuială) nu apar —
+        // reziduul lor nu atinge contractul 1.
+        if (reziduu.PeCont.Count > 0) {
+            stare.Jurnalizeaza($"\n[1] D18-D4 — reziduu per lot absorbit la golire, din registru, cumulat "
+                + $"la zi ({reziduu.Linii} linii de ieșire pe {reziduu.Chei} chei golite; "
+                + $"{reziduu.LiniiFaraContrapartida} linii fără contrapartidă contabilă (BTR), "
+                + $"{reziduu.LiniiAmbigue} cu contrapartidă ambiguă):");
+            foreach (var (cont, suma) in reziduu.PeCont.OrderBy(x => x.Key, StringComparer.Ordinal)) {
+                var delta = db.GetValueOrDefault(cont) - sursa.GetValueOrDefault(cont);
+                stare.Jurnalizeaza($"  cont {cont}: reziduu absorbit {suma:N2} lei; Δ {delta:N2} ⇒ "
+                    + $"Δ fără reziduu {delta - suma:N2}");
+            }
+            Console.WriteLine($"     D18-D4: reziduu absorbit la golire pe {reziduu.PeCont.Count} conturi — "
+                + string.Join(", ", reziduu.PeCont.OrderBy(x => x.Key, StringComparer.Ordinal)
+                    .Select(x => $"{x.Key} {x.Value:N2}")));
+        }
+
         // Suma abaterilor justificate: banii nu se pierd, se mută între stoc și
         // cost. Nu mai e CONDIȚIE (se satisfăcea trivial — D6), dar rămâne
         // semnal: o sumă care nu se închide arată o diferență reală strecurată
@@ -412,6 +443,133 @@ static partial class ReconciliereLuna {
             + $"({registru.Count(d => d.ValoareNepostata != 0m)} divergențe înregistrate pe "
             + $"{explicat.Count} conturi), {nemapate.Count} conturi 1C nemapate",
             picate.Count == 0 && nemapate.Count == 0);
+    }
+
+    // ---- D18-D4: reziduul per lot absorbit la golire, recitit din registru ----
+    //
+    // Regula motorului (D18-D2, `StocService.ValoareGolire`): ieșirea care
+    // GOLEȘTE cheia (Lot × Repartitor × TipStoc) la data ei preia tot soldul
+    // valoric rămas, nu `round(cantitate × preț lot)`. Diferența dintre cele
+    // două e reziduul de cenți al lotului, iar el pleacă pe contul de
+    // cheltuială/venit al aceleiași linii (nu pe contul de stoc, care ajunge
+    // exact la 0). Aici se măsoară din REGISTRU (Postgres, 47e), nu din
+    // predicția rulării, ca cifra să fie aceeași la recitire:
+    //   * rândurile de IEȘIRE (cantitate < 0, ne-storno) cu `Valoare −
+    //     RotunjesteBani(Cantitate × Lot.PretUnitar) ≠ 0` — pe orice altă
+    //     ieșire motorul scrie exact `round(q × preț)`, deci termenul e 0 prin
+    //     construcție;
+    //   * golirea se VERIFICĂ, nu se presupune, cu convenția EXACTĂ a motorului
+    //     (`SolduriLaData` la operare): rândurile cheii cu `Data <` ziua
+    //     rândului + cele din ACEEAȘI zi ale documentelor operate ÎNAINTE
+    //     (`DataOperare ≤` a documentului rândului — la recitire, ordinea intra-zi
+    //     e cea în care motorul a văzut registrul) + rândurile de deschidere;
+    //     soldul cantitativ după rând trebuie să fie 0. Un reziduu pe o cheie
+    //     negolită e semnal de altă cauză și se strigă. (Prefix-sum-ul pe ZIUA
+    //     întreagă, convenția gardianului 25d, dădea fals-pozitive: măsurat pe
+    //     clona Flax 3/9/14 linii BTR pe luni — chei golite de transfer și
+    //     re-încărcate în aceeași zi de un document operat DUPĂ el.)
+    //   * contul de stoc = `Lot.Produs.TipMaterial.ContImplicit` (semnul
+    //     reziduului, ca mișcare a soldului Atlas față de baza `preț ×
+    //     cantitate`), contrapartida = cealaltă latură a rândului contabil al
+    //     ACELEIAȘI linii (`RegistruContabil.DetaliuId`), cu semn invers. O linie
+    //     fără rând contabil (BTR — restul s-a mutat pe destinație, în același
+    //     cont) nu atinge contractul 1 și se numără separat.
+    sealed record ReziduuGolire(IReadOnlyDictionary<string, decimal> PeCont, int Linii, int Chei,
+        int LiniiFaraContrapartida, int LiniiAmbigue);
+
+    static ReziduuGolire ReziduuAbsorbit(IObjectSpace os, ContextLuna ctx, Catalog cat, Action<string> avert) {
+        var simbolPeId = cat.Plan.ToDictionary(x => x.Value, x => x.Key);
+        var iesiri = os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.Data <= ctx.Ultima && r.Cantitate < 0m && !r.Storno && r.DocumentId != null)
+            .Select(r => new {
+                r.LotId, r.RepartitorId, r.TipStoc, r.Data, r.Cantitate, r.Valoare, r.DetaliuId,
+                Operat = r.Document.DataOperare,
+                PretLot = r.Lot.PretUnitar, ContStoc = r.Lot.Produs.TipMaterial.ContImplicit.Simbol,
+            })
+            .ToList()
+            .Select(r => new {
+                r.LotId, r.RepartitorId, r.TipStoc, r.Data, r.DetaliuId, r.ContStoc, r.Operat,
+                Reziduu = r.Valoare - Scara.RotunjesteBani(r.Cantitate * r.PretLot),
+            })
+            .Where(r => r.Reziduu != 0m)
+            .ToList();
+        var peCont = new Dictionary<string, decimal>(StringComparer.Ordinal);
+        if (iesiri.Count == 0)
+            return new ReziduuGolire(peCont, 0, 0, 0, 0);
+
+        // Golirea, verificată pe cheile atinse, cu ordinea în care motorul a
+        // văzut registrul (vezi capul funcției).
+        var loturi = iesiri.Select(r => r.LotId).Distinct().ToList();
+        var miscari = os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.Data <= ctx.Ultima && loturi.Contains(r.LotId))
+            .Select(r => new {
+                r.LotId, r.RepartitorId, r.TipStoc, r.Data, r.Cantitate,
+                Operat = r.DocumentId == null ? null : r.Document.DataOperare,
+            })
+            .ToList()
+            .GroupBy(r => (r.LotId, r.RepartitorId, r.TipStoc))
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var negolite = 0m;
+        var liniiNegolite = 0;
+        var linii = new List<(Guid? DetaliuId, string ContStoc, decimal Reziduu)>();
+        var chei = new HashSet<(Guid, Guid, TipStoc)>();
+        foreach (var r in iesiri) {
+            var cheie = (r.LotId, r.RepartitorId, r.TipStoc);
+            var soldLaData = miscari[cheie]
+                .Where(m => m.Data < r.Data
+                    || (m.Data == r.Data && (m.Operat == null || m.Operat <= r.Operat)))
+                .Sum(m => m.Cantitate);
+            if (soldLaData != 0m) {
+                liniiNegolite++;
+                negolite += r.Reziduu;
+                continue;
+            }
+            chei.Add(cheie);
+            linii.Add((r.DetaliuId, r.ContStoc, r.Reziduu));
+        }
+        if (liniiNegolite > 0)
+            avert($"[{ctx.Luna:00}/{ctx.An}] D18-D4: {liniiNegolite} linii de ieșire cu valoare ≠ "
+                + $"round(cantitate × preț) pe chei NEGOLITE la data lor (Σ {negolite:N2}) — nu e reziduul "
+                + "absorbit la golire, e altă cauză; nu intră în categorie.");
+
+        // Contrapartida contabilă a fiecărei linii, din rândurile ei.
+        var detalii = linii.Where(l => l.DetaliuId != null).Select(l => l.DetaliuId.Value).Distinct().ToList();
+        var contabil = new Dictionary<Guid, List<(string Debit, string Credit)>>();
+        foreach (var lot in detalii.Chunk(500)) {
+            foreach (var r in os.GetObjectsQuery<RegistruContabil>()
+                         .Where(r => r.DetaliuId != null && lot.Contains(r.DetaliuId.Value))
+                         .Select(r => new { r.DetaliuId, r.ContDebitId, r.ContCreditId })
+                         .ToList()) {
+                if (!contabil.TryGetValue(r.DetaliuId.Value, out var lista))
+                    contabil[r.DetaliuId.Value] = lista = [];
+                lista.Add((simbolPeId.GetValueOrDefault(r.ContDebitId), simbolPeId.GetValueOrDefault(r.ContCreditId)));
+            }
+        }
+        var faraContrapartida = 0;
+        var ambigue = 0;
+        foreach (var (detaliuId, contStoc, rezid) in linii) {
+            if (contStoc == null)
+                continue;
+            var contrapartide = (detaliuId == null ? null : contabil.GetValueOrDefault(detaliuId.Value))?
+                .Where(c => c.Debit == contStoc || c.Credit == contStoc)
+                .Select(c => c.Debit == contStoc ? c.Credit : c.Debit)
+                .Distinct(StringComparer.Ordinal)
+                .ToList() ?? [];
+            if (contrapartide.Count == 0) {
+                faraContrapartida++;
+                continue;
+            }
+            peCont[contStoc] = peCont.GetValueOrDefault(contStoc) + rezid;
+            if (contrapartide.Count == 1)
+                peCont[contrapartide[0]] = peCont.GetValueOrDefault(contrapartide[0]) - rezid;
+            else {
+                ambigue++;
+                peCont["?"] = peCont.GetValueOrDefault("?") - rezid;
+            }
+        }
+        foreach (var cont in peCont.Where(x => x.Value == 0m).Select(x => x.Key).ToList())
+            peCont.Remove(cont);
+        return new ReziduuGolire(peCont, linii.Count - faraContrapartida, chei.Count, faraContrapartida, ambigue);
     }
 
     // ==================== 2. Închiderea de TVA (4423/4424) ====================
