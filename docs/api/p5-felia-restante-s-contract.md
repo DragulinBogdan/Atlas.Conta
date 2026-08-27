@@ -279,3 +279,15 @@ costul; `EXPLAIN` = index scan pe `IX_LotId`, fără seq-scan dominant ⇒
 id-uri (≈1,4 s, de două ori), `ComponenteS3` ≈0,8 s — cauzele reale, în afara
 lui D1, de decis explicit. D18-V1 verde (scena D17-V2 == suma naivă);
 ModelCheck verde (bugetar 764, privat 594).
+
+**Pasul 1, partea a doua.** (a) §7 pe `CoduriTipPeTipuri` (ancoră, doar
+Guid-uri) o singură dată, dicționarul partajat cu `ComponenteS3`; filtrul
+pe id-uri în SQL măsurat și RESPINS (`= ANY` = |ids| sondări per tip: 0,15 s
+pe luna de 9 k, 1,4–1,8 s pe istoricul de 78 k / 105 k cerut de S3); listarea
+nefiltrată 0,4 s o dată. Proiecție mediană caldă: 09 **4,0 → 2,9 s**, 12
+**4,1 → 3,0 s**; XML/rapoarte identice, DUK ok. (b) `ComponenteS3` măsurat:
+agregatul cu join 0,2–0,3 s, GL 0,15–0,2 s ⇒ câștigul posibil ≤ 0,3 s <
+0,4 s — NU s-a făcut, restanță. `ApiProiectii.CoduriTip` are aceeași
+problemă pe mulțimi mari (hot-path API, neatins — raportat). **Ținta < 1 s
+NU e atinsă**: 2,9–3,0 s, fără un vinovat dominant (§8–13 ~1,2 s în felii de
+0,1–0,3 s).

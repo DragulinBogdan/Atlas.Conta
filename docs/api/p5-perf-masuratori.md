@@ -449,25 +449,70 @@ ordinea pentru grupare, iar `Data ≤ end` reține 75 % din tabel — un index p
 |---|---|---|---|
 | 0–5 profil, societate, conturi + balanță, politică, rândurile lunii | 0 → 250–400 | 0,25–0,4 s | `ConturiSiSolduri` ≈ 0,1 s, rândurile lunii (24.510) ≈ 0,1–0,3 s |
 | 6 agregatul unic (D18-D1) | → 650–800 | **0,4 s** | 155 ms SQL + materializarea a 83 k `AgregatStocRand` + `SoldPeCheie` |
-| 7 documentele mișcărilor | → 2.030–2.160 | **1,4 s** | `CoduriTipPeTipuri` (`SaftProiectii.cs`, `IdsDocumenteDeTip<T>`): pentru FIECARE tip de document, `GetObjectsQuery<T>().Select(ID).ToList()` FĂRĂ filtru pe id-urile cerute — ~19 interogări TPT care listează TOATE documentele bazei, filtrate apoi în memorie; e O(documente), nu O(lună) |
+| 7 documentele mișcărilor | → 2.030–2.160 | **1,4 s** | `ApiProiectii.CoduriTip` pe cele ~9,3 k documente ale lunii: materializează ENTITĂȚILE polimorf (toate join-urile TPT, change tracking) ca să citească clasa CLR — corect pe o pagină de 500 de rânduri (60b), nu pe o lună de import (atribuirea din prima versiune a acestui addendum, „`CoduriTipPeTipuri` fără filtru", era GREȘITĂ pentru §7 — vezi partea a doua) |
 | 8 repartitori + parteneri | → 2.140–2.310 | 0,1–0,15 s | două `IN` cu ~sute de GUID-uri |
 | 9 loturi + produse | → 2.390–2.590 | 0,25–0,3 s | `IN` cu 16,7 k loturi, apoi 7,5 k produse cu join la cont |
 | 10 `PhysicalStock` | → 2.620–2.800 | 0,2 s | 16.723 intrări în memorie |
 | 11 `MovementOfGoods` | → 2.820–3.060 | 0,2–0,25 s | potrivire + grupare + unicitatea referințelor |
 | 12–13 master files | → 2.980–3.240 | 0,15–0,2 s | produse/UM/taxe |
-| 14 cusături, din care `ComponenteS3` | → 3.860–4.060 | **0,8–1,0 s** | agregat pe `RegistruStoc ≤ end` cu join de 4 niveluri (Lot → Produs → TipMaterial → Cont) grupat pe (Simbol, DocumentId) + agregatul GL pe conturile țintă + `CoduriTipPeTipuri` ÎNCĂ O DATĂ pe documentele lor |
+| 14 cusături, din care `ComponenteS3` | → 3.860–4.060 | **0,8–1,0 s** | măsurat în partea a doua: agregatul pe `RegistruStoc ≤ end` cu join de 4 niveluri (Lot → Produs → TipMaterial → Cont) grupat pe (Simbol, DocumentId) = 0,2–0,3 s (76,8 k / 103,6 k grupe), agregatul GL pe conturile țintă = 0,2 s (44,3 k / 59,6 k), `CoduriTipPeTipuri` pe cele ~78 k / 105 k documente ale istoricului = ~0,4 s |
 
 **Verdict:** D18-D1 e corect și e curat (un singur pass, cifre identice), dar
 ținta contractului (< 1 s/lună) nu se atinge prin el — și nici prin index:
-scanarea istoricului n-a fost niciodată costul dominant. Cele două cauze reale
-sunt **`CoduriTipPeTipuri` fără filtru de id-uri în SQL** (≈1,4 s, apelat de
-două ori: §7 și în `ComponenteS3`) și **`ComponenteS3`** (≈0,8 s). Prima e o
-schimbare de o linie (`Where(d => cerute.Contains(d.ID))` pe fiecare tip) cu
-aceleași cifre; a doua ar refolosi agregatul unic (are `LotId`; contul se
-rezolvă din dicționarele deja citite), dar S3 e spartă pe DocumentId, deci
-cere o grupare în plus. Ambele sunt în afara lui D18-D1 și se decid explicit
-(restanță sau pasul următor), nu se strecoară aici. Snapshot lunar de solduri:
-rămâne NEDESCHIS — nu are ce rezolva.
+scanarea istoricului n-a fost niciodată costul dominant. **Atribuirea din 74-r4 („proiecția S e O(istoric)") era greșită**: cele trei
+scanări ale istoricului costau 0,27 s din 4 s. Cauzele reale, măsurate în
+partea a doua: rezolvarea POLIMORFĂ a tipului de document (§7 prin entități,
+S3 prin listarea per tip) și, mai mărunt, cele două agregate ale lui S3.
+Snapshot lunar de solduri: rămâne NEDESCHIS — nu are ce rezolva.
+
+### Partea a doua (aceeași zi) — tipul documentului o singură dată, `ComponenteS3` măsurat
+
+**(a) `CoduriTip` → `CoduriTipPeTipuri`, o dată, partajat.** §7 folosea
+`ApiProiectii.CoduriTip` (entități polimorfe, 60b); acum folosește
+`CoduriTipPeTipuri` (ancora `TipDocument.ClrType`, doar Guid-uri per tip),
+iar dicționarul rezultat — tipul TUTUROR documentelor bazei — se dă mai
+departe lui `ComponenteS3`, care îl recalcula. Filtrul pe id-uri ÎN SQL
+(`Where(d => cerute.Contains(d.ID))` în `IdsDocumenteDeTip<T>`) a fost
+încercat primul, cum cerea planul, și RESPINS pe cifră: Npgsql îl traduce în
+`= ANY(@ids)` (un singur parametru array, deci fără problema limitei de
+parametri), dar Postgres îl execută ca |ids| sondări de index PER TIP — pe
+cele ~9,3 k documente ale lunii (§7) costă ~0,15 s, pe cele ~78 k / 105 k
+documente ale istoricului pe care le cere S3 costă **1,4–1,8 s** (măsurat:
+proiecția a URCAT la 4,8–5,1 s). Listarea NEFILTRATĂ a tuturor id-urilor
+per tip (205.131 documente pe Flax, ~19 interogări TPT pe coloana `ID`) costă
+**~0,4 s** și se face o singură dată — de aici partajarea.
+
+| Lună | ÎNAINTE (D1) | DUPĂ (a): 5 calde (s) | **Mediană** |
+|---|---|---|---|
+| 09/2025 | 4,0 s | 3,0 · 2,9 · 2,9 · 2,9 · 2,3 | **2,9 s** |
+| 12/2025 | 4,1 s | 2,7 · 2,8 · 3,0 · 3,0 · 3,1 | **3,0 s** |
+
+Identitate, din nou: XML 09/12 — 1 linie diferită (`SoftwareVersion`),
+rapoarte identice, DUK `ok` pe ambele.
+
+**`ApiProiectii.CoduriTip` are ACEEAȘI problemă** pe orice mulțime mare
+(materializează entitățile polimorf ca să citească clasa) — e pe hot-path-ul
+API-ului (grupul conex, panoul de imperecheri, ~sute de rânduri, unde e
+corect și măsurat la 60b). NU s-a atins în pasul ăsta; se raportează.
+
+**(b) `ComponenteS3`, măsurat înainte de a decide** (cronometru temporar,
+09 / 12, două rulări calde): agregatul de stoc cu join-ul de 4 niveluri
+**0,21–0,23 s / 0,28–0,30 s** (76.789 / 103.579 grupe), agregatul GL
+**0,13–0,21 s / 0,16–0,17 s**, `CoduriTipPeTipuri` pe istoric 0,4 s (acum
+partajat, deci 0). Mutarea părții „registru per cont" pe agregatul D1 ar
+economisi cel mult agregatul de stoc, adică **≤ 0,3 s < pragul de 0,4 s**
+fixat pentru încercare — și ar cere oricum o grupare pe `(LotId,
+DocumentId)` în SQL (S3 e spartă pe document), adică un al doilea agregat de
+cardinalitate comparabilă. **NU s-a făcut**; rămâne restanță cu cifra.
+
+**Unde sunt cele ~2,9 s rămase** (din profilul pe secțiuni, cu §7 ≈ 0,5 s
+acum): §6 agregatul unic 0,4 s, §7 tipuri + documente 0,5 s, §8–13
+(repartitori, loturi/produse cu `IN` de 16,7 k GUID-uri, stoc fizic,
+mișcări, master files) ~1,2 s în felii de 0,1–0,3 s, §14 cusături ~0,5 s.
+Nicio felie nu mai domină; **ținta < 1 s/lună NU e atinsă** (2,9–3,0 s), și
+nu mai există un singur vinovat de luat — următorul pas real ar fi §8–13
+(listele `IN` cu mii de GUID-uri → join pe agregat, ca la 71/addendum 5) și
+serializarea a 16,7 k intrări, fiecare ≤ 0,3 s.
 
 ### Reproducere (addendum 6)
 
