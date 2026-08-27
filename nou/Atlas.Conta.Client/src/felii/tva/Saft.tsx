@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { components } from '../../generated/api-types';
 import { labelEnum } from '../../nucleu/campMeta';
@@ -493,18 +493,35 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
     nume: string; explicatie: string; stanga: number; dreapta: number; bate: boolean; cant?: boolean;
   }[] = [
     {
-      nume: 'S1 stoc fizic (valoare)',
-      explicatie: 'deschidere + mișcările lunii == închidere, pe FIECARE intrare (gestiune × lot)',
+      nume: 'S1 stoc fizic vs registru (valoare)',
+      explicatie: 'deschidere + rândurile de registru ale lunii == închidere, pe FIECARE intrare '
+        + '(gestiune × lot)',
       stanga: (rezumat.StocOpeningValoare ?? zero) + (rezumat.StocMiscariValoare ?? zero),
       dreapta: rezumat.StocClosingValoare ?? zero,
-      bate: rezumat.StocFizicBate ?? false,
+      bate: (rezumat.StocIntrariDiferite ?? 0) === 0,
     },
     {
-      nume: 'S1 stoc fizic (cantitate)',
+      nume: 'S1 stoc fizic vs registru (cantitate)',
       explicatie: 'aceeași egalitate, pe cantități',
       stanga: (rezumat.StocOpeningCantitate ?? zero) + (rezumat.StocMiscariCantitate ?? zero),
       dreapta: rezumat.StocClosingCantitate ?? zero,
-      bate: rezumat.StocFizicBate ?? false,
+      bate: (rezumat.StocIntrariDiferite ?? 0) === 0,
+      cant: true,
+    },
+    {
+      nume: 'S5 stoc fizic vs fișier (valoare)',
+      explicatie: 'aceeași egalitate, dar cu Σ luată din liniile EMISE în MovementOfGoods — S1 confruntă '
+        + 'trei interogări pe registru între ele, deci nu vede ce s-a scris în fișier',
+      stanga: (rezumat.StocOpeningValoare ?? zero) + (rezumat.StocEmiseValoare ?? zero),
+      dreapta: rezumat.StocClosingValoare ?? zero,
+      bate: (rezumat.StocFizicVsMiscariDiferite ?? 0) === 0,
+    },
+    {
+      nume: 'S5 stoc fizic vs fișier (cantitate)',
+      explicatie: 'aceeași egalitate, pe cantități',
+      stanga: (rezumat.StocOpeningCantitate ?? zero) + (rezumat.StocEmiseCantitate ?? zero),
+      dreapta: rezumat.StocClosingCantitate ?? zero,
+      bate: (rezumat.StocFizicVsMiscariDiferite ?? 0) === 0,
       cant: true,
     },
     {
@@ -544,6 +561,13 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
       rupte: rezumat.IdentitatiTertInvalide ?? 0,
       total: rezumat.IdentitatiTertInvalide ?? 0,
       explicatie: 'fiecare CustomerID/SupplierID ≠ 0 are unul dintre formatele 00–08 ale legii',
+    },
+    {
+      nume: 'S4 referințe de mișcare (duplicate)',
+      rupte: rezumat.ReferinteDuplicate ?? 0,
+      total: rezumat.NumarMiscari ?? 0,
+      explicatie: 'MovementReference e identitatea mișcării în fișier, deci trebuie să fie unică — '
+        + 'numerele de document duplicate primesc un discriminant',
     },
   ];
   return (
@@ -588,10 +612,11 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
         </tbody>
       </table>
       <p className="indiciu">
-        S1 se verifică <strong>pe fiecare intrare</strong> de stoc fizic ({numar(rezumat.StocIntrari ?? 0)}{' '}
-        intrări, {numar(rezumat.StocIntrariDiferite ?? 0)} diferite), nu doar pe total — două erori de semn
-        opus s-ar anula într-o singură sumă. Validatorul ANAF nu face nicio aritmetică pe declarația de
-        stocuri: aceste cusături sunt singura probă că nu s-a pierdut nimic.
+        S1 și S5 se verifică <strong>pe fiecare intrare</strong> de stoc fizic (
+        {numar(rezumat.StocIntrari ?? 0)} intrări, {numar(rezumat.StocIntrariDiferite ?? 0)} diferite față de
+        registru, {numar(rezumat.StocFizicVsMiscariDiferite ?? 0)} față de fișier), nu doar pe total — două
+        erori de semn opus s-ar anula într-o singură sumă. Validatorul ANAF nu face nicio aritmetică pe
+        declarația de stocuri: aceste cusături sunt singura probă că nu s-a pierdut nimic.
       </p>
     </div>
   );
@@ -625,14 +650,28 @@ function StocPerCont({ lista, rezumat }: { lista: DiferentaCont[]; rezumat: Rezu
         </thead>
         <tbody>
           {lista.map((c) => (
-            <tr key={c.Cont ?? ''} className={(c.Diferenta ?? 0) === 0 ? undefined : 'saft__difera'}>
-              <td>{c.Cont}</td>
-              <td className="num">{bani(c.ClosingStocFizic ?? 0)}</td>
-              <td className="num">{bani(c.ClosingBalanta ?? 0)}</td>
-              <td className="num">
-                {(c.Diferenta ?? 0) === 0 ? '' : <strong>{bani(c.Diferenta ?? 0)}</strong>}
-              </td>
-            </tr>
+            <Fragment key={c.Cont ?? ''}>
+              <tr className={(c.Diferenta ?? 0) === 0 ? undefined : 'saft__difera'}>
+                <td>{c.Cont}</td>
+                <td className="num">{bani(c.ClosingStocFizic ?? 0)}</td>
+                <td className="num">{bani(c.ClosingBalanta ?? 0)}</td>
+                <td className="num">
+                  {(c.Diferenta ?? 0) === 0 ? '' : <strong>{bani(c.Diferenta ?? 0)}</strong>}
+                </td>
+              </tr>
+              {/* Componentele apar DOAR sub conturile care chiar diferă: pe unul
+                  care se închide la zero ar fi zgomot. Ele spun CE TIP de
+                  document pune diferența — singura formă în care cifra devine
+                  acționabilă. */}
+              {(c.Diferenta ?? 0) !== 0 && (c.Componente ?? []).map((comp) => (
+                <tr key={`${c.Cont ?? ''}|${comp.TipDocument ?? ''}`} className="saft__componenta">
+                  <td>↳ {comp.TipDocument}</td>
+                  <td className="num">{bani(comp.StocFizic ?? 0)}</td>
+                  <td className="num">{bani(comp.Balanta ?? 0)}</td>
+                  <td className="num">{bani(comp.Diferenta ?? 0)}</td>
+                </tr>
+              ))}
+            </Fragment>
           ))}
           <tr>
             <th>Total</th>

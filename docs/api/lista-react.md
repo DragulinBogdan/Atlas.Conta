@@ -103,3 +103,17 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
   rânduri se poate ascunde după 200 de `ContFaraRol`; agregarea per cauză pe
   server (73-r10) + drill-down e forma corectă. Descărcarea trece prin
   memoria paginii (`blob`, ~70 MiB pe luna Flax) — acceptat pe desktop.
+
+## Adăugate la felia 17 (SAF-T S)
+
+- **Ecranul `PoliticaMiscareSaft` în React** (74-r12): politica se editează
+  azi doar în XAF (OData ReadOnly, 56); grila cu `TipDocument × TipStoc ×
+  Semn → cod + rol + motiv` și validarea codului din nomenclator
+  (`SaftReguli.CoduriMiscare` — lista poate ieși prin metadata sau prin
+  OData pe un nomenclator viitor).
+- **`/saft?fel=S`**: `Neincluse` pe S are cheia PRODUSUL (`FaraContStoc`) —
+  agregarea per cauză pe server (73-r10/74-r7) e mai urgentă aici decât pe
+  L; S3 cu componentele pe tip de document e deja randată, dar un drill-down
+  pe cont ⇒ balanță/fișă ar închide bucla.
+- Restul ecranului S e livrat (comutator L/S în URL, S1–S5, `Excluse`,
+  422 inline, descărcare prin `fetch + blob`).

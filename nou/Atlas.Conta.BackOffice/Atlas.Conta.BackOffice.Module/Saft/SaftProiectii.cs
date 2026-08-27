@@ -1186,6 +1186,21 @@ public static class SaftProiectii {
         rezultat.FacturiEmise = Facturi(idsFacturiVanzare, RolTertCont.Client, "SalesInvoices");
         rezultat.FacturiPrimite = Facturi(idsFacturiCumparare, RolTertCont.Furnizor, "PurchaseInvoices");
 
+        // Numere de factură DUPLICATE în aceeași secțiune (colateralul fixului F1
+        // al feliei 17): `InvoiceNo` NU se discriminează — e numărul REAL al
+        // facturii, iar un sufix inventat ar fi o factură care nu există. Dar
+        // faptul se strigă: pe importul din 1C două documente pot purta același
+        // număr al sursei, iar cine primește fișierul va vedea două facturi cu
+        // aceeași identitate comercială.
+        foreach (var (sectiune, lista) in new[] {
+                     ("SalesInvoices", rezultat.FacturiEmise), ("PurchaseInvoices", rezultat.FacturiPrimite) })
+            foreach (var coliziune in lista.GroupBy(f => f.InvoiceNo ?? "", StringComparer.Ordinal)
+                         .Where(gr => gr.Count() > 1)
+                         .OrderBy(gr => gr.Key, StringComparer.Ordinal))
+                Avert(CodAvertismentSaft.NumarFacturaDuplicat,
+                    $"{sectiune} „{coliziune.Key}”: {coliziune.Count()} facturi cu ACELAȘI `InvoiceNo` "
+                    + $"({string.Join(", ", coliziune.Take(3).Select(f => f.DocumentTip + (f.Storno ? " (storno)" : "")))}).");
+
         // ── 13. Payments ─────────────────────────────────────────────────────
         var trezorerie = os.GetObjectsQuery<DocumentTrezorerie>()
             .Where(d => idsPlati.Contains(d.ID))
@@ -1593,7 +1608,7 @@ public static class SaftProiectii {
 
         // ── 4. Politica de mișcare: `(TipDocument × TipStoc × Semn?) → cod` ──
         var tipuriDocument = os.GetObjectsQuery<TipDocument>()
-            .Select(t => new { t.ID, t.Cod }).ToList();
+            .Select(t => new { t.ID, t.Cod, t.ClrType }).ToList();
         var idTipPeCod = tipuriDocument
             .Where(t => t.Cod != null)
             .GroupBy(t => t.Cod, StringComparer.Ordinal)
@@ -1604,7 +1619,14 @@ public static class SaftProiectii {
             .ToList()
             .Select(p => new RegulaMiscare {
                 TipDocumentId = p.TipDocumentId, TipStoc = p.TipStoc, Semn = p.Semn,
-                Cod = p.CodMiscare, Rol = p.RolTert, Motiv = p.Motiv,
+                // Codul se NORMALIZEAZĂ la citire (fixul F3): „  ” nu e un cod,
+                // e o politică lăsată la jumătate — și trebuie să se comporte ca
+                // absența codului, nu ca o valoare. Gardianul o refuză azi la
+                // culegere, dar seed-ul și conectoarele scriu pe ușa
+                // non-secured, iar proiecția nu are voie să presupună că a
+                // trecut pe unde trebuie.
+                Cod = string.IsNullOrWhiteSpace(p.CodMiscare) ? null : p.CodMiscare.Trim(),
+                Rol = p.RolTert, Motiv = p.Motiv,
                 CodTipDocument = tipuriDocument.FirstOrDefault(t => t.ID == p.TipDocumentId)?.Cod,
             })
             .ToList();
@@ -1690,20 +1712,17 @@ public static class SaftProiectii {
                 .ToList()
                 .ToDictionary(d => d.ID, d => (d.PredatorId, d.PrimitorId));
 
-        // ── 8. Repartitorii: laturile documentelor, gestiunile, centrele de cost ──
-        IQueryable<RegistruContabil> Gl() => os.GetObjectsQuery<RegistruContabil>().IgnoreAutoIncludes()
-            .Where(r => r.Data >= dataStart && r.Data <= dataEnd);
-        var idsCentruCost = Gl().Select(r => r.DebitCentruCostId)
-            .Concat(Gl().Select(r => r.CreditCentruCostId)).Distinct().ToList();
-
+        // ── 8. Repartitorii: laturile documentelor și gestiunile ─────────────
+        // Centrele de cost NU se mai citesc (fixul F8): S nu emite `Analysis` pe
+        // nicio linie, deci `AnalysisTypeTable` iese GOL — iar etichetele
+        // dimensiunilor perioadei erau șapte interogări pe registrul contabil
+        // pentru o secțiune pe care nimic din fișier n-o referă.
         var idsRepartitor = new HashSet<Guid>();
-        void AdaugaRep(Guid? id) { if (id is Guid v) idsRepartitor.Add(v); }
         foreach (var d in documente.Values) { idsRepartitor.Add(d.PredatorId); idsRepartitor.Add(d.PrimitorId); }
         foreach (var s in surse.Values) { idsRepartitor.Add(s.PredatorId); idsRepartitor.Add(s.PrimitorId); }
         foreach (var r in randuriStoc) idsRepartitor.Add(r.RepartitorId);
         foreach (var a in deschideri) idsRepartitor.Add(a.RepartitorId);
         foreach (var a in inchideri) idsRepartitor.Add(a.RepartitorId);
-        foreach (var id in idsCentruCost) AdaugaRep(id);
         var listaRep = idsRepartitor.ToList();
 
         var repartitori = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
@@ -1790,7 +1809,19 @@ public static class SaftProiectii {
                 Avert(CodAvertismentSaft.SoldNegativ,
                     $"„{NumeProdus(lot.ProdusId)}” în {EtichetaRepartitor(repartitori, cheie.Item1)}: sold final "
                     + $"{inchidere.Cantitate:0.###} / {inchidere.Valoare:0.00} lei — se declară CA ATARE "
-                    + "(gardianul de sold, 25d, n-ar trebui să-l lase să existe).", inchidere.Valoare);
+                    + "(deriva de rotunjire PER LOT a importului, 45e/52; gardianul 25d păzește altă cheie).",
+                    inchidere.Valoare);
+            // Intrarea „0 bucăți, X lei” (fixul F6): cantitatea s-a stins, dar a
+            // rămas un reziduu valoric — tot deriva per lot a importului. E ALT
+            // fapt decât soldul negativ (altă cauză, altă cifră), deci are cod
+            // propriu; și nu se omite: `PhysicalStock` declară patrimoniul, iar
+            // o valoare tăcută ar face fișierul mai mic decât balanța.
+            if (deschidere.Cantitate == 0m && inchidere.Cantitate == 0m
+                    && (deschidere.Valoare != 0m || inchidere.Valoare != 0m))
+                Avert(CodAvertismentSaft.ReziduValoricFaraCantitate,
+                    $"„{NumeProdus(lot.ProdusId)}” în {EtichetaRepartitor(repartitori, cheie.Item1)}: cantitate 0 "
+                    + $"la ambele capete, valoare {deschidere.Valoare:0.00} → {inchidere.Valoare:0.00} lei.",
+                    Math.Abs(inchidere.Valoare != 0m ? inchidere.Valoare : deschidere.Valoare));
             produseFolosite.Add(lot.ProdusId);
             stocFizic.Add(new SaftStocFizic {
                 RepartitorId = cheie.Item1,
@@ -1826,6 +1857,7 @@ public static class SaftProiectii {
         var emise = new List<(RandStoc Rand, RegulaMiscare Regula)>();
         var excluse = new Dictionary<(Guid, TipStoc, int?), SaftExclus>();
         var faraPolitica = new Dictionary<(string, TipStoc, int), SaftNeinclus>();
+        var codNecunoscut = new Dictionary<(string, TipStoc, string), SaftNeinclus>();
         foreach (var r in randuriStoc) {
             var codTip = codPerDocument.GetValueOrDefault(r.DocumentId);
             // Semnul REGULII, nu al rândului (vezi antetul metodei).
@@ -1867,6 +1899,33 @@ public static class SaftProiectii {
                 x.Valoare += r.Valoare;
                 continue;
             }
+            // Codul politicii RE-verificat contra nomenclatorului legii (fixul
+            // F3): gardianul îl păzește la culegere, dar seed-ul, migrațiile și
+            // conectoarele scriu pe ușa non-secured. Un cod din afara listei
+            // face validatorul să respingă fișierul ÎNTREG, deci rândurile ies
+            // afară, cu cifrele lor — și `MovementTypeTable` nu-l vede niciodată
+            // (descrierea vine DOAR din nomenclator, nu din codul cules).
+            if (!SaftReguli.EsteCodMiscare(regula.Cod)) {
+                var cheie = (codTip ?? "(tip necunoscut)", r.TipStoc, regula.Cod);
+                if (!codNecunoscut.TryGetValue(cheie, out var n)) {
+                    documente.TryGetValue(r.DocumentId, out var d);
+                    n = codNecunoscut[cheie] = new SaftNeinclus {
+                        Cauza = nameof(CauzaNeincludere.CodMiscareNecunoscut),
+                        Sectiune = "MovementOfGoods",
+                        DocumentId = r.DocumentId,
+                        DocumentNumar = d?.Numar,
+                        DocumentTip = cheie.Item1,
+                        TipStoc = r.TipStoc.ToString(),
+                        Semn = regula.Semn,
+                        CodMiscare = regula.Cod,
+                        Cantitate = 0m, Valoare = 0m,
+                    };
+                }
+                n.Cantitate += r.Cantitate;
+                n.Valoare += r.Valoare;
+                n.Randuri++;
+                continue;
+            }
             emise.Add((r, regula));
         }
 
@@ -1888,8 +1947,38 @@ public static class SaftProiectii {
             return null;
         }
 
+        // Numărul EFECTIV al documentului în referință: cel cules, iar acolo unde
+        // lipsește, identitatea lui (o singură definiție — jos se refolosește).
+        string NumarEfectiv(Guid documentId) {
+            var n = documente.TryGetValue(documentId, out var d) ? d.Numar : null;
+            return string.IsNullOrWhiteSpace(n) ? documentId.ToString("N") : n;
+        }
+
+        // ── F1: `(codTip, Numar)` NU e o identitate ──────────────────────────
+        // Importul din 1C aduce numărul SURSEI, iar documentele conexe îl
+        // moștenesc: două FCL cu același număr produc două DSC cu același număr,
+        // deci două `MovementReference` identice — adică două mișcări pe care
+        // fișierul nu le mai poate deosebi. Documentele care se ciocnesc primesc
+        // ordinalul lor în ordinea `DocumentId` (stabil între rulări), iar
+        // perechile se STRIGĂ: numerele duplicate sunt un fapt al datelor.
+        var discriminantPerDocument = new Dictionary<Guid, int>();
+        foreach (var coliziune in emise.Select(x => x.Rand.DocumentId).Distinct()
+                     .GroupBy(id => (Tip: codPerDocument.GetValueOrDefault(id) ?? "", Numar: NumarEfectiv(id)))
+                     .Where(gr => gr.Count() > 1)
+                     .OrderBy(gr => gr.Key.Tip, StringComparer.Ordinal)
+                     .ThenBy(gr => gr.Key.Numar, StringComparer.Ordinal)) {
+            var ordonate = coliziune.OrderBy(id => id).ToList();
+            for (var i = 0; i < ordonate.Count; i++)
+                discriminantPerDocument[ordonate[i]] = i + 1;
+            Avert(CodAvertismentSaft.NumarDocumentDuplicat,
+                $"{coliziune.Key.Tip} „{coliziune.Key.Numar}”: {ordonate.Count} documente cu ACELAȘI număr — "
+                + $"`MovementReference` primește discriminantul `#1`…`#{ordonate.Count}`.");
+        }
+
         var faraContStoc = new Dictionary<Guid, SaftNeinclus>();
         var tertLipsaStrigat = new HashSet<Guid>();
+        var rolMixtStrigat = new HashSet<Guid>();
+        var postareStrigata = new HashSet<Guid>();
         var referinteTrunchiate = 0;
         var coduriFolosite = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -1901,12 +1990,11 @@ public static class SaftProiectii {
                      .ThenBy(g => g.Key.Cod, StringComparer.Ordinal)) {
             documente.TryGetValue(g.Key.DocumentId, out var doc);
             var codTip = codPerDocument.GetValueOrDefault(g.Key.DocumentId);
-            var numar = doc?.Numar;
-            if (string.IsNullOrWhiteSpace(numar))
-                numar = g.Key.DocumentId.ToString("N");
+            var numar = NumarEfectiv(g.Key.DocumentId);
             var seSparge = coduriPerDocument.GetValueOrDefault((g.Key.DocumentId, g.Key.Storno)) > 1;
             var (referinta, trunchiat) = SaftReguli.MovementReference(
-                codTip, numar, seSparge ? g.Key.Cod : null, g.Key.Storno);
+                codTip, numar, seSparge ? g.Key.Cod : null, g.Key.Storno,
+                discriminantPerDocument.TryGetValue(g.Key.DocumentId, out var ordinal) ? ordinal : null);
             if (trunchiat) {
                 referinteTrunchiate++;
                 Avert(CodAvertismentSaft.MovementReferenceTrunchiat,
@@ -1914,7 +2002,26 @@ public static class SaftProiectii {
                     + $"(max {SaftReguli.LungimeMovementReference} caractere).");
             }
 
-            var rolul = g.First().Regula.Rol;
+            // ── F5: rolul e AL GRUPULUI, nu al primului rând nimerit ─────────
+            // Grupul e `(Document × Storno × Cod)`, dar politica se dă per
+            // `(tip × TipStoc × semn)`: un document care mișcă două registre pe
+            // ACELAȘI cod poate purta două politici, iar `g.First()` alegea rolul
+            // după ordinea de citire a registrului. Se ia rolul NE-`Niciunul`
+            // când e singurul distinct (cazul real: o latură are rol, cealaltă
+            // nu — mișcarea are un terț și el nu se pierde); două roluri
+            // diferite sunt o incoerență de POLITICĂ, deci se strigă și se ia
+            // deterministic rolul primei linii.
+            var roluriDistincte = g.Select(x => x.Regula.Rol).Where(r => r != RolTertSaft.Niciunul)
+                .Distinct().ToList();
+            var rolul = roluriDistincte.Count == 1
+                ? roluriDistincte[0]
+                : g.OrderBy(x => x.Rand.Id).First().Regula.Rol;
+            if (roluriDistincte.Count > 1 && rolMixtStrigat.Add(g.Key.DocumentId))
+                Avert(CodAvertismentSaft.RolTertMixt,
+                    $"{codTip} {numar} (cod {g.Key.Cod}): politicile registrelor atinse cer roluri diferite "
+                    + $"[{string.Join(", ", roluriDistincte.OrderBy(r => r.ToString(), StringComparer.Ordinal))}] "
+                    + $"— mișcarea are un singur `CustomerID`/`SupplierID`, deci iese cu „{rolul}”.");
+
             var partenerId = PartenerulMiscarii(g.Key.DocumentId);
             string idPartener = null;
             if (partenerId is Guid pid && parteneri.TryGetValue(pid, out var infoPartener))
@@ -1976,13 +2083,35 @@ public static class SaftProiectii {
             }
             if (linii.Count == 0)
                 continue;
-            coduriFolosite.TryAdd(g.Key.Cod, SaftReguli.CoduriMiscare.GetValueOrDefault(g.Key.Cod, g.Key.Cod));
+            // Descrierea vine DOAR din nomenclatorul legii — codul a trecut deja
+            // prin `EsteCodMiscare`, deci indexarea directă e corectă și, dacă
+            // vreodată nu mai e, pică zgomotos (fixul F3: vechiul
+            // `GetValueOrDefault(cod, cod)` ar fi scris codul ca descriere).
+            coduriFolosite.TryAdd(g.Key.Cod, SaftReguli.CoduriMiscare[g.Key.Cod]);
+
+            // ── F4: `MovementPostingDate` nu are voie să contrazică antetul ──
+            // Câmpul e `DataOperare`, adică ora RULĂRII: pe baza de import,
+            // 12/2025 s-a operat în 2026-08. O dată de postare în afara
+            // perioadei declarate e o contradicție în fișier — iar elementul e
+            // OPȚIONAL în schemă, deci se omite și se strigă. Nu se falsifică
+            // (o dată „potrivită” ar fi inventată) și nu se tace.
+            DateOnly? dataPostarii = null;
+            if (doc?.DataOperare is DateTime op) {
+                var zi = DateOnly.FromDateTime(op);
+                if (zi >= dataStart && zi <= dataEnd)
+                    dataPostarii = zi;
+                else if (postareStrigata.Add(g.Key.DocumentId))
+                    Avert(CodAvertismentSaft.DataPostariiInAfaraPerioadei,
+                        $"{codTip} {numar}: `DataOperare` {zi:yyyy-MM-dd} e în afara perioadei "
+                        + $"{dataStart:yyyy-MM-dd}…{dataEnd:yyyy-MM-dd} — `MovementPostingDate` se omite.");
+            }
+
             rezultat.MiscariStoc.Add(new SaftMiscareStoc {
                 DocumentId = g.Key.DocumentId,
                 Storno = g.Key.Storno,
                 MovementReference = referinta,
                 MovementDate = g.Min(x => x.Rand.Data),
-                MovementPostingDate = doc?.DataOperare is DateTime op ? DateOnly.FromDateTime(op) : null,
+                MovementPostingDate = dataPostarii,
                 MovementType = g.Key.Cod,
                 DocumentType = codTip,
                 DocumentNumber = doc?.Numar,
@@ -2006,6 +2135,7 @@ public static class SaftProiectii {
             .ThenBy(x => x.Semn ?? 0)
             .ToList();
         neincluse.AddRange(faraPolitica.Values);
+        neincluse.AddRange(codNecunoscut.Values);
         neincluse.AddRange(faraContStoc.Values);
 
         rezultat.NumberOfMovementLines = rezultat.MiscariStoc.Sum(m => m.Linii.Count);
@@ -2054,21 +2184,13 @@ public static class SaftProiectii {
         }
         rezultat.Taxe = TabelaTaxe(codTvaFolosit);
 
-        var etichete = new EtichetePerioada(os, repartitori);
-        void Axa(string tip,
-            System.Linq.Expressions.Expression<Func<RegistruContabil, Guid?>> peDebit,
-            System.Linq.Expressions.Expression<Func<RegistruContabil, Guid?>> peCredit) {
-            foreach (var id in Gl().Select(peDebit).Concat(Gl().Select(peCredit)).Distinct().ToList())
-                if (id is Guid v)
-                    etichete.Inregistreaza(tip, v);
-        }
-        Axa("CC", r => r.DebitCentruCostId, r => r.CreditCentruCostId);
-        Axa("P", r => r.DebitProiectId, r => r.CreditProiectId);
-        Axa("U", r => r.DebitUnitateId, r => r.CreditUnitateId);
-        Axa("SF", r => r.DebitSursaFinantareId, r => r.CreditSursaFinantareId);
-        Axa("CF", r => r.DebitCodFunctionalId, r => r.CreditCodFunctionalId);
-        Axa("CE", r => r.DebitCodEconomicId, r => r.CreditCodEconomicId);
-        rezultat.TipuriAnaliza = etichete.Lista();
+        // `AnalysisTypeTable` rămâne GOL pe S (fixul F8). Prima variantă îl
+        // umplea cu dimensiunile perioadei „ca la L”, dar tabela e un NOMENCLATOR
+        // al valorilor pe care fișierul le FOLOSEȘTE, iar S nu emite `Analysis`
+        // pe nicio linie: o listă pe care nimic n-o referă e zgomot în fișier și
+        // șapte interogări pe registrul contabil în proiecție. `MovementTypeTable`
+        // e regula, nu excepția — și el declară exact codurile folosite.
+        rezultat.TipuriAnaliza = [];
 
         // ── 14. Cusăturile S1–S4 ─────────────────────────────────────────────
         // Validatorul ANAF nu face NICIO aritmetică pe stocuri: Opening + intrări
@@ -2097,6 +2219,29 @@ public static class SaftProiectii {
             .Aggregate((Cantitate: 0m, Valoare: 0m),
                 (acc, x) => (acc.Cantitate + x.Cantitate, acc.Valoare + x.Valoare));
 
+        // (S5) ACEEAȘI egalitate, cu Σ luată din LINIILE EMISE ÎN FIȘIER (fixul
+        // F2 al review-ului). S1 confruntă trei interogări pe REGISTRU — deci
+        // probează că agregatele se închid unul pe altul, dar nu spune nimic
+        // despre ce s-a scris: un rând ieșit în `Neincluse` lasă S1 verde și
+        // fișierul incomplet. S5 pune fișierul de o parte a semnului egal, deci
+        // când nimic nu se pierde S5 ≡ S1, iar când se pierde ceva S5 spune pe
+        // CE intrări de stoc fizic.
+        var emisePeCheie = new Dictionary<(Guid, Guid), (decimal Cantitate, decimal Valoare)>();
+        foreach (var l in rezultat.MiscariStoc.SelectMany(m => m.Linii)) {
+            var cheie = (l.RepartitorId, l.LotId);
+            var acumulat = emisePeCheie.GetValueOrDefault(cheie);
+            emisePeCheie[cheie] = (acumulat.Cantitate + l.Quantity, acumulat.Valoare + l.BookValue);
+        }
+        var intrariVsMiscari = 0;
+        var sumaEmise = (Cantitate: 0m, Valoare: 0m);
+        foreach (var e in rezultat.StocFizic) {
+            var emis = emisePeCheie.GetValueOrDefault((e.RepartitorId, e.LotId));
+            sumaEmise = (sumaEmise.Cantitate + emis.Cantitate, sumaEmise.Valoare + emis.Valoare);
+            if (e.OpeningQuantity + emis.Cantitate != e.ClosingQuantity
+                    || e.OpeningValue + emis.Valoare != e.ClosingValue)
+                intrariVsMiscari++;
+        }
+
         // (S3) Σ `ClosingStockValue` per cont de stoc vs. `Balanta` pe același
         // cont — RAPORTATĂ, nu blocantă (registrul contabil poate purta 3xx și din
         // note contabile ori deschideri fără lot).
@@ -2120,6 +2265,11 @@ public static class SaftProiectii {
                 };
             })
             .ToList();
+        // …și SPARTĂ pe tipul documentului care a produs-o (fixul F7): „371
+        // diferă cu 194.122,31” nu se poate acționa, „din care NTC atât și DSC
+        // atât” da.
+        ComponenteS3(os, perCont, raportate, dataEnd, tipuriDocument
+            .Select(t => (t.ID, t.Cod, t.ClrType)).ToList(), conturi);
 
         // (S4) Integritatea referințelor din fișier.
         var coduriProdus = rezultat.Produse.Select(p => p.ProductCode).ToHashSet(StringComparer.Ordinal);
@@ -2134,6 +2284,8 @@ public static class SaftProiectii {
             .SelectMany(l => new[] { l.CustomerId, l.SupplierId })
             .Concat(rezultat.StocFizic.Select(e => e.OwnerId))
             .Count(id => !IdentitateTertValida(id));
+
+        var referinteDuplicate = ReferinteDuplicate(rezultat.MiscariStoc);
 
         var miscariCantitate = rezultat.MiscariStoc.SelectMany(m => m.Linii).Sum(l => l.Quantity);
         var miscariValoare = rezultat.MiscariStoc.SelectMany(m => m.Linii).Sum(l => l.BookValue);
@@ -2160,7 +2312,10 @@ public static class SaftProiectii {
             StocMiscariValoare = sumaMiscariRaportate.Valoare,
             StocClosingCantitate = rezultat.StocFizic.Sum(e => e.ClosingQuantity),
             StocClosingValoare = rezultat.StocFizic.Sum(e => e.ClosingValue),
-            StocFizicBate = intrariDiferite == 0,
+            StocFizicVsMiscariDiferite = intrariVsMiscari,
+            StocEmiseCantitate = sumaEmise.Cantitate,
+            StocEmiseValoare = sumaEmise.Valoare,
+            StocFizicBate = intrariDiferite == 0 && intrariVsMiscari == 0,
 
             MiscariCantitate = miscariCantitate,
             MiscariValoare = miscariValoare,
@@ -2185,9 +2340,11 @@ public static class SaftProiectii {
             CoduriMiscareFolosite = coduriReferite.Count,
             CoduriMiscareLipsa = coduriReferite.Count(c => !coduriDeclarate.Contains(c)),
             IdentitatiTertInvalide = identitatiInvalide,
+            ReferinteDuplicate = referinteDuplicate,
             ReferinteBat = referiteProdus.All(coduriProdus.Contains)
                 && coduriReferite.All(coduriDeclarate.Contains)
-                && identitatiInvalide == 0,
+                && identitatiInvalide == 0
+                && referinteDuplicate == 0,
         };
 
         // ── 15. Avertismentele, AGREGATE per cauză ───────────────────────────
@@ -2247,6 +2404,154 @@ public static class SaftProiectii {
         public decimal Cantitate { get; set; }
         public decimal Valoare { get; set; }
     }
+
+    /// <summary>
+    /// Câte `MovementReference` se REPETĂ într-o listă de mișcări (cusătura S4,
+    /// fixul F1). Funcție PURĂ și publică fiindcă e o afirmație despre FIȘIER,
+    /// nu despre bază: proba negativă („două mișcări cu aceeași referință ⇒
+    /// cusătura pică") se scrie pe un DTO fabricat, fără nicio scenă.
+    /// </summary>
+    public static int ReferinteDuplicate(IReadOnlyCollection<SaftMiscareStoc> miscari) =>
+        miscari.Count - miscari.Select(m => m.MovementReference)
+            .Distinct(StringComparer.Ordinal).Count();
+
+    // Eticheta componentei rândurilor FĂRĂ document — soldurile de deschidere
+    // (25e/34d). Nu e un tip de document și nu se preface că e unul.
+    const string ComponentaDeschidere = "(deschidere)";
+
+    // ── S3, spartă pe tipul documentului (fixul F7 al review-ului) ───────────
+    // Diferența per cont e legitimă (registrul contabil poartă 3xx și din note
+    // contabile ori din deschideri fără lot), dar ca UNA singură nu se poate
+    // acționa: „371 diferă cu 194.122,31" nu spune de unde vine. Spartă pe TIPUL
+    // documentului, spune — și devine o listă de întrebări concrete („NTC-urile
+    // punte pun 194.000 pe 371 fără să miște stocul: e corect?").
+    //
+    // DOUĂ interogări GRUPATE, niciodată una per document: cardinalitatea
+    // rezultatului e (cont × document), nu (rând de registru), iar pe baza de
+    // import a doua ar fi însemnat zeci de mii de query-uri.
+    static void ComponenteS3(
+            IObjectSpace os, List<SaftDiferentaCont> perCont, List<TipStoc> raportate, DateOnly dataEnd,
+            List<(Guid Id, string Cod, string ClrType)> tipuri,
+            IReadOnlyDictionary<Guid, (string Simbol, string Denumire, string Functie, RolTertCont RolTert)> conturi) {
+        if (perCont.Count == 0)
+            return;
+        var tinte = perCont.Select(c => c.Cont).ToHashSet(StringComparer.Ordinal);
+        // Conturile CONTABILE care cad pe unul dintre simbolurile țintă: aceeași
+        // normalizare (`ProductTypeDinCont`) ca la gruparea stocului fizic, ca
+        // cele două laturi ale comparației să vorbească despre același cont.
+        var simbolPerContId = new Dictionary<Guid, string>();
+        foreach (var (id, info) in conturi) {
+            var simbol = SaftReguli.ProductTypeDinCont(info.Simbol);
+            if (tinte.Contains(simbol))
+                simbolPerContId[id] = simbol;
+        }
+        var contIdsTinta = simbolPerContId.Keys.ToList();
+
+        var agregatStoc = os.GetObjectsQuery<RegistruStoc>().IgnoreAutoIncludes()
+            .Where(r => r.Data <= dataEnd && raportate.Contains(r.TipStoc))
+            // `Select` ÎNAINTE de `GroupBy`: cheia are o navigație de patru
+            // niveluri (lot → produs → tip → cont), iar traducătorul o duce
+            // sigur ca proiecție, nu ca expresie de grupare.
+            .Select(r => new {
+                Simbol = r.Lot.Produs.TipMaterial.ContImplicit.Simbol, r.DocumentId, r.Valoare
+            })
+            .GroupBy(x => new { x.Simbol, x.DocumentId })
+            .Select(g => new { g.Key.Simbol, g.Key.DocumentId, Valoare = g.Sum(x => x.Valoare) })
+            .ToList();
+        var agregatGl = os.GetObjectsQuery<RegistruContabil>().IgnoreAutoIncludes()
+            .Where(r => r.Data <= dataEnd
+                && (contIdsTinta.Contains(r.ContDebitId) || contIdsTinta.Contains(r.ContCreditId)))
+            .GroupBy(r => new { r.ContDebitId, r.ContCreditId, r.DocumentId })
+            .Select(g => new {
+                g.Key.ContDebitId, g.Key.ContCreditId, g.Key.DocumentId, Valoare = g.Sum(r => r.Valoare)
+            })
+            .ToList();
+
+        var idsDocumente = agregatStoc.Where(x => x.DocumentId != null).Select(x => x.DocumentId.Value)
+            .Concat(agregatGl.Where(x => x.DocumentId != null).Select(x => x.DocumentId.Value))
+            .ToHashSet();
+        var codPerDocument = CoduriTipPeTipuri(os, tipuri, idsDocumente);
+
+        var acumulator = new Dictionary<(string Cont, string Tip), (decimal Stoc, decimal Balanta)>();
+        void Aduna(string cont, Guid? documentId, decimal stoc, decimal balanta) {
+            var tip = documentId is Guid id
+                ? codPerDocument.GetValueOrDefault(id) ?? "(tip necunoscut)"
+                : ComponentaDeschidere;
+            var cheie = (cont, tip);
+            var vechi = acumulator.GetValueOrDefault(cheie);
+            acumulator[cheie] = (vechi.Stoc + stoc, vechi.Balanta + balanta);
+        }
+        foreach (var x in agregatStoc) {
+            var simbol = SaftReguli.ProductTypeDinCont(x.Simbol);
+            if (tinte.Contains(simbol))
+                Aduna(simbol, x.DocumentId, x.Valoare, 0m);
+        }
+        foreach (var x in agregatGl) {
+            // Soldul contului, SEMNAT (debitor pozitiv) — exact convenția
+            // `balantaPeSimbol` de mai sus. Un rând cu contul pe AMBELE laturi
+            // (reclasificare analitică) contribuie cu +v și −v, adică zero: și
+            // asta e corect, nu o pierdere.
+            if (simbolPerContId.TryGetValue(x.ContDebitId, out var simbolD))
+                Aduna(simbolD, x.DocumentId, 0m, x.Valoare);
+            if (simbolPerContId.TryGetValue(x.ContCreditId, out var simbolC))
+                Aduna(simbolC, x.DocumentId, 0m, -x.Valoare);
+        }
+
+        foreach (var cont in perCont)
+            cont.Componente = acumulator
+                .Where(a => a.Key.Cont == cont.Cont && (a.Value.Stoc != 0m || a.Value.Balanta != 0m))
+                .Select(a => new SaftComponentaCont {
+                    TipDocument = a.Key.Tip,
+                    StocFizic = a.Value.Stoc,
+                    Balanta = a.Value.Balanta,
+                    Diferenta = a.Value.Stoc - a.Value.Balanta,
+                })
+                .OrderByDescending(c => Math.Abs(c.Diferenta))
+                .ThenBy(c => c.TipDocument, StringComparer.Ordinal)
+                .ToList();
+    }
+
+    // Codul de tip al documentelor CERUTE, rezolvat pe TABELELE TPT ale
+    // tipurilor, nu prin materializarea documentelor (`ApiProiectii.CoduriTip`).
+    // Aceeași cifră, alt cost: `CoduriTip` încarcă ENTITĂȚI ca să citească numele
+    // clasei CLR — corect pe o pagină de 500 de rânduri (60b), imposibil pe
+    // istoricul întreg al unei baze de import, unde S3 cere `Data <= dataEnd`.
+    // Aici sursa e tot ancora `TipDocument.ClrType` (deci tot DATE, niciun
+    // `is`/`switch` pe frunze), iar fiecare tip întoarce doar Guid-uri.
+    static Dictionary<Guid, string> CoduriTipPeTipuri(
+            IObjectSpace os, List<(Guid Id, string Cod, string ClrType)> tipuri, HashSet<Guid> cerute) {
+        var rezultat = new Dictionary<Guid, string>();
+        if (cerute.Count == 0)
+            return rezultat;
+        var metoda = typeof(SaftProiectii).GetMethod(
+            nameof(IdsDocumenteDeTip), BindingFlags.NonPublic | BindingFlags.Static);
+        var clase = typeof(Document).Assembly.GetTypes()
+            .Where(t => !t.IsAbstract && typeof(Document).IsAssignableFrom(t))
+            .GroupBy(t => t.Name, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        // Adâncimea CRESCĂTOARE: `GetObjectsQuery<T>` întoarce și subtipurile lui
+        // `T`, deci tipul mai derivat trebuie să scrie ULTIMUL peste id-urile
+        // comune — altfel un document ar fi etichetat cu codul bazei lui.
+        static int Adancime(Type t) {
+            var n = 0;
+            for (var c = t; c != null && c != typeof(Document); c = c.BaseType)
+                n++;
+            return n;
+        }
+        foreach (var tip in tipuri
+                     .Where(t => !string.IsNullOrWhiteSpace(t.Cod) && !string.IsNullOrWhiteSpace(t.ClrType))
+                     .Select(t => (t.Cod, Clasa: clase.GetValueOrDefault(t.ClrType)))
+                     .Where(t => t.Clasa != null)
+                     .OrderBy(t => Adancime(t.Clasa))) {
+            foreach (var id in (List<Guid>)metoda.MakeGenericMethod(tip.Clasa).Invoke(null, [os]))
+                if (cerute.Contains(id))
+                    rezultat[id] = tip.Cod;
+        }
+        return rezultat;
+    }
+
+    static List<Guid> IdsDocumenteDeTip<T>(IObjectSpace os) where T : Document =>
+        os.GetObjectsQuery<T>().Select(d => d.ID).ToList();
 
     static List<AgregatStocRand> AgregatStoc(IObjectSpace os, List<TipStoc> tipuri, DateOnly pana) =>
         tipuri.Count == 0
@@ -2678,8 +2983,32 @@ public static class SaftProiectii {
             + "MIȘCĂRI aceeași gaură scoate linia din fișier (`Neincluse/FaraContStoc`): acolo `AccountID` e "
             + "obligatoriu, iar un cont inventat e interzis (73e).",
         CodAvertismentSaft.SoldNegativ =>
-            "Solduri finale NEGATIVE pe (gestiune × lot) — gardianul de sold (25d) n-ar trebui să le lase să "
-            + "existe. Se declară CA ATARE: registrul e sursa, iar o ajustare la zero ar fi o cifră inventată.",
+            "Solduri finale NEGATIVE pe (gestiune × lot). NU e o scăpare a gardianului de sold (25d păzește "
+            + "cheia de stoc a MOTORULUI, care nu e încălcată): pe baza de import cauza e deriva de rotunjire "
+            + "PER LOT, pe care contractul 1C o declară nereconciliabilă structural (45e/52) — valoarea "
+            + "grupei se conservă, repartiția ei pe loturi nu. Se declară CA ATARE: registrul e sursa, iar o "
+            + "ajustare la zero ar fi o cifră inventată.",
+        CodAvertismentSaft.ReziduValoricFaraCantitate =>
+            "Intrări de stoc fizic cu cantitate 0 la ambele capete și valoare nenulă („0 bucăți, X lei”) — "
+            + "același rezidu al derivei per lot (45e), dar ALT fapt decât soldul negativ, deci altă cifră. "
+            + "Se declară: `PhysicalStock` descrie patrimoniul, iar o valoare omisă ar face fișierul mai mic "
+            + "decât balanța.",
+        CodAvertismentSaft.NumarDocumentDuplicat =>
+            "Perechi (tip × număr) purtate de MAI MULTE documente — importul aduce numărul sursei, iar conexele "
+            + "îl moștenesc. `MovementReference` primește discriminantul `#1`…`#n` (ordinea `DocumentId`, "
+            + "stabilă între rulări), ca identitatea mișcărilor din fișier să rămână unică.",
+        CodAvertismentSaft.NumarFacturaDuplicat =>
+            "Facturi din aceeași secțiune cu ACELAȘI `InvoiceNo` — aici NU se discriminează nimic: numărul e "
+            + "cel real al facturii, iar un sufix inventat ar declara o factură care nu există. Faptul se "
+            + "raportează ca să fie văzut înainte de depunere.",
+        CodAvertismentSaft.DataPostariiInAfaraPerioadei =>
+            "Documente a căror `DataOperare` cade în afara perioadei declarate (pe baza de import e ora "
+            + "RULĂRII importului) — `MovementPostingDate` e opțional în schemă, deci se OMITE: o dată de "
+            + "postare care contrazice antetul e mai rea decât absența ei.",
+        CodAvertismentSaft.RolTertMixt =>
+            "Mișcări al căror grup (document × storno × cod) atinge registre cu roluri de terț DIFERITE — "
+            + "linia are un singur `CustomerID`/`SupplierID`, deci se ia rolul primei linii (determinist pe "
+            + "`Id`). E o incoerență de POLITICĂ: același cod de mișcare ar trebui să aibă același rol.",
         CodAvertismentSaft.SoldPeTipStocNeraportat =>
             "Solduri pe registre de stoc pe care declarația NU le raportează (`Consum`, `Folosinta`, `Custodie`…): "
             + "niciun tip de document nu produce cod de mișcare pe ele, deci nu sunt patrimoniu în magazie. N-au "

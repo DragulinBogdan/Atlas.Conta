@@ -244,13 +244,26 @@ static class Saft1C {
         // cantități între registre e tot un fișier greșit. Cusăturile sunt
         // singurul lucru care-l prinde.
         s.AppendLine("--- Cusăturile (D17-D3), la cent și la a 3-a zecimală pe cantități ---");
-        Cusatura(s, "S1 stoc fizic: Opening + Σ mișcările lunii == Closing, PE FIECARE intrare (lot × gestiune)",
-            rez.StocFizicBate && rez.StocIntrariDiferite == 0 && rez.StocIntrari > 0,
+        Cusatura(s, "S1 stoc fizic vs REGISTRU: Opening + Σ rândurile lunii == Closing, PE FIECARE intrare "
+                + "(lot × gestiune)",
+            rez.StocIntrariDiferite == 0 && rez.StocIntrari > 0,
             $"{rez.StocIntrari} intrări, {rez.StocIntrariDiferite} diferite; cantitate "
                 + $"{rez.StocOpeningCantitate:0.###} + {rez.StocMiscariCantitate:0.###} = "
                 + $"{rez.StocOpeningCantitate + rez.StocMiscariCantitate:0.###} vs "
                 + $"{rez.StocClosingCantitate:0.###}; valoare {rez.StocOpeningValoare:N2} + "
                 + $"{rez.StocMiscariValoare:N2} = {rez.StocOpeningValoare + rez.StocMiscariValoare:N2} vs "
+                + $"{rez.StocClosingValoare:N2}");
+        // S5 e S1 cu Σ luată din LINIILE EMISE, nu din registru: S1 confruntă
+        // trei interogări între ele (deci nu vede fișierul), S5 pune fișierul de
+        // o parte a semnului egal. Când nimic nu se pierde, sunt identice.
+        Cusatura(s, "S5 stoc fizic vs FIȘIER: Opening + Σ liniile EMISE în MovementOfGoods == Closing, "
+                + "pe fiecare intrare",
+            rez.StocFizicVsMiscariDiferite == 0 && rez.StocIntrari > 0,
+            $"{rez.StocIntrari} intrări, {rez.StocFizicVsMiscariDiferite} diferite; cantitate "
+                + $"{rez.StocOpeningCantitate:0.###} + {rez.StocEmiseCantitate:0.###} = "
+                + $"{rez.StocOpeningCantitate + rez.StocEmiseCantitate:0.###} vs "
+                + $"{rez.StocClosingCantitate:0.###}; valoare {rez.StocOpeningValoare:N2} + "
+                + $"{rez.StocEmiseValoare:N2} = {rez.StocOpeningValoare + rez.StocEmiseValoare:N2} vs "
                 + $"{rez.StocClosingValoare:N2}");
         Cusatura(s, "S2 nimic nu se pierde: Σ mișcări + Σ Excluse (deliberat) + Σ Neincluse == Σ RegistruStoc "
                 + "pe documentele lunii (TOATE tipurile de stoc)",
@@ -267,15 +280,25 @@ static class Saft1C {
             + $"{rez.ClosingBalantaStoc:N2} ⇒ {rez.ClosingStocFizic - rez.ClosingBalantaStoc:N2}");
         s.AppendLine("           (diferența e legitimă: registrul CONTABIL poartă conturile de stoc și din "
             + "note contabile / solduri de deschidere fără lot — vezi §D17-D3)");
-        foreach (var c in rez.StocPerCont.OrderByDescending(c => Math.Abs(c.Diferenta)))
+        foreach (var c in rez.StocPerCont.OrderByDescending(c => Math.Abs(c.Diferenta))) {
             s.AppendLine($"           cont {c.Cont,-10} stoc {c.ClosingStocFizic,18:N2} · balanță "
                 + $"{c.ClosingBalanta,18:N2} · diferență {c.Diferenta,18:N2}");
+            // Componentele apar DOAR unde e ceva de explicat: pe un cont care se
+            // închide la zero, lista ar fi zgomot.
+            if (c.Diferenta == 0m)
+                continue;
+            foreach (var comp in c.Componente)
+                s.AppendLine($"                 din care {comp.TipDocument,-16} stoc {comp.StocFizic,16:N2} · "
+                    + $"balanță {comp.Balanta,16:N2} · diferență {comp.Diferenta,16:N2}");
+        }
         Cusatura(s, "S4 referințe: fiecare `ProductCode` e în `Products`, fiecare cod de mișcare în "
-                + "`MovementTypeTable`, fiecare `CustomerID`/`SupplierID` ≠ 0 are format valid",
+                + "`MovementTypeTable`, fiecare `CustomerID`/`SupplierID` ≠ 0 are format valid, fiecare "
+                + "`MovementReference` e UNICĂ",
             rez.ReferinteBat,
             $"{rez.ProduseLipsa}/{rez.ProduseReferite} produse nedeclarate · {rez.CoduriMiscareLipsa}/"
                 + $"{rez.CoduriMiscareFolosite} coduri nedeclarate · {rez.IdentitatiTertInvalide} identități "
-                + "de terț cu format invalid");
+                + $"de terț cu format invalid · {rez.ReferinteDuplicate} referințe duplicate din "
+                + $"{dto.MiscariStoc.Count}");
         s.AppendLine();
 
         // `Excluse` ≠ `Neincluse`, și distincția e chiar contractul: primele sunt
@@ -301,7 +324,8 @@ static class Saft1C {
                 + $"cantitate {g.Sum(n => n.Cantitate ?? 0m):0.###} · valoare {g.Sum(n => n.Valoare ?? 0m):N2}");
             foreach (var n in g.Take(3))
                 s.AppendLine($"           ex. {n.DocumentTip} {n.DocumentNumar} produs {n.ProdusCod} "
-                    + $"{n.TipStoc}/{n.Semn?.ToString() ?? "±"} ×{n.Randuri} "
+                    + $"{n.TipStoc}/{n.Semn?.ToString() ?? "±"}"
+                    + $"{(n.CodMiscare == null ? "" : $" cod „{n.CodMiscare}”")} ×{n.Randuri} "
                     + $"{n.Cantitate ?? 0m:0.###}/{n.Valoare ?? 0m:N2}");
         }
         s.AppendLine();

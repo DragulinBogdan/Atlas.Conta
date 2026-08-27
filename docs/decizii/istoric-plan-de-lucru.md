@@ -340,10 +340,21 @@ per felie):
   `ok` pe fișierele REALE 09 și 12/2025 de pe Flax (70,9 / 71,6 MiB), 6/6
   cusături la cent (partidă dublă 80.527.820,95), reconcilierea neatinsă;
   JSON-ul întreg de 38,6 MiB/lună ⇒ sumar. Decizia 73.
+- **Pasul 5, felia 17 — SAF-T S (stocuri) — executată** (contract:
+  `docs/api/p5-felia-saft-s-contract.md`; 4 pași + review advers cu fix-uri
+  F1–F8, un agent per pas, verificare independentă + commit după fiecare):
+  3f1f519 (contract + pas 1, `PoliticaMiscareSaft`), ee6bb6a (pas 2,
+  `SaftStocuri`), 195838f (pas 3, XML + DUK), 4722055 (pas 4, REST + client
+  + Import1C), fix-urile odată cu decizia. Închidere: DUK J2.2.8 `ok` pe
+  fișierele REALE 09 și 12/2025 (36,2 / 34,3 MiB; 16.723 / 16.444 intrări de
+  stoc fizic, 9.341 / 8.523 mișcări), S1/S5 0 diferite, S2 la cent, S4 0
+  referințe duplicate după fix, 0 `Neincluse`, reconcilierea neatinsă;
+  review-ul a găsit `MovementReference` neunic (reprodus pe fișierul
+  livrat), S1 oarbă la fișier (⇒ S5), codul politicii nere-verificat.
+  Decizia 74.
 - Restul: finisaj de client (listele §Închidere ale contractelor +
   `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului) și
-  feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T S (stocuri)
-  peste `RegistruStoc` (73-r1).
+  feliile de scriere rămase (NTC/ASM/retururi, la cerere).
   Alternativă rămasă: felia C1a a comenzilor
   (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă, la presiune
   de client).

@@ -265,6 +265,13 @@ public enum CauzaNeincludere {
     // `MovementLine.AccountID` e obligatoriu. Un cont inventat e interzis (73e),
     // deci linia iese din fișier și intră aici, cu cantitatea și valoarea ei.
     [XafDisplayName("Produs fără cont de stoc")] FaraContStoc = 9,
+    // Politica are un cod de mișcare care NU e în nomenclatorul D406 (`999`,
+    // spații, un cod scos dintr-o versiune veche a listei). Gardianul îl refuză
+    // la culegere, dar seed-ul și conectoarele scriu pe ușa non-secured, iar
+    // validatorul respinge fișierul ÎNTREG pe o valoare din afara listei — deci
+    // proiecția RE-verifică și scoate rândurile afară, în loc să le declare cu
+    // un cod inventat. `MovementTypeTable` nu-l vede niciodată.
+    [XafDisplayName("Cod de mișcare necunoscut în politică")] CodMiscareNecunoscut = 10,
 }
 
 // Cauza unui avertisment SAF-T (D16-D4) — aceeași formă agregată ca la D394
@@ -306,9 +313,11 @@ public enum CodAvertismentSaft {
     // Pe MIȘCĂRI aceeași gaură e mai gravă (`AccountID` e obligatoriu), deci
     // acolo iese `Neincluse/FaraContStoc`, nu avertisment.
     [XafDisplayName("Produs fără cont de stoc")] ProdusFaraContStoc = 16,
-    // Sold final negativ pe (gestiune × lot): gardianul de sold (25d) n-ar
-    // trebui să-l lase să existe, dar registrul e sursa — se declară CA ATARE
-    // și se strigă, nu se ajustează la zero.
+    // Sold final negativ pe (gestiune × lot). NU e „gardianul de sold a dormit"
+    // (25d păzește soldul pe cheia de stoc a MOTORULUI, iar el nu e încălcat):
+    // pe baza de import cauza e deriva de rotunjire PER LOT, pe care contractul
+    // 1C o declară nereconciliabilă structural (45e/52). Registrul e sursa —
+    // se declară CA ATARE și se strigă, nu se ajustează la zero.
     [XafDisplayName("Sold de stoc negativ")] SoldNegativ = 17,
     // Sold de deschidere pe un `TipStoc` fără nicio politică cu cod (Custodie,
     // Gratuit, ProductieNeterminata): `PhysicalStock` nu-l declară. N-are
@@ -317,6 +326,33 @@ public enum CodAvertismentSaft {
     // `MovementReference` (max 35) n-a încăput cu sufixele ei: numărul s-a tăiat
     // de la început. Identitatea rămâne unică prin sufixe, dar e scurtată.
     [XafDisplayName("Referință de mișcare trunchiată")] MovementReferenceTrunchiat = 19,
+
+    // ── Felia 17, fixurile review-ului advers (D17-V6) ──────────────────────
+    // DOUĂ documente de același tip cu ACELAȘI număr (importul 1C aduce numărul
+    // sursei, iar conexele îl moștenesc): `(codTip, Numar)` nu e o identitate,
+    // deci `MovementReference` primește un discriminant (`#1`, `#2`) ca să
+    // rămână unică în fișier. Cifra se strigă — numerele duplicate sunt un fapt
+    // al nomenclatorului, nu al generatorului.
+    [XafDisplayName("Număr de document duplicat (referință discriminată)")] NumarDocumentDuplicat = 20,
+    // Același fapt pe LUNAR: două facturi din aceeași secțiune cu același
+    // `InvoiceNo`. Aici NU se discriminează nimic — `InvoiceNo` e numărul REAL
+    // al facturii și nu are voie să fie inventat —, dar cifra se declară.
+    [XafDisplayName("Număr de factură duplicat")] NumarFacturaDuplicat = 21,
+    // `MovementPostingDate` = `DataOperare`, care e ora RULĂRII (importul din
+    // 1C a operat 12/2025 în 2026-08). O dată de postare în afara perioadei
+    // declarate e o contradicție în fișier, deci elementul (opțional) se OMITE
+    // și se strigă, în loc să se scrie o dată care contrazice antetul.
+    [XafDisplayName("Data postării în afara perioadei (omisă)")] DataPostariiInAfaraPerioadei = 22,
+    // Grupul `(Document × Storno × Cod)` are DOUĂ roluri de terț distincte pe
+    // rândurile lui (politici diferite per `TipStoc`): fișierul are un singur
+    // `CustomerID`/`SupplierID` per linie, iar rolul se ia deterministic de pe
+    // prima linie. Politica ar trebui să fie coerentă pe același cod.
+    [XafDisplayName("Roluri de terț mixte pe aceeași mișcare")] RolTertMixt = 23,
+    // Intrare de stoc fizic cu cantitate 0 la ambele capete și valoare nenulă
+    // la vreunul — reziduul valoric al derivei de rotunjire per lot (45e).
+    // Se DECLARĂ ca atare (registrul e sursa), separat de `SoldNegativ`:
+    // e alt fapt, cu altă cauză și cu altă cifră.
+    [XafDisplayName("Rezidu valoric fără cantitate")] ReziduValoricFaraCantitate = 24,
 }
 
 // Cauza unui avertisment D394 (D4-D5, fix 7 al review-ului advers): avertismentele

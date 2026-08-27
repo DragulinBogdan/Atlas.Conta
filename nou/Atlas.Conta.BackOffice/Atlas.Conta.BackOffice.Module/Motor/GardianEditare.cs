@@ -440,7 +440,11 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         // (1) Codul e din nomenclatorul legii. O valoare din afara listei nu e o
         // „coloană greșită": validatorul ANAF respinge fișierul ÎNTREG pe ea, deci
         // greșeala trebuie prinsă la culegere, nu la depunere.
-        if (!string.IsNullOrEmpty(politica.CodMiscare) && !SaftReguli.EsteCodMiscare(politica.CodMiscare))
+        // `IsNullOrWhiteSpace`, nu `IsNullOrEmpty`: un cod de „  ” ar fi trecut
+        // pe lângă AMBELE reguli — nici cod valid (ramura de mai jos îl sărea),
+        // nici excludere deliberată (cea de mai jos îi cerea motiv doar dacă era
+        // gol). Adică exact gaura pe care gardianul există să n-o lase (62f).
+        if (!string.IsNullOrWhiteSpace(politica.CodMiscare) && !SaftReguli.EsteCodMiscare(politica.CodMiscare))
             erori.Add($"Politica de mișcare SAF-T pe {eticheta}/{politica.TipStoc} are codul "
                 + $"„{politica.CodMiscare}”, care nu e în nomenclatorul D406 "
                 + $"({string.Join(", ", SaftReguli.CoduriMiscare.Keys)}) — "
@@ -450,7 +454,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         // afirmație are nevoie de motiv: rândurile ei ies în `Excluse` deliberate,
         // iar acolo se citește tocmai motivul. Fără el, excluderea ar fi
         // indistinguibilă de o politică uitată la jumătate.
-        if (string.IsNullOrEmpty(politica.CodMiscare) && string.IsNullOrWhiteSpace(politica.Motiv))
+        if (string.IsNullOrWhiteSpace(politica.CodMiscare) && string.IsNullOrWhiteSpace(politica.Motiv))
             erori.Add($"Politica de mișcare SAF-T pe {eticheta}/{politica.TipStoc} n-are cod de mișcare — "
                 + "asta EXCLUDE deliberat rândurile din declarație, deci cere un motiv scris "
                 + "(el apare lângă cifrele excluse).");

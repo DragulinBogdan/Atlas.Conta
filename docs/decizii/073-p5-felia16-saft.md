@@ -3,7 +3,8 @@
 - **Data**: 2026-08-26
 - **Stare**: activă (închide D4-r5 parțial — cod NC pe produs, D4-r10 — antetul
   societății, D4-r14; deschide prima infrastructură de fișier XML din repo —
-  69-r6/D4-r13 rămân, dar au acum un precedent)
+  69-r6/D4-r13 rămân, dar au acum un precedent; **73-r1 închisă de decizia 74**,
+  care amendează 73f/g cu faptele profilului `C`)
 - **Rezumat durabil**: `CLAUDE.md` §73
 - **Docs**: docs/api/p5-felia-saft-contract.md (D16-D1…D6 + amendamentele
   pașilor 2 și 4, riscurile 1–12, V1–V5), docs/api/d406-structura-2026.md

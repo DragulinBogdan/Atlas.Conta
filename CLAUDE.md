@@ -628,7 +628,38 @@ decizia N.
     declarație falsă), 200 gol pe sumar. (h) Client: descărcare prin `fetch` +
     `blob`. (i) Import1C: `Societate` din 1C pe câmp gol, UM/NC, `--saft`;
     V5: DUK `ok` pe lunile reale, reconcilierea neatinsă. (k) Restanțe
-    73-r1…r18 → jurnal.
+    73-r1…r18 → jurnal (73-r1 închisă de 74).
+74. **SAF-T S (stocuri) = proiecție peste `RegistruStoc` + FIȘIER `C`.** (a)
+    `PoliticaMiscareSaft` = `(TipDocument × TipStoc × Semn?) → CodMiscare? +
+    RolTertSaft + Motiv`: codul de mișcare e al TIPULUI × registrului, deci
+    politică (4) pe cheia lui `RegulaStoc`; `Semn null` = orice semn; două
+    indexuri unice filtrate (`NULL <> NULL`); **cod NULL = excludere
+    DELIBERATĂ cu motiv** (`Excluse`) ≠ rând fără politică (`Neincluse`);
+    gardian pe ușa comună + seed-ul își validează tabelul; bugetar zero,
+    OData ReadOnly (56). (b) Legea = cod (`SaftReguli`): 19 coduri; terții pe
+    linia de stoc — Client `(p,"0")`, Furnizor `("0",p)`, intern
+    `(soc,soc)` (ALTĂ convenție decât L); `OwnerID` = raportorul,
+    `ProductType` = simbolul contului de stoc, `MovementReference` ≤ 35 cu
+    discriminant `#n` când `Numar` se repetă (nu e unic per tip). (c)
+    Proiecția: politica potrivită pe **semnul REGULII** (`(Storno ? −1 : 1) ×
+    sign(Cantitate)` — stornoul păstrează codul original); `PhysicalStock`
+    per `(Repartitor × Lot)` pe `TipStoc`-urile cu cod, două agregate
+    grupate; `MovementOfGoods` per `(Document × Storno × Cod)` (`/cod` la
+    spargere, `/S` pe storno); partenerul de pe laturi sau ale
+    `DocumentSursa`; contul liniei = `TipMaterial.ContImplicit`, niciodată
+    inventat; `Quantity`/`BookValue` SEMNATE ca în registru;
+    `MovementPostingDate` omis în afara perioadei; `AnalysisTypeTable` gol.
+    (d) Cusături: S1 (registru) **și S5 (liniile EMISE)** per intrare, S2
+    nimic nu se pierde, S3 vs balanță per cont RAPORTATĂ (spartă pe tip de
+    document), S4 referințe + unicitatea `MovementReference`. (e) Profilul
+    `C` măsurat cu DUK: secțiunile L COMPLET goale (fără totaluri),
+    `PhysicalStock` OBLIGATORIU prezent ⇒ lună fără stoc = refuz înainte de
+    primul octet / 422, `MovementOfGoods` gol trece. (f) REST
+    `saft/stocuri` + `stocuri/xml` cu gărzile o singură dată (proiecția ca
+    funcție); `/saft?fel=S`; `--saft-s`; seed pe Flax cere
+    `EFCoreProvider=Postgres;`. (g) Deriva per lot a importului (45e) se
+    DECLARĂ ca atare (`ReziduValoricFaraCantitate`, `SoldNegativ`), nu se
+    ascunde. (h) Restanțe 74-r1…r15 → jurnal.
 
 ## Stare și roadmap
 
@@ -650,12 +681,11 @@ detaliat în jurnal):
   perf (59), mărunțișuri (60–61), NIR scriere (62), LDI+BCS (63), virament (64),
   DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68),
   D300 (69), motor/structură post-D300 (70), D394 (71), partener + ANAF (72),
-  SAF-T D406 L (73).
+  SAF-T D406 L (73), SAF-T S stocuri (74).
 
 **Următorul pas**: finisajul clientului (listele §Închidere ale contractelor +
 `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului);
-feliile de scriere rămase (NTC/ASM/retururi, la cerere); SAF-T S (stocuri)
-peste `RegistruStoc` (73-r1).
+feliile de scriere rămase (NTC/ASM/retururi, la cerere).
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -704,6 +734,15 @@ zecimale, cantitatea negativă nemăsurată · 73-r12 64h (`PartenerulRandului`)
 `InregistratTva` derivat · 73-r15 `CuiPrefixDublat` nemăsurat · 73-r16
 multi-valută · 73-r17 categoria `op11` · 73-r18 contact/IBAN parteneri ·
 73-r19 422 pe CUI gol/invalid nemăsurat pe HTTP
+· 74-r1 `Owners`/`8038`, custodie · 74-r2 `ShipTo/From` pe BTR,
+`MovementComments` · 74-r3 `InvoiceNo` duplicat în L (date 1C) · 74-r4
+proiecția S O(istoric) · 74-r5 soldul `Consum` neraportat (220 k / 340 k) ·
+74-r6 deriva per lot a importului publicată per lot · 74-r7 `Neincluse` per
+produs în sumar · 74-r8 stornoul S doar pe scenă · 74-r9 `381` creditor din
+NTC (Import1C) · 74-r10 `T`/segmentare pe S · 74-r11 D17-V6 doar privat,
+proba ștergerii logice · 74-r12 ecran React `PoliticaMiscareSaft` · 74-r13
+DUK J2.2.18 · 74-r14 gardian produs de stoc fără cont · 74-r15 `FaraCodNc`
+pe Flax
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

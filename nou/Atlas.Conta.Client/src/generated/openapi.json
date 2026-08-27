@@ -119410,6 +119410,28 @@
         },
         "additionalProperties": false
       },
+      "SaftComponentaCont": {
+        "type": "object",
+        "properties": {
+          "TipDocument": {
+            "type": "string",
+            "nullable": true
+          },
+          "StocFizic": {
+            "type": "number",
+            "format": "double"
+          },
+          "Balanta": {
+            "type": "number",
+            "format": "double"
+          },
+          "Diferenta": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "SaftDiferentaCont": {
         "type": "object",
         "properties": {
@@ -119428,6 +119450,13 @@
           "Diferenta": {
             "type": "number",
             "format": "double"
+          },
+          "Componente": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftComponentaCont"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -119674,6 +119703,10 @@
             "type": "number",
             "format": "double",
             "nullable": true
+          },
+          "CodMiscare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -119885,6 +119918,18 @@
             "type": "number",
             "format": "double"
           },
+          "StocFizicVsMiscariDiferite": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "StocEmiseCantitate": {
+            "type": "number",
+            "format": "double"
+          },
+          "StocEmiseValoare": {
+            "type": "number",
+            "format": "double"
+          },
           "StocFizicBate": {
             "type": "boolean"
           },
@@ -119963,6 +120008,10 @@
             "format": "int32"
           },
           "IdentitatiTertInvalide": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ReferinteDuplicate": {
             "type": "integer",
             "format": "int32"
           },

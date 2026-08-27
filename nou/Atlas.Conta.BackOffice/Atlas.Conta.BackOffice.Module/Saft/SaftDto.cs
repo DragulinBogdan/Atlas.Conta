@@ -314,6 +314,10 @@ public sealed class SaftNeinclus {
     public int? Semn { get; set; }
     public decimal? Cantitate { get; set; }
     public decimal? Valoare { get; set; }
+    // Codul CULES din politică, pe cauza `CodMiscareNecunoscut` — singurul loc
+    // în care „ce scrie în politică” e chiar informația care lipsește din
+    // nomenclator. Null pe orice altă cauză.
+    public string CodMiscare { get; set; }
 }
 
 // ═══ SAF-T S (stocuri) — felia 17, D17-D3 ═══════════════════════════════════
@@ -427,6 +431,24 @@ public sealed class SaftDiferentaCont {
     public string Cont { get; set; }
     public decimal ClosingStocFizic { get; set; }
     public decimal ClosingBalanta { get; set; }
+    public decimal Diferenta { get; set; }
+    // Diferența SPARTĂ pe tipul documentului care a produs-o (fixul F7 al
+    // review-ului): „371 diferă cu 194.122,31” e o cifră pe care n-o poți
+    // acționa, „din care NTC 194.000 și DSC 122,31” e. `Σ Componente.Diferenta
+    // == Diferenta`, prin construcție — ambele laturi ies din ACELEAȘI două
+    // agregate.
+    public List<SaftComponentaCont> Componente { get; set; } = [];
+}
+
+// O componentă a diferenței S3: cât pune un TIP de document (sau deschiderea,
+// care n-are document — 25e) de o parte și de alta a comparației. Cheia e codul
+// tipului, nu documentul: pe o bază reală sunt zeci de mii de documente și
+// douăzeci de tipuri.
+public sealed class SaftComponentaCont {
+    /// <summary>Codul tipului de document, sau „(deschidere)” pentru rândurile fără document.</summary>
+    public string TipDocument { get; set; }
+    public decimal StocFizic { get; set; }
+    public decimal Balanta { get; set; }
     public decimal Diferenta { get; set; }
 }
 
@@ -544,6 +566,20 @@ public sealed class SaftRezumat {
     public decimal StocMiscariValoare { get; set; }
     public decimal StocClosingCantitate { get; set; }
     public decimal StocClosingValoare { get; set; }
+
+    // (S5) ACEEAȘI egalitate ca S1, dar cu Σ luată din LINIILE EMISE ÎN FIȘIER,
+    //      nu din registru (fixul F2 al review-ului). S1 compară trei
+    //      interogări pe registru — deci probează aritmetica agregatelor, dar
+    //      nu spune NIMIC despre ce s-a scris în `MovementOfGoods`: dacă un
+    //      rând a ieșit în `Neincluse`, S1 rămâne verde și fișierul e totuși
+    //      incomplet. S5 pune fișierul de o parte a semnului egal. Când nimic
+    //      nu se pierde, S5 ≡ S1; când se pierde ceva, S5 spune pe CE intrări.
+    public int StocFizicVsMiscariDiferite { get; set; }
+    public decimal StocEmiseCantitate { get; set; }
+    public decimal StocEmiseValoare { get; set; }
+
+    // Verdictul cumulat al lui S1 ȘI S5: registrul se închide pe sine ȘI
+    // fișierul spune același lucru.
     public bool StocFizicBate { get; set; }
 
     // (S2) Nimic nu se pierde: `Σ mișcări + Σ Excluse + Σ Neincluse == Σ
@@ -577,6 +613,11 @@ public sealed class SaftRezumat {
     public int CoduriMiscareFolosite { get; set; }
     public int CoduriMiscareLipsa { get; set; }
     public int IdentitatiTertInvalide { get; set; }
+    // Câte `MovementReference` se repetă în fișier (fixul F1): identitatea unei
+    // mișcări e chiar referința, deci o repetiție e o coliziune de identitate,
+    // nu un detaliu de prezentare. Zero prin construcție după discriminant —
+    // cusătura există ca să se VADĂ dacă discriminantul n-a fost de ajuns.
+    public int ReferinteDuplicate { get; set; }
     public bool ReferinteBat { get; set; }
 }
 

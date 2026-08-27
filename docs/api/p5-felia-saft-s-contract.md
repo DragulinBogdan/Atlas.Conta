@@ -335,6 +335,65 @@ Agentul se oprește și raportează (nu normalizează tăcut) dacă:
 în masă pe Flax, S3 care nu bate (se raportează per cont), `FaraContStoc` pe
 produsele importate — cifre, nu presupuneri.
 
+## Închidere (2026-08-27, după fix-urile review-ului advers)
+
+- [x] Pașii 1–4 comise (`3f1f519` contract + model, `ee6bb6a` proiecție,
+  `195838f` XML + DUK, `4722055` REST + client + Import1C), fiecare verificat
+  independent de main (suita re-rulată, spot-check pe migrație/seed/gardian/
+  proiecție/controller); pasul 5 = review advers + fix-uri F1–F8 (comise
+  odată cu decizia 74).
+- **Riscurile, măsurate**: 1 `Quantity` semnată — DUK acceptă (și |q|); se
+  păstrează semnul registrului. 2 secțiunile L pe `C` — OBLIGATORIU goale,
+  fără totaluri. 3 `StockCharacteristic` text liber. 4 `StockAccountNo` Guid
+  ok, `MovementReference` 36 respins ⇒ trunchierea e necesară (max efectiv pe
+  Flax 23). 5 `ProductType` nevalidat. 6 `FaraContStoc` pe Flax = 0
+  STRUCTURAL (niciun lot fără `TipMaterial.ContImplicit`). 7 S1 pe
+  deschiderile importului = 0/16.723 și 0/16.444 diferite. 8 partenerul
+  prin sursă: 0 `TertLipsaPeMiscare` pe Flax; NIR/DSC îl au pe laturile
+  proprii (fallback-ul prin `DocumentSursa` e implementat, neexercitat). 9
+  perf: proiecție 3,4–5,6 s / XML 0,3 s / DUK 2,2 s pe 36 MiB — dar O(istoric)
+  (74-r4). 10 storno peste lună: probat DOAR pe scenă — Flax n-are niciun
+  rând de storno (74-r8).
+- **Fapte noi ale profilului `C`** (DUK J2.2.8): `PhysicalStock` OBLIGATORIU
+  prezent ⇒ lună fără stoc fizic = 422; `MovementOfGoods` GOL trece (măsurat
+  de review pe fișierul real cu mișcările șterse: `ok`) — corolarul din
+  amendamentele pasului 3 e ÎNCHIS.
+- **Review advers ⇒ fix-uri (F1–F8)**: F1 `MovementReference` NU era unic
+  (`Numar` nu e unic per tip: pe Flax 187 perechi, 24 coliziuni în 01/2025, 1
+  în 12/2025 — două DSC către clienți diferiți sub aceeași referință, DUK nu
+  prinde) ⇒ discriminant `#n` pe ordinea `DocumentId` + unicitatea în S4 +
+  `NumarDocumentDuplicat`; colateral L: `NumarFacturaDuplicat` (2/5.185 pe
+  12/2025, `InvoiceNo` rămâne cel real). F2 S1 se ținea pe REGISTRU (trei
+  surse identice ⇒ nu vedea fișierul) ⇒ **S5** = aceeași egalitate pe
+  LINIILE EMISE, în `StocFizicBate` (pe scenă produsul fără cont rupe S5 2/9;
+  pe Flax S5 ≡ S1). F3 codul politicii nu era re-verificat în proiecție
+  (`""` trecea gardianul și trunchia fișierul la 200; `999` se autodeclara în
+  `MovementTypeTable`) ⇒ `IsNullOrWhiteSpace` în gardian, cod necunoscut ⇒
+  `Neincluse/CodMiscareNecunoscut`. F4 `MovementPostingDate` = ora rulării
+  importului (2026-08 pe 12/2025) ⇒ omis în afara perioadei +
+  `DataPostariiInAfaraPerioadei` (9.274/8.446). F5 roluri mixte în grup ⇒
+  `RolTertMixt`. F6 „0 bucăți, X lei" = deriva per lot a importului (45e),
+  NU gardianul 25d ⇒ text corectat + `ReziduValoricFaraCantitate` (861 Σ
+  6.347,71 / 1.168 Σ 6.357,75), se declară ca atare. F7 S3 spartă pe tip de
+  document: 371 = NTC 185.267,81 (09) / 239.136,20 (12) + deschidere 4.852,19
+  + FCT −20,00, restul EXACT 0; 381 = NTC 4.800,00 (un NTC dublează DSC-ul ⇒
+  balanță creditoare −4.520 pe cont de stoc — fișierul S e cel corect,
+  74-r10). F8 `AnalysisTypeTable` GOL pe S (7 query-uri scoase).
+- **Cifrele finale pe Flax** (identice cu pasul 4 pe secțiuni): 09/2025 DUK
+  `ok` — 16.723 `PhysicalStock`, 9.341 mișcări / 24.433 linii, S1/S5 0
+  diferite, S2 la cent, S4 0 duplicate, 0 `Neincluse`, `Excluse` BCS/Consum
+  77 / 26.331,94; 12/2025 DUK `ok` — 16.444 / 8.523 / 22.328, idem;
+  reconcilierea NEATINSĂ; V4 matricea completă pe clona Flax.Api (XML 36,6
+  MiB în 3,0 s, sumar 226 ms cald, `User` 403, lună fără stoc 422).
+- ModelCheck: bugetar 764, privat 593 (D17-V1…V3 + V6), `verifica:drift`
+  verde pe HEAD, `--dump-metadata` comis.
+- **Ce NU se reproduce** (dovada review-ului): rânduri cu semne opuse
+  cantitate/valoare 0; `Cantitate = 0 ∧ Valoare ≠ 0` doar pe deschidere;
+  `RepartitorId` pe `Magazie`/`Marfuri` = `Gestiune` 100%; `Custodie` 0
+  rânduri; `RegistruStoc.Data ≠ Document.Data` 0/275.441; injectare prin
+  `Content-Disposition` imposibilă (doar cifre, după gardul CUI).
+- **Restanțe cu nume** → decizia 74 (74-r1…r15).
+
 ## Pașii (un agent per pas, verificare independentă + commit după fiecare)
 
 1. **Model + seed**: D1 (`PoliticaMiscareSaft`, `RolTertSaft`), migrație pe

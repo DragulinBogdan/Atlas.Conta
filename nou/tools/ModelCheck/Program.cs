@@ -12811,7 +12811,9 @@ void VerificaSaftStocuri(bool privat) {
         + $"{saft.TipuriAnaliza.Count} tipuri de analiză; recepționat {saft.TotalQuantityReceived:0.###} / "
         + $"eliberat {saft.TotalQuantityIssued:0.###}; proiecția {msProiectie:N0} ms.");
     Console.WriteLine($"     MĂSURAT (D17-V2 cusături): S1 {rez.StocIntrariDiferite}/{rez.StocIntrari} intrări "
-        + $"diferite (deschidere {rez.StocOpeningCantitate:0.###}/{rez.StocOpeningValoare:N2} + mișcări "
+        + $"diferite, S5 (vs FIȘIER) {rez.StocFizicVsMiscariDiferite}/{rez.StocIntrari} — emise "
+        + $"{rez.StocEmiseCantitate:0.###}/{rez.StocEmiseValoare:N2}; "
+        + $"(deschidere {rez.StocOpeningCantitate:0.###}/{rez.StocOpeningValoare:N2} + mișcări "
         + $"{rez.StocMiscariCantitate:0.###}/{rez.StocMiscariValoare:N2} = închidere "
         + $"{rez.StocClosingCantitate:0.###}/{rez.StocClosingValoare:N2}); S2 mișcări {rez.MiscariValoare:N2} + "
         + $"excluse {rez.ExcluseValoare:N2} + neincluse {rez.NeincluseStocValoare:N2} vs registru "
@@ -13044,11 +13046,13 @@ void VerificaSaftStocuri(bool privat) {
         && mBtr.Linii.All(l => l.StockAccountNo == lotA1.ID.ToString()));
 
     // ---------------- Cusăturile S1–S4 ----------------
-    Check("D17-V2 cusătura S1 (stoc fizic): pe FIECARE intrare, `Opening + Σ mișcările lunii == Closing`, "
-        + "pe cantitate ȘI pe valoare — trei interogări independente (deschiderea cumulată, rândurile lunii, "
-        + "închiderea cumulată) care trebuie să se închidă una pe alta. Validatorul ANAF nu verifică "
-        + "aritmetica asta NICĂIERI, deci ea e a noastră sau a nimănui",
-        rez.StocFizicBate && rez.StocIntrariDiferite == 0 && rez.StocIntrari > 0
+    Check("D17-V2 cusătura S1 (stoc fizic vs REGISTRU): pe FIECARE intrare, `Opening + Σ rândurile lunii == "
+        + "Closing`, pe cantitate ȘI pe valoare — trei interogări independente (deschiderea cumulată, "
+        + "rândurile lunii, închiderea cumulată) care trebuie să se închidă una pe alta. Validatorul ANAF nu "
+        + "verifică aritmetica asta NICĂIERI, deci ea e a noastră sau a nimănui. "
+        + "(`StocFizicBate` poartă de la D17-V6 ȘI cusătura S5 — pe scena asta ea pică DELIBERAT, pe "
+        + "produsul fără cont de stoc; verdictul lui S1 singur e `StocIntrariDiferite`)",
+        rez.StocIntrariDiferite == 0 && rez.StocIntrari > 0
         && rez.StocOpeningCantitate + rez.StocMiscariCantitate == rez.StocClosingCantitate
         && rez.StocOpeningValoare + rez.StocMiscariValoare == rez.StocClosingValoare
         && rez.StocIntrari == saft.StocFizic.Count);
@@ -13126,7 +13130,7 @@ void VerificaSaftStocuri(bool privat) {
         + "ceea ce e onest, iar omul vede exact ce documente n-au avut de unde lua terțul",
         btrCuRol != null && btrCuRol.Linii.All(l => l.CustomerId == idRaportor && l.SupplierId == idRaportor)
         && cuRol.Avertismente.Any(a => a.Cod == nameof(CodAvertismentSaft.TertLipsaPeMiscare) && a.Numar > 0)
-        && cuRol.Rezumat.StocFizicBate && cuRol.Rezumat.RegistruStocBate);
+        && cuRol.Rezumat.StocIntrariDiferite == 0 && cuRol.Rezumat.RegistruStocBate);
 
     politicaBtr.RolTert = RolTertSaft.Niciunul;
     politicaBtr.TipStoc = TipStoc.Custodie;
@@ -13155,12 +13159,21 @@ void VerificaSaftStocuri(bool privat) {
         && refacut.StocFizic.Count == saft.StocFizic.Count
         && refacut.Neincluse.Count == saft.Neincluse.Count
         && refacut.Rezumat.RegistruStocValoare == rez.RegistruStocValoare
-        && refacut.Rezumat.StocFizicBate && refacut.Rezumat.RegistruStocBate);
+        && refacut.Rezumat.StocIntrariDiferite == rez.StocIntrariDiferite
+        && refacut.Rezumat.StocFizicVsMiscariDiferite == rez.StocFizicVsMiscariDiferite
+        && refacut.Rezumat.RegistruStocBate);
 
     // ---------------- Fișierul S + oracolul DUK (D17-V3) ----------------
     // Se rulează AICI, cât scena e încă pe bază, pe DTO-ul probat mai sus:
     // fișierul validat de ANAF e cel al scenei, nu unul fabricat pentru ocazie.
     VerificaSaftStocuriXml(saft, an, luna, msProiectie);
+
+    // ---------------- Fixurile review-ului advers (D17-V6) ----------------
+    // Tot pe scena asta, tot cât e pe bază: fixurile schimbă exact ce se vede în
+    // fișier și în cusături, deci proba lor trebuie să fie aceeași scenă, nu una
+    // fabricată alături.
+    VerificaSaftStocuriFixuri(os, an, luna, dataCreare, saft, Marcaj,
+        mag1, mag2, produsA, produsFaraCont, lotA1, lotF1, tip371, idRaportor);
 
     // ---------------- Curățenie ----------------
     RestaureazaSocietatea();
@@ -13354,14 +13367,20 @@ void VerificaSaftStocuriXml(SaftDto saft, int an, int luna, double msProiectie) 
     var goale = new[] {
         "Customers", "Suppliers", "Owners", "Assets",
         "GeneralLedgerEntries", "SalesInvoices", "PurchaseInvoices", "Payments",
+        // `AnalysisTypeTable` intră în listă de la fixul F8: tabela e
+        // nomenclatorul valorilor pe care fișierul le FOLOSEȘTE, iar S nu emite
+        // `Analysis` pe nicio linie — o listă pe care nimic n-o referă e zgomot
+        // în fișier și șapte interogări pe registrul contabil în proiecție.
+        "AnalysisTypeTable",
     }.Select(n => (Nume: n, Copii: Unul(n)?.Elements().Count() ?? -1)).ToList();
     Console.WriteLine($"     MĂSURAT (D17-V3 secțiuni L): [{string.Join(", ",
         goale.Select(g => $"{g.Nume}:{g.Copii}"))}] copii.");
-    Check("D17-V3 (riscul 2) secțiunile lunarului sunt PREZENTE și COMPLET goale în declarația de stocuri — "
-        + "nici măcar `NumberOfEntries`/`TotalDebit`/`TotalCredit` la zero, fiindcă profilul `C` al "
-        + "validatorului le refuză („a depasit numarul maxim de aparitii (0)”): un total la zero descrie "
-        + "rânduri care aici nu există, iar §A.5 se aplică literal",
-        goale.All(g => g.Copii == 0));
+    Check("D17-V3 (riscul 2 + fixul F8) secțiunile pe care declarația de STOCURI nu le raportează sunt "
+        + "PREZENTE și COMPLET goale — nici măcar `NumberOfEntries`/`TotalDebit`/`TotalCredit` la zero, "
+        + "fiindcă profilul `C` al validatorului le refuză („a depasit numarul maxim de aparitii (0)”): un "
+        + "total la zero descrie rânduri care aici nu există, iar §A.5 se aplică literal. `AnalysisTypeTable` "
+        + "e printre ele: fără `Analysis` pe linii, tabela n-are ce declara",
+        goale.All(g => g.Copii == 0) && saft.TipuriAnaliza.Count == 0);
 
     // ---------------- Oracolul: validatorul oficial ----------------
     var rezultat = Duk.Valideaza(caleXml, an, luna);
@@ -13520,6 +13539,337 @@ void VerificaSaftStocuriXml(SaftDto saft, int an, int luna, double msProiectie) 
         () => intrareProba.ProductType = "999999",
         () => intrareProba.ProductType = tipInitial);
 
+}
+
+// ============ Felia 17: fixurile review-ului advers — D17-V6 ============
+// Opt fixuri, pe ACEEAȘI scenă ca D17-V2/V3 (nu pe una fabricată alături: ce
+// probează fixurile e chiar ce se vede în fișierul validat mai sus).
+//
+//  F1  `MovementReference` UNICĂ: `(codTip, Numar)` nu e o identitate — importul
+//      aduce numărul sursei și conexele îl moștenesc —, deci coliziunile primesc
+//      un discriminant `#n`, iar S4 numără referințele duplicate.
+//  F2  cusătura S5: aceeași egalitate ca S1, cu Σ luată din LINIILE EMISE. S1
+//      confruntă trei interogări pe registru între ele, deci nu vede fișierul.
+//  F3  codul politicii RE-verificat în proiecție: un cod din afara
+//      nomenclatorului scoate rândurile în `Neincluse`, nu le declară.
+//  F4  `MovementPostingDate` omis când `DataOperare` cade în afara perioadei.
+//  F5  rolul de terț al unui grup cu DOUĂ politici.
+//  F6  intrările „0 bucăți, X lei" — declarate, cu cauza lor reală (45e).
+//  F7  S3 spartă pe TIPUL documentului care pune diferența.
+//  F8  `AnalysisTypeTable` GOL pe S (probat în D17-V3, pe fișier + DUK).
+void VerificaSaftStocuriFixuri(IObjectSpace os, int an, int luna, DateOnly dataCreare, SaftDto saft,
+        string marcaj, Gestiune mag1, Gestiune mag2, Produs produsA, Produs produsFaraCont,
+        Lot lotA1, Lot lotF1, TipMaterial tip371, string idRaportor) {
+
+    // ══════════ (a) Funcțiile PURE ══════════
+    var faraDiscriminant = SaftReguli.MovementReference("DSC", "DSC-000123", null, false);
+    var cuUnu = SaftReguli.MovementReference("DSC", "DSC-000123", null, false, 1);
+    var cuDoi = SaftReguli.MovementReference("DSC", "DSC-000123", "30", true, 2);
+    var cuDoisprezeceLung = SaftReguli.MovementReference("DSC", new string('9', 60), "30", true, 12);
+    Console.WriteLine($"     MĂSURAT (D17-V6/F1 referință): fără discriminant „{faraDiscriminant.Referinta}”; "
+        + $"#1 „{cuUnu.Referinta}”; #2 + cod + storno „{cuDoi.Referinta}”; număr lung + #12 "
+        + $"„{cuDoisprezeceLung.Referinta}” ({cuDoisprezeceLung.Referinta.Length} caractere, "
+        + $"trunchiat {cuDoisprezeceLung.Trunchiat}).");
+    Check("D17-V6 (F1) `MovementReference` primește discriminantul `#n` ÎNAINTEA sufixelor de cod și de "
+        + "storno — sufixele rămân coada recognoscibilă a referinței, iar două documente cu același număr "
+        + "ies cu identități diferite. Trunchierea taie tot NUMĂRUL, nu discriminantul: el e chiar partea "
+        + "care le deosebește",
+        faraDiscriminant == ("DSC-DSC-000123", false)
+        && cuUnu == ("DSC-DSC-000123#1", false)
+        && cuDoi == ("DSC-DSC-000123#2/30/S", false)
+        && cuDoisprezeceLung.Trunchiat
+        && cuDoisprezeceLung.Referinta.Length == SaftReguli.LungimeMovementReference
+        && cuDoisprezeceLung.Referinta.EndsWith("#12/30/S")
+        && cuDoisprezeceLung.Referinta.StartsWith("DSC-"));
+
+    // Proba NEGATIVĂ a cusăturii, pe un DTO fabricat: fără ea, „0 referințe
+    // duplicate" ar putea să însemne „numărătoarea nu numără".
+    var doua = new List<SaftMiscareStoc> {
+        new() { MovementReference = "BTR-1" }, new() { MovementReference = "BTR-2" },
+    };
+    var trei = new List<SaftMiscareStoc> {
+        new() { MovementReference = "BTR-1" }, new() { MovementReference = "BTR-1" },
+        new() { MovementReference = "BTR-2" },
+    };
+    Check("D17-V6 (F1) `SaftProiectii.ReferinteDuplicate` NUMĂRĂ: două referințe distincte ⇒ 0, două "
+        + "identice din trei ⇒ 1. Cusătura S4 e o afirmație despre FIȘIER, deci se probează pe un DTO, "
+        + "fără nicio scenă",
+        SaftProiectii.ReferinteDuplicate(doua) == 0 && SaftProiectii.ReferinteDuplicate(trei) == 1);
+
+    // ══════════ (b) Fixurile care se citesc pe DTO-ul de bază ══════════
+    var rez = saft.Rezumat;
+
+    // ── F2: cusătura S5 ──────────────────────────────────────────────────────
+    // Scena are DELIBERAT un produs fără cont de stoc: rândurile lui ies în
+    // `Neincluse/FaraContStoc`, deci fișierul NU spune despre cele două intrări
+    // ale lui ce spune registrul. S1 rămâne verde (registrul se închide pe sine)
+    // — și exact asta era gaura: cusătura nu se uita la fișier.
+    var emisePeCheie = saft.MiscariStoc.SelectMany(m => m.Linii)
+        .GroupBy(l => (l.RepartitorId, l.LotId))
+        .ToDictionary(g => g.Key, g => (Cant: g.Sum(l => l.Quantity), Val: g.Sum(l => l.BookValue)));
+    var intrariRupte = saft.StocFizic.Where(e => {
+        var emis = emisePeCheie.GetValueOrDefault((e.RepartitorId, e.LotId));
+        return e.OpeningQuantity + emis.Cant != e.ClosingQuantity
+            || e.OpeningValue + emis.Val != e.ClosingValue;
+    }).ToList();
+    Console.WriteLine($"     MĂSURAT (D17-V6/F2 S5): S1 {rez.StocIntrariDiferite}/{rez.StocIntrari} · "
+        + $"S5 {rez.StocFizicVsMiscariDiferite}/{rez.StocIntrari} · `StocFizicBate` {rez.StocFizicBate}; "
+        + $"intrările rupte: {string.Join(" | ", intrariRupte.Select(e => $"{e.WarehouseId}/{e.ProductCode} "
+            + $"{e.OpeningQuantity:0.###}→{e.ClosingQuantity:0.###}"))}.");
+    Check("D17-V6 (F2) cusătura S5 pune FIȘIERUL de o parte a semnului egal: `Opening + Σ liniile EMISE == "
+        + "Closing`, pe fiecare intrare. Pe scena asta pică pe EXACT cele două intrări ale produsului fără "
+        + "cont de stoc (rândurile lui sunt în `Neincluse`), în timp ce S1 rămâne verde — adică proba că "
+        + "S1 singură nu vedea fișierul. `StocFizicBate` poartă acum ambele cusături, deci e FALS",
+        rez.StocIntrariDiferite == 0
+        && rez.StocFizicVsMiscariDiferite == 2
+        && !rez.StocFizicBate
+        && intrariRupte.Count == rez.StocFizicVsMiscariDiferite
+        && intrariRupte.All(e => e.ProdusId == produsFaraCont.ID)
+        && intrariRupte.Select(e => e.RepartitorId).OrderBy(x => x)
+            .SequenceEqual(new[] { mag1.ID, mag2.ID }.OrderBy(x => x))
+        && saft.StocFizic.Count(e => e.LotId == lotF1.ID) == 2);
+
+    // ── F4: `MovementPostingDate` în afara perioadei ─────────────────────────
+    // Scena operează documentele ACUM (motorul pune `DataOperare = UtcNow`), iar
+    // luna declarată e martie 2027 — deci toate mișcările cad pe cazul care pe
+    // baza de import apare la fel: importul lui 12/2025 a rulat în 2026-08.
+    var documenteCuMiscari = saft.MiscariStoc.Select(m => m.DocumentId).Distinct().Count();
+    var avertPostare = saft.Avertismente
+        .FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.DataPostariiInAfaraPerioadei));
+    Console.WriteLine($"     MĂSURAT (D17-V6/F4 postare): {saft.MiscariStoc.Count(m => m.MovementPostingDate != null)}"
+        + $"/{saft.MiscariStoc.Count} mișcări cu `MovementPostingDate`; avertisment ×{avertPostare?.Numar ?? 0} "
+        + $"peste {documenteCuMiscari} documente — ex. {avertPostare?.Exemple.FirstOrDefault()}");
+    Check("D17-V6 (F4) `MovementPostingDate` se OMITE când `DataOperare` cade în afara perioadei declarate "
+        + "(o dată de postare care contrazice antetul e mai rea decât absența ei — elementul e opțional în "
+        + "schemă), iar faptul se strigă o dată per DOCUMENT, nu per mișcare",
+        saft.MiscariStoc.All(m => m.MovementPostingDate == null)
+        && avertPostare != null && avertPostare.Numar == documenteCuMiscari && documenteCuMiscari > 0);
+
+    // ── F7: S3 spartă pe tipul documentului ──────────────────────────────────
+    foreach (var c in rez.StocPerCont)
+        Console.WriteLine($"     MĂSURAT (D17-V6/F7 S3 {c.Cont}): diferență {c.Diferenta:N2} = "
+            + string.Join(" + ", c.Componente.Select(x => $"{x.TipDocument} {x.Diferenta:N2}")));
+    Check("D17-V6 (F7) fiecare cont din S3 își sparge diferența pe TIPUL documentului care o pune (rândurile "
+        + "fără document = deschiderea): Σ componentelor == cifra contului, pe AMBELE laturi și pe diferență. "
+        + "„371 diferă cu X” nu se poate acționa; „din care NTC atât și DSC atât” da",
+        rez.StocPerCont.Count > 0
+        && rez.StocPerCont.All(c => c.Componente.Sum(x => x.Diferenta) == c.Diferenta
+            && c.Componente.Sum(x => x.StocFizic) == c.ClosingStocFizic
+            && c.Componente.Sum(x => x.Balanta) == c.ClosingBalanta
+            && c.Componente.All(x => x.Diferenta == x.StocFizic - x.Balanta))
+        && rez.StocPerCont.Any(c => c.Componente.Count > 0));
+
+    // ── F8: `AnalysisTypeTable` GOL ──────────────────────────────────────────
+    Check("D17-V6 (F8) `AnalysisTypeTable` e GOL pe declarația de stocuri: S nu emite `Analysis` pe nicio "
+        + "linie, deci tabela n-are ce declara — iar cele șapte interogări de dimensiuni pe registrul "
+        + "contabil nu se mai fac. (Fișierul cu tabela goală trece DUK — probat în D17-V3.)",
+        saft.TipuriAnaliza.Count == 0
+        && saft.MiscariStoc.SelectMany(m => m.Linii).All(l => l.ProductCode != null));
+
+    // ══════════ (c) Fixurile care cer scenă proprie ══════════
+    // Toate adaugă artefacte cu MARCAJUL scenei, deci `Curata()` de la sfârșitul
+    // lui D17-V2 le ia pe toate; politicile mutate se pun la loc AICI.
+    var tip302 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302");
+    var dDeschidere = new DateOnly(an - 1, 12, 31);
+
+    // Produs pe o clasă NE-marfă (302 ⇒ clasa „M”): regulile de stoc private îl
+    // trimit pe registrul GENERIC (`Magazie`), nu pe `Marfuri` — de aici un
+    // document care atinge DOUĂ registre sub ACELAȘI cod, adică fix cazul lui F5.
+    var produsMagazie = os.CreateObject<Produs>();
+    produsMagazie.Cod = marcaj + "-MAG"; produsMagazie.Denumire = "Material SAF-T S (registrul generic)";
+    produsMagazie.TipMaterial = tip302; produsMagazie.UM = "BUC";
+    produsMagazie.UnitateMasura = os.FirstOrDefault<UnitateMasura>(u => u.Cod == "H87");
+    produsMagazie.CodNc = "01012100";
+    os.CommitChanges();
+
+    Lot LotCuDeschidere(Produs produs, decimal pret, decimal cantitate, decimal valoare) {
+        var lot = os.CreateObject<Lot>();
+        lot.Produs = produs; lot.PretUnitar = pret; lot.Gestiune = mag1; lot.Data = dDeschidere;
+        var rand = os.CreateObject<RegistruStoc>();
+        rand.Data = dDeschidere;
+        rand.TipStoc = produs.TipMaterial.Cod == "371" ? TipStoc.Marfuri : TipStoc.Magazie;
+        rand.Lot = lot; rand.Repartitor = mag1;
+        rand.Cantitate = cantitate; rand.Valoare = valoare;
+        return lot;
+    }
+    var lotMagazie = LotCuDeschidere(produsMagazie, 4m, 100m, 400m);
+    // F6: intrarea „0 bucăți, X lei" — reziduul valoric al derivei de rotunjire
+    // per lot (45e), fabricat aici fiindcă pe scenă nu se naște singur.
+    var lotRezidu = LotCuDeschidere(produsA, 10m, 0m, 5m);
+    os.CommitChanges();
+
+    // BTR care atinge AMBELE registre sub același cod (`80`): o linie de marfă
+    // (⇒ `Marfuri`) și una de material (⇒ `Magazie`).
+    var btrMixt = os.CreateObject<NotaTransfer>();
+    btrMixt.Numar = marcaj + "-BTR-MIX"; btrMixt.Data = new DateOnly(an, luna, 22);
+    btrMixt.Predator = mag1; btrMixt.Primitor = mag2; btrMixt.NumarPV = marcaj;
+    var linMixtMarfa = os.CreateObject<DocumentDetaliu>();
+    linMixtMarfa.Document = btrMixt; linMixtMarfa.TipMaterial = tip371;
+    linMixtMarfa.Lot = lotA1; linMixtMarfa.Cantitate = 1m;
+    var linMixtMaterial = os.CreateObject<DocumentDetaliu>();
+    linMixtMaterial.Document = btrMixt; linMixtMaterial.TipMaterial = tip302;
+    linMixtMaterial.Lot = lotMagazie; linMixtMaterial.Cantitate = 2m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, btrMixt);
+    os.CommitChanges();
+
+    // DOUĂ documente de același tip cu ACELAȘI număr — cazul real al importului
+    // (1C aduce numărul sursei, conexele îl moștenesc). `Numar` e server-owned pe
+    // BTR, dar ușa uneltei e cea NON-secured (44), exact ca a conectorului: se
+    // scrie direct, cum scrie și importul.
+    NotaTransfer BtrDuplicat(int zi, decimal cantitate) {
+        var d = os.CreateObject<NotaTransfer>();
+        d.Numar = marcaj + "-DUP"; d.Data = new DateOnly(an, luna, zi);
+        d.Predator = mag1; d.Primitor = mag2; d.NumarPV = marcaj;
+        var linie = os.CreateObject<DocumentDetaliu>();
+        linie.Document = d; linie.TipMaterial = tip371; linie.Lot = lotA1; linie.Cantitate = cantitate;
+        return d;
+    }
+    var dup1 = BtrDuplicat(23, 1m);
+    var dup2 = BtrDuplicat(24, 2m);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, dup1);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, dup2);
+    os.CommitChanges();
+
+    var dupaScena = SaftProiectii.SaftStocuri(os, an, luna, dataCreare);
+
+    // ── F1 pe scenă ──────────────────────────────────────────────────────────
+    var refDup = dupaScena.MiscariStoc.Where(m => m.DocumentId == dup1.ID || m.DocumentId == dup2.ID)
+        .OrderBy(m => m.DocumentId).Select(m => m.MovementReference).ToList();
+    var avertNumar = dupaScena.Avertismente
+        .FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.NumarDocumentDuplicat));
+    var ordinePeId = new[] { dup1.ID, dup2.ID }.OrderBy(x => x).ToList();
+    Console.WriteLine($"     MĂSURAT (D17-V6/F1 scenă): două BTR cu numărul „{dup1.Numar}” ⇒ "
+        + $"[{string.Join(", ", refDup)}]; avertisment ×{avertNumar?.Numar ?? 0}; S4 referințe duplicate "
+        + $"{dupaScena.Rezumat.ReferinteDuplicate}/{dupaScena.MiscariStoc.Count}, `ReferinteBat` "
+        + $"{dupaScena.Rezumat.ReferinteBat}.");
+    Check("D17-V6 (F1) două documente de ACELAȘI tip cu ACELAȘI număr ies cu referințe DISTINCTE (`#1`, "
+        + "`#2`, în ordinea `DocumentId` — stabilă între rulări), cusătura S4 numără 0 referințe duplicate, "
+        + "iar faptul se strigă o dată per pereche (tip × număr). Fără discriminant, fișierul ar fi avut "
+        + "două mișcări cu aceeași identitate",
+        refDup.Count == 2 && refDup[0] != refDup[1]
+        && refDup[0].EndsWith("#1") && refDup[1].EndsWith("#2")
+        && refDup.All(r => r.StartsWith("BTR-") && r.Contains(marcaj + "-DUP"))
+        && ordinePeId.Count == 2
+        && avertNumar != null && avertNumar.Numar == 1
+        && avertNumar.Exemple.Any(e => e.Contains(marcaj + "-DUP"))
+        && dupaScena.Rezumat.ReferinteDuplicate == 0 && dupaScena.Rezumat.ReferinteBat);
+
+    // ── F6 pe scenă ──────────────────────────────────────────────────────────
+    var avertRezidu = dupaScena.Avertismente
+        .FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.ReziduValoricFaraCantitate));
+    var intrareRezidu = dupaScena.StocFizic.SingleOrDefault(e => e.LotId == lotRezidu.ID);
+    Console.WriteLine($"     MĂSURAT (D17-V6/F6 rezidu): intrarea {intrareRezidu?.WarehouseId}/"
+        + $"{intrareRezidu?.ProductCode} {intrareRezidu?.OpeningQuantity:0.###}→"
+        + $"{intrareRezidu?.ClosingQuantity:0.###} @ {intrareRezidu?.OpeningValue:N2}→"
+        + $"{intrareRezidu?.ClosingValue:N2}; avertisment ×{avertRezidu?.Numar ?? 0} "
+        + $"Σ {avertRezidu?.Suma:N2}.");
+    Check("D17-V6 (F6) intrarea „0 bucăți, X lei” se DECLARĂ ca atare, cu cod propriu de avertisment: "
+        + "e reziduul derivei de rotunjire PER LOT (45e/52), nu o scăpare a gardianului de sold — și e ALT "
+        + "fapt decât soldul negativ. Omisă, fișierul ar fi declarat un patrimoniu mai mic decât balanța",
+        intrareRezidu is { OpeningQuantity: 0m, ClosingQuantity: 0m, OpeningValue: 5m, ClosingValue: 5m }
+        && avertRezidu != null && avertRezidu.Numar == 1 && avertRezidu.Suma == 5m
+        && dupaScena.Rezumat.StocIntrariDiferite == 0);
+    Check("D17-V6 (F5) fără politici cu roluri diferite pe același cod, avertismentul `RolTertMixt` NU "
+        + "apare — un avertisment care se aprinde singur n-ar mai însemna nimic",
+        !dupaScena.Avertismente.Any(a => a.Cod == nameof(CodAvertismentSaft.RolTertMixt)));
+
+    // ── F5: rolurile grupului ────────────────────────────────────────────────
+    var tipBtrId = os.FirstOrDefault<TipDocument>(t => t.Cod == "BTR").ID;
+    var polMarfuri = os.GetObjectsQuery<PoliticaMiscareSaft>()
+        .First(p => p.TipDocumentId == tipBtrId && p.TipStoc == TipStoc.Marfuri);
+    var polMagazie = os.GetObjectsQuery<PoliticaMiscareSaft>()
+        .First(p => p.TipDocumentId == tipBtrId && p.TipStoc == TipStoc.Magazie);
+
+    polMarfuri.RolTert = RolTertSaft.Furnizor;
+    os.CommitChanges();
+    var rolUnic = SaftProiectii.SaftStocuri(os, an, luna, dataCreare);
+    var mixtUnic = rolUnic.MiscariStoc.SingleOrDefault(m => m.DocumentId == btrMixt.ID && !m.Storno);
+
+    polMagazie.RolTert = RolTertSaft.Client;
+    os.CommitChanges();
+    var rolMixt = SaftProiectii.SaftStocuri(os, an, luna, dataCreare);
+    var mixtDoua = rolMixt.MiscariStoc.SingleOrDefault(m => m.DocumentId == btrMixt.ID && !m.Storno);
+    var avertRolMixt = rolMixt.Avertismente
+        .FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.RolTertMixt));
+
+    polMarfuri.RolTert = RolTertSaft.Niciunul;
+    polMagazie.RolTert = RolTertSaft.Niciunul;
+    os.CommitChanges();
+
+    Console.WriteLine($"     MĂSURAT (D17-V6/F5 roluri): un singur rol ne-`Niciunul` ⇒ mișcarea are "
+        + $"{mixtUnic?.Linii.Count} linii, avertisment "
+        + $"{rolUnic.Avertismente.Count(a => a.Cod == nameof(CodAvertismentSaft.RolTertMixt))}; DOUĂ roluri "
+        + $"⇒ {mixtDoua?.Linii.Count} linii, avertisment ×{avertRolMixt?.Numar ?? 0} — "
+        + $"ex. {avertRolMixt?.Exemple.FirstOrDefault()}");
+    // 4 linii, nu 2: transferul scrie pe AMBELE picioare (−predator, +primitor)
+    // pentru fiecare dintre cele două linii de document, deci grupul are patru
+    // rânduri de registru — două pe `Marfuri` și două pe `Magazie`.
+    Check("D17-V6 (F5) rolul de terț e AL GRUPULUI, nu al primului rând nimerit: un document care atinge "
+        + "două registre sub același cod (BTR cu marfă ⇒ `Marfuri` și material ⇒ `Magazie`, 4 rânduri de "
+        + "registru) ia rolul NE-`Niciunul` când e singurul distinct — TĂCUT, fiindcă nu e nicio incoerență "
+        + "—, iar când politicile cer DOUĂ roluri diferite, strigă și alege determinist rolul primei linii "
+        + "(pe `Id`)",
+        mixtUnic != null && mixtUnic.Linii.Count == 4
+        && !rolUnic.Avertismente.Any(a => a.Cod == nameof(CodAvertismentSaft.RolTertMixt))
+        && mixtDoua != null && mixtDoua.Linii.Count == 4
+        && avertRolMixt != null && avertRolMixt.Numar == 1
+        && avertRolMixt.Exemple.Any(e => e.Contains("BTR-MIX"))
+        && mixtDoua.Linii.All(l => l.CustomerId == idRaportor && l.SupplierId == idRaportor)
+        && rolMixt.Rezumat.RegistruStocBate);
+
+    // ── F3: codul politicii, RE-verificat în proiecție ───────────────────────
+    // Se scrie pe ușa NON-secured (ca seed-ul și ca importul), deci gardianul nu
+    // apucă să refuze — exact drumul pe care un cod greșit ajunge în bază.
+    var codInitial = polMarfuri.CodMiscare;
+    polMarfuri.CodMiscare = "999";
+    os.CommitChanges();
+    var cuCodStricat = SaftProiectii.SaftStocuri(os, an, luna, dataCreare);
+    var neinclusCod = cuCodStricat.Neincluse
+        .Where(n => n.Cauza == nameof(CauzaNeincludere.CodMiscareNecunoscut)).ToList();
+    polMarfuri.CodMiscare = codInitial;
+    os.CommitChanges();
+    var refacutCod = SaftProiectii.SaftStocuri(os, an, luna, dataCreare);
+    Console.WriteLine($"     MĂSURAT (D17-V6/F3 cod „999”): {neinclusCod.Count} intrări `CodMiscareNecunoscut` "
+        + $"({neinclusCod.Sum(n => n.Randuri)} rânduri, {neinclusCod.Sum(n => n.Valoare ?? 0m):N2} lei); "
+        + $"`MovementTypeTable` = [{string.Join(", ", cuCodStricat.TipuriMiscare.Select(t => t.Cod))}]; "
+        + $"S2 bate {cuCodStricat.Rezumat.RegistruStocBate}; după restaurare "
+        + $"{refacutCod.MiscariStoc.Count} mișcări (față de {cuCodStricat.MiscariStoc.Count}).");
+    Check("D17-V6 (F3) un cod de mișcare care NU e în nomenclatorul D406 scoate rândurile în "
+        + "`Neincluse/CodMiscareNecunoscut` — nu le declară cu codul cules (validatorul ar respinge fișierul "
+        + "ÎNTREG) și nu-l pune în `MovementTypeTable` cu codul drept descriere. S2 rămâne închisă peste ele, "
+        + "iar politica pusă la loc reface declarația",
+        neinclusCod.Count > 0
+        && neinclusCod.All(n => n.DocumentTip == "BTR" && n.TipStoc == nameof(TipStoc.Marfuri)
+            && n.CodMiscare == "999")
+        && !cuCodStricat.TipuriMiscare.Any(t => t.Cod == "999")
+        && cuCodStricat.Rezumat.RegistruStocBate
+        && !cuCodStricat.MiscariStoc.Any(m => m.MovementType == "999")
+        && refacutCod.MiscariStoc.Count == dupaScena.MiscariStoc.Count);
+
+    // Gardianul: un cod de SPAȚII nu e nici cod valid, nici excludere deliberată.
+    using (var osGard = provider.CreateObjectSpace()) {
+        var p = osGard.CreateObject<PoliticaMiscareSaft>();
+        p.TipDocument = osGard.FirstOrDefault<TipDocument>(t => t.Cod == "BCS");
+        p.TipStoc = TipStoc.Custodie;
+        p.Semn = +1;
+        p.CodMiscare = "   ";
+        string mesajSpatii = null;
+        try { GardianEditare.Verifica(osGard); } catch (OperareException e) { mesajSpatii = e.Message; }
+        p.Motiv = "custodia nu se raportează încă";
+        string mesajCuMotiv = null;
+        try { GardianEditare.Verifica(osGard); } catch (OperareException e) { mesajCuMotiv = e.Message; }
+        Console.WriteLine($"     MĂSURAT (D17-V6/F3 gardian): cod „   ” fără motiv → "
+            + $"„{mesajSpatii ?? "<NU A ARUNCAT>"}”; același cod CU motiv → „{mesajCuMotiv ?? "tace"}”.");
+        Check("D17-V6 (F3) gardianul citește codul cu `IsNullOrWhiteSpace`, nu `IsNullOrEmpty`: un cod de "
+            + "SPAȚII trecea pe lângă AMBELE reguli — nu era verificat contra nomenclatorului (ramura cerea "
+            + "„nenul”) și nu i se cerea motiv (ramura cerea „gol”). Acum e tratat ca absența codului, adică "
+            + "drept excludere deliberată, deci cere motiv",
+            mesajSpatii != null && mesajSpatii.Contains("motiv") && mesajCuMotiv == null);
+        osGard.Rollback();
+    }
 }
 
 // ============ Felia 15, pas 2: merge-ul ANAF — D15-V2 + D15-V3 ============

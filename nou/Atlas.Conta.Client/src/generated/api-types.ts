@@ -5859,6 +5859,15 @@ export interface components {
             Suma?: number | null;
             Exemple?: string[] | null;
         };
+        SaftComponentaCont: {
+            TipDocument?: string | null;
+            /** Format: double */
+            StocFizic?: number;
+            /** Format: double */
+            Balanta?: number;
+            /** Format: double */
+            Diferenta?: number;
+        };
         SaftDiferentaCont: {
             Cont?: string | null;
             /** Format: double */
@@ -5867,6 +5876,7 @@ export interface components {
             ClosingBalanta?: number;
             /** Format: double */
             Diferenta?: number;
+            Componente?: components["schemas"]["SaftComponentaCont"][] | null;
         };
         SaftExclus: {
             TipDocument?: string | null;
@@ -5949,6 +5959,7 @@ export interface components {
             Cantitate?: number | null;
             /** Format: double */
             Valoare?: number | null;
+            CodMiscare?: string | null;
         };
         SaftRezumat: {
             /** Format: int32 */
@@ -6053,6 +6064,12 @@ export interface components {
             StocClosingCantitate?: number;
             /** Format: double */
             StocClosingValoare?: number;
+            /** Format: int32 */
+            StocFizicVsMiscariDiferite?: number;
+            /** Format: double */
+            StocEmiseCantitate?: number;
+            /** Format: double */
+            StocEmiseValoare?: number;
             StocFizicBate?: boolean;
             /** Format: double */
             MiscariCantitate?: number;
@@ -6090,6 +6107,8 @@ export interface components {
             CoduriMiscareLipsa?: number;
             /** Format: int32 */
             IdentitatiTertInvalide?: number;
+            /** Format: int32 */
+            ReferinteDuplicate?: number;
             ReferinteBat?: boolean;
         };
         SaftSumarDto: {

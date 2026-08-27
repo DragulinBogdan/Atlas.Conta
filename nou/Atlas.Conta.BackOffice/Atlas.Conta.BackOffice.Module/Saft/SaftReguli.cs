@@ -1,3 +1,4 @@
+using System.Globalization;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Proiectii;
 
@@ -436,8 +437,9 @@ public static class SaftReguli {
 
     /// <summary>
     /// `MovementReference` — identitatea mișcării în fișier:
-    /// `{CodTip}-{Numar}`, plus `/{cod}` DOAR când documentul se sparge în mai
-    /// multe mișcări (ASM: `/20` și `/70`), plus `/S` pe jumătatea de storno.
+    /// `{CodTip}-{Numar}`, plus `#{n}` când numărul NU e unic pe tipul lui,
+    /// plus `/{cod}` DOAR când documentul se sparge în mai multe mișcări (ASM:
+    /// `/20` și `/70`), plus `/S` pe jumătatea de storno.
     /// <para>
     /// Sufixele nu sunt decor: unitatea unei mișcări e `(Document × Storno ×
     /// CodMiscare)`, deci două mișcări ale aceluiași document TREBUIE să aibă
@@ -447,11 +449,22 @@ public static class SaftReguli {
     /// `MovementReferenceTrunchiat`. NU se aruncă: un fișier care nu se
     /// generează e mai rău decât o referință scurtată și declarată.
     /// </para>
+    /// <para>
+    /// <c>discriminant</c> (fixul F1 al review-ului advers): perechea
+    /// `(codTip, Numar)` NU e unică — importul din 1C aduce numărul SURSEI, iar
+    /// documentele conexe îl moștenesc (două FCL cu același număr ⇒ două DSC cu
+    /// același număr). Apelantul numără documentele per pereche și, când sunt
+    /// mai multe, dă fiecăruia ordinalul lui în ordinea `DocumentId` — un număr
+    /// STABIL între rulări, care nu depinde de ordinea de citire. Ordinalul
+    /// intră ÎNAINTEA sufixelor de cod și de storno, ca acestea să rămână
+    /// coada recognoscibilă a referinței.
+    /// </para>
     /// </summary>
     public static (string Referinta, bool Trunchiat) MovementReference(
-        string codTip, string numar, string codMiscare, bool storno) {
+        string codTip, string numar, string codMiscare, bool storno, int? discriminant = null) {
         var prefix = string.IsNullOrWhiteSpace(codTip) ? "" : codTip.Trim() + "-";
-        var sufix = (string.IsNullOrEmpty(codMiscare) ? "" : "/" + codMiscare)
+        var sufix = (discriminant is int ordinal ? "#" + ordinal.ToString(CultureInfo.InvariantCulture) : "")
+            + (string.IsNullOrEmpty(codMiscare) ? "" : "/" + codMiscare)
             + (storno ? "/S" : "");
         var corp = (numar ?? "").Trim();
         var disponibil = LungimeMovementReference - prefix.Length - sufix.Length;
