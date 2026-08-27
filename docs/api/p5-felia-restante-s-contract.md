@@ -291,3 +291,46 @@ agregatul cu join 0,2–0,3 s, GL 0,15–0,2 s ⇒ câștigul posibil ≤ 0,3 s 
 problemă pe mulțimi mari (hot-path API, neatins — raportat). **Ținta < 1 s
 NU e atinsă**: 2,9–3,0 s, fără un vinovat dominant (§8–13 ~1,2 s în felii de
 0,1–0,3 s).
+
+**Pasul 2 (D18-D2, 2026-08-27).** Regula stă în MOTOR, nu în frunze:
+`StocService.ValoareGolire(soldInainte, cantitate)` (funcția PURĂ, o singură
+sursă), `StocService.SolduriLaData` (o interogare grupată per document,
+prefix-sum ≤ `Data`, rândurile documentului excluse) și
+`StocService.AplicaValoareIesire` (`Motor/StocService.cs`), chemat din
+`MotorOperare.CalculeazaSiValideaza` DUPĂ `PregatesteOperare` și ÎNAINTE de
+`ValideazaOperare` (`Motor/MotorOperare.cs`, potrivirea regulilor extrasă în
+`PotrivesteReguliStoc(strict)` — tolerantă înainte de validare, strictă la
+mișcări). Motivul locului: cheia (`TipStoc`, latura) și semnul sunt ale
+REGULII de stoc — frunza nu le cunoaște și n-are voie să le re-potrivească
+(42a); valoarea rămâne a liniei (`Valoare = −rest × Semn`, deci convenția de
+semn a fiecărei frunze se păstrează: BCS/BTR/DSC pozitiv, LDI−/RLF/ASM
+negativ). Frunzele (`preț × cantitate`) rămân previzualizarea implicită —
+doar comentate. Niciun câmp nou, intrările neatinse (mișcare pozitivă ⇒ regula
+nu se aplică). **ASM**: consumul preia restul înainte de validare, produsele
+rămân la valoarea CULEASĂ ⇒ invariantul 46d SEMNALEAZĂ cu cenți când operatorul
+a evaluat produsul la `preț × cantitate` pe un lot golit (probat: refuz la
+10,01 vs 10,00, trece la 10,00) — nu se ajustează nicio latură tăcut; decizia
+de a deriva automat valoarea produsului rămâne a închiderii. **RLF**: cenții
+cad pe 401 (n-are cont de cheltuială) — consecință acceptată, comentată în
+`Retururi.cs`. **Riscul 5 (Import1C, cod, nerulat)**: `AlocareIesire.Aloca`
+întoarce acum `(LotId, Cantitate, Valoare)`, valoarea prezisă prin ACEEAȘI
+`ValoareGolire` peste soldul la dată pe ambele axe (`Disponibil` citește și
+`Valoare`), cu acumularea per document în `AlocatInDocument` (înlocuiește
+`Dictionary<Guid, decimal>` la cei 6 apelanți); `valoareAtlas`/`cost`/
+`valoareConsum` din HandlereStoc (BTR ×2, BCS, LDI−), HandlerAsamblare,
+HandlereRetur (RLF), Vanzare1C (DSC) consumă valoarea alocării — colateral: BTR
+și LDI− declarau în punte suma NEROTUNJITĂ, acum rotunjită per linie ca
+motorul. RDC (HandlereRetur:577) e intrare, neatins. ASM-ul importului
+(riscul 7) trece exact: `Scaleaza` distribuie valoarea REALĂ a consumului.
+**D18-V2** (`ModelCheck`, `VerificaValoareIesire`, ambele profiluri; lot
+3 × 30,02 ⇒ preț 10,006667, `preț × 3` = 30,02 deci reziduul e al ACUMULĂRII):
+(a) 1+1+1 pe trei BCS ⇒ 10,01 / 10,01 / **10,00**, lot 0/0,00, consumul +10,00,
+nota 6xx=3xx 10,00, dry-run 10,00 == operare, ReadDto 10,00, anulare ⇒ 1/10,00
+și re-operare 10,00 cu exact 2 rânduri, storno ⇒ inverse identice; (b) 1+1+1
+într-UN document ⇒ 10,01 / 10,01 / 10,00; (c) BTR pe rest ⇒ sursă −1/−10,00,
+destinație +1/+10,00; (d) LDI− ⇒ −10,00; (e) ieșire care nu golește ⇒ 10,01
+neschimbat; privat: (f) FCL ⇒ DSC generat cu 10,01 (37b), operat 10,00,
+ReadDto 10,00; (g) RLF −10,00, 3xx=401 −10,00; (h) ASM refuz la 10,01, trece
+la 10,00, kit 10,00; nicio cheie golită cu valoare ≠ 0. Scena D17-V2/V6 are
+prețuri exacte ⇒ nicio cifră veche schimbată (F6 injectează reziduul direct
+în registru, rămâne). ModelCheck verde (bugetar 778, privat 613).

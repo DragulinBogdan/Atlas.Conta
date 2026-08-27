@@ -181,7 +181,7 @@ static class HandlerTransfer {
             DocumenteAceeasiGestiune++;
 
         var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
-        var dejaAlocat = new Dictionary<Guid, decimal>();
+        var dejaAlocat = new AlocatInDocument();
         using var os = bucla.CreeazaObjectSpace();
 
         foreach (var r in bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? []) {
@@ -213,9 +213,10 @@ static class HandlerTransfer {
             if (!plan.FaraDocument) {
                 var (alocari, ramas) = bucla.Alocare.Aloca(os, lot?.Id, produsId, plan.PredatorId,
                     tip.Registru, plan.Data, r.CantitateCredit, dejaAlocat);
-                foreach (var (lotId, cantitate) in alocari) {
+                foreach (var (lotId, cantitate, valoareLinie) in alocari) {
                     plan.Linii.Add(new LiniePeLot(lotId, tip.Id, cantitate));
-                    valoareAtlas += cantitate * PretLot(os, lotId);
+                    // Valoarea prezisă de `Aloca` = ce scrie motorul pe linie (D18-D2).
+                    valoareAtlas += valoareLinie;
                 }
                 if (ramas > 0) {
                     bucla.Avert($"{context}: {ramas:N3} din {r.CantitateCredit:N3} n-au acoperire "
@@ -421,7 +422,7 @@ static class HandlerConsum {
             : throw new InvalidOperationException(
                 $"Depozitul 1C {depozitHex} al bonului de consum nu e legat de o Gestiune.");
 
-        var dejaAlocat = new Dictionary<Guid, decimal>();
+        var dejaAlocat = new AlocatInDocument();
         using var os = bucla.CreeazaObjectSpace();
         foreach (var r in randuri) {
             var simbolCredit = cat.Mapeaza(r.ContCredit);
@@ -452,13 +453,14 @@ static class HandlerConsum {
             var (alocari, ramas) = bucla.Alocare.Aloca(os, lot?.Id, produsId, plan.PredatorId,
                 tip.Registru, plan.Data, r.CantitateCredit, dejaAlocat);
             var valoareAtlas = 0m;
-            foreach (var (lotId, cantitate) in alocari) {
+            foreach (var (lotId, cantitate, valoareLinie) in alocari) {
                 plan.Linii.Add(new LiniePeLot(lotId, tip.Id, cantitate));
-                // Rotunjirea e PER LINIE, ca la materializare: motorul postează un
-                // rând per linie, rotunjit la bani. O sumă nerotunjită aici ar
-                // declara în punte altceva decât postează motorul, iar reziduul de
-                // sub-ban s-ar acumula pe contul de cheltuială.
-                valoareAtlas += Scara.RotunjesteBani(cantitate * HandlerTransfer.PretLot(os, lotId));
+                // Valoarea PER LINIE, exact cum o scrie motorul: rotunjită la bani,
+                // iar pe linia care golește lotul tot soldul valoric rămas (D18-D2)
+                // — `Aloca` o prezice prin aceeași funcție. O sumă calculată altfel
+                // aici ar declara în punte altceva decât postează motorul, iar
+                // reziduul s-ar acumula pe contul de cheltuială.
+                valoareAtlas += valoareLinie;
             }
             // Diferența de EVALUARE a consumului, măsurată ca peste tot (Punte.cs):
             // sursa își descarcă marfa la costul ei, Atlas la costul lotului lui.
@@ -685,7 +687,7 @@ static class HandlerDiferente {
                 $"Depozitul 1C {h.DepozitId} al diminuării de stoc nu e legat de o Gestiune.");
 
         var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
-        var dejaAlocat = new Dictionary<Guid, decimal>();
+        var dejaAlocat = new AlocatInDocument();
         using var os = bucla.CreeazaObjectSpace();
         foreach (var r in bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? []) {
             var simbolCredit = cat.Mapeaza(r.ContCredit);
@@ -699,9 +701,10 @@ static class HandlerDiferente {
             var (alocari, ramas) = bucla.Alocare.Aloca(os, lot?.Id, produsId, plan.PredatorId,
                 tip.Registru, plan.Data, r.CantitateCredit, dejaAlocat);
             var valoareAtlas = 0m;
-            foreach (var (lotId, cantitate) in alocari) {
+            foreach (var (lotId, cantitate, valoareLinie) in alocari) {
                 plan.Minusuri.Add(new LiniePeLot(lotId, tip.Id, cantitate));
-                valoareAtlas += cantitate * HandlerTransfer.PretLot(os, lotId);
+                // Valoarea prezisă de `Aloca` = ce scrie motorul pe linie (D18-D2).
+                valoareAtlas += valoareLinie;
                 Minusuri++;
             }
             var valoareNeacoperita = 0m;

@@ -16,6 +16,13 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 //
 // Invariantul valoric (Σ produse = Σ consumuri) ține valoarea în patrimoniu:
 // asamblarea nu creează și nu distruge valoare, doar o mută între loturi.
+// D18-D2: consumul care GOLEȘTE un lot ia tot soldul valoric rămas (motorul o
+// face înainte de validare, deci invariantul se verifică pe valoarea FINALĂ a
+// consumului). Produsele rămân la valoarea CULEASĂ (`PretEvaluare`): dacă
+// operatorul le-a evaluat la `preț lot × cantitate` iar lotul consumat integral
+// purta un rezidu de cenți, invariantul SEMNALEAZĂ (refuz cu ambele sume) — nu
+// se ajustează tăcut nicio latură; cine culege alege valoarea produsului egală
+// cu consumul (importul o face: `Aloca` prezice exact valoarea motorului).
 // Alocarea AUTOMATĂ pe rețetar rămâne amânată (BPR) — valorile se culeg sau vin
 // din import.
 //

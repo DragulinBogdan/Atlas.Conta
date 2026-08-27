@@ -98,6 +98,21 @@ public static class MotorOperare {
         // înainte de comandă).
         TvaService.VerificaTvaCulesTaxareInversa(os, tipDoc, tvaCulesInainte, erori);
         ValideazaDeclarativ(os, doc, tipDoc, claseTip, erori);
+
+        // D18-D2: ieșirea care GOLEȘTE o cheie de stoc preia valoarea rămasă pe
+        // ea (identificarea specifică: lotul consumat integral iese cu valoarea
+        // lui integrală, nu cu `preț × cantitate` rotunjit). Regula stă în MOTOR,
+        // nu în `PregatesteOperare` al frunzelor, fiindcă are nevoie de cheia și
+        // semnul REGULII de stoc (pe ce `TipStoc`, pe ce latură) — date pe care
+        // frunza nu le cunoaște și nu are voie să le re-potrivească (42a). Ordinea
+        // 33d e respectată: e tot faza de CALCUL, înainte de hook-ul de validare
+        // al tipului (ASM își verifică invariantul valoric pe valorile FINALE) și
+        // înainte de orice materializare. Potrivirea e TOLERANTĂ aici (linia
+        // fără lot e sărită — o refuză validarea de mai jos, cu mesajul ei);
+        // pasul 1 o reface STRICT, pe aceleași reguli.
+        var reguliStoc = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipDoc.ID).ToList();
+        StocService.AplicaValoareIesire(os, doc, PotrivesteReguliStoc(doc, claseTip, reguliStoc, strict: false));
+
         doc.ValideazaOperare(os, erori);
         if (erori.Count > 0)
             throw new OperareException(string.Join("\n", erori));
@@ -106,24 +121,7 @@ public static class MotorOperare {
         //    le verifică, abia apoi se materializează rândurile. Per latură,
         //    regula specifică pe Clasa liniei bate regula generică (Clasa=null =
         //    orice clasă cu Natura=Stoc) — altfel s-ar aplica amândouă.
-        var reguliStoc = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipDoc.ID).ToList();
-        var miscari = new List<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)>();
-        foreach (var d in doc.Detalii) {
-            var info = claseTip.GetValueOrDefault(d.TipMaterialId);
-            foreach (var latura in reguliStoc.GroupBy(r => r.Latura)) {
-                var aplicabile = latura.Where(r => r.ClasaId != null && r.ClasaId == info.ClasaId).ToList();
-                if (aplicabile.Count == 0 && info.Natura == NaturaClasa.Stoc)
-                    aplicabile = latura.Where(r => r.ClasaId == null).ToList();
-                foreach (var regula in aplicabile) {
-                    if (d.LotId == null)
-                        throw new OperareException(
-                            $"Linia cu {info.Denumire} intră în regulile de stoc dar nu are lot.");
-                    var repartitorId = regula.Latura == LaturaDocument.Predator ? doc.PredatorId : doc.PrimitorId;
-                    miscari.Add((d, regula, new MiscareStoc(
-                        new CheieStoc(d.LotId.Value, repartitorId, regula.TipStoc), doc.Data, regula.Semn * d.Cantitate)));
-                }
-            }
-        }
+        var miscari = PotrivesteReguliStoc(doc, claseTip, reguliStoc, strict: true);
         StocService.VerificaSoldIntermediar(os, miscari.Select(m => m.Miscare).ToList());
 
         // 2. Rândurile contabile se CALCULEAZĂ și se validează tot înainte de
@@ -467,6 +465,39 @@ public static class MotorOperare {
             if (politica.NaturaInterzisa != null && info.Natura == politica.NaturaInterzisa)
                 erori.Add($"Liniile cu natura {politica.NaturaInterzisa} nu sunt permise pe {tipDoc.Cod} (linia cu {info.Denumire}).");
         }
+    }
+
+    // Potrivirea liniilor pe regulile de stoc ale tipului — O SINGURĂ definiție
+    // (42a), folosită de două ori în `CalculeazaSiValideaza`: tolerant înaintea
+    // validării (D18-D2 are nevoie de cheile ieșirilor ca să decidă valoarea) și
+    // strict la calculul mișcărilor (linia care intră în reguli fără lot = refuz).
+    // Per latură, regula specifică pe Clasa liniei bate regula generică
+    // (Clasa=null = orice clasă cu Natura=Stoc) — altfel s-ar aplica amândouă.
+    static List<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)> PotrivesteReguliStoc(
+        Document doc,
+        Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
+        List<RegulaStoc> reguliStoc, bool strict) {
+        var miscari = new List<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)>();
+        foreach (var d in doc.Detalii) {
+            var info = claseTip.GetValueOrDefault(d.TipMaterialId);
+            foreach (var latura in reguliStoc.GroupBy(r => r.Latura)) {
+                var aplicabile = latura.Where(r => r.ClasaId != null && r.ClasaId == info.ClasaId).ToList();
+                if (aplicabile.Count == 0 && info.Natura == NaturaClasa.Stoc)
+                    aplicabile = latura.Where(r => r.ClasaId == null).ToList();
+                foreach (var regula in aplicabile) {
+                    if (d.LotId == null) {
+                        if (!strict)
+                            continue;
+                        throw new OperareException(
+                            $"Linia cu {info.Denumire} intră în regulile de stoc dar nu are lot.");
+                    }
+                    var repartitorId = regula.Latura == LaturaDocument.Predator ? doc.PredatorId : doc.PrimitorId;
+                    miscari.Add((d, regula, new MiscareStoc(
+                        new CheieStoc(d.LotId.Value, repartitorId, regula.TipStoc), doc.Data, regula.Semn * d.Cantitate)));
+                }
+            }
+        }
+        return miscari;
     }
 
     // Decizia 15: flag-urile de defalcare din plan (R/M/E/B/F/P) = dimensiuni

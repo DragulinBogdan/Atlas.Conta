@@ -174,6 +174,10 @@ public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteL
 // consum). Valoarea vine din lot (prețul nu se culege). Lotul NU e legat de
 // gestiunea predatoare prin schemă — locația curentă e soldul din registru,
 // iar gardianul de sold intermediar refuză consumul de unde lotul nu există.
+// `preț × cantitate` de aici e valoarea IMPLICITĂ a ieșirii: pe linia care
+// golește cheia de stoc motorul o înlocuiește cu tot soldul valoric rămas
+// (D18-D2, `StocService.AplicaValoareIesire`) — valabil pentru toate frunzele
+// cu ieșiri (BCS, BTR, DSC, LDI−, RLF, ASM consum).
 public class BonConsum : Document {
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.Where(d => d.LotId != null)) {
@@ -209,7 +213,9 @@ public class NotaTransfer : Document, IDocumentCuPV {
     public virtual DateOnly? DataPV { get; set; }
 
     // Valoarea liniei = prețul lotului × cantitate (04: formulă fără re-aplicare
-    // de TVA — prețul lotului e deja valoarea de registru per unitate).
+    // de TVA — prețul lotului e deja valoarea de registru per unitate). Linia
+    // care golește lotul în sursă ia tot soldul valoric rămas (D18-D2, în
+    // motor) — valoarea e comună ambelor laturi, deci restul se MUTĂ pe destinație.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.Where(d => d.LotId != null)) {
             var lot = os.GetObjectByKey<Lot>(d.LotId.Value);

@@ -229,7 +229,7 @@ static class HandlerAsamblare {
         // Consumurile: pin pe lotul sursei, prin supapa 48a (netarea poate să-l fi
         // golit). Un lot creat de ACEST document nu poate fi consumat de el
         // (motorul refuză — 46d), deci acolo pinul cade și se alocă FIFO.
-        var dejaAlocat = new Dictionary<Guid, decimal>();
+        var dejaAlocat = new AlocatInDocument();
         var valoareConsum = 0m;
         using var os = bucla.CreeazaObjectSpace();
         foreach (var (cheie, c) in consumuri) {
@@ -249,7 +249,7 @@ static class HandlerAsamblare {
                 ? lot.Id : (Guid?)null;
             var (alocari, ramas) = bucla.Alocare.Aloca(os, pin, produsId, plan.GestiuneConsum,
                 tip.Registru, plan.Data, c.Cantitate, dejaAlocat);
-            foreach (var (lotId, q) in alocari) {
+            foreach (var (lotId, q, valoareLinie) in alocari) {
                 plan.Consumuri.Add(new Consum(lotId, tip.Id, q));
                 // Rotunjit PER LINIE, exact ca `Asamblare.PregatesteOperare`:
                 // `valoareConsum` e o PREDICȚIE a ceea ce va calcula motorul, iar
@@ -259,7 +259,10 @@ static class HandlerAsamblare {
                 // `round(q × preț, 2)` pe fiecare linie — o sumă neroturnjită aici
                 // se abate de la el cu până la o jumătate de ban pe linie și pică
                 // invariantul pe documentele cu mai multe consumuri.
-                valoareConsum += Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId));
+                // D18-D2: consumul care GOLEȘTE lotul ia tot soldul valoric rămas —
+                // `Aloca` prezice prin aceeași funcție ca motorul, deci invariantul
+                // trece exact și pe lotul golit (riscul 7 al contractului F18).
+                valoareConsum += valoareLinie;
                 LiniiConsum++;
             }
             if (ramas > 0) {

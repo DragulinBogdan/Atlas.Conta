@@ -29,7 +29,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 public class ReturFurnizor : Document {
     // Valoarea e COSTUL lotului (prețul nu se culege — pattern BTR/BCS/DSC);
     // TVA-ul urmează factura furnizorului, deci `pastreazaTvaCules` (ca FCT):
-    // valoarea culeasă/importată bate rotunjirea noastră.
+    // valoarea culeasă/importată bate rotunjirea noastră. Returul care GOLEȘTE
+    // lotul ia tot soldul valoric rămas (D18-D2, în motor): 3xx ajunge exact la
+    // 0 pe lot, iar cenții de rotunjire cad pe 401 (RLF n-are cont de
+    // cheltuială — stornarea achiziției poartă costul integral al lotului).
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         // RLF stornează o ACHIZIȚIE: politica lui e `Deductibil`, deci taxarea

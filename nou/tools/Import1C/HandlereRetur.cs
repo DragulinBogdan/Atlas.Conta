@@ -162,7 +162,7 @@ static class HandlerReturFurnizor {
                 Tva: g.Sum(x => h.InLei(x.SumaTva)),
                 Cantitate: g.Sum(x => Math.Abs(x.Cantitate))));
 
-        var dejaAlocat = new Dictionary<Guid, decimal>();
+        var dejaAlocat = new AlocatInDocument();
         var peCheie = new Dictionary<(string, string), List<LinieRetur>>();
         using var os = bucla.CreeazaObjectSpace();
 
@@ -209,7 +209,7 @@ static class HandlerReturFurnizor {
             var (alocari, ramas) = bucla.Alocare.Aloca(os, pin, produsId, gestiuneId,
                 tip.Registru, plan.Data, cantitate, dejaAlocat);
             var valoareAtlas = 0m;
-            foreach (var (lotId, q) in alocari) {
+            foreach (var (lotId, q, valoareLinie) in alocari) {
                 var linie = new LinieRetur(lotId, tip.Id, q);
                 grup.Linii.Add(linie);
                 var cheie = (nomRef.Id, simbolDebit);
@@ -217,7 +217,9 @@ static class HandlerReturFurnizor {
                     peCheie[cheie] = lista = [];
                 lista.Add(linie);
                 Linii++;
-                var cost = Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId));
+                // Costul prezis de `Aloca` = ce scrie motorul pe linie (D18-D2: pe
+                // lotul golit, tot soldul valoric rămas).
+                var cost = valoareLinie;
                 valoareAtlas += cost;
                 // Ce postează motorul: stornarea achiziției la costul lotului ATLAS
                 // (3xx = 401, cu semn negativ — 46e). Diferența față de cifra

@@ -161,7 +161,7 @@ static class Descarcare1C {
         var bucla = ctx.Bucla;
         var cat = bucla.Catalog;
         var grupuri = new List<Grup>();
-        var dejaAlocat = new Dictionary<Guid, decimal>();
+        var dejaAlocat = new AlocatInDocument();
         using var os = bucla.CreeazaObjectSpace();
 
         var sursa = $"{view}/{docId}";
@@ -216,10 +216,12 @@ static class Descarcare1C {
             // Atlas postează 608 = 381 fiindcă lotul a rămas pe geamănul lui).
             var contare = cat.Contare("DSC", tip.Id);
             var valoareAtlas = 0m;
-            foreach (var (lotId, q) in alocari) {
+            foreach (var (lotId, q, valoareLinie) in alocari) {
                 grup.Linii.Add(new LiniePeLot(lotId, tip.Id, q));
                 LiniiDescarcate++;
-                var cost = Scara.RotunjesteBani(q * HandlerTransfer.PretLot(os, lotId));
+                // Costul prezis de `Aloca` = ce scrie motorul pe linia DSC (D18-D2:
+                // pe lotul golit, tot soldul valoric rămas).
+                var cost = valoareLinie;
                 valoareAtlas += cost;
                 if (contare is { } c)
                     punte.ActualEvaluat(c.Debit, c.Credit, cost);

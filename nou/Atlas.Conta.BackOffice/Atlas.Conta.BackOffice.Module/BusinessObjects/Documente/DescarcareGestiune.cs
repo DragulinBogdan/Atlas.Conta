@@ -16,7 +16,8 @@ public class DescarcareGestiune : Document {
     // pe link-ul DocumentSursa, nu pe dimensiunile registrului.
     public override Guid RepartitorImplicitCredit(DevExpress.ExpressApp.IObjectSpace os) => PredatorId;
 
-    // Valoare = COST (preț lot × cantitate — pattern BTR/BCS, prețul nu se culege).
+    // Valoare = COST (preț lot × cantitate — pattern BTR/BCS, prețul nu se culege;
+    // pe linia care golește lotul motorul pune tot soldul valoric rămas, D18-D2).
     // ValoareTva 0: TVA-ul vânzării e integral pe FCL (P1), DSC nu poartă TVA.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.Where(d => d.LotId != null)) {
