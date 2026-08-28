@@ -191,6 +191,10 @@ static class HandlerTransfer {
         public Dictionary<string, ProdusReclas> ReclasProduse = new(StringComparer.Ordinal);
         public Punte Punte;
         public bool FaraDocument;
+        // Rândurile de reclasificare ale sursei, cu cifra EI: dacă ASM-ul #reclas
+        // nu ajunge operat, puntea nu se scrie (review F4) și rândurile astea se
+        // declară nepostate — contractul 1 rămâne explicat, nu roșu mut.
+        public List<(string Debit, string Credit, decimal Suma)> ReclasRanduri = [];
 
         public bool AreReclas => ReclasProduse.Count > 0;
         // BTR-ul mută liniile pe loturi existente ȘI loturile noi ale
@@ -235,31 +239,31 @@ static class HandlerTransfer {
                         bucla.EsecPlanificare(View, h.Id, ex);
                         return;
                     }
-                    Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
-                        h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
-                    if (!plan.AreDocument && !plan.Punte.AreCeva)
-                        bucla.NumaraSursaFaraCorespondent();
                 }
-                if (plan != null && !plan.AreDocument)
-                    return;
+                // ORDINEA (review advers F4): ASM → BTR → punte. Puntea transcrie
+                // contabil MIȘCAREA (D18-D3), deci se scrie abia după ce mișcarea
+                // există — înainte era scrisă prima, iar un ASM picat lăsa nota
+                // 371 = 381 fără stocul din spatele ei.
                 // 1. ASM #reclas — ÎNAINTEA transferului: lotul nou trebuie să fie
                 //    operat (cu sold) când BTR-ul îl mută. Aceeași dată, aceeași
                 //    unitate; gardianul de sold lucrează pe zile (25d), deci +q și
                 //    −q pe aceeași zi trec.
-                if (plan == null ? cereReclas : plan.AreReclas)
+                var reclas = plan == null ? cereReclas : plan.AreReclas;
+                if (reclas)
                     bucla.ImportaDocument(View, h.Id + SufixReclas,
                         os => MaterializeazaReclas(os, bucla.Catalog, plan, h.Numar),
                         motivFaraDraft: Motive.FaraPlan(plan,
                             "reclasificarea n-a rămas cu nicio linie acoperită"));
+                // Gardul dependentului (ca la asamblare): dacă ASM-ul n-a ajuns
+                // operat, loturile noi n-au sold — nici BTR-ul, nici puntea nu se
+                // scriu (o cheie legată nu se mai revizitează; unitatea se
+                // replanifică integral la rularea următoare, fiindcă #reclas
+                // rămâne nelegat).
+                var asmId = reclas ? bucla.Tinta(View, h.Id + SufixReclas) : null;
+                var asmOperat = !reclas || asmId is { } a && bucla.Stare(a) == StareDocument.Operat;
                 // 2. BTR — pe loturile existente + loturile noi ale reclasificării.
                 if (plan == null ? cereBtr : plan.AreBtr) {
-                    // Gardul dependentului (ca la asamblare): dacă ASM-ul n-a ajuns
-                    // operat, loturile noi n-au sold și transferul ar pica la
-                    // gardian — se refuză curat, cu motiv, nu se transferă pe
-                    // jumătate (o cheie legată nu se mai revizitează).
-                    var reclas = plan == null ? cereReclas : plan.AreReclas;
-                    var asmId = reclas ? bucla.Tinta(View, h.Id + SufixReclas) : null;
-                    if (reclas && (asmId is not { } a || bucla.Stare(a) != StareDocument.Operat))
+                    if (!asmOperat)
                         bucla.ImportaDocument(View, h.Id, _ => null,
                             motivFaraDraft: "reclasificarea (ASM #reclas) n-a ajuns operată "
                                 + "(loturile noi n-au sold de transferat)");
@@ -268,6 +272,32 @@ static class HandlerTransfer {
                             motivFaraDraft: Motive.FaraPlan(plan,
                                 "transferul n-a rămas cu nicio linie de stoc"));
                 }
+                if (plan == null)
+                    return;
+                // 3. Puntea — DUPĂ mișcare. Fără ASM operat nu se scrie: rândurile
+                //    de reclasificare ale sursei se DECLARĂ nepostate, cu cifra
+                //    sursei (nici stocul, nici contabilitatea nu s-au mișcat), ca
+                //    diferența să fie explicată la contractul 1, nu roșu mut.
+                if (!asmOperat) {
+                    foreach (var (debit, credit, suma) in plan.ReclasRanduri)
+                        bucla.Divergenta($"{View}/{h.Id}",
+                            "BTR: reclasificarea (ASM #reclas) n-a ajuns operată — puntea nu se scrie, "
+                            + "rândul sursei rămâne nepostat",
+                            null, debit, credit, suma);
+                    return;
+                }
+                Punti.Scrie(bucla, View, plan.AreDocument ? h.Id + "#punte" : h.Id,
+                    h.Numar, plan.Data, plan.Punte, bucla.ContorPunti, bucla.Avert);
+                if (!plan.AreDocument && !plan.Punte.AreCeva)
+                    bucla.NumaraSursaFaraCorespondent();
+                // 4. Cheia #reclas cerută de sursă, dar fără ASM (review F9: lot la
+                //    valoare 0, cont nou fără Tip, lot deja pe contul nou, nicio
+                //    linie acoperită): se leagă „fără document" — altfel unitatea ar
+                //    rămâne „parțială" la rulările următoare cât BTR-ul ei e operat.
+                if (cereReclas && !plan.AreReclas)
+                    bucla.LeagaFaraDocument(View, h.Id + SufixReclas,
+                        "reclasificarea cerută de sursă n-a produs ASM (valoare 0 / fără Tip / deja pe "
+                        + "contul nou / nicio linie acoperită) — cheie decisă fără document");
             });
     }
 
@@ -476,6 +506,7 @@ static class HandlerTransfer {
                 Reclasificari++;
                 plan.Punte.Categoria("BTR: reclasificare de cont pe transfer")
                     .Tinta1C(simbolDebit, simbolCredit, valoareAtlas);
+                plan.ReclasRanduri.Add((simbolDebit, simbolCredit, r.Suma));
             }
         }
         LoturiReclasificate += plan.ReclasProduse.Count;

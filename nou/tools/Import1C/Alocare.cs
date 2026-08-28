@@ -151,9 +151,13 @@ sealed class AlocareIesire {
     // tot soldul valoric rămas (`StocService.ValoareGolire`, funcția comună).
     // Punțile și divergențele calculate din ea declară exact ce postează motorul,
     // nu cifra cu cenții vechi.
+    // `absoarbeLaGolire: false` = apelantul materializează un document cu
+    // `IDocumentCuIesireFiscala` (RLF, review F5): motorul SARE regula de golire
+    // acolo, deci și predicția rămâne `preț × cantitate` — altfel puntea ar
+    // declara altă cifră decât cea postată.
     public (IReadOnlyList<(Guid LotId, decimal Cantitate, decimal Valoare)> Alocari, decimal Ramas) Aloca(
             IObjectSpace os, Guid? lotDoritId, Guid produsId, Guid gestiuneId, TipStoc tipStoc,
-            DateOnly data, decimal cantitate, AlocatInDocument dejaAlocat) {
+            DateOnly data, decimal cantitate, AlocatInDocument dejaAlocat, bool absoarbeLaGolire = true) {
         var alocari = new List<(Guid LotId, decimal Cantitate, decimal Valoare)>();
         var ramas = cantitate;
         if (cantitate <= 0)
@@ -185,7 +189,7 @@ sealed class AlocareIesire {
         decimal Liber(Guid lotId) => Math.Max(0m, Inainte(lotId).Cantitate);
 
         void Ia(Guid lotId, decimal cantitateLuata) {
-            var valoare = StocService.ValoareGolire(Inainte(lotId), cantitateLuata)
+            var valoare = (absoarbeLaGolire ? StocService.ValoareGolire(Inainte(lotId), cantitateLuata) : null)
                 ?? Scara.RotunjesteBani(cantitateLuata * loturi[lotId].PretLot);
             alocari.Add((lotId, cantitateLuata, valoare));
             dejaAlocat.Adauga(lotId, cantitateLuata, valoare);

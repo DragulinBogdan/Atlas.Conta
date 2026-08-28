@@ -82,3 +82,15 @@ public interface ILinieCuPostareExplicita {
 // explicite atașată programatic unui tip fără reguli (BTR, NIR, ASM) ar
 // injecta note arbitrare — motorul o sare, ca înainte de extensie.
 public interface IDocumentCuPostareExplicita { }
+
+// Documentul ale cărui IEȘIRI de stoc au valoare FISCALĂ, nu de evaluare
+// (F18, review advers F5): suma returului la furnizor e a facturii / notei de
+// credit a furnizorului — `cantitate × prețul lotului`, cifra de pe hârtie —
+// nu soldul valoric rămas pe lot. Regula D18-D2 („ieșirea care GOLEȘTE cheia
+// preia restul", `StocService.AplicaValoareIesire`) SARE documentele care
+// declară marker-ul; cenții de rotunjire rămân pe lot (vizibili în SAF-T S ca
+// `ReziduValoricFaraCantitate`, contorizați de reconcilierea Import1C ca
+// „golită fiscal") și NU cad pe 401 — un cont de furnizori nu poartă reziduul
+// de evaluare al stocului. Marker pe DOCUMENT (nu pe linie): RLF folosește
+// detaliul de bază, iar semantica e a tipului întreg. Declarat de `ReturFurnizor`.
+public interface IDocumentCuIesireFiscala { }

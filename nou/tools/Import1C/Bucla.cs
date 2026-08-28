@@ -323,7 +323,34 @@ sealed class BuclaImport {
     // reluarea ar intra în materializare cu mâna goală.
     public bool EsteCunoscut(string view, string cheie) =>
         legaturi.TryGetValue((Legaturi.Tabela(view), cheie), out var tinta)
-            && stari.TryGetValue(tinta, out var stare) && stare != StareDocument.Draft;
+            && (tinta == FaraDocument
+                || stari.TryGetValue(tinta, out var stare) && stare != StareDocument.Draft);
+
+    // CHEIA DECISĂ FĂRĂ DOCUMENT (F18, review advers F9): o unitate compusă
+    // (transferul cu reclasificare) derivă cheile din SURSĂ, dar planificarea
+    // poate decide legitim că una dintre ele nu produce document (ASM `#reclas`
+    // fără nicio linie acoperită, lot la valoare 0, contul nou fără Tip, lotul
+    // deja pe contul nou). Nelegată, cheia ar fi „inexistentă" la rulările
+    // următoare și `Reluare1C.UnitatePartiala` ar refuza unitatea la nesfârșit
+    // (frații de stoc operați + o cheie lipsă). Se leagă deci cu ținta
+    // `Guid.Empty` — aceeași convenție de „țintă goală" ca rândurile registrului
+    // divergențelor și contoarele de midpoint — și e CUNOSCUTĂ fără document:
+    // `Executa` o sare cu motivul ei, `Tinta` întoarce null, idempotența din
+    // Program.cs n-o numără (nu e document), iar `--deblocheaza` o șterge ca pe
+    // o legătură orfană. Scrisă în ObjectSpace propriu, DUPĂ ce frații au fost
+    // comiși — o decizie, nu o promisiune.
+    public static readonly Guid FaraDocument = Guid.Empty;
+
+    public void LeagaFaraDocument(string view, string cheie, string motiv) {
+        var tabela = (Legaturi.Tabela(view), cheie);
+        if (legaturi.ContainsKey(tabela))
+            return;
+        using var os = provider.CreateObjectSpace();
+        Legaturi.Leaga(os, view, cheie, FaraDocument);
+        os.CommitChanges();
+        legaturi[tabela] = FaraDocument;
+        Sare(view, motiv);
+    }
 
     // Documentul Atlas al unei chei deja importate — pasul 4 are nevoie de el ca
     // FK (descărcarea de gestiune poartă `DocumentSursa` = factura de ieșire,
@@ -689,6 +716,12 @@ sealed class BuclaImport {
         // comportamentul de până acum, re-operarea.
         var draftVechi = Guid.Empty;
         if (legaturi.TryGetValue(cheie, out var tinta)) {
+            if (tinta == FaraDocument) {
+                // Cheie decisă fără document de o rulare anterioară (F9): nu se
+                // reconstruiește nimic — decizia stă până la `--deblocheaza`.
+                Sare(view, motivFaraDraft ?? "cheie decisă fără document de o rulare anterioară");
+                return StareImport.Sarit;
+            }
             if (!stari.TryGetValue(tinta, out var stare)) {
                 // Legătură fără document: baza a fost golită parțial. Se șterge
                 // legătura moartă și se reimportă — altfel fiecare rulare ar

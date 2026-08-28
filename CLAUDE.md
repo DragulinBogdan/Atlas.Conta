@@ -659,7 +659,32 @@ decizia N.
     funcție); `/saft?fel=S`; `--saft-s`; seed pe Flax cere
     `EFCoreProvider=Postgres;`. (g) Deriva per lot a importului (45e) se
     DECLARĂ ca atare (`ReziduValoricFaraCantitate`, `SoldNegativ`), nu se
-    ascunde. (h) Restanțe 74-r1…r15 → jurnal.
+    ascunde. (h) Restanțe 74-r1…r15 → jurnal (74-r4/r6/r9 închise de 75).
+75. **Restanțele grele ale lui S (F18).** (a) **Golirea valorică e a
+    MOTORULUI**: ieșirea care golește cheia (Lot × Repartitor × TipStoc)
+    preia tot soldul valoric rămas — `StocService.ValoareGolire` (pură) +
+    `AplicaValoareIesire` în `MotorOperare`, DUPĂ `PregatesteOperare`,
+    ÎNAINTE de `ValideazaOperare` (33d); frunzele rămân previzualizarea
+    `preț × cantitate`; Import1C prezice prin ACELAȘI helper. Limitele se
+    DECLARĂ, nu se corectează tăcut: retro (golirea se decide la operare pe
+    registrul existent — un document retro nu re-decide linii operate) și
+    fiscal — **RLF NU absoarbe restul** (`IDocumentCuIesireFiscala`, marker
+    pe clasa de document; suma returului = hârtia furnizorului, reziduul
+    rămâne pe lot). (b) **Reclasificarea de cont la transfer = MIȘCARE**:
+    ASM `#reclas` → BTR → NTC-punte, în ordinea asta (puntea transcrie
+    mișcarea; fără ASM operat nu se scrie nimic, rândurile sursei se declară
+    nepostate); cheia cerută de sursă dar fără ASM produs se leagă „fără
+    document" (ținta `Guid.Empty`); codul S al reclasificării = al ASM-ului
+    (74a). (c) **Oracolul golirii** = linia de contract `1'` a
+    reconcilierii: `StocService.VerificaGoliri` (pură, verdicte Exacta/
+    CuValoare/Fiscala/ReDeschisaRetro/Negolita) pe cifra REGISTRULUI
+    (necircular); stornatele pe `DetaliuId` se sar; D4 = defalcare, luna +
+    cumulat. (d) Perf S: `AgregatStoc` o trecere, `CoduriTipPeTipuri`
+    (ancoră, Guid-uri per tip) partajat; ținta < 1 s neatinsă FĂRĂ vinovat
+    dominant — optimizarea următoare doar cu cifră (59). Proba: re-rularea
+    integrală Flax pe codul final, contract 12 luni / 0 FAIL, 381/608 dispar
+    din divergențe, DUK ok, `ReziduValoricFaraCantitate` 861/1.168 →
+    131/132. (e) Restanțe 75-r1…r5 → jurnal.
 
 ## Stare și roadmap
 
@@ -681,7 +706,8 @@ detaliat în jurnal):
   perf (59), mărunțișuri (60–61), NIR scriere (62), LDI+BCS (63), virament (64),
   DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68),
   D300 (69), motor/structură post-D300 (70), D394 (71), partener + ANAF (72),
-  SAF-T D406 L (73), SAF-T S stocuri (74).
+  SAF-T D406 L (73), SAF-T S stocuri (74), restanțele grele ale lui S —
+  golirea valorică în motor + reclasificarea ca mișcare (75).
 
 **Următorul pas**: finisajul clientului (listele §Închidere ale contractelor +
 `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului);
@@ -722,8 +748,7 @@ D394 (35c; precedentul `SaftXml`) · 72-r1 rate-limit ANAF cross-request ·
 neconsumată · 72-r5 smoke vizual XAF al acțiunii ANAF · 72-r6
 `RegistruContraAnaf` real abia la a doua rulare · 72-r7 ordinea la egalitate
 în raportul de reconciliere · 72-r8 `CuiInterogabil("00")` · 72-r9 ecranul
-React de partener · 72-r10 `User` ⇒ 404 vs 403 pe comanda ANAF · 73-r1
-declarația S (stocuri) peste `RegistruStoc` · 73-r2 `T`/`R`/nerezidenți ·
+React de partener · 72-r10 `User` ⇒ 404 vs 403 pe comanda ANAF · 73-r2 `T`/`R`/nerezidenți ·
 73-r3 segmentarea · 73-r4 nomenclatorul NC8 + corecturile `ml`/`pac`/TARIC ·
 73-r5 `Produs.UM` string · 73-r6 ecranul React `Societate`, `CodNc`/UM pe
 produs · 73-r7 OpANAF 1783/2021 (termene/praguri) · 73-r8 kitul DUK J2.2.8
@@ -735,14 +760,20 @@ zecimale, cantitatea negativă nemăsurată · 73-r12 64h (`PartenerulRandului`)
 multi-valută · 73-r17 categoria `op11` · 73-r18 contact/IBAN parteneri ·
 73-r19 422 pe CUI gol/invalid nemăsurat pe HTTP
 · 74-r1 `Owners`/`8038`, custodie · 74-r2 `ShipTo/From` pe BTR,
-`MovementComments` · 74-r3 `InvoiceNo` duplicat în L (date 1C) · 74-r4
-proiecția S O(istoric) · 74-r5 soldul `Consum` neraportat (220 k / 340 k) ·
-74-r6 deriva per lot a importului publicată per lot · 74-r7 `Neincluse` per
-produs în sumar · 74-r8 stornoul S doar pe scenă · 74-r9 `381` creditor din
-NTC (Import1C) · 74-r10 `T`/segmentare pe S · 74-r11 D17-V6 doar privat,
+`MovementComments` · 74-r3 `InvoiceNo` duplicat în L (date 1C) ·
+74-r5 soldul `Consum` neraportat (220 k / 340 k) ·
+74-r7 `Neincluse` per
+produs în sumar · 74-r8 stornoul S doar pe scenă ·
+74-r10 `T`/segmentare pe S · 74-r11 D17-V6 doar privat,
 proba ștergerii logice · 74-r12 ecran React `PoliticaMiscareSaft` · 74-r13
 DUK J2.2.18 · 74-r14 gardian produs de stoc fără cont · 74-r15 `FaraCodNc`
 pe Flax
+· 75-r1 ASM UI: derivarea valorii produsului din consum · 75-r2 scalarea
+rezoluției de tip (`CoduriTipPeTipuri` liniar cu baza; `ApiProiectii.
+CoduriTip` pe hot-path API) · 75-r3 `--continua` fals-roșu pe bază importată
+(idempotența doar prin re-rulare integrală) · 75-r4 `PretEvaluare` 6 zecimale
+pe cantități mari vs invariantul 46d · 75-r5 stornoul fără timbru propriu în
+oracolul golirii
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

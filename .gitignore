@@ -77,3 +77,8 @@ nou/tools/Import1C/reconciliere-*.txt
 nou/tools/Import1C/saft-*.xml
 nou/tools/Import1C/saft-*.xml.*
 nou/tools/Import1C/saft-*-raport.txt
+
+# Artefactele rulărilor Import1C pe date reale (felia 18): baseline-ul F17 salvat
+# înainte de re-rulare și jurnalul rulării detașate. Date reale — nu intră în git.
+nou/tools/Import1C/baseline-f17/
+nou/tools/Import1C/run-f18/

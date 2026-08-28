@@ -352,6 +352,19 @@ per felie):
   review-ul a găsit `MovementReference` neunic (reprodus pe fișierul
   livrat), S1 oarbă la fișier (⇒ S5), codul politicii nere-verificat.
   Decizia 74.
+- **Pasul 5, felia 18 — restanțele grele ale lui S (74-r4/r6/r9) —
+  executată** (contract: `docs/api/p5-felia-restante-s-contract.md`; 4 pași +
+  review advers F1–F10 cu fix-uri, un agent per pas): bc8f8ea/ba233f6 (pas 1,
+  `AgregatStoc` + `CoduriTipPeTipuri`, 4,0→2,9 s, ținta < 1 s neatinsă fără
+  vinovat dominant), 7436988 (pas 2, D18-D2 motor: golirea preia valoarea
+  rămasă), 06f9fc4 (pas 3, D18-D3/D4 Import1C: reclasificarea ca mișcare,
+  D18-V3 pe clonă), fix-urile + proba finală odată cu decizia. Închidere:
+  re-rularea integrală Flax pe codul final (1h52, contract îndeplinit 12
+  luni, 0 FAIL), oracolul golirii verde 12/12, 381/608 dispar din registrul
+  divergențelor, `--saft-s` 09/12 DUK ok, punțile == ASM `#reclas` la cent,
+  `ReziduValoricFaraCantitate` 861/1.168 → 131/132. Incident: prima rulare
+  a mers pe binarul pre-fix (pană de net, sesiune moartă) — refăcută.
+  Decizia 75.
 - Restul: finisaj de client (listele §Închidere ale contractelor +
   `docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului) și
   feliile de scriere rămase (NTC/ASM/retururi, la cerere).

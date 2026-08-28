@@ -80,8 +80,26 @@ public static class StocService {
     // −Magazie + Consum, BTR: −sursă + destinație) ia valoarea de pe PRIMA
     // mișcare negativă care golește; celelalte o poartă (restul se MUTĂ pe
     // consum/destinație — corect: valoarea nu se pierde).
+    //
+    // LIMITA regulii (F18, review advers F1): golirea se decide LA MOMENTUL
+    // OPERĂRII, pe rândurile care EXISTĂ atunci în registru cu `Data ≤ Data`
+    // documentului. O linie decisă „nu golește" nu e re-decisă de un document
+    // RETRO operat mai târziu (lot 2 × 20,01: BCS 10.05 −1 ⇒ 10,01 și rest
+    // 1/10,00; BCS 05.05 −1 operat DUPĂ ⇒ prefix-ul ≤ 05.05 nu vede rândul din
+    // 10.05, deci 10,01 ⇒ cheia rămâne 0/−0,01). Nu e „convenția gardianului
+    // 25d" (gardianul e pe ziua întreagă, valoarea e pe registrul văzut):
+    // retro-ul / re-ordonarea intra-zi LASĂ reziduu, iar el se DECLARĂ (SAF-T S
+    // `ReziduValoricFaraCantitate`; oracolul `VerificaGoliri` de mai jos îl
+    // clasifică „re-deschisă retro"), nu se corectează tăcut. Probat în
+    // ModelCheck D18-V2 (retro) ca fapt documentat.
+    //
+    // Documentele cu IEȘIRE FISCALĂ (`IDocumentCuIesireFiscala` — RLF) sunt
+    // SĂRITE: suma lor e a hârtiei furnizorului, `preț × cantitate`, nu a
+    // lotului (review F5); reziduul rămâne pe lot, declarat.
     public static void AplicaValoareIesire(IObjectSpace os, Document doc,
         IReadOnlyList<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)> miscari) {
+        if (doc is IDocumentCuIesireFiscala)
+            return;
         var loturiIesire = miscari.Where(m => m.Miscare.Cantitate < 0m)
             .Select(m => m.Miscare.Cheie.LotId).Distinct().ToList();
         if (loturiIesire.Count == 0)
@@ -100,6 +118,83 @@ public static class StocService {
             acumulat[cheie] = acumulat.GetValueOrDefault(cheie)
                 + new SoldStoc(miscare.Cantitate, regula.Semn * detaliu.Valoare);
         }
+    }
+
+    // ───────────── Oracolul golirii: verificarea regulii D18-D2 DIN REGISTRU ─────────────
+    //
+    // Funcție PURĂ peste rândurile unei singure chei (Lot × Repartitor ×
+    // TipStoc), ca verificarea să nu fie circulară cu regula (review advers
+    // F18, F2: contractul D4 al Import1C verifica golirea doar cantitativ și
+    // cifra valorică venea din ACEEAȘI `ValoareGolire` pe care o folosea
+    // puntea). Aici se întreabă REGISTRUL: pentru fiecare rând de IEȘIRE al
+    // cheii, cu rândurile pe care motorul le VEDEA la operarea lui (`Data ≤`
+    // data rândului ȘI operate ÎNAINTE — `Operat ≤`; deschiderea, fără
+    // document, se vede întotdeauna; liniile aceluiași document au același
+    // `Operat`, deci se văd), soldul cantitativ DUPĂ rând e 0? Dacă da, soldul
+    // VALORIC pe același set trebuie să fie 0,00 — altfel regula n-a lucrat
+    // (`CuValoare`). Rândurile STORNATE (perechea original + invers pe același
+    // `DetaliuId`, review F3) se sar amândouă: nu mai există ca ieșire.
+    //
+    // Verdictele:
+    //   * `Exacta`          — golire cu Σ valoare 0,00 (regula a lucrat);
+    //   * `CuValoare`       — golire la operare cu Σ valoare ≠ 0 — DEFECT
+    //                         (regula n-a lucrat sau rândul e scris pe lângă motor);
+    //   * `Fiscala`         — golire a unui document cu `IDocumentCuIesireFiscala`
+    //                         (RLF): reziduul rămâne pe lot PRIN CONTRACT;
+    //   * `ReDeschisaRetro` — la operare NU golea (sau golea exact), dar în
+    //                         registrul de AZI, la data rândului, cheia e 0 cu
+    //                         valoare ≠ 0 și există rânduri RETRO (`Data ≤`, operate
+    //                         DUPĂ el) — limita F1, declarată, nu defect;
+    //   * `Negolita`        — rând de ieșire pe cheie negolită; se întoarce DOAR
+    //                         când `Valoare ≠ round(cantitate × preț)` (altă cauză —
+    //                         proba `--sabotaj` a Import1C).
+    // `Reziduu` = `Valoare − round(Cantitate × pretLot)`: cât a mutat rândul de pe
+    // stoc pe contrapartidă față de evaluarea naivă (categoria D18-D4).
+    public readonly record struct RandGolire(Guid? DocumentId, Guid? DetaliuId, DateOnly Data, DateTime? Operat,
+        decimal Cantitate, decimal Valoare, bool Storno, bool IesireFiscala = false);
+
+    public enum FelGolire { Negolita, Exacta, CuValoare, Fiscala, ReDeschisaRetro }
+
+    public sealed record VerdictGolire(Guid DocumentId, Guid? DetaliuId, DateOnly Data, FelGolire Fel,
+        decimal CantitateDupa, decimal ValoareDupa, decimal CantitateLaData, decimal ValoareLaData,
+        decimal Reziduu, int RanduriRetro);
+
+    public static List<VerdictGolire> VerificaGoliri(IReadOnlyList<RandGolire> randuriCheie, decimal pretLot,
+        DateOnly? doarDin = null, DateOnly? doarPanaLa = null) {
+        var stornate = randuriCheie.Where(r => r.Storno && r.DetaliuId != null)
+            .Select(r => r.DetaliuId.Value).ToHashSet();
+        var verdicte = new List<VerdictGolire>();
+        foreach (var r in randuriCheie) {
+            if (r.Cantitate >= 0m || r.Storno || r.DocumentId is not { } documentId)
+                continue;
+            if (r.DetaliuId is { } detaliuId && stornate.Contains(detaliuId))
+                continue;
+            if (doarDin is { } din && r.Data < din || doarPanaLa is { } panaLa && r.Data > panaLa)
+                continue;
+            var reziduu = r.Valoare - Scara.RotunjesteBani(r.Cantitate * pretLot);
+            var laData = randuriCheie.Where(m => m.Data <= r.Data).ToList();
+            var vazute = laData
+                .Where(m => m.Operat == null || r.Operat == null || m.Operat <= r.Operat).ToList();
+            var retro = laData.Count(m => m.Operat != null && r.Operat != null && m.Operat > r.Operat);
+            var cantitateDupa = vazute.Sum(m => m.Cantitate);
+            var valoareDupa = vazute.Sum(m => m.Valoare);
+            var cantitateLaData = laData.Sum(m => m.Cantitate);
+            var valoareLaData = laData.Sum(m => m.Valoare);
+            FelGolire fel;
+            if (cantitateDupa == 0m && valoareDupa != 0m && !r.IesireFiscala)
+                fel = FelGolire.CuValoare;
+            else if (cantitateLaData == 0m && valoareLaData != 0m && retro > 0)
+                fel = FelGolire.ReDeschisaRetro;
+            else if (cantitateDupa == 0m)
+                fel = r.IesireFiscala ? FelGolire.Fiscala : FelGolire.Exacta;
+            else
+                fel = FelGolire.Negolita;
+            if (fel == FelGolire.Negolita && reziduu == 0m)
+                continue;
+            verdicte.Add(new VerdictGolire(documentId, r.DetaliuId, r.Data, fel, cantitateDupa, valoareDupa,
+                cantitateLaData, valoareLaData, reziduu, retro));
+        }
+        return verdicte;
     }
 
     public static decimal Sold(IObjectSpace os, CheieStoc cheie, DateOnly? panaLa = null) {

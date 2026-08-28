@@ -89,3 +89,4 @@
 | 72 | [Pasul 5, felia 15 — partener + ANAF (adresa, `Judet`, sincronizarea ANAF)](072-p5-felia15-partener-anaf.md) | 2026-08-26 | activă |
 | 73 | [Pasul 5, felia 16 — SAF-T (D406 L): `Societate`, `UnitateMasura`, `CodNc`, `RolTert`, proiecție + fișier XML + DUK](073-p5-felia16-saft.md) | 2026-08-26 | activă |
 | 74 | [Pasul 5, felia 17 — SAF-T S (stocuri): `PoliticaMiscareSaft`, proiecție peste `RegistruStoc`, cusăturile S1–S5, fișier + DUK](074-p5-felia17-saft-s.md) | 2026-08-27 | activă |
+| 75 | [Pasul 5, felia 18 — restanțele grele ale lui S: golirea valorică (motor), reclasificarea ca mișcare, perf proiecție](075-p5-felia18-restante-s.md) | 2026-08-29 | activă |

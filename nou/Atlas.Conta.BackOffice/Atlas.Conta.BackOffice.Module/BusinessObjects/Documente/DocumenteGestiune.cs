@@ -176,8 +176,9 @@ public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteL
 // iar gardianul de sold intermediar refuză consumul de unde lotul nu există.
 // `preț × cantitate` de aici e valoarea IMPLICITĂ a ieșirii: pe linia care
 // golește cheia de stoc motorul o înlocuiește cu tot soldul valoric rămas
-// (D18-D2, `StocService.AplicaValoareIesire`) — valabil pentru toate frunzele
-// cu ieșiri (BCS, BTR, DSC, LDI−, RLF, ASM consum).
+// (D18-D2, `StocService.AplicaValoareIesire`) — valabil pentru frunzele cu
+// ieșiri de EVALUARE (BCS, BTR, DSC, LDI−, ASM consum); RLF declară
+// `IDocumentCuIesireFiscala` și rămâne la `preț × cantitate` (review F5).
 public class BonConsum : Document {
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.Where(d => d.LotId != null)) {

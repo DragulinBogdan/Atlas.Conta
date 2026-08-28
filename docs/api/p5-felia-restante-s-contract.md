@@ -98,6 +98,26 @@ două ori (loturile coincid, verificat în `RegistruStoc`). Generalizare:
   după prima). Soldul „la dată" = prefix-sum ≤ data documentului, aceeași
   convenție ca gardianul 25d; rândurile deja scrise ale ACELUIAȘI document
   (re-operare) nu se numără de două ori.
+- **Amendament (review advers F1/F10, 2026-08-28)**: golirea e decisă **LA
+  MOMENTUL OPERĂRII, pe rândurile care EXISTĂ atunci în registru** cu `Data ≤`
+  data documentului — NU „convenția gardianului 25d" (gardianul e pe ziua
+  întreagă, valoarea e pe registrul văzut). Invariantul „cheie golită ⇒
+  0/0,00" NU ține la operare retro / re-ordonare intra-zi: o linie decisă
+  „nu golește" nu e re-decisă de un document retro operat ulterior (probat:
+  lot 2 × 20,01, BCS 10.05 −1 ⇒ 10,01 și rest 1/10,00, BCS retro 05.05 −1
+  operat după ⇒ prefix-ul ≤ 05.05 nu vede rândul din 10.05 ⇒ 10,01 ⇒ cheia
+  0/−0,01). Reziduul retro se DECLARĂ (S: `ReziduValoricFaraCantitate`; D4:
+  „golită la operare, re-deschisă retro", avertisment cu măsurarea rândului
+  retro), nu se corectează tăcut. Helper-ul e în MOTOR (42a), nu în
+  `PregatesteOperare` al frunzelor. ModelCheck D18-V2 (r) ține proba ca FAPT
+  documentat, nu ca invariant.
+- **Amendament (review F5)**: RLF NU absoarbe restul — suma returului e a
+  facturii/notei de credit a furnizorului (`q × preț`), nu a lotului. Contract
+  pe tipul de document, fără migrație: `IDocumentCuIesireFiscala` (marker în
+  `Comun/Interfete.cs`, declarat de `ReturFurnizor`); `AplicaValoareIesire`
+  sare documentele care îl declară; `Alocare.Aloca(absoarbeLaGolire: false)`
+  face același lucru în Import1C. Reziduul rămâne pe lot (S), contorizat de
+  D4 ca „golită fiscal".
 - Storno: rândurile inverse copiază valorile (neschimbat). Anularea:
   neschimbată. Dry-run (`Valideaza`) = același calcul (calculează →
   validează → materializează, 33d).
@@ -190,6 +210,12 @@ două ori (loturile coincid, verificat în `RegistruStoc`). Generalizare:
 2. D2: cheia golită la data D dar cu rânduri ULTERIOARE (document retro):
    soldul „la dată" e prefix-sum ≤ D; rândurile după D nu se văd — rezultat
    corect pentru registrul la D; gardianul 25d păzește negativul.
+   **Amendat (review F1)**: cazul invers — documentul RETRO (Data < D, operat
+   DUPĂ linia din D) — lasă reziduu pe cheie, fiindcă nici linia din D (nu
+   vedea retro-ul), nici retro-ul (nu vede rândul din D) nu golesc; regula nu
+   re-decide linii deja operate. Reziduul e vizibil în S și clasificat de
+   oracolul D4 „re-deschisă retro" (măsurat: există un rând cu `Data ≤` și
+   `DataOperare >`), nu ascuns.
 3. D2: două linii ale aceluiași document pe aceeași cheie; DSC spart pe
    loturi de generator (37b) apoi recalculat la operare; BTR care golește
    sursa — restul ajunge pe destinație (probă S1 pe ambele gestiuni).
@@ -449,3 +475,140 @@ contorizat. (d) `PretEvaluare` la 6 zecimale: pe cantități ≥ ~10.000 `round(
 (e) Reclasificări din alte tipuri 1C decât `TransferDeMarfuri`: 0 (gardul
 `HandlerAsamblare` n-a lovit nimic). (f) Codul S al reclasificării (20/70) —
 de decis la închidere (riscul 8).
+
+**Review advers (pasul 5, 2026-08-28) — F1–F10 → fix / restanță.**
+
+- **F1 (D2, invariantul nu ține la retro) + F10 (docs)** → DOCS + PROBĂ:
+  D18-D2 și riscul 2 amendate mai sus (golirea e decisă la operare pe registrul
+  existent; retro/re-ordonarea intra-zi lasă reziduu declarat); comentariul
+  `StocService.AplicaValoareIesire` spune limita; ModelCheck D18-V2 (r)
+  reproduce proba review-ului (lot 2 × 20,01, BCS 10.05 apoi BCS retro 05.05 ⇒
+  ambele `round(1 × preț)`, cheia 0/−0,01) ca FAPT, plus S 06/2026 pe privat
+  (intrarea 0→0 @ −0,01, `ReziduValoricFaraCantitate` o numără).
+- **F2 (D4 = oracol, blocant)** → FIX: logica pură extrasă în MOTOR —
+  `StocService.VerificaGoliri(rânduriCheie, prețLot, din?, panăLa?)` peste
+  `RandGolire` (DocumentId, DetaliuId, Data, Operat, Cantitate, Valoare, Storno,
+  IesireFiscala) cu verdicte `Exacta / CuValoare / Fiscala / ReDeschisaRetro /
+  Negolita`: pe rândurile VĂZUTE la operare (`Data ≤` + `Operat ≤`, deschiderea
+  inclusă) cheia golită cantitativ trebuie să aibă Σ valoare 0,00 — cifra e a
+  REGISTRULUI, nu a `ValoareGolire` (necircular). `ReconciliereLuna.
+  ReziduuAbsorbit` o consumă: `CuValoare` ⇒ linie FAIL a contractului (cheia,
+  lotul, Σ) + linia de contract `1'. D18-D4 oracolul golirii`; `ReDeschisaRetro`
+  ⇒ avertisment doar dacă există EFECTIV un rând cu `Data ≤` și `DataOperare >`
+  (măsurat, nu presupus); `Negolita` cu reziduu ≠ 0 ⇒ avertismentul de azi
+  („altă cauză"). Probată în ModelCheck D18-V2 (o) cu rânduri sintetice
+  (golire corectă ⇒ `Exacta`; valoare dublată ⇒ `CuValoare` Σ −10,00; retro ⇒
+  `ReDeschisaRetro`; stornat ⇒ 0 verdicte; fiscal ⇒ `Fiscala`; fereastra
+  lunii) și pe scena reală (r).
+- **F3 (D4 storno)** → FIX: în aceeași funcție, perechea original + invers pe
+  `DetaliuId` se sare (`stornate`), deci originalul unei linii stornate nu mai
+  intră în categorie; probat (o).
+- **F4 (D3 ordinea)** → FIX: `HandlerTransfer.Importa` = ASM → BTR → punte;
+  puntea condiționată de ASM Operat (ca BTR-ul); dacă ASM-ul pică, puntea NU
+  se scrie și rândurile de reclasificare ale sursei se DECLARĂ nepostate
+  (`plan.ReclasRanduri`, categoria „BTR: reclasificarea (ASM #reclas) n-a
+  ajuns operată — puntea nu se scrie, rândul sursei rămâne nepostat") ⇒
+  contractul 1 explicat, nu roșu mut; unitatea se replanifică integral la
+  rularea următoare (#reclas rămâne nelegat).
+- **F5 (RLF, decizie)** → FIX: `IDocumentCuIesireFiscala` (marker pe
+  DOCUMENT — RLF folosește detaliul de bază, deci un marker pe linie ar fi
+  cerut frunză + migrație), declarat de `ReturFurnizor`; `AplicaValoareIesire`
+  sare documentele care îl declară; `Alocare.Aloca(absoarbeLaGolire: false)`
+  din `HandlerReturFurnizor` prezice aceeași cifră. D18-V2 (g) rescris: RLF
+  1 buc pe restul 1/10,00 ⇒ linia −10,01, 3xx = 401 −10,01, lotul 0/−0,01,
+  `ValoareTva = −round(10,01 × cota)` (baza TVA = valoarea liniei — F5
+  original închis). D4: `Fiscala` contorizată („goliri fiscale RLF, reziduul
+  rămas pe lot Σ"), nu FAIL.
+- **F6 (ASM UI: valoarea produsului cu cenți)** → RESTANȚĂ 75-r: operatorul
+  care evaluează produsul la `preț × cantitate` pe un lot golit primește refuz
+  pe invariantul 46d cu cenți (probat D18-V2 (h)); derivarea automată a
+  valorii produsului din consum rămâne de proiectat (review: „UI-ul cere
+  operatorului să ghicească restul").
+- **F7 (D4 perf O(istoric))** → FIX: `ReziduuAbsorbit` citește DOAR ieșirile
+  LUNII (`Data ∈ [Prima, Ultima]`) și istoricul loturilor lor (chunk-uri de
+  500); cumulatul per cont trăiește în `Stare.ReziduuAbsorbitCumulat`
+  (raportul `[1] D18-D4` arată luna + cumulatul, `Δ fără reziduu` pe cumulat).
+- **F8 (`CoduriTipPeTipuri` scalare)** → RESTANȚĂ 75-r: listarea tuturor
+  documentelor per tip (0,4 s pe 205 k) crește liniar cu baza; alternativa
+  (join pe ancora `TipDocument` sau discriminator materializat) se măsoară
+  când cifra o cere (59).
+- **F9 (D3, `#reclas` cerut fără ASM)** → FIX: `BuclaImport.LeagaFaraDocument`
+  scrie legătura cu ținta `Guid.Empty` (convenția „țintă goală" a registrului
+  divergențelor/midpoint); `EsteCunoscut` ⇒ true, `Tinta` ⇒ null, `Executa`
+  ⇒ skip cu motiv, `--deblocheaza` o șterge ca orfană, idempotența din
+  Program.cs n-o numără. `HandlerTransfer` o cheamă când `Cere` a cerut
+  `#reclas` dar planul n-a produs ASM (valoare 0 / fără Tip / deja pe cont /
+  nicio linie acoperită) — după BTR și punte, ca decizie, nu promisiune.
+- Verificări: ModelCheck AMBELE profiluri (cifrele în raportul agentului);
+  Import1C build Debug verde; nicio schimbare de API (marker-ul e pe clasa de
+  document, nu pe DTO) ⇒ openapi neatins. **Rămâne de probat pe Flax**
+  (re-rularea finală, pasul 4): oracolul `1'. D18-D4` verde pe 12 luni, cifra
+  „goliri fiscale RLF", `ReDeschisaRetro` (aștept 0 — importul e cronologic),
+  ordinea ASM → BTR → punte pe cele 169+ reclasificări, `#reclas` legat fără
+  document pe cazul valoare 0 (03/2025).
+
+**Pasul 4 (re-rularea integrală Flax, 2026-08-28 → 29) — proba finală, pe
+codul cu fix-urile review-ului.**
+
+*Incident de execuție, consemnat*: prima rulare integrală (28.08 00:00–02:05,
+exit 0, contract îndeplinit 12 luni) a rulat pe binarul Release construit la
+23:59 — codul PASULUI 3, FĂRĂ fix-urile F2–F9 (agentul de fix a editat
+sursele la 00:24–00:33, DUPĂ lansare; sesiunea a murit la 01:16 pe o pană de
+net, fără commit). Raportul ei are formatul vechi al blocului D4 (fără
+oracolul `1'`), deci NU e proba contractului; artefactele stau în
+`run-f18\pas3-binar\` ca dovadă separată că pașii 1–3 țin pe anul întreg.
+Proba finală = rularea de mai jos, pe binarul reconstruit din working
+tree-ul cu fix-uri.
+
+*Rularea* (`--recreeaza --cititori` + `--reclasifica`, detașat): 28.08
+23:32:48 → 29.08 01:25:38, import 1h52 (deschidere 0:52, documente 1:50:56),
+exit 0 + 0, **CONTRACT ÎNDEPLINIT, 0 FAIL**, 932 avertismente; reclasificarea
+finală 25 s / 23 avertismente / 0 eșecuri.
+
+- **Oracolul `1'. D18-D4` (F2): VERDE pe toate cele 12 luni, 0 goliri cu
+  valoare rămasă** (8.734–11.318 goliri verificate/lună pe 8.174–10.524 chei
+  exacte). Goliri fiscale RLF (F5): 19/18/26/35/53/56/40/23/27/36/43/24 pe
+  luni (Σ 400), TOATE cu reziduul rămas pe lot Σ 0,00 (valoarea fiscală a
+  coincis cu restul). `ReDeschisaRetro`: 0 în 11 luni și **1 în aprilie**
+  (aștept era 0): lot `01a04a20…` × Marfuri, document din 10.04 cu 1 rând
+  retro, valoare la dată 0,01 — limita F1 pe date reale (sursa are un
+  document cu `Data` anterioară operat mai târziu chiar și în ordonarea
+  cronologică pe timestamp), declarată cu măsurarea rândului retro, nu
+  ascunsă.
+- **Reclasificarea (D3), cumulat pe an**: 556 rânduri de punte, din care
+  **552 ca MIȘCARE** (552 loturi noi, 81 chei discriminate, 0 linii noi
+  netransferate, 0 „deja pe contul nou", 0 fără Tip), 2 cu lotul la valoare 0
+  (calea veche, contorizate), 169 documente în aceeași gestiune (fără BTR),
+  0 rânduri nerezolvate. Ordinea ASM → BTR → punte (F4) a ținut peste tot
+  (0 apariții ale categoriei „puntea nu se scrie"). **F9 a lovit exact o
+  dată**: `1 × TransferDeMarfuri: reclasificarea cerută de sursă n-a produs
+  ASM … — cheie decisă fără document` (cazul valoare-0 din 03/2025).
+- **D4 la 31.12** (luna + cumulat): 371 cumulat 40,18 / 607 −40,18, 3024
+  0,04 / 6024 −0,04, 3028 0,01 / 6028 −0,01; **`Δ fără reziduu` 371 =
+  136.746,56, identic la cent cu rularea pe binarul pas-3**; reziduul pe 401
+  al rulării pas-3 (−0,03) a DISPĂRUT — efectul F5 (RLF nu mai absoarbe,
+  cenții rămân pe lot).
+- **Diff-ul raportului vs baseline-ul F17** (`reconciliere-20260825-203703`
+  → `reconciliere-20260828-233406`): 530 de linii schimbate, TOATE atribuite
+  — conturile 371/607/3028/6028/3024/6024/303 (mutările punților de
+  reclasificare + D4), blocul `[1] D18-D4` nou, contoarele categoriilor din
+  `[3]` (mai puține chei de justificat: 575 vs baseline, multe rezolvate
+  structural de mișcare); **381/608 dispar INTEGRAL din registrul
+  divergențelor** (74-r9: ±80 și ±4.800 pe toate lunile erau dubla creditare;
+  acum 0 apariții), 6588 (0,01 × 7 luni) dispare, 6584 scade 0,02 → 0,01.
+  Nicio linie schimbată în afara acestor cauze.
+- **SAF-T S (09 și 12/2025)**: **DUK ok (J2.2.8), 0 atenționări** pe ambele;
+  S3 = 2 conturi diferite (371, 3028 — perechea ASM-stoc / NTC-balanță);
+  **punțile de reclasificare == ASM `#reclas` per cont LA CENT** pe ambele
+  orizonturi, verificat SQL pe toate cele 5 conturi atinse (09: 3028
+  52.493,59−514,03 = 51.979,56, 371 net −57.305,20, 303 10.125,64, 381
+  −4.800,00, 3021 0; 12: 371 −88.712,43, 381 −2.620,00 …) ⇒ componenta
+  „reclasificare" a lui S3 e exact 0; **381 nu mai apare deloc în S3**
+  (baseline: creditor). `ReziduValoricFaraCantitate`: **131 (09) / 132 (12)
+  chei, Σ 6.231,84/6.231,85 — de la 861/1.168 în F17**: D2 a stins deriva
+  per lot a ieșirilor; rămân loturile deschiderii + limitele declarate
+  (F1 retro, F5 fiscal); `SoldNegativ` 4 chei Σ −0,04 (deschidere, 45e).
+- Riscul 8 (codul S al reclasificării = 20/70, „iese ca asamblare"):
+  DECIS — rămâne 20/70. Codul de mișcare e al TIPULUI × registrului (74a),
+  iar mișcarea reclasificării E un ASM; un cod distinct ar cere politică
+  per-document, contra lui 74a. DUK nu o contrazice.

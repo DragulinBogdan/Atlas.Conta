@@ -206,8 +206,11 @@ static class HandlerReturFurnizor {
             // din produs × gestiune, cu raport.
             var pin = lot != null && lot.Id != Guid.Empty && !EsteLotPropriu(lotRef, h.Id) ? lot.Id : (Guid?)null;
             var cantitate = Math.Abs(r.CantitateDebit);
+            // Fără absorbția restului la golire: RLF declară `IDocumentCuIesireFiscala`
+            // (review F5) — suma returului e `preț × cantitate`, ca pe hârtia
+            // furnizorului; motorul sare regula D18-D2 pe el, deci și predicția.
             var (alocari, ramas) = bucla.Alocare.Aloca(os, pin, produsId, gestiuneId,
-                tip.Registru, plan.Data, cantitate, dejaAlocat);
+                tip.Registru, plan.Data, cantitate, dejaAlocat, absoarbeLaGolire: false);
             var valoareAtlas = 0m;
             foreach (var (lotId, q, valoareLinie) in alocari) {
                 var linie = new LinieRetur(lotId, tip.Id, q);
@@ -217,8 +220,8 @@ static class HandlerReturFurnizor {
                     peCheie[cheie] = lista = [];
                 lista.Add(linie);
                 Linii++;
-                // Costul prezis de `Aloca` = ce scrie motorul pe linie (D18-D2: pe
-                // lotul golit, tot soldul valoric rămas).
+                // Costul prezis de `Aloca` = ce scrie motorul pe linie
+                // (`round(q × preț lot)` — fiscal, nu soldul rămas).
                 var cost = valoareLinie;
                 valoareAtlas += cost;
                 // Ce postează motorul: stornarea achiziției la costul lotului ATLAS

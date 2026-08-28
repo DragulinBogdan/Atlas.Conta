@@ -15717,6 +15717,68 @@ void VerificaValoareIesire(bool privat) {
         lotA.PretUnitar == 10.006667m && Scara.RotunjesteBani(1m * lotA.PretUnitar) == 10.01m
         && Scara.RotunjesteBani(3m * lotA.PretUnitar) == 30.02m);
 
+    // ---------------- (o) ORACOLUL golirii — funcția pură, pe rânduri sintetice (review F2/F3) ----------------
+    // Aceeași funcție o folosește reconcilierea Import1C (D18-D4): golirea se
+    // verifică din REGISTRU (Σ valoare pe rândurile văzute la operare), nu prin
+    // `ValoareGolire` — altfel oracolul ar fi circular cu regula.
+    {
+        var t0 = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var docA = Guid.NewGuid(); var docB = Guid.NewGuid(); var docC = Guid.NewGuid();
+        var detA = Guid.NewGuid(); var detB = Guid.NewGuid(); var detC = Guid.NewGuid();
+        StocService.RandGolire Deschidere() => new(null, null, dataLot, null, 3m, 30.02m, false);
+        // 1. Golire corectă: 1+1+1 la 10,01 / 10,01 / 10,00 ⇒ Exacta, reziduul rândului golitor −0,01.
+        var corect = new List<StocService.RandGolire> {
+            Deschidere(),
+            new(docA, detA, new DateOnly(2026, 5, 1), t0, -1m, -10.01m, false),
+            new(docB, detB, new DateOnly(2026, 5, 2), t0.AddMinutes(1), -1m, -10.01m, false),
+            new(docC, detC, new DateOnly(2026, 5, 3), t0.AddMinutes(2), -1m, -10.00m, false),
+        };
+        var vCorect = StocService.VerificaGoliri(corect, lotA.PretUnitar);
+        // 2. Valoarea DUBLATĂ pe ultimul rând (registru scris pe lângă motor): cheia golită rămâne cu −10,00 ⇒ CuValoare.
+        var dublat = corect.Take(3).Append(new(docC, detC, new DateOnly(2026, 5, 3), t0.AddMinutes(2), -1m, -20.00m, false)).ToList();
+        var vDublat = StocService.VerificaGoliri(dublat, lotA.PretUnitar);
+        // 3. Retro: 10.05 −1 (10,01, operat primul), apoi 05.05 −1 (10,01, operat DUPĂ) pe lot 2 × 20,01 ⇒
+        //    la operare niciunul nu golea; azi, la 10.05, cheia e 0/−0,01 ⇒ ReDeschisaRetro pe rândul din 10.05.
+        var retro = new List<StocService.RandGolire> {
+            new(null, null, dataLot, null, 2m, 20.01m, false),
+            new(docA, detA, new DateOnly(2026, 5, 10), t0, -1m, -10.01m, false),
+            new(docB, detB, new DateOnly(2026, 5, 5), t0.AddMinutes(1), -1m, -10.01m, false),
+        };
+        var vRetro = StocService.VerificaGoliri(retro, 10.005m);
+        // 4. Rândul golitor STORNAT (perechea pe DetaliuId): nu mai e ieșire ⇒ niciun verdict pe el (F3).
+        var stornat = corect.Append(new(docC, detC, new DateOnly(2026, 5, 20), t0.AddMinutes(2), 1m, 10.00m, true)).ToList();
+        var vStornat = StocService.VerificaGoliri(stornat, lotA.PretUnitar);
+        // 5. Golire FISCALĂ (RLF): −1 la 10,01 pe restul 1/10,00 ⇒ cheia 0/−0,01 prin contract ⇒ Fiscala, nu defect.
+        var fiscal = corect.Take(3).Append(new(docC, detC, new DateOnly(2026, 5, 3), t0.AddMinutes(2), -1m, -10.01m, false, true)).ToList();
+        var vFiscal = StocService.VerificaGoliri(fiscal, lotA.PretUnitar);
+        // 6. Fereastra lunii: doar rândurile din [din, panaLa] primesc verdict (F7).
+        var vFereastra = StocService.VerificaGoliri(corect, lotA.PretUnitar, new DateOnly(2026, 5, 3), new DateOnly(2026, 5, 31));
+        Console.WriteLine($"     MĂSURAT (D18-V2 o): corect [{string.Join(", ", vCorect.Select(v => $"{v.Fel} {v.Reziduu:N2}"))}]; "
+            + $"dublat [{string.Join(", ", vDublat.Select(v => $"{v.Fel} Σ{v.ValoareDupa:N2}"))}]; "
+            + $"retro [{string.Join(", ", vRetro.Select(v => $"{v.Fel} {v.Data:dd.MM} laDată {v.ValoareLaData:N2} retro {v.RanduriRetro}"))}]; "
+            + $"stornat {vStornat.Count}; fiscal [{string.Join(", ", vFiscal.Select(v => $"{v.Fel} Σ{v.ValoareDupa:N2}"))}]; "
+            + $"fereastră {vFereastra.Count}.");
+        Check("D18-V2 (o) oracolul golirii: golirea corectă ⇒ un singur verdict, `Exacta`, cu reziduul rândului +0,01 "
+            + "(−10,00 − round(−1 × 10,006667) = +0,01: a mutat cu un ban MAI PUȚIN de pe stoc decât evaluarea naivă; "
+            + "Σ valoare 0,00 pe rândurile văzute); rândurile care nu golesc și au reziduu 0 nu apar",
+            vCorect.Count == 1 && vCorect[0].Fel == StocService.FelGolire.Exacta && vCorect[0].Reziduu == 0.01m
+            && vCorect[0].ValoareDupa == 0m && vCorect[0].DocumentId == docC);
+        Check("D18-V2 (o) valoarea dublată pe rândul golitor ⇒ `CuValoare` cu Σ −10,00 — DEFECT detectat din registru, "
+            + "nu din formula regulii (necircular)",
+            vDublat.Count == 1 && vDublat[0].Fel == StocService.FelGolire.CuValoare && vDublat[0].ValoareDupa == -10.00m);
+        Check("D18-V2 (o) retro (F1): rândul din 10.05 nu golea la operare, dar azi cheia e 0/−0,01 la data lui și "
+            + "există 1 rând retro ⇒ `ReDeschisaRetro` (avertisment, nu defect); rândul retro din 05.05 nu golea nici el",
+            vRetro.Count == 1 && vRetro[0].Fel == StocService.FelGolire.ReDeschisaRetro
+            && vRetro[0].Data == new DateOnly(2026, 5, 10) && vRetro[0].ValoareLaData == -0.01m
+            && vRetro[0].CantitateLaData == 0m && vRetro[0].RanduriRetro == 1);
+        Check("D18-V2 (o) rândul golitor STORNAT nu mai e ieșire (perechea pe DetaliuId, F3) ⇒ niciun verdict",
+            vStornat.Count == 0);
+        Check("D18-V2 (o) golirea FISCALĂ (RLF, F5) lasă −0,01 pe lot prin contract ⇒ `Fiscala`, nu `CuValoare`",
+            vFiscal.Count == 1 && vFiscal[0].Fel == StocService.FelGolire.Fiscala && vFiscal[0].ValoareDupa == -0.01m);
+        Check("D18-V2 (o) fereastra lunii (F7): verdict doar pe rândurile din interval, istoricul rămâne context",
+            vFereastra.Count == 1 && vFereastra[0].DocumentId == docC);
+    }
+
     // ---------------- (a) 1 + 1 + 1: primele două la preț, a treia ia restul ----------------
     var bcs1 = Bcs(lotA, new DateOnly(2026, 5, 1), 1m);
     MotorOperare.Opereaza(os, bcs1);
@@ -15837,6 +15899,63 @@ void VerificaValoareIesire(bool privat) {
         + "10,006667)`, lotul 2 / 20,01",
         bcsPartial.Detalii.Single().Valoare == 10.01m && SoldCheie(lotE, g1, tipStoc) == new SoldStoc(2m, 20.01m));
 
+    // ---------------- (r) RETRO — limita regulii, ca FAPT documentat (review F1) ----------------
+    // Lot 2 × 20,01 (preț 10,005). BCS din 10.05 −1 operat PRIMUL: vede 2 ⇒ nu
+    // golește ⇒ `round(1 × preț)`, rest 1. BCS RETRO din 05.05 −1 operat DUPĂ:
+    // prefix-ul ≤ 05.05 nu vede rândul din 10.05 ⇒ tot 2 ⇒ nu golește ⇒
+    // `round(1 × preț)`. Cheia rămâne 0 / (20,01 − 2 × round): golirea e decisă
+    // LA OPERARE pe registrul EXISTENT, retro-ul lasă reziduu — vizibil în SAF-T
+    // S (`ReziduValoricFaraCantitate`) și clasificat de oracol „re-deschisă retro".
+    var produsRetro = Prod("-RETRO");
+    var lotRetro = LotNou(produsRetro, g1, 2m, 20.01m);
+    os.CommitChanges();
+    var unuRetro = Scara.RotunjesteBani(1m * lotRetro.PretUnitar);
+    var bcsTarziu = Bcs(lotRetro, new DateOnly(2026, 5, 10), 1m);
+    MotorOperare.Opereaza(os, bcsTarziu);
+    os.CommitChanges();
+    var bcsRetro = Bcs(lotRetro, new DateOnly(2026, 5, 5), 1m);
+    MotorOperare.Opereaza(os, bcsRetro);
+    os.CommitChanges();
+    var soldRetro = SoldCheie(lotRetro, g1, tipStoc);
+    var randuriRetro = os.GetObjectsQuery<RegistruStoc>()
+        .Where(r => r.LotId == lotRetro.ID && r.RepartitorId == g1.ID && r.TipStoc == tipStoc)
+        .Select(r => new { r.DocumentId, r.DetaliuId, r.Data, r.Cantitate, r.Valoare, r.Storno,
+            Operat = r.DocumentId == null ? null : r.Document.DataOperare })
+        .ToList()
+        .Select(r => new StocService.RandGolire(r.DocumentId, r.DetaliuId, r.Data, r.Operat, r.Cantitate, r.Valoare, r.Storno))
+        .ToList();
+    var verdictRetro = StocService.VerificaGoliri(randuriRetro, lotRetro.PretUnitar);
+    Console.WriteLine($"     MĂSURAT (D18-V2 r): preț {lotRetro.PretUnitar:0.######}, round(1 × preț) {unuRetro:N2}; "
+        + $"BCS 10.05 {bcsTarziu.Detalii.Single().Valoare:N2} (operat primul), BCS retro 05.05 {bcsRetro.Detalii.Single().Valoare:N2}; "
+        + $"cheia {soldRetro.Cantitate:0.###} / {soldRetro.Valoare:N2}; oracol "
+        + $"[{string.Join(", ", verdictRetro.Select(v => $"{v.Fel} {v.Data:dd.MM} retro {v.RanduriRetro}"))}].");
+    Check("D18-V2 (r) LIMITA regulii (F1), ca fapt: golirea e decisă la operare pe registrul existent — documentul "
+        + "retro nu re-decide linia din 10.05 și nu vede rândul ei; ambele ies la `round(1 × preț)`, cheia rămâne "
+        + "0 bucăți cu reziduu ≠ 0 (nu se corectează tăcut)",
+        bcsTarziu.Detalii.Single().Valoare == unuRetro && bcsRetro.Detalii.Single().Valoare == unuRetro
+        && soldRetro.Cantitate == 0m && soldRetro.Valoare == 20.01m - 2 * unuRetro && soldRetro.Valoare != 0m);
+    Check("D18-V2 (r) oracolul clasifică rândul din 10.05 `ReDeschisaRetro` (măsurat: 1 rând cu Data ≤ și DataOperare >), "
+        + "nu `CuValoare` — reziduul retro e limită declarată, nu defect al regulii",
+        verdictRetro.Count == 1 && verdictRetro[0].Fel == StocService.FelGolire.ReDeschisaRetro
+        && verdictRetro[0].DocumentId == bcsTarziu.ID && verdictRetro[0].RanduriRetro == 1
+        && verdictRetro[0].ValoareLaData == soldRetro.Valoare);
+    if (privat) {
+        // Vizibil în S: în luna în care lotul e 0 la AMBELE capete (iunie), intrarea
+        // se declară cu codul ei de avertisment — reziduul retro nu e ascuns.
+        var sIunie = SaftProiectii.SaftStocuri(os, 2026, 6);
+        var avertRetro = sIunie.Avertismente
+            .FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.ReziduValoricFaraCantitate));
+        var intrareRetro = sIunie.StocFizic.SingleOrDefault(e => e.LotId == lotRetro.ID);
+        Console.WriteLine($"     MĂSURAT (D18-V2 r, S 06/2026): intrarea {intrareRetro?.OpeningQuantity:0.###}→{intrareRetro?.ClosingQuantity:0.###} "
+            + $"@ {intrareRetro?.OpeningValue:N2}→{intrareRetro?.ClosingValue:N2}; `ReziduValoricFaraCantitate` ×{avertRetro?.Numar ?? 0}.");
+        Check("D18-V2 (r) SAF-T S arată reziduul retro: intrarea 0→0 bucăți cu valoarea reziduului la ambele capete și "
+            + "avertismentul `ReziduValoricFaraCantitate` o numără",
+            intrareRetro != null && intrareRetro.OpeningQuantity == 0m && intrareRetro.ClosingQuantity == 0m
+            && intrareRetro.ClosingValue == soldRetro.Valoare
+            && avertRetro != null && avertRetro.Exemple.Any(e => e.Contains("Produs D18-RETRO")));
+    }
+
+    Guid? lotFiscalId = null;
     if (privat) {
         // ---------------- (f) DSC generat de FCL care golește lotul ----------------
         var client = os.CreateObject<Partener>();
@@ -15873,7 +15992,10 @@ void VerificaValoareIesire(bool privat) {
             && dsc.Detalii.Single().Valoare == 10.00m && dtoDsc.Linii.Single().Valoare == 10.00m
             && SoldCheie(lotF, g1, tipStoc) == new SoldStoc(0m, 0m));
 
-        // ---------------- (g) RLF care golește lotul ----------------
+        // ---------------- (g) RLF care golește lotul: ieșire FISCALĂ, nu de evaluare (review F5) ----------------
+        // Suma returului e a notei de credit a furnizorului (`q × preț`), nu a
+        // lotului: RLF declară `IDocumentCuIesireFiscala`, motorul sare regula
+        // de golire, reziduul de cenți rămâne pe lot (declarat în S), NU pe 401.
         var rlf = os.CreateObject<ReturFurnizor>();
         rlf.Data = new DateOnly(2026, 5, 9); rlf.Predator = g1; rlf.Primitor = furnizor;
         var linRlf = os.CreateObject<DocumentDetaliu>();
@@ -15882,13 +16004,21 @@ void VerificaValoareIesire(bool privat) {
         MotorOperare.Opereaza(os, rlf);
         os.CommitChanges();
         var noteRlf = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == rlf.ID).ToList();
-        Console.WriteLine($"     MĂSURAT (D18-V2 g): RLF 1 buc (rest 10,00) ⇒ linia {linRlf.Valoare:N2}, TVA {linRlf.ValoareTva:N2}; note "
+        var tvaAsteptat = Scara.RotunjesteBani(10.01m * n21.Cota / 100m);
+        Console.WriteLine($"     MĂSURAT (D18-V2 g): RLF 1 buc (rest 10,00, preț × 1 = 10,01) ⇒ linia {linRlf.Valoare:N2}, TVA {linRlf.ValoareTva:N2} "
+            + $"(cota {n21.Cota}% ⇒ {tvaAsteptat:N2}); note "
             + $"{string.Join(" | ", noteRlf.Select(n => $"{n.ContDebit.Simbol}={n.ContCredit.Simbol} {n.Valoare:N2}"))}; "
-            + $"lot {SoldCheie(lotG, g1, tipStoc).Valoare:N2}.");
-        Check("D18-V2 (g) returul la furnizor care golește lotul: costul liniei = −10,00 (restul, cu semnul storno 46e), "
-            + "stornarea achiziției 3xx = 401 postează −10,00 (cenții cad pe 401 — RLF n-are cheltuială), lotul 0 / 0,00",
-            linRlf.Valoare == -10.00m && SoldCheie(lotG, g1, tipStoc) == new SoldStoc(0m, 0m)
-            && noteRlf.Any(n => n.Valoare == -10.00m && n.ContCredit.Simbol == "401"));
+            + $"lot {SoldCheie(lotG, g1, tipStoc).Cantitate:0.###}/{SoldCheie(lotG, g1, tipStoc).Valoare:N2}.");
+        Check("D18-V2 (g) returul la furnizor care golește lotul rămâne la `preț × cantitate` = −10,01 (suma hârtiei "
+            + "furnizorului, `IDocumentCuIesireFiscala`), stornarea 3xx = 401 postează −10,01, iar lotul rămâne 0 / −0,01 — "
+            + "reziduul e al lotului (declarat), nu al lui 401",
+            rlf is IDocumentCuIesireFiscala && linRlf.Valoare == -10.01m
+            && SoldCheie(lotG, g1, tipStoc) == new SoldStoc(0m, -0.01m)
+            && noteRlf.Any(n => n.Valoare == -10.01m && n.ContCredit.Simbol == "401"));
+        Check("D18-V2 (g) TVA-ul returului e coerent cu baza lui: `ValoareTva` = −round(10,01 × cota) — baza TVA și "
+            + "valoarea liniei sunt aceeași cifră (F5 original: cu absorbția, baza rămânea 10,01 iar valoarea devenea 10,00)",
+            linRlf.ValoareTva == -tvaAsteptat && tvaAsteptat > 0m);
+        lotFiscalId = lotG.ID;
 
         // ---------------- (h) ASM: consumul preia restul; produsul CULES trebuie să-l egaleze ----------------
         var asm = os.CreateObject<Asamblare>();
@@ -15923,14 +16053,22 @@ void VerificaValoareIesire(bool privat) {
     var loturiScena = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
     var chei = os.GetObjectsQuery<RegistruStoc>().Where(r => loturiScena.Contains(r.LotId))
         .GroupBy(r => new { r.LotId, r.RepartitorId, r.TipStoc })
-        .Select(g => new { Cantitate = g.Sum(r => r.Cantitate), Valoare = g.Sum(r => r.Valoare) })
+        .Select(g => new { g.Key.LotId, Cantitate = g.Sum(r => r.Cantitate), Valoare = g.Sum(r => r.Valoare) })
         .ToList();
-    var reziduuri = chei.Count(c => c.Cantitate == 0m && c.Valoare != 0m);
+    var reziduuri = chei.Where(c => c.Cantitate == 0m && c.Valoare != 0m).Select(c => c.LotId).ToList();
+    // Reziduurile AȘTEPTATE, fiecare cu numele lui: retro (limita F1) și, pe
+    // privat, returul fiscal (F5). Orice altă cheie golită cu valoare = defect.
+    var reziduuriAsteptate = new List<Guid> { lotRetro.ID };
+    if (lotFiscalId is { } fiscalId)
+        reziduuriAsteptate.Add(fiscalId);
     Console.WriteLine($"     MĂSURAT (D18-V2 rezidu): {chei.Count} chei pe scenă, {chei.Count(c => c.Cantitate == 0m)} golite, "
-        + $"{reziduuri} cu valoare fără cantitate.");
-    Check("D18-V2 `ReziduValoricFaraCantitate` = 0 pe toate cheile golite de documente ale scenei — reziduul 74g nu se "
-        + "mai naște din operare (avertismentul rămâne în cod pentru datele vechi ale importului)",
-        reziduuri == 0 && chei.Count(c => c.Cantitate == 0m) >= (privat ? 6 : 3));
+        + $"{reziduuri.Count} cu valoare fără cantitate (așteptate {reziduuriAsteptate.Count}: retro"
+        + (privat ? " + RLF fiscal" : "") + ").");
+    Check("D18-V2 `ReziduValoricFaraCantitate` pe cheile golite de documente ale scenei = EXACT cele două limite declarate "
+        + "(retro F1; pe privat și returul fiscal F5) — pe nicio altă cheie golită nu rămâne valoare (reziduul 74g nu se "
+        + "mai naște din evaluare)",
+        reziduuri.Count == reziduuriAsteptate.Count && reziduuriAsteptate.All(reziduuri.Contains)
+        && chei.Count(c => c.Cantitate == 0m) >= (privat ? 7 : 4));
 
     Curata();
     Check("D18-V2 curățenie (fără reziduuri: repartitori, documente, loturi, produse)",

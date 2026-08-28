@@ -728,15 +728,19 @@ atinge registrele.
 
 ## 15. Felia 18 (D18-D3/D4) — reclasificarea la transfer ca MIȘCARE + reziduul absorbit
 
-Contractul: `docs/api/p5-felia-restante-s-contract.md` (§Închidere, pasul 3
-are cifrele). Executat pe clona `Atlas.Conta.Import1C.Flax.Api`
-(`--recreeaza --pana-la 3`, 30 min 31 s, contract îndeplinit, 0 eșecuri;
-169 reclasificări ca mișcare, 1 cu lotul la valoare 0 rămasă pe calea veche;
-`--saft-s 2025 3` DUK ok, S3 pe 371 fără componenta de reclasificare, 381 la
-zero), baza `Flax` neatinsă până la pasul 4. **`--continua` pe o bază deja
-importată e fals-roșu** pe contractele 1/3 și replanifică cu efect real
-unitățile fără document legat (vezi contractul, abaterea (a)) — proba de
-idempotență se face prin re-rulare integrală.
+Contractul: `docs/api/p5-felia-restante-s-contract.md` (§Închidere, pașii 3
+și 4 au cifrele). Executat întâi pe clona `Atlas.Conta.Import1C.Flax.Api`
+(`--recreeaza --pana-la 3`, 30 min 31 s, contract îndeplinit, 0 eșecuri),
+apoi PROBA FINALĂ pe `Flax` (2026-08-28→29, `--recreeaza`, 1h52, **contract
+îndeplinit 12 luni, 0 FAIL**): 556 rânduri de punte, 552 ca mișcare (81 chei
+discriminate), 2 la valoare 0 pe calea veche; oracolul golirii (`1'. D18-D4`)
+verde pe toate lunile, 0 goliri cu valoare rămasă; **381/608 dispar integral
+din registrul divergențelor**; `--saft-s 2025 9/12` DUK ok 0 atenționări,
+punțile de reclasificare == ASM `#reclas` per cont la cent (componenta S3
+„reclasificare" = 0), `ReziduValoricFaraCantitate` 861/1.168 → 131/132.
+**`--continua` pe o bază deja importată e fals-roșu** pe contractele 1/3 și
+replanifică cu efect real unitățile fără document legat (vezi contractul,
+abaterea (a)) — proba de idempotență se face prin re-rulare integrală.
 
 ### Reclasificarea de cont la transfer (D18-D3) — amendează §4 (BTR) și §12.1
 
@@ -751,7 +755,11 @@ din simbolul canonic al lotului: DSC-ul descărca 381 pentru un rând 1C pe 371,
 371/381 purta toate reclasificările anului (74-r9).
 
 De acum reclasificarea e o **mișcare de stoc**, într-o singură unitate de
-import, în ordinea asta:
+import, în ordinea asta (ordinea de EXECUȚIE, după review-ul advers F4, e ASM
+→ BTR → punte: puntea transcrie mișcarea, deci se scrie după ce mișcarea
+există; fără ASM operat nici BTR-ul, nici puntea nu se scriu, iar rândurile
+de reclasificare ale sursei se declară NEPOSTATE, cu cifra sursei —
+contractul 1 explicat, unitatea replanificată integral la rularea următoare):
 
 1. **ASM `#reclas`** (`h.Id + "#reclas"`) în gestiunea SURSEI: consumă lotul de
    pe `produs@contVechi` (rezoluția de azi + `Alocare.Aloca`, deci supapa 48a
@@ -794,10 +802,14 @@ raportat (comportamentul de azi, nu se inventează).
 = vreun rând cu conturi mapate diferite și debit de stoc; BTR = gestiuni
 diferite) și trec prin `Reluare1C.UnitatePartiala` — o rulare întreruptă
 între ASM și BTR refuză zgomotos cu `--deblocheaza`. BTR-ul refuză curat dacă
-ASM-ul `#reclas` n-a ajuns operat (loturile noi n-ar avea sold). Limitare
-moștenită de la asamblare: o unitate care a cerut `#reclas` dar n-a produs
-ASM (nicio linie acoperită) rămâne „parțială" la rulările următoare (refuz cu
-motiv), fiindcă o cheie fără document nu se poate lega.
+ASM-ul `#reclas` n-a ajuns operat (loturile noi n-ar avea sold). Cheia
+`#reclas` cerută de sursă dar fără ASM (lot la valoare 0, cont nou fără Tip,
+lot deja pe contul nou, nicio linie acoperită) se leagă **fără document**
+(`BuclaImport.LeagaFaraDocument`, ținta `Guid.Empty` — review F9): e
+cunoscută, `Executa` o sare cu motiv, `--deblocheaza` o șterge ca orfană,
+idempotența n-o numără; altfel unitatea rămânea „parțială" la nesfârșit cât
+BTR-ul ei era operat (limitarea moștenită de la asamblare, închisă aici
+pentru transfer).
 
 Gardul din `HandlerAsamblare` care refuză „asamblarea care reclasifică"
 rămâne: e al asamblărilor REALE ale sursei (formă nouă, fără caz pe 2025);
@@ -825,6 +837,27 @@ prinde exact așa), contul de stoc din
 rândului `RegistruContabil` al ACELEIAȘI linii (`DetaliuId`), cu semn invers.
 BTR-ul (fără rând contabil — restul se mută pe destinație, același cont) nu
 atinge contractul 1 și se numără separat. Raportul integral primește blocul
-`[1] D18-D4` per cont: reziduul absorbit și `Δ fără reziduu` (= Δ-ul de
-dinainte de D2 pe conturile neatinse de D3) — atribuirea diff-ului față de
-baseline, linie cu linie.
+`[1] D18-D4` per cont: reziduul absorbit (luna + cumulat) și `Δ fără reziduu`
+(= Δ-ul de dinainte de D2 pe conturile neatinse de D3) — atribuirea
+diff-ului față de baseline, linie cu linie.
+
+**D4 e ORACOL, nu doar categorie (review advers F2/F3/F7, 2026-08-28).**
+Verdictul per rând de ieșire îl dă funcția PURĂ a motorului
+`StocService.VerificaGoliri` (probată în ModelCheck D18-V2 (o) cu rânduri
+sintetice): pe rândurile pe care motorul le VEDEA la operare (`Data ≤` +
+`DataOperare ≤`, deschiderea inclusă) o cheie golită cantitativ trebuie să
+aibă și Σ valoare 0,00 din REGISTRU — `CuValoare` = defect, linie FAIL a
+contractului (cheia, lotul, Σ) și linia de contract `1'. D18-D4 oracolul
+golirii`; cifra nu mai e circulară cu `ValoareGolire` al punții. Rândurile
+STORNATE (perechea pe `DetaliuId`) nu intră (F3). Doar IEȘIRILE LUNII se
+verifică (F7), istoricul se citește pentru loturile lor; cumulatul per cont
+stă în `Stare.ReziduuAbsorbitCumulat`. Clasificări declarate, nu eșecuri:
+`Fiscala` — golirea unui document cu `IDocumentCuIesireFiscala` (RLF, F5:
+suma returului e a hârtiei furnizorului, `q × preț`; reziduul rămâne pe lot,
+contorizat „goliri fiscale RLF"); `ReDeschisaRetro` — cheia e 0 cu valoare
+≠ 0 la data rândului DOAR din cauza unor rânduri retro (măsurat: există un
+rând cu `Data ≤` și `DataOperare >`), limita F1 a regulii, avertisment.
+Limitare cunoscută: rândul invers al unui storno poartă `DataOperare` a
+originalului (stornarea n-are timbru propriu), deci ordinea lui intra-zi e
+aproximată. RLF în Import1C: `Alocare.Aloca(absoarbeLaGolire: false)` din
+`HandlerReturFurnizor`, ca puntea să declare exact cifra postată.

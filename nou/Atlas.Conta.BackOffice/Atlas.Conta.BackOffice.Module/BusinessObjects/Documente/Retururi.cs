@@ -26,13 +26,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // RLF: marfa se întoarce la furnizor pe LOTUL ORIGINAL. Laturi Gestiune →
 // Partener; stoc −q (regula +1 pe predator × linia negativă); contare
 // 3xx = 401 cu −V (stornarea achiziției) + 4426 = 401 cu −TVA (PoliticaTva).
-public class ReturFurnizor : Document {
+public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
     // Valoarea e COSTUL lotului (prețul nu se culege — pattern BTR/BCS/DSC);
     // TVA-ul urmează factura furnizorului, deci `pastreazaTvaCules` (ca FCT):
     // valoarea culeasă/importată bate rotunjirea noastră. Returul care GOLEȘTE
-    // lotul ia tot soldul valoric rămas (D18-D2, în motor): 3xx ajunge exact la
-    // 0 pe lot, iar cenții de rotunjire cad pe 401 (RLF n-are cont de
-    // cheltuială — stornarea achiziției poartă costul integral al lotului).
+    // lotul NU preia soldul valoric rămas (F18, review F5 — `IDocumentCuIesireFiscala`):
+    // suma returului e a notei de credit a furnizorului, `cantitate × preț`,
+    // deci baza TVA-ului și valoarea liniei rămân aceeași cifră; reziduul de
+    // cenți rămâne pe lot (raportat în SAF-T S), nu cade pe 401.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         // RLF stornează o ACHIZIȚIE: politica lui e `Deductibil`, deci taxarea
