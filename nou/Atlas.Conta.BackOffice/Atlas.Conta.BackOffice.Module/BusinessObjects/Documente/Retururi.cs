@@ -27,6 +27,23 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Partener; stoc −q (regula +1 pe predator × linia negativă); contare
 // 3xx = 401 cu −V (stornarea achiziției) + 4426 = 401 cu −TVA (PoliticaTva).
 public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
+    // Rolul de STINS (F19-D16): RLF stornează achiziția (3xx = 401 cu −V), deci
+    // lasă un sold DEBITOR pe 401 — se stinge creditând contrapartida (o
+    // încasare de la furnizor, sau jumătatea de credit a unei note).
+    //
+    // Declarația e ADEVĂRATĂ dar azi NEATINSĂ (review O1 — comentariul anterior
+    // pretindea că „calea directă îi acceptă"; nu îi acceptă): retururile nu
+    // sunt doar în afara lui `DocumenteCuRest` (F19-D11), ci și în afara
+    // stingerii cu totul, fiindcă după operare au valori NEGATIVE pe tot
+    // (semnarea din `PregatesteOperare`) ⇒ `ImperechereService.Total` e negativ
+    // ⇒ `Ramas` e negativ ⇒ orice sumă pozitivă cade pe „depășește restul
+    // documentului stins", ÎNAINTEA oricărei verificări de sens. Se declară
+    // fiindcă e adevărul contabil al tipului, nu fiindcă ar fi executabil azi;
+    // ziua în care restul returului va fi definit (F19-D11), sensul e deja aici
+    // și e corect.
+    public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
+        SensStingere.Creanta;
+
     // Valoarea e COSTUL lotului (prețul nu se culege — pattern BTR/BCS/DSC);
     // TVA-ul urmează factura furnizorului, deci `pastreazaTvaCules` (ca FCT):
     // valoarea culeasă/importată bate rotunjirea noastră. Returul care GOLEȘTE
@@ -103,6 +120,15 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
 // AMÂNATĂ (acțiune/serviciu ulterior, precedent DescarcareService); importul 1C
 // aduce ambele feluri de linii direct.
 public class ReturClient : Document {
+    // Oglinda RLF-ului: RDC stornează livrarea (creditează 4111 cu −V), deci lasă
+    // un sold CREDITOR pe contul clientului — se stinge debitând (plata de
+    // rambursare, jumătatea de debit a notei). Ca la `ReturFurnizor`, declarația
+    // e adevărată dar azi NEATINSĂ: `LiniiCreanta` al RDC-ului dă doar liniile
+    // de venit, care după operare sunt negative ⇒ `Ramas` negativ ⇒ refuzul de
+    // rest cade înaintea oricărei verificări de sens (review O1).
+    public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
+        SensStingere.Datorie;
+
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         // RDC stornează o LIVRARE (politica lui e `Colectat`): pe liniile de

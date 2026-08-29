@@ -685,6 +685,38 @@ decizia N.
     integrală Flax pe codul final, contract 12 luni / 0 FAIL, 381/608 dispar
     din divergențe, DUK ok, `ReziduValoricFaraCantitate` 861/1.168 →
     131/132. (e) Restanțe 75-r1…r5 → jurnal.
+76. **NTC + ASM + retururi prin API și client** (ultimele patru tipuri fără
+    felie de scriere). (a) Trei tracks independente, cu regulă de oprire per
+    track; ITV rămâne afară (nu e document cules, e serviciu — 46c); zero
+    seturi OData noi. (b) **ASM capătă culegerea de produs** (`ProdusId` +
+    `ILinieCareNasteLot` cu `NasteLot => Directie == Produs`,
+    `GestiuneLoturiCulese` → **PREDATORUL**) — închide 53i pe ASM. (c)
+    **Valoarea produsului ASM se derivă din consum** (închide 75-r1):
+    `distribuie-valoarea` cere cifra **MOTORULUI** (`MotorOperare.Valideaza` pe
+    un OS de unică folosință, al doilea OS obligatoriu fiindcă `Valideaza`
+    SCRIE), nu o formulă geamănă; „calculul n-a rulat" se detectează
+    STRUCTURAL, nu din textul erorilor; reziduul se plimbă, iar cazul
+    nereprezentabil (75-r4) și cel MIXT se REFUZĂ cu cifra. (d) Semnarea storno
+    rămâne a OPERĂRII — RLF/RDC se culeg pozitiv, ecranul explică semnul în loc
+    să-l inverseze; linia de cost RDC se persistă cu `TipTvaId = null`; rolul
+    liniei RDC e o PREZENȚĂ, iar mutarea lui pe o linie salvată se REFUZĂ (o
+    conversie ar rescrie tăcut culegerea). (e) Idempotența: pe draft bate
+    `MaterializeazaValori`, la operare bate hook-ul — nu se contrazic fiindcă
+    amândouă pleacă din `Abs`; motorul NU de-semnează la anulare. (f)
+    **Plafonul de stingere capătă LATURĂ și se NETEAZĂ** (amendează 31d/48b):
+    `Document.SensDeStins` = al treilea hook polimorf al rolului (default `null`
+    = motorul nu ghicește); plafonul = **`|Σ semnat|` per (repartitor × latura
+    liniei)**, cheia cu net 0 nu intră deloc — netarea SUBSUMEAZĂ linia
+    negativă. `PLT → FCL` și `INC → FCT` se refuză de acum, DECLARAT. Panourile
+    clasice urmează sensul din ReadDto (`SensCandidati`), nu din TS. Refuzul de
+    ambiguitate primește ieșire prin MODELARE (`NIR` = `Datorie`), niciodată
+    printr-un câmp care lasă apelantul să aleagă jumătatea. (g) `PanouStingeri`
+    capătă un al doilea mod (grupat per contrapartidă × sens); pe notă **„Rest"
+    dispare** (Σ liniilor nu e o creanță); NTC nu intră în `DocumenteCuRest`,
+    retururile nu devin stingători — compensarea trece prin notă (46f rămâne,
+    cu cale practică). (h) Bara ASM: cifra e NEUTRĂ, culoarea stă pe verdictul
+    dry-run-ului — `Diferenta` minte în ambele sensuri, deci orice culoare pe ea
+    reproduce o minciună. (i) Restanțe 76-r1…r6 → jurnal.
 
 ## Stare și roadmap
 
@@ -707,11 +739,17 @@ detaliat în jurnal):
   DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68),
   D300 (69), motor/structură post-D300 (70), D394 (71), partener + ANAF (72),
   SAF-T D406 L (73), SAF-T S stocuri (74), restanțele grele ale lui S —
-  golirea valorică în motor + reclasificarea ca mișcare (75).
+  golirea valorică în motor + reclasificarea ca mișcare (75), NTC + ASM +
+  retururi prin API și client + plafonul de stingere cu latură și netat (76).
+
+**Toate tipurile de document au acum felie de scriere prin API și client**,
+în afara lui ITV (comandă, nu agregat — 76a) și a lui BPR (rezervat, 19).
 
 **Următorul pas**: finisajul clientului (listele §Închidere ale contractelor +
-`docs/api/lista-react.md`; licența DevExtreme = acțiunea utilizatorului);
-feliile de scriere rămase (NTC/ASM/retururi, la cerere).
+`docs/api/lista-react.md`, unde 76-r6 a adăugat patru itemi — între care
+căutarea sensibilă la diacritice, care e decizie de BAZĂ DE DATE și atinge toate
+lookup-urile; licența DevExtreme = acțiunea utilizatorului); felia ITV, la
+cerere.
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -774,6 +812,19 @@ CoduriTip` pe hot-path API) · 75-r3 `--continua` fals-roșu pe bază importată
 (idempotența doar prin re-rulare integrală) · 75-r4 `PretEvaluare` 6 zecimale
 pe cantități mari vs invariantul 46d · 75-r5 stornoul fără timbru propriu în
 oracolul golirii
+· 76-r1 netarea plafonului e per (repartitor × LATURĂ), nu per CONT (55 chei /
+36 note amestecă conturi de clasă 4 pe aceeași latură; expunere reală 3 chei) ·
+76-r2 `caStins` se scade din AMBELE sensuri — inatacabil azi, **devine real când
+un tip cu partener pe latură capătă capacitate bidirecțională** · 76-r3 perf
+`AsignatFataDe` (entități polimorfe, chemat de 2 × nr. contrapartide) · 76-r4
+gate-ul comenzilor e pe `Document`, nu pe tipul feliei (422 vs 404 pe aceeași
+cauză) · 76-r5 `Candidati` sub-raportează pe ușa secured, iar `User` pe ușa de
+scriere e refuzat de primul FK invizibil, nu de o permisiune (familia 72-r10) ·
+76-r6 patru itemi de client în `lista-react.md`: căutarea sensibilă la
+diacritice în TOATE lookup-urile remote (colație `unaccent`/ICU sau coloană
+shadow — decizie de bază de date), `Lookup` care refetchează eticheta per
+instanță, limita convenției 61b pe valorile din PRECOMPLETARE, `window.confirm`
+moștenit pe ștergere
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

@@ -2933,6 +2933,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasPrecision(18, 6)
                         .HasColumnType("numeric(18,6)");
 
+                    b.Property<Guid?>("ProdusId")
+                        .HasColumnType("uuid");
+
+                    b.HasIndex("ProdusId");
+
                     b.ToTable("AsamblariDetalii");
                 });
 
@@ -4413,6 +4418,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasForeignKey("Atlas.Conta.BackOffice.Module.BusinessObjects.AsamblareDetaliu", "ID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Produs", "Produs")
+                        .WithMany()
+                        .HasForeignKey("ProdusId");
+
+                    b.Navigation("Produs");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.DecontDetaliu", b =>

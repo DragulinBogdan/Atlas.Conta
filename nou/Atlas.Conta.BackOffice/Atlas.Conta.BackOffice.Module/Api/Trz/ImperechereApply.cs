@@ -45,7 +45,8 @@ public static class ImperechereApply {
         // Restul invarianților (ambele operate, sensuri opuse, contrapartidă
         // comună, plafoane) rămân EXCLUSIV în serviciu — un al doilea exemplar
         // aici ar diverge tăcut.
-        var imperechere = ImperechereService.Imperecheaza(os, stingator, document, dto.Suma);
+        var imperechere = ImperechereService.Imperecheaza(os, stingator, document, dto.Suma,
+            dto.ContrapartidaId);
         return new ImperechereReadDto {
             Id = imperechere.ID,
             DocumentStingatorId = imperechere.DocumentStingatorId,
@@ -70,7 +71,8 @@ public static class ImperechereApply {
     // Panoul de stingeri al unui document: numerele + rândurile, într-un singur
     // apel (F3-D3). `null` dacă documentul nu există.
     public static StingeriDto Stingeri(IObjectSpace os, Guid documentId) {
-        if (!os.GetObjectsQuery<Document>().Any(d => d.ID == documentId))
+        var doc = os.GetObjectByKey<Document>(documentId);
+        if (doc == null)
             return null;
 
         // Proiecție PLATĂ, cu rolul rezolvat ÎN SQL (`CASE`): un singur query
@@ -100,6 +102,11 @@ public static class ImperechereApply {
 
         return new StingeriDto {
             DocumentId = documentId,
+            // Afordanța de SENS a panoului (F19-D16, review F3): sensul pe care
+            // trebuie să-l poarte candidații, calculat AICI din hook-ul polimorf
+            // — clientul îl pasează pe ruta proiecției, nu îl deduce. Vezi
+            // `StingeriDto.SensCandidati` pentru de ce e `Opus`.
+            SensCandidati = doc.SensDeStins(os)?.Opus().ToString(),
             // SURSA DE ADEVĂR = serviciul, nu o a doua agregare aici: `Total`
             // trece prin `LiniiCreanta` (ReturClient), iar `Asignat` numără
             // AMBELE coloane. Trei apeluri, deci patru interogări mărginite —

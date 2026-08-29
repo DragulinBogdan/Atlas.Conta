@@ -27,26 +27,60 @@ public class NotaContabila : Document, IDocumentCuPostareExplicita {
     // operată poate stinge documente, iar invariantul de contrapartidă al
     // trezoreriei (31d) se reformulează pe ea — contrapartidele stinse sunt
     // repartitorii EXPLICIȚI de pe linii (401 = 4111 pe partenerul X stinge
-    // atât factura lui de furnizor, cât și pe cea de client). Plafonul per
-    // contrapartidă = suma liniilor pe care ea apare, NUMĂRATĂ PER LATURĂ:
-    // rândul 401 = 4111 de X lei pe același partener duce X pe debit (datoria)
-    // și X pe credit (creanța), adică exact cele două stingeri legitime.
+    // atât factura lui de furnizor, cât și pe cea de client).
+    //
+    // ═══ Plafonul e MIȘCAREA NETĂ, nu rulajul (F19-D16, corectată de review) ═══
+    // Cheia de agregare e (repartitor × LATURA liniei — debit sau credit), iar
+    // valoarea acumulată e suma SEMNATĂ. La final semnul netului alege sensul:
+    // net pozitiv pe debit ⇒ `Datorie` (nota debitează contul contrapartidei,
+    // deci stinge ce datorăm), net pozitiv pe credit ⇒ `Creanta`; net negativ
+    // răstoarnă latura, fiindcă un debit de −10 e economic un credit de 10.
+    // Cheia cu net ZERO nu intră deloc în dicționar — o notă care n-a mișcat
+    // nimic pe partener nu-l poate stinge.
+    //
+    // Netarea SUBSUMEAZĂ tratarea liniei negative: nu mai e caz special (nu mai
+    // există răsturnare per LINIE, cu `Math.Abs` pe fiecare), e o consecință a
+    // formulei. Prima versiune a lui F19-D16 suma `Σ |Valoare|` per (repartitor
+    // × sens) și răsturna per linie — deci perechea `+v` / `−v` pe ACEEAȘI
+    // latură a aceluiași repartitor producea `(Datorie v, Creanta v)` deși
+    // mișcarea netă era ZERO: exact defectul „o compensare de 60 stinge 120",
+    // mutat de pe axa laturilor pe axa semnelor. Măsurat pe Flax 2025: 908 din
+    // 1.478 de chei aveau brut > |net| (10.517.794,82 lei de capacitate fantomă),
+    // din care 899 cu net exact 0,00.
+    //
+    // Cazul LEGITIM rămâne neatins: `401 = 4111` de 60 pe X are net +60 pe debit
+    // ȘI net +60 pe credit ⇒ `(Datorie 60, Creanta 60)`, adică exact cele două
+    // stingeri legitime.
+    //
     // Fără repartitori pe linii nota nu stinge nimic (dicționar gol → refuz).
     // Proiecție pe FK-uri, fără navigația Detalii (25b).
-    public override IReadOnlyDictionary<Guid, decimal> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) {
+    public override IReadOnlyDictionary<Guid, PlafonStingere> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) {
         var id = ID;
         var linii = os.GetObjectsQuery<NotaContabilaDetaliu>()
             .Where(d => d.DocumentId == id)
             .Select(d => new { d.Valoare, d.RepartitorDebitId, d.RepartitorCreditId })
             .ToList();
-        var capacitati = new Dictionary<Guid, decimal>();
-        void Adauga(Guid? repartitorId, decimal valoare) {
-            if (repartitorId != null)
-                capacitati[repartitorId.Value] = capacitati.GetValueOrDefault(repartitorId.Value) + Math.Abs(valoare);
+        // Latura e purtată tot de `SensStingere`, ca sensul „natural" al ei:
+        // debit ⇒ Datorie, credit ⇒ Creanta. Un enum propriu ar fi al doilea
+        // vocabular pentru aceeași axă.
+        var neturi = new Dictionary<(Guid Repartitor, SensStingere Latura), decimal>();
+        void Aduna(Guid? repartitorId, SensStingere latura, decimal valoare) {
+            if (repartitorId == null)
+                return;
+            var cheie = (repartitorId.Value, latura);
+            neturi[cheie] = neturi.GetValueOrDefault(cheie) + valoare;
         }
         foreach (var l in linii) {
-            Adauga(l.RepartitorDebitId, l.Valoare);
-            Adauga(l.RepartitorCreditId, l.Valoare);
+            Aduna(l.RepartitorDebitId, SensStingere.Datorie, l.Valoare);
+            Aduna(l.RepartitorCreditId, SensStingere.Creanta, l.Valoare);
+        }
+        var capacitati = new Dictionary<Guid, PlafonStingere>();
+        foreach (var (cheie, net) in neturi) {
+            if (net == 0m)
+                continue;
+            var sens = net > 0m ? cheie.Latura : cheie.Latura.Opus();
+            capacitati[cheie.Repartitor] =
+                capacitati.GetValueOrDefault(cheie.Repartitor).Adauga(sens, Math.Abs(net));
         }
         return capacitati;
     }

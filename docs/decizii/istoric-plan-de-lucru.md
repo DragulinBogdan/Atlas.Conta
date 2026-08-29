@@ -372,3 +372,24 @@ per felie):
   (`docs/architecture-notes-2026-07-28.md` — bifurcație deschisă, la presiune
   de client).
 
+- **Pasul 5, felia 19 — NTC + ASM + retururi (RLF/RDC) — executată**
+  (contract: `docs/api/p5-felia-ntc-asm-retururi-contract.md`; 6 pași de
+  implementare + 2 de fix + review advers + gate Import1C + smoke, un agent per
+  pas): modelul ASM (`ProdusId` + `ILinieCareNasteLot`, gestiunea = predatorul —
+  închide 53i pe ASM), API NTC + `candidati`, API ASM +
+  `distribuie-valoarea` (închide 75-r1: predicția e cifra MOTORULUI, prin
+  `MotorOperare.Valideaza` pe un OS de unică folosință), API RLF + RDC, client
+  pentru toate patru. Pe parcurs a ieșit un defect de MOTOR preexistent —
+  plafonul de stingere al notei se număra per latură dar se consuma fără latură
+  (o compensare de 60 stingea 120) — reparat în două trepte: sensul
+  (`Document.SensDeStins`, al treilea hook al rolului) și, după ce review-ul
+  advers a arătat că premisa mea era greșită, **netarea** (`|Σ semnat|` per
+  repartitor × latură, în loc de `Σ|v|`). Review advers: 4 constatări de fond, 3
+  minore, 5 observații. Închidere: ModelCheck 786→858+ bugetar / 623→870 privat
+  0 FAIL, build client verde, drift exit 0; gate Import1C pe Flax (2h10, binar
+  din codul final) CONTRACT ÎNDEPLINIT cu TOT identic cu proba finală F18 în
+  afara imperecherilor (46.056 → 44.448, atribuite integral: 899 chei cu net
+  EXACT 0, 10,5 mil. lei plafon fantomă; conservarea închide pe ambele rulări la
+  52.039); smoke browser 6/6 fluxuri, zero erori de consolă. Lecția consemnată:
+  „toate verificările existente rămân verzi" NU e un invariant de ne-regresie —
+  verde înseamnă „nimic din ce e acoperit nu s-a rupt". Decizia 76.

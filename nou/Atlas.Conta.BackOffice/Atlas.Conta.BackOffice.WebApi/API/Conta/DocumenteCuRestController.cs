@@ -1,3 +1,4 @@
+using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
@@ -26,8 +27,28 @@ public class DocumenteCuRestController : ContaApiController {
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginaDto<DocumentCuRestRand>), StatusCodes.Status200OK)]
-    public object Get(DataSourceLoadOptions loadOptions, [FromQuery] Guid? contrapartidaId = null) {
+    public object Get(DataSourceLoadOptions loadOptions, [FromQuery] Guid? contrapartidaId = null,
+        [FromQuery] string sens = null) {
+        // `sens` = A DOUA jumătate a filtrului de candidați (F19-D16, review F3).
+        // Fără el panourile CLASICE (trezorerie/FCT/FCL/DEC) filtrau DOAR pe TIP,
+        // ceea ce n-are legătură cu sensul: măsurat pe baza Privat, 87 din 353 de
+        // contrapartide au documente pe AMBELE sensuri, deci panoul unei Încasări
+        // oferea zeci de facturi de furnizor cu buton „Stinge" care duc garantat
+        // la 422. Valoarea NU se deduce în TS: vine server-computed din
+        // `StingeriDto.SensCandidati` al documentului curent (42c).
+        //
+        // Enum pe sârmă ca STRING, parsat pe NUME înainte de proiecție (57a):
+        // o valoare necunoscută e eroare de client, nu filtru tăcut ignorat.
+        SensStingere? sensCerut = null;
+        if (!string.IsNullOrWhiteSpace(sens)) {
+            // 400, nu 422: cererea e malformată, n-o refuză domeniul (ca la balanță).
+            if (!Enum.TryParse<SensStingere>(sens, ignoreCase: false, out var parsat))
+                return BadRequest(EroriDto.DinMesaj(
+                    $"Sensul stingerii („{sens}”) nu e cunoscut: "
+                    + $"{nameof(SensStingere.Datorie)} sau {nameof(SensStingere.Creanta)}."));
+            sensCerut = parsat;
+        }
         using var os = Secured(typeof(Document));
-        return Incarca(ImperecheriProiectii.DocumenteCuRest(os, contrapartidaId), loadOptions);
+        return Incarca(ImperecheriProiectii.DocumenteCuRest(os, contrapartidaId, sensCerut), loadOptions);
     }
 }

@@ -13,6 +13,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // (GATE XAF D12), grupul propriu nested în containerul `Antet`.
 [TipDetaliu(typeof(FacturaIesireDetaliu))]
 public class FacturaIesire : Document, IDocumentCuScadenta {
+    // Rolul de STINS (F19-D16): factura clientului lasă un sold DEBITOR pe 4111 —
+    // se stinge creditând contrapartida (încasarea, jumătatea de credit a notei).
+    public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
+        SensStingere.Creanta;
+
     [XafDisplayName("Scadență")]
     public virtual DateOnly? DataScadenta { get; set; }
 

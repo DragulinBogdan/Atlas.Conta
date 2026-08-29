@@ -105,4 +105,23 @@ internal static class ApiEnum {
             $"Direcția liniei de inventar „{valoare}” nu există — valorile acceptate: "
             + string.Join(", ", Enum.GetNames<DirectieDiferenta>()) + ".");
     }
+
+    // Rolul liniei de ASAMBLARE (F19-D4/D9), pe aceeași regulă ca direcția LDI —
+    // parse pe NUME, la graniță, ÎNAINTE de orice `CreateObject`. Enumerare
+    // proprie (`Consum = 1`, `Produs = 2`), tot fără membru 0: pe ASM direcția
+    // decide dacă linia naște lot sau descarcă unul, deci o linie fără rol n-are
+    // ce fi. A doua copie a corpului, nu a regulii: generalizarea la
+    // `Enum.Parse<T>` ar pierde exact fraza de refuz care numește CE nu există
+    // („direcția liniei de inventar" ≠ „rolul liniei de asamblare").
+    public static DirectieAsamblare DirectieAsm(string valoare) {
+        if (!string.IsNullOrWhiteSpace(valoare)) {
+            var cerut = valoare.Trim();
+            foreach (var nume in Enum.GetNames<DirectieAsamblare>())
+                if (string.Equals(nume, cerut, StringComparison.OrdinalIgnoreCase))
+                    return Enum.Parse<DirectieAsamblare>(nume);
+        }
+        throw new OperareException(
+            $"Rolul liniei de asamblare „{valoare}” nu există — valorile acceptate: "
+            + string.Join(", ", Enum.GetNames<DirectieAsamblare>()) + ".");
+    }
 }

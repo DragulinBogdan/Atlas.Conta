@@ -25,6 +25,13 @@ public sealed class ImperechereWriteDto {
     // Documentul STINS (factura, decontul, avansul aflat pe rolul de stins).
     public Guid DocumentId { get; set; }
     public decimal Suma { get; set; }
+    // Grupul de plafon ales EXPLICIT (F19-D16), OPȚIONAL. Necesar doar când
+    // documentul stins poartă mai multe dintre contrapartidele stingătorului pe
+    // laturi diferite: acolo deducția refuză (ar consuma un plafon la
+    // întâmplare), iar panoul — care afișează candidații grupați per
+    // contrapartidă × sens — e singurul care știe sub ce grup a fost ales
+    // rândul. `null` = se deduce, cazul tuturor plăților/încasărilor.
+    public Guid? ContrapartidaId { get; set; }
 }
 
 // Legătura creată, plată. Numerele de rest NU sunt aici: după creare clientul
@@ -47,6 +54,25 @@ public sealed class StingeriDto {
     public decimal Total { get; set; }
     public decimal Asignat { get; set; }
     public decimal Ramas { get; set; }
+    // AFORDANȚA de SENS a panoului (F19-D16, review F3): literalul `Sens` pe care
+    // trebuie să-l poarte rândurile din `GET api/proiectii/documente-cu-rest`
+    // ca să fie candidați VALIZI pentru documentul ăsta — se pasează ca atare,
+    // pe parametrul `sens` al rutei. Server-computed, ca tot restul panoului:
+    // TS-ul nu deduce nimic (42c), fiindcă sensul e funcție de TIP (polimorf).
+    //
+    // Formula, una singură pentru AMBELE roluri: `Opus(SensDeStins)`.
+    //   * rolul „stinge" (PLT/INC): plafonul documentului e pe
+    //     `SensPropriu().Opus()` == `Opus(SensDeStins)`, iar candidații lui sunt
+    //     documentele care CONSUMĂ acel sens ⇒ literalul lor e chiar el. O plată
+    //     (`SensDeStins = Creanta`) cere candidați `Datorie` — facturile de
+    //     furnizor și deconturile, nu facturile de client.
+    //   * rolul „e stins" (FCT/FCL/DEC): candidații sunt STINGĂTORI, iar
+    //     stingătorul care are plafon pe sensul meu e cel al cărui `SensDeStins`
+    //     e opusul lui. Un FCT (`Datorie`) cere `Creanta` ⇒ plăți, nu încasări.
+    // `null` = tipul nu declară sens (nota contabilă, gestiunea) ⇒ panoul nu
+    // filtrează, exact ca înainte de F19-D16. Nota de compensare are propriul
+    // panou, GRUPAT, unde sensul vine per grup din `NtcContrapartidaDto.Sens`.
+    public string SensCandidati { get; set; }
     public List<StingereRandDto> Imperecheri { get; set; } = new();
 }
 

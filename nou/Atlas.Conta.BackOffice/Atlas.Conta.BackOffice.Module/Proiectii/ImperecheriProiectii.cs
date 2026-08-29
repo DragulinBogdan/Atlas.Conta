@@ -38,6 +38,12 @@ public sealed class DocumentCuRestRand {
     // stingătorului trebuie să apară pe documentul stins).
     public Guid ContrapartidaId { get; set; }
     public string ContrapartidaDenumire { get; set; }
+    // Sensul stingerii pe care documentul îl CONSUMĂ (F19-D16), ca LITERAL per
+    // ramură — exact cum e `Tip`. Dublează `Document.SensDeStins` (funcție de
+    // TIP, deci netraductibilă în SQL), deci are check de consistență pe fiecare
+    // rând în ModelCheck (42c: o proiecție care dublează un calcul al motorului
+    // se măsoară contra lui, nu se afirmă).
+    public string Sens { get; set; }
 
     public decimal Total { get; set; }
     public decimal Asignat { get; set; }
@@ -60,9 +66,15 @@ sealed class AntetCuRest {
     public DateOnly Data { get; set; }
     public Guid ContrapartidaId { get; set; }
     public string ContrapartidaDenumire { get; set; }
+    public string Sens { get; set; }
 }
 
 public static class ImperecheriProiectii {
+    // Literalii de sens, o singură dată: `SensStingere.X.ToString()` nu se
+    // traduce în SQL, iar un string „liber" în cinci ramuri ar putea devia de
+    // enum fără ca nimic să se plângă.
+    static readonly string SensDatorie = SensStingere.Datorie.ToString();
+    static readonly string SensCreanta = SensStingere.Creanta.ToString();
 
     // ── Atomii (42c) ────────────────────────────────────────────────────────
 
@@ -97,7 +109,7 @@ public static class ImperecheriProiectii {
     // Documentele operate cu rest > 0, opțional filtrate pe contrapartidă
     // (candidații de stins pentru o plată/încasare — F3-D4).
     public static IQueryable<DocumentCuRestRand> DocumenteCuRest(
-        IObjectSpace os, Guid? contrapartidaId = null) {
+        IObjectSpace os, Guid? contrapartidaId = null, SensStingere? sens = null) {
 
         // Contrapartida per tip: FCT → furnizorul (predator), FCL → clientul
         // (primitor), PLT → beneficiarul (primitor), INC → plătitorul
@@ -107,11 +119,13 @@ public static class ImperecheriProiectii {
             os.GetObjectsQuery<FacturaIntrare>().Where(d => d.Stare == StareDocument.Operat)
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "FCT", Numar = d.Numar, Data = d.Data,
-                    ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire })
+                    ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
+                    Sens = SensDatorie })
             .Concat(os.GetObjectsQuery<FacturaIesire>().Where(d => d.Stare == StareDocument.Operat)
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "FCL", Numar = d.Numar, Data = d.Data,
-                    ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire }))
+                    ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire,
+                    Sens = SensCreanta }))
             // PLT/INC: picioarele de VIRAMENT INTERN (F7) sunt EXCLUSE. Au
             // `Rest > 0` pe veci (nu se sting niciodată — `CapacitateStingere` e
             // null, `PoateFiStins` e false pe ele), iar contrapartida lor E un
@@ -126,20 +140,30 @@ public static class ImperecheriProiectii {
                     && !(d.Predator is ContPropriu && d.Primitor is ContPropriu))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "PLT", Numar = d.Numar, Data = d.Data,
-                    ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire }))
+                    ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire,
+                    Sens = SensCreanta }))
             .Concat(os.GetObjectsQuery<Incasare>()
                 .Where(d => d.Stare == StareDocument.Operat
                     && !(d.Predator is ContPropriu && d.Primitor is ContPropriu))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "INC", Numar = d.Numar, Data = d.Data,
-                    ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire }))
+                    ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
+                    Sens = SensDatorie }))
             .Concat(os.GetObjectsQuery<Decont>().Where(d => d.Stare == StareDocument.Operat)
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "DEC", Numar = d.Numar, Data = d.Data,
-                    ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire }));
+                    ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
+                    Sens = SensDatorie }));
 
         if (contrapartidaId is Guid cp)
             antete = antete.Where(a => a.ContrapartidaId == cp);
+        // Filtrul de SENS (F19-D16): panoul de compensare cere candidații UNEI
+        // jumătăți de plafon. Fără el ar propune o factură de client sub
+        // jumătatea de datorie a notei — o stingere pe care serviciul o refuză.
+        if (sens is SensStingere sensCerut) {
+            var literal = sensCerut.ToString();
+            antete = antete.Where(a => a.Sens == literal);
+        }
 
         var totaluri = Brut(os);
         var asignate = Asignari(os)
@@ -162,6 +186,7 @@ public static class ImperecheriProiectii {
                 Data = a.Data,
                 ContrapartidaId = a.ContrapartidaId,
                 ContrapartidaDenumire = a.ContrapartidaDenumire,
+                Sens = a.Sens,
                 Total = (decimal?)t.Suma ?? 0m,
                 Asignat = (decimal?)s.Suma ?? 0m,
                 Rest = ((decimal?)t.Suma ?? 0m) - ((decimal?)s.Suma ?? 0m)

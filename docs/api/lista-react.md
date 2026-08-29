@@ -117,3 +117,42 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
   pe cont ⇒ balanță/fișă ar închide bucla.
 - Restul ecranului S e livrat (comutator L/S în URL, S1–S5, `Excluse`,
   422 inline, descărcare prin `fetch + blob`).
+
+## Adăugate la felia 19 (NTC + ASM + retururi)
+
+Găsite la smoke-ul pe calea reală (browser + WebApi, baza Privat); niciunul nu
+e defect al feliei — toate patru sunt limite ale unor mecanisme comune, care vor
+reapărea pe orice felie următoare.
+
+- **Căutarea în lookup-uri e sensibilă la diacritice** (cel mai lat item):
+  „Clienti" nu găsește „419 — Clienţi – creditori" (grafia din seed are sedilă);
+  rândul apare doar tastând codul. Filtrul pleacă `$filter=contains(...)` spre
+  OData, iar comparația o face Postgres pe colația bazei — deci NU e o decizie a
+  componentei React și nu se rezolvă într-o felie. Afectează TOATE lookup-urile
+  remote (`Cont`, `TipMaterial`, `Repartitor`, `Produs`, `Lot`), iar operatorul
+  român nu tastează diacritice. Rezolvarea e de BAZĂ DE DATE: colație
+  `unaccent`/ICU pe coloanele de denumire sau o coloană shadow normalizată pe
+  care să cadă `contains`.
+- **`Lookup` refetchează eticheta valorii curente, o dată per instanță și per
+  re-render**: 8 cereri identice `GET UnitateInterna(<același guid>)` la o
+  singură deschidere a ecranului NTC (două laturi pe același nomenclator).
+  Fiecare `Lookup` își rezolvă singur eticheta prin `byKey`, fără cache partajat.
+  Rezolvarea: `byKey` prin TanStack Query cu cheie `(entitate, id)` — o singură
+  rezolvare per valoare, partajată între widget-uri.
+- **Etichetele liniilor nesalvate (61b) lipsesc când valoarea vine din
+  PRECOMPLETARE, nu din selecție**: pe linia de Consum a ASM, editorul arată
+  „371 — Mărfuri" (precompletat din lot), dar coloanele grilei rămân goale până
+  la salvare; pe linia de Produs eticheta apare, fiindcă acolo Tipul a venit
+  dintr-o selecție manuală. E limita convenției, nu o scăpare a feliei:
+  mecanismul culege eticheta *la selecție*, iar o valoare setată programatic nu
+  trece pe acolo. Reapare la orice viitoare precompletare. Rezolvarea:
+  precompletarea scrie perechea (id, etichetă) în același loc ca selecția —
+  sursa există deja în răspunsul `$expand` din care vine precompletarea.
+- **`window.confirm` pe ștergerea draftului** e moștenit de șablonul comun și
+  există acum și pe cele patru ecrane noi (`AsmDetaliu.tsx:194`,
+  `NtcDetaliu.tsx:168`, `RdcDetaliu.tsx:136`, `RlfDetaliu.tsx:139`).
+  Confirmările pe care felia le-a scris ea însăși sunt corect inline (panoul de
+  stingeri, distribuirea ASM). Se semnalează din nou fiindcă dialogul nativ
+  BLOCHEAZĂ renderer-ul sub extensie — motivul pentru care fusese scos din
+  panoul de stingeri, și motivul pentru care ștergerea n-a putut fi probată la
+  smoke.

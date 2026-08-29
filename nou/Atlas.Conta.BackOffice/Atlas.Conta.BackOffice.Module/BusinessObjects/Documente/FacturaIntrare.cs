@@ -17,6 +17,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // e aditivă), deci nu primesc grup de layout.
 [TipDetaliu(typeof(FacturaIntrareDetaliu))]
 public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
+    // Rolul de STINS (F19-D16): factura furnizorului lasă un sold CREDITOR pe
+    // 401 — se stinge debitând contrapartida (plata, jumătatea de debit a notei
+    // de compensare). Nu declară `CapacitateStingere`: factura nu stinge nimic.
+    public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
+        SensStingere.Datorie;
+
     [XafDisplayName("Scadență")]
     public virtual DateOnly? DataScadenta { get; set; }
     [XafDisplayName("Număr PV")]

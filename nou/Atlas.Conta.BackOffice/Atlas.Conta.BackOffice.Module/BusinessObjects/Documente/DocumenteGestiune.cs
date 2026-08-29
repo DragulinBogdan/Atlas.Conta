@@ -15,6 +15,21 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // închiderea întrebării 00 §13.1) — factura postează doar liniile non-stoc.
 [TipDetaliu(typeof(NirDetaliu))]
 public class NIR : Document {
+    // Rolul de STINS (F19-D16, review F4): recepția CONTEAZĂ pe NIR (26a) —
+    // `3xx = 401` se postează aici, nu pe factură —, deci NIR-ul lasă un sold
+    // CREDITOR pe contul furnizorului, iar furnizorul e chiar PREDATORUL lui.
+    // Se stinge debitând: plata, sau jumătatea de debit a unei note de
+    // compensare. Nu declară `CapacitateStingere`: NIR-ul nu stinge nimic.
+    //
+    // Declarația e IEȘIREA din fundătura găsită de review: fără ea, un NIR fără
+    // factură (partenerul e pe latură, deci intră în `peLaturi`) în fața unei
+    // note `401 = 4111` pe acel furnizor primea refuzul de ambiguitate — corect
+    // ca principiu, dar nerezolvabil pe NICIO cale de apelant. Ieșirea e
+    // MODELAREA (tipul își declară natura soldului), nu un câmp `Sens` în DTO
+    // care ar lăsa apelantul să aleagă arbitrar jumătatea.
+    public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
+        SensStingere.Datorie;
+
     // Cele două cazuri ale recepției, cu o formulă fiecare (F5-D6):
     //  (a) lot STRĂIN (născut pe altă linie — cazul conex): valoarea vine din
     //      prețul finalizat al lotului, deci recepția parțială (operatorul scade

@@ -21,6 +21,14 @@ import { IncLista } from './felii/inc/IncLista';
 import { IncDetaliu } from './felii/inc/IncDetaliu';
 import { DecLista } from './felii/dec/DecLista';
 import { DecDetaliu } from './felii/dec/DecDetaliu';
+import { NtcLista } from './felii/ntc/NtcLista';
+import { NtcDetaliu } from './felii/ntc/NtcDetaliu';
+import { AsmLista } from './felii/asm/AsmLista';
+import { AsmDetaliu } from './felii/asm/AsmDetaliu';
+import { RlfLista } from './felii/rlf/RlfLista';
+import { RlfDetaliu } from './felii/rlf/RlfDetaliu';
+import { RdcLista } from './felii/rdc/RdcLista';
+import { RdcDetaliu } from './felii/rdc/RdcDetaliu';
 import { SoldStoc } from './felii/stoc/SoldStoc';
 import { Balanta } from './felii/raportare/Balanta';
 import { BalantaPlan } from './felii/raportare/BalantaPlan';
@@ -72,6 +80,25 @@ export function App() {
         <Route path="/ldi" element={<LdiLista />} />
         <Route path="/ldi/nou" element={<LdiDetaliu />} />
         <Route path="/ldi/:id" element={<LdiDetaliu />} />
+        {/* Nota contabilă (felia 19): postare EXPLICITĂ, fără regulă de contare
+            — și calea de lucru a compensării (48b), cu panoul de stingeri
+            grupat pe (contrapartidă × sens). */}
+        <Route path="/ntc" element={<NtcLista />} />
+        <Route path="/ntc/nou" element={<NtcDetaliu />} />
+        <Route path="/ntc/:id" element={<NtcDetaliu />} />
+        <Route path="/asm" element={<AsmLista />} />
+        <Route path="/asm/nou" element={<AsmDetaliu />} />
+        <Route path="/asm/:id" element={<AsmDetaliu />} />
+        {/* Retururile (felia 19): storno cu valori NEGATIVE pe corespondența
+            originală, culese POZITIV. Nu sunt stingători și nu au panou de
+            stingeri (F19-D11) — compensarea cu factura originală se face prin
+            nota contabilă. */}
+        <Route path="/rlf" element={<RlfLista />} />
+        <Route path="/rlf/nou" element={<RlfDetaliu />} />
+        <Route path="/rlf/:id" element={<RlfDetaliu />} />
+        <Route path="/rdc" element={<RdcLista />} />
+        <Route path="/rdc/nou" element={<RdcDetaliu />} />
+        <Route path="/rdc/:id" element={<RdcDetaliu />} />
         <Route path="/stoc" element={<SoldStoc />} />
         {/* Raportarea pe registre (felia 9). Parametrii (perioadă, mod, cont)
             trăiesc în query string, nu în cale: sunt STARE, nu identitate — un
@@ -123,6 +150,10 @@ function Cadru() {
         <NavLink to="/btr">Note de transfer</NavLink>
         <NavLink to="/bcs">Bonuri de consum</NavLink>
         <NavLink to="/ldi">Diferențe inventar</NavLink>
+        <NavLink to="/asm">Asamblări</NavLink>
+        <NavLink to="/ntc">Note contabile</NavLink>
+        <NavLink to="/rlf">Retururi la furnizor</NavLink>
+        <NavLink to="/rdc">Retururi de la client</NavLink>
         <NavLink to="/stoc">Sold stoc</NavLink>
         <NavLink to="/balanta">Balanță</NavLink>
         <NavLink to="/balanta-plan">Balanță pe plan</NavLink>

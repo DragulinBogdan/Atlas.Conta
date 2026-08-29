@@ -5,6 +5,7 @@ using System.Xml.Linq;
 using Atlas.Conta.BackOffice.ModelCheck;
 using Atlas.Conta.BackOffice.Module.Anaf;
 using Atlas.Conta.BackOffice.Module.Api;
+using Atlas.Conta.BackOffice.Module.Api.Asm;
 using Atlas.Conta.BackOffice.Module.Api.Bcs;
 using Atlas.Conta.BackOffice.Module.Api.Btr;
 using Atlas.Conta.BackOffice.Module.Api.Dec;
@@ -13,6 +14,9 @@ using Atlas.Conta.BackOffice.Module.Api.Fcl;
 using Atlas.Conta.BackOffice.Module.Api.Fct;
 using Atlas.Conta.BackOffice.Module.Api.Ldi;
 using Atlas.Conta.BackOffice.Module.Api.Nir;
+using Atlas.Conta.BackOffice.Module.Api.Ntc;
+using Atlas.Conta.BackOffice.Module.Api.Rdc;
+using Atlas.Conta.BackOffice.Module.Api.Rlf;
 using Atlas.Conta.BackOffice.Module.Api.Trz;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
@@ -1228,6 +1232,9 @@ if (profil == ProfilContabil.Privat) {
             var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
             var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
             var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+            // Piciorul de trezorerie al matricei de perechi (review F2), de la
+            // sfârșitul blocului: aceeași scenă, aceeași contrapartidă.
+            var casaCmp = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
             var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
             var tip704 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704");
             var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
@@ -1356,6 +1363,84 @@ if (profil == ProfilContabil.Privat) {
             Check("După ștergerea stingerilor nota se anulează normal (link fără registre proprii — 31d)",
                 ntc.Stare == StareDocument.Draft
                 && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == ntc.ID));
+
+            // ═══ F19-D16 (review F2): acoperire pe SPAȚIUL de perechi ═══
+            // Lecția scrisă în contract: „un invariant de ne-regresie se măsoară
+            // pe SPAȚIUL de cazuri, nu pe suita existentă". Prima versiune a lui
+            // F19-D16 a trecut cu toate verificările verzi, iar review-ul a găsit
+            // pe HTTP că trezoreria ÎȘI SCHIMBĂ comportamentul (`PLT → FCL` și
+            // `INC → FCT` primesc acum 422) — fiindcă nicio verificare nu atingea
+            // acele perechi. Aici se măsoară perechile (stingător × stins) pe
+            // AMBELE verdicte, cu documente reale pe ACEEAȘI contrapartidă:
+            // contrapartida comună nu mai e explicația refuzului, sensul e.
+            //
+            // Verdictul REFUZ pe `PLT → FCL` / `INC → FCT` e corect contabil (a
+            // credita 401 nu stinge o factură de furnizor; a debita 4111 nu
+            // stinge una de client) — vechea permisivitate era o gaură din
+            // aceeași familie. Pe Flax cade exact 1 imperechere / 700,00 din
+            // 46.056 (F19-D16, pin-ul „Adăugat după review").
+            DocumentTrezorerie TrzCmp(bool incasare, decimal valoare, DateOnly data) {
+                DocumentTrezorerie d = incasare ? os.CreateObject<Incasare>() : os.CreateObject<Plata>();
+                d.Data = data;
+                d.Predator = incasare ? (Repartitor)partenerX : casaCmp;
+                d.Primitor = incasare ? (Repartitor)casaCmp : partenerX;
+                d.TipInstrument = TipInstrumentPlata.Chitanta;
+                var l = os.CreateObject<DocumentTrezorerieDetaliu>();
+                l.Document = d;
+                l.TipMaterial = tipTrz;
+                l.Valoare = valoare;
+                os.CommitChanges();
+                MotorOperare.Opereaza(os, d);
+                return d;
+            }
+            var pltCmp = TrzCmp(incasare: false, 30m, new DateOnly(2026, 5, 8));
+            var pltCmp2 = TrzCmp(incasare: false, 30m, new DateOnly(2026, 5, 8));
+            var incCmp = TrzCmp(incasare: true, 30m, new DateOnly(2026, 5, 9));
+            var incCmp2 = TrzCmp(incasare: true, 30m, new DateOnly(2026, 5, 9));
+            Check("F19-D16 (spațiul de perechi) — PREMISA: cei patru stingători de trezorerie și cele două facturi "
+                + "stau pe ACEEAȘI contrapartidă (X), toate operate cu rest > 0; deci orice refuz de mai jos e al "
+                + "SENSULUI, nu al contrapartidei comune",
+                new[] { pltCmp, pltCmp2, incCmp, incCmp2 }.All(d =>
+                    d.CapacitateStingere(os).ContainsKey(partenerX.ID)
+                    && ImperechereService.Ramas(os, d.ID) == 30m)
+                && ImperechereService.Ramas(os, fct.ID) == 100m
+                && ImperechereService.Ramas(os, fcl.ID) == 100m);
+            // Fiecare pereche se măsoară IZOLAT: acceptarea se șterge imediat, ca
+            // plafonul consumat de o pereche să nu explice verdictul următoarei.
+            void Accepta(string nume, Document stingator, Document stins) {
+                var imp = ImperechereService.Imperecheaza(os, stingator, stins, 10m);
+                Check(nume, imp.Suma == 10m);
+                os.Delete(imp);
+                os.CommitChanges();
+            }
+            Accepta("F19-D16 (perechi, TRECE): PLT → FCT — plata are plafon pe `Datorie`, factura furnizorului "
+                + "consumă `Datorie` (comportament NESCHIMBAT)", pltCmp, fct);
+            CheckRefuza("F19-D16 (perechi, REFUZĂ — SCHIMBARE de comportament, declarată): PLT → FCL, aceeași "
+                + "contrapartidă și rest suficient pe amândouă — a credita 4111 nu stinge o factură de client. "
+                + "Trecea înainte de F19-D16; pe Flax e 1 imperechere / 700,00 din 46.056",
+                () => ImperechereService.Imperecheaza(os, pltCmp, fcl, 10m));
+            Accepta("F19-D16 (perechi, TRECE): INC → FCL — încasarea are plafon pe `Creanta`, factura clientului "
+                + "consumă `Creanta` (comportament NESCHIMBAT)", incCmp, fcl);
+            CheckRefuza("F19-D16 (perechi, REFUZĂ — SCHIMBARE de comportament, declarată): INC → FCT — a debita 401 "
+                + "din încasare nu stinge o factură de furnizor",
+                () => ImperechereService.Imperecheaza(os, incCmp, fct, 10m));
+            Accepta("F19-D16 (perechi, TRECE): PLT → INC — avansul dat stinge încasarea-avans primit (lanțul "
+                + "avans↔regularizare, 31d, NEATINS)", pltCmp, incCmp);
+            Accepta("F19-D16 (perechi, TRECE): INC → PLT — cealaltă jumătate a aceluiași lanț", incCmp, pltCmp);
+            CheckRefuza("F19-D16 (perechi, REFUZĂ — regulă PREEXISTENTĂ, nu a sensului): PLT → PLT",
+                () => ImperechereService.Imperecheaza(os, pltCmp, pltCmp2, 10m));
+            CheckRefuza("F19-D16 (perechi, REFUZĂ — regulă PREEXISTENTĂ): INC → INC",
+                () => ImperechereService.Imperecheaza(os, incCmp, incCmp2, 10m));
+            CheckRefuza("F19-D16 (perechi, REFUZĂ): FCT nu e stingător (rolul e al TIPULUI — 48b), deși poartă "
+                + "contrapartida", () => ImperechereService.Imperecheaza(os, fct, pltCmp, 10m));
+            CheckRefuza("F19-D16 (perechi, REFUZĂ): FCL nu e stingător",
+                () => ImperechereService.Imperecheaza(os, fcl, incCmp, 10m));
+            Check("F19-D16 (perechi): măsurarea n-a lăsat nicio imperechere în urmă — fiecare verdict a fost "
+                + "izolat, deci niciun refuz nu se explică prin plafonul consumat de perechea dinainte",
+                !os.GetObjectsQuery<Imperechere>().Any(i =>
+                    i.DocumentStingatorId == pltCmp.ID || i.DocumentStingatorId == incCmp.ID)
+                && ImperechereService.Ramas(os, fct.ID) == 100m
+                && ImperechereService.Ramas(os, fcl.ID) == 100m);
 
             CurataCmp(os);
             Check("Curățenie finală compensare (fără reziduuri e2e)",
@@ -2979,6 +3064,15 @@ if (profil == ProfilContabil.Privat) {
     VerificaAxaTaxareInversa();
     VerificaGardianCicluCont();
     VerificaValoareIesire(privat: true);
+    VerificaApiNtc(privat: true);
+    // F19-D14: ASM are politici DOAR pe privat (numerotare + reguli de stoc) —
+    // pe bugetar tipul e inert, deci blocul ar măsura cifre moarte.
+    VerificaApiAsm();
+    // F19-D14: RLF/RDC au politici (numerotare, stoc, contare, TVA) DOAR pe
+    // privat — pe bugetar tipurile sunt inerte, iar blocurile ar măsura cifre
+    // moarte (retururile sunt singurele tipuri ale feliei cu TVA).
+    VerificaApiRlf();
+    VerificaApiRdc();
 
     Rezumat();
     return;
@@ -5086,6 +5180,37 @@ using (var os = provider.CreateObjectSpace()) {
         && cuRestFurnizor.Any(r => r.DocumentId == idFctPlata)
         && cuRestFurnizor.Any(r => r.DocumentId == idPlt)
         && !cuRestFurnizor.Any(r => r.DocumentId == idInc));
+    // ═══ F19-D16 (review F3): afordanța de SENS a panourilor CLASICE ═══
+    // Sensul nu se deduce în TS (42c): vine server-computed pe `StingeriDto`,
+    // din hook-ul polimorf, iar clientul îl pasează ca atare pe parametrul
+    // `sens` al proiecției. Fără el panourile clasice filtrau DOAR pe TIP —
+    // măsurat pe baza Privat, 87 din 353 de contrapartide au documente pe AMBELE
+    // sensuri, deci un panou de Încasare oferea zeci de facturi de furnizor cu
+    // buton „Stinge” care duc garantat la 422.
+    var panouSensFct = ImperechereApply.Stingeri(os, idFctPlata);
+    var panouSensPlt = ImperechereApply.Stingeri(os, idPlt);
+    Check("F19-D16 (F3): `StingeriDto.SensCandidati` = `Opus(SensDeStins)`, o singură formulă pentru ambele "
+        + "roluri — factura de furnizor (consumă `Datorie`) cere candidați cu literalul `Creanta` (plăți), plata "
+        + "(consumă `Creanta`) cere `Datorie` (facturi de furnizor, deconturi)",
+        panouSensFct.SensCandidati == nameof(SensStingere.Creanta)
+        && panouSensPlt.SensCandidati == nameof(SensStingere.Datorie));
+    var candFctSens = ImperecheriProiectii
+        .DocumenteCuRest(os, furnizor.ID, Enum.Parse<SensStingere>(panouSensFct.SensCandidati)).ToList();
+    var candPltSens = ImperecheriProiectii
+        .DocumenteCuRest(os, furnizor.ID, Enum.Parse<SensStingere>(panouSensPlt.SensCandidati)).ToList();
+    Check("F19-D16 (F3, cusătura MĂSURATĂ — riscul 2 al contractului, capătul panourilor VECHI): filtrată cu "
+        + "`SensCandidati`, proiecția oferă DOAR documente pe care serviciul le acceptă — fiecare candidat al "
+        + "facturii chiar are plafon pe sensul pe care factura îl consumă (`Datorie`), iar factura nu se oferă pe "
+        + "sine; simetric, panoul plății oferă factura și niciun document de trezorerie de același sens",
+        candFctSens.Count > 0
+        && candFctSens.All(r => r.Tip == "PLT")
+        && candFctSens.All(r => os.GetObjectByKey<Document>(r.DocumentId).CapacitateStingere(os) is { } cap
+            && cap.TryGetValue(furnizor.ID, out var plafon) && plafon[SensStingere.Datorie] > 0m)
+        && candFctSens.Any(r => r.DocumentId == idPlt)
+        && !candFctSens.Any(r => r.DocumentId == idFctPlata)
+        && candPltSens.Any(r => r.DocumentId == idFctPlata)
+        && !candPltSens.Any(r => r.DocumentId == idPlt));
+
     Check("F3-D4: proiecția rămâne IQueryable — filtrarea/sortarea/paginarea se traduc în SQL peste uniune (sondă: filtru pe tip + sort + take)",
         ImperecheriProiectii.DocumenteCuRest(os).Where(r => r.Tip == "PLT")
             .OrderByDescending(r => r.Rest).Take(1).ToList().Count == 1);
@@ -7962,6 +8087,7 @@ VerificaSaftStocuri(privat: false);
 VerificaAxaTaxareInversa();
 VerificaGardianCicluCont();
 VerificaValoareIesire(privat: false);
+VerificaApiNtc(privat: false);
 
 Rezumat();
 
@@ -16074,4 +16200,2398 @@ void VerificaValoareIesire(bool privat) {
     Check("D18-V2 curățenie (fără reziduuri: repartitori, documente, loturi, produse)",
         !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(Marcaj))
         && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(Marcaj)));
+}
+
+// ================= Felia API NTC (F19, track 1) — E2E-API-NTC =================
+// Nota contabilă parcursă prin CONTRACTUL feliei: WriteDto →
+// `NotaContabilaApply.Aplica` → `Citeste`/`Lista` → `Candidati` → dry-run →
+// `OperareApi`. Endpoint-urile din host sunt transport peste EXACT acest cod,
+// deci ce e verde aici e verde și pe sârmă.
+//
+// Rulează pe AMBELE profiluri (F19-D14): NTC are `PoliticaNumerotare` în
+// amândouă, fiindcă nota e NEUTRĂ față de profil — fără stoc, fără contare, fără
+// TVA, fără scadență, fără validare. Singurul lucru care diferă sunt SIMBOLURILE
+// conturilor scenei, luate din profil, nu presupuse.
+//
+// Ce exersează, în plus față de blocul de MOTOR (`E2E-NTC`, care probează
+// postarea explicită și refuzurile pe calea XAF):
+//   * `Valoare` CULEASĂ, inclusiv NEGATIVĂ, supraviețuiește round-trip-ului
+//     Write → Read → Write (F19-D8: nu există `MaterializeazaValori` care s-o
+//     rescrie);
+//   * reconcilierea agregatului: Id străin, Id repetat, linie de tip BAZĂ, FK
+//     inexistent, scara banilor — fiecare refuz de DOMENIU, fără reziduu;
+//   * seria „NTC-" NEconsumată la refuz (F19-D6 + GATE D6);
+//   * `candidati` (F19-D10): plafonul per contrapartidă IDENTIC cu
+//     `CapacitateStingere`, „asignat" identic cu `ImperechereService.AsignatFataDe`
+//     și rândurile identice cu `DocumenteCuRest` filtrat pe acea contrapartidă —
+//     cusătură MĂSURATĂ (se probează că `Disponibil` e exact suma maximă pe care
+//     serviciul o acceptă și că un ban peste ea se refuză);
+//   * NTC ABSENT din `DocumenteCuRest` (nota n-are semantică de „rest").
+void VerificaApiNtc(bool privat) {
+    const string Marcaj = "E2E-API-NTC";
+    using var os = provider.CreateObjectSpace();
+
+    // Conturile scenei, per PROFIL (motorul nu cunoaște niciun simbol — 29;
+    // scena, care e date, îl cunoaște pe al profilului ei).
+    var contFurnizor = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "401" : "401.01.00"));
+    var contClient = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "4111" : "411.01.01"));
+    var contTranzit = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "581" : "581.01.01"));
+    var casa = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
+    var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+    var tipNtc = os.FirstOrDefault<TipDocument>(t => t.Cod == "NTC");
+
+    void Curata() {
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
+        // Laturile notei sunt unitatea internă MARCATĂ a scenei, deci filtrul pe
+        // laturi prinde și notele, nu doar documentele de trezorerie.
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId))
+            .Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+    Curata();
+
+    Check("Api NTC — precondiții de profil: ancora NTC cu seria „NTC-”, conturile scenei și NICIO regulă de contare "
+        + "(postarea explicită a liniei postează în ABSENȚA regulii — riscul 1 al feliei, trăsătura tipului)",
+        tipNtc != null && tipNtc.ClrType == nameof(NotaContabila)
+        && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "NTC")?.Serie == "NTC-"
+        && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipNtc.ID)
+        && !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocumentId == tipNtc.ID)
+        && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipNtc.ID) == null
+        && contFurnizor != null && contClient != null && contTranzit != null
+        && casa != null && tipTrz != null);
+
+    // ---------------- Scena ----------------
+    // Laturile notei: o unitate internă MARCATĂ (nota le cere interne).
+    var unitate = os.CreateObject<UnitateInterna>();
+    unitate.Cod = Marcaj + "-U";
+    unitate.Denumire = "Unitate probă felia Api NTC";
+    // Partenerul pe care se face compensarea (contrapartida de pe LINIE) + un al
+    // doilea, ca panoul să aibă DOUĂ contrapartide — exact cazul pentru care
+    // `DocumenteCuRest(contrapartidaId)` nu ajunge (F19-D10).
+    var partenerX = os.CreateObject<Partener>();
+    partenerX.Cod = Marcaj + "-X";
+    partenerX.Denumire = "Partener Api NTC X";
+    var partenerY = os.CreateObject<Partener>();
+    partenerY.Cod = Marcaj + "-Y";
+    partenerY.Denumire = "Partener Api NTC Y";
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = Marcaj + "-CE";
+    codEc.Denumire = "Cod economic probă Api NTC";
+    os.CommitChanges();
+
+    // Dry-run-ul își cere ObjectSpace-ul PROPRIU (contractul lui
+    // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
+    IReadOnlyList<string> DryRunNtc(Guid docId) {
+        using var osDry = provider.CreateObjectSpace();
+        return OperareApi.Valideaza(osDry, docId);
+    }
+    int SerieNtc() => os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "NTC").UrmatorulNumar;
+    List<RegistruContabil> NoteNtc(Guid docId) =>
+        os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == docId && !r.Storno).ToList();
+
+    var dataNtc = new DateOnly(2026, 4, 20);
+
+    // --- Apply: culegerea, cu cele trei feluri de linie ale scenei ---
+    var write = new NtcWriteDto {
+        Data = dataNtc,
+        PredatorId = unitate.ID,
+        PrimitorId = unitate.ID,
+        Linii = {
+            // Compensarea propriu-zisă: furnizor = client pe ACELAȘI partener.
+            // Plafonul lui X devine 2 × 60 (o dată pe debit, o dată pe credit).
+            new NtcLinieWriteDto {
+                TipMaterialId = tipTrz.ID, Descriere = "Compensare X",
+                ContDebitId = contFurnizor.ID, ContCreditId = contClient.ID,
+                RepartitorDebitId = partenerX.ID, RepartitorCreditId = partenerX.ID,
+                CodEconomicId = codEc.ID, Valoare = 60m
+            },
+            // O singură latură cu contrapartidă ⇒ plafonul lui Y e 25.
+            new NtcLinieWriteDto {
+                TipMaterialId = tipTrz.ID, Descriere = "Preluare datorie Y",
+                ContDebitId = contFurnizor.ID, ContCreditId = contTranzit.ID,
+                RepartitorDebitId = partenerY.ID,
+                CodEconomicId = codEc.ID, Valoare = 25m
+            },
+            // Linia NEGATIVĂ (nota storno, F19-D8): fără repartitori pe linie,
+            // deci nu atinge niciun plafon — dimensiunile cad pe default-ul
+            // polimorf al header-ului (32c).
+            new NtcLinieWriteDto {
+                TipMaterialId = tipTrz.ID, Descriere = "Corecție cu minus",
+                ContDebitId = contTranzit.ID, ContCreditId = contFurnizor.ID,
+                CodEconomicId = codEc.ID, Valoare = -10m
+            }
+        }
+    };
+    var idNtc = NotaContabilaApply.Aplica(os, null, write);
+    var cit = NotaContabilaApply.Citeste(os, idNtc);
+    Check("Api NTC: Apply → header plat, FĂRĂ număr (seria „NTC-” e server-owned, se consumă la operare), "
+        + "cu denumirile ambelor laturi interne",
+        cit != null && cit.Id == idNtc && cit.Stare == "Draft" && cit.Numar == null
+        && cit.Data == dataNtc
+        && cit.PredatorId == unitate.ID && cit.PredatorDenumire == unitate.Denumire
+        && cit.PrimitorId == unitate.ID && cit.PrimitorDenumire == unitate.Denumire
+        && cit.Linii.Count == 3
+        && cit.PoateEdita && cit.PoateOpera && !cit.PoateAnula && !cit.PoateStorna);
+
+    var lCompensare = cit.Linii.Single(l => l.Descriere == "Compensare X");
+    var lPreluare = cit.Linii.Single(l => l.Descriere == "Preluare datorie Y");
+    var lMinus = cit.Linii.Single(l => l.Descriere == "Corecție cu minus");
+    Check("Api NTC (F19-D8): `Valoare` e CULEASĂ ca atare — inclusiv NEGATIVĂ (nota storno); nu există lanț de valori "
+        + "care s-o rescrie, iar `Total` = Σ liniilor (60 + 25 − 10 = 75)",
+        lCompensare.Valoare == 60m && lPreluare.Valoare == 25m && lMinus.Valoare == -10m
+        && cit.Total == 75m);
+    Check("Api NTC: linia proiectează plat postarea EXPLICITĂ (cont = simbol + denumire, repartitor per latură) "
+        + "și dimensiunea frunzei; laturile necompletate ies null, nu 0",
+        lCompensare.ContDebitId == contFurnizor.ID && lCompensare.ContDebitSimbol == contFurnizor.Simbol
+        && lCompensare.ContDebitDenumire == contFurnizor.Denumire
+        && lCompensare.ContCreditId == contClient.ID && lCompensare.ContCreditSimbol == contClient.Simbol
+        && lCompensare.RepartitorDebitId == partenerX.ID
+        && lCompensare.RepartitorDebitDenumire == partenerX.Denumire
+        && lCompensare.RepartitorCreditId == partenerX.ID
+        && lPreluare.RepartitorCreditId == null && lPreluare.RepartitorCreditDenumire == null
+        && lMinus.RepartitorDebitId == null && lMinus.RepartitorCreditId == null
+        && lCompensare.CodEconomicId == codEc.ID && lCompensare.CodEconomicCod == codEc.Cod
+        && lCompensare.TipMaterialId == tipTrz.ID && lCompensare.TipMaterialCod == tipTrz.Cod);
+    var randLista = NotaContabilaApply.Lista(os).Single(d => d.Id == idNtc);
+    Check("Api NTC: Lista dă aceleași cifre ca agregatul (Total prin join pe agregat), starea tradusă în SQL",
+        randLista.Stare == "Draft" && randLista.Total == 75m && randLista.Numar == null
+        && randLista.PredatorDenumire == unitate.Denumire
+        && randLista.PrimitorDenumire == unitate.Denumire);
+
+    // Round-trip complet: ReadDto → WriteDto → Apply, valorile (negativa inclusă)
+    // rămân neschimbate și nu apar/dispar linii.
+    var rescriere = new NtcWriteDto {
+        Data = cit.Data, PredatorId = cit.PredatorId, PrimitorId = cit.PrimitorId,
+        Linii = cit.Linii.Select(l => new NtcLinieWriteDto {
+            Id = l.Id, TipMaterialId = l.TipMaterialId, Descriere = l.Descriere,
+            ContDebitId = l.ContDebitId, ContCreditId = l.ContCreditId,
+            RepartitorDebitId = l.RepartitorDebitId, RepartitorCreditId = l.RepartitorCreditId,
+            CodEconomicId = l.CodEconomicId, Valoare = l.Valoare
+        }).ToList()
+    };
+    NotaContabilaApply.Aplica(os, idNtc, rescriere);
+    Check("Api NTC: round-trip Read → Write → Apply nu schimbă nimic (negativul supraviețuiește; "
+        + "nicio linie nu apare și nu dispare)",
+        NotaContabilaApply.Citeste(os, idNtc) is { Total: 75m } dupaRoundTrip
+        && dupaRoundTrip.Linii.Count == 3
+        && dupaRoundTrip.Linii.Single(l => l.Id == lMinus.Id).Valoare == -10m);
+
+    // --- Refuzurile de PAYLOAD (reconcilierea) ---
+    NtcWriteDto Payload(params NtcLinieWriteDto[] linii) => new() {
+        Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID, Linii = linii.ToList()
+    };
+    NtcLinieWriteDto LinieValida() => new() {
+        TipMaterialId = tipTrz.ID, Descriere = "probă",
+        ContDebitId = contTranzit.ID, ContCreditId = contFurnizor.ID,
+        CodEconomicId = codEc.ID, Valoare = 5m
+    };
+
+    CheckRefuza("Api NTC: Id de linie STRĂIN → refuz (agregatul nu adoptă linii din alt document)", () => {
+        var l = LinieValida(); l.Id = Guid.NewGuid();
+        NotaContabilaApply.Aplica(os, idNtc, Payload(l));
+    });
+    CheckRefuza("Api NTC: același Id de linie de două ori → refuz", () => {
+        var l = new NtcLinieWriteDto {
+            Id = lCompensare.Id, TipMaterialId = tipTrz.ID,
+            ContDebitId = contFurnizor.ID, ContCreditId = contClient.ID, Valoare = 60m
+        };
+        NotaContabilaApply.Aplica(os, idNtc, Payload(l, l));
+    });
+    CheckRefuza("Api NTC: `TipMaterialId` absent din payload → refuz de DOMENIU („tipul … nu există”), "
+        + "nu violare de FK NOT NULL (singurul câmp fără rol pe notă, dar obligatoriu pe BAZĂ)", () => {
+        var l = LinieValida(); l.TipMaterialId = Guid.Empty;
+        NotaContabilaApply.Aplica(os, idNtc, Payload(l));
+    });
+    CheckRefuza("Api NTC: cont explicit inexistent → refuz de domeniu (rezolvarea pe navigație)", () => {
+        var l = LinieValida(); l.ContDebitId = Guid.NewGuid();
+        NotaContabilaApply.Aplica(os, idNtc, Payload(l));
+    });
+    CheckRefuza("Api NTC: repartitor de linie inexistent → refuz de domeniu", () => {
+        var l = LinieValida(); l.RepartitorCreditId = Guid.NewGuid();
+        NotaContabilaApply.Aplica(os, idNtc, Payload(l));
+    });
+    CheckRefuza("Api NTC: valoare în afara scării numeric(18,2) → refuz de domeniu, nu DbUpdateException", () => {
+        var l = LinieValida(); l.Valoare = 5.001m;
+        NotaContabilaApply.Aplica(os, idNtc, Payload(l));
+    });
+    // Pe documentul EXISTENT, nu pe unul nou: refuzul cade ÎNAINTE de orice
+    // atingere a header-ului, deci nota rămâne exact cum era. (Pe calea de
+    // CREARE același refuz vine după `CreateObject`, adică lasă în
+    // ObjectSpace-ul apelantului un document fără latură — pe host OS-ul e
+    // per-cerere și moare cu ea, aici ar fi persistat de următorul commit.
+    // Contractul e al apelantului, documentat în antetul lui `Aplica`.)
+    CheckRefuza("Api NTC: latură inexistentă în nomenclatorul de repartitori → refuz de domeniu, înaintea "
+        + "oricărei modificări a header-ului", () =>
+        NotaContabilaApply.Aplica(os, idNtc, new NtcWriteDto {
+            Data = dataNtc, PredatorId = Guid.NewGuid(), PrimitorId = unitate.ID,
+            Linii = { LinieValida() }
+        }));
+    Check("Api NTC: …iar nota rămâne pe laturile ei (refuzul n-a rescris nimic)",
+        NotaContabilaApply.Citeste(os, idNtc) is { PredatorId: var pId } && pId == unitate.ID);
+
+    NotaContabilaApply.Aplica(os, idNtc, rescriere);
+    Check("Api NTC: un Apply refuzat nu lasă reziduu în agregat — următorul payload valid readuce documentul la "
+        + "exact trei linii, cu aceleași cifre (reconcilierea curăță liniile create înaintea refuzului)",
+        NotaContabilaApply.Citeste(os, idNtc) is { Total: 75m } dupaRefuzuri
+        && dupaRefuzuri.Linii.Count == 3);
+
+    // --- Linia de tip BAZĂ (notă istorică/importată) ---
+    var docIstoric = os.GetObjectByKey<NotaContabila>(idNtc);
+    var linieBaza = os.CreateObject<DocumentDetaliu>();   // NU NotaContabilaDetaliu
+    linieBaza.Document = docIstoric;
+    linieBaza.TipMaterial = tipTrz;
+    linieBaza.Valoare = 7m;
+    os.CommitChanges();
+    var idLinieBaza = linieBaza.ID;
+    var citCuBaza = NotaContabilaApply.Citeste(os, idNtc);
+    Check("Api NTC: citirea merge pe BAZA detaliului (as-cast la frunză) — linia de tip BAZĂ APARE, cu câmpurile "
+        + "frunzei NULE, iar `Total` o numără la fel în agregat și în listă (82)",
+        citCuBaza.Linii.Count == 4
+        && citCuBaza.Linii.Single(l => l.Id == idLinieBaza)
+            is { Descriere: null, ContDebitId: null, ContCreditId: null, CodEconomicId: null, Valoare: 7m }
+        && citCuBaza.Total == 82m
+        && NotaContabilaApply.Lista(os).Single(d => d.Id == idNtc).Total == 82m);
+    CheckRefuza("Api NTC: Id-ul unei linii de tip BAZĂ în payload → refuz acționabil („ștergeți-o și culegeți-o din nou”)",
+        () => {
+            var l = LinieValida(); l.Id = idLinieBaza;
+            NotaContabilaApply.Aplica(os, idNtc, Payload(l));
+        });
+    CheckRefuza("Api NTC: motorul refuză o notă cu linie de tip BAZĂ (n-are postare explicită — ar fi sărită mut)",
+        () => OperareApi.Opereaza(os, idNtc));
+    NotaContabilaApply.Aplica(os, idNtc, rescriere);
+    Check("Api NTC: linia absentă din payload se ȘTERGE (reconciliere server-side) — linia de bază dispare, "
+        + "agregatul revine la 75",
+        !os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.ID == idLinieBaza)
+        && NotaContabilaApply.Citeste(os, idNtc) is { Total: 75m } dupaCuratenie
+        && dupaCuratenie.Linii.Count == 3);
+
+    // --- Refuzurile de OPERARE: fără rânduri-fantomă, fără serie consumată ---
+    var serieInainte = SerieNtc();
+    void RefuzOperare(string nume, Guid predatorId, Guid primitorId, NtcLinieWriteDto linie) {
+        var id = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
+            Data = dataNtc, PredatorId = predatorId, PrimitorId = primitorId, Linii = { linie }
+        });
+        Check(nume + " — dry-run-ul îl vede (fără să atingă nimic)", DryRunNtc(id).Count > 0);
+        CheckRefuza(nume, () => OperareApi.Opereaza(os, id));
+        Check(nume + " — fără rânduri-fantomă și fără număr consumat (33d + GATE D6)",
+            !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == id)
+            && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == id)
+            && os.GetObjectByKey<NotaContabila>(id).Stare == StareDocument.Draft
+            && os.GetObjectByKey<NotaContabila>(id).Numar == null);
+        NotaContabilaApply.Sterge(os, id);
+    }
+
+    RefuzOperare("Api NTC: latură `Partener` (nota are laturi INTERNE — partenerul stă pe contul liniei) → refuz",
+        unitate.ID, partenerX.ID, LinieValida());
+    var faraCont = LinieValida(); faraCont.ContCreditId = null;
+    RefuzOperare("Api NTC: linie fără cont creditor → refuz (nota n-are reguli de contare care s-o salveze)",
+        unitate.ID, unitate.ID, faraCont);
+    var valoareZero = LinieValida(); valoareZero.Valoare = 0m;
+    RefuzOperare("Api NTC: linie cu valoare 0 → refuz al TIPULUI (felia NU duplică regula — negativul rămâne permis)",
+        unitate.ID, unitate.ID, valoareZero);
+    var faraDefalcare = LinieValida();
+    faraDefalcare.ContDebitId = contFurnizor.ID;
+    faraDefalcare.ContCreditId = contTranzit.ID;
+    faraDefalcare.CodEconomicId = null;
+    if (contFurnizor.DimensiuniObligatorii.HasFlag(DimensiuneFlags.CodEconomic))
+        RefuzOperare("Api NTC: cont cu defalcare obligatorie fără cod economic pe linie → refuzul gardianului "
+            + "generic (33a: postarea explicită NU scutește linia de `DimensiuniObligatorii`)",
+            unitate.ID, unitate.ID, faraDefalcare);
+    else
+        Check("Api NTC: profilul nu cere defalcare pe contul de furnizor — gardianul `DimensiuniObligatorii` "
+            + "se probează pe profilul care o cere (bugetar)", true);
+
+    Check("Api NTC: seria „NTC-” NU se consumă la refuz (F19-D6 + GATE D6: numărul se asignează abia la materializare)",
+        SerieNtc() == serieInainte);
+
+    // --- Dry-run, apoi comanda ---
+    Check("Api NTC: dry-run (Valideaza) pe draftul valid → listă goală", DryRunNtc(idNtc).Count == 0);
+    Check("Api NTC: dry-run-ul NU materializează nimic (Draft, fără număr, fără note)",
+        os.GetObjectByKey<NotaContabila>(idNtc).Stare == StareDocument.Draft
+        && os.GetObjectByKey<NotaContabila>(idNtc).Numar == null
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idNtc));
+
+    var rez = OperareApi.Opereaza(os, idNtc);
+    cit = NotaContabilaApply.Citeste(os, idNtc);
+    Check("Api NTC: Opereaza → Operat, cu număr din seria proprie (NTC-), fără conex și fără secundar; "
+        + "affordances inversate",
+        rez.StareNoua == StareDocument.Operat && rez.ConexId == null
+        && cit.Numar?.StartsWith("NTC-") == true && cit.DataOperare != null
+        && !cit.PoateEdita && !cit.PoateOpera && cit.PoateAnula && cit.PoateStorna
+        && SerieNtc() == serieInainte + 1);
+    Check("Api NTC: nota nu mișcă stoc și nu scrie jurnal de TVA (fără `PoliticaTva` în niciun profil — F19-D7)",
+        !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idNtc)
+        && !os.GetObjectsQuery<RegistruTva>().Any(r => r.DocumentId == idNtc));
+
+    var note = NoteNtc(idNtc);
+    var notaCompensare = note.Single(n => n.DetaliuId == lCompensare.Id);
+    var notaPreluare = note.Single(n => n.DetaliuId == lPreluare.Id);
+    var notaMinus = note.Single(n => n.DetaliuId == lMinus.Id);
+    Check("ANCORA F19-D14 (NTC): operarea prin API postează pe POSTAREA EXPLICITĂ a liniei — câte un rând per linie, "
+        + "cu conturile CULESE, în absența oricărei `RegulaContare` pe tip",
+        note.Count == 3
+        && notaCompensare.ContDebitId == contFurnizor.ID && notaCompensare.ContCreditId == contClient.ID
+        && notaPreluare.ContDebitId == contFurnizor.ID && notaPreluare.ContCreditId == contTranzit.ID
+        && notaMinus.ContDebitId == contTranzit.ID && notaMinus.ContCreditId == contFurnizor.ID);
+    Check("Api NTC: valorile se postează CA ATARE, inclusiv negativa (60 / 25 / −10), fără flag de storno (46a)",
+        notaCompensare.Valoare == 60m && notaPreluare.Valoare == 25m && notaMinus.Valoare == -10m
+        && note.All(n => !n.Storno));
+    Check("Api NTC: dimensiunile — repartitorul EXPLICIT al liniei e nivelul MAXIM al coalesce-ului, iar pe latura "
+        + "necompletată cade default-ul polimorf al header-ului (32c)",
+        notaCompensare.DimensiuniDebit().RepartitorId == partenerX.ID
+        && notaCompensare.DimensiuniCredit().RepartitorId == partenerX.ID
+        && notaPreluare.DimensiuniDebit().RepartitorId == partenerY.ID
+        && notaPreluare.DimensiuniCredit().RepartitorId == unitate.ID
+        && notaMinus.DimensiuniDebit().RepartitorId == unitate.ID
+        && notaCompensare.DimensiuniDebit().CodEconomicId == codEc.ID);
+    CheckRefuza("Api NTC: Apply peste o notă OPERATĂ → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
+        () => NotaContabilaApply.Aplica(os, idNtc, rescriere));
+    CheckRefuza("Api NTC: Sterge peste o notă OPERATĂ → același refuz de domeniu",
+        () => NotaContabilaApply.Sterge(os, idNtc));
+
+    // ---------------- Panoul de compensare (F19-D10) ----------------
+    // Documentele de stins: două pe X (ca plafonul să aibă unde se consuma) și
+    // unul pe Y. Trezoreria e scena NEUTRĂ față de profil (TRZ + contare din
+    // laturi, cu fallback pe furnizor/client); compensarea „reală” FCT ↔ FCL e
+    // deja probată de blocul de motor `E2E-CMP`.
+    Document TrezorerieOperata(bool incasare, Repartitor partener, decimal valoare, DateOnly data) {
+        DocumentTrezorerie doc = incasare ? os.CreateObject<Incasare>() : os.CreateObject<Plata>();
+        doc.Data = data;
+        doc.Predator = incasare ? partener : casa;
+        doc.Primitor = incasare ? casa : partener;
+        doc.TipInstrument = TipInstrumentPlata.Chitanta;
+        var linie = os.CreateObject<DocumentTrezorerieDetaliu>();
+        linie.Document = doc;
+        linie.TipMaterial = tipTrz;
+        linie.Valoare = valoare;
+        linie.CodEconomicId = codEc.ID;   // conturile 5xx/401/411 bugetare cer defalcarea E
+        os.CommitChanges();
+        OperareApi.Opereaza(os, doc.ID);
+        return doc;
+    }
+    var incX1 = TrezorerieOperata(incasare: true, partenerX, 100m, new DateOnly(2026, 4, 10));
+    var incX2 = TrezorerieOperata(incasare: true, partenerX, 100m, new DateOnly(2026, 4, 11));
+    // Perechea de SENS a scenei (F19-D16): pe X există și o CREANȚĂ (plata =
+    // avans dat), pe Y și o DATORIE (încasarea = avans primit), ca fiecare
+    // jumătate de plafon să aibă candidați proprii și ca proba „aceeași notă
+    // stinge 60 de datorie + 60 de creanță" să existe pe date, nu în text.
+    var pltX = TrezorerieOperata(incasare: false, partenerX, 90m, new DateOnly(2026, 4, 12));
+    var pltY = TrezorerieOperata(incasare: false, partenerY, 50m, new DateOnly(2026, 4, 12));
+    var incY = TrezorerieOperata(incasare: true, partenerY, 30m, new DateOnly(2026, 4, 13));
+
+    var capacitati = os.GetObjectByKey<NotaContabila>(idNtc).CapacitateStingere(os);
+    Check("ANCORA F19-D16: plafonul notei e DEFALCAT PE SENS — X are 60 pe `Datorie` (repartitorul de pe DEBIT: "
+        + "nota debitează 401, deci stinge ce datorăm) ȘI 60 pe `Creanta` (cel de pe CREDIT); Y doar 25 pe datorie. "
+        + "Tavanul per contrapartidă rămâne 120 pe X — ce s-a schimbat e că fiecare jumătate se consumă pe latura ei",
+        capacitati.Count == 2
+        && capacitati[partenerX.ID] == new PlafonStingere(60m, 60m)
+        && capacitati[partenerY.ID] == new PlafonStingere(25m, 0m));
+
+    var cand = NotaContabilaApply.Candidati(os, idNtc);
+    Check("ANCORA F19-D10 + D16: `candidati` întoarce O INTRARE PER (CONTRAPARTIDĂ × SENS) de pe linii (exact ce nu "
+        + "putea `DocumenteCuRest`, care filtrează pe UNA singură), cu eticheta repartitorului — X pe amândouă "
+        + "jumătățile, Y doar pe cea de datorie",
+        cand != null && cand.Stare == "Operat" && cand.PoateStinge
+        && cand.Contrapartide.Count == 3
+        && cand.Contrapartide.Any(c => c.RepartitorId == partenerX.ID && c.Sens == "Datorie"
+            && c.RepartitorCod == partenerX.Cod)
+        && cand.Contrapartide.Any(c => c.RepartitorId == partenerX.ID && c.Sens == "Creanta")
+        && cand.Contrapartide.Any(c => c.RepartitorId == partenerY.ID && c.Sens == "Datorie"));
+    var candXd = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Datorie");
+    var candXc = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Creanta");
+    var candY = cand.Contrapartide.Single(c => c.RepartitorId == partenerY.ID);
+    Check("ANCORA F19-D10 (cusătură MĂSURATĂ, nu afirmată): plafonul per (contrapartidă × sens) din `candidati` e "
+        + "IDENTIC cu `NotaContabila.CapacitateStingere` — X 60 datorie / 60 creanță, Y 25 datorie",
+        cand.Contrapartide.All(c => capacitati[c.RepartitorId][Enum.Parse<SensStingere>(c.Sens)] == c.Capacitate)
+        && candXd.Capacitate == 60m && candXc.Capacitate == 60m && candY.Capacitate == 25m
+        && candXd.Asignat == 0m && candXd.Disponibil == 60m);
+
+    List<DocumentCuRestRand> RestPentru(Guid contrapartidaId, SensStingere sens) =>
+        ImperecheriProiectii.DocumenteCuRest(os, contrapartidaId, sens)
+            .OrderBy(r => r.Data).ThenBy(r => r.Numar).ToList();
+    bool Aceleasi(List<DocumentCuRestRand> a, List<DocumentCuRestRand> b) =>
+        a.Count == b.Count && a.Zip(b).All(p =>
+            p.First.DocumentId == p.Second.DocumentId && p.First.Tip == p.Second.Tip
+            && p.First.ContrapartidaId == p.Second.ContrapartidaId && p.First.Sens == p.Second.Sens
+            && p.First.Total == p.Second.Total && p.First.Asignat == p.Second.Asignat
+            && p.First.Rest == p.Second.Rest);
+    Check("ANCORA F19-D10 + D16: rândurile unei jumătăți sunt EXACT `DocumenteCuRest` filtrat pe (contrapartidă × "
+        + "sens) — încasările lui X (avansuri primite = datorii) sub jumătatea de DEBIT, plata către X (avans dat = "
+        + "creanță) sub cea de CREDIT; niciun document nu apare sub ambele, iar documentele lui Y nu apar la X",
+        Aceleasi(candXd.Candidati, RestPentru(partenerX.ID, SensStingere.Datorie))
+        && Aceleasi(candXc.Candidati, RestPentru(partenerX.ID, SensStingere.Creanta))
+        && Aceleasi(candY.Candidati, RestPentru(partenerY.ID, SensStingere.Datorie))
+        && candXd.Candidati.Select(r => r.DocumentId).OrderBy(x => x)
+            .SequenceEqual(new[] { incX1.ID, incX2.ID }.OrderBy(x => x))
+        && candXc.Candidati.Single().DocumentId == pltX.ID
+        && candY.Candidati.Single().DocumentId == incY.ID
+        && !candY.Candidati.Any(r => r.DocumentId == pltY.ID)
+        && !candXd.MaiSunt && !candXc.MaiSunt && !candY.MaiSunt);
+    var totRest = ImperecheriProiectii.DocumenteCuRest(os).ToList();
+    Check("F19-D16 (42c): literalul `Sens` al proiecției == `Document.SensDeStins` pe FIECARE rând — proiecția "
+        + "dublează un calcul al motorului (funcție de TIP, netraductibilă în SQL), deci se MĂSOARĂ contra lui",
+        totRest.Count > 0
+        && totRest.All(r => r.Sens == os.GetObjectByKey<Document>(r.DocumentId).SensDeStins(os).ToString()));
+    Check("F19-D10: NTC NU se adaugă în `DocumenteCuRest` (nota n-are semantică de „rest”: Σ liniilor ei nu e nici "
+        + "creanță, nici datorie) — deci nu se poate propune pe ea însăși",
+        !totRest.Any(r => r.DocumentId == idNtc));
+
+    // ═══ A doua axă a lui F19-D16: CARE contrapartidă se taxează ═══
+    // Ipoteza contractului (citită din cod la pasul 2, NEMĂSURATĂ atunci): regula
+    // veche alegea „primul key din `capacitati` care se potrivește cu o latură a
+    // documentului stins", iar cheile se umplu debit-întâi, în ordinea liniilor
+    // ⇒ un document care poartă DOUĂ dintre contrapartidele notei pe cele două
+    // laturi ale lui era taxat pe plafonul altui grup decât cel sub care panoul
+    // l-a afișat. Scena: nota poartă CASA (60) și partenerul X (5); încasarea
+    // `incX1` are predator X și primitor CASA, deci le poartă pe amândouă.
+    var idAxa2 = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
+        Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID,
+        Linii = {
+            new NtcLinieWriteDto {
+                TipMaterialId = tipTrz.ID, ContDebitId = contFurnizor.ID, ContCreditId = contTranzit.ID,
+                RepartitorDebitId = casa.ID, CodEconomicId = codEc.ID, Valoare = 60m },
+            new NtcLinieWriteDto {
+                TipMaterialId = tipTrz.ID, ContDebitId = contFurnizor.ID, ContCreditId = contTranzit.ID,
+                RepartitorDebitId = partenerX.ID, CodEconomicId = codEc.ID, Valoare = 5m }
+        }
+    });
+    OperareApi.Opereaza(os, idAxa2);
+    var notaAxa2 = os.GetObjectByKey<NotaContabila>(idAxa2);
+    var capAxa2 = notaAxa2.CapacitateStingere(os);
+    var cheiAxa2 = capAxa2.Keys.ToList();
+    Check("MĂSURARE F19-D16 (a doua axă) — PREMISA: nota poartă DOUĂ contrapartide, în ordinea liniilor "
+        + "(debit-întâi): casa 60,00 pe datorie și partenerul X 5,00 pe datorie; iar încasarea `incX1` le poartă pe "
+        + "AMÂNDOUĂ (predator = X, primitor = casa). Configurația e realizabilă: `CapacitateStingere` ia ORICE "
+        + "repartitor de pe linie, nu doar parteneri",
+        cheiAxa2.Count == 2 && cheiAxa2[0] == casa.ID && cheiAxa2[1] == partenerX.ID
+        && capAxa2[casa.ID].Datorie == 60m && capAxa2[partenerX.ID].Datorie == 5m
+        && incX1.PredatorId == partenerX.ID && incX1.PrimitorId == casa.ID);
+    // Regula ȘTEARSĂ din `ValideazaCreare`, re-executată aici pe aceeași scenă și
+    // pe același dicționar: e o funcție deterministă de (ordinea cheilor ×
+    // laturile documentului), ambele asertate mai sus.
+    Guid primulKeyVechi = Guid.Empty;
+    foreach (var candidat in capAxa2.Keys)
+        if (candidat == incX1.PredatorId || candidat == incX1.PrimitorId) {
+            primulKeyVechi = candidat;
+            break;
+        }
+    Console.WriteLine("     MĂSURAT (F19-D16, a doua axă) — IPOTEZA CONFIRMATĂ: regula veche („primul key care se "
+        + "potrivește cu o latură”) alege CASA, cu plafon 60,00, deși panoul afișează încasarea sub partenerul X, "
+        + "cu disponibil 5,00. O stingere de 50,00 ar fi trecut pe plafonul altui grup decât cel afișat.");
+    Check("MĂSURAT (F19-D16, a doua axă): regula veche alegea CASA (primul key, plafon 60,00), NU contrapartida sub "
+        + "care panoul chiar afișează documentul (X, plafon 5,00) — `DocumenteCuRest` pune încasarea pe predatorul "
+        + "ei (X) și pe nimeni altcineva",
+        primulKeyVechi == casa.ID && capAxa2[casa.ID].Datorie == 60m && capAxa2[partenerX.ID].Datorie == 5m
+        && ImperecheriProiectii.DocumenteCuRest(os, partenerX.ID, SensStingere.Datorie)
+            .Any(r => r.DocumentId == incX1.ID)
+        && !ImperecheriProiectii.DocumenteCuRest(os, casa.ID).Any(r => r.DocumentId == incX1.ID));
+    CheckRefuza("F19-D16 (a doua axă, ÎNCHISĂ): documentul stins poartă DOUĂ dintre contrapartidele notei, pe laturi "
+        + "diferite ⇒ deducția REFUZĂ zgomotos în loc să aleagă „primul key”",
+        () => ImperechereService.Imperecheaza(os, notaAxa2, os.GetObjectByKey<Document>(incX1.ID), 50m));
+    CheckRefuza("F19-D16 (a doua axă): cu contrapartida CERUTĂ explicit (X — grupul sub care panoul l-a afișat) se "
+        + "aplică plafonul LUI: 50,00 > 5,00 se refuză",
+        () => ImperechereService.Imperecheaza(os, notaAxa2, os.GetObjectByKey<Document>(incX1.ID), 50m,
+            partenerX.ID));
+    CheckRefuza("F19-D16 (a doua axă): aceeași ambiguitate pe calea REST (`ImperechereApply.Creeaza`) — refuz de "
+        + "domeniu, nu o alegere tăcută",
+        () => ImperechereApply.Creeaza(os, new ImperechereWriteDto {
+            DocumentStingatorId = idAxa2, DocumentId = incX1.ID, Suma = 5m }));
+    var impAxa2 = ImperechereApply.Creeaza(os, new ImperechereWriteDto {
+        DocumentStingatorId = idAxa2, DocumentId = incX1.ID, Suma = 5m, ContrapartidaId = partenerX.ID });
+    Check("F19-D16 (a doua axă): exact plafonul lui X (5,00) se acceptă pe contrapartida cerută; casa rămâne cu "
+        + "55,00 disponibil — `AsignatFataDe` numără o stingere contra ORICĂREI contrapartide de pe documentul "
+        + "stins (semantică preexistentă, conservatoare: nu deschide plafon)",
+        impAxa2.Suma == 5m
+        && ImperechereService.AsignatFataDe(os, idAxa2, partenerX.ID, SensStingere.Datorie) == 5m
+        && capAxa2[casa.ID].Datorie - ImperechereService.AsignatFataDe(os, idAxa2, casa.ID, SensStingere.Datorie)
+            == 55m);
+    os.Delete(os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentStingatorId == idAxa2).ToList());
+    os.CommitChanges();
+    Check("F19-D16 (a doua axă): scena revine la zero — încasarea își recapătă restul întreg (100,00)",
+        ImperechereService.Ramas(os, incX1.ID) == 100m);
+
+    // ═══ Proba de fond a lui F19-D16: 60 nu mai stinge 120 de aceeași natură ═══
+    // Defectul măsurat la pasul 2 al feliei: nota `401 = 4111` de 60,00 pe X avea
+    // plafon 120,00 și îl consuma INTEGRAL pe două ÎNCASĂRI — documente de
+    // aceeași natură (80,00 + 40,00). Tavanul de 120 era corect (60 pe datorie +
+    // 60 pe creanță = cele două stingeri legitime); lipsea regula că fiecare
+    // jumătate se consumă pe latura ei.
+    CheckRefuza("PROBA F19-D16: 80,00 pe o încasare (= datorie) depășește jumătatea de DEBIT a notei (60,00), deși "
+        + "plafonul TOTAL al contrapartidei e tot 120,00 — înainte de F19-D16 trecea",
+        () => ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtc),
+            os.GetObjectByKey<Document>(incX1.ID), 80m));
+    ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtc),
+        os.GetObjectByKey<Document>(incX1.ID), 60m);
+    cand = NotaContabilaApply.Candidati(os, idNtc);
+    candXd = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Datorie");
+    candXc = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Creanta");
+    Check("ANCORA F19-D14 (NTC): stingerea prin serviciu scade `Rest`-ul documentului stins (100 → 40) ȘI se vede "
+        + "în panou ca `Asignat` PE JUMĂTATEA EI — cifra vine din `ImperechereService.AsignatFataDe(cp, sens)`, "
+        + "funcția pe care o cheamă și `ValideazaCreare` (o singură formulă a plafonului); jumătatea de creanță "
+        + "rămâne INTACTĂ",
+        ImperechereService.Ramas(os, incX1.ID) == 40m
+        && candXd.Asignat == 60m
+        && candXd.Asignat == ImperechereService.AsignatFataDe(os, idNtc, partenerX.ID, SensStingere.Datorie)
+        && candXd.Disponibil == 0m
+        && candXc.Asignat == 0m && candXc.Disponibil == 60m
+        && candXd.Candidati.Single(r => r.DocumentId == incX1.ID).Rest == 40m);
+    CheckRefuza("PROBA F19-D16 (defectul de la pasul 2, ÎNCHIS): jumătatea de datorie e consumată — a doua încasare "
+        + "nu mai primește niciun ban. Înainte lua încă 40,00 și o compensare de 60,00 stingea 120,00 pe aceeași "
+        + "latură economică",
+        () => ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtc),
+            os.GetObjectByKey<Document>(incX2.ID), 0.01m));
+    CheckRefuza("ANCORA F19-D10 (riscul 2, capătul „panoul nu promite mai mult decât acceptă serviciul”): un ban "
+        + "PESTE `Disponibil` al jumătății de creanță (60,01) → refuz al `ValideazaCreare`",
+        () => ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtc),
+            os.GetObjectByKey<Document>(pltX.ID), 60.01m));
+    ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtc),
+        os.GetObjectByKey<Document>(pltX.ID), 60m);
+    cand = NotaContabilaApply.Candidati(os, idNtc);
+    candXd = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Datorie");
+    candXc = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Creanta");
+    Check("PROBA F19-D16 (cazul LEGITIM rămâne): ACEEAȘI notă de 60,00 stinge 60,00 de DATORIE (încasarea) + 60,00 "
+        + "de CREANȚĂ (plata) — 120,00 în total, exact tavanul, dar fiecare jumătate pe latura ei; ambele "
+        + "`Disponibil` ajung la 0",
+        os.GetObjectsQuery<Imperechere>().Count(i => i.DocumentStingatorId == idNtc) == 2
+        && os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentStingatorId == idNtc).Sum(i => i.Suma) == 120m
+        && candXd.Disponibil == 0m && candXc.Disponibil == 0m
+        && ImperechereService.Ramas(os, pltX.ID) == 30m);
+    CheckRefuza("Api NTC: plafonul consumat integral pe AMBELE jumătăți → orice altă stingere pe aceeași "
+        + "contrapartidă se refuză",
+        () => ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtc),
+            os.GetObjectByKey<Document>(incX2.ID), 0.01m));
+    cit = NotaContabilaApply.Citeste(os, idNtc);
+    Check("Api NTC: affordance ONEST pe stingeri — `PoateAnula`/`PoateStorna` FALSE cât există imperecheri (57d), "
+        + "iar gardianul motorului confirmă",
+        !cit.PoateAnula && !cit.PoateStorna);
+    CheckRefuza("Api NTC: anularea unei note care STINGE se refuză (gardianul acoperă coloana DocumentStingator)",
+        () => OperareApi.AnuleazaOperarea(os, idNtc));
+    os.Delete(os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentStingatorId == idNtc).ToList());
+    os.CommitChanges();
+    cit = NotaContabilaApply.Citeste(os, idNtc);
+    Check("Api NTC: după ștergerea link-urilor (31d: se șterg liber) affordance-ele revin, iar panoul arată din nou "
+        + "plafonul întreg — pe FIECARE jumătate (60 datorie + 60 creanță)",
+        cit.PoateAnula && cit.PoateStorna
+        && NotaContabilaApply.Candidati(os, idNtc).Contrapartide
+            .Where(c => c.RepartitorId == partenerX.ID)
+            .All(c => c is { Asignat: 0m, Disponibil: 60m })
+        && NotaContabilaApply.Candidati(os, idNtc).Contrapartide
+            .Count(c => c.RepartitorId == partenerX.ID) == 2);
+
+    // ═══ Review O2, MĂSURAT (restanță DECLARATĂ, nefixată) ═══
+    // `AsignatFataDe` adaugă `caStins` — cât s-a stins PE stingătorul însuși —
+    // la AMBELE sensuri, necondiționat. Pe un plafon cu două jumătăți asta
+    // consumă de două ori. Review-ul l-a considerat inaccesibil pe motiv că
+    // „laturile notei sunt unități interne, deci nota nu poate fi stinsă de
+    // nimic". Trezoreria chiar nu ajunge acolo — `Plata` cere primitor
+    // partener/angajat/cont propriu, deci o unitate internă nu poate fi
+    // contrapartida ei (probat: operarea unei plăți către `unitate` e REFUZATĂ).
+    // Dar o ALTĂ NOTĂ ajunge: `CapacitateStingere` ia ORICE repartitor de pe
+    // linie, inclusiv unitatea internă (aceeași proprietate pe care se sprijină
+    // și măsurarea „a doua axă" de mai sus).
+    // Verdictul „nu e atacabil" RĂMÂNE, dar din alt motiv: efectul e
+    // CONSERVATOR — închide plafon (60,00 disponibil în loc de 90,00), nu
+    // deschide. Se măsoară ca să nu mai fie o afirmație; fixul e restanță.
+    CheckRefuza("Review O2 (premisa corectată): trezoreria NU poate stinge o notă — `Plata` cere primitor "
+        + "partener/angajat/cont propriu, deci o unitate internă nu e niciodată contrapartida ei",
+        () => TrezorerieOperata(incasare: false, unitate, 30m, new DateOnly(2026, 4, 14)));
+    var idStingeNota = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
+        Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID,
+        Linii = { new NtcLinieWriteDto {
+            TipMaterialId = tipTrz.ID, ContDebitId = contFurnizor.ID, ContCreditId = contTranzit.ID,
+            RepartitorDebitId = unitate.ID, CodEconomicId = codEc.ID, Valoare = 30m } }
+    });
+    OperareApi.Opereaza(os, idStingeNota);
+    ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idStingeNota),
+        os.GetObjectByKey<Document>(idNtc), 30m);
+    var asigDatorieO2 = ImperechereService.AsignatFataDe(os, idNtc, partenerX.ID, SensStingere.Datorie);
+    var asigCreantaO2 = ImperechereService.AsignatFataDe(os, idNtc, partenerX.ID, SensStingere.Creanta);
+    Console.WriteLine($"     MĂSURAT (review O2, restanță): nota (plafon X 60,00 + 60,00 = 120,00) stinsă ea însăși "
+        + $"cu 30,00 de o altă notă ⇒ `Asignat` {asigDatorieO2:N2} pe datorie ȘI {asigCreantaO2:N2} pe creanță, "
+        + $"deci disponibil total {120m - asigDatorieO2 - asigCreantaO2:N2} în loc de 90,00.");
+    Check("Review O2 (restanță DECLARATĂ, nu fixată aici): o notă POATE fi stinsă — de o altă notă, care poartă "
+        + "unitatea internă ca repartitor de linie —, iar `caStins` se scade atunci din AMBELE jumătăți: cei "
+        + "30,00 se consumă de două ori. Efectul e CONSERVATOR (închide plafon, nu deschide), deci nu e o gaură; "
+        + "e a doua cifră pe același concept",
+        asigDatorieO2 == 30m && asigCreantaO2 == 30m
+        && os.GetObjectByKey<NotaContabila>(idNtc).CapacitateStingere(os)[partenerX.ID]
+            == new PlafonStingere(60m, 60m));
+    os.Delete(os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentId == idNtc).ToList());
+    os.CommitChanges();
+    Check("Review O2: scena revine la zero — plafonul notei e din nou întreg pe ambele jumătăți",
+        ImperechereService.AsignatFataDe(os, idNtc, partenerX.ID, SensStingere.Datorie) == 0m
+        && ImperechereService.AsignatFataDe(os, idNtc, partenerX.ID, SensStingere.Creanta) == 0m);
+
+    // ═══ F19-D16 (F2): schimbarea de comportament a trezoreriei, DECLARATĂ ═══
+    // Contractul pin-uise inițial „pentru documentele cu o SINGURĂ contrapartidă
+    // (toată trezoreria + DEC) comportamentul rămâne IDENTIC". Nu rămâne, iar
+    // review-ul a găsit-o pe HTTP fiindcă suita n-avea niciun check pe perechile
+    // acelea: plafonul trezoreriei e pe UN SINGUR sens (`SensPropriu().Opus()`),
+    // deci perechea cu sensuri nepotrivite cade pe `perechi.Count == 0` — deși
+    // ambele documente au o singură contrapartidă, iar regula veche o accepta pe
+    // plafonul total. Verdictul e CORECT contabil (a credita 401 nu stinge o
+    // factură de furnizor); vechea permisivitate era o gaură din aceeași
+    // familie. Cazul real pe Flax: PLT `SED00000097-1` → FCL `FLAX000161444`,
+    // 700,00, 23.04.2025 — SINGURA imperechere PLT→FCL din cele 46.056 ale
+    // importului, fără niciun gard mai vechi care s-o fi oprit (`Plata↔Plata` e
+    // refuzată separat; `Plata↔FacturaIesire` nu era).
+    // Aici se măsoară MECANISMUL; perechile ca atare (ce trece / ce se refuză,
+    // pe documente reale cu aceeași contrapartidă) sunt în blocul `E2E-CMP`.
+    var pltProba = os.GetObjectByKey<Plata>(pltX.ID);
+    var fclProba = os.CreateObject<FacturaIesire>();
+    Check("F19-D16 (F2, mecanismul schimbării declarate): `Plata.CapacitateStingere` are TOT plafonul pe "
+        + "`Datorie` și 0,00 pe `Creanta`, iar `FacturaIesire.SensDeStins` = `Creanta` — deci orice PLT→FCL cade "
+        + "pe refuzul „n-are capacitate pe sensul cerut”, deși e trezorerie cu o SINGURĂ contrapartidă",
+        pltProba.CapacitateStingere(os)[partenerX.ID] == new PlafonStingere(90m, 0m)
+        && fclProba.SensDeStins(os) == SensStingere.Creanta
+        && pltProba.SensDeStins(os) == SensStingere.Creanta);
+    os.Delete(fclProba);
+    os.CommitChanges();
+    // ═══ F19-D16 corectată de review (F1): plafonul e MIȘCAREA NETĂ ═══
+    // Prima versiune suma `Σ |Valoare|` per (repartitor × sens) și răsturna
+    // sensul per LINIE negativă — deci o pereche +v/−v pe ACEEAȘI latură a
+    // aceluiași repartitor producea (Datorie v, Creanta v) deși mișcarea NETĂ pe
+    // partener era ZERO: exact defectul "o compensare de 60 stinge 120", mutat
+    // de pe axa laturilor pe axa semnelor. Forma e dominantă pe Flax 2025: 899
+    // din 1.478 de chei (repartitor × latură) cu net 0,00 și brut > 0 — 10,5
+    // mil. lei de capacitate fantomă, cu candidați reali dedesubt.
+    // Formula de acum: `|Σ semnat|` per (repartitor × LATURĂ), semnul netului
+    // alege sensul, iar cheia cu net 0 nu intră deloc în dicționar.
+    var idNtcNetZero = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
+        Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID,
+        Linii = {
+            new NtcLinieWriteDto {
+                TipMaterialId = tipTrz.ID, ContDebitId = contFurnizor.ID, ContCreditId = contTranzit.ID,
+                RepartitorDebitId = partenerX.ID, CodEconomicId = codEc.ID, Valoare = 40m },
+            new NtcLinieWriteDto {
+                TipMaterialId = tipTrz.ID, ContDebitId = contFurnizor.ID, ContCreditId = contTranzit.ID,
+                RepartitorDebitId = partenerX.ID, CodEconomicId = codEc.ID, Valoare = -40m }
+        }
+    });
+    OperareApi.Opereaza(os, idNtcNetZero);
+    var capNetZero = os.GetObjectByKey<NotaContabila>(idNtcNetZero).CapacitateStingere(os);
+    var netPeX = os.GetObjectsQuery<NotaContabilaDetaliu>()
+        .Where(d => d.DocumentId == idNtcNetZero && d.RepartitorDebitId == partenerX.ID)
+        .Sum(d => d.Valoare);
+    var brutPeX = os.GetObjectsQuery<NotaContabilaDetaliu>()
+        .Where(d => d.DocumentId == idNtcNetZero && d.RepartitorDebitId == partenerX.ID)
+        .Sum(d => Math.Abs(d.Valoare));
+    Console.WriteLine($"     ANCORA F19-D16 (F1) — nota cu perechea +40/-40 pe DEBITUL lui X: brut {brutPeX:N2}, "
+        + $"miscare neta {netPeX:N2} => plafon Datorie "
+        + $"{capNetZero.GetValueOrDefault(partenerX.ID).Datorie:N2} / Creanta "
+        + $"{capNetZero.GetValueOrDefault(partenerX.ID).Creanta:N2}");
+    Check("ANCORA F19-D16 (F1, proba de fond): nota cu BRUT 80,00 și mișcare NETĂ 0,00 pe X are plafon ZERO pe "
+        + "AMBELE sensuri — X nici măcar nu apare printre contrapartidele notei (cheia cu net 0 nu intră în "
+        + "dicționar). Prima versiune a lui F19-D16 dădea „Datorie 40,00 / Creanța 40,00”",
+        brutPeX == 80m && netPeX == 0m
+        && !capNetZero.ContainsKey(partenerX.ID)
+        && capNetZero.GetValueOrDefault(partenerX.ID) == new PlafonStingere(0m, 0m));
+    var candNetZero = NotaContabilaApply.Candidati(os, idNtcNetZero);
+    Check("ANCORA F19-D16 (F1): panoul `candidati` nu mai PROPUNE nicio jumătate fantomă — zero grupuri pe X, deși "
+        + "documentele lui X sunt acolo, cu rest; operatorul nu mai vede butoane „Stinge” pentru o notă care n-a "
+        + "mișcat nimic pe partener",
+        candNetZero.PoateStinge && !candNetZero.Contrapartide.Any(c => c.RepartitorId == partenerX.ID));
+    CheckRefuza("ANCORA F19-D16 (F1, cifra): serviciul REFUZĂ acum stingerea unei încasări a lui X — înainte "
+        + "accepta 40,00 pe jumătatea de datorie…",
+        () => ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtcNetZero),
+            os.GetObjectByKey<Document>(incX2.ID), 40m));
+    CheckRefuza("ANCORA F19-D16 (F1, cifra): …și 40,00 pe cea de creanță (plata lui X). Cele 80,00 pe care o notă "
+        + "cu mișcare 0,00 pe X le stingea nu se mai împart în două jumătăți, ci dispar",
+        () => ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtcNetZero),
+            os.GetObjectByKey<Document>(pltX.ID), 40m));
+    Check("ANCORA F19-D16 (F1): nicio imperechere n-a fost creată, deci resturile documentelor lui X rămân "
+        + "NEATINSE (100,00 pe a doua încasare, 90,00 pe plată)",
+        !os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == idNtcNetZero)
+        && ImperechereService.Ramas(os, incX2.ID) == 100m
+        && ImperechereService.Ramas(os, pltX.ID) == 90m);
+
+    // Netarea nu MUTĂ tratarea liniei negative, o SUBSUMEAZĂ: nu mai există
+    // răsturnare per LINIE (`Math.Abs` pe fiecare valoare), doar semnul NETULUI.
+    var idNtcNetNegativ = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
+        Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID,
+        Linii = {
+            new NtcLinieWriteDto {
+                TipMaterialId = tipTrz.ID, ContDebitId = contFurnizor.ID, ContCreditId = contTranzit.ID,
+                RepartitorDebitId = partenerY.ID, CodEconomicId = codEc.ID, Valoare = -40m },
+            new NtcLinieWriteDto {
+                TipMaterialId = tipTrz.ID, ContDebitId = contFurnizor.ID, ContCreditId = contTranzit.ID,
+                RepartitorDebitId = partenerY.ID, CodEconomicId = codEc.ID, Valoare = -40m }
+        }
+    });
+    OperareApi.Opereaza(os, idNtcNetNegativ);
+    Check("ANCORA F19-D16 (F1): două linii de −40,00 pe DEBITUL lui Y dau net −80,00, deci plafon 80,00 pe "
+        + "`Creanta` — un debit de −80 e economic un credit de 80. Latura o răstoarnă semnul NETULUI, nu semnul "
+        + "fiecărei linii: tratarea liniei negative e o consecință a netării, nu un caz special",
+        os.GetObjectByKey<NotaContabila>(idNtcNetNegativ).CapacitateStingere(os)[partenerY.ID]
+            == new PlafonStingere(0m, 80m));
+    Check("ANCORA F19-D16 (F1): …iar panoul urmează plafonul — un singur grup pe Y, pe `Creanta`",
+        NotaContabilaApply.Candidati(os, idNtcNetNegativ).Contrapartide
+            .Single(c => c.RepartitorId == partenerY.ID) is { Sens: "Creanta", Capacitate: 80m });
+
+    // Panoul pe un DRAFT: nota nu stinge încă, deci nu întoarce NIMIC de stins
+    // (review M3). Capacitățile EXISTĂ (sunt ale liniilor, care sunt culese pe
+    // draft), dar o afordanță nu contrazice datele pe care le însoțește: un
+    // panou complet de plafoane și candidați lângă `PoateStinge: false` ar fi
+    // „panoul promite mai mult decât acceptă serviciul" (riscul 2), pe axa
+    // STĂRII. `Stare`/`PoateStinge` rămân — ele spun DE CE e gol.
+    var idDraft = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
+        Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID,
+        Linii = { new NtcLinieWriteDto {
+            TipMaterialId = tipTrz.ID, ContDebitId = contFurnizor.ID, ContCreditId = contTranzit.ID,
+            RepartitorDebitId = partenerY.ID, CodEconomicId = codEc.ID, Valoare = 12m } }
+    });
+    Check("Api NTC (review M3): `candidati` pe un DRAFT — `PoateStinge` false ȘI lista de contrapartide GOALĂ, "
+        + "deși capacitățile liniilor există (12,00 pe Y): panoul nu promite plafoane pe care serviciul le refuză "
+        + "din primul invariant al stingerii (ambele documente operate)",
+        NotaContabilaApply.Candidati(os, idDraft) is { Stare: "Draft", PoateStinge: false } candDraft
+        && candDraft.Contrapartide.Count == 0
+        && os.GetObjectByKey<NotaContabila>(idDraft).CapacitateStingere(os)[partenerY.ID]
+            == new PlafonStingere(12m, 0m));
+    CheckRefuza("Api NTC: și serviciul refuză stingerea de pe un draft (nota NEOPERATĂ nu stinge)",
+        () => ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idDraft),
+            os.GetObjectByKey<Document>(pltY.ID), 5m));
+    NotaContabilaApply.Sterge(os, idDraft);
+    Check("Api NTC: Sterge pe draft — documentul și liniile lui dispar împreună",
+        NotaContabilaApply.Citeste(os, idDraft) == null
+        && !os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.DocumentId == idDraft));
+
+    // Nota FĂRĂ repartitori pe linii nu stinge nimic (dicționar gol → refuz):
+    // panoul o spune, iar serviciul o confirmă.
+    var idFaraContrapartida = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
+        Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID,
+        Linii = { new NtcLinieWriteDto {
+            TipMaterialId = tipTrz.ID, ContDebitId = contTranzit.ID, ContCreditId = contFurnizor.ID,
+            CodEconomicId = codEc.ID, Valoare = 9m } }
+    });
+    OperareApi.Opereaza(os, idFaraContrapartida);
+    Check("Api NTC: nota fără repartitori pe linii n-are nicio contrapartidă — panoul întoarce lista GOALĂ "
+        + "(48b: fără contrapartide explicite nota nu stinge nimic)",
+        NotaContabilaApply.Candidati(os, idFaraContrapartida) is { PoateStinge: true } candGol
+        && candGol.Contrapartide.Count == 0);
+    CheckRefuza("Api NTC: …iar serviciul refuză explicit („documentul care stinge nu poartă nicio contrapartidă”)",
+        () => ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idFaraContrapartida),
+            os.GetObjectByKey<Document>(pltY.ID), 5m));
+
+    // --- Anulare, re-operare, storno ---
+    var numarNtc = cit.Numar;
+    Check("Api NTC: anulare prin API → Draft + notele șterse",
+        OperareApi.AnuleazaOperarea(os, idNtc).StareNoua == StareDocument.Draft
+        && NoteNtc(idNtc).Count == 0);
+    OperareApi.Opereaza(os, idNtc);
+    Check("Api NTC: re-operare după anulare — același număr, aceleași trei rânduri (valorile nu se re-semnează)",
+        NotaContabilaApply.Citeste(os, idNtc) is { Total: 75m } dupaReoperare
+        && dupaReoperare.Numar == numarNtc
+        && NoteNtc(idNtc).Count == 3 && NoteNtc(idNtc).Sum(n => n.Valoare) == 75m);
+    Check("Api NTC: storno prin API → Stornat, rânduri inverse append-only la data stornării (−60 / −25 / +10 — "
+        + "negativa devine pozitivă)",
+        OperareApi.Storneaza(os, idNtc, new DateOnly(2026, 7, 23)).StareNoua == StareDocument.Stornat
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idNtc) == 6
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idNtc && r.Storno
+            && r.Data == new DateOnly(2026, 7, 23)
+            && (r.Valoare == -60m || r.Valoare == -25m || r.Valoare == 10m)) == 3);
+
+    Curata();
+    Check("Api NTC: curățenie finală (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<CodEconomic>().Any(c => c.Cod.StartsWith(Marcaj))
+        && os.GetObjectByKey<NotaContabila>(idNtc) == null);
+}
+
+// ================= Felia API ASM (F19, track 2) — E2E-API-ASM =================
+// Asamblarea parcursă prin CONTRACTUL feliei: WriteDto → `AsamblareApply.Aplica`
+// → `Citeste`/`Lista` → `DistribuieValoarea` → dry-run → `OperareApi`.
+// Endpoint-urile din host sunt transport peste EXACT acest cod, deci ce e verde
+// aici e verde și pe sârmă.
+//
+// Rulează DOAR pe profilul PRIVAT (F19-D14): ASM are politici (numerotare +
+// reguli de stoc) doar acolo; pe bugetar tipul e inert, iar blocul ar măsura
+// cifre moarte.
+//
+// Ce exersează, în plus față de blocul de MOTOR (`E2E-ASM`, care probează
+// mecanica pe calea XAF):
+//   * TESTUL-ANCORĂ al lui F19-D3: linia de produs culeasă prin Apply
+//     (`ProdusId`) naște lotul pe linia proprie, în gestiunea PREDATORULUI; PUT
+//     repetat nu naște al doilea lot; comutarea Produs→Consum șterge lotul
+//     propriu nefinalizat și golește câmpurile produsului; consumul cu lot
+//     pinuit rămâne NEATINS;
+//   * `Valoare` SEMNATĂ la culegere ⇒ `Total` draft == `Diferenta` din ReadDto;
+//   * ANCORA F19-D4 (închide 75-r1): `distribuie-valoarea` pe scena cu lot golit
+//     cu rezidu — predicția == cifra pe care o SCRIE operarea, invariantul trece
+//     exact, a doua rulare e idempotentă, reziduul de ban se plimbă pe linia cu
+//     grila cea mai fină, iar cazul nereprezentabil (75-r4) se REFUZĂ cu cifra;
+//   * refuzurile de payload și cele ale tipului, fără rânduri-fantomă și fără
+//     serie consumată;
+//   * riscul 3 al contractului: coerența Tip↔Produs la NAȘTERE, MĂSURATĂ.
+void VerificaApiAsm() {
+    const string Marcaj = "E2E-API-ASM";
+    using var os = provider.CreateObjectSpace();
+
+    var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371");
+    var tipAsm = os.FirstOrDefault<TipDocument>(t => t.Cod == "ASM");
+    // Al doilea Tip de stoc al profilului — pentru proba de coerență Tip↔Produs
+    // (riscul 3). Se CAUTĂ, nu se presupune: dacă profilul n-are decât unul,
+    // proba se sare explicit.
+    var tipAltStoc = os.GetObjectsQuery<TipMaterial>()
+        .Where(t => t.Clasa.Natura == NaturaClasa.Stoc && t.ID != tip371.ID)
+        .OrderBy(t => t.Cod).FirstOrDefault();
+
+    // Registrul pe care iese ASM-ul din predator, citit din POLITICĂ (regula
+    // specifică pe clasa liniei bate genericul — 26c).
+    var reguliAsm = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipAsm.ID).ToList();
+    var tipStoc = (reguliAsm.FirstOrDefault(r => r.ClasaId == tip371.ClasaId)
+        ?? reguliAsm.First(r => r.ClasaId == null)).TipStoc;
+
+    void Curata() {
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId))
+            .Select(d => d.ID).ToList();
+        var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => loturi.Contains(r.LotId) || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => docIds.Contains(d.ID)).ToList()
+                     .OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => loturi.Contains(l.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+    Curata();
+
+    Check("Api ASM — precondiții de profil: ancora ASM cu seria „ASM-”, UN SINGUR set de reguli de stoc (+1 pe "
+        + "PREDATOR) și NICIO politică de TVA (F19-D7: `TipTvaId`/`ValoareTva` ar fi cifră moartă în DTO)",
+        tipAsm != null && tipAsm.ClrType == nameof(Asamblare)
+        && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipAsm.ID)?.Serie == "ASM-"
+        && reguliAsm.Count > 0 && reguliAsm.All(r => r.Latura == LaturaDocument.Predator && r.Semn == +1)
+        && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipAsm.ID) == null
+        && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipAsm.ID)
+        && tip371 != null);
+
+    // ---------------- Scena ----------------
+    // DOUĂ gestiuni DIFERITE: ASM permite laturi diferite („de regulă aceeași”),
+    // iar lotul produsului trebuie să se nască în PREDATOR (F19-D3). Cu o
+    // singură gestiune proba ar trece și cu hook-ul lipsă.
+    var gA = os.CreateObject<Gestiune>();
+    gA.Cod = Marcaj + "-GA"; gA.Denumire = "Gestiune Api ASM (se asamblează)";
+    var gB = os.CreateObject<Gestiune>();
+    gB.Cod = Marcaj + "-GB"; gB.Denumire = "Gestiune Api ASM (primitoare)";
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = Marcaj + "-F"; furnizor.Denumire = "Furnizor Api ASM"; furnizor.CodFiscal = "RO44444447";
+    var loc = os.CreateObject<UnitateInterna>();
+    loc.Cod = Marcaj + "-LOC"; loc.Denumire = "Loc consum Api ASM"; loc.Calitati = CalitateRepartitor.LocConsum;
+    Produs Prod(string sufix, TipMaterial tip = null) {
+        var p = os.CreateObject<Produs>();
+        p.Cod = Marcaj + sufix; p.Denumire = "Produs Api ASM" + sufix; p.UM = "BUC";
+        p.TipMaterial = tip ?? tip371;
+        return p;
+    }
+    var produsA = Prod("-A");
+    var produsKit = Prod("-KIT");
+    var produsKit2 = Prod("-KIT2");
+    var produsAltTip = tipAltStoc == null ? null : Prod("-ALT", tipAltStoc);
+    os.CommitChanges();
+
+    var dataLot = new DateOnly(2026, 6, 1);
+    var dataAsm = new DateOnly(2026, 6, 10);
+
+    // Lotul „strâmb”: 3 bucăți intrate cu 30,02 ⇒ preț 10,006667 (26e).
+    Lot LotNou(Produs p, decimal cantitate, decimal valoare) {
+        var nir = os.CreateObject<NIR>();
+        nir.Data = dataLot; nir.Predator = furnizor; nir.Primitor = gA;
+        var lin = os.CreateObject<DocumentDetaliu>();
+        lin.Document = nir; lin.TipMaterial = p.TipMaterial; lin.Cantitate = cantitate; lin.Valoare = valoare;
+        var lot = lin.CreeazaLot(os, p, gA);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nir);
+        os.CommitChanges();
+        return lot;
+    }
+    void Bcs(Lot lot, DateOnly data, decimal q) {
+        var doc = os.CreateObject<BonConsum>();
+        doc.Data = data; doc.Predator = gA; doc.Primitor = loc;
+        var d = os.CreateObject<DocumentDetaliu>();
+        d.Document = doc; d.TipMaterial = tip371; d.Lot = lot; d.Cantitate = q;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, doc);
+        os.CommitChanges();
+    }
+    // Lotul „cu rest”: după două ieșiri de câte 1 (10,01 + 10,01) rămâne 1 bucată
+    // și 10,00 lei, iar `preț × 1` ar scoate 10,01 — exact scena D18-V2.
+    Lot LotCuRest(Produs p) {
+        var lot = LotNou(p, 3m, 30.02m);
+        Bcs(lot, new DateOnly(2026, 6, 2), 1m);
+        Bcs(lot, new DateOnly(2026, 6, 3), 1m);
+        return lot;
+    }
+    SoldStoc SoldCheie(Guid lotId, Repartitor r) {
+        var rows = os.GetObjectsQuery<RegistruStoc>()
+            .Where(x => x.LotId == lotId && x.RepartitorId == r.ID && x.TipStoc == tipStoc).ToList();
+        return new SoldStoc(rows.Sum(x => x.Cantitate), rows.Sum(x => x.Valoare));
+    }
+
+    var lotIntreg = LotNou(produsA, 10m, 50m);      // 10 × 5,00 — lot „cuminte”
+    Check("Api ASM premisă: lotul „cuminte” de 10 × 5,00 se naște prin NIR operat, în gestiunea în care se "
+        + "asamblează",
+        lotIntreg.PretUnitar == 5m && SoldCheie(lotIntreg.ID, gA) == new SoldStoc(10m, 50m));
+
+    // Dry-run-ul își cere ObjectSpace-ul PROPRIU (contractul lui
+    // `MotorOperare.Valideaza`: `PregatesteOperare` SCRIE pe linii).
+    IReadOnlyList<string> DryRun(Guid docId) {
+        using var osDry = provider.CreateObjectSpace();
+        return OperareApi.Valideaza(osDry, docId);
+    }
+    // Seria se citește din BAZĂ, nu din cache-ul OS-ului scenei.
+    int SerieAsm() {
+        using var o = provider.CreateObjectSpace();
+        return o.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "ASM").UrmatorulNumar;
+    }
+    Lot LotulLiniei(Guid linieId) =>
+        os.GetObjectsQuery<Lot>().FirstOrDefault(l => l.LinieIntrareId == linieId);
+    int LoturiAleLiniei(Guid linieId) =>
+        os.GetObjectsQuery<Lot>().Count(l => l.LinieIntrareId == linieId);
+
+    // ═══════════ (A) Testul-ancoră F19-D3: culegerea care naște lotul ═══════════
+    var write = new AsmWriteDto {
+        Data = dataAsm, PredatorId = gA.ID, PrimitorId = gB.ID,
+        Linii = {
+            new AsmLinieWriteDto {
+                Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 4m
+            },
+            new AsmLinieWriteDto {
+                Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID, Cantitate = 2m,
+                PretEvaluare = 10m, DataExpirare = new DateOnly(2027, 1, 31), LotFabricatie = "SARJA-1"
+            }
+        }
+    };
+    var idAsm = AsamblareApply.Aplica(os, null, write);
+    var cit = AsamblareApply.Citeste(os, idAsm);
+    var lConsum = cit.Linii.Single(l => l.Directie == "Consum");
+    var lProdus = cit.Linii.Single(l => l.Directie == "Produs");
+    var lotNascut = LotulLiniei(lProdus.Id);
+    Console.WriteLine($"     MĂSURAT (Api ASM ancora F19-D3): linia de produs {lProdus.Id} a născut lotul "
+        + $"{lotNascut?.ID} în gestiunea „{lotNascut?.Gestiune?.Denumire}” (predator „{gA.Denumire}”, "
+        + $"primitor „{gB.Denumire}”), preț {lotNascut?.PretUnitar:0.######} (nefinalizat).");
+    Check("ANCORA F19-D3 (Api ASM): linia de PRODUS culeasă cu `ProdusId` naște lotul PE LINIA PROPRIE "
+        + "(`LinieIntrareId`), în gestiunea PREDATORULUI — nu a primitorului (default-ul bazei ar fi dus lotul în "
+        + "gestiunea greșită, iar operarea l-ar fi refuzat fără cale de reparare din UI)",
+        lotNascut != null && lotNascut.GestiuneId == gA.ID && gA.ID != gB.ID
+        && lotNascut.ProdusId == produsKit.ID && lProdus.LotId == lotNascut.ID
+        && lotNascut.PretUnitar == 0m && lotNascut.Data == default);
+    Check("Api ASM: header plat, FĂRĂ număr (seria „ASM-” e server-owned — F19-D6), cu denumirile ambelor laturi; "
+        + "`PoateDistribui` e adevărat pe un Draft cu ambele roluri",
+        cit.Numar == null && cit.Stare == "Draft" && cit.Data == dataAsm
+        && cit.PredatorId == gA.ID && cit.PredatorDenumire == gA.Denumire
+        && cit.PrimitorId == gB.ID && cit.PrimitorDenumire == gB.Denumire
+        && cit.PoateEdita && cit.PoateOpera && !cit.PoateAnula && !cit.PoateStorna && cit.PoateDistribui);
+    Check("Api ASM (F19-D8): `Valoare` e SEMNATĂ de la culegere — consum −round(4 × 5,00) = −20,00, produs "
+        + "+round(2 × 10,00) = +20,00 — iar `Cantitate` rămâne POZITIVĂ până la operare (28a)",
+        lConsum.Valoare == -20m && lProdus.Valoare == 20m
+        && lConsum.Cantitate == 4m && lProdus.Cantitate == 2m);
+    Check("ANCORA F19-D9: invariantul 46d iese calculat SERVER-SIDE (`SumaConsum`/`SumaProdus`/`Diferenta`, "
+        + "magnitudini pozitive) — iar `Total`-ul draftului E diferența (Σ valorilor semnate), deci clientul nu "
+        + "face aritmetică (42c)",
+        cit.SumaConsum == 20m && cit.SumaProdus == 20m && cit.Diferenta == 0m && cit.Total == 0m
+        && cit.Total == cit.Diferenta);
+    Check("Api ASM: linia proiectează plat Tipul, produsul, eticheta lotului și atributele lui; lotul „în culegere” "
+        + "se recunoaște ca atare în etichetă",
+        lProdus.ProdusId == produsKit.ID && lProdus.ProdusCod == produsKit.Cod
+        && lProdus.TipMaterialCod == tip371.Cod && lProdus.PretEvaluare == 10m
+        && lProdus.DataExpirare == new DateOnly(2027, 1, 31) && lProdus.LotFabricatie == "SARJA-1"
+        && lProdus.LotEticheta != null && lProdus.LotEticheta.Contains("în culegere")
+        && lConsum.LotId == lotIntreg.ID && lConsum.ProdusId == null && lConsum.PretEvaluare == null);
+    var randLista = AsamblareApply.Lista(os).Single(d => d.Id == idAsm);
+    Check("Api ASM: Lista dă aceleași cifre ca agregatul (Total prin join pe agregat), starea tradusă în SQL",
+        randLista.Stare == "Draft" && randLista.Total == 0m && randLista.Numar == null
+        && randLista.PredatorDenumire == gA.Denumire && randLista.PrimitorDenumire == gB.Denumire);
+
+    // Round-trip: ReadDto → WriteDto → Apply. `LotId`-ul liniei de PRODUS se
+    // întoarce din ReadDto, deci payload-ul îl retrimite — el trebuie IGNORAT.
+    AsmWriteDto Rescriere(AsmReadDto d) => new() {
+        Data = d.Data, PredatorId = d.PredatorId, PrimitorId = d.PrimitorId,
+        Linii = d.Linii.Select(l => new AsmLinieWriteDto {
+            Id = l.Id, Directie = l.Directie, TipMaterialId = l.TipMaterialId,
+            ProdusId = l.ProdusId, LotId = l.LotId, Cantitate = l.Cantitate,
+            PretEvaluare = l.PretEvaluare, DataExpirare = l.DataExpirare, LotFabricatie = l.LotFabricatie,
+            AngajamentId = l.AngajamentId
+        }).ToList()
+    };
+    AsamblareApply.Aplica(os, idAsm, Rescriere(cit));
+    var citRT = AsamblareApply.Citeste(os, idAsm);
+    Check("ANCORA F19-D3: PUT repetat (round-trip complet al agregatului) NU naște al doilea lot — linia își "
+        + "păstrează lotul, iar `LotId`-ul retrimis din ReadDto e IGNORAT pe direcția Produs (server-owned)",
+        LoturiAleLiniei(lProdus.Id) == 1
+        && citRT.Linii.Single(l => l.Id == lProdus.Id).LotId == lotNascut.ID
+        && citRT.Linii.Count == 2 && citRT.Diferenta == 0m);
+
+    // Un `LotId` STRĂIN trimis pe linia de produs nu are voie s-o re-lege.
+    var payloadLotStrain = Rescriere(citRT);
+    payloadLotStrain.Linii.Single(l => l.Id == lProdus.Id).LotId = lotIntreg.ID;
+    AsamblareApply.Aplica(os, idAsm, payloadLotStrain);
+    Check("Api ASM: `LotId` STRĂIN pe o linie de PRODUS se ignoră (lotul e server-owned) — linia rămâne pe lotul "
+        + "ei, iar lotul altcuiva nu e adoptat",
+        AsamblareApply.Citeste(os, idAsm).Linii.Single(l => l.Id == lProdus.Id).LotId == lotNascut.ID);
+
+    // Comutarea Produs → Consum: lotul propriu NEFINALIZAT dispare, câmpurile
+    // produsului se golesc PERSISTAT, iar consumul cu pin rămâne neatins.
+    var idLotNascut = lotNascut.ID;
+    var payloadComutare = Rescriere(AsamblareApply.Citeste(os, idAsm));
+    var linieComutata = payloadComutare.Linii.Single(l => l.Id == lProdus.Id);
+    linieComutata.Directie = "Consum";
+    linieComutata.LotId = lotIntreg.ID;
+    AsamblareApply.Aplica(os, idAsm, payloadComutare);
+    var linieDupaComutare = os.GetObjectByKey<AsamblareDetaliu>(lProdus.Id);
+    Console.WriteLine($"     MĂSURAT (Api ASM comutare): lotul propriu {idLotNascut} după Produs→Consum: "
+        + $"{(os.GetObjectByKey<Lot>(idLotNascut) == null ? "ȘTERS" : "rămas")}; "
+        + $"ProdusId={linieDupaComutare.ProdusId?.ToString() ?? "null"}, "
+        + $"PretEvaluare={linieDupaComutare.PretEvaluare?.ToString() ?? "null"}.");
+    Check("ANCORA F19-D3: comutarea Produs→Consum prin PUT ȘTERGE lotul propriu NEFINALIZAT (gardul `NasteLot`) și "
+        + "GOLEȘTE persistat câmpurile produsului (F6-D3: „inert devine adevărat, nu doar afirmat”) — un produs "
+        + "rămas pe o linie de consum ar fi citit de validarea de coerență, printr-un câmp pe care UI-ul nu-l arată",
+        os.GetObjectByKey<Lot>(idLotNascut) == null
+        && linieDupaComutare.ProdusId == null && linieDupaComutare.PretEvaluare == null
+        && linieDupaComutare.DataExpirare == null && linieDupaComutare.LotFabricatie == null
+        && linieDupaComutare.LotId == lotIntreg.ID);
+    Check("ANCORA F19-D3: consumul cu lot PINUIT a rămas NEATINS peste toate PUT-urile (gardul de lot străin: "
+        + "linia care n-a născut lotul nu i-l atinge)",
+        os.GetObjectByKey<AsamblareDetaliu>(lConsum.Id).LotId == lotIntreg.ID);
+
+    // ═══════════ (B) Refuzurile de PAYLOAD (reconcilierea) ═══════════
+    AsamblareApply.Aplica(os, idAsm, new AsmWriteDto {
+        Data = dataAsm, PredatorId = gA.ID, PrimitorId = gB.ID,
+        Linii = {
+            new AsmLinieWriteDto { Id = lConsum.Id, Directie = "Consum", TipMaterialId = tip371.ID,
+                LotId = lotIntreg.ID, Cantitate = 4m },
+            new AsmLinieWriteDto { Id = lProdus.Id, Directie = "Produs", TipMaterialId = tip371.ID,
+                ProdusId = produsKit.ID, Cantitate = 2m, PretEvaluare = 10m }
+        }
+    });
+    var citBaza = AsamblareApply.Citeste(os, idAsm);
+    var lotRenascut = LotulLiniei(lProdus.Id);
+    Console.WriteLine($"     MĂSURAT (Api ASM, comutarea inversă Consum→Produs): linia {lProdus.Id} a "
+        + $"{(lotRenascut == null ? "RĂMAS FĂRĂ lot" : $"născut lotul {lotRenascut.ID}")}; pinul consumului "
+        + $"(lotul {lotIntreg.ID}) a fost {(citBaza.Linii.Single(l => l.Id == lProdus.Id).LotId == lotIntreg.ID ? "PĂSTRAT" : "rupt")}.");
+    Check("ANCORA F19-D3 (comutarea INVERSĂ, Consum→Produs — defect găsit și reparat în felie): pinul lotului "
+        + "consumat se RUPE la culegere, ca linia să-și poată naște lotul propriu. Fără ruptură, gardul de lot "
+        + "STRĂIN din `LoturiCulegereService` bloca nașterea, linia rămânea pe lotul consumului, iar documentul "
+        + "devenea PERMANENT ne-operabil („lotul unei linii de produs se naște pe linia însăși”) — cu `Lot` "
+        + "server-owned pe direcția Produs, adică fără nicio cale de reparare din ecran",
+        lotRenascut != null && lotRenascut.LinieIntrareId == lProdus.Id
+        && lotRenascut.ProdusId == produsKit.ID && lotRenascut.GestiuneId == gA.ID
+        && citBaza.Linii.Single(l => l.Id == lProdus.Id).LotId == lotRenascut.ID
+        && LoturiAleLiniei(lProdus.Id) == 1);
+    AsmWriteDto Payload(params AsmLinieWriteDto[] linii) => new() {
+        Data = dataAsm, PredatorId = gA.ID, PrimitorId = gB.ID, Linii = linii.ToList()
+    };
+    AsmLinieWriteDto LinieValida() => new() {
+        Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 1m
+    };
+
+    CheckRefuza("Api ASM: rol de linie necunoscut → refuz de DOMENIU cu valorile acceptate enumerate "
+        + "(parse pe NUME, la graniță, ÎNAINTE de `CreateObject`)", () => {
+        var l = LinieValida(); l.Directie = "Iesire";
+        AsamblareApply.Aplica(os, idAsm, Payload(l));
+    });
+    CheckRefuza("Api ASM: rol absent (null) → același refuz — enumerarea n-are membru 0, deci o linie fără rol "
+        + "n-are ce fi", () => {
+        var l = LinieValida(); l.Directie = null;
+        AsamblareApply.Aplica(os, idAsm, Payload(l));
+    });
+    CheckRefuza("Api ASM: Id de linie STRĂIN → refuz (agregatul nu adoptă linii din alt document)", () => {
+        var l = LinieValida(); l.Id = Guid.NewGuid();
+        AsamblareApply.Aplica(os, idAsm, Payload(l));
+    });
+    CheckRefuza("Api ASM: același Id de linie de două ori → refuz", () => {
+        var l = LinieValida(); l.Id = lConsum.Id;
+        AsamblareApply.Aplica(os, idAsm, Payload(l, l));
+    });
+    CheckRefuza("Api ASM: `TipMaterialId` absent din payload → refuz de DOMENIU, nu violare de FK NOT NULL", () => {
+        var l = LinieValida(); l.TipMaterialId = Guid.Empty;
+        AsamblareApply.Aplica(os, idAsm, Payload(l));
+    });
+    CheckRefuza("Api ASM: lot inexistent pe o linie de consum → refuz de domeniu (rezolvarea pe navigație)", () => {
+        var l = LinieValida(); l.LotId = Guid.NewGuid();
+        AsamblareApply.Aplica(os, idAsm, Payload(l));
+    });
+    CheckRefuza("Api ASM: produs inexistent pe o linie de produs → refuz de domeniu", () =>
+        AsamblareApply.Aplica(os, idAsm, Payload(new AsmLinieWriteDto {
+            Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = Guid.NewGuid(), Cantitate = 1m,
+            PretEvaluare = 1m
+        })));
+    CheckRefuza("Api ASM: cantitate în afara scării numeric(18,3) → refuz de domeniu, nu DbUpdateException", () => {
+        var l = LinieValida(); l.Cantitate = 1.0001m;
+        AsamblareApply.Aplica(os, idAsm, Payload(l));
+    });
+    CheckRefuza("Api ASM: preț de evaluare în afara scării numeric(18,6) → refuz de domeniu", () =>
+        AsamblareApply.Aplica(os, idAsm, Payload(new AsmLinieWriteDto {
+            Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID, Cantitate = 1m,
+            PretEvaluare = 1.0000001m
+        })));
+    CheckRefuza("Api ASM: latură inexistentă în nomenclatorul de repartitori → refuz de domeniu, înaintea oricărei "
+        + "modificări a header-ului", () =>
+        AsamblareApply.Aplica(os, idAsm, new AsmWriteDto {
+            Data = dataAsm, PredatorId = Guid.NewGuid(), PrimitorId = gB.ID, Linii = { LinieValida() }
+        }));
+    Check("Api ASM: …iar asamblarea rămâne pe laturile ei (refuzul n-a rescris nimic)",
+        AsamblareApply.Citeste(os, idAsm) is { PredatorId: var pId } && pId == gA.ID);
+
+    AsamblareApply.Aplica(os, idAsm, Rescriere(citBaza));
+    var dupaRefuzuri = AsamblareApply.Citeste(os, idAsm);
+    Console.WriteLine($"     MĂSURAT (Api ASM, după refuzuri): {dupaRefuzuri.Linii.Count} linii "
+        + $"[{string.Join(", ", dupaRefuzuri.Linii.Select(l => $"{l.Directie}:{l.Valoare:N2}"))}], "
+        + $"Diferenta {dupaRefuzuri.Diferenta:N2}, loturi ale liniei de produs {LoturiAleLiniei(lProdus.Id)}.");
+    Check("Api ASM: un Apply refuzat nu lasă reziduu în agregat — următorul payload valid readuce documentul la "
+        + "exact două linii, cu aceleași cifre, și fără lot în plus",
+        dupaRefuzuri.Diferenta == 0m && dupaRefuzuri.Linii.Count == 2
+        && LoturiAleLiniei(lProdus.Id) == 1);
+
+    // Linia de tip BAZĂ (ASM istoric/importat).
+    var docIstoric = os.GetObjectByKey<Asamblare>(idAsm);
+    var linieBaza = os.CreateObject<DocumentDetaliu>();   // NU AsamblareDetaliu
+    linieBaza.Document = docIstoric; linieBaza.TipMaterial = tip371;
+    linieBaza.Cantitate = 1m; linieBaza.Valoare = 7m;
+    os.CommitChanges();
+    var idLinieBaza = linieBaza.ID;
+    var citCuBaza = AsamblareApply.Citeste(os, idAsm);
+    Check("Api ASM: citirea merge pe BAZA detaliului (as-cast la frunză) — linia de tip BAZĂ APARE, cu câmpurile "
+        + "frunzei NULE (inclusiv `Directie`), intră în `Total` dar NU în sumele invariantului (n-are rol) — de "
+        + "aceea pe un document cu linii vechi `Total` (7,00) și `Diferenta` (0,00) diferă DELIBERAT",
+        citCuBaza.Linii.Count == 3
+        && citCuBaza.Linii.Single(l => l.Id == idLinieBaza) is { Directie: null, ProdusId: null, PretEvaluare: null }
+        && citCuBaza.Total == 7m && citCuBaza.Diferenta == 0m
+        && AsamblareApply.Lista(os).Single(d => d.Id == idAsm).Total == 7m);
+    CheckRefuza("Api ASM: Id-ul unei linii de tip BAZĂ în payload → refuz acționabil („ștergeți-o și culegeți-o din nou”)",
+        () => {
+            var l = LinieValida(); l.Id = idLinieBaza;
+            AsamblareApply.Aplica(os, idAsm, Payload(l));
+        });
+    CheckRefuza("Api ASM: `distribuie-valoarea` pe un document cu linii de tip vechi se refuză explicit (n-au rol, "
+        + "deci n-au loc nici în consum, nici în produse)",
+        () => AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idAsm));
+    CheckRefuza("Api ASM: motorul refuză o asamblare cu linie de tip BAZĂ („trebuie culeasă ca linie de asamblare”)",
+        () => OperareApi.Opereaza(os, idAsm));
+    AsamblareApply.Aplica(os, idAsm, Rescriere(citBaza));
+    Check("Api ASM: linia absentă din payload se ȘTERGE (reconciliere server-side) — linia de bază dispare, "
+        + "agregatul revine la două linii",
+        !os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.ID == idLinieBaza)
+        && AsamblareApply.Citeste(os, idAsm).Linii.Count == 2);
+
+    // ═══════════ (C) Refuzurile TIPULUI, prin calea API ═══════════
+    var serieInainte = SerieAsm();
+    Guid IdNou(Guid predator, Guid primitor, params AsmLinieWriteDto[] linii) =>
+        AsamblareApply.Aplica(os, null, new AsmWriteDto {
+            Data = dataAsm, PredatorId = predator, PrimitorId = primitor, Linii = linii.ToList()
+        });
+
+    var idLaturi = IdNou(loc.ID, gB.ID,
+        new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 1m },
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
+            Cantitate = 1m, PretEvaluare = 5m });
+    CheckRefuza("Api ASM: predator ne-Gestiune → refuz al tipului („asamblarea trăiește într-o gestiune”)",
+        () => OperareApi.Opereaza(os, idLaturi));
+    Check("Api ASM: dry-run-ul spune ACELAȘI lucru înaintea comenzii (43b: autoritar e motorul)",
+        DryRun(idLaturi).Any(e => e.Contains("gestiune")));
+    AsamblareApply.Sterge(os, idLaturi);
+
+    var idPretZero = IdNou(gA.ID, gB.ID,
+        new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 1m },
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
+            Cantitate = 1m });
+    CheckRefuza("Api ASM: linie de produs FĂRĂ preț de evaluare → refuz al tipului („cere preț de evaluare pozitiv”)",
+        () => OperareApi.Opereaza(os, idPretZero));
+    AsamblareApply.Sterge(os, idPretZero);
+
+    Check("Api ASM (F19-D6 + GATE D6): niciun refuz n-a consumat seria „ASM-” — numărul se asignează abia la "
+        + "MATERIALIZARE, deci un document refuzat nu lasă gaură în numerotare",
+        SerieAsm() == serieInainte);
+
+    // Consum dintr-un lot NĂSCUT DE ACELAȘI DOCUMENT (lanțul de kitting).
+    var idLotFrate = AsamblareApply.Aplica(os, null, new AsmWriteDto {
+        Data = dataAsm, PredatorId = gA.ID, PrimitorId = gA.ID,
+        Linii = {
+            new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 1m },
+            new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
+                Cantitate = 1m, PretEvaluare = 5m }
+        }
+    });
+    var citFrate = AsamblareApply.Citeste(os, idLotFrate);
+    var lotFrate = citFrate.Linii.Single(l => l.Directie == "Produs").LotId.Value;
+    var payloadFrate = Rescriere(citFrate);
+    payloadFrate.Linii.Add(new AsmLinieWriteDto {
+        Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotFrate, Cantitate = 1m
+    });
+    AsamblareApply.Aplica(os, idLotFrate, payloadFrate);
+    CheckRefuza("Api ASM: consumul unui lot produs de ACELAȘI document → refuz al tipului (lanțul de kitting = "
+        + "documente separate, operate în ordine) — culegerea îl PERMITE, refuzul e al motorului, cu mesajul lui",
+        () => OperareApi.Opereaza(os, idLotFrate));
+    AsamblareApply.Sterge(os, idLotFrate);
+
+    // Riscul 3 al contractului, MĂSURAT: coerența Tip↔Produs la NAȘTERE.
+    if (produsAltTip != null) {
+        var idTipGresit = IdNou(gA.ID, gA.ID,
+            new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 1m },
+            new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsAltTip.ID,
+                Cantitate = 1m, PretEvaluare = 5m });
+        var citTipGresit = AsamblareApply.Citeste(os, idTipGresit);
+        var linieTipGresit = citTipGresit.Linii.Single(l => l.Directie == "Produs").Id;
+        var lotTipGresit = LotulLiniei(linieTipGresit);
+        Console.WriteLine($"     MĂSURAT (Api ASM, riscul 3 — coerența Tip↔Produs la NAȘTERE): linia cu Tipul "
+            + $"„{tip371.Cod}” și produsul „{produsAltTip.Cod}” (Tip „{tipAltStoc.Cod}”) e ACCEPTATĂ la culegere, "
+            + $"lotul {lotTipGresit?.ID} SE NAȘTE pe draft (nefinalizat, fără rânduri de stoc), iar refuzul vine "
+            + "de la operare — ca pe LDI, care are aceeași ordine (F6-F2).");
+        Check("Api ASM (riscul 3, MĂSURAT): coerența Tip↔Produs nu e păzită la CULEGERE — lotul se naște pe draft "
+            + "cu produsul de alt Tip; e NEFINALIZAT (preț 0, dată 0) și fără rânduri de registru, deci urma e "
+            + "reparabilă, nu contabilă",
+            lotTipGresit != null && lotTipGresit.ProdusId == produsAltTip.ID
+            && lotTipGresit.PretUnitar == 0m && lotTipGresit.Data == default
+            && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == lotTipGresit.ID));
+        CheckRefuza("Api ASM (riscul 3 / review M2): operarea refuză prin gardul EXPLICIT pe `ProdusId` — cel pe "
+            + "care îl au toate tipurile care nasc loturi (LDI F6-F2, FCT, FCL, NIR) și care lipsea de pe ASM. "
+            + "Mesajul numește PRODUSUL, câmp editabil, nu lotul: pe linia de produs `Lot` e server-owned și "
+            + "read-only, deci vechiul refuz trimitea operatorul la un câmp pe care nu-l poate atinge (62f)",
+            () => OperareApi.Opereaza(os, idTipGresit));
+        Check("Api ASM (review M2): refuzul e chiar cel al produsului, cuvânt cu cuvânt ca pe LDI — nu cel "
+            + "TRANZITIV prin lot",
+            DryRun(idTipGresit).Any(e =>
+                e == "Produsul liniei aparține altui Tip decât Tipul liniei — corectați Tipul sau produsul."));
+        var idLotTipGresit = lotTipGresit.ID;
+        var reparare = Rescriere(AsamblareApply.Citeste(os, idTipGresit));
+        reparare.Linii.Single(l => l.Id == linieTipGresit).ProdusId = produsKit.ID;
+        AsamblareApply.Aplica(os, idTipGresit, reparare);
+        Check("Api ASM (riscul 3): urma se repară din UI — realegerea produsului MUTĂ lotul existent pe produsul "
+            + "corect (sincronizarea lotului propriu), nu lasă un al doilea lot orfan",
+            LoturiAleLiniei(linieTipGresit) == 1
+            && os.GetObjectByKey<Lot>(idLotTipGresit) is { } lotReparat && lotReparat.ProdusId == produsKit.ID);
+        AsamblareApply.Sterge(os, idTipGresit);
+        Check("Api ASM (riscul 3): ștergerea draftului duce cu ea și lotul nefinalizat — nicio urmă",
+            os.GetObjectByKey<Lot>(idLotTipGresit) == null);
+    }
+
+    // ═══════════ (D) ANCORA F19-D4: `distribuie-valoarea` (închide 75-r1) ═══════════
+    AsamblareApply.Sterge(os, idAsm);
+
+    // --- (D1) Capcana: consumul care GOLEȘTE lotul ia 10,00, nu 10,01 ---
+    var lotRest = LotCuRest(produsA);
+    Check("Api ASM (D18-V2 replicat): lotul „cu rest” are prețul 10,006667 și soldul 1 buc / 10,00 — `preț × 1` "
+        + "rotunjit ar da 10,01, adică exact capcana pe care o repară F19-D4",
+        lotRest.PretUnitar == 10.006667m && SoldCheie(lotRest.ID, gA) == new SoldStoc(1m, 10.00m)
+        && Scara.RotunjesteBani(1m * lotRest.PretUnitar) == 10.01m);
+
+    var idCapcana = IdNou(gA.ID, gA.ID,
+        new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotRest.ID, Cantitate = 1m },
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
+            Cantitate = 1m, PretEvaluare = 10.01m });   // evaluarea „naivă”: preț lot × cantitate
+    var citCapcana = AsamblareApply.Citeste(os, idCapcana);
+    var erCapcana = DryRun(idCapcana);
+    Console.WriteLine($"     MĂSURAT (Api ASM, capcana 75-r1): la culegere `Diferenta` = {citCapcana.Diferenta:N2} "
+        + $"(consum {citCapcana.SumaConsum:N2}, produs {citCapcana.SumaProdus:N2}) — documentul PARE echilibrat; "
+        + $"dry-run-ul dă {erCapcana.Count} eroare/erori: {string.Join(" | ", erCapcana)}");
+    Check("ANCORA 75-r1 (capcana, MĂSURATĂ): la culegere documentul pare ECHILIBRAT (`Diferenta` 0,00 — culegerea "
+        + "prezice `preț × cantitate`), dar operarea îl REFUZĂ: consumul care golește cheia ia 10,00 (D18-D2), nu "
+        + "10,01 — asta e capcana pe care operatorul n-o poate ieși din ecran fără comanda F19-D4",
+        citCapcana.Diferenta == 0m && citCapcana.SumaConsum == 10.01m
+        && erCapcana.Any(e => e.Contains("nu creează și nu distruge valoare")));
+
+    var distr = AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idCapcana);
+    var citDupa = AsamblareApply.Citeste(os, idCapcana);
+    var linieProdusCapcana = citDupa.Linii.Single(l => l.Directie == "Produs");
+    var erDupa = DryRun(idCapcana);
+    Console.WriteLine($"     MĂSURAT (Api ASM, F19-D4): predicția consumului {distr.SumaConsum:N2}, repartizat pe "
+        + $"produse {distr.SumaProdus:N2} (reziduu plimbat {distr.ReziduuPlimbat:N2}); preț nou "
+        + $"{linieProdusCapcana.PretEvaluare:0.######}, valoare {linieProdusCapcana.Valoare:N2}; "
+        + $"dry-run după distribuire: {erDupa.Count} erori.");
+    Check("ANCORA F19-D4: comanda PREZICE valoarea consumului prin dry-run-ul MOTORULUI (deci prin regula golirii "
+        + "D18-D2, nu printr-o a doua formulă) — 10,00, nu 10,01 — și rescrie prețul produsului la exact atât; "
+        + "dry-run-ul de după trece FĂRĂ nicio eroare",
+        distr.SumaConsum == 10.00m && distr.SumaProdus == 10.00m
+        && linieProdusCapcana.PretEvaluare == 10m && linieProdusCapcana.Valoare == 10.00m
+        && erDupa.Count == 0);
+    Check("Api ASM (F19-D9, limita DECLARATĂ): după distribuire `Diferenta` din ReadDto iese −0,01, fiindcă "
+        + "sumele proiecției sunt ale CULEGERII (`preț × cantitate` — 75a interzice culegerii să prezică golirea); "
+        + "verdictul autoritar rămâne dry-run-ul, iar cifrele prezise ies din `AsmDistribuireDto`",
+        citDupa.SumaConsum == 10.01m && citDupa.SumaProdus == 10.00m && citDupa.Diferenta == -0.01m);
+
+    // Idempotența: a doua rulare, aceleași cifre.
+    var distr2 = AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idCapcana);
+    var citDupa2 = AsamblareApply.Citeste(os, idCapcana);
+    Check("ANCORA F19-D4 (idempotența): a doua rulare pe același document, cu același registru, dă EXACT aceleași "
+        + "cifre — cheia de repartizare devine chiar valorile scrise de prima, iar prețul e normalizat ca funcție "
+        + "a valorii finale",
+        distr2.SumaConsum == distr.SumaConsum && distr2.SumaProdus == distr.SumaProdus
+        && distr2.ReziduuPlimbat == 0m
+        && citDupa2.Linii.Single(l => l.Directie == "Produs") is { PretEvaluare: 10m, Valoare: 10.00m });
+
+    // Operarea: predicția == cifra pe care o SCRIE motorul.
+    OperareApi.Opereaza(os, idCapcana);
+    var citOperat = AsamblareApply.Citeste(os, idCapcana);
+    var lConsumOperat = citOperat.Linii.Single(l => l.Directie == "Consum");
+    var lProdusOperat = citOperat.Linii.Single(l => l.Directie == "Produs");
+    var lotKitNou = os.GetObjectByKey<Lot>(lProdusOperat.LotId.Value);
+    Console.WriteLine($"     MĂSURAT (Api ASM, predicție vs operare): predicția {distr.SumaConsum:N2} — operarea a "
+        + $"scris pe linia de consum {lConsumOperat.Valoare:N2}; lotul consumat "
+        + $"{SoldCheie(lotRest.ID, gA).Cantitate:0.###}/{SoldCheie(lotRest.ID, gA).Valoare:N2}; lotul nou "
+        + $"{lotKitNou.PretUnitar:0.######} la {lotKitNou.Data:dd.MM.yyyy}.");
+    Check("ANCORA F19-D4 (cusătura MĂSURATĂ, nu afirmată): cifra pe care a PREZIS-O comanda (10,00) e EXACT "
+        + "valoarea pe care a scris-o operarea pe linia de consum (−10,00) — deci predicția și motorul folosesc "
+        + "aceeași regulă, nu două; invariantul 46d trece la ZERO, iar lotul consumat ajunge la 0 / 0,00",
+        citOperat.Stare == "Operat" && lConsumOperat.Valoare == -distr.SumaConsum
+        && lProdusOperat.Valoare == distr.SumaProdus
+        && lConsumOperat.Valoare + lProdusOperat.Valoare == 0m
+        && SoldCheie(lotRest.ID, gA) == new SoldStoc(0m, 0m));
+    Check("Api ASM: operarea SEMNEAZĂ cantitățile (consum −1, produs +1 — 28a), consumă seria „ASM-”, finalizează "
+        + "lotul nou cu `PretUnitar = PretEvaluare` la data documentului și îi copiază atributele",
+        lConsumOperat.Cantitate == -1m && lProdusOperat.Cantitate == 1m
+        && citOperat.Numar != null && citOperat.Numar.StartsWith("ASM-")
+        && lotKitNou.PretUnitar == 10m && lotKitNou.Data == dataAsm && lotKitNou.GestiuneId == gA.ID
+        && SoldCheie(lotKitNou.ID, gA) == new SoldStoc(1m, 10.00m));
+    Check("Api ASM: asamblarea NU postează (zero `RegulaContare` — 23c: marfă→marfă la sintetic e zgomot); "
+        + "affordance-ele ReadDto trec pe Operat, iar `PoateDistribui` cade",
+        !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idCapcana)
+        && !citOperat.PoateEdita && !citOperat.PoateOpera && citOperat.PoateAnula && citOperat.PoateStorna
+        && !citOperat.PoateDistribui);
+    CheckRefuza("Api ASM: `distribuie-valoarea` pe un document care nu mai e Draft se refuză",
+        () => AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idCapcana));
+    CheckRefuza("Api ASM: PUT pe un document Operat se refuză (pre-check de domeniu, înaintea gardianului)",
+        () => AsamblareApply.Aplica(os, idCapcana, Rescriere(citOperat)));
+
+    // --- (D2) Reziduul PLIMBAT pe mai multe linii de produs ---
+    // Grila valorilor realizabile e cu atât mai groasă cu cât cantitatea e mai
+    // mare (un pas de 1e-6 pe preț mișcă valoarea cu q × 1e-6): linia de 30.000
+    // bucăți nu poate absorbi un ban, cea de 1 bucată poate.
+    var lotRest2 = LotCuRest(produsA);
+    var idMulti = IdNou(gA.ID, gA.ID,
+        new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotRest2.ID, Cantitate = 1m },
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
+            Cantitate = 30000m, PretEvaluare = 0.0002m },     // pondere 6,00, grilă de 0,03
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit2.ID,
+            Cantitate = 1m, PretEvaluare = 4.01m });          // pondere 4,01, grilă de 0,000001
+    var distrMulti = AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idMulti);
+    var citMulti = AsamblareApply.Citeste(os, idMulti);
+    var lGros = citMulti.Linii.Single(l => l.ProdusId == produsKit.ID);
+    var lFin = citMulti.Linii.Single(l => l.ProdusId == produsKit2.ID);
+    Console.WriteLine($"     MĂSURAT (Api ASM, reziduul plimbat): țintă {distrMulti.SumaConsum:N2}; ponderi culese "
+        + $"6,00 + 4,01 = 10,01 ⇒ părți 5,99 + 4,01; linia de 30.000 buc realizează {lGros.Valoare:N2} "
+        + $"(preț {lGros.PretEvaluare:0.######}, un pas de 1e-6 mișcă 0,03), linia de 1 buc absoarbe reziduul "
+        + $"{distrMulti.ReziduuPlimbat:N2} ⇒ {lFin.Valoare:N2} (preț {lFin.PretEvaluare:0.######}).");
+    Check("ANCORA F19-D4 (reziduul se PLIMBĂ): pe mai multe linii de produs repartizarea e proporțională cu "
+        + "valoarea CULEASĂ, iar diferența de rotunjire se pune pe linia pe care un pas de 0,000001 o poate "
+        + "absorbi — cea cu cantitatea cea mai mică, adică grila cea mai fină; Σ produselor == valoarea "
+        + "consumului la CENT",
+        distrMulti.SumaConsum == 10.00m && distrMulti.SumaProdus == 10.00m
+        && distrMulti.ReziduuPlimbat == -0.01m
+        && lGros.Valoare == 6.00m && lFin.Valoare == 4.00m
+        && lGros.Valoare + lFin.Valoare == distrMulti.SumaConsum);
+    Check("Api ASM: distribuirea pe mai multe linii e și ea idempotentă (a doua rulare nu mai plimbă nimic)",
+        AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idMulti) is
+            { SumaProdus: 10.00m, ReziduuPlimbat: 0m }
+        && AsamblareApply.Citeste(os, idMulti).Linii.Single(l => l.ProdusId == produsKit2.ID).Valoare == 4.00m);
+    Check("Api ASM: documentul distribuit pe mai multe linii trece dry-run-ul FĂRĂ erori (invariantul 46d la zero)",
+        DryRun(idMulti).Count == 0);
+    OperareApi.Opereaza(os, idMulti);
+    Check("Api ASM: …și operează, cu ambele loturi finalizate la prețurile distribuite",
+        AsamblareApply.Citeste(os, idMulti).Stare == "Operat"
+        && SoldCheie(lotRest2.ID, gA) == new SoldStoc(0m, 0m)
+        && os.GetObjectsQuery<Lot>().Single(l => l.LinieIntrareId == lGros.Id).PretUnitar == 0.0002m);
+
+    // --- (D3) Limita 75-r4: reziduu NEREPREZENTABIL ⇒ refuz cu CIFRA ---
+    // Consum care NU golește (lot de 3, iese 1) ⇒ ținta rămâne 10,01, iar linia
+    // de produs are 1.000.000 buc: un pas de 1e-6 pe preț mișcă valoarea cu 1,00
+    // leu, deci grila e mai groasă decât banul.
+    var lotIntreg2 = LotNou(produsA, 3m, 30.02m);
+    var idNerepr = IdNou(gA.ID, gA.ID,
+        new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotIntreg2.ID, Cantitate = 1m },
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
+            Cantitate = 1000000m, PretEvaluare = 0.00001m });
+    var mesajNerepr = new List<string>();
+    try { AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idNerepr); }
+    catch (OperareException ex) { mesajNerepr.Add(ex.Message); }
+    Console.WriteLine($"     MĂSURAT (Api ASM, limita 75-r4): țintă 10,01 pe 1.000.000 buc ⇒ prețul reprezentabil "
+        + $"cel mai apropiat (0,000010) realizează 10,00; refuzul: {string.Join(" ", mesajNerepr)}");
+    Check("ANCORA F19-D4 (limita 75-r4, DECLARATĂ nu ascunsă): când niciun preț de 6 zecimale nu poate stinge "
+        + "reziduul (cantități mari — grila valorilor devine mai groasă decât banul), comanda REFUZĂ cu CIFRA "
+        + "reziduului (0,01), în loc să lase un ASM pe care operarea l-ar refuza oricum",
+        mesajNerepr.Count == 1 && mesajNerepr[0].Contains("0,01") && mesajNerepr[0].Contains("10,01"));
+    Check("Api ASM (75-r4): refuzul n-a scris nimic — prețul cules rămâne cel de dinainte",
+        AsamblareApply.Citeste(os, idNerepr).Linii.Single(l => l.Directie == "Produs").PretEvaluare == 0.00001m);
+    AsamblareApply.Sterge(os, idNerepr);
+
+    // --- (D4) Refuzurile comenzii: documente pe care predicția n-are ce prezice ---
+    var idFaraProdus = IdNou(gA.ID, gA.ID,
+        new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 1m });
+    CheckRefuza("Api ASM: `distribuie-valoarea` fără nicio linie de PRODUS → refuz (n-are pe ce distribui)",
+        () => AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idFaraProdus));
+    Check("Api ASM: …iar `PoateDistribui` o spunea deja în ReadDto (afordanță, nu surpriză)",
+        !AsamblareApply.Citeste(os, idFaraProdus).PoateDistribui);
+    AsamblareApply.Sterge(os, idFaraProdus);
+
+    var idFaraConsum = IdNou(gA.ID, gA.ID,
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
+            Cantitate = 1m, PretEvaluare = 5m });
+    CheckRefuza("Api ASM: `distribuie-valoarea` fără nicio linie de CONSUM → refuz (nu există valoare de distribuit)",
+        () => AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idFaraConsum));
+    AsamblareApply.Sterge(os, idFaraConsum);
+
+    var idConsumFaraLot = IdNou(gA.ID, gA.ID,
+        new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, Cantitate = 1m },
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
+            Cantitate = 1m, PretEvaluare = 5m });
+    CheckRefuza("Api ASM: `distribuie-valoarea` cu un consum FĂRĂ lot → refuz explicit — cifra prezisă s-ar "
+        + "schimba imediat ce linia se completează, iar operatorul ar rămâne cu prețuri care par bune",
+        () => AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idConsumFaraLot));
+    AsamblareApply.Sterge(os, idConsumFaraLot);
+
+    var idMixt = IdNou(gA.ID, gA.ID,
+        new AsmLinieWriteDto { Directie = "Consum", TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 1m },
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
+            Cantitate = 1m, PretEvaluare = 5m },
+        new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit2.ID,
+            Cantitate = 1m });
+    CheckRefuza("Api ASM: cheia de repartizare MIXTĂ (o linie de produs evaluată, alta nu) → refuz cu ce are "
+        + "operatorul de făcut — ponderea 0 ar da preț 0, adică refuzul operării mutat cu un pas mai încolo",
+        () => AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idMixt));
+    // …iar cu ZERO prețuri culese cheia devine CANTITATEA (F19-D4).
+    var payloadCantitati = Rescriere(AsamblareApply.Citeste(os, idMixt));
+    foreach (var l in payloadCantitati.Linii.Where(l => l.Directie == "Produs")) {
+        l.PretEvaluare = null;
+        l.Cantitate = l.ProdusId == produsKit.ID ? 3m : 1m;
+    }
+    AsamblareApply.Aplica(os, idMixt, payloadCantitati);
+    var distrCantitati = AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idMixt);
+    var citCantitati = AsamblareApply.Citeste(os, idMixt);
+    Console.WriteLine($"     MĂSURAT (Api ASM, cheia pe cantitate): țintă {distrCantitati.SumaConsum:N2} pe 3 + 1 "
+        + $"bucăți ⇒ {citCantitati.Linii.Single(l => l.ProdusId == produsKit.ID).Valoare:N2} + "
+        + $"{citCantitati.Linii.Single(l => l.ProdusId == produsKit2.ID).Valoare:N2}.");
+    Check("ANCORA F19-D4 (cheia de rezervă): dacă NICIO linie de produs n-are valoare culeasă, repartizarea e "
+        + "proporțională cu CANTITATEA — 5,00 pe 3 + 1 bucăți ⇒ 3,75 + 1,25, Σ la cent",
+        distrCantitati.SumaConsum == 5.00m && distrCantitati.SumaProdus == 5.00m
+        && citCantitati.Linii.Single(l => l.ProdusId == produsKit.ID).Valoare == 3.75m
+        && citCantitati.Linii.Single(l => l.ProdusId == produsKit2.ID).Valoare == 1.25m);
+    AsamblareApply.Sterge(os, idMixt);
+
+    // ═══════════ (E) Anulare, re-operare, storno ═══════════
+    var numarCapcana = citOperat.Numar;
+    Check("Api ASM: anulare prin API → Draft, rândurile de stoc dispar, lotul consumat își recapătă soldul",
+        OperareApi.AnuleazaOperarea(os, idCapcana).StareNoua == StareDocument.Draft
+        && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idCapcana)
+        && SoldCheie(lotRest.ID, gA) == new SoldStoc(1m, 10.00m));
+    OperareApi.Opereaza(os, idCapcana);
+    var citReoperat = AsamblareApply.Citeste(os, idCapcana);
+    Check("Api ASM: re-operare după anulare — același număr, aceleași cifre (idempotența `Abs`-urilor din "
+        + "`PregatesteOperare` + regula golirii, care recalculează pe registrul curent)",
+        citReoperat.Numar == numarCapcana
+        && citReoperat.Linii.Single(l => l.Directie == "Consum").Valoare == -10.00m
+        && citReoperat.Linii.Single(l => l.Directie == "Produs").Valoare == 10.00m
+        && SoldCheie(lotRest.ID, gA) == new SoldStoc(0m, 0m));
+    Check("Api ASM: storno prin API → Stornat, rânduri INVERSE append-only la data stornării (+1/+10,00 pe lotul "
+        + "consumat, −1/−10,00 pe lotul produs)",
+        OperareApi.Storneaza(os, idCapcana, new DateOnly(2026, 7, 15)).StareNoua == StareDocument.Stornat
+        && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idCapcana && r.Storno) == 2
+        && SoldCheie(lotRest.ID, gA) == new SoldStoc(1m, 10.00m));
+
+    Curata();
+    Check("Api ASM: curățenie finală (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(Marcaj))
+        && os.GetObjectByKey<Asamblare>(idCapcana) == null);
+}
+
+// ================= Felia API RLF (F19, track 3) — E2E-API-RLF =================
+// Returul la furnizor parcurs prin CONTRACTUL feliei: WriteDto →
+// `ReturFurnizorApply.Aplica` → `Citeste`/`Lista` → dry-run → `OperareApi`.
+// Endpoint-urile din host sunt transport peste EXACT acest cod, deci ce e verde
+// aici e verde și pe sârmă.
+//
+// Rulează DOAR pe profilul PRIVAT (F19-D14): RLF are politici (numerotare, reguli
+// de stoc, contare, TVA) doar acolo; pe bugetar tipul e inert.
+//
+// Ce exersează, în plus față de blocul de MOTOR (`E2E-RET`, care probează
+// mecanica pe calea XAF):
+//   * F19-D8: culegerea e POZITIVĂ (cifra de pe nota de credit a furnizorului),
+//     iar semnarea rămâne a OPERĂRII — cusătura măsurată contra hook-ului însuși;
+//   * lanțul de TVA la culegere (implicit pe linii NOI, recalcul pe declanșatori,
+//     override pe regimurile cu TVA separat);
+//   * ANCORA F18/F5 (`IDocumentCuIesireFiscala`): returul care GOLEȘTE cantitativ
+//     lotul NU absoarbe soldul valoric rămas — reziduul rămâne pe lot, 401 nu-l
+//     primește; probat pe calea API și pus FAȚĂ ÎN FAȚĂ cu un consum obișnuit pe
+//     un lot geamăn, care ÎL absoarbe;
+//   * riscul 6: idempotența semnării prin calea API (culegere → operare → anulare
+//     → PUT → re-operare) — cine bate pe cine între `MaterializeazaValori` și
+//     `PregatesteOperare`;
+//   * refuzurile de payload și cele ale tipului, fără rânduri-fantomă și fără
+//     serie consumată.
+void VerificaApiRlf() {
+    const string Marcaj = "E2E-API-RLF";
+    using var os = provider.CreateObjectSpace();
+
+    var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371");
+    var tipRlf = os.FirstOrDefault<TipDocument>(t => t.Cod == "RLF");
+    var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+    var ned21 = os.FirstOrDefault<TipTva>(t => t.Cod == "NED21");   // Capitalizat
+    var sdd = os.FirstOrDefault<TipTva>(t => t.Cod == "SDD");       // Scutit
+    var cont371 = os.FirstOrDefault<Cont>(c => c.Simbol == "371");
+    var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
+    var cont4426 = os.FirstOrDefault<Cont>(c => c.Simbol == "4426");
+
+    // Registrul pe care iese RLF-ul din predator, citit din POLITICĂ (regula
+    // specifică pe clasa liniei bate genericul — 26c).
+    var reguliRlf = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipRlf.ID).ToList();
+    var tipStoc = (reguliRlf.FirstOrDefault(r => r.ClasaId == tip371.ClasaId)
+        ?? reguliRlf.First(r => r.ClasaId == null)).TipStoc;
+
+    void Curata() {
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId))
+            .Select(d => d.ID).ToList();
+        var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => loturi.Contains(r.LotId) || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => docIds.Contains(d.ID)).ToList()
+                     .OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => loturi.Contains(l.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+    Curata();
+
+    Check("Api RLF — precondiții de profil: ancora RLF cu seria „RLF-”, reguli de stoc +1 pe PREDATOR (semnul "
+        + "liniei dă ieșirea) și `PoliticaTva` DEDUCTIBIL cu `TipTvaImplicit = N21` — de aceea `TipTvaId`/"
+        + "`ValoareTva` INTRĂ în DTO (F19-D7), spre deosebire de NTC/ASM",
+        tipRlf != null && tipRlf.ClrType == nameof(ReturFurnizor)
+        && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipRlf.ID)?.Serie == "RLF-"
+        && reguliRlf.Count > 0 && reguliRlf.All(r => r.Latura == LaturaDocument.Predator && r.Semn == +1)
+        && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipRlf.ID)?.Directie == DirectieTva.Deductibil
+        && tipRlf.TipTvaImplicitId == n21.ID
+        && tip371 != null && ned21 != null && sdd != null);
+
+    // ---------------- Scena ----------------
+    var gest = os.CreateObject<Gestiune>();
+    gest.Cod = Marcaj + "-G"; gest.Denumire = "Gestiune Api RLF";
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = Marcaj + "-F"; furnizor.Denumire = "Furnizor Api RLF"; furnizor.CodFiscal = "RO44444448";
+    var loc = os.CreateObject<UnitateInterna>();
+    loc.Cod = Marcaj + "-LOC"; loc.Denumire = "Loc consum Api RLF"; loc.Calitati = CalitateRepartitor.LocConsum;
+    Produs Prod(string sufix) {
+        var p = os.CreateObject<Produs>();
+        p.Cod = Marcaj + sufix; p.Denumire = "Produs Api RLF" + sufix; p.UM = "BUC";
+        p.TipMaterial = tip371;
+        return p;
+    }
+    var produsA = Prod("-A");
+    var produsRest = Prod("-REST");
+    var produsGeaman = Prod("-GEAMAN");
+    os.CommitChanges();
+
+    var dataLot = new DateOnly(2026, 9, 1);
+    var dataRlf = new DateOnly(2026, 9, 10);
+
+    Lot LotNou(Produs p, decimal cantitate, decimal valoare) {
+        var nir = os.CreateObject<NIR>();
+        nir.Data = dataLot; nir.Predator = furnizor; nir.Primitor = gest;
+        var lin = os.CreateObject<DocumentDetaliu>();
+        lin.Document = nir; lin.TipMaterial = tip371; lin.Cantitate = cantitate; lin.Valoare = valoare;
+        var lot = lin.CreeazaLot(os, p, gest);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nir);
+        os.CommitChanges();
+        return lot;
+    }
+    void Bcs(Lot lot, DateOnly data, decimal q) {
+        var doc = os.CreateObject<BonConsum>();
+        doc.Data = data; doc.Predator = gest; doc.Primitor = loc;
+        var d = os.CreateObject<DocumentDetaliu>();
+        d.Document = doc; d.TipMaterial = tip371; d.Lot = lot; d.Cantitate = q;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, doc);
+        os.CommitChanges();
+    }
+    SoldStoc SoldCheie(Guid lotId) {
+        var rows = os.GetObjectsQuery<RegistruStoc>()
+            .Where(x => x.LotId == lotId && x.RepartitorId == gest.ID && x.TipStoc == tipStoc).ToList();
+        return new SoldStoc(rows.Sum(x => x.Cantitate), rows.Sum(x => x.Valoare));
+    }
+    List<RegistruContabil> Note(Guid docId) =>
+        os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == docId && !r.Storno).ToList();
+    IReadOnlyList<string> DryRun(Guid docId) {
+        using var osDry = provider.CreateObjectSpace();
+        return OperareApi.Valideaza(osDry, docId);
+    }
+    int SerieRlf() {
+        using var o = provider.CreateObjectSpace();
+        return o.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "RLF").UrmatorulNumar;
+    }
+    // Cusătura F19-D8, MĂSURATĂ: ce SCRIE hook-ul de operare pe o linie, rulat pe
+    // un ObjectSpace de unică folosință (contractul lui `PregatesteOperare`: el
+    // SCRIE pe linii, deci nu are voie să atingă OS-ul scenei; nu se comite).
+    (decimal Valoare, decimal Tva, decimal Cantitate) Hook(Guid docId, Guid linieId) {
+        using var o = provider.CreateObjectSpace();
+        var d = o.GetObjectByKey<ReturFurnizor>(docId);
+        d.PregatesteOperare(o);
+        var l = d.Detalii.Single(x => x.ID == linieId);
+        return (l.Valoare, l.ValoareTva, l.Cantitate);
+    }
+
+    var lotIntreg = LotNou(produsA, 10m, 100m);   // 10 × 10,00 — lot „cuminte”
+    Check("Api RLF premisă: lotul de 10 × 10,00 se naște prin NIR operat, în gestiunea returului",
+        lotIntreg.PretUnitar == 10m && SoldCheie(lotIntreg.ID) == new SoldStoc(10m, 100m));
+
+    // ═══════════ (A) Culegerea: valori POZITIVE + lanțul de TVA ═══════════
+    var idRlf = ReturFurnizorApply.Aplica(os, null, new RlfWriteDto {
+        Data = dataRlf, PredatorId = gest.ID, PrimitorId = furnizor.ID,
+        Linii = { new RlfLinieWriteDto { TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 4m } }
+    });
+    var cit = ReturFurnizorApply.Citeste(os, idRlf);
+    var linie = cit.Linii.Single();
+    Check("Api RLF (F19-D8): culegerea e POZITIVĂ — `Valoare` = round(4 × 10,00) = 40,00 și TVA-ul 21% = 8,40, "
+        + "adică exact cifra de pe nota de credit a furnizorului; `Total` brut 48,40 pe DRAFT",
+        linie.Cantitate == 4m && linie.Valoare == 40m && linie.ValoareTva == 8.4m && cit.Total == 48.4m);
+    Check("Api RLF (F19-D7): `TipTvaImplicit` al tipului (N21) se aplică pe linia NOUĂ al cărei payload n-a dat "
+        + "TipTva — seam-ul de culegere, nu motorul",
+        linie.TipTvaId == n21.ID && linie.TipTvaCod == "N21" && linie.TipTvaCota == 21m);
+    Check("Api RLF: header plat, FĂRĂ număr (seria „RLF-” e server-owned — F19-D6), cu denumirile ambelor laturi "
+        + "și affordances de Draft",
+        cit.Numar == null && cit.Stare == "Draft" && cit.Data == dataRlf
+        && cit.PredatorId == gest.ID && cit.PredatorDenumire == gest.Denumire
+        && cit.PrimitorId == furnizor.ID && cit.PrimitorDenumire == furnizor.Denumire
+        && cit.PoateEdita && cit.PoateOpera && !cit.PoateAnula && !cit.PoateStorna);
+    Check("Api RLF: linia proiectează plat Tipul, eticheta lotului și tipul de TVA (fără `as`-cast — RLF n-are "
+        + "frunză, F19-D9)",
+        linie.TipMaterialId == tip371.ID && linie.TipMaterialCod == tip371.Cod
+        && linie.LotId == lotIntreg.ID
+        && linie.LotEticheta != null && linie.LotEticheta.Contains(produsA.Denumire));
+    var randLista = ReturFurnizorApply.Lista(os).Single(d => d.Id == idRlf);
+    Check("Api RLF: Lista dă aceleași cifre ca agregatul (Total prin join pe agregat), starea tradusă în SQL",
+        randLista.Stare == "Draft" && randLista.Total == 48.4m && randLista.Numar == null
+        && randLista.PredatorDenumire == gest.Denumire && randLista.PrimitorDenumire == furnizor.Denumire);
+
+    var hookInainte = Hook(idRlf, linie.Id);
+    Console.WriteLine($"     MĂSURAT (Api RLF, cusătura F19-D8): culegerea a scris {linie.Valoare:N2} / "
+        + $"{linie.ValoareTva:N2} pe cantitatea {linie.Cantitate:0.###}; `PregatesteOperare` scrie "
+        + $"{hookInainte.Valoare:N2} / {hookInainte.Tva:N2} pe {hookInainte.Cantitate:0.###} — aceleași "
+        + "magnitudini, semn opus.");
+    Check("ANCORA F19-D8 (cusătură MĂSURATĂ, nu afirmată): TVA-ul și valoarea de la CULEGERE sunt EXACT ce "
+        + "calculează `PregatesteOperare` înainte de semnare — formulele sunt gemene, nu două adevăruri; "
+        + "diferența e doar semnul, care e al OPERĂRII (46e)",
+        hookInainte.Valoare == -linie.Valoare && hookInainte.Tva == -linie.ValoareTva
+        && hookInainte.Cantitate == -linie.Cantitate);
+
+    // Round-trip: ReadDto → WriteDto → Apply.
+    RlfWriteDto Rescriere(RlfReadDto d) => new() {
+        Data = d.Data, PredatorId = d.PredatorId, PrimitorId = d.PrimitorId,
+        Linii = d.Linii.Select(l => new RlfLinieWriteDto {
+            Id = l.Id, TipMaterialId = l.TipMaterialId, LotId = l.LotId,
+            Cantitate = l.Cantitate, TipTvaId = l.TipTvaId, ValoareTva = l.ValoareTva
+        }).ToList()
+    };
+    ReturFurnizorApply.Aplica(os, idRlf, Rescriere(cit));
+    Check("Api RLF: PUT de round-trip complet nu schimbă nimic (idempotent la nivel de agregat)",
+        ReturFurnizorApply.Citeste(os, idRlf) is { Total: 48.4m, Linii.Count: 1 });
+
+    // Override-ul manual de ValoareTva (36a) + semantica declanșatorilor (56).
+    var cuOverride = Rescriere(ReturFurnizorApply.Citeste(os, idRlf));
+    cuOverride.Linii[0].ValoareTva = 8.39m;
+    ReturFurnizorApply.Aplica(os, idRlf, cuOverride);
+    Check("Api RLF: override-ul manual de `ValoareTva` (8,39 — rotunjirea furnizorului) se persistă, iar `Total` "
+        + "îl urmează",
+        ReturFurnizorApply.Citeste(os, idRlf).Linii[0].ValoareTva == 8.39m
+        && ReturFurnizorApply.Citeste(os, idRlf).Total == 48.39m);
+    var faraDeclansator = Rescriere(ReturFurnizorApply.Citeste(os, idRlf));
+    faraDeclansator.Linii[0].ValoareTva = null;   // clientul nu retrimite override-ul
+    faraDeclansator.Data = dataRlf.AddDays(1);
+    ReturFurnizorApply.Aplica(os, idRlf, faraDeclansator);
+    Check("Api RLF (56): un PUT care nu atinge niciun DECLANȘATOR (cantitatea, lotul, TipTva) NU pierde "
+        + "override-ul — clientul nu poate distinge „valoarea citită e override” de „e calculată”, deci n-o "
+        + "retrimite",
+        ReturFurnizorApply.Citeste(os, idRlf).Linii[0].ValoareTva == 8.39m);
+    var cuDeclansator = Rescriere(ReturFurnizorApply.Citeste(os, idRlf));
+    cuDeclansator.Linii[0].ValoareTva = null;
+    cuDeclansator.Linii[0].Cantitate = 5m;
+    ReturFurnizorApply.Aplica(os, idRlf, cuDeclansator);
+    Check("Api RLF (56): schimbarea CANTITĂȚII e declanșator — baza devine 50,00, TVA-ul se recalculează din "
+        + "cotă (10,50) și override-ul stale dispare",
+        ReturFurnizorApply.Citeste(os, idRlf).Linii[0] is { Valoare: 50m, ValoareTva: 10.5m });
+    var inapoi = Rescriere(ReturFurnizorApply.Citeste(os, idRlf));
+    inapoi.Linii[0].ValoareTva = null;
+    inapoi.Linii[0].Cantitate = 4m;
+    ReturFurnizorApply.Aplica(os, idRlf, inapoi);
+    Check("Api RLF: …și înapoi la 4 buc ⇒ 40,00 / 8,40 (valoarea nu se culege NICIODATĂ — e a lotului)",
+        ReturFurnizorApply.Citeste(os, idRlf).Linii[0] is { Valoare: 40m, ValoareTva: 8.4m });
+
+    // ═══════════ (B) Refuzurile de PAYLOAD (reconcilierea) ═══════════
+    RlfWriteDto Payload(params RlfLinieWriteDto[] linii) => new() {
+        Data = dataRlf, PredatorId = gest.ID, PrimitorId = furnizor.ID, Linii = linii.ToList()
+    };
+    RlfLinieWriteDto LinieValida() => new() {
+        TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 1m
+    };
+    CheckRefuza("Api RLF: Id de linie STRĂIN → refuz (agregatul nu adoptă linii din alt document)", () => {
+        var l = LinieValida(); l.Id = Guid.NewGuid();
+        ReturFurnizorApply.Aplica(os, idRlf, Payload(l));
+    });
+    CheckRefuza("Api RLF: același Id de linie de două ori → refuz", () => {
+        var l = LinieValida(); l.Id = linie.Id;
+        ReturFurnizorApply.Aplica(os, idRlf, Payload(l, l));
+    });
+    CheckRefuza("Api RLF: `TipMaterialId` absent din payload → refuz de DOMENIU, nu violare de FK NOT NULL", () => {
+        var l = LinieValida(); l.TipMaterialId = Guid.Empty;
+        ReturFurnizorApply.Aplica(os, idRlf, Payload(l));
+    });
+    CheckRefuza("Api RLF: lot inexistent → refuz de domeniu (rezolvarea pe navigație)", () => {
+        var l = LinieValida(); l.LotId = Guid.NewGuid();
+        ReturFurnizorApply.Aplica(os, idRlf, Payload(l));
+    });
+    CheckRefuza("Api RLF: tip de TVA inexistent → refuz de domeniu", () => {
+        var l = LinieValida(); l.TipTvaId = Guid.NewGuid();
+        ReturFurnizorApply.Aplica(os, idRlf, Payload(l));
+    });
+    CheckRefuza("Api RLF: cantitate în afara scării numeric(18,3) → refuz de domeniu, nu DbUpdateException", () => {
+        var l = LinieValida(); l.Cantitate = 1.0001m;
+        ReturFurnizorApply.Aplica(os, idRlf, Payload(l));
+    });
+    CheckRefuza("Api RLF: `ValoareTva` în afara scării numeric(18,2) → refuz de domeniu", () => {
+        var l = LinieValida(); l.ValoareTva = 1.001m;
+        ReturFurnizorApply.Aplica(os, idRlf, Payload(l));
+    });
+    CheckRefuza("Api RLF (56): override de `ValoareTva` pe un regim FĂRĂ TVA separat (SDD, scutit) → refuz — "
+        + "`PregatesteOperare` l-ar șterge oricum la operare, deci acceptarea lui ar minți operatorul", () => {
+        var l = LinieValida(); l.TipTvaId = sdd.ID; l.ValoareTva = 1m;
+        ReturFurnizorApply.Aplica(os, idRlf, Payload(l));
+    });
+    CheckRefuza("Api RLF: latură inexistentă în nomenclatorul de repartitori → refuz de domeniu, înaintea "
+        + "oricărei modificări a header-ului", () =>
+        ReturFurnizorApply.Aplica(os, idRlf, new RlfWriteDto {
+            Data = dataRlf, PredatorId = Guid.NewGuid(), PrimitorId = furnizor.ID, Linii = { LinieValida() }
+        }));
+    Check("Api RLF: …iar returul rămâne pe laturile lui și cu linia lui (niciun refuz n-a rescris nimic)",
+        ReturFurnizorApply.Citeste(os, idRlf) is { PredatorId: var pId, Linii.Count: 1, Total: 48.4m }
+        && pId == gest.ID);
+    // Un Apply refuzat DUPĂ `CreateObject` lasă linia pe jumătate construită în
+    // ObjectSpace-ul VIU al apelantului (pe HTTP el moare cu cererea — aici nu).
+    // Reconcilierea următorului payload al ACELUIAȘI document o curăță: linia
+    // fără Id în payload cade în `sterse`. Măsurat, nu presupus.
+    ReturFurnizorApply.Aplica(os, idRlf, Rescriere(ReturFurnizorApply.Citeste(os, idRlf)));
+    Check("Api RLF: un Apply refuzat nu lasă reziduu în agregat — următorul payload valid readuce documentul la "
+        + "exact o linie, cu aceleași cifre",
+        ReturFurnizorApply.Citeste(os, idRlf) is { Linii.Count: 1, Total: 48.4m }
+        && os.GetObjectsQuery<DocumentDetaliu>().Count(d => d.DocumentId == idRlf) == 1);
+
+    // ═══════════ (C) Refuzurile TIPULUI, prin calea API ═══════════
+    var serieInainte = SerieRlf();
+    Guid IdNou(Guid predator, Guid primitor, params RlfLinieWriteDto[] linii) =>
+        ReturFurnizorApply.Aplica(os, null, new RlfWriteDto {
+            Data = dataRlf, PredatorId = predator, PrimitorId = primitor, Linii = linii.ToList()
+        });
+
+    var idLaturi = IdNou(furnizor.ID, gest.ID, LinieValida());
+    CheckRefuza("Api RLF: laturi INVERSATE (predator partener / primitor gestiune) → refuz al tipului",
+        () => OperareApi.Opereaza(os, idLaturi));
+    Check("Api RLF: dry-run-ul spune ACELAȘI lucru înaintea comenzii (43b: autoritar e motorul)",
+        DryRun(idLaturi).Any(e => e.Contains("gestiune")));
+    Check("Api RLF: refuzul n-a lăsat rânduri-fantomă (33d)",
+        !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idLaturi)
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idLaturi));
+    ReturFurnizorApply.Sterge(os, idLaturi);
+
+    var idFaraLot = IdNou(gest.ID, furnizor.ID,
+        new RlfLinieWriteDto { TipMaterialId = tip371.ID, Cantitate = 1m });
+    Check("Api RLF: linia fără lot e CULEASĂ (draftul are voie să fie incomplet), dar cu valoarea golită la 0 — "
+        + "valoarea lotului scos de pe linie ar minți pe ecran (precedentul BCS)",
+        ReturFurnizorApply.Citeste(os, idFaraLot).Linii[0] is { LotId: null, Valoare: 0m, ValoareTva: 0m });
+    CheckRefuza("Api RLF: …iar operarea o refuză („returul descarcă LOTUL ORIGINAL” — decizia 13)",
+        () => OperareApi.Opereaza(os, idFaraLot));
+    ReturFurnizorApply.Sterge(os, idFaraLot);
+
+    var idCapitalizat = IdNou(gest.ID, furnizor.ID, new RlfLinieWriteDto {
+        TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 1m, TipTvaId = ned21.ID
+    });
+    CheckRefuza("Api RLF: regim `Capitalizat` (NED21) → refuz al MOTORULUI, nu al clientului (43b) — valoarea "
+        + "returului e costul lotului, nu costul plus taxa",
+        () => OperareApi.Opereaza(os, idCapitalizat));
+    ReturFurnizorApply.Sterge(os, idCapitalizat);
+
+    var idPesteSold = IdNou(gest.ID, furnizor.ID, new RlfLinieWriteDto {
+        TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 999m
+    });
+    CheckRefuza("Api RLF: retur peste soldul lotului → refuzul gardianului de sold (25d), pe calea API",
+        () => OperareApi.Opereaza(os, idPesteSold));
+    ReturFurnizorApply.Sterge(os, idPesteSold);
+
+    Check("Api RLF (F19-D6 + GATE D6): niciun refuz n-a consumat seria „RLF-” — numărul se asignează abia la "
+        + "MATERIALIZARE, deci un document refuzat nu lasă gaură în numerotare",
+        SerieRlf() == serieInainte);
+    Console.WriteLine("     MĂSURAT (Api RLF, gardul „lot propriu”): `ReturFurnizor.ValideazaOperare` refuză linia "
+        + "al cărei lot are `LinieIntrareId == linia`, dar calea API NU poate ajunge acolo — liniile de RLF nu "
+        + "declară `ILinieCareNasteLot`, deci `Aplica` nu naște niciun lot, iar `LotId` se poate lega doar la un "
+        + "lot EXISTENT. Gardul rămâne al căilor directe (XAF/Import1C); declarat, nu sărit tăcut.");
+    var liniiRlfScena = os.GetObjectsQuery<ReturFurnizor>()
+        .Where(d => d.PredatorId == gest.ID || d.PrimitorId == furnizor.ID)
+        .SelectMany(d => d.Detalii.Select(x => x.ID)).ToList();
+    Check("Api RLF: nicio linie de retur nu a născut vreun lot pe toată scena (gardul „lot propriu” e "
+        + "inatingibil prin API, prin construcție)",
+        liniiRlfScena.Count > 0
+        && !os.GetObjectsQuery<Lot>().Any(l => l.LinieIntrareId != null
+            && liniiRlfScena.Contains(l.LinieIntrareId.Value)));
+
+    // ═══════════ (D) Operarea: semnarea, stocul, notele ═══════════
+    Check("Api RLF: dry-run-ul unui retur complet nu întoarce nicio eroare", DryRun(idRlf).Count == 0);
+    OperareApi.Opereaza(os, idRlf);
+    var citOperat = ReturFurnizorApply.Citeste(os, idRlf);
+    var linieOperata = citOperat.Linii.Single();
+    Check("Api RLF: operarea SEMNEAZĂ (−4 / −40,00 / −8,40), consumă seria „RLF-”, iar ReadDto arată cifrele "
+        + "semnate — fapta operării, pe un document oricum read-only (F19-D9)",
+        citOperat.Stare == "Operat" && citOperat.Numar != null && citOperat.Numar.StartsWith("RLF-")
+        && linieOperata.Cantitate == -4m && linieOperata.Valoare == -40m && linieOperata.ValoareTva == -8.4m
+        && citOperat.Total == -48.4m
+        && !citOperat.PoateEdita && !citOperat.PoateOpera && citOperat.PoateAnula && citOperat.PoateStorna);
+    Check("Api RLF: stoc −4 / −40,00 în gestiunea PREDATOARE (regula +1 × linia negativă), soldul lotului scade "
+        + "de la 10 la 6",
+        os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idRlf) == 1
+        && SoldCheie(lotIntreg.ID) == new SoldStoc(6m, 60m));
+    var noteRlf = Note(idRlf);
+    Check("Api RLF: note pe corespondența ORIGINALĂ, negative — `371 = 401` cu −40,00 și `4426 = 401` cu −8,40",
+        noteRlf.Count == 2
+        && noteRlf.Any(r => r.ContDebitId == cont371.ID && r.ContCreditId == cont401.ID && r.Valoare == -40m)
+        && noteRlf.Any(r => r.ContDebitId == cont4426.ID && r.ContCreditId == cont401.ID && r.Valoare == -8.4m)
+        && noteRlf.All(r => !r.Storno));
+
+    // ═══════════ (E) ANCORA F18/F5: golirea FISCALĂ nu absoarbe restul ═══════════
+    // Lot „strâmb”: 3 buc intrate cu 30,01 ⇒ preț 10,003333. Două ieșiri de câte 1
+    // (10,00 + 10,00) lasă 1 buc și 10,01 lei — adică un BAN peste `preț × 1`.
+    Lot LotCuRest(Produs p) {
+        var l = LotNou(p, 3m, 30.01m);
+        Bcs(l, new DateOnly(2026, 9, 2), 1m);
+        Bcs(l, new DateOnly(2026, 9, 3), 1m);
+        return l;
+    }
+    var lotFiscal = LotCuRest(produsRest);
+    var lotGeaman = LotCuRest(produsGeaman);
+    Check("Api RLF premisă (scena golirii): ambele loturi „strâmbe” au preț 10,003333 și au rămas la 1 buc / "
+        + "10,01 — un ban peste `preț × cantitate`",
+        lotFiscal.PretUnitar == 10.003333m && lotGeaman.PretUnitar == 10.003333m
+        && SoldCheie(lotFiscal.ID) == new SoldStoc(1m, 10.01m)
+        && SoldCheie(lotGeaman.ID) == new SoldStoc(1m, 10.01m));
+
+    var idFiscal = IdNou(gest.ID, furnizor.ID, new RlfLinieWriteDto {
+        TipMaterialId = tip371.ID, LotId = lotFiscal.ID, Cantitate = 1m
+    });
+    var citFiscal = ReturFurnizorApply.Citeste(os, idFiscal);
+    Check("ANCORA F18/F5 la CULEGERE: pe cheia pe care returul o va goli, culegerea prezice `q × preț` = 10,00 "
+        + "și ATÂT — nu consultă soldul valoric și nu prezice golirea; calea API nu introduce un al doilea adevăr "
+        + "despre valoarea ieșirii",
+        citFiscal.Linii[0].Valoare == 10.00m && citFiscal.Linii[0].ValoareTva == 2.10m);
+    OperareApi.Opereaza(os, idFiscal);
+    // Contrastul: un BON DE CONSUM pe lotul geamăn, în aceeași poziție, ABSOARBE.
+    Bcs(lotGeaman, new DateOnly(2026, 9, 12), 1m);
+    var soldFiscal = SoldCheie(lotFiscal.ID);
+    var soldGeaman = SoldCheie(lotGeaman.ID);
+    var noteFiscal = Note(idFiscal);
+    var catreFurnizor = noteFiscal.Where(r => r.ContCreditId == cont401.ID).Sum(r => r.Valoare);
+    Console.WriteLine($"     MĂSURAT (Api RLF, F18/F5): pe DOUĂ loturi identice (1 buc / 10,01) — returul "
+        + $"(ieșire FISCALĂ) a scos {citFiscal.Linii[0].Valoare:N2} și a lăsat lotul la "
+        + $"{soldFiscal.Cantitate:0.###} / {soldFiscal.Valoare:N2}; consumul obișnuit a ABSORBIT restul și a "
+        + $"lăsat lotul la {soldGeaman.Cantitate:0.###} / {soldGeaman.Valoare:N2}. Contul 401 a primit "
+        + $"{catreFurnizor:N2} (valoare + TVA), nu banul în plus.");
+    Check("ANCORA F18/F5 (`IDocumentCuIesireFiscala`, replicată pe calea API): returul GOLEȘTE cantitativ cheia, "
+        + "dar NU absoarbe soldul valoric rămas — postează 10,00 (hârtia furnizorului) și lasă pe lot reziduul de "
+        + "0,01, raportat în SAF-T S; contul 401 primește 10,00 + 2,10 TVA, iar banul în plus NU cade pe el",
+        soldFiscal == new SoldStoc(0m, 0.01m)
+        && noteFiscal.Count == 2
+        && noteFiscal.Any(r => r.ContDebitId == cont371.ID && r.ContCreditId == cont401.ID && r.Valoare == -10.00m)
+        && noteFiscal.Any(r => r.ContDebitId == cont4426.ID && r.ContCreditId == cont401.ID && r.Valoare == -2.10m)
+        && catreFurnizor == -12.10m);
+    Check("ANCORA F18/F5 (contrastul care face cifra să însemne ceva): pe lotul GEAMĂN, în aceeași poziție, un "
+        + "consum obișnuit — care NU e ieșire fiscală — preia tot soldul valoric rămas (F18-D2) și duce cheia la "
+        + "0 / 0,00; diferența dintre cele două cifre e exact marker-ul de tip, nu o toleranță",
+        soldGeaman == new SoldStoc(0m, 0m));
+
+    // ═══════════ (F) Riscul 6: idempotența semnării prin calea API ═══════════
+    var numarRlf = citOperat.Numar;
+    OperareApi.AnuleazaOperarea(os, idRlf);
+    var citAnulat = ReturFurnizorApply.Citeste(os, idRlf);
+    Console.WriteLine($"     MĂSURAT (Api RLF, riscul 6): după ANULARE documentul e „{citAnulat.Stare}” cu linia "
+        + $"încă semnată de operare ({citAnulat.Linii[0].Cantitate:0.###} / {citAnulat.Linii[0].Valoare:N2} / "
+        + $"{citAnulat.Linii[0].ValoareTva:N2}) — motorul nu de-semnează.");
+    Check("Api RLF: anularea readuce Draft-ul, șterge registrele și întoarce soldul lotului la 10 — dar LASĂ "
+        + "liniile semnate (motorul nu de-semnează; `Abs`-urile din `PregatesteOperare` fac re-operarea sigură)",
+        citAnulat.Stare == "Draft" && citAnulat.Linii[0].Cantitate == -4m
+        && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idRlf)
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idRlf)
+        && SoldCheie(lotIntreg.ID) == new SoldStoc(10m, 100m));
+    ReturFurnizorApply.Aplica(os, idRlf, Rescriere(citAnulat));
+    var citRenormalizat = ReturFurnizorApply.Citeste(os, idRlf);
+    Console.WriteLine($"     MĂSURAT (Api RLF, riscul 6): PUT-ul de round-trip al aceluiași ReadDto semnat a "
+        + $"readus linia la {citRenormalizat.Linii[0].Cantitate:0.###} / {citRenormalizat.Linii[0].Valoare:N2} / "
+        + $"{citRenormalizat.Linii[0].ValoareTva:N2}, iar `Total` la {citRenormalizat.Total:N2}.");
+    Check("RISCUL 6, MĂSURAT (cine bate pe cine): pe DRAFT bate `MaterializeazaValori` — round-trip-ul unui "
+        + "ReadDto SEMNAT (singurul lucru pe care clientul îl are după o anulare) readuce linia la forma de "
+        + "CULEGERE, adică magnitudini pozitive, în loc să fie refuzat sau să lase cantitatea negativă lângă o "
+        + "valoare pozitivă. La OPERARE bate hook-ul — și cele două nu se contrazic, fiindcă amândouă pleacă din "
+        + "`Abs`",
+        citRenormalizat.Linii[0].Cantitate == 4m && citRenormalizat.Linii[0].Valoare == 40m
+        && citRenormalizat.Linii[0].ValoareTva == 8.4m && citRenormalizat.Total == 48.4m);
+    OperareApi.Opereaza(os, idRlf);
+    var citReoperat = ReturFurnizorApply.Citeste(os, idRlf);
+    Check("RISCUL 6: re-operarea după anulare + PUT dă EXACT aceleași cifre și același număr — semnul nu se "
+        + "dublează (nici prin motor, nici prin Apply)",
+        citReoperat.Numar == numarRlf && citReoperat.Linii[0].Cantitate == -4m
+        && citReoperat.Linii[0].Valoare == -40m && citReoperat.Linii[0].ValoareTva == -8.4m
+        && citReoperat.Total == -48.4m
+        && Note(idRlf).Count == 2 && SoldCheie(lotIntreg.ID) == new SoldStoc(6m, 60m));
+
+    // ═══════════ (G) Storno ═══════════
+    var dStorno = new DateOnly(2026, 9, 20);
+    Check("Api RLF: storno prin API → Stornat, rânduri INVERSE append-only (POZITIVE, cu flag `Storno`) la data "
+        + "stornării; stocul revine la 10",
+        OperareApi.Storneaza(os, idRlf, dStorno).StareNoua == StareDocument.Stornat
+        && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idRlf && r.Storno) == 1
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idRlf && r.Storno) == 2
+        && os.GetObjectsQuery<RegistruContabil>()
+            .Any(r => r.DocumentId == idRlf && r.Storno && r.ContDebitId == cont371.ID && r.Valoare == 40m)
+        && SoldCheie(lotIntreg.ID) == new SoldStoc(10m, 100m));
+    Check("Api RLF: documentul stornat nu mai are nicio afordanță de scriere",
+        ReturFurnizorApply.Citeste(os, idRlf) is
+            { Stare: "Stornat", PoateEdita: false, PoateOpera: false, PoateAnula: false, PoateStorna: false });
+    CheckRefuza("Api RLF: PUT pe un document Stornat se refuză (pre-check de domeniu, înaintea gardianului)",
+        () => ReturFurnizorApply.Aplica(os, idRlf, Rescriere(ReturFurnizorApply.Citeste(os, idRlf))));
+    CheckRefuza("Api RLF: DELETE pe un document Stornat se refuză",
+        () => ReturFurnizorApply.Sterge(os, idRlf));
+
+    Curata();
+    Check("Api RLF: curățenie finală (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(Marcaj))
+        && os.GetObjectByKey<ReturFurnizor>(idRlf) == null
+        && os.GetObjectByKey<ReturFurnizor>(idFiscal) == null);
+}
+
+// ================= Felia API RDC (F19, track 3) — E2E-API-RDC =================
+// Returul de la client parcurs prin CONTRACTUL feliei: WriteDto →
+// `ReturClientApply.Aplica` → `Citeste`/`Lista` → dry-run → `OperareApi`.
+// Endpoint-urile din host sunt transport peste EXACT acest cod.
+//
+// Rulează DOAR pe profilul PRIVAT (F19-D14): politicile RDC există doar acolo.
+//
+// Ce exersează, în plus față de blocul de MOTOR (`E2E-RET`):
+//   * RISCUL 5, pin-uit: rolul liniei e o PREZENȚĂ (`LotId`), nu un enum — un PUT
+//     care mută o linie dintr-un rol în celălalt e REFUZ EXPLICIT, în ambele
+//     sensuri, iar calea legitimă (ștergere + re-culegere) rămâne deschisă;
+//   * F19-D7: linia de COST persistată cu `TipTvaId = null` — probat ÎN BAZĂ, pe
+//     un ObjectSpace proaspăt, nu doar în ReadDto;
+//   * F19-D9: `Total` == DOAR liniile de venit, `TotalCost` separat, pe agregat ȘI
+//     pe listă;
+//   * riscul 6: idempotența semnării prin calea API (anulare → PUT → re-operare).
+void VerificaApiRdc() {
+    const string Marcaj = "E2E-API-RDC";
+    using var os = provider.CreateObjectSpace();
+
+    var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371");
+    var tip301 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "301");   // alt Tip de stoc (coerență)
+    var tip707 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "707");   // venit din vânzarea mărfurilor
+    var tipRdc = os.FirstOrDefault<TipDocument>(t => t.Cod == "RDC");
+    var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+    var ned21 = os.FirstOrDefault<TipTva>(t => t.Cod == "NED21");   // Capitalizat
+    var cont371 = os.FirstOrDefault<Cont>(c => c.Simbol == "371");
+    var cont4111 = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
+    var cont4427 = os.FirstOrDefault<Cont>(c => c.Simbol == "4427");
+    var cont607 = os.FirstOrDefault<Cont>(c => c.Simbol == "607");
+    var cont707 = os.FirstOrDefault<Cont>(c => c.Simbol == "707");
+
+    var reguliRdc = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipRdc.ID).ToList();
+    var tipStoc = (reguliRdc.FirstOrDefault(r => r.ClasaId == tip371.ClasaId)
+        ?? reguliRdc.First(r => r.ClasaId == null)).TipStoc;
+
+    void Curata() {
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId))
+            .Select(d => d.ID).ToList();
+        var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => loturi.Contains(r.LotId) || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => docIds.Contains(d.ID)).ToList()
+                     .OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters().Where(l => loturi.Contains(l.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Where(p => p.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+    Curata();
+
+    Check("Api RDC — precondiții de profil: ancora RDC cu seria „RDC-”, reguli de stoc −1 pe PRIMITOR (marfa "
+        + "REVINE pe lotul original) și `PoliticaTva` COLECTAT cu `TipTvaImplicit = N21`",
+        tipRdc != null && tipRdc.ClrType == nameof(ReturClient)
+        && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipRdc.ID)?.Serie == "RDC-"
+        && reguliRdc.Count > 0 && reguliRdc.All(r => r.Latura == LaturaDocument.Primitor && r.Semn == -1)
+        && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipRdc.ID)?.Directie == DirectieTva.Colectat
+        && tipRdc.TipTvaImplicitId == n21.ID
+        && tip371 != null && tip301 != null && tip707 != null && ned21 != null);
+
+    // ---------------- Scena ----------------
+    var gest = os.CreateObject<Gestiune>();
+    gest.Cod = Marcaj + "-G"; gest.Denumire = "Gestiune Api RDC";
+    var client = os.CreateObject<Partener>();
+    client.Cod = Marcaj + "-CL"; client.Denumire = "Client Api RDC"; client.CodFiscal = "RO44444449";
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = Marcaj + "-F"; furnizor.Denumire = "Furnizor Api RDC"; furnizor.CodFiscal = "RO44444450";
+    var produsA = os.CreateObject<Produs>();
+    produsA.Cod = Marcaj + "-A"; produsA.Denumire = "Marfă Api RDC"; produsA.UM = "BUC";
+    produsA.TipMaterial = tip371;
+    os.CommitChanges();
+
+    var dataLot = new DateOnly(2026, 10, 1);
+    var dataRdc = new DateOnly(2026, 10, 10);
+
+    var nir = os.CreateObject<NIR>();
+    nir.Data = dataLot; nir.Predator = furnizor; nir.Primitor = gest;
+    var linNir = os.CreateObject<DocumentDetaliu>();
+    linNir.Document = nir; linNir.TipMaterial = tip371; linNir.Cantitate = 10m; linNir.Valoare = 100m;
+    var lot = linNir.CreeazaLot(os, produsA, gest);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, nir);
+    os.CommitChanges();
+
+    SoldStoc SoldCheie() {
+        var rows = os.GetObjectsQuery<RegistruStoc>()
+            .Where(x => x.LotId == lot.ID && x.RepartitorId == gest.ID && x.TipStoc == tipStoc).ToList();
+        return new SoldStoc(rows.Sum(x => x.Cantitate), rows.Sum(x => x.Valoare));
+    }
+    List<RegistruContabil> Note(Guid docId) =>
+        os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == docId && !r.Storno).ToList();
+    IReadOnlyList<string> DryRun(Guid docId) {
+        using var osDry = provider.CreateObjectSpace();
+        return OperareApi.Valideaza(osDry, docId);
+    }
+    int SerieRdc() {
+        using var o = provider.CreateObjectSpace();
+        return o.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "RDC").UrmatorulNumar;
+    }
+    // Proba „ÎN BAZĂ", nu în ReadDto: ObjectSpace PROASPĂT, proiecție pe coloană.
+    (Guid? TipTvaId, decimal ValoareTva, decimal Valoare, decimal Cantitate) InBaza(Guid linieId) {
+        using var o = provider.CreateObjectSpace();
+        return o.GetObjectsQuery<DocumentDetaliu>().Where(x => x.ID == linieId)
+            .Select(x => new ValueTuple<Guid?, decimal, decimal, decimal>(
+                x.TipTvaId, x.ValoareTva, x.Valoare, x.Cantitate))
+            .Single();
+    }
+
+    Check("Api RDC premisă: lotul original de 10 × 10,00 (livrarea care se stornează) e pe stoc",
+        lot.PretUnitar == 10m && SoldCheie() == new SoldStoc(10m, 100m));
+
+    // ═══════════ (A) Culegerea: DOUĂ roluri într-un singur document ═══════════
+    // Linia de COST primește DELIBERAT `TipTvaId` în payload — exact ce face
+    // calea de produs (implicitul tipului pus pe orice linie nouă). Apply trebuie
+    // să-l ȘTEARGĂ, nu doar să-l ignore (F19-D7).
+    var idRdc = ReturClientApply.Aplica(os, null, new RdcWriteDto {
+        Data = dataRdc, PredatorId = client.ID, PrimitorId = gest.ID,
+        Linii = {
+            new RdcLinieWriteDto { TipMaterialId = tip707.ID, Valoare = 100m, TipTvaId = n21.ID },
+            new RdcLinieWriteDto { TipMaterialId = tip371.ID, LotId = lot.ID, Cantitate = 3m,
+                TipTvaId = n21.ID, Valoare = 999m }
+        }
+    });
+    var cit = ReturClientApply.Citeste(os, idRdc);
+    var lVenit = cit.Linii.Single(l => l.LotId == null);
+    var lCost = cit.Linii.Single(l => l.LotId != null);
+    Check("Api RDC (F19-D8): culegerea e POZITIVĂ pe ambele roluri — venitul stornat 100,00 + TVA 21,00, costul "
+        + "round(3 × 10,00) = 30,00 (prețul lotului, `Valoare` din payload IGNORATĂ pe rolul de marfă)",
+        lVenit.Valoare == 100m && lVenit.ValoareTva == 21m && lVenit.TipTvaId == n21.ID
+        && lCost.Valoare == 30m && lCost.Cantitate == 3m);
+    var costInBaza = InBaza(lCost.Id);
+    Console.WriteLine($"     MĂSURAT (Api RDC, F19-D7 — proba ÎN BAZĂ): linia de cost {lCost.Id} a fost culeasă cu "
+        + $"`TipTvaId = {n21.Cod}` în payload; în baza de date are TipTvaId="
+        + $"{costInBaza.TipTvaId?.ToString() ?? "null"}, ValoareTva={costInBaza.ValoareTva:N2}, "
+        + $"Valoare={costInBaza.Valoare:N2}.");
+    Check("ANCORA F19-D7 (probat ÎN BAZĂ, pe ObjectSpace proaspăt — nu doar în ReadDto): linia de COST își pierde "
+        + "IDENTITATEA fiscală la culegere, nu doar valoarea — `TipTvaId = null` PERSISTAT, oglinda exactă a lui "
+        + "`PregatesteOperare`. „Inert devine adevărat, nu doar afirmat”: `RegistruTva` scrie un rând pentru "
+        + "ORICE linie cu `TipTvaId`, deci un implicit rămas aici ar intra în jurnal (și în D394) ca bază "
+        + "impozabilă — inclusiv la BACKFILL, care recitește din model",
+        costInBaza.TipTvaId == null && costInBaza.ValoareTva == 0m && costInBaza.Valoare == 30m
+        && lCost.TipTvaId == null && lCost.ValoareTva == 0m && lCost.TipTvaCod == null);
+    Check("ANCORA F19-D9: `Total` == DOAR liniile de VENIT (121,00 brut — oglinda lui `ReturClient.Total` virtual "
+        + "și a lui `LiniiCreanta`), iar costul iese SEPARAT în `TotalCost` (30,00) — operatorul nu citește „121” "
+        + "acolo unde documentul valorează „121 creanță + 30 cost”",
+        cit.Total == 121m && cit.TotalCost == 30m
+        && cit.Linii.Sum(l => l.Valoare + l.ValoareTva) == 151m);   // totalul „naiv” al bazei
+    Check("Api RDC: header plat, FĂRĂ număr (seria „RDC-” e server-owned — F19-D6), cu denumirile ambelor laturi",
+        cit.Numar == null && cit.Stare == "Draft" && cit.Data == dataRdc
+        && cit.PredatorId == client.ID && cit.PredatorDenumire == client.Denumire
+        && cit.PrimitorId == gest.ID && cit.PrimitorDenumire == gest.Denumire
+        && cit.PoateEdita && cit.PoateOpera && !cit.PoateAnula && !cit.PoateStorna);
+    var randLista = ReturClientApply.Lista(os).Single(d => d.Id == idRdc);
+    Check("Api RDC: Lista poartă ACELEAȘI două cifre (două agregate condiționate într-o singură grupare) — grila "
+        + "nu are voie să arate alt total decât detaliul",
+        randLista.Total == 121m && randLista.TotalCost == 30m && randLista.Stare == "Draft"
+        && randLista.Numar == null);
+
+    RdcWriteDto Rescriere(RdcReadDto d) => new() {
+        Data = d.Data, PredatorId = d.PredatorId, PrimitorId = d.PrimitorId,
+        Linii = d.Linii.Select(l => new RdcLinieWriteDto {
+            Id = l.Id, TipMaterialId = l.TipMaterialId, LotId = l.LotId,
+            Cantitate = l.Cantitate, Valoare = l.Valoare,
+            TipTvaId = l.TipTvaId, ValoareTva = l.ValoareTva
+        }).ToList()
+    };
+    ReturClientApply.Aplica(os, idRdc, Rescriere(cit));
+    Check("Api RDC: PUT de round-trip complet nu schimbă nimic (idempotent la nivel de agregat)",
+        ReturClientApply.Citeste(os, idRdc) is { Total: 121m, TotalCost: 30m, Linii.Count: 2 });
+
+    // ═══════════ (B) RISCUL 5: rolul liniei nu se schimbă prin PUT ═══════════
+    var scoateLotul = Rescriere(ReturClientApply.Citeste(os, idRdc));
+    scoateLotul.Linii.Single(l => l.Id == lCost.Id).LotId = null;
+    CheckRefuza("ANCORA riscul 5 (COST → VENIT): un PUT care SCOATE `LotId` de pe o linie de cost e REFUZ "
+        + "EXPLICIT, nu conversie tăcută — rolul e o PREZENȚĂ, iar o conversie ar trebui să fie COMPLETĂ (TVA, "
+        + "natura Tipului, valoarea, cantitatea pro-formă); pe jumătate ar lăsa în document o linie care nu e "
+        + "niciunul din cele două lucruri",
+        () => ReturClientApply.Aplica(os, idRdc, scoateLotul));
+    var puneLotul = Rescriere(ReturClientApply.Citeste(os, idRdc));
+    puneLotul.Linii.Single(l => l.Id == lVenit.Id).LotId = lot.ID;
+    CheckRefuza("ANCORA riscul 5 (VENIT → COST): și sensul invers e refuzat — simetria contează, altfel „rolul "
+        + "e imuabil” ar fi o regulă cu o singură direcție",
+        () => ReturClientApply.Aplica(os, idRdc, puneLotul));
+    var dupaRefuz = ReturClientApply.Citeste(os, idRdc);
+    Console.WriteLine($"     MĂSURAT (Api RDC, riscul 5): ambele PUT-uri de schimbare de rol au fost REFUZATE; "
+        + $"documentul are în continuare {dupaRefuz.Linii.Count} linii "
+        + $"[{string.Join(", ", dupaRefuz.Linii.Select(l => (l.LotId == null ? "venit" : "marfă") + $":{l.Valoare:N2}"))}], "
+        + $"Total {dupaRefuz.Total:N2} / TotalCost {dupaRefuz.TotalCost:N2}.");
+    Check("Api RDC (riscul 5): refuzurile n-au lăsat reziduu — documentul e neatins, cu ambele roluri intacte",
+        dupaRefuz.Linii.Count == 2 && dupaRefuz.Total == 121m && dupaRefuz.TotalCost == 30m
+        && dupaRefuz.Linii.Single(l => l.Id == lCost.Id).LotId == lot.ID
+        && dupaRefuz.Linii.Single(l => l.Id == lVenit.Id).LotId == null
+        && InBaza(lCost.Id).TipTvaId == null);
+    // Calea LEGITIMĂ de schimbare de rol: agregatul o exprimă deja.
+    var reculegere = Rescriere(dupaRefuz);
+    reculegere.Linii.RemoveAll(l => l.Id == lCost.Id);
+    reculegere.Linii.Add(new RdcLinieWriteDto { TipMaterialId = tip707.ID, Valoare = 5m, TipTvaId = n21.ID });
+    ReturClientApply.Aplica(os, idRdc, reculegere);
+    var citReculegere = ReturClientApply.Citeste(os, idRdc);
+    Check("Api RDC (riscul 5): calea LEGITIMĂ rămâne deschisă și e cea pe care agregatul o exprimă deja — linia "
+        + "absentă din payload se ȘTERGE, iar rolul dorit se culege ca linie NOUĂ (aici: costul devine un al "
+        + "doilea venit de 5,00 + 1,05 TVA, deci `Total` 127,05 și `TotalCost` 0,00)",
+        !os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.ID == lCost.Id)
+        && citReculegere.Linii.Count == 2 && citReculegere.Total == 127.05m && citReculegere.TotalCost == 0m);
+    // …și înapoi la scena de bază.
+    var inapoi = Rescriere(citReculegere);
+    inapoi.Linii.RemoveAll(l => l.TipMaterialId == tip707.ID && l.Valoare == 5m);
+    inapoi.Linii.Add(new RdcLinieWriteDto { TipMaterialId = tip371.ID, LotId = lot.ID, Cantitate = 3m });
+    ReturClientApply.Aplica(os, idRdc, inapoi);
+    var citBaza = ReturClientApply.Citeste(os, idRdc);
+    lCost = citBaza.Linii.Single(l => l.LotId != null);
+    Check("Api RDC: scena revine la forma de bază (venit 121,00 + marfă 30,00), iar linia de cost NOUĂ primește "
+        + "și ea `TipTvaId = null` — implicitul tipului nu se aplică pe rolul de marfă",
+        citBaza.Total == 121m && citBaza.TotalCost == 30m && InBaza(lCost.Id).TipTvaId == null);
+
+    // ═══════════ (C) Refuzurile de PAYLOAD ═══════════
+    RdcWriteDto Payload(params RdcLinieWriteDto[] linii) => new() {
+        Data = dataRdc, PredatorId = client.ID, PrimitorId = gest.ID, Linii = linii.ToList()
+    };
+    RdcLinieWriteDto LinieVenit() => new() { TipMaterialId = tip707.ID, Valoare = 10m, TipTvaId = n21.ID };
+    CheckRefuza("Api RDC: Id de linie STRĂIN → refuz (agregatul nu adoptă linii din alt document)", () => {
+        var l = LinieVenit(); l.Id = Guid.NewGuid();
+        ReturClientApply.Aplica(os, idRdc, Payload(l));
+    });
+    CheckRefuza("Api RDC: același Id de linie de două ori → refuz", () => {
+        var l = LinieVenit(); l.Id = lVenit.Id;
+        ReturClientApply.Aplica(os, idRdc, Payload(l, l));
+    });
+    CheckRefuza("Api RDC: `TipMaterialId` absent din payload → refuz de DOMENIU, nu violare de FK NOT NULL", () => {
+        var l = LinieVenit(); l.TipMaterialId = Guid.Empty;
+        ReturClientApply.Aplica(os, idRdc, Payload(l));
+    });
+    CheckRefuza("Api RDC: lot inexistent pe o linie de marfă → refuz de domeniu", () =>
+        ReturClientApply.Aplica(os, idRdc, Payload(new RdcLinieWriteDto {
+            TipMaterialId = tip371.ID, LotId = Guid.NewGuid(), Cantitate = 1m
+        })));
+    CheckRefuza("Api RDC: valoare în afara scării numeric(18,2) → refuz de domeniu, nu DbUpdateException", () => {
+        var l = LinieVenit(); l.Valoare = 10.001m;
+        ReturClientApply.Aplica(os, idRdc, Payload(l));
+    });
+    CheckRefuza("Api RDC: latură inexistentă în nomenclatorul de repartitori → refuz de domeniu, înaintea "
+        + "oricărei modificări a header-ului", () =>
+        ReturClientApply.Aplica(os, idRdc, new RdcWriteDto {
+            Data = dataRdc, PredatorId = client.ID, PrimitorId = Guid.NewGuid(), Linii = { LinieVenit() }
+        }));
+    Check("Api RDC: …iar returul rămâne pe laturile lui și cu ambele linii (niciun refuz n-a rescris nimic)",
+        ReturClientApply.Citeste(os, idRdc) is { Linii.Count: 2, Total: 121m, TotalCost: 30m });
+    // Ca pe RLF: reziduul unui Apply refuzat DUPĂ `CreateObject` îl curăță
+    // reconcilierea următorului payload al ACELUIAȘI document.
+    ReturClientApply.Aplica(os, idRdc, Rescriere(ReturClientApply.Citeste(os, idRdc)));
+    Check("Api RDC: un Apply refuzat nu lasă reziduu în agregat — următorul payload valid readuce documentul la "
+        + "exact două linii, cu aceleași cifre pe ambele roluri",
+        ReturClientApply.Citeste(os, idRdc) is { Linii.Count: 2, Total: 121m, TotalCost: 30m }
+        && os.GetObjectsQuery<DocumentDetaliu>().Count(d => d.DocumentId == idRdc) == 2);
+
+    // ═══════════ (D) Refuzurile TIPULUI, prin calea API ═══════════
+    var serieInainte = SerieRdc();
+    Guid IdNou(Guid predator, Guid primitor, params RdcLinieWriteDto[] linii) =>
+        ReturClientApply.Aplica(os, null, new RdcWriteDto {
+            Data = dataRdc, PredatorId = predator, PrimitorId = primitor, Linii = linii.ToList()
+        });
+
+    var idLaturi = IdNou(gest.ID, client.ID, LinieVenit());
+    CheckRefuza("Api RDC: laturi INVERSATE (predator gestiune / primitor partener) → refuz al tipului",
+        () => OperareApi.Opereaza(os, idLaturi));
+    Check("Api RDC: dry-run-ul spune ACELAȘI lucru înaintea comenzii (43b: autoritar e motorul)",
+        DryRun(idLaturi).Any(e => e.Contains("client")));
+    Check("Api RDC: refuzul n-a lăsat rânduri-fantomă (33d)",
+        !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idLaturi)
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idLaturi));
+    ReturClientApply.Sterge(os, idLaturi);
+
+    var idVenitStoc = IdNou(client.ID, gest.ID,
+        new RdcLinieWriteDto { TipMaterialId = tip371.ID, Valoare = 100m, TipTvaId = n21.ID });
+    CheckRefuza("Api RDC: linie de VENIT (fără lot) cu Tip de STOC → refuz al tipului (venitul poartă natura "
+        + "Serviciu; marfa care revine se culege pe o linie cu lot)",
+        () => OperareApi.Opereaza(os, idVenitStoc));
+    ReturClientApply.Sterge(os, idVenitStoc);
+
+    var idTipIncoerent = IdNou(client.ID, gest.ID,
+        LinieVenit(),
+        new RdcLinieWriteDto { TipMaterialId = tip301.ID, LotId = lot.ID, Cantitate = 1m });
+    CheckRefuza("Api RDC: linie de marfă cu Tip incoerent cu produsul lotului → refuz al tipului",
+        () => OperareApi.Opereaza(os, idTipIncoerent));
+    ReturClientApply.Sterge(os, idTipIncoerent);
+
+    var idCapitalizat = IdNou(client.ID, gest.ID,
+        new RdcLinieWriteDto { TipMaterialId = tip707.ID, Valoare = 100m, TipTvaId = ned21.ID });
+    CheckRefuza("Api RDC: venit cu regim `Capitalizat` (NED21) → refuz al MOTORULUI (43b) — semnarea ar compunda "
+        + "brutul la re-operare",
+        () => OperareApi.Opereaza(os, idCapitalizat));
+    ReturClientApply.Sterge(os, idCapitalizat);
+
+    Check("Api RDC (F19-D6 + GATE D6): niciun refuz n-a consumat seria „RDC-”",
+        SerieRdc() == serieInainte);
+
+    // ═══════════ (E) Operarea ═══════════
+    Check("Api RDC: dry-run-ul returului complet nu întoarce nicio eroare", DryRun(idRdc).Count == 0);
+    OperareApi.Opereaza(os, idRdc);
+    var citOperat = ReturClientApply.Citeste(os, idRdc);
+    var venitOperat = citOperat.Linii.Single(l => l.LotId == null);
+    var costOperat = citOperat.Linii.Single(l => l.LotId != null);
+    Check("Api RDC: operarea SEMNEAZĂ (venit −100,00 / −21,00 cu cantitatea pro-formă 1 pozitivă; cost −3 / "
+        + "−30,00), consumă seria „RDC-”, iar `Total` devine −121,00 — tot DOAR venitul",
+        citOperat.Stare == "Operat" && citOperat.Numar != null && citOperat.Numar.StartsWith("RDC-")
+        && venitOperat.Cantitate == 1m && venitOperat.Valoare == -100m && venitOperat.ValoareTva == -21m
+        && costOperat.Cantitate == -3m && costOperat.Valoare == -30m && costOperat.ValoareTva == 0m
+        && citOperat.Total == -121m && citOperat.TotalCost == -30m);
+    Check("Api RDC: stoc +3 / +30,00 pe LOTUL ORIGINAL, în gestiunea PRIMITOARE (regula −1 × linia negativă) — "
+        + "soldul urcă de la 10 la 13",
+        os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idRdc) == 1
+        && os.GetObjectsQuery<RegistruStoc>().Single(r => r.DocumentId == idRdc).LotId == lot.ID
+        && SoldCheie() == new SoldStoc(13m, 130m));
+    var noteRdc = Note(idRdc);
+    Check("Api RDC: note pe corespondența ORIGINALĂ, toate negative — `4111 = 707` cu −100,00, `4111 = 4427` cu "
+        + "−21,00 și `607 = 371` cu −30,00",
+        noteRdc.Count == 3
+        && noteRdc.Any(r => r.ContDebitId == cont4111.ID && r.ContCreditId == cont707.ID && r.Valoare == -100m)
+        && noteRdc.Any(r => r.ContDebitId == cont4111.ID && r.ContCreditId == cont4427.ID && r.Valoare == -21m)
+        && noteRdc.Any(r => r.ContDebitId == cont607.ID && r.ContCreditId == cont371.ID && r.Valoare == -30m)
+        && noteRdc.All(r => !r.Storno));
+    var fiscalRdc = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == idRdc).ToList();
+    Check("Api RDC (consecința lui F19-D7, măsurată pe REGISTRU): jurnalul de TVA are UN SINGUR rând, al liniei "
+        + "de VENIT, cu baza −100,00 și taxa −21,00 — nu −130,00, cum ar fi ieșit dacă linia de cost și-ar fi "
+        + "păstrat tipul de TVA de la culegere",
+        fiscalRdc.Count == 1 && fiscalRdc[0].DetaliuId == venitOperat.Id
+        && fiscalRdc[0] is { Baza: -100m, Tva: -21m, Sens: SensTva.Livrare });
+
+    // ═══════════ (F) Riscul 6: idempotența semnării prin calea API ═══════════
+    var numarRdc = citOperat.Numar;
+    OperareApi.AnuleazaOperarea(os, idRdc);
+    var citAnulat = ReturClientApply.Citeste(os, idRdc);
+    ReturClientApply.Aplica(os, idRdc, Rescriere(citAnulat));
+    var citRenormalizat = ReturClientApply.Citeste(os, idRdc);
+    Console.WriteLine($"     MĂSURAT (Api RDC, riscul 6): după anulare ReadDto dădea venit "
+        + $"{citAnulat.Linii.Single(l => l.LotId == null).Valoare:N2} / cost "
+        + $"{citAnulat.Linii.Single(l => l.LotId != null).Valoare:N2}; PUT-ul aceluiași ReadDto a readus "
+        + $"documentul la Total {citRenormalizat.Total:N2} / TotalCost {citRenormalizat.TotalCost:N2}.");
+    Check("RISCUL 6 (RDC): pe DRAFT bate Apply — round-trip-ul unui ReadDto SEMNAT readuce AMBELE roluri la forma "
+        + "de CULEGERE (venit +100,00 / +21,00, cost +30,00), în loc să fie refuzat sau să compundă semnul",
+        citAnulat.Stare == "Draft" && citAnulat.Total == -121m
+        && citRenormalizat.Total == 121m && citRenormalizat.TotalCost == 30m
+        && citRenormalizat.Linii.Single(l => l.LotId == null).Cantitate == 1m
+        && citRenormalizat.Linii.Single(l => l.LotId != null).Cantitate == 3m
+        && SoldCheie() == new SoldStoc(10m, 100m));
+    OperareApi.Opereaza(os, idRdc);
+    var citReoperat = ReturClientApply.Citeste(os, idRdc);
+    Check("RISCUL 6 (RDC): re-operarea după anulare + PUT dă EXACT aceleași cifre și același număr",
+        citReoperat.Numar == numarRdc && citReoperat.Total == -121m
+        && citReoperat.Linii.Single(l => l.LotId != null).Valoare == -30m
+        && Note(idRdc).Count == 3 && SoldCheie() == new SoldStoc(13m, 130m));
+
+    // ═══════════ (G) Storno ═══════════
+    Check("Api RDC: storno prin API → Stornat, rânduri INVERSE append-only (POZITIVE, cu flag `Storno`); stocul "
+        + "revine la 10",
+        OperareApi.Storneaza(os, idRdc, new DateOnly(2026, 10, 20)).StareNoua == StareDocument.Stornat
+        && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idRdc && r.Storno) == 1
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idRdc && r.Storno) == 3
+        && SoldCheie() == new SoldStoc(10m, 100m));
+    CheckRefuza("Api RDC: PUT pe un document Stornat se refuză (pre-check de domeniu, înaintea gardianului)",
+        () => ReturClientApply.Aplica(os, idRdc, Rescriere(ReturClientApply.Citeste(os, idRdc))));
+    CheckRefuza("Api RDC: DELETE pe un document Stornat se refuză",
+        () => ReturClientApply.Sterge(os, idRdc));
+
+    Curata();
+    Check("Api RDC: curățenie finală (fără reziduuri e2e)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(Marcaj))
+        && os.GetObjectByKey<ReturClient>(idRdc) == null);
 }

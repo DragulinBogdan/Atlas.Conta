@@ -114,6 +114,14 @@ static class NoteComune {
 //  * repartitorii de pe linii sunt OBLIGATORII pentru capacitate
 //    (`NotaContabila.CapacitateStingere` numără per repartitor, pe ambele
 //    laturi) — se iau din subconto-ul rândului, cu antetul ca rezervă.
+//    De la F19-D16 latura contează și la CONSUM: repartitorul de pe DEBIT dă
+//    capacitate pe sensul `Datorie`, cel de pe CREDIT pe `Creanta`, iar
+//    stingerea se ia din jumătatea cerută de documentul stins
+//    (`Document.SensDeStins`). O compensare a sursei care lega o notă de un
+//    document de sens „greșit" (sau două documente de aceeași natură de o notă
+//    cu plafon dublu) e acum refuzată de `ValideazaCreare` și ajunge în
+//    raportul de imperecheri, nu tăcut în bază — 48b: invariantul picat pe date
+//    reale e RAPORT, nu stop.
 //
 // Rândurile pe 891 se transcriu ca atare (48b): hub-ul tehnic al sursei e cont
 // ca oricare altul în contractul de reconciliere.

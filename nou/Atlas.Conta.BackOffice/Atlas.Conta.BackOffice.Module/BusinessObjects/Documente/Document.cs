@@ -11,6 +11,58 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
+// Sensul stingerii (F19-D16): ce FEL de sold se închide. Aceeași axă pe ambele
+// capete ale imperecherii — plafonul stingătorului e defalcat pe ea, iar
+// documentul stins declară pe care jumătate o consumă (`Document.SensDeStins`).
+//
+// Nu e persistat nicăieri: e o funcție a tipului de document, calculată la
+// fiecare validare. De aceea nu are migrație și nu are coloană pe `Imperechere`.
+public enum SensStingere {
+    // Stingătorul DEBITEAZĂ contul contrapartidei ⇒ închide un sold creditor
+    // (ce datorăm): plata, jumătatea de DEBIT a notei de compensare.
+    [XafDisplayName("Datorie")] Datorie,
+    // Stingătorul CREDITEAZĂ contul contrapartidei ⇒ închide un sold debitor
+    // (ce ni se datorează): încasarea, jumătatea de CREDIT a notei.
+    [XafDisplayName("Creanță")] Creanta
+}
+
+public static class SensStingereExtensii {
+    // Sensul OPUS: soldul pe care un document îl LASĂ pe contul contrapartidei e
+    // opusul celui pe care îl STINGE (plata debitează 401 ⇒ stinge datorii, dar
+    // rămâne ea însăși un avans = creanță). Un singur loc unde se scrie relația,
+    // ca cele două jumătăți ale trezoreriei să nu poată devia una de alta.
+    public static SensStingere Opus(this SensStingere sens) =>
+        sens == SensStingere.Datorie ? SensStingere.Creanta : SensStingere.Datorie;
+}
+
+// Plafonul unei contrapartide, DEFALCAT PE SENS (F19-D16). Înainte era un
+// singur `decimal`: nota 401 = 4111 de 60 pe X aduna 120 într-o cheie și îi
+// consuma INTEGRAL pe două documente de aceeași natură. Tavanul de 120 era
+// corect (60 datorie + 60 creanță = exact cele două stingeri legitime) — lipsea
+// regula că fiecare jumătate se consumă pe latura ei.
+public readonly record struct PlafonStingere(decimal Datorie, decimal Creanta) {
+    public decimal this[SensStingere sens] =>
+        sens == SensStingere.Datorie ? Datorie : Creanta;
+
+    public PlafonStingere Adauga(SensStingere sens, decimal valoare) =>
+        sens == SensStingere.Datorie
+            ? this with { Datorie = Datorie + valoare }
+            : this with { Creanta = Creanta + valoare };
+
+    // Sensurile pe care plafonul chiar OFERĂ ceva. Un plafon integral zero
+    // întoarce totuși `Datorie`, ca alegerea să rămână determinist unică:
+    // stingerea cade oricum pe mesajul de plafon depășit, exact ca înainte.
+    public IReadOnlyList<SensStingere> Sensuri {
+        get {
+            var l = new List<SensStingere>(2);
+            if (Datorie != 0m) l.Add(SensStingere.Datorie);
+            if (Creanta != 0m) l.Add(SensStingere.Creanta);
+            if (l.Count == 0) l.Add(SensStingere.Datorie);
+            return l;
+        }
+    }
+}
+
 // Nucleul generic (deciziile 1, 2, 22). Motoarele de stoc și contare consumă
 // DOAR această clasă și DocumentDetaliu — orice câmp de aici e justificat de o
 // formulă de stoc, o regulă contabilă sau un motor transversal (testul bazei).
@@ -141,7 +193,11 @@ public abstract class Document : BaseObject {
     // prin construcție: 401 = 4111 pe partenerul X stinge X lei de datorie ȘI
     // X lei de creanță — un plafon global ar refuza a doua stingere legitimă.
     // Hook pe FK-uri + IObjectSpace (25b): apelanții nu garantează lazy loading.
-    public virtual IReadOnlyDictionary<Guid, decimal> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) => null;
+    // De la F19-D16 plafonul e DEFALCAT PE SENS (`PlafonStingere`): cheia rămâne
+    // contrapartida, dar fiecare jumătate se consumă pe latura ei. Cheia
+    // NESCHIMBATĂ (Guid) e deliberată — apelanții care întreabă doar „apare
+    // contrapartida asta?" rămân neatinși.
+    public virtual IReadOnlyDictionary<Guid, PlafonStingere> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) => null;
 
     // Cealaltă jumătate a rolului: `CapacitateStingere` spune „pot STINGE",
     // asta spune „pot fi STINS". Default `true` — orice document cu rest e
@@ -154,6 +210,23 @@ public abstract class Document : BaseObject {
     // ORICĂRUI document. Fără hook, „documentul ăsta nu se stinge" ar fi doar o
     // afirmație din comentarii. Hook pe FK-uri + IObjectSpace (25b).
     public virtual bool PoateFiStins(DevExpress.ExpressApp.IObjectSpace os) => true;
+
+    // A TREIA jumătate a rolului (F19-D16): CE FEL de sold poartă documentul pe
+    // contul contrapartidei, deci din ce jumătate a plafonului se stinge.
+    // `Datorie` = poartă un sold CREDITOR (îi datorăm) și se stinge DEBITÂND
+    // contrapartida — FCT, INC (avans primit), DEC, RDC. `Creanta` = sold
+    // DEBITOR (ni se datorează), se stinge CREDITÂND — FCL, PLT (avans dat), RLF.
+    //
+    // `null` = tipul NU declară. Default DELIBERAT, nu accidental: motorul nu
+    // ghicește niciodată o jumătate: dacă stingătorul oferă exact un sens față de
+    // contrapartida aleasă (toată trezoreria — o singură contrapartidă, un
+    // singur sens) comportamentul e IDENTIC cu cel de dinainte de F19-D16; dacă
+    // oferă două (nota de compensare 401 = 4111), alegerea e AMBIGUĂ și se
+    // refuză zgomotos în loc să cadă pe „prima" jumătate. Simetric, pe consum
+    // (`ImperechereService.AsignatFataDe`) un document nedeclarat se scade din
+    // AMBELE sensuri — conservator: nu deschide plafon.
+    // Hook pe FK-uri + IObjectSpace (25b), ca surorile lui.
+    public virtual SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) => null;
 
     // Documentul SECUNDAR (00 §7 — plata automată legacy, decizia 31): spre
     // deosebire de conexul din PoliticaConex (clonă filtrată pe natură, trăiește

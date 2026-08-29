@@ -90,3 +90,4 @@
 | 73 | [Pasul 5, felia 16 — SAF-T (D406 L): `Societate`, `UnitateMasura`, `CodNc`, `RolTert`, proiecție + fișier XML + DUK](073-p5-felia16-saft.md) | 2026-08-26 | activă |
 | 74 | [Pasul 5, felia 17 — SAF-T S (stocuri): `PoliticaMiscareSaft`, proiecție peste `RegistruStoc`, cusăturile S1–S5, fișier + DUK](074-p5-felia17-saft-s.md) | 2026-08-27 | activă |
 | 75 | [Pasul 5, felia 18 — restanțele grele ale lui S: golirea valorică (motor), reclasificarea ca mișcare, perf proiecție](075-p5-felia18-restante-s.md) | 2026-08-29 | activă |
+| 76 | [Pasul 5, felia 19 — NTC + ASM + retururi (RLF/RDC): scriere prin API și client; plafonul de stingere cu latură și netat](076-p5-felia19-ntc-asm-retururi.md) | 2026-08-29 | activă (amendează 31d/48b) |

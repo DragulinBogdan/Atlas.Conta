@@ -75,7 +75,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<DecontDetaliu>().HideForeignKeys();            // ContDebitId/ContCreditId/RepartitorDebitId/RepartitorCreditId
         registry.For<DescarcareGestiuneDetaliu>().HideForeignKeys();// LinieSursaId
         registry.For<NotaContabilaDetaliu>().HideForeignKeys();     // ContDebitId/ContCreditId/RepartitorDebitId/RepartitorCreditId
-        registry.For<AsamblareDetaliu>().HideForeignKeys();          // fără FK propriu — declarația ține convenția pe derivată
+        registry.For<AsamblareDetaliu>().HideForeignKeys();          // ProdusId (F19-D3)
 
         // Tipuri în afara ierarhiei de documente:
         registry.For<RegistruStoc>().HideForeignKeys();             // LotId/RepartitorId/DocumentId/DetaliuId
@@ -534,18 +534,27 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     // Asamblarea (FAZA 1C §7): rolul liniei (consum/produs) e primul câmp de
     // culegere — restul e schema de stoc (lot, cantitate, preț de evaluare pe
     // liniile de produs). ASM nu poartă TVA (marfa se mută între loturi).
+    //
+    // F19-D13 (oglinda lui F6-D10, aceeași lecție): declararea `ILinieCareNasteLot`
+    // face din ecranul ASM o cale VIE de culegere — `DocumenteLoturiCulegereController`
+    // e țintit pe `Document`. Cele două direcții culeg lucruri DIFERITE, iar
+    // câmpurile celeilalte sunt capcane: pe produs lotul e al mecanismului (născut
+    // din produs + gestiunea în care se asamblează), pe consum produsul și prețul
+    // de evaluare sunt inerte. Comutarea o face `[Appearance]` de pe frunză;
+    // ordinea coloanelor de aici e ordinea de culegere a produsului.
     static void Asamblare(UiBaselineRegistry registry) {
         var entitate = registry.For<AsamblareDetaliu>();
-        entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
+        entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
         entitate.ListView(nameof(AsamblareDetaliu) + ListView, _ => { })
             .Column(d => d.Directie, c => c.Index = 0)
             .Column(d => d.TipMaterial, c => c.Index = 1)
-            .Column(d => d.Lot, c => c.Index = 2)
-            .Column(d => d.Cantitate, c => c.Index = 3)
-            .Column(d => d.PretEvaluare, c => c.Index = 4)
-            .Column(d => d.Valoare, c => c.Index = 5)
-            .Column(d => d.DataExpirare, c => c.Index = 6)
-            .Column(d => d.LotFabricatie, c => c.Index = 7)
+            .Column(d => d.Produs, c => c.Index = 2)
+            .Column(d => d.Lot, c => c.Index = 3)
+            .Column(d => d.Cantitate, c => c.Index = 4)
+            .Column(d => d.PretEvaluare, c => c.Index = 5)
+            .Column(d => d.Valoare, c => c.Index = 6)
+            .Column(d => d.DataExpirare, c => c.Index = 7)
+            .Column(d => d.LotFabricatie, c => c.Index = 8)
             // ASM nu poartă TVA — ascunde coloanele moștenite din bază.
             .Column(d => d.TipTva, c => c.Index = -1)
             .Column(d => d.ValoareTva, c => c.Index = -1);

@@ -72,6 +72,28 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
   margin-bottom: var(--gol);
 }
 .stingeri__numere { display: flex; gap: 16px; color: #46525f; }
+/* modul GRUPAT al panoului (nota de compensare, F19-D10): un bloc per
+   (contrapartidă × sens), cu plafonul jumătății deasupra listei ei */
+.stingeri__grup { margin-top: var(--gol); }
+.stingeri__grup > .linii__bara > h4 { margin: 0 auto 0 0; font-size: 14px; }
+
+/* bara invariantului valoric al asamblării (46d): cifrele SERVERULUI + comanda
+   care le aduce la zero (F19-D4) */
+.asm__invariant {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: var(--gol);
+  padding: 8px 10px;
+  border: 1px solid var(--linie);
+  border-radius: 6px;
+  background: #f7f9fb;
+}
+.asm__cifre { display: flex; gap: 20px; margin-right: auto; color: #46525f; }
+/* Cifrele rămân NEUTRE, deliberat: sunt ale CULEGERII, iar culoarea („trece /
+   nu trece") e a verdictului motorului, randat sub bară ca `panou` — review
+   advers F19, M1. */
 
 /* ── câmpuri ─────────────────────────────────────────────────────────── */
 .grila-campuri {

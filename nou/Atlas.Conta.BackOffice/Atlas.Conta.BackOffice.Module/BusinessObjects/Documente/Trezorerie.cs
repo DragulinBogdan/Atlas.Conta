@@ -163,10 +163,28 @@ public abstract class DocumentTrezorerie : Document {
     // unei plăți normale (partener/angajat) nu apare niciodată pe laturile lui.
     // `null` = „tipul nu stinge nimic", exact contractul bazei — de aici motorul
     // știe să nu creeze imperecherea automată a laturii pereche.
-    public override IReadOnlyDictionary<Guid, decimal> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) =>
+    //
+    // F19-D16: plafonul e pe UN SINGUR sens — opusul soldului pe care documentul
+    // îl lasă el însuși (plata debitează 401, deci stinge DATORII, dar rămâne un
+    // avans = creanță). O contrapartidă × un sens ⇒ nicio ambiguitate și niciun
+    // grup de plafon nou: comportamentul trezoreriei rămâne identic.
+    public override IReadOnlyDictionary<Guid, PlafonStingere> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) =>
         EsteVirament(os)
             ? null
-            : new Dictionary<Guid, decimal> { [GetContrapartidaId()] = Motor.ImperechereService.Total(os, ID) };
+            : new Dictionary<Guid, PlafonStingere> {
+                [GetContrapartidaId()] = default(PlafonStingere)
+                    .Adauga(SensPropriu().Opus(), Motor.ImperechereService.Total(os, ID))
+            };
+
+    // Soldul pe care documentul îl LASĂ pe contul contrapartidei: plata = avans
+    // dat (creanță), încasarea = avans primit (datorie). Declarat o singură dată
+    // per tip — din el ies AMBELE jumătăți ale rolului (plafonul de mai sus și
+    // `SensDeStins` de mai jos), ca ele să nu poată devia una de alta.
+    // METODĂ, nu proprietate: pe o clasă persistentă XAF tratează orice
+    // proprietate virtuală ca pe un câmp de model (XAF0033).
+    protected abstract SensStingere SensPropriu();
+
+    public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) => SensPropriu();
 
     // Cealaltă jumătate a lui F7-D5, IMPUSĂ nu doar afirmată: viramentul nu
     // închide nicio datorie/creanță, deci nu poate sta nici pe rolul de document
@@ -562,6 +580,11 @@ public abstract class DocumentTrezorerie : Document {
 public class Plata : DocumentTrezorerie {
     public override Guid GetContrapartidaId() => PrimitorId;
 
+    // Plata debitează contul contrapartidei ⇒ stinge DATORII (FCT, DEC, avansul
+    // primit); ea însăși rămâne un avans dat = CREANȚĂ față de contrapartidă,
+    // stinsă de o încasare de regularizare (lanțul 31d).
+    protected override SensStingere SensPropriu() => SensStingere.Creanta;
+
     protected override DocumentTrezorerie CreeazaPereche(DevExpress.ExpressApp.IObjectSpace os) =>
         os.CreateObject<Incasare>();
     public override Type TipLaturaPereche() => typeof(Incasare);
@@ -581,6 +604,10 @@ public class Plata : DocumentTrezorerie {
 [TipDetaliu(typeof(DocumentTrezorerieDetaliu))]
 public class Incasare : DocumentTrezorerie {
     public override Guid GetContrapartidaId() => PredatorId;
+
+    // Oglinda plății: încasarea creditează contrapartida ⇒ stinge CREANȚE (FCL,
+    // avansul dat); ea însăși rămâne un avans primit = DATORIE.
+    protected override SensStingere SensPropriu() => SensStingere.Datorie;
 
     protected override DocumentTrezorerie CreeazaPereche(DevExpress.ExpressApp.IObjectSpace os) =>
         os.CreateObject<Plata>();

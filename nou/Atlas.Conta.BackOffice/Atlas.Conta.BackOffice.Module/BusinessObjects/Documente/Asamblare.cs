@@ -1,4 +1,10 @@
 using Atlas.Conta.BackOffice.Module.UI;
+using DevExpress.ExpressApp.ConditionalAppearance;
+using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Editors;
+using DevExpress.Persistent.Base;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -38,6 +44,15 @@ public class Asamblare : Document {
     // Toleranța invariantului = toleranța de reconciliere a fazei (design §9).
     const decimal Toleranta = 0.005m;
 
+    // F19-D3 (închide 53i pe ASM): lotul liniei de PRODUS se naște în gestiunea
+    // în care se asamblează — PREDATORUL (46d: regulile de stoc lucrează pe
+    // predator), nu primitorul (default-ul bazei). Laturile POT diferi („de
+    // regulă aceeași", nu obligatoriu), iar `ValideazaOperare` cere explicit
+    // `lot.GestiuneId == PredatorId` — fără override-ul ăsta lotul s-ar naște în
+    // gestiunea greșită și operarea ar refuza, fără nicio cale de reparare din UI.
+    public override Gestiune GestiuneLoturiCulese(DevExpress.ExpressApp.IObjectSpace os) =>
+        PredatorId != Guid.Empty ? os.GetObjectByKey<Repartitor>(PredatorId) as Gestiune : null;
+
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.OfType<AsamblareDetaliu>()) {
             // Idempotent prin Abs (re-operarea după anulare nu dublează semnul).
@@ -70,6 +85,21 @@ public class Asamblare : Document {
             .Where(l => idsLot.Contains(l.ID))
             .Select(l => new { l.ID, l.Produs.TipMaterialId })
             .ToDictionary(l => l.ID, l => l.TipMaterialId);
+        // Coerența Tip-linie ↔ PRODUSUL cules, gardul pe care îl au toate
+        // tipurile care nasc loturi (LDI F6-F2, FCT, FCL, NIR) și care lipsea de
+        // pe ASM (review M2). ASM o acoperea doar TRANZITIV, prin lotul deja
+        // născut — iar mesajul de acolo trimite spre `Lot`, care pe linia de
+        // produs e server-owned și READ-ONLY (`ASM_Linie_Produs_FaraLot`, plus
+        // `LotId` ignorat deliberat în `AsamblareApply`): un refuz care arată
+        // spre un câmp pe care operatorul nu-l poate atinge din niciun ecran.
+        var idsProdus = Detalii.OfType<AsamblareDetaliu>()
+            .Where(d => d.ProdusId != null).Select(d => d.ProdusId.Value).Distinct().ToList();
+        var tipPerProdus = idsProdus.Count == 0
+            ? new Dictionary<Guid, Guid?>()
+            : os.GetObjectsQuery<Produs>()
+                .Where(p => idsProdus.Contains(p.ID))
+                .Select(p => new { p.ID, p.TipMaterialId })
+                .ToDictionary(p => p.ID, p => (Guid?)p.TipMaterialId);
         // Consumul unui lot produs de ACELAȘI document ar intra cu preț
         // nefinalizat (0) — invariantul ar fi satisfiabil cu valoare orfană în
         // registrul de stoc (review advers 1C-a): lanțul de kitting se face în
@@ -87,6 +117,9 @@ public class Asamblare : Document {
             }
             if (linie.Cantitate == 0)
                 erori.Add("Cantitatea liniei de asamblare nu poate fi zero.");
+            if (linie.ProdusId != null && tipPerProdus.TryGetValue(linie.ProdusId.Value, out var tipProdus)
+                    && tipProdus != null && tipProdus != linie.TipMaterialId)
+                erori.Add("Produsul liniei aparține altui Tip decât Tipul liniei — corectați Tipul sau produsul.");
             if (linie.LotId == null) {
                 erori.Add(linie.Directie == DirectieAsamblare.Produs
                     ? "Linia de produs își creează lotul la culegere (alegeți produsul)."
@@ -104,8 +137,16 @@ public class Asamblare : Document {
             }
             else if (lot.LinieIntrareId != null && idsLiniiProprii.Contains(lot.LinieIntrareId.Value))
                 erori.Add("Linia de consum descarcă un lot existent, nu unul creat de acest document (lanțul de kitting = documente separate, operate în ordine).");
-            if (tipPerLot.TryGetValue(linie.LotId.Value, out var tipLot) && tipLot != null && tipLot != linie.TipMaterialId)
-                erori.Add("Lotul liniei aparține unui produs cu alt Tip decât Tipul liniei.");
+            // Gardul de LOT rămâne al CONSUMULUI, unde lotul e chiar câmpul pe
+            // care operatorul îl alege. Pe produs lotul e derivat din produs,
+            // deci acolo vorbește gardul de mai sus — care numește un câmp
+            // editabil (62f: un refuz care arată spre un câmp read-only e tot o
+            // capcană, doar că zgomotoasă).
+            if (linie.Directie != DirectieAsamblare.Produs
+                    && tipPerLot.TryGetValue(linie.LotId.Value, out var tipLot)
+                    && tipLot != null && tipLot != linie.TipMaterialId)
+                erori.Add("Lotul liniei aparține unui produs cu alt Tip decât Tipul liniei — "
+                    + "corectați Tipul sau lotul.");
         }
 
         // Invariantul alocării (§7): valoarea produsă = valoarea consumată.
@@ -119,14 +160,53 @@ public class Asamblare : Document {
     }
 }
 
-public class AsamblareDetaliu : DocumentDetaliu, ILinieCuAtributeLot {
+// F19-D3 (închide restanța 53i pe ASM, oglinda exactă a lui F6-D2 pe LDI):
+// linia de PRODUS a asamblării e o INTRARE de stoc — marfa nouă nu vine de
+// nicăieri, deci linia își naște lotul, ca plusul de inventar. Produsul e
+// mecanismul: `LoturiCulegereService` îl transformă în lot, în gestiunea în care
+// se asamblează (hook-ul de mai sus). Pe CONSUM câmpurile astea sunt inerte —
+// gardul `NasteLot` le scoate din joc, iar culegerea le golește (F6-D3).
+// Interdicția din `Interfete.cs` („nu se declară pe ieșiri") rămâne neatinsă:
+// linia de produs e intrare, linia de consum e cea care descarcă un lot existent.
+[Appearance("ASM_Linie_Produs_FaraLot", AppearanceItemType.ViewItem, "Directie = 'Produs'",
+    TargetItems = nameof(Lot), Enabled = false)]
+[Appearance("ASM_Linie_Consum_FaraCulegere", AppearanceItemType.ViewItem, "Directie = 'Consum'",
+    TargetItems = nameof(Produs) + ";" + nameof(PretEvaluare) + ";" + nameof(DataExpirare)
+        + ";" + nameof(LotFabricatie), Enabled = false)]
+public class AsamblareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot {
     // Rolul explicit al liniei — se materializează în semnul Cantitate-ii din
     // bază la operare; UI-ul culege cantitatea pozitivă (ca LDI).
+    [XafDisplayName("Direcție")]
     public virtual DirectieAsamblare Directie { get; set; }
+
+    // Identitatea liniei de PRODUS — oglinda lui `ListaDiferenteInventarDetaliu.
+    // ProdusId` (F6-D2). Nullable în schemă (aceeași frunză poartă și liniile de
+    // consum, unde marfa e a lotului descărcat); obligatoriu pe produs, prin
+    // validarea de operare („Linia de produs își creează lotul la culegere
+    // (alegeți produsul)").
+    public virtual Guid? ProdusId { get; set; }
+    // Catalog de produse (potențial mare).
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Produs")]
+    public virtual Produs Produs { get; set; }
+
+    // F6-D3 aplicat pe ASM: doar produsul naște. Consumul descarcă un lot
+    // EXISTENT, iar un produs rămas cules pe el ar naște lot-artefact pe draft.
+    // Direcția nesetată (enum-ul n-are membru 0 — `Consum = 1`, `Produs = 2`, ca
+    // `DirectieDiferenta`) cade tot pe `false`: o linie fără rol cules nu
+    // inventează marfă. Flag de MECANISM, nu câmp: nu se mapează (n-ar avea
+    // backing field oricum, dar atributul o spune explicit) și nu se arată —
+    // altfel ar ieși coloană în grila liniei.
+    [NotMapped, Browsable(false)]
+    public bool NasteLot => Directie == DirectieAsamblare.Produs;
+
     // Valoarea alocată liniei de produs (lotul nou se naște cu ea); pe consum
     // nu se folosește — valoarea vine din prețul lotului descărcat.
+    [XafDisplayName("Preț evaluare")]
     public virtual decimal? PretEvaluare { get; set; }
     // Atributele lotului produs, copiate de motor la finalizare.
+    [XafDisplayName("Dată expirare")]
     public virtual DateOnly? DataExpirare { get; set; }
+    [XafDisplayName("Lot fabricație")]
     public virtual string LotFabricatie { get; set; }
 }

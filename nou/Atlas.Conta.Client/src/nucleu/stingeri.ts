@@ -31,17 +31,28 @@ export const stingeri = {
   // anularea/stornarea ambelor documente (affordances oneste — F3-D2).
   sterge: (id: string) => sterge(`${BAZA}/${id}`),
 
-  // Candidații de stins: proiecția de REST, filtrată pe contrapartidă ÎN
-  // proiecție (parametru, nu filtru DataSourceLoader — contrapartida e o latură
-  // diferită per tip). Grila rămâne remote peste el.
-  storeCandidati: (contrapartidaId: string) =>
-    storeRemote(`/api/proiectii/documente-cu-rest?contrapartidaId=${encodeURIComponent(contrapartidaId)}`, 'DocumentId'),
+  // Candidații de stins: proiecția de REST, filtrată pe contrapartidă ȘI pe
+  // SENS ÎN proiecție (parametri, nu filtre DataSourceLoader — contrapartida e
+  // o latură diferită per tip, iar sensul e funcție de TIPUL documentului stins,
+  // deci polimorf). Grila rămâne remote peste el.
+  //
+  // `sens` NU se deduce aici (42c): e literalul server-computed
+  // `StingeriDto.SensCandidati` (`Opus(SensDeStins)`), pasat ca atare. `null` ⇒
+  // parametrul lipsește din URL și proiecția nu filtrează pe sens — exact
+  // comportamentul de dinainte de F19-D16, pentru tipurile care nu declară sens.
+  // O valoare necunoscută e refuzată de rută cu 400, nu ignorată tăcut (57a).
+  storeCandidati: (contrapartidaId: string, sens?: string | null) =>
+    storeRemote(
+      `/api/proiectii/documente-cu-rest?contrapartidaId=${encodeURIComponent(contrapartidaId)}`
+      + (sens ? `&sens=${encodeURIComponent(sens)}` : ''),
+      'DocumentId'),
 };
 
-// Ruta feliei pentru un cod de tip (`CelalaltTip`, `DocumentCuRestRand.Tip`).
-// Vocabular ÎNCHIS, scris explicit: tipurile fără felie de client (RDC, NTC,
-// ASM…) rămân TEXT, nu link mort. Se extinde odată cu feliile, nu automat —
-// DEC a ieșit din listă la felia 8.
+// Ruta feliei pentru un cod de tip (`CelalaltTip`, `DocumentCuRestRand.Tip`,
+// `DocumentTip` din fișă/jurnal). Vocabular ÎNCHIS, scris explicit: tipurile
+// fără felie de client (ITV…) rămân TEXT, nu link mort. Se extinde
+// odată cu feliile, nu automat — DEC a ieșit din listă la felia 8, iar NTC,
+// ASM, RLF și RDC la felia 19.
 export function rutaTip(tip: string | null | undefined, id: string): string | null {
   switch (tip) {
     case 'FCT': return `/fct/${id}`;
@@ -54,6 +65,17 @@ export function rutaTip(tip: string | null | undefined, id: string): string | nu
     case 'BCS': return `/bcs/${id}`;
     case 'LDI': return `/ldi/${id}`;
     case 'DEC': return `/dec/${id}`;
+    // F19: nota de compensare devine link real în panourile existente (era
+    // exact cazul numit în comentariul lui `Celalalt`), iar asamblarea în fișa
+    // de cont și în jurnal.
+    case 'NTC': return `/ntc/${id}`;
+    case 'ASM': return `/asm/${id}`;
+    // Retururile au ecrane proprii de la felia 19. NU sunt stingători și nu
+    // apar în `DocumenteCuRest` (F19-D11) — dar apar în fișa de cont, în jurnal
+    // și ca `CelalaltTip` al unei stingeri făcute pe altă cale (notă, import),
+    // și acolo trebuie să fie link, nu text.
+    case 'RLF': return `/rlf/${id}`;
+    case 'RDC': return `/rdc/${id}`;
     default: return null;
   }
 }
