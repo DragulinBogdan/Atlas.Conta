@@ -320,6 +320,55 @@ public sealed class SaftNeinclus {
     public string CodMiscare { get; set; }
 }
 
+// `Neincluse` AGREGAT per cauză — forma pe care o servește SUMARUL (F20-D5),
+// aceeași ca `SaftAvertisment` (cod + număr + sumă + exemple), fiindcă e aceeași
+// întrebare: „ce n-a intrat, de ce, cât, și dă-mi câteva”. Lista PLATĂ rămâne în
+// `SaftDto.Neincluse` (fișierul + ModelCheck): nimic nu se pierde (73e). Ce se
+// schimbă e ce pleacă pe sârmă — pe o lună reală lista are mii de rânduri pe
+// care ecranul nu le citește unul câte unul, iar clientul o tăia la 200, adică
+// ascundea TĂCUT restul (73-r10 / 74-r7). Agregatul e mărginit de numărul de
+// CAUZE, deci merge întreg și nu minte.
+public sealed class NeinclusAgregat {
+    /// <summary>Câte exemple duce, cel mult, un agregat.</summary>
+    public const int MaximExemple = 20;
+
+    /// <summary>`CauzaNeincludere` ca string (57a) — cheia agregării.</summary>
+    public string Cauza { get; set; }
+    /// <summary>Câte INTRĂRI ale listei plate au cauza asta.</summary>
+    public int Numar { get; set; }
+    /// <summary>Σ `SaftNeinclus.Randuri` — câte rânduri de REGISTRU stau în spate.</summary>
+    public int Randuri { get; set; }
+    /// <summary>
+    /// Cifra de bani a cauzei. Definiție UNICĂ, per rând, cu PRECEDENȚĂ — un rând
+    /// poartă exact o familie de cifre (celelalte sunt null prin construcție), iar
+    /// familiile nu se amestecă:
+    /// <list type="bullet">
+    /// <item>S (stocuri) ⇒ `Valoare`, SEMNATĂ ca în registru. Așa Σ pe agregate e
+    /// chiar `SaftRezumat.NeincluseStocValoare`, adică termenul cusăturii S2 — iar
+    /// un storno care anulează o gaură o anulează și aici.</item>
+    /// <item>L, linii fiscale ⇒ |`Baza`|. Cusăturile de bani ale lui L își au deja
+    /// termenii semnați în `Rezumat` (`BazaNeincluse*`); aici cifra răspunde la
+    /// „cât de mare e problema”, iar valoarea absolută o ține vizibilă.</item>
+    /// <item>L, solduri de terți (`Baza` null) ⇒ |`Debit`| + |`Credit`|. Un rând
+    /// poartă în practică o singură latură, iar suma modulelor nu poate ieși 0
+    /// dintr-o compensare care ar ascunde cauza.</item>
+    /// </list>
+    /// </summary>
+    public decimal Suma { get; set; }
+    /// <summary>
+    /// Σ `Cantitate`, SEMNATĂ — doar pe S; null pe L, unde niciun rând n-o poartă.
+    /// Convenția lui `SaftAvertisment.Suma`: null = „cauza asta n-are cantitate”,
+    /// nu „cantitatea e zero”.
+    /// </summary>
+    public decimal? Cantitate { get; set; }
+    /// <summary>
+    /// PRIMELE ≤ <see cref="MaximExemple"/> rânduri, în ordinea (deterministă) a
+    /// listei plate. NU e o paginare: e eșantionul din care omul recunoaște cazul,
+    /// iar „câte din câte” se citește din `Numar`.
+    /// </summary>
+    public List<SaftNeinclus> Exemple { get; set; } = [];
+}
+
 // ═══ SAF-T S (stocuri) — felia 17, D17-D3 ═══════════════════════════════════
 //
 // ACELAȘI `SaftDto` (un DTO, un scriitor): S nu e un al doilea arbore, e ALTE
@@ -429,6 +478,17 @@ public sealed class SaftExclus {
 // nu o eroare de generare.
 public sealed class SaftDiferentaCont {
     public string Cont { get; set; }
+    /// <summary>
+    /// GUID-ul contului din spatele simbolului (F20-D5), ca S3 să poată trimite
+    /// la fișă: cheia comparației e SIMBOLUL normalizat
+    /// (`SaftReguli.ProductTypeDinCont`), iar fișa cere id-ul. Când mai multe
+    /// conturi cad pe același simbol (analitice tăiate de normalizare) e cel cu
+    /// simbolul cel mai scurt, apoi cel mai mic ordinal — adică sinteticul, care
+    /// e chiar contul pe care omul îl deschide. `Guid.Empty` = niciun cont în
+    /// spate (`SaftReguli.ProductTypeImplicit`, produsul fără cont de stoc): nu
+    /// se inventează unul (73e), iar ecranul nu pune link.
+    /// </summary>
+    public Guid ContId { get; set; }
     public decimal ClosingStocFizic { get; set; }
     public decimal ClosingBalanta { get; set; }
     public decimal Diferenta { get; set; }
@@ -721,6 +781,12 @@ public sealed class SaftSumarDto {
     // (`Neincluse`) — adică exact partea pe care omul o citește înainte de a
     // depune. Ele sunt motivul pentru care ecranul există.
     public SaftRezumat Rezumat { get; set; } = new();
-    public List<SaftNeinclus> Neincluse { get; set; } = [];
+    // `Neincluse` merge AGREGAT per cauză (F20-D5): singura listă a sumarului
+    // care nu era mărginită de nimic — pe o lună reală are mii de rânduri, iar
+    // clientul o tăia la 200 fără să spună. Lista plată rămâne în `SaftDto`
+    // (fișierul + ModelCheck); aici e răspunsul complet la întrebarea pe care
+    // ecranul chiar o pune. Σ `Numar` == `SaftDto.Neincluse.Count` e cusătură
+    // probată în ModelCheck, nu presupunere.
+    public List<NeinclusAgregat> Neincluse { get; set; } = [];
     public List<SaftAvertisment> Avertismente { get; set; } = [];
 }

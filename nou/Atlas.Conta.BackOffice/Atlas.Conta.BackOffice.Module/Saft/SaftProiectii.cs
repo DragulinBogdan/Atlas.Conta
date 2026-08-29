@@ -172,10 +172,51 @@ public static class SaftProiectii {
             LiniiMiscare = dto.MiscariStoc.Sum(m => m.Linii.Count),
             Excluse = dto.Excluse,
             Rezumat = dto.Rezumat,
-            Neincluse = dto.Neincluse,
+            // Singura listă a sumarului care NU e mărginită de nimic (mii de
+            // rânduri pe o lună reală) — deci pleacă AGREGATĂ per cauză
+            // (F20-D5). Tot funcție pură pe DTO: agregatul nu poate diverge de
+            // listă fiindcă e calculat DIN ea.
+            Neincluse = AgregaNeincluse(dto.Neincluse),
             Avertismente = dto.Avertismente,
         };
     }
+
+    /// <summary>
+    /// `Neincluse` agregat per cauză (F20-D5) — funcție PURĂ pe lista plată,
+    /// aceeași formă ca agregarea avertismentelor. Ordinea: `Numar` DESCRESCĂTOR
+    /// (cauza cea mai grasă prima — e ordinea în care omul le citește), apoi
+    /// `Cauza` ordinal; exemplele sunt PRIMELE din grup, adică primele în ordinea
+    /// (deja deterministă) a listei plate. Totul e determinist: două cereri pe
+    /// aceleași date dau exact același răspuns, până la ordinea exemplelor.
+    /// </summary>
+    public static List<NeinclusAgregat> AgregaNeincluse(IEnumerable<SaftNeinclus> neincluse) {
+        ArgumentNullException.ThrowIfNull(neincluse);
+        return neincluse
+            .GroupBy(n => n.Cauza ?? "", StringComparer.Ordinal)
+            .Select(g => new NeinclusAgregat {
+                Cauza = g.Key,
+                Numar = g.Count(),
+                Randuri = g.Sum(n => n.Randuri),
+                Suma = g.Sum(CifraNeinclus),
+                // Convenția lui `SaftAvertisment.Suma`: null = axa nu se aplică
+                // acestei cauze (L n-are cantități), nu „zero".
+                Cantitate = g.Any(n => n.Cantitate != null) ? g.Sum(n => n.Cantitate ?? 0m) : null,
+                Exemple = g.Take(NeinclusAgregat.MaximExemple).ToList(),
+            })
+            .OrderByDescending(a => a.Numar)
+            .ThenBy(a => a.Cauza, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    // Cifra de bani a UNUI rând neinclus — definiția e scrisă lângă
+    // `NeinclusAgregat.Suma`; aici e doar mecanica. Precedența e sigură fiindcă
+    // familiile de cifre sunt disjuncte per rând: pe S doar `Valoare`/`Cantitate`,
+    // pe L doar `Baza`/`Tva` (linii fiscale) sau `Debit`/`Credit` (solduri de
+    // terți), restul null prin construcție.
+    static decimal CifraNeinclus(SaftNeinclus n) =>
+        n.Valoare != null ? n.Valoare.Value
+        : n.Baza != null ? Math.Abs(n.Baza.Value)
+        : Math.Abs(n.Debit ?? 0m) + Math.Abs(n.Credit ?? 0m);
 
     /// <summary>
     /// Declarația D406 (modul L) pe o lună. `dataCreare` există DOAR pentru
@@ -2267,6 +2308,20 @@ public static class SaftProiectii {
             balantaPeSimbol[simbol] = balantaPeSimbol.GetValueOrDefault(simbol)
                 + b.InitialDebit - b.InitialCredit + b.RulajDebit - b.RulajCredit;
         }
+        // Simbolul normalizat → GUID-ul contului (F20-D5): cheia comparației e
+        // simbolul, dar fișa de cont cere id-ul, iar S3 fără drill-down e o cifră
+        // pe care omul n-o poate deschide. Fără interogare nouă — `conturi` e
+        // dicționarul citit deja o dată (§3). Ordinea alegerii e DETERMINISTĂ:
+        // simbolul cel mai scurt (sinteticul, nu un analitic tăiat de
+        // `ProductTypeDinCont`), apoi ordinal. Conturile fără simbol se sar — ele
+        // ar revendica `ProductTypeImplicit`, care nu e un cont.
+        var contIdPerSimbol = new Dictionary<string, Guid>(StringComparer.Ordinal);
+        foreach (var pereche in conturi
+                .Where(c => !string.IsNullOrWhiteSpace(c.Value.Simbol))
+                .OrderBy(c => c.Value.Simbol.Length)
+                .ThenBy(c => c.Value.Simbol, StringComparer.Ordinal))
+            contIdPerSimbol.TryAdd(SaftReguli.ProductTypeDinCont(pereche.Value.Simbol), pereche.Key);
+
         var perCont = rezultat.StocFizic
             .GroupBy(e => e.ProductType, StringComparer.Ordinal)
             .OrderBy(g => g.Key, StringComparer.Ordinal)
@@ -2275,6 +2330,7 @@ public static class SaftProiectii {
                 var dinBalanta = balantaPeSimbol.GetValueOrDefault(g.Key);
                 return new SaftDiferentaCont {
                     Cont = g.Key,
+                    ContId = contIdPerSimbol.GetValueOrDefault(g.Key),
                     ClosingStocFizic = stoc,
                     ClosingBalanta = dinBalanta,
                     Diferenta = stoc - dinBalanta,

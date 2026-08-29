@@ -6000,6 +6000,18 @@ export interface components {
         };
         /** @enum {string} */
         NaturaClasa: "Stoc" | "Serviciu" | "Cheltuiala" | "Imobilizare" | "Tehnica" | "Virament";
+        NeinclusAgregat: {
+            Cauza?: string | null;
+            /** Format: int32 */
+            Numar?: number;
+            /** Format: int32 */
+            Randuri?: number;
+            /** Format: double */
+            Suma?: number;
+            /** Format: double */
+            Cantitate?: number | null;
+            Exemple?: components["schemas"]["SaftNeinclus"][] | null;
+        };
         NirLinieReadDto: {
             /** Format: uuid */
             Id?: string;
@@ -6727,6 +6739,8 @@ export interface components {
         };
         SaftDiferentaCont: {
             Cont?: string | null;
+            /** Format: uuid */
+            ContId?: string;
             /** Format: double */
             ClosingStocFizic?: number;
             /** Format: double */
@@ -7015,7 +7029,7 @@ export interface components {
             LiniiMiscare?: number;
             Excluse?: components["schemas"]["SaftExclus"][] | null;
             Rezumat?: components["schemas"]["SaftRezumat"];
-            Neincluse?: components["schemas"]["SaftNeinclus"][] | null;
+            Neincluse?: components["schemas"]["NeinclusAgregat"][] | null;
             Avertismente?: components["schemas"]["SaftAvertisment"][] | null;
         };
         /** @enum {string} */

@@ -142685,6 +142685,40 @@
         ],
         "type": "string"
       },
+      "NeinclusAgregat": {
+        "type": "object",
+        "properties": {
+          "Cauza": {
+            "type": "string",
+            "nullable": true
+          },
+          "Numar": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Randuri": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Suma": {
+            "type": "number",
+            "format": "double"
+          },
+          "Cantitate": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "Exemple": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaftNeinclus"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "NirLinieReadDto": {
         "type": "object",
         "properties": {
@@ -144787,6 +144821,10 @@
             "type": "string",
             "nullable": true
           },
+          "ContId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "ClosingStocFizic": {
             "type": "number",
             "format": "double"
@@ -145476,7 +145514,7 @@
           "Neincluse": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SaftNeinclus"
+              "$ref": "#/components/schemas/NeinclusAgregat"
             },
             "nullable": true
           },

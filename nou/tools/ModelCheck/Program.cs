@@ -12053,7 +12053,8 @@ void VerificaSaftJson(SaftDto dto, string eticheta) {
     // presupunere — clientul citește o singură sursă și n-are voie să numere (42c).
     Check($"D16-V2 (d, {eticheta}) `SaftProiectii.Sumar` = numărătoarea serverului: fiecare contor al sumarului "
         + "e lungimea listei corespunzătoare din declarație, iar unde `Rezumat` are deja cifra ea COINCIDE; "
-        + "`Rezumat`/`Neincluse`/avertismentele trec neschimbate, antetul întreg",
+        + "`Rezumat`/avertismentele trec neschimbate, antetul întreg (`Neincluse` pleacă AGREGAT — F20-D5, "
+        + "cusătura de mai jos)",
         sumar.Conturi == dto.Conturi.Count && sumar.Clienti == dto.Clienti.Count
         && sumar.Furnizori == dto.Furnizori.Count && sumar.CoduriTaxa == dto.Taxe.Count
         && sumar.Unitati == dto.Unitati.Count && sumar.Produse == dto.Produse.Count
@@ -12065,7 +12066,7 @@ void VerificaSaftJson(SaftDto dto, string eticheta) {
         && sumar.FacturiEmise == dto.Rezumat.NumarFacturiEmise
         && sumar.FacturiPrimite == dto.Rezumat.NumarFacturiPrimite
         && sumar.Plati == dto.Rezumat.NumarPlati && sumar.Produse == dto.Rezumat.NumarProduse
-        && ReferenceEquals(sumar.Rezumat, dto.Rezumat) && ReferenceEquals(sumar.Neincluse, dto.Neincluse)
+        && ReferenceEquals(sumar.Rezumat, dto.Rezumat)
         && ReferenceEquals(sumar.Avertismente, dto.Avertismente)
         && ReferenceEquals(sumar.Header, dto.Header)
         && sumar.Neaplicabil == dto.Neaplicabil && sumar.An == dto.An && sumar.Luna == dto.Luna
@@ -12078,6 +12079,51 @@ void VerificaSaftJson(SaftDto dto, string eticheta) {
         // 38,6 MiB → zeci de KiB.
         && (dto.Neaplicabil != null
             || Encoding.UTF8.GetByteCount(jsonSumar) < Encoding.UTF8.GetByteCount(jsonIntreg)));
+
+    // ---------------- F20-D5: `Neincluse` pleacă AGREGAT per cauză ----------------
+    // Singura listă a sumarului nemărginită de nimic (mii de rânduri pe o lună
+    // reală) — clientul o tăia la 200 fără să spună (73-r10 / 74-r7). Cusătura:
+    // agregatul nu are voie să piardă NIMIC din lista plată, care rămâne în
+    // `SaftDto` (fișierul). Oracolul cifrei e scris aici din nou, independent de
+    // `AgregaNeincluse`: aceeași definiție, altă implementare — dacă agregarea
+    // ratează o familie de cifre, cele două nu mai cad la fel.
+    static decimal CifraOracol(SaftNeinclus n) =>
+        n.Valoare != null ? n.Valoare.Value
+        : n.Baza != null ? Math.Abs(n.Baza.Value)
+        : Math.Abs(n.Debit ?? 0m) + Math.Abs(n.Credit ?? 0m);
+    var cauzePlat = dto.Neincluse.Select(n => n.Cauza ?? "").Distinct(StringComparer.Ordinal)
+        .OrderBy(c => c, StringComparer.Ordinal).ToList();
+    // Exemplele = PRIMELE ≤ 20 ale grupului, în ordinea listei plate — comparate
+    // pe REFERINȚĂ (agregatul nu clonează rândurile, le arată).
+    var exempleSuntPrimele = sumar.Neincluse.All(a =>
+        a.Exemple.Count == Math.Min(a.Numar, NeinclusAgregat.MaximExemple)
+        && a.Exemple.SequenceEqual(dto.Neincluse
+            .Where(n => (n.Cauza ?? "") == a.Cauza).Take(NeinclusAgregat.MaximExemple)));
+    var ordineAgregate = sumar.Neincluse.SequenceEqual(sumar.Neincluse
+        .OrderByDescending(a => a.Numar).ThenBy(a => a.Cauza, StringComparer.Ordinal));
+    Console.WriteLine($"     MĂSURAT (F20-D5 Neincluse, {eticheta}): {dto.Neincluse.Count} rânduri plate "
+        + $"({dto.Neincluse.Sum(n => n.Randuri)} de registru) ⇒ {sumar.Neincluse.Count} cauze ["
+        + string.Join(", ", sumar.Neincluse.Select(a => $"{a.Cauza}×{a.Numar}/{a.Randuri}r/Σ{a.Suma:N2}"
+            + (a.Cantitate is decimal cant ? $"/{cant:0.###}" : "")))
+        + $"]; {sumar.Neincluse.Sum(a => a.Exemple.Count)} exemple.");
+    Check($"F20-D5 ({eticheta}) `SaftSumarDto.Neincluse` = lista plată AGREGATĂ per cauză, FĂRĂ pierdere: "
+        + "Σ `Numar` == `SaftDto.Neincluse.Count`, Σ `Randuri` == Σ pe lista plată, Σ `Suma` == Σ cifrei "
+        + "fiecărui rând (S: `Valoare` SEMNATĂ; L: |`Baza`|, iar pe solduri de terți |`Debit`|+|`Credit`|), "
+        + "Σ `Cantitate` idem; exact aceleași CAUZE; `Cantitate` e nenulă exact pe cauzele care au rânduri "
+        + "cu cantitate (convenția `SaftAvertisment.Suma`); exemplele = PRIMELE ≤ 20 în ordinea listei; "
+        + "agregatele ordonate `Numar` desc + `Cauza` ordinal; round-trip-ul JSON le păstrează",
+        sumar.Neincluse.Sum(a => a.Numar) == dto.Neincluse.Count
+        && sumar.Neincluse.Sum(a => a.Randuri) == dto.Neincluse.Sum(n => n.Randuri)
+        && sumar.Neincluse.Sum(a => a.Suma) == dto.Neincluse.Sum(CifraOracol)
+        && sumar.Neincluse.Sum(a => a.Cantitate ?? 0m) == dto.Neincluse.Sum(n => n.Cantitate ?? 0m)
+        && sumar.Neincluse.Select(a => a.Cauza).OrderBy(c => c, StringComparer.Ordinal)
+            .SequenceEqual(cauzePlat, StringComparer.Ordinal)
+        && sumar.Neincluse.All(a => (a.Cantitate != null)
+            == dto.Neincluse.Any(n => (n.Cauza ?? "") == a.Cauza && n.Cantitate != null))
+        && exempleSuntPrimele && ordineAgregate
+        && sumarInapoi != null && sumarInapoi.Neincluse.Count == sumar.Neincluse.Count
+        && sumarInapoi.Neincluse.Sum(a => a.Numar) == dto.Neincluse.Count
+        && sumarInapoi.Neincluse.Sum(a => a.Suma) == sumar.Neincluse.Sum(a => a.Suma));
 }
 
 // ============ Felia 16, pas 3: fișierul XML + oracolul DUK — D16-V3 ============
@@ -13044,6 +13090,45 @@ void VerificaSaftStocuri(bool privat) {
         && ReferenceEquals(sumar.Excluse, saft.Excluse)
         && sumar.MiscariStoc == rez.NumarMiscari && sumar.LiniiMiscare == rez.NumarLiniiMiscare
         && sumar.StocFizic == rez.NumarStocFizic && sumar.TipuriMiscare == rez.NumarTipuriMiscare);
+
+    // ---------------- F20-D5 (S): agregatul se închide pe cusătura S2 ----------------
+    // Cusătura generică (Σ agregat == Σ lista plată) e în `VerificaSaftJson`,
+    // rulată pentru AMBELE module. Aici e partea care ține DOAR de S și e chiar
+    // motivul definiției semnate a lui `Suma`: cifrele agregatului sunt aceiași
+    // termeni pe care S2 îi pune în ecuație — deci ecranul care citește sumarul
+    // și cusătura care apără fișierul vorbesc despre aceleași bani.
+    Check("F20-D5 (S) `Suma`/`Cantitate` ale agregatului per cauză SUNT termenii cusăturii S2: Σ pe cauze "
+        + "== `Rezumat.NeincluseStocValoare` / `NeincluseStocCantitate`, cu `Valoare` SEMNATĂ ca în registru "
+        + "(un storno care anulează o gaură o anulează și în sumar); pe S fiecare cauză are cantitate, deci "
+        + "niciun `Cantitate` null",
+        sumar.Neincluse.Sum(a => a.Suma) == rez.NeincluseStocValoare
+        && sumar.Neincluse.Sum(a => a.Cantitate ?? 0m) == rez.NeincluseStocCantitate
+        && sumar.Neincluse.Count > 0 && rez.NeincluseStocValoare != 0m
+        && sumar.Neincluse.All(a => a.Cantitate != null));
+
+    // ---------------- F20-D5: `ContId` pe S3 (drill-down la fișă) ----------------
+    // S3 spune „371 diferă cu X"; ca omul să poată DESCHIDE contul, rândul are
+    // nevoie de GUID, nu doar de simbol. Oracolul: contul cu acel id are, după
+    // aceeași normalizare pe care o folosește gruparea, chiar simbolul rândului.
+    {
+        var simboluriConturi = os.GetObjectsQuery<Cont>()
+            .Select(c => new { c.ID, c.Simbol }).ToList()
+            .ToDictionary(c => c.ID, c => c.Simbol);
+        var reale = rez.StocPerCont.Where(c => c.Cont != SaftReguli.ProductTypeImplicit).ToList();
+        foreach (var c in rez.StocPerCont)
+            Console.WriteLine($"     MĂSURAT (F20-D5 S3): cont „{c.Cont}” ⇒ ContId {c.ContId} = "
+                + $"„{simboluriConturi.GetValueOrDefault(c.ContId) ?? "<niciun cont>"}”");
+        Check("F20-D5 `SaftDiferentaCont.ContId` = GUID-ul contului din spatele simbolului: nenul pe fiecare "
+            + "rând al cărui simbol e un cont real, iar contul cu acel id are — după ACEEAȘI normalizare "
+            + "`ProductTypeDinCont` folosită la grupare — exact simbolul rândului; niciun cont inventat pe "
+            + "„0” (`ProductTypeImplicit`, produsul fără cont de stoc), unde rămâne `Guid.Empty` (73e)",
+            reale.Count > 0
+            && reale.All(c => c.ContId != Guid.Empty
+                && simboluriConturi.TryGetValue(c.ContId, out var simbol)
+                && SaftReguli.ProductTypeDinCont(simbol) == c.Cont)
+            && rez.StocPerCont.All(c => c.Cont != SaftReguli.ProductTypeImplicit
+                || c.ContId == Guid.Empty));
+    }
 
     // ---------------- D18-V1: trecerea UNICĂ peste istoric == recalcularea naivă ----------------
     // Felia 18, pasul 1 (D18-D1): deschiderea, închiderea și soldurile pe
