@@ -65,94 +65,32 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
   reală de audit: fie ticket la DevExpress, fie audit propriu pe registre
   (append-only, deja istoricul contabil), fie la pasul 5 în tierul API.
 
-## Adăugate la felia 5 (NIR scriere)
+## Închise de felia 20 (decizia 77)
 
-- **`window.confirm` la ștergerea unui draft** (`FctDetaliu`/`NirDetaliu`):
-  inconsecvent cu confirmarea inline aleasă la felia 3 pentru panoul de stingeri
-  (57f). Dincolo de inconsecvență, dialogul nativ blochează întregul renderer —
-  s-a văzut la smoke-ul feliei 5, unde tab-ul a rămas nefolosibil. În React
-  soluția e aceeași ca la stingeri: confirmare inline în shell, nu dialog de
-  browser.
+Itemii de mai jos au fost rezolvați și textul lor original trăiește în
+`docs/decizii/077-p5-felia20-finisaj-client.md` + contractul feliei:
 
-## Adăugate la felia 15 (partener + ANAF)
+- `window.confirm` la ștergerea draftului (F5, F19) → `ConfirmareInline` + slot
+  în `DocumentShell`; zero `window.confirm` în cod.
+- Ecranul de partener (72-r9), `Societate` (73-r6), `CodNc` + UM pe produs
+  (73-r6) → `felii/nomenclatoare/`. `PoliticaMiscareSaft` (74-r12) → grilă de
+  citire; editarea din React = 77-r3.
+- `/saft` `Neincluse` plafonat la 200 (73-r10/74-r7) → agregat per cauză pe
+  server, exemple ≤ 20; S3 → link la fișa contului (`ContId`).
+- Căutarea sensibilă la diacritice (F19) → coloana generată `Cautare` (77a);
+  rămân în afara ei `CodFiscal`/`Iban`/`Marca` (77-r4).
+- `Lookup` care refetchează eticheta (F19) → `nucleu/odata.ts`, `byKey` prin
+  cache pe `(entitate, id, proiecție)`; a închis de la sine și placeholder-ul pe
+  linia existentă (restanța F6 din LDI+BCS).
+- Etichetele la precompletare (F19) → `nucleu/etichete.ts`; BTR rămâne 77-r1.
+- Smoke-ul vizual al jurnalelor de TVA și al decontului (datoria F12) — văzute.
 
-- **Ecranul de partener în React** (72-r9): prima felie de nomenclator din
-  client. Ce trebuie să aibă, din ce a fixat felia: grupul de adresă cu lookup
-  pe `Judet` (OData, `ForbidCRUD`) activ DOAR când `Tara == RO` (gardianul
-  refuză altfel — afordanță, nu validare, 65); `DataSincronizareAnaf` și
-  `InactivFiscal` afișate readonly (server-owned); butonul „Sincronizează din
-  ANAF" = `POST api/parteneri/{id}/sincronizeaza-anaf` cu rezultatul ca listă
-  (`Modificari` cu vechi/nou, `Diferente`, `Avertismente`) și `suprascrie` ca
-  opțiune explicită, confirmată inline (57f); 503 = „ANAF n-a răspuns, reia".
-- **Acțiunea XAF e sincronă și blochează ~5 s la 500 selectați** (72-r5): în
-  React comanda de lot e async natural, cu progres per tranșă.
+## Rămase (nestructurale)
 
-## Adăugate la felia 16 (SAF-T)
-
-- **Ecranul `Societate` în React** (73-r6): un singur rând (OData
-  `Societate`, PATCH pe rândul unic — POST-ul al doilea cade pe gardian);
-  adresa cu lookup pe `Judet` activ doar pe `Tara == RO`; `BazaContabila` ca
-  select din `Societate.BazeContabile` (lista e pe tip, gardianul o verifică);
-  `ContBancar` lookup pe `ContPropriu` filtrat `EsteBanca`; `RaporteazaCnp` ca
-  opțiune explicată (confidențialitate: PF ⇒ `04`+cod intern).
-- **`CodNc` + `UnitateMasura` pe ecranul de produs** (73-r6): `CodNc` cu
-  validare de formă (8 cifre) și, când vine 73-r4, lookup pe nomenclatorul
-  NC8; UM = lookup pe `UnitateMasura` (2.163 rânduri ⇒ mod remote, `Lookup`
-  cu `$filter` pe `Cod`/`Denumire`).
-- **`/saft`**: `Neincluse` e plafonat la 200 de rânduri în client — cauza cu 3
-  rânduri se poate ascunde după 200 de `ContFaraRol`; agregarea per cauză pe
-  server (73-r10) + drill-down e forma corectă. Descărcarea trece prin
-  memoria paginii (`blob`, ~70 MiB pe luna Flax) — acceptat pe desktop.
-
-## Adăugate la felia 17 (SAF-T S)
-
-- **Ecranul `PoliticaMiscareSaft` în React** (74-r12): politica se editează
-  azi doar în XAF (OData ReadOnly, 56); grila cu `TipDocument × TipStoc ×
-  Semn → cod + rol + motiv` și validarea codului din nomenclator
-  (`SaftReguli.CoduriMiscare` — lista poate ieși prin metadata sau prin
-  OData pe un nomenclator viitor).
-- **`/saft?fel=S`**: `Neincluse` pe S are cheia PRODUSUL (`FaraContStoc`) —
-  agregarea per cauză pe server (73-r10/74-r7) e mai urgentă aici decât pe
-  L; S3 cu componentele pe tip de document e deja randată, dar un drill-down
-  pe cont ⇒ balanță/fișă ar închide bucla.
-- Restul ecranului S e livrat (comutator L/S în URL, S1–S5, `Excluse`,
-  422 inline, descărcare prin `fetch + blob`).
-
-## Adăugate la felia 19 (NTC + ASM + retururi)
-
-Găsite la smoke-ul pe calea reală (browser + WebApi, baza Privat); niciunul nu
-e defect al feliei — toate patru sunt limite ale unor mecanisme comune, care vor
-reapărea pe orice felie următoare.
-
-- **Căutarea în lookup-uri e sensibilă la diacritice** (cel mai lat item):
-  „Clienti" nu găsește „419 — Clienţi – creditori" (grafia din seed are sedilă);
-  rândul apare doar tastând codul. Filtrul pleacă `$filter=contains(...)` spre
-  OData, iar comparația o face Postgres pe colația bazei — deci NU e o decizie a
-  componentei React și nu se rezolvă într-o felie. Afectează TOATE lookup-urile
-  remote (`Cont`, `TipMaterial`, `Repartitor`, `Produs`, `Lot`), iar operatorul
-  român nu tastează diacritice. Rezolvarea e de BAZĂ DE DATE: colație
-  `unaccent`/ICU pe coloanele de denumire sau o coloană shadow normalizată pe
-  care să cadă `contains`.
-- **`Lookup` refetchează eticheta valorii curente, o dată per instanță și per
-  re-render**: 8 cereri identice `GET UnitateInterna(<același guid>)` la o
-  singură deschidere a ecranului NTC (două laturi pe același nomenclator).
-  Fiecare `Lookup` își rezolvă singur eticheta prin `byKey`, fără cache partajat.
-  Rezolvarea: `byKey` prin TanStack Query cu cheie `(entitate, id)` — o singură
-  rezolvare per valoare, partajată între widget-uri.
-- **Etichetele liniilor nesalvate (61b) lipsesc când valoarea vine din
-  PRECOMPLETARE, nu din selecție**: pe linia de Consum a ASM, editorul arată
-  „371 — Mărfuri" (precompletat din lot), dar coloanele grilei rămân goale până
-  la salvare; pe linia de Produs eticheta apare, fiindcă acolo Tipul a venit
-  dintr-o selecție manuală. E limita convenției, nu o scăpare a feliei:
-  mecanismul culege eticheta *la selecție*, iar o valoare setată programatic nu
-  trece pe acolo. Reapare la orice viitoare precompletare. Rezolvarea:
-  precompletarea scrie perechea (id, etichetă) în același loc ca selecția —
-  sursa există deja în răspunsul `$expand` din care vine precompletarea.
-- **`window.confirm` pe ștergerea draftului** e moștenit de șablonul comun și
-  există acum și pe cele patru ecrane noi (`AsmDetaliu.tsx:194`,
-  `NtcDetaliu.tsx:168`, `RdcDetaliu.tsx:136`, `RlfDetaliu.tsx:139`).
-  Confirmările pe care felia le-a scris ea însăși sunt corect inline (panoul de
-  stingeri, distribuirea ASM). Se semnalează din nou fiindcă dialogul nativ
-  BLOCHEAZĂ renderer-ul sub extensie — motivul pentru care fusese scos din
-  panoul de stingeri, și motivul pentru care ștergerea n-a putut fi probată la
-  smoke.
+- **BTR n-a adoptat convenția 61b** (etichete per poziție, precompletare) —
+  77-r1, plumbing de felie.
+- **`displayExpr` de nucleu pentru `TipMaterial`** (ASM arată cod + denumire,
+  BCS doar denumire) — 77-r6.
+- **Cele 8 dimensiuni n-au UI** pe balanță/fișă (pass-through din URL).
+- **`AngajamentId` fără lookup** (tabela e goală).
+- **`HeaderFilter` trunchiat la 100 de valori** (cauza e server-side).

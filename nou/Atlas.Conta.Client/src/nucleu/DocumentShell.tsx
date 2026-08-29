@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { DateBox } from 'devextreme-react';
 import { PanouErori } from './PanouErori';
 import { azi, izolataZi } from './zi';
@@ -45,6 +45,11 @@ export function DocumentShell(props: {
   // loc ca cererea de dată a shell-ului — de aceea slotul e aici și nu lângă
   // butonul care o deschide: cele două cereri se exclud. Felia montează un
   // `<ConfirmareInline>`; shell-ul îi dă doar locul.
+  // Orice nod FALSY (`false`, `null`, `undefined`, `''`) înseamnă „nicio
+  // confirmare" — feliile scriu natural `confirmare={deSters && <…/>}`, care dă
+  // `false`, iar `false == null` e fals (review F20 F1: gardul de mai jos era
+  // permanent fals și „Stornează" murise pe 11 ecrane; `tsc` nu-l poate prinde,
+  // `ReactNode` acceptă `false`).
   confirmare?: ReactNode;
   // Cum se închide confirmarea feliei. O SINGURĂ cerere în așteptare, iar
   // starea celor două stă în locuri diferite (cererea de dată e a shell-ului,
@@ -60,6 +65,11 @@ export function DocumentShell(props: {
   } = props;
   const [cerere, setCerere] = useState<Comanda | null>(null);
   const [data, setData] = useState<string | undefined>(azi());
+
+  // Deschiderea unei confirmări a FELIEI trebuie să ÎNCHIDĂ cererea de dată (nu
+  // doar s-o ascundă): altfel reapare, armată cu data veche, după „Renunță".
+  const confirmareDeschisa = !!confirmare;
+  useEffect(() => { if (confirmareDeschisa) setCerere(null); }, [confirmareDeschisa]);
 
   function apasa(c: Comanda) {
     inchideConfirmarea?.();
@@ -93,7 +103,7 @@ export function DocumentShell(props: {
 
       {confirmare}
 
-      {confirmare == null && cerere?.cereData && (
+      {!confirmareDeschisa && cerere?.cereData && (
         <div className="cerere-data">
           <label className="camp__eticheta">{cerere.cereData.eticheta}</label>
           <DateBox

@@ -24,7 +24,11 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .cadru__meniu {
   display: flex;
   align-items: center;
-  gap: 18px;
+  /* Bara se RUPE pe rânduri când nu încape (smoke F20 D1: la 1416 px grupurile
+     „Nomenclatoare"/„Politici" ieșeau din viewport și trăgeau body-ul în scroll
+     orizontal — ecranele noi erau practic inaccesibile din meniu). */
+  flex-wrap: wrap;
+  gap: 6px 18px;
   padding: 10px 18px;
   background: #ffffff;
   border-bottom: 1px solid var(--linie);

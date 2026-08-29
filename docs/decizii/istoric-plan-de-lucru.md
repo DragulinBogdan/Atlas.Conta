@@ -393,3 +393,20 @@ per felie):
   52.039); smoke browser 6/6 fluxuri, zero erori de consolă. Lecția consemnată:
   „toate verificările existente rămân verzi" NU e un invariant de ne-regresie —
   verde înseamnă „nimic din ce e acoperit nu s-a rupt". Decizia 76.
+
+- **Felia 20 — finisajul clientului** (2026-08-29, contract
+  `docs/api/p5-felia-finisaj-client-contract.md`, F20-D1…D10): lista
+  `lista-react.md` + itemii de client rămași din §Închidere ale F1–F19, în 7
+  pași cu 6 agenți. Căutarea fără diacritice tranșată la nivel de BAZĂ:
+  coloană generată STORED `Cautare` (translate+lower, IMMUTABLE) pe 14
+  nomenclatoare prin `ICuCautare` + buclă generică în `OnModelCreating`, cu
+  oracol SQL==C# pe toate rândurile; `nucleu/odata.ts` = singurul store OData
+  al clientului, `byKey` prin TanStack pe `(entitate, id, proiecție)`;
+  precompletarea scrie (id, etichetă) prin cache; `ConfirmareInline` — zero
+  `window.confirm`; `Neincluse` agregat per cauză pe server + `ContId` pe S3;
+  `metadata.json` capătă `Nomenclatoare`; 70-r1 închisă (422 `EroriDto` pe
+  OData); primele ecrane de nomenclator (Partener + ANAF, Societate, Produs,
+  politica SAF-T citire). Review advers: 2 de fond (storno mort pe 11 ecrane
+  printr-un `== null` pe `ReactNode`; cache-ul supraviețuia „Ieșire"), 3 medii,
+  6 cosmetice — F1–F9 fixate. Smoke 7/7 + F6 și datoria F12 închise de la
+  sine. Decizia 77.

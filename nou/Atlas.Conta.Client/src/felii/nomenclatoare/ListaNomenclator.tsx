@@ -39,12 +39,16 @@ export function ListaNomenclator(props: {
   expand?: string[];
   sortare?: string;
   substitutCautare?: string;
+  // Câmpuri de căutare SUPLIMENTARE, pe care `Cautare` (cod + denumire) nu le
+  // acoperă — `CodFiscal` pe partener (review F20 F5): în document partenerul
+  // se găsește după CUI, deci și pe ecranul lui. Se compun cu `or`, ca în `Lookup`.
+  cauta?: string[];
   indiciu?: ReactNode;
   // Coloanele — `<Column>`-uri, scrise de ecran. Grila nu le deduce din
   // metadata: identitatea coloanelor e cod, ca identitatea editorilor (43a).
   children: ReactNode;
 }) {
-  const { titlu, entitate, ruta, poateCrea = true, expand, sortare, substitutCautare, indiciu, children } = props;
+  const { titlu, entitate, ruta, poateCrea = true, expand, sortare, substitutCautare, cauta, indiciu, children } = props;
   const navigheaza = useNavigate();
   const [stare, seteaza] = useUrlStare({ cauta: '' });
 
@@ -60,6 +64,7 @@ export function ListaNomenclator(props: {
 
   const cautaPeCautare = areCautare(entitate);
   const cheieExpand = JSON.stringify(expand ?? null);
+  const cheieCauta = JSON.stringify(cauta ?? null);
 
   const sursa = useMemo(() => new DataSource({
     store: storeOData(entitate),
@@ -68,7 +73,7 @@ export function ListaNomenclator(props: {
     // căutarea rămâne, doar că sensibilă la diacritice. Prezența se citește din
     // metadata, nu dintr-o listă scrisă de mână care ar drifta.
     filter: stare.cauta
-      ? [cautaPeCautare ? CAMP_CAUTARE : defaultProperty(entitate), 'contains', stare.cauta]
+      ? filtruCautare([cautaPeCautare ? CAMP_CAUTARE : defaultProperty(entitate), ...(cauta ?? [])], stare.cauta)
       : null,
     sort: sortare ?? defaultProperty(entitate),
     paginate: true,
@@ -78,7 +83,8 @@ export function ListaNomenclator(props: {
     // array-ului: un literal `['TipMaterial']` scris în JSX e alt obiect la
     // fiecare render și ar recrea `DataSource`-ul (deci ar reîncărca grila) fără
     // ca nimic să se fi schimbat. Același tipar ca în `Lookup`.
-  }), [entitate, cheieExpand, sortare, stare.cauta, cautaPeCautare]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [entitate, cheieExpand, cheieCauta, sortare, stare.cauta, cautaPeCautare]);
 
   return (
     <div className="ecran">
@@ -117,4 +123,14 @@ export function ListaNomenclator(props: {
       {indiciu && <p className="indiciu">{indiciu}</p>}
     </div>
   );
+}
+
+// `[c1,'contains',t] or [c2,'contains',t] …` în formatul DevExtreme; un singur
+// câmp rămâne o condiție simplă.
+function filtruCautare(campuri: string[], text: string): unknown[] {
+  const conditii = campuri.map((c) => [c, 'contains', text]);
+  if (conditii.length === 1) return conditii[0];
+  const grup: unknown[] = [];
+  conditii.forEach((c, i) => { if (i > 0) grup.push('or'); grup.push(c); });
+  return grup;
 }

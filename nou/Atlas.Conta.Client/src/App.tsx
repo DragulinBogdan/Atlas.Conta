@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
 import { esteAutentificat, stergeToken } from './nucleu/auth';
+import { cache } from './nucleu/cache';
 import { Login } from './pagini/Login';
 import { BtrLista } from './felii/btr/BtrLista';
 import { BtrDetaliu } from './felii/btr/BtrDetaliu';
@@ -192,7 +193,10 @@ function Cadru() {
         <button
           type="button"
           className="buton buton--mic"
-          onClick={() => { stergeToken(); navigheaza('/login', { replace: true }); }}
+          // Ieșirea e navigare SPA, deci contextul JS supraviețuiește: fără `clear()`
+          // cache-ul (`staleTime: Infinity` pe nomenclatoare, F20-D2) ar servi
+          // următorului utilizator din același tab datele celui dinainte (review F2).
+          onClick={() => { stergeToken(); cache.clear(); navigheaza('/login', { replace: true }); }}
         >
           Ieșire
         </button>

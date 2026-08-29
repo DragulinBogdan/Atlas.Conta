@@ -717,6 +717,37 @@ decizia N.
     cu cale practică). (h) Bara ASM: cifra e NEUTRĂ, culoarea stă pe verdictul
     dry-run-ului — `Diferenta` minte în ambele sensuri, deci orice culoare pe ea
     reproduce o minciună. (i) Restanțe 76-r1…r6 → jurnal.
+77. **Finisajul clientului (F20).** (a) **Căutarea fără diacritice e a BAZEI
+    DE DATE, ca o coloană GENERATĂ, nu ca o colație**: `Cautare` =
+    `translate(lower(cod || ' ' || denumire), De, La)` STORED (ambele
+    IMMUTABLE; `concat` nu e) pe orice nomenclator care declară `ICuCautare`,
+    configurată printr-o buclă generică pe model (o coloană pe baza TPT;
+    `Simbol` pe `Cont`); colația ICU nedeterministă rupe `LIKE`/`contains`,
+    `unaccent` nu poate fi injectat în `$filter`-ul compus de `ODataStore`.
+    Tabelul `De`/`La` (`Comun/Cautare.cs`) e UNICA sursă: SQL, C#
+    (`Normalizeaza`) și client (prin `metadata.json`), cu oracol SQL == C# pe
+    toate rândurile în ModelCheck. (b) **Un singur store OData în client**
+    (`nucleu/odata.ts`): `byKey` prin cache-ul TanStack pe `(entitate, id,
+    proiecție)` cu `staleTime: Infinity` — proiecția e în cheie, altfel cache-ul
+    minte; `cache.clear()` la „Ieșire" (logout-ul e navigare SPA); `Lookup`
+    caută default pe `Cautare` și rescrie literalul în `beforeSend` pentru
+    `contains`/`startswith`/`endswith`. (c) Precompletarea scrie perechea (id,
+    etichetă) printr-un singur verdict „e gol" (`nucleu/etichete.ts`), sursa =
+    cache-ul, nu `$expand` imbricat. (d) `ConfirmareInline` + slot în
+    `DocumentShell`; **un slot de `ReactNode` nu se compară cu `null`** (`false
+    == null` e fals — storno a murit pe 11 ecrane, invizibil pentru `tsc`).
+    (e) `Neincluse` pleacă AGREGAT per cauză în sumar (funcție pură pe lista
+    plată, care rămâne în fișier); `Suma` = semnată pe S, absolută pe L;
+    `ContId` pe S3 ⇒ fișă. (f) Listele legii care sunt COD se PUBLICĂ declarat
+    în `metadata.json` (`Nomenclatoare`), nu devin entități. (g) Refuzurile de
+    DOMENIU pe `api/odata/*` ies `422 EroriDto` (`RefuzDomeniuOdataFilter`,
+    `Order = int.MaxValue`, în WebApi); permisiunea rămâne 404/403 text, tradusă
+    doar în client. (h) Șablonul ecranului de nomenclator (`felii/nomenclatoare`):
+    scriere prin OData, PATCH = DELTĂ (absența NU e golire, spre deosebire de
+    PUT-ul documentelor), lungimile din schemele OData ale `openapi.json`;
+    Partener + ANAF, Societate, Produs; `PoliticaMiscareSaft` DOAR citire (56
+    nu se redeschide). (i) Licența DevExtreme = `VITE_DEVEXTREME_LICENSE`.
+    (j) Restanțe 77-r1…r8 → jurnal.
 
 ## Stare și roadmap
 
@@ -740,16 +771,17 @@ detaliat în jurnal):
   D300 (69), motor/structură post-D300 (70), D394 (71), partener + ANAF (72),
   SAF-T D406 L (73), SAF-T S stocuri (74), restanțele grele ale lui S —
   golirea valorică în motor + reclasificarea ca mișcare (75), NTC + ASM +
-  retururi prin API și client + plafonul de stingere cu latură și netat (76).
+  retururi prin API și client + plafonul de stingere cu latură și netat (76),
+  finisajul clientului — căutarea fără diacritice, cache-ul de nomenclator,
+  confirmările, `Neincluse` agregat, primele ecrane de nomenclator (77).
 
 **Toate tipurile de document au acum felie de scriere prin API și client**,
 în afara lui ITV (comandă, nu agregat — 76a) și a lui BPR (rezervat, 19).
 
-**Următorul pas**: finisajul clientului (listele §Închidere ale contractelor +
-`docs/api/lista-react.md`, unde 76-r6 a adăugat patru itemi — între care
-căutarea sensibilă la diacritice, care e decizie de BAZĂ DE DATE și atinge toate
-lookup-urile; licența DevExtreme = acțiunea utilizatorului); felia ITV, la
-cerere.
+**Următorul pas**: felia ITV (comandă + ecran de rezultat, 76a), la cerere;
+restanțele de fond ale lui 77 (77-r2 obligativitatea `Cod`/`Denumire`, 77-r8
+decizia unică 404/403/422 pe toate ușile); `lista-react.md` mai ține doar
+itemii structurali și 77-r1/r3/r6.
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -824,7 +856,14 @@ scriere e refuzat de primul FK invizibil, nu de o permisiune (familia 72-r10) ·
 diacritice în TOATE lookup-urile remote (colație `unaccent`/ICU sau coloană
 shadow — decizie de bază de date), `Lookup` care refetchează eticheta per
 instanță, limita convenției 61b pe valorile din PRECOMPLETARE, `window.confirm`
-moștenit pe ștergere
+moștenit pe ștergere (toți patru închiși de 77)
+· 77-r1 BTR fără convenția 61b · 77-r2 `Cod`/`Denumire` neobligatorii pe nicio
+ușă · 77-r3 editarea `PoliticaMiscareSaft` din React, comanda ANAF de lot ·
+77-r4 `CodFiscal`/`Iban`/`Marca` în afara lui `Cautare` · 77-r5 precompletarea
+nu distinge alegerea operatorului; invalidarea nu reîmprospătează
+`SelectBox`-urile montate · 77-r6 `displayExpr` de nucleu pentru `TipMaterial`
+· 77-r7 `Cautare` fără index (seq scan pe 20 k rânduri; cifra decide) · 77-r8
+permisiunea pe OData `text/plain` pe server
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

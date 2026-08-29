@@ -84,6 +84,16 @@ async function trimite(cale: string, init: RequestInit, cuCorp: boolean): Promis
     const corp = (await raspuns.json().catch(() => null)) as { Erori?: string[] | null } | null;
     throw new EroareIndisponibil(corp?.Erori ?? ['Serviciul nu răspunde acum. Reîncercați.']);
   }
+  // Pe ușa OData refuzul de PERMISIUNE nu trece prin `EroriDto`: controllerul
+  // securizat XAF răspunde 404 (obiect invizibil) sau 403 (fără drept de
+  // scriere), ambele `text/plain` (review F20 F3, familia 72-r10/76-r5). Pentru
+  // operator sunt același lucru — „nu aveți drept" — deci ies ca refuz de
+  // domeniu, nu ca eroare de transport. Pe REST statusurile astea rămân ale
+  // gate-ului comenzilor (55b) și trec mai departe neschimbate.
+  if ((raspuns.status === 403 || raspuns.status === 404) && cale.startsWith('/api/odata/'))
+    throw new EroareDomeniu([raspuns.status === 403
+      ? 'Nu aveți drept de scriere pe acest nomenclator.'
+      : 'Rândul nu există sau nu aveți drept să-l vedeți.']);
   if (!raspuns.ok)
     throw new Error(`${init.method ?? 'GET'} ${cale} → ${raspuns.status} ${raspuns.statusText}`);
   return raspuns;

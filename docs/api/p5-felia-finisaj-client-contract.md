@@ -284,6 +284,41 @@ dotnet run --project nou/tools/ModelCheck -- --dump-metadata
 cd nou/Atlas.Conta.Client && pnpm verifica:drift && pnpm build
 ```
 
-## Închidere
+## Închidere (2026-08-29/30, decizia 77)
 
-(se completează la pasul 7)
+Pașii 1–5 comise separat (`a54d6c9`, `c7ddcdc`, `4cca0fb`, `6cfa7ad`, `3f17a4a`),
+fiecare după verificare independentă (ModelCheck / build / spot-check).
+
+**Ne-regresie**: ModelCheck 0 FAIL pe ambele profiluri pe codul final (oracolul
+`Cautare` pe 9.343 / 2.951 rânduri; cusătura `Neincluse` pe L și S); `pnpm
+build` verde; `verifica:drift` exit 0 (după commit); migrația aplicată pe toate
+cele 5 baze de dev (Flax după review F6).
+
+**Măsurători**: NTC `UnitateInterna(guid)` 2 → 1 la deschidere, +2 → 0 la al
+doilea document (cifra „8" din inventar nu s-a reprodus — corectată); linia
+existentă: 2 `byKey` la prima deschidere, 0 la a doua (restanța F6 închisă);
+„Clienți – Cred" (ț-virgulă) ⇒ rândul cu ţ-sedilă; `/parteneri` „ștefan" ⇒
+`contains(Cautare,'stefan')` 304 rânduri; PATCH 204 / POST 201 / DELETE 200 /
+422 JSON pe gardian, măsurate pe host.
+
+**Smoke pe calea reală** (browser + WebApi pe Privat re-seed-uită): 7/7 — S3 →
+fișa 371 cu soldul == „Închidere balanță"; `/jurnal-cumparari`,
+`/jurnal-vanzari`, `/decont-tva` văzute pe 08/2026 și 12/2025, cusătura la cent
+(datoria F12 închisă); precompletarea ASM/BCS înainte de Salvează; XAF fără
+`Cautare` pe 5 ecrane; consola 0 erori. Re-probă după fix-uri: storno pe NTC
+Operat arată rândul de dată (F1), meniul se rupe pe rânduri fără scroll
+orizontal (D1), `User` pe Salvează ⇒ „Rândul nu există sau nu aveți drept"
+(F3), CUI-ul găsit pe server prin `or CodFiscal` (F5; în UI blocat de un
+snapshot stale al cache-ului Vite, nu de cod — build-ul e verde).
+
+**Review advers**: F1 fond (storno mort pe 11 ecrane — `confirmare == null` pe
+un `ReactNode` `false`), F2 fond (cache-ul supraviețuia „Ieșire"), F3 mediu
+(permisiunea pe OData text/plain), F4 mediu (`startswith` nerescris), F5 mediu
+(CUI pe lista de parteneri), F6–F9 cosmetice — toate fixate de main în
+commit-ul de închidere; F10/F11 + D2 + „Cod/Denumire neobligatorii" = restanțe
+77-r1…r8 (jurnal).
+
+**Abateri declarate față de contract**: BTR nu a intrat în F20-D3 (n-are 61b
+deloc — 77-r1); lungimile vin din schemele OData ale `openapi.json`, nu din dump
+(D8 amendat); `DocumentShell` a primit și `inchideConfirmarea` (D4); cheia de
+cache are al patrulea segment, proiecția (D2).

@@ -12,6 +12,7 @@ export function Parteneri() {
     <ListaNomenclator
       titlu="Parteneri"
       entitate="Partener"
+      cauta={['CodFiscal']}
       ruta="/parteneri"
       indiciu={
         <>

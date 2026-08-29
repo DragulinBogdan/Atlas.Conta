@@ -77,7 +77,7 @@ export function SocietateEcran() {
     onSuccess: () => {
       setErori([]);
       setMesaje(['Salvat.']);
-      invalideaza(cache, 'Societate');
+      invalideaza(cache, 'Societate', 'unicul');
       void citit.refetch();
     },
     onError: (e) => { setMesaje([]); setErori(eroriDin(e)); },

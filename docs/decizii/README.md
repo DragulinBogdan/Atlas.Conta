@@ -91,3 +91,4 @@
 | 74 | [Pasul 5, felia 17 — SAF-T S (stocuri): `PoliticaMiscareSaft`, proiecție peste `RegistruStoc`, cusăturile S1–S5, fișier + DUK](074-p5-felia17-saft-s.md) | 2026-08-27 | activă |
 | 75 | [Pasul 5, felia 18 — restanțele grele ale lui S: golirea valorică (motor), reclasificarea ca mișcare, perf proiecție](075-p5-felia18-restante-s.md) | 2026-08-29 | activă |
 | 76 | [Pasul 5, felia 19 — NTC + ASM + retururi (RLF/RDC): scriere prin API și client; plafonul de stingere cu latură și netat](076-p5-felia19-ntc-asm-retururi.md) | 2026-08-29 | activă (amendează 31d/48b) |
+| 77 | [Pasul 5, felia 20 — finisajul clientului: căutarea fără diacritice (coloană generată), cache-ul de nomenclator, confirmările inline, `Neincluse` agregat, primele ecrane de nomenclator](077-p5-felia20-finisaj-client.md) | 2026-08-29 | activă |

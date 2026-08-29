@@ -67,12 +67,15 @@ export function areCautare(entitate: string): boolean {
 //
 // Apostroful se dublează în OData; regexul îl acceptă în literal (`''`) și
 // re-escapează rezultatul, ca un text cu apostrof să nu rupă filtrul.
-const FILTRU_CAUTARE = new RegExp(`contains\\((?:tolower\\()?${CAMP_CAUTARE}\\)?,'((?:[^']|'')*)'\\)`, 'g');
+// Toate cele trei funcții de text ale OData, nu doar `contains`: un `FilterRow`
+// cu `startswith` pe coloană ar fi trimis altfel `tolower(Cautare)` peste un
+// literal cu diacritice ⇒ zero rânduri, tăcut (review F20 F4).
+const FILTRU_CAUTARE = new RegExp(`(contains|startswith|endswith)\\((?:tolower\\()?${CAMP_CAUTARE}\\)?,'((?:[^']|'')*)'\\)`, 'g');
 
 export function normalizeazaFiltru(filtru: string): string {
-  return filtru.replace(FILTRU_CAUTARE, (_, literal: string) => {
+  return filtru.replace(FILTRU_CAUTARE, (_, functie: string, literal: string) => {
     const text = normalizeazaCautare(String(literal).replace(/''/g, "'"));
-    return `contains(${CAMP_CAUTARE},'${text.replace(/'/g, "''")}')`;
+    return `${functie}(${CAMP_CAUTARE},'${text.replace(/'/g, "''")}')`;
   });
 }
 

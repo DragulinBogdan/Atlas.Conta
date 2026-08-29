@@ -14,8 +14,9 @@ import { cache } from './nucleu/cache';
 // Licența DevExtreme (F20-D9). Cheia e a UTILIZATORULUI, nu a repo-ului: intră
 // prin `.env.local` (gitignored), documentată în `.env.example`. Fără ea build-ul
 // merge și aplicația funcționează — apare doar watermark-ul de trial, tolerat pe
-// dev. Apelul stă ÎNAINTE de orice import care instanțiază un widget, fiindcă
-// verificarea se face la crearea componentei.
+// dev. Import-urile ES sunt hoistate, deci apelul rulează după codul de nivel
+// superior al modulelor importate — e suficient: verificarea se face la CREAREA
+// widget-ului, adică în `render()`, care vine după.
 config({ licenseKey: import.meta.env.VITE_DEVEXTREME_LICENSE ?? '' });
 
 // Localizarea completă a shell-ului e explicit în afara spike-ului; ce e gratis

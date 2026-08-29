@@ -5,5 +5,6 @@ dist/
 
 # Mediul local (cheia de licență DevExtreme — F20-D9). `.env.example` se comite,
 # valorile reale nu.
+.env
 .env.local
 .env.*.local
