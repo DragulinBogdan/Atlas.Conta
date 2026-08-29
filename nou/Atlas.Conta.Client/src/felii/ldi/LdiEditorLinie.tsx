@@ -22,8 +22,10 @@ import { SCHEMA_LINIE, TIP_LINIE, type LdiLinieWrite } from './api';
 //     cere pozitiv — 28e). Atributele de lot (dată expirare, lot fabricație) se
 //     culeg pe poziție.
 //  2. **Minus** — se constată lipsă: linia DESCARCĂ un lot existent, la prețul
-//     LUI. Tipul se alege manual, nu se precompletează din lot: ar cere un
-//     `$expand` imbricat (Lot → Produs → TipMaterial) pe care nu-l facem.
+//     LUI. Tipul se precompletează din produsul lotului (F20-D3), ca pe plus:
+//     `$expand=Produs` aduce `Produs.TipMaterialId`, deci nu e nevoie de niciun
+//     `$expand` imbricat — motivul pentru care minusul era singurul fără
+//     precompletare.
 //
 // Comutarea de direcție GOLEȘTE client-side câmpurile celeilalte direcții —
 // oglinda golirii persistate din `ListaDiferenteInventarApply` (lecția F5:
@@ -189,8 +191,7 @@ export function LdiEditorLinie(props: {
               {/* Lotul DESCĂRCAT: nefiltrat pe gestiune (F6-D8, precedentul
                   BTR/BCS) — locația curentă a unui lot e soldul din registru, nu
                   nașterea lui. Refuzul „nu există sold aici" e al gardianului
-                  motorului. Tipul NU se precompletează din lot: ar cere un
-                  `$expand` imbricat, deci îl alege operatorul. */}
+                  motorului. */}
               <Lookup<LdiLinieWrite>
                 camp="LotId"
                 entitate="Lot"
@@ -200,7 +201,23 @@ export function LdiEditorLinie(props: {
                 afisare={etichetaLot}
                 cauta="Produs.Denumire"
                 sortare="Data"
-                laSelectie={(l) => setEtichete((prev) => ({ ...prev, LotEticheta: l ? etichetaLot(l) : '' }))}
+                laSelectie={(l) => {
+                  // Tipul se precompletează din PRODUSUL lotului, ca pe plus și
+                  // ca pe ASM/RLF/RDC/BCS. Motivul pentru care linia de minus era
+                  // singura fără precompletare („ar cere un `$expand` imbricat
+                  // Lot → Produs → TipMaterial") a dispărut odată cu F20-D3:
+                  // `$expand=Produs` aduce deja `Produs.TipMaterialId` — valoare
+                  // REALĂ, nu ghicită —, iar eticheta Tipului vine din cache-ul
+                  // de nomenclatoare, într-o singură decizie cu id-ul.
+                  const p = l?.Produs as Record<string, unknown> | null | undefined;
+                  setEtichete((prev) => ({ ...prev, LotEticheta: l ? etichetaLot(l) : '' }));
+                  precompleteazaTip({
+                    linie,
+                    tipId: p?.TipMaterialId == null ? undefined : String(p.TipMaterialId),
+                    setLinie,
+                    setEtichete,
+                  });
+                }}
               />
               <p className="indiciu">
                 Lotul lipsă — el dă și prețul cu care se evaluează minusul.

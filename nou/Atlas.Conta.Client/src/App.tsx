@@ -39,6 +39,12 @@ import { DecontTva } from './felii/tva/DecontTva';
 import { D300 } from './felii/tva/D300';
 import { D394 } from './felii/tva/D394';
 import { Saft } from './felii/tva/Saft';
+import { Parteneri } from './felii/nomenclatoare/Parteneri';
+import { PartenerDetaliu } from './felii/nomenclatoare/PartenerDetaliu';
+import { Produse } from './felii/nomenclatoare/Produse';
+import { ProdusDetaliu } from './felii/nomenclatoare/ProdusDetaliu';
+import { SocietateEcran } from './felii/nomenclatoare/SocietateEcran';
+import { PoliticiMiscareSaft } from './felii/nomenclatoare/PoliticiMiscareSaft';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
@@ -125,6 +131,19 @@ export function App() {
             produce un FIȘIER. Perioada e o LUNĂ (`an`+`luna`), nu un interval:
             `SelectionCriteria` din D406 numără luni. */}
         <Route path="/saft" element={<Saft />} />
+        {/* Nomenclatoarele (felia 20, F20-D8): primele ecrane care scriu prin
+            OData, nu prin REST — o entitate plată n-are agregat, deci n-are ce
+            reconcilia un controller de felie. `Societate` n-are listă și n-are
+            `/nou`: e un singur rând prin definiție (gardianul refuză al doilea).
+            Politica de mișcare SAF-T e DOAR de citit (56). */}
+        <Route path="/parteneri" element={<Parteneri />} />
+        <Route path="/parteneri/nou" element={<PartenerDetaliu />} />
+        <Route path="/parteneri/:id" element={<PartenerDetaliu />} />
+        <Route path="/produse" element={<Produse />} />
+        <Route path="/produse/nou" element={<ProdusDetaliu />} />
+        <Route path="/produse/:id" element={<ProdusDetaliu />} />
+        <Route path="/societate" element={<SocietateEcran />} />
+        <Route path="/politici/miscare-saft" element={<PoliticiMiscareSaft />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
     </Routes>
@@ -164,6 +183,12 @@ function Cadru() {
         <NavLink to="/d300">D300</NavLink>
         <NavLink to="/d394">D394</NavLink>
         <NavLink to="/saft">SAF-T</NavLink>
+        <span className="cadru__grup">Nomenclatoare</span>
+        <NavLink to="/parteneri">Parteneri</NavLink>
+        <NavLink to="/produse">Produse</NavLink>
+        <NavLink to="/societate">Societate</NavLink>
+        <span className="cadru__grup">Politici</span>
+        <NavLink to="/politici/miscare-saft">Mișcări SAF-T</NavLink>
         <button
           type="button"
           className="buton buton--mic"

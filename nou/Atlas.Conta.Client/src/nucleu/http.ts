@@ -27,6 +27,21 @@ export class EroareDomeniu extends Error {
   }
 }
 
+// 503 = serviciul din AMONTE nu răspunde ACUM (felia 15: registrul ANAF pică
+// tranzitoriu — 5xx, timeout, rețea). E o a treia specie, distinctă de refuzul
+// de domeniu: cererea era bună, iar reîncercarea are sens — exact ce nu e
+// adevărat despre un 422. Fără clasa asta clientul ar fi văzut un `Error`
+// generic („POST … → 503") și n-ar fi putut oferi butonul de reluare fără să
+// citească textul mesajului, adică fără să ghicească.
+export class EroareIndisponibil extends Error {
+  readonly erori: string[];
+  constructor(erori: string[]) {
+    super(erori[0] ?? 'Serviciul nu răspunde acum. Reîncercați.');
+    this.name = 'EroareIndisponibil';
+    this.erori = erori;
+  }
+}
+
 function antete(cuCorp: boolean): HeadersInit {
   const h: Record<string, string> = { Accept: 'application/json' };
   const t = token();
@@ -62,6 +77,13 @@ async function trimite(cale: string, init: RequestInit, cuCorp: boolean): Promis
     if (erori !== null && erori.length > 0) throw new EroareDomeniu(erori);
     if (raspuns.status === 422) throw new EroareDomeniu(['Operațiune refuzată de server.']);
   }
+  // Serviciul din amonte, indisponibil ACUM. Corpul e tot `EroriDto` (motivul
+  // real vine de la server, nu se inventează aici); ce adaugă clientul e doar
+  // FELUL erorii, ca ecranul să poată oferi „Reia".
+  if (raspuns.status === 503) {
+    const corp = (await raspuns.json().catch(() => null)) as { Erori?: string[] | null } | null;
+    throw new EroareIndisponibil(corp?.Erori ?? ['Serviciul nu răspunde acum. Reîncercați.']);
+  }
   if (!raspuns.ok)
     throw new Error(`${init.method ?? 'GET'} ${cale} → ${raspuns.status} ${raspuns.statusText}`);
   return raspuns;
@@ -86,6 +108,23 @@ export async function posteaza<T>(cale: string, date?: unknown): Promise<T> {
     cale,
     date === undefined ? { method: 'POST' } : { method: 'POST', body: JSON.stringify(date) },
     date !== undefined));
+}
+
+// PATCH — modificarea PARȚIALĂ a unei entități (F20-D7/D8). Verbul apare abia
+// cu ecranele de nomenclator: documentele se scriu ca AGREGAT ÎNTREG (PUT header
+// + linii, 42d), unde un patch parțial ar fi contrazis reconcilierea
+// server-side. Pe OData e invers — nomenclatorul n-are agregat, iar corpul unui
+// PATCH e chiar delta pe care o cere `DataController.Patch` (`Delta<TEntity>`):
+// câmpurile absente rămân NEATINSE. De aceea aici absența unui câmp NU e golire
+// deliberată (convenția 56 e a documentelor, a lui PUT); golirea se scrie
+// explicit, cu `null`.
+//
+// Măsurat pe host: `PATCH api/odata/Partener({id})` ⇒ **204 No Content**, fără
+// `Prefer` și fără `If-Match`; refuzul gardianului ⇒ `422 {Erori:[…]}` (F20-D7),
+// tradus de `trimite` exact ca pe REST. Corpul gol al lui 204 e tratat de
+// `corp<T>`, deci apelantul primește `undefined` — recitirea e a lui.
+export async function modifica<T>(cale: string, date: unknown): Promise<T> {
+  return corp<T>(await trimite(cale, { method: 'PATCH', body: JSON.stringify(date) }, true));
 }
 
 export async function sterge(cale: string): Promise<void> {
@@ -135,7 +174,7 @@ function numeDinDispozitie(antet: string | null): string | null {
 // Mesajul de afișat pentru orice eroare prinsă de UI, ca listă (aceeași formă
 // ca `Erori[]` — panoul de erori are un singur mod de randare).
 export function eroriDin(e: unknown): string[] {
-  if (e instanceof EroareDomeniu) return e.erori;
+  if (e instanceof EroareDomeniu || e instanceof EroareIndisponibil) return e.erori;
   if (e instanceof Error) return [e.message];
   return [String(e)];
 }

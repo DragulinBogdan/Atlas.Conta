@@ -262,3 +262,22 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .tabel-mic tr.saft__exemple details > summary { cursor: pointer; font-weight: 600; }
 .tabel-mic tr.saft__exemple details > table { margin-top: 4px; }
 .tabel-mic tr.saft__exemple details { max-height: 320px; overflow: auto; }
+
+/* ── nomenclatoare (felia 20) ────────────────────────────────────────── */
+/* separatorul de grup din meniu: „Nomenclatoare", „Politici" — etichetă, nu
+   link, deci nu poate fi apăsată din greșeală */
+.cadru__grup {
+  color: #8a939d;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-left: 1px solid var(--linie);
+  padding-left: 12px;
+}
+/* căutarea listei: un singur câmp, pe coloana generată `Cautare` */
+.nomenclator__cautare { min-width: 260px; }
+.nomenclator__titlu-grup {
+  margin: var(--gol) 0 8px;
+  font-size: 13px;
+  color: #46525f;
+}
