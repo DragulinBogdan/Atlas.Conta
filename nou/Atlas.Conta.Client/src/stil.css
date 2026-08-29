@@ -254,3 +254,11 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 /* Componentele S3 stau SUB contul lor: aceeași grilă, altă greutate — sunt
    detalierea unei cifre, nu un rând de sine stătător. */
 .tabel-mic tr.saft__componenta > td { color: #555; font-size: 0.92em; padding-left: 1.2em; }
+/* Exemplele unei cauze de „neincludere": un tabel întreg pliat sub rândul
+   cauzei, deci celula care-l poartă nu are voie să impună `white-space: nowrap`
+   sau alinierea rândurilor de cifre. Se derulează pe verticală ca lista de
+   exemple a avertismentelor — o cauză cu 20 de exemple nu împinge pagina. */
+.tabel-mic tr.saft__exemple > td { padding: 2px 6px 6px; }
+.tabel-mic tr.saft__exemple details > summary { cursor: pointer; font-weight: 600; }
+.tabel-mic tr.saft__exemple details > table { margin-top: 4px; }
+.tabel-mic tr.saft__exemple details { max-height: 320px; overflow: auto; }

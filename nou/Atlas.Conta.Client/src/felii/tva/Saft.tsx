@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router';
 import type { components } from '../../generated/api-types';
 import { labelEnum } from '../../nucleu/campMeta';
 import { descarcaFisier, eroriDin, ia } from '../../nucleu/http';
@@ -39,6 +40,7 @@ import { urlCu, useUrlStare } from '../../nucleu/urlStare';
 type SaftSumar = components['schemas']['SaftSumarDto'];
 type Rezumat = components['schemas']['SaftRezumat'];
 type Neinclus = components['schemas']['SaftNeinclus'];
+type NeinclusAgregat = components['schemas']['NeinclusAgregat'];
 type Exclus = components['schemas']['SaftExclus'];
 type DiferentaCont = components['schemas']['SaftDiferentaCont'];
 type Avertisment = components['schemas']['SaftAvertisment'];
@@ -52,11 +54,10 @@ const LUNI = [
 // serverului, ca lista să nu ofere ce API-ul respinge.
 const AN_MINIM = 2020;
 
-// Câte rânduri de `Neincluse` se randează. Pe scenă sunt câteva; pe o bază de
-// producție pot fi mii, iar un tabel HTML de mii de rânduri îngheață pagina
-// pentru o informație care se citește oricum pe cauze. Restul nu dispare: se
-// spune câte sunt și cauzele se văd toate în rândurile afișate.
-const NEINCLUSE_AFISATE = 200;
+// `Guid.Empty` pe sârmă: „câmpul e prezent, dar nu are nimic în spate". Un FK
+// nenullabil în DTO nu poate lipsi, deci absența se scrie așa — iar un link
+// construit pe el ar deschide un ecran gol.
+const GUID_GOL = '00000000-0000-0000-0000-000000000000';
 
 // Cele două module, cu tot ce diferă între ele într-un singur loc: ruta
 // sumarului, ruta fișierului, numele implicit al descărcării și titlul. Un
@@ -194,7 +195,7 @@ export function Saft() {
             <>
               <SectiuniStoc sumar={sumar} rezumat={rezumat} />
               <CusaturiStoc rezumat={rezumat} />
-              <StocPerCont lista={rezumat.StocPerCont ?? []} rezumat={rezumat} />
+              <StocPerCont lista={rezumat.StocPerCont ?? []} rezumat={rezumat} sumar={sumar} />
               <Excluse lista={excluse} />
             </>
           ) : (
@@ -626,7 +627,18 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
 // registrul contabil poartă conturile de stoc și din note contabile sau din
 // solduri de deschidere fără lot, care n-au ce căuta în stocul fizic. E un fapt
 // de citit înainte de depunere, nu un refuz.
-function StocPerCont({ lista, rezumat }: { lista: DiferentaCont[]; rezumat: Rezumat }) {
+//
+// Simbolul contului e un LINK către fișa lui pe perioada declarației: „raportată,
+// nu blocantă" cere ca omul să poată răspunde la „de unde vine diferența", iar
+// singurul răspuns e lista rândurilor contului pe luna aceea. Perioada nu se
+// calculează aici — sunt `DataStart`/`DataEnd` ale sumarului, adică exact
+// intervalul pe care s-au făcut cifrele de deasupra.
+//
+// `ContId` gol (`Guid.Empty`) = niciun cont în spatele simbolului (diferența e a
+// unei grupări fără cont propriu): fără id nu există fișă, deci nu se pune un
+// link care ar deschide un ecran gol.
+function StocPerCont({ lista, rezumat, sumar }:
+  { lista: DiferentaCont[]; rezumat: Rezumat; sumar: SaftSumar }) {
   if (lista.length === 0) return null;
   return (
     <div className="saft__sectiune">
@@ -652,7 +664,19 @@ function StocPerCont({ lista, rezumat }: { lista: DiferentaCont[]; rezumat: Rezu
           {lista.map((c) => (
             <Fragment key={c.Cont ?? ''}>
               <tr className={(c.Diferenta ?? 0) === 0 ? undefined : 'saft__difera'}>
-                <td>{c.Cont}</td>
+                <td>{c.ContId && c.ContId !== GUID_GOL
+                  ? (
+                    <Link to={urlCu('/fisa-cont', {
+                      contId: c.ContId,
+                      dataStart: sumar.DataStart,
+                      dataEnd: sumar.DataEnd,
+                    })}
+                    >
+                      {c.Cont}
+                    </Link>
+                  )
+                  : c.Cont}
+                </td>
                 <td className="num">{bani(c.ClosingStocFizic ?? 0)}</td>
                 <td className="num">{bani(c.ClosingBalanta ?? 0)}</td>
                 <td className="num">
@@ -732,16 +756,33 @@ function Excluse({ lista }: { lista: Exclus[] }) {
 }
 
 // Nimic nu se pierde (62f): ce n-a putut intra în fișier apare aici cu cauza.
-// Coloanele diferă între module fiindcă și cifrele diferă: pe L un rând neinclus
-// are bază/TVA/debit/credit, pe S are produs, tip de stoc, cantitate și valoare.
-// A afișa coloanele lunarului pe stocuri ar fi însemnat șapte celule goale.
-function Neincluse({ lista, fel }: { lista: Neinclus[]; fel: Fel }) {
+//
+// AGREGAT PER CAUZĂ, ca la D394 și ca avertismentele de mai jos. Tabelul plat de
+// până acum era plafonat la 200 de rânduri și pe o bază reală spunea „afișate
+// primele 200 din 41.000" — adică taman întrebarea la care nu răspundea: CÂTE
+// sunt pe fiecare cauză și cât fac. Acum întregul e vizibil (cauzele sunt
+// mărginite de enum, nu de volumul registrului), iar cazurile nominale sunt la
+// un clic, pliate în `<details>`, cu aceleași coloane ca înainte.
+//
+// Coloanele exemplelor diferă între module fiindcă și cifrele diferă: pe L un
+// rând neinclus are bază/TVA/debit/credit, pe S are produs, tip de stoc,
+// cantitate și valoare. A afișa coloanele lunarului pe stocuri ar fi însemnat
+// șapte celule goale.
+function Neincluse({ lista, fel }: { lista: NeinclusAgregat[]; fel: Fel }) {
   if (lista.length === 0) return null;
-  const afisate = lista.slice(0, NEINCLUSE_AFISATE);
   const stoc = fel === 'S';
+  // O NUMĂRĂTOARE de cazuri peste contoarele serverului, nu o cifră contabilă
+  // (42c privește sold/rest/total, iar cusăturile de mai sus adună deja termeni
+  // trimiși de server). Totalul trebuie să existe: altfel titlul ar spune „4"
+  // acolo unde sunt 41.000 de rânduri, adică ar minți despre mărimea găurii.
+  const cazuri = lista.reduce((s, n) => s + (n.Numar ?? 0), 0);
+  const coloane = stoc ? 5 : 4;
   return (
     <div className="d300__neincluse">
-      <h3>Neincluse în declarație ({numar(lista.length)})</h3>
+      <h3>
+        Neincluse în declarație ({numar(cazuri)} în {numar(lista.length)}{' '}
+        {lista.length === 1 ? 'cauză' : 'cauze'})
+      </h3>
       <p className="indiciu">
         {stoc
           ? 'Rânduri ale registrului de stoc pentru care nu există politică de mișcare sau cont de stoc '
@@ -756,56 +797,96 @@ function Neincluse({ lista, fel }: { lista: Neinclus[]; fel: Fel }) {
         <thead>
           <tr>
             <th>Cauză</th>
-            <th>Secțiune</th>
-            {stoc ? <th>Document</th> : <th>Sens</th>}
-            {stoc ? <th>Produs</th> : <th>Document</th>}
-            {stoc ? <th>Tip stoc</th> : <th>Cont</th>}
-            {stoc ? <th>Semn</th> : <th>Repartitor</th>}
-            {stoc ? <th>Cantitate</th> : <th>Bază</th>}
-            {stoc ? <th>Valoare</th> : <th>TVA</th>}
-            {!stoc && <th>Debit</th>}
-            {!stoc && <th>Credit</th>}
+            <th>Cazuri</th>
             <th>Rânduri</th>
+            {stoc && <th>Cantitate</th>}
+            <th>{stoc ? 'Valoare' : 'Sumă'}</th>
           </tr>
         </thead>
         <tbody>
-          {afisate.map((n, i) => (
-            <tr key={`${n.Cauza}|${n.DocumentId ?? ''}|${n.ContId ?? ''}|${n.RepartitorId ?? ''}|${i}`}>
-              <td>{labelEnum('CauzaNeincludere', n.Cauza)}</td>
-              <td>{n.Sectiune}</td>
-              {stoc ? (
-                <>
-                  <td>{[n.DocumentTip, n.DocumentNumar].filter(Boolean).join(' ')}</td>
-                  <td>{n.ProdusCod}</td>
-                  <td>{labelEnum('TipStoc', n.TipStoc)}</td>
-                  <td className="num">{n.Semn == null ? '±' : semn(n.Semn)}</td>
+          {lista.map((n) => (
+            <Fragment key={n.Cauza ?? ''}>
+              <tr>
+                <td><strong>{labelEnum('CauzaNeincludere', n.Cauza)}</strong></td>
+                <td className="num">{numar(n.Numar ?? 0)}</td>
+                <td className="num">{numar(n.Randuri ?? 0)}</td>
+                {stoc && (
                   <td className="num">{n.Cantitate == null ? '' : cantitate(n.Cantitate)}</td>
-                  <td className="num">{n.Valoare == null ? '' : bani(n.Valoare)}</td>
-                </>
-              ) : (
-                <>
-                  <td>{labelEnum('SensTva', n.Sens)}</td>
-                  <td>{[n.DocumentTip, n.DocumentNumar].filter(Boolean).join(' ')}</td>
-                  <td>{n.ContSimbol}</td>
-                  <td>{n.RepartitorDenumire}</td>
-                  <td className="num">{n.Baza == null ? '' : bani(n.Baza)}</td>
-                  <td className="num">{n.Tva == null ? '' : bani(n.Tva)}</td>
-                  <td className="num">{n.Debit == null ? '' : bani(n.Debit)}</td>
-                  <td className="num">{n.Credit == null ? '' : bani(n.Credit)}</td>
-                </>
+                )}
+                <td className="num">{bani(n.Suma ?? 0)}</td>
+              </tr>
+              {(n.Exemple?.length ?? 0) > 0 && (
+                <tr className="saft__exemple">
+                  <td colSpan={coloane}>
+                    <details>
+                      <summary>
+                        {n.Exemple!.length < (n.Numar ?? 0)
+                          ? `Primele ${numar(n.Exemple!.length)} din ${numar(n.Numar ?? 0)}`
+                          : 'Cazurile'}
+                      </summary>
+                      <ExempleNeincluse lista={n.Exemple!} stoc={stoc} />
+                    </details>
+                  </td>
+                </tr>
               )}
-              <td className="num">{numar(n.Randuri ?? 0)}</td>
-            </tr>
+            </Fragment>
           ))}
         </tbody>
       </table>
-      {lista.length > afisate.length && (
-        <p className="indiciu">
-          Afișate primele {numar(afisate.length)} din {numar(lista.length)} — restul sunt în răspunsul
-          JSON al proiecției, cu aceleași cauze.
-        </p>
-      )}
     </div>
+  );
+}
+
+// Cazurile nominale ale unei cauze — exact tabelul de dinainte de agregare,
+// mutat sub `<details>`. Coloana „Cauză" lipsește: e scrisă pe rândul care le
+// deschide.
+function ExempleNeincluse({ lista, stoc }: { lista: Neinclus[]; stoc: boolean }) {
+  return (
+    <table className="tabel-mic">
+      <thead>
+        <tr>
+          <th>Secțiune</th>
+          {stoc ? <th>Document</th> : <th>Sens</th>}
+          {stoc ? <th>Produs</th> : <th>Document</th>}
+          {stoc ? <th>Tip stoc</th> : <th>Cont</th>}
+          {stoc ? <th>Semn</th> : <th>Repartitor</th>}
+          {stoc ? <th>Cantitate</th> : <th>Bază</th>}
+          {stoc ? <th>Valoare</th> : <th>TVA</th>}
+          {!stoc && <th>Debit</th>}
+          {!stoc && <th>Credit</th>}
+          <th>Rânduri</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lista.map((n, i) => (
+          <tr key={`${n.DocumentId ?? ''}|${n.ContId ?? ''}|${n.RepartitorId ?? ''}|${i}`}>
+            <td>{n.Sectiune}</td>
+            {stoc ? (
+              <>
+                <td>{[n.DocumentTip, n.DocumentNumar].filter(Boolean).join(' ')}</td>
+                <td>{n.ProdusCod}</td>
+                <td>{labelEnum('TipStoc', n.TipStoc)}</td>
+                <td className="num">{n.Semn == null ? '±' : semn(n.Semn)}</td>
+                <td className="num">{n.Cantitate == null ? '' : cantitate(n.Cantitate)}</td>
+                <td className="num">{n.Valoare == null ? '' : bani(n.Valoare)}</td>
+              </>
+            ) : (
+              <>
+                <td>{labelEnum('SensTva', n.Sens)}</td>
+                <td>{[n.DocumentTip, n.DocumentNumar].filter(Boolean).join(' ')}</td>
+                <td>{n.ContSimbol}</td>
+                <td>{n.RepartitorDenumire}</td>
+                <td className="num">{n.Baza == null ? '' : bani(n.Baza)}</td>
+                <td className="num">{n.Tva == null ? '' : bani(n.Tva)}</td>
+                <td className="num">{n.Debit == null ? '' : bani(n.Debit)}</td>
+                <td className="num">{n.Credit == null ? '' : bani(n.Credit)}</td>
+              </>
+            )}
+            <td className="num">{numar(n.Randuri ?? 0)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
