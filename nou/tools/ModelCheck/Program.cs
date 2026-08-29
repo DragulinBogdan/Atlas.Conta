@@ -183,6 +183,73 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     Console.WriteLine($"ReguliStoc:      {await ctx.ReguliStoc.CountAsync()}");
     Console.WriteLine($"ReguliContare:   {await ctx.ReguliContare.CountAsync()}");
 
+    // ═══ F20-D1 — ORACOLUL căutării fără diacritice ═══
+    // Coloana `Cautare` e GENERATĂ de Postgres (`lower` + `translate`);
+    // `Cautare.Normalizeaza` e aceeași transformare în C#, iar clientul o va
+    // aplica literalului tastat înainte de a-l trimite. Dacă cele două ar
+    // diverge (un caracter în plus în tabel, un `lower` care nu coincide),
+    // căutarea n-ar da eroare — ar TĂCEA, ceea ce e mult mai rău. Proba: pentru
+    // TOATE rândurile, valoarea citită din bază == valoarea calculată în
+    // memorie. Entitățile se descoperă din model exact ca în `OnModelCreating`
+    // (interfața + proprietatea DECLARATĂ pe tip — sub TPT coloana e a bazei),
+    // deci un nomenclator nou intră automat și în probă.
+    // SQL brut ⇒ `GCRecord = 0` explicit (66).
+    {
+        Check("Cautare: tabelul De/La are lungimi egale",
+            Cautare.De.Length == Cautare.La.Length);
+        Check("Cautare: tabelul De n-are caractere duplicate",
+            Cautare.De.Distinct().Count() == Cautare.De.Length);
+
+        var conn = ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+            await conn.OpenAsync();
+        var totalRanduri = 0;
+        var totalEntitati = 0;
+        foreach (var et in ctx.Model.GetEntityTypes()) {
+            var clr = et.ClrType;
+            if (clr == null || !typeof(ICuCautare).IsAssignableFrom(clr))
+                continue;
+            var propCautare = clr.GetProperty(Cautare.NumeColoana);
+            if (propCautare == null || propCautare.DeclaringType != clr)
+                continue;
+            var tabel = et.GetTableName();
+            if (tabel == null)
+                continue;
+            var obiectStocare = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier
+                .Table(tabel, et.GetSchema());
+            string Coloana(string membru) => et.FindProperty(membru)?.GetColumnName(obiectStocare);
+            var colCod = Coloana("Cod") ?? Coloana("Simbol");
+            var colDenumire = Coloana("Denumire");
+            var colCautare = Coloana(Cautare.NumeColoana);
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"select {(colCod == null ? "null" : $"\"{colCod}\"")}, \"{colDenumire}\", \"{colCautare}\" "
+                + $"from \"{tabel}\" where \"GCRecord\" = 0";
+            var neconforme = 0;
+            var randuri = 0;
+            string exemplu = null;
+            using (var cititor = await cmd.ExecuteReaderAsync()) {
+                while (await cititor.ReadAsync()) {
+                    randuri++;
+                    var cod = cititor.IsDBNull(0) ? null : cititor.GetString(0);
+                    var denumire = cititor.IsDBNull(1) ? null : cititor.GetString(1);
+                    var dinBaza = cititor.IsDBNull(2) ? null : cititor.GetString(2);
+                    var asteptat = Cautare.Compune(cod, denumire);
+                    if (dinBaza == asteptat)
+                        continue;
+                    neconforme++;
+                    exemplu ??= $"„{cod}” / „{denumire}” ⇒ SQL „{dinBaza}” vs C# „{asteptat}”";
+                }
+            }
+            totalRanduri += randuri;
+            totalEntitati++;
+            Check($"Cautare == Normalizeaza pe {clr.Name} ({randuri} rânduri)"
+                + (neconforme > 0 ? $" — {neconforme} neconforme, ex. {exemplu}" : ""), neconforme == 0);
+        }
+        Console.WriteLine($"Cautare: {totalEntitati} entități ICuCautare, {totalRanduri} rânduri verificate.");
+    }
+
     // DIM-3: garda mapării PLATE — [Column] trebuie să conserve schema fostului
     // owned (round-trip insert/reread/update pe FK-ul plat al regulii de contare;
     // o nepotrivire de nume de coloană ar pica aici, nu în producție).

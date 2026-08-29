@@ -337,6 +337,45 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasFilter("\"Semn\" IS NULL AND \"GCRecord\" = 0");
 
             AplicaScaraNumerica(modelBuilder);
+            AplicaColoanaCautare(modelBuilder);
+        }
+
+        // Căutarea fără diacritice (felia 20, F20-D1): coloană GENERATĂ STORED
+        // pe fiecare nomenclator care declară `ICuCautare`. Configurare
+        // GENERICĂ — o buclă, nu 14 blocuri copiate: prezența interfeței e
+        // toată declarația, iar SQL-ul vine dintr-o singură sursă (`Cautare.
+        // ExpresieSql`), aceeași care ajunge în migrație și în oracolul din
+        // ModelCheck.
+        //
+        // Trei reguli, toate deduse din model (nicio listă de tipuri aici):
+        //   * TPT — proprietatea bazei apare pe FIECARE derivată, dar coloana
+        //     aparține tabelului care o DECLARĂ. Filtrul `DeclaringType == clr`
+        //     pune o singură coloană pe `Repartitor`, care acoperă Partener/
+        //     Gestiune/Angajat/UnitateInterna/ContPropriu.
+        //   * numele coloanei de cod se citește din entitate: `Cod`, altfel
+        //     `Simbol` (planul de conturi), altfel doar denumirea.
+        //   * `Denumire` e obligatorie — un nomenclator care ar declara
+        //     interfața fără ea ar produce o coloană tăcut inutilă, deci e
+        //     eroare la construirea modelului (ca gardianul scării).
+        private static void AplicaColoanaCautare(ModelBuilder modelBuilder) {
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
+                var clr = entityType.ClrType;
+                if (clr == null || !typeof(ICuCautare).IsAssignableFrom(clr))
+                    continue;
+                var proprietate = clr.GetProperty(Cautare.NumeColoana);
+                if (proprietate == null || proprietate.DeclaringType != clr)
+                    continue;
+                if (clr.GetProperty("Denumire") == null)
+                    throw new InvalidOperationException(
+                        $"{clr.Name} declară ICuCautare dar n-are `Denumire` — coloana generată " +
+                        "n-ar avea ce normaliza.");
+                var coloanaCod =
+                    clr.GetProperty("Cod") != null ? "Cod" :
+                    clr.GetProperty("Simbol") != null ? "Simbol" : null;
+                modelBuilder.Entity(clr).Property(Cautare.NumeColoana)
+                    .HasComputedColumnSql(Cautare.ExpresieSql(coloanaCod, "Denumire"), stored: true)
+                    .ValueGeneratedOnAddOrUpdate();
+            }
         }
 
         // Scara fixă pe TOATE coloanele zecimale ale modelului (vezi `Scara`

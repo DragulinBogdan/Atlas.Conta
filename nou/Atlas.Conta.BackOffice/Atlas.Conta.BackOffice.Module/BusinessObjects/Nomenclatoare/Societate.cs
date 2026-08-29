@@ -185,10 +185,28 @@ public class Societate : BaseObject {
     // aceluiași rând H.2 enumeră doar OPT valori (fără NORMA14/ONG/ONGE/BNR6) —
     // o contradicție internă a xlsx-ului. Lista de aici e cea din DESCRIERE, cea
     // completă; dacă DUK respinge vreuna, se măsoară la V3 și se taie atunci.
-    public static readonly IReadOnlyList<string> BazeContabile = [
-        "A", "I", "IFRS", "BANK", "INSURANCE", "NORMA39",
-        "IFN", "NORMA36", "NORMA14", "ONG", "ONGE", "BNR6",
+    // Descrierile de mai sus devin DATE (felia 20, F20-D6): clientul React
+    // trebuie să arate operatorului ce înseamnă „NORMA39", iar singurul loc unde
+    // scria asta era comentariul. Perechea e sursa; lista de coduri
+    // (`BazeContabile`, pe care o verifică gardianul) se DERIVĂ din ea — o a
+    // doua listă paralelă s-ar desincroniza tăcut exact la adăugarea unui cod.
+    public static readonly IReadOnlyList<(string Cod, string Descriere)> BazeContabileDescrise = [
+        ("A", "Contabilitatea angajamentelor, partidă dublă + planul general (OMFP 1802)"),
+        ("I", "Invoice Accounting: nerezidenți / contribuabili cu decont special de TVA"),
+        ("IFRS", "Partidă dublă + OMFP 2844/2016 (planul IFRS)"),
+        ("BANK", "Instituții de credit (planul pentru bănci)"),
+        ("INSURANCE", "Societăți de asigurări"),
+        ("NORMA39", "Leasing / investiții financiare, IFRS pe Norma ASF 39/2015"),
+        ("IFN", "Instituții financiare nebancare (Reg. BNR 17/2015)"),
+        ("NORMA36", "Brokeraj de asigurări / reasigurări (Norma ASF 36/2015)"),
+        ("NORMA14", "Pensii private (Norma ASF 14/2015)"),
+        ("ONG", "Persoane juridice fără scop patrimonial (OMFP 3103/2017)"),
+        ("ONGE", "ONG cu cod de TVA pentru activitate economică"),
+        ("BNR6", "Instituții de plată, societăți financiare nebancare (Ordin BNR 6)"),
     ];
+
+    public static readonly IReadOnlyList<string> BazeContabile =
+        BazeContabileDescrise.Select(b => b.Cod).ToList();
 
     public const string BazaContabilaImplicita = "A";
 }

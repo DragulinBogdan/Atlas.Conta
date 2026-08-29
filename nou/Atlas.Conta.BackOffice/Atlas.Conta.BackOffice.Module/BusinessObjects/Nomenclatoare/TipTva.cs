@@ -11,7 +11,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // ca atribute (SAF-T e direcțional: serii separate livrare/achiziție).
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class TipTva : BaseObject {
+public class TipTva : BaseObject, ICuCautare {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     public virtual decimal Cota { get; set; }
@@ -34,6 +34,12 @@ public class TipTva : BaseObject {
     // Maparea D406 (nomenclatorul ANAF de coduri de taxă, direcțional).
     public virtual string CodSafTLivrare { get; set; }
     public virtual string CodSafTAchizitie { get; set; }
+
+    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
+    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    [XafDisplayName("Căutare")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    public virtual string Cautare { get; set; }
     // Fosta `CategorieD394` (36d) a MURIT la felia 14: tipul de operațiune D394
     // e direcțional (N21 = L pe livrare, A pe achiziție), deci e politică
     // `(TipTva × Sens) → tip` — `MapareD394` —, nu atribut pe tip (D4-D2).

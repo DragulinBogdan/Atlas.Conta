@@ -138547,6 +138547,10 @@
           "Denumire": {
             "type": "string",
             "nullable": true
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -138580,6 +138584,10 @@
           "ContImplicit": {
             "$ref": "#/components/schemas/Cont"
           },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
+          },
           "Marca": {
             "type": "string",
             "nullable": true
@@ -138611,6 +138619,10 @@
           "ContImplicitId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "Cautare": {
+            "type": "string",
             "nullable": true
           },
           "Marca": {
@@ -139376,6 +139388,10 @@
           },
           "Natura": {
             "$ref": "#/components/schemas/NaturaClasa"
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -139394,6 +139410,10 @@
           "Denumire": {
             "type": "string",
             "nullable": true
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -139410,6 +139430,10 @@
             "nullable": true
           },
           "Denumire": {
+            "type": "string",
+            "nullable": true
+          },
+          "Cautare": {
             "type": "string",
             "nullable": true
           }
@@ -139451,6 +139475,10 @@
           },
           "RolTert": {
             "$ref": "#/components/schemas/RolTertCont"
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -139483,6 +139511,10 @@
           },
           "ContImplicit": {
             "$ref": "#/components/schemas/Cont"
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           },
           "Iban": {
             "type": "string",
@@ -141882,6 +141914,10 @@
           },
           "ContImplicit": {
             "$ref": "#/components/schemas/Cont"
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -141910,6 +141946,10 @@
           "ContImplicitId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "Cautare": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -142018,6 +142058,10 @@
           "CodCnp": {
             "type": "integer",
             "format": "int32"
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -143644,6 +143688,10 @@
           "ContImplicit": {
             "$ref": "#/components/schemas/Cont"
           },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
+          },
           "CodFiscal": {
             "type": "string",
             "nullable": true
@@ -143733,6 +143781,10 @@
           "ContImplicitId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "Cautare": {
+            "type": "string",
             "nullable": true
           },
           "CodFiscal": {
@@ -143919,6 +143971,10 @@
             "maxLength": 8,
             "type": "string",
             "nullable": true
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -143956,6 +144012,10 @@
             "maxLength": 8,
             "type": "string",
             "nullable": true
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -143972,6 +144032,10 @@
             "nullable": true
           },
           "Denumire": {
+            "type": "string",
+            "nullable": true
+          },
+          "Cautare": {
             "type": "string",
             "nullable": true
           }
@@ -144324,6 +144388,10 @@
           },
           "ContImplicit": {
             "$ref": "#/components/schemas/Cont"
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -145918,6 +145986,10 @@
           "Denumire": {
             "type": "string",
             "nullable": true
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -145948,6 +146020,10 @@
           },
           "TipTvaImplicit": {
             "$ref": "#/components/schemas/TipTva"
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -145981,6 +146057,10 @@
           },
           "ContImplicit": {
             "$ref": "#/components/schemas/Cont"
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -146007,6 +146087,10 @@
           "ContImplicitId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "Cautare": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -146095,6 +146179,10 @@
             "nullable": true
           },
           "CodSafTAchizitie": {
+            "type": "string",
+            "nullable": true
+          },
+          "Cautare": {
             "type": "string",
             "nullable": true
           }
@@ -146481,6 +146569,10 @@
           },
           "ContImplicit": {
             "$ref": "#/components/schemas/Cont"
+          },
+          "Cautare": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -146499,6 +146591,10 @@
           },
           "Denumire": {
             "maxLength": 256,
+            "type": "string",
+            "nullable": true
+          },
+          "Cautare": {
             "type": "string",
             "nullable": true
           }

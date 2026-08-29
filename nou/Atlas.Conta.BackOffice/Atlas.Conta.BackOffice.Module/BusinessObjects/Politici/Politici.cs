@@ -17,7 +17,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Ancoră seed care oglindește clasele 1:1 (decizia 20) — doar FK + UI.
 [NavigationItem("Politici")]
 [XafDefaultProperty(nameof(Denumire))]
-public class TipDocument : BaseObject {
+public class TipDocument : BaseObject, ICuCautare {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     // Numele CLR al clasei derivate corespunzătoare (ex. "FacturaIntrare").
@@ -30,6 +30,12 @@ public class TipDocument : BaseObject {
     // vine în pașii următori.
     public virtual Guid? TipTvaImplicitId { get; set; }
     public virtual TipTva TipTvaImplicit { get; set; }
+
+    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
+    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    [XafDisplayName("Căutare")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    public virtual string Cautare { get; set; }
 }
 
 // Regula de alimentare a registrului de stoc: tip document × latură × filtru

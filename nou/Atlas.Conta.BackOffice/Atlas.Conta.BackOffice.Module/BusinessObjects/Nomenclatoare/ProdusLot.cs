@@ -14,7 +14,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class Produs : BaseObject {
+public class Produs : BaseObject, ICuCautare {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     // Unitatea de măsură ca TEXT LIBER, cum a fost dintotdeauna. RĂMÂNE lângă
@@ -48,6 +48,12 @@ public class Produs : BaseObject {
         SkipNullOrEmptyValues = true,
         CustomMessageTemplate = "Codul NC are exact 8 cifre (sau rămâne gol).")]
     public virtual string CodNc { get; set; }
+
+    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
+    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    [XafDisplayName("Căutare")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    public virtual string Cautare { get; set; }
 }
 
 [NavigationItem("Nomenclatoare")]

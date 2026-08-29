@@ -10,17 +10,23 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class ClasaProdus : BaseObject {
+public class ClasaProdus : BaseObject, ICuCautare {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     // Doar clasele cu Natura=Stoc intră în regulile de stoc; cele tehnice
     // (TVA, diferențe) participă numai la contare.
     public virtual NaturaClasa Natura { get; set; }
+
+    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
+    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    [XafDisplayName("Căutare")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    public virtual string Cautare { get; set; }
 }
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class TipMaterial : BaseObject {
+public class TipMaterial : BaseObject, ICuCautare {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     // Fiecare Tip aparține unei Clase (10 §2) — de aceea baza detaliului poartă
@@ -35,4 +41,10 @@ public class TipMaterial : BaseObject {
     // (SmartLookup revertat, decizia 40d/gate).
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContImplicit { get; set; }
+
+    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
+    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    [XafDisplayName("Căutare")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    public virtual string Cautare { get; set; }
 }

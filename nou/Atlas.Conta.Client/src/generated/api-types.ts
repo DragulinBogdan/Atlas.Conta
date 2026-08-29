@@ -4561,6 +4561,7 @@ export interface components {
             ID?: string;
             Cod?: string | null;
             Denumire?: string | null;
+            Cautare?: string | null;
         };
         Angajat: {
             /** Format: uuid */
@@ -4572,6 +4573,7 @@ export interface components {
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
+            Cautare?: string | null;
             Marca?: string | null;
         };
         AngajatResourceDelta: {
@@ -4583,6 +4585,7 @@ export interface components {
             Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
+            Cautare?: string | null;
             Marca?: string | null;
         };
         AsmDistribuireDto: {
@@ -4862,18 +4865,21 @@ export interface components {
             Cod?: string | null;
             Denumire?: string | null;
             Natura?: components["schemas"]["NaturaClasa"];
+            Cautare?: string | null;
         };
         CodEconomic: {
             /** Format: uuid */
             ID?: string;
             Cod?: string | null;
             Denumire?: string | null;
+            Cautare?: string | null;
         };
         CodFunctional: {
             /** Format: uuid */
             ID?: string;
             Cod?: string | null;
             Denumire?: string | null;
+            Cautare?: string | null;
         };
         Cont: {
             /** Format: uuid */
@@ -4887,6 +4893,7 @@ export interface components {
             Sumator?: boolean;
             DimensiuniObligatorii?: components["schemas"]["DimensiuneFlags"];
             RolTert?: components["schemas"]["RolTertCont"];
+            Cautare?: string | null;
         };
         ContPropriu: {
             /** Format: uuid */
@@ -4898,6 +4905,7 @@ export interface components {
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
+            Cautare?: string | null;
             Iban?: string | null;
             EsteBanca?: boolean;
         };
@@ -5720,6 +5728,7 @@ export interface components {
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
+            Cautare?: string | null;
         };
         GestiuneResourceDelta: {
             /** Format: uuid */
@@ -5730,6 +5739,7 @@ export interface components {
             Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
+            Cautare?: string | null;
         };
         GroupingInfo: {
             Selector?: string | null;
@@ -5769,6 +5779,7 @@ export interface components {
             CodAuto?: string | null;
             /** Format: int32 */
             CodCnp?: number;
+            Cautare?: string | null;
         };
         JurnalRand: {
             /** Format: uuid */
@@ -6342,6 +6353,7 @@ export interface components {
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
+            Cautare?: string | null;
             CodFiscal?: string | null;
             RegistruComert?: string | null;
             TipPersoana?: components["schemas"]["TipPersoana"];
@@ -6369,6 +6381,7 @@ export interface components {
             Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
+            Cautare?: string | null;
             CodFiscal?: string | null;
             RegistruComert?: string | null;
             TipPersoana?: components["schemas"]["TipPersoana"];
@@ -6428,6 +6441,7 @@ export interface components {
             UnitateMasuraId?: string | null;
             UnitateMasura?: components["schemas"]["UnitateMasura"];
             CodNc?: string | null;
+            Cautare?: string | null;
         };
         ProdusResourceDelta: {
             /** Format: uuid */
@@ -6440,12 +6454,14 @@ export interface components {
             /** Format: uuid */
             UnitateMasuraId?: string | null;
             CodNc?: string | null;
+            Cautare?: string | null;
         };
         Proiect: {
             /** Format: uuid */
             ID?: string;
             Cod?: string | null;
             Denumire?: string | null;
+            Cautare?: string | null;
         };
         RandD300: {
             /** Format: uuid */
@@ -6572,6 +6588,7 @@ export interface components {
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
+            Cautare?: string | null;
         };
         RestNedescarcatRandDto: {
             /** Format: uuid */
@@ -7145,6 +7162,7 @@ export interface components {
             ID?: string;
             Cod?: string | null;
             Denumire?: string | null;
+            Cautare?: string | null;
         };
         TipDocument: {
             /** Format: uuid */
@@ -7155,6 +7173,7 @@ export interface components {
             /** Format: uuid */
             TipTvaImplicitId?: string | null;
             TipTvaImplicit?: components["schemas"]["TipTva"];
+            Cautare?: string | null;
         };
         TipMaterial: {
             /** Format: uuid */
@@ -7167,6 +7186,7 @@ export interface components {
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
+            Cautare?: string | null;
         };
         TipMaterialResourceDelta: {
             /** Format: uuid */
@@ -7177,6 +7197,7 @@ export interface components {
             ClasaId?: string;
             /** Format: uuid */
             ContImplicitId?: string | null;
+            Cautare?: string | null;
         };
         /** @enum {string} */
         TipOperatiuneD394: "L" | "A" | "AI" | "LS" | "AS" | "V" | "C" | "N";
@@ -7203,6 +7224,7 @@ export interface components {
             ContTvaNeexigibil?: components["schemas"]["Cont"];
             CodSafTLivrare?: string | null;
             CodSafTAchizitie?: string | null;
+            Cautare?: string | null;
         };
         TrezorerieLinieReadDto: {
             /** Format: uuid */
@@ -7337,12 +7359,14 @@ export interface components {
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
+            Cautare?: string | null;
         };
         UnitateMasura: {
             /** Format: uuid */
             ID?: string;
             Cod?: string | null;
             Denumire?: string | null;
+            Cautare?: string | null;
         };
     };
     responses: never;

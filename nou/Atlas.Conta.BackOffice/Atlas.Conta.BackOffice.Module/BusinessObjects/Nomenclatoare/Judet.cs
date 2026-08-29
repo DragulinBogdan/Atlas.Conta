@@ -34,7 +34,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
 [ForbidCRUD("ListView", "DetailView")]
-public class Judet : BaseObject {
+public class Judet : BaseObject, ICuCautare {
     // Codul ISO 3166-2, cu prefixul de țară: „RO-CJ", „RO-B". Unic (index
     // filtrat pe `GCRecord = 0` în DbContext) și cheia seed-ului.
     [MaxLength(5)]
@@ -56,4 +56,10 @@ public class Judet : BaseObject {
     // 51 Călărași, 52 Giurgiu.
     [XafDisplayName("Cod CNP")]
     public virtual int CodCnp { get; set; }
+
+    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
+    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    [XafDisplayName("Căutare")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    public virtual string Cautare { get; set; }
 }

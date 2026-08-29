@@ -286,7 +286,14 @@ namespace Atlas.Conta.BackOffice.WebApi {
             }, Configuration);
 
             services
-                .AddControllers()
+                // F20-D7 (închide 70-r1): refuzurile de domeniu pe rutele
+                // `api/odata/*` ies `422 EroriDto`, nu `400 text/plain`.
+                // Filtrul se înregistrează AICI (nu în Module — regula 42a:
+                // tratarea HTTP e a tierului), cu `Order = int.MaxValue` ca să
+                // fie cel mai din interior și să apuce înaintea filtrului
+                // DevExpress; vezi `RefuzDomeniuOdataFilter` pentru mecanică.
+                .AddControllers(options => options.Filters.Add<API.Odata.RefuzDomeniuOdataFilter>(
+                    API.Odata.RefuzDomeniuOdataFilter.OrdineInterioara))
                 .AddOData((options, serviceProvider) => {
                     options
                         .AddRouteComponents("api/odata", new EdmModelBuilder(serviceProvider).GetEdmModel(), Microsoft.OData.ODataVersion.V401, _routeServices => {

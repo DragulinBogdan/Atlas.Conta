@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -70,9 +71,38 @@ static class MetadataDump {
                 tipuri[t.Name] = new TipMeta(DefaultProperty(t), Membri(t));
         }
 
-        return JsonSerializer.Serialize(new DumpMeta(enumuri, tipuri), Optiuni)
+        return JsonSerializer.Serialize(new DumpMeta(enumuri, Nomenclatoare(), tipuri), Optiuni)
             .ReplaceLineEndings("\n") + "\n";
     }
+
+    // ── A treia secțiune: `Nomenclatoare` (felia 20, F20-D6) ───────────────
+    //
+    // Liste care sunt LEGE ÎN COD (`static readonly` pe tipuri C#, deciziile
+    // 73d/74b), deci invizibile pe OData, pe REST și în `openapi.json` — dar de
+    // care clientul are nevoie ca să compună un `SelectBox` sau să traducă un
+    // cod în denumire. NU devin entități: motivația scrisă în
+    // `SaftReguli.cs:311-316` („lista e a legii, nu variază per client") rămâne.
+    //
+    // DECLARATĂ EXPLICIT, nu prin reflecție pe câmpuri statice: prezența în dump
+    // e o decizie per listă (ca `[TipDetaliu]`), nu un efect colateral al
+    // faptului că cineva a scris `public static readonly`. Ordinea cheilor e cea
+    // de mai jos — `Dictionary` păstrează ordinea de inserție la serializare,
+    // deci dump-ul e determinist fără sortare.
+    static Dictionary<string, object> Nomenclatoare() => new() {
+        // `TaxAccountingBasis` din antetul SAF-T: cele 12 planuri ANAF.
+        ["BazeContabile"] = Societate.BazeContabileDescrise
+            .Select(b => new CodDescriere(b.Cod, b.Descriere)).ToArray(),
+        // Cele 19 tipuri de mișcare de stoc admise de D406 S.
+        ["CoduriMiscare"] = SaftReguli.CoduriMiscare
+            .Select(c => new CodDenumire(c.Key, c.Value)).ToArray(),
+        // Tabelul de normalizare al coloanei generate `Cautare` (F20-D1): TS-ul
+        // normalizează literalul tastat cu ACELAȘI tabel, nu cu o copie.
+        ["Cautare"] = new TabelCautare(Cautare.De, Cautare.La),
+    };
+
+    sealed record CodDescriere(string Cod, string Descriere);
+    sealed record CodDenumire(string Cod, string Denumire);
+    sealed record TabelCautare(string De, string La);
 
     static bool EsteRelevant(Type t) {
         if (!t.IsPublic || t.Namespace == null)
@@ -149,6 +179,7 @@ static class MetadataDump {
 
     sealed record DumpMeta(
         SortedDictionary<string, Dictionary<string, string>> Enumuri,
+        Dictionary<string, object> Nomenclatoare,
         SortedDictionary<string, TipMeta> Tipuri);
 
     sealed record TipMeta(string DefaultProperty, SortedDictionary<string, string> Membri);

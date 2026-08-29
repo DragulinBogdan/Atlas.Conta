@@ -171,10 +171,145 @@
       "ProductieNeterminata": "ProductieNeterminata"
     }
   },
+  "Nomenclatoare": {
+    "BazeContabile": [
+      {
+        "Cod": "A",
+        "Descriere": "Contabilitatea angajamentelor, partidă dublă + planul general (OMFP 1802)"
+      },
+      {
+        "Cod": "I",
+        "Descriere": "Invoice Accounting: nerezidenți / contribuabili cu decont special de TVA"
+      },
+      {
+        "Cod": "IFRS",
+        "Descriere": "Partidă dublă + OMFP 2844/2016 (planul IFRS)"
+      },
+      {
+        "Cod": "BANK",
+        "Descriere": "Instituții de credit (planul pentru bănci)"
+      },
+      {
+        "Cod": "INSURANCE",
+        "Descriere": "Societăți de asigurări"
+      },
+      {
+        "Cod": "NORMA39",
+        "Descriere": "Leasing / investiții financiare, IFRS pe Norma ASF 39/2015"
+      },
+      {
+        "Cod": "IFN",
+        "Descriere": "Instituții financiare nebancare (Reg. BNR 17/2015)"
+      },
+      {
+        "Cod": "NORMA36",
+        "Descriere": "Brokeraj de asigurări / reasigurări (Norma ASF 36/2015)"
+      },
+      {
+        "Cod": "NORMA14",
+        "Descriere": "Pensii private (Norma ASF 14/2015)"
+      },
+      {
+        "Cod": "ONG",
+        "Descriere": "Persoane juridice fără scop patrimonial (OMFP 3103/2017)"
+      },
+      {
+        "Cod": "ONGE",
+        "Descriere": "ONG cu cod de TVA pentru activitate economică"
+      },
+      {
+        "Cod": "BNR6",
+        "Descriere": "Instituții de plată, societăți financiare nebancare (Ordin BNR 6)"
+      }
+    ],
+    "CoduriMiscare": [
+      {
+        "Cod": "10",
+        "Denumire": "Achiziție"
+      },
+      {
+        "Cod": "20",
+        "Denumire": "Producție"
+      },
+      {
+        "Cod": "30",
+        "Denumire": "Vânzare"
+      },
+      {
+        "Cod": "40",
+        "Denumire": "Retur produse vândute"
+      },
+      {
+        "Cod": "50",
+        "Denumire": "Retur produse achiziționate"
+      },
+      {
+        "Cod": "60",
+        "Denumire": "Reduceri comerciale primite"
+      },
+      {
+        "Cod": "70",
+        "Denumire": "Consum"
+      },
+      {
+        "Cod": "80",
+        "Denumire": "Transfer intern"
+      },
+      {
+        "Cod": "90",
+        "Denumire": "Cheltuieli ulterioare capitalizate"
+      },
+      {
+        "Cod": "100",
+        "Denumire": "Diferențe de preț în plus"
+      },
+      {
+        "Cod": "101",
+        "Denumire": "Diferențe de preț în minus"
+      },
+      {
+        "Cod": "110",
+        "Denumire": "Plus de inventar"
+      },
+      {
+        "Cod": "120",
+        "Denumire": "Minus de inventar"
+      },
+      {
+        "Cod": "130",
+        "Denumire": "Ajustări pentru depreciere"
+      },
+      {
+        "Cod": "140",
+        "Denumire": "Reluări ale ajustărilor pentru depreciere"
+      },
+      {
+        "Cod": "150",
+        "Denumire": "Bunuri acordate cu titlu gratuit"
+      },
+      {
+        "Cod": "160",
+        "Denumire": "Bunuri degradate"
+      },
+      {
+        "Cod": "170",
+        "Denumire": "Bunuri expirate"
+      },
+      {
+        "Cod": "180",
+        "Denumire": "Alte tranzacții (fără cantitate)"
+      }
+    ],
+    "Cautare": {
+      "De": "ăâîșşțţéèêëáàäöüçñ",
+      "La": "aaisstteeeeaaaoucn"
+    }
+  },
   "Tipuri": {
     "Angajament": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"
@@ -185,6 +320,7 @@
       "Membri": {
         "Activ": "Activ",
         "Calitati": "Calitati",
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "ContImplicit": "ContImplicit",
         "ContImplicitId": "ContImplicit",
@@ -281,6 +417,7 @@
     "ClasaProdus": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID",
@@ -290,6 +427,7 @@
     "CodEconomic": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"
@@ -298,6 +436,7 @@
     "CodFunctional": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"
@@ -306,6 +445,7 @@
     "Cont": {
       "DefaultProperty": "Simbol",
       "Membri": {
+        "Cautare": "Căutare",
         "Denumire": "Denumire",
         "DimensiuniObligatorii": "DimensiuniObligatorii",
         "Functie": "Functie",
@@ -322,6 +462,7 @@
       "Membri": {
         "Activ": "Activ",
         "Calitati": "Calitati",
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "ContImplicit": "ContImplicit",
         "ContImplicitId": "ContImplicit",
@@ -630,6 +771,7 @@
       "Membri": {
         "Activ": "Activ",
         "Calitati": "Calitati",
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "ContImplicit": "ContImplicit",
         "ContImplicitId": "ContImplicit",
@@ -693,6 +835,7 @@
     "Judet": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "CodAuto": "Indicativ auto",
         "CodCnp": "Cod CNP",
@@ -919,6 +1062,7 @@
       "Membri": {
         "Activ": "Activ",
         "Calitati": "Calitati",
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "CodFiscal": "CodFiscal",
         "CodPostal": "Cod poștal",
@@ -1059,6 +1203,7 @@
     "Produs": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "CodNc": "Cod NC",
         "Denumire": "Denumire",
@@ -1073,6 +1218,7 @@
     "Proiect": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"
@@ -1288,6 +1434,7 @@
       "Membri": {
         "Activ": "Activ",
         "Calitati": "Calitati",
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "ContImplicit": "ContImplicit",
         "ContImplicitId": "ContImplicit",
@@ -1368,6 +1515,7 @@
     "SursaFinantare": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"
@@ -1376,6 +1524,7 @@
     "TipDocument": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "ClrType": "ClrType",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -1387,6 +1536,7 @@
     "TipMaterial": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Clasa": "Clasa",
         "ClasaId": "Clasa",
         "Cod": "Cod",
@@ -1399,6 +1549,7 @@
     "TipTva": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "CodSafTAchizitie": "CodSafTAchizitie",
         "CodSafTLivrare": "CodSafTLivrare",
@@ -1427,6 +1578,7 @@
       "Membri": {
         "Activ": "Activ",
         "Calitati": "Calitati",
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "ContImplicit": "ContImplicit",
         "ContImplicitId": "ContImplicit",
@@ -1437,6 +1589,7 @@
     "UnitateMasura": {
       "DefaultProperty": "Cod",
       "Membri": {
+        "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"

@@ -12,7 +12,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // calitățile transversale sunt flags, nu clase.
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public abstract class Repartitor : BaseObject {
+public abstract class Repartitor : BaseObject, ICuCautare {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     public virtual CalitateRepartitor Calitati { get; set; }
@@ -26,6 +26,12 @@ public abstract class Repartitor : BaseObject {
     // decizia 40d/gate).
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContImplicit { get; set; }
+
+    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
+    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    [XafDisplayName("Căutare")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    public virtual string Cautare { get; set; }
 }
 
 // Furnizor/client = rol contextual dat de poziția pe document (decizia 16).

@@ -27,7 +27,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Cod))]
 [ForbidCRUD("ListView", "DetailView")]
-public class UnitateMasura : BaseObject {
+public class UnitateMasura : BaseObject, ICuCautare {
     // Codul UN/ECE („H87", „KGM", „MTQ"). Unic, index filtrat pe `GCRecord = 0`
     // (ca `Judet.Cod`), cheia de idempotență a seed-ului.
     //
@@ -42,4 +42,10 @@ public class UnitateMasura : BaseObject {
     // `TST`, `XAL`). 256 = `Description` din `UOMTableEntry`.
     [MaxLength(256)]
     public virtual string Denumire { get; set; }
+
+    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
+    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    [XafDisplayName("Căutare")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    public virtual string Cautare { get; set; }
 }

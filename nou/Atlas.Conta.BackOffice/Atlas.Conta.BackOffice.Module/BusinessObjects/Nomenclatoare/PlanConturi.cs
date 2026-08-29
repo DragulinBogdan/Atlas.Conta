@@ -7,7 +7,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Decizia 10: plan doar sintetic; analiticele se derivă din dimensiuni la raportare.
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Simbol))]
-public class Cont : BaseObject {
+public class Cont : BaseObject, ICuCautare {
     public virtual string Simbol { get; set; }
     public virtual string Denumire { get; set; }
     public virtual Guid? ParinteId { get; set; }
@@ -25,4 +25,10 @@ public class Cont : BaseObject {
     // profil (seed), nu simbol în cod; bugetarul îl lasă `Niciunul` peste tot.
     [XafDisplayName("Rol de terț (SAF-T)")]
     public virtual RolTertCont RolTert { get; set; }
+
+    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
+    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    [XafDisplayName("Căutare")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    public virtual string Cautare { get; set; }
 }
