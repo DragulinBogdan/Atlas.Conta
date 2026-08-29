@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampBifa, CampData, CampSelectie, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
@@ -45,6 +46,10 @@ export function FctDetaliu() {
   const [aratErori, setAratErori] = useState(false);
   const [erori, setErori] = useState<string[]>([]);
   const [mesaje, setMesaje] = useState<string[]>([]);
+  // Ștergerea draftului cere confirmare INLINE (F20-D4), nu `window.confirm`:
+  // dialogul nativ blochează renderer-ul și nu poate spune CE se pierde.
+  // Starea e a feliei; locul de randare îl dă `DocumentShell`.
+  const [deSters, setDeSters] = useState(false);
   const [inEditare, setInEditare] = useState<FctLinieWrite | null>(null);
   const [indiceEditat, setIndiceEditat] = useState<number | null>(null);
   // Etichetele CULESE în sesiunea asta, per POZIȚIE de linie (paralel cu
@@ -144,7 +149,7 @@ export function FctDetaliu() {
   }
 
   async function stergeDocumentul() {
-    if (!window.confirm('Ștergeți definitiv acest draft, cu tot cu linii?')) return;
+    setDeSters(false);
     setErori([]);
     setMesaje([]);
     try {
@@ -175,7 +180,7 @@ export function FctDetaliu() {
       cereData: { eticheta: 'Data stornării' },
       ruleaza: (data) => { if (data) void comanda(() => fct.storneaza(id!, data)); },
     },
-    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => void stergeDocumentul() },
+    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => setDeSters(true) },
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza('/fct') },
   ];
 
@@ -213,6 +218,15 @@ export function FctDetaliu() {
       titlu={nou ? 'Factură de intrare — nouă' : `Factură de intrare ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}
+      confirmare={deSters && (
+        <ConfirmareInline
+          intrebare="Ștergeți definitiv acest draft, cu tot cu liniile lui?"
+          verb="Șterge documentul"
+          onConfirma={() => void stergeDocumentul()}
+          onRenunta={() => setDeSters(false)}
+        />
+      )}
+      inchideConfirmarea={() => setDeSters(false)}
       erori={erori}
       mesaje={mesaje}
       rezultatExtra={<Copii copii={doc?.Copii} />}
@@ -232,8 +246,8 @@ export function FctDetaliu() {
               <CampText<FctWrite> camp="Numar" obligatoriu />
               <CampData<FctWrite> camp="Data" />
               {/* Furnizorul: 129k parteneri ⇒ căutare server-side (`mod="remote"`). */}
-              <Lookup<FctWrite> camp="PredatorId" entitate="Partener" mod="remote" cauta={['Denumire', 'Cod', 'CodFiscal']} />
-              <Lookup<FctWrite> camp="PrimitorId" entitate="Gestiune" mod="local" cauta={['Cod', 'Denumire']} />
+              <Lookup<FctWrite> camp="PredatorId" entitate="Partener" mod="remote" cauta={['Cautare', 'CodFiscal']} />
+              <Lookup<FctWrite> camp="PrimitorId" entitate="Gestiune" mod="local" />
               <CampData<FctWrite> camp="DataScadenta" />
               <CampText<FctWrite> camp="NumarPV" />
               <CampData<FctWrite> camp="DataPV" />
@@ -263,7 +277,7 @@ export function FctDetaliu() {
                       camp="PlataContPropriuId"
                       entitate="ContPropriu"
                       mod="local"
-                      cauta={['Cod', 'Denumire', 'Iban']}
+                      cauta={['Cautare', 'Iban']}
                     />
                     <CampText<FctWrite> camp="PlataNumar" />
                     <CampData<FctWrite> camp="PlataData" />

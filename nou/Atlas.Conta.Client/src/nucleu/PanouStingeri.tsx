@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NumberBox } from 'devextreme-react';
 import { Column, DataGrid, FilterRow, Pager, Paging, Sorting } from 'devextreme-react/data-grid';
 import { PanouErori } from './PanouErori';
+import { ConfirmareInline } from './ConfirmareInline';
 import { eroriDin } from './http';
 import { rutaTip, stingeri, type DocumentCuRest, type StingereRand } from './stingeri';
 
@@ -284,16 +285,18 @@ export function PanouStingeri(props: {
         )}
 
       {randDeSters && (
-        <div className="cerere-data">
-          <span>
-            Ștergeți legătura de stingere cu <strong>{randDeSters.CelalaltTip} {randDeSters.CelalaltNumar}</strong>?
-            {' '}Restul ambelor documente se eliberează.
-          </span>
-          <button type="button" className="buton buton--primar" disabled={ocupat} onClick={() => void confirmaStergere()}>
-            Șterge legătura
-          </button>
-          <button type="button" className="buton" onClick={() => setRandDeSters(null)}>Renunță</button>
-        </div>
+        <ConfirmareInline
+          intrebare={(
+            <>
+              Ștergeți legătura de stingere cu <strong>{randDeSters.CelalaltTip} {randDeSters.CelalaltNumar}</strong>?
+              {' '}Restul ambelor documente se eliberează.
+            </>
+          )}
+          verb="Șterge legătura"
+          ocupat={ocupat}
+          onConfirma={() => void confirmaStergere()}
+          onRenunta={() => setRandDeSters(null)}
+        />
       )}
 
       {/* Zona de ADĂUGARE. Două moduri (clasic / grupat), aceeași confirmare

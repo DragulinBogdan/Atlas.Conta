@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import { DateBox } from 'devextreme-react';
 import DataSource from 'devextreme/data/data_source';
-import ODataStore from 'devextreme/data/odata/store';
-import { expiraSesiunea, token } from '../../nucleu/auth';
+import { storeOData } from '../../nucleu/odata';
 import { izolataZi } from '../../nucleu/zi';
 
 // Piesele comune celor trei ecrane de raportare. Stau în FELIE, nu în nucleu:
@@ -49,21 +48,16 @@ export function CasetaData(props: {
   );
 }
 
-// Sursa de conturi pentru selectorul fișei. Duplică deliberat cablajul din
-// `nucleu/Lookup` (ODataStore + JWT + 401), fiindcă `Lookup` e legat de
-// formular prin `useCamp` și aici nu există formular. Dacă apare a treia
-// utilizare în afara unui formular, extragerea în nucleu se justifică — azi ar
-// fi o abstracție cu un singur consumator.
+// Sursa de conturi pentru selectorul fișei. Cablajul (URL + JWT + 401 +
+// normalizarea căutării + `byKey` prin cache) e al NUCLEULUI din felia 20
+// (F20-D2): a treia utilizare — ecranele de nomenclator — a venit, iar cu ea a
+// venit și motivul pentru care duplicarea nu mai era doar redundantă (fiecare
+// store nativ își refetcha singur eticheta valorii curente). `Lookup` rămâne
+// separat fiindcă el e legat de formular prin `useCamp`, iar aici nu există
+// formular; ce împart acum e store-ul, nu componenta.
 export function useSursaConturi() {
   return useMemo(() => new DataSource({
-    store: new ODataStore({
-      url: '/api/odata/Cont',
-      key: 'ID',
-      keyType: 'Guid',
-      version: 4,
-      beforeSend: (e) => { e.headers = { ...e.headers, Authorization: `Bearer ${token() ?? ''}` }; },
-      errorHandler: (e) => { if (e.httpStatus === 401) expiraSesiunea(); },
-    }),
+    store: storeOData('Cont'),
     sort: 'Simbol',
     paginate: true,
     pageSize: 50,

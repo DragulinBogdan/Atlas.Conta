@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
@@ -42,6 +43,10 @@ export function LdiDetaliu() {
   const [aratErori, setAratErori] = useState(false);
   const [erori, setErori] = useState<string[]>([]);
   const [mesaje, setMesaje] = useState<string[]>([]);
+  // Ștergerea draftului cere confirmare INLINE (F20-D4), nu `window.confirm`:
+  // dialogul nativ blochează renderer-ul și nu poate spune CE se pierde.
+  // Starea e a feliei; locul de randare îl dă `DocumentShell`.
+  const [deSters, setDeSters] = useState(false);
   const [inEditare, setInEditare] = useState<LdiLinieWrite | null>(null);
   const [indiceEditat, setIndiceEditat] = useState<number | null>(null);
   // Etichetele CULESE în sesiunea asta, per POZIȚIE de linie (paralel cu
@@ -127,7 +132,7 @@ export function LdiDetaliu() {
   }
 
   async function stergeDocumentul() {
-    if (!window.confirm('Ștergeți definitiv acest draft, cu tot cu linii?')) return;
+    setDeSters(false);
     setErori([]);
     setMesaje([]);
     try {
@@ -158,7 +163,7 @@ export function LdiDetaliu() {
       cereData: { eticheta: 'Data stornării' },
       ruleaza: (data) => { if (data) void comanda(() => ldi.storneaza(id!, data)); },
     },
-    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => void stergeDocumentul() },
+    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => setDeSters(true) },
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza('/ldi') },
   ];
 
@@ -196,6 +201,15 @@ export function LdiDetaliu() {
       titlu={nou ? 'Listă de diferențe — nouă' : `Listă de diferențe ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}
+      confirmare={deSters && (
+        <ConfirmareInline
+          intrebare="Ștergeți definitiv acest draft, cu tot cu liniile lui?"
+          verb="Șterge documentul"
+          onConfirma={() => void stergeDocumentul()}
+          onRenunta={() => setDeSters(false)}
+        />
+      )}
+      inchideConfirmarea={() => setDeSters(false)}
       erori={erori}
       mesaje={mesaje}
       ocupat={salvare.isPending || citit.isFetching}
@@ -226,7 +240,6 @@ export function LdiDetaliu() {
                 entitate="Gestiune"
                 mod="local"
                 eticheta="Gestiunea inventariată"
-                cauta={['Cod', 'Denumire']}
               />
               <div>
                 {/* Primitorul e COMISIA de inventariere (28d): un intern purtător
@@ -238,7 +251,6 @@ export function LdiDetaliu() {
                   entitate="UnitateInterna"
                   mod="local"
                   eticheta="Comisia de inventariere"
-                  cauta={['Cod', 'Denumire']}
                 />
                 <p className="indiciu">
                   Trebuie să fie comisia de inventariere (calitatea „Comisie”) — lista nu e filtrată pe

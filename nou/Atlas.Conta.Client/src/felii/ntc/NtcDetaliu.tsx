@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
@@ -50,6 +51,10 @@ export function NtcDetaliu() {
   const [aratErori, setAratErori] = useState(false);
   const [erori, setErori] = useState<string[]>([]);
   const [mesaje, setMesaje] = useState<string[]>([]);
+  // Ștergerea draftului cere confirmare INLINE (F20-D4), nu `window.confirm`:
+  // dialogul nativ blochează renderer-ul și nu poate spune CE se pierde.
+  // Starea e a feliei; locul de randare îl dă `DocumentShell`.
+  const [deSters, setDeSters] = useState(false);
   const [inEditare, setInEditare] = useState<NtcLinieWrite | null>(null);
   const [indiceEditat, setIndiceEditat] = useState<number | null>(null);
   // Etichetele CULESE în sesiunea asta, per POZIȚIE de linie (paralel cu
@@ -165,7 +170,7 @@ export function NtcDetaliu() {
   }
 
   async function stergeDocumentul() {
-    if (!window.confirm('Ștergeți definitiv acest draft, cu tot cu linii?')) return;
+    setDeSters(false);
     setErori([]);
     setMesaje([]);
     try {
@@ -196,7 +201,7 @@ export function NtcDetaliu() {
       cereData: { eticheta: 'Data stornării' },
       ruleaza: (data) => { if (data) void comanda(() => ntc.storneaza(id!, data)); },
     },
-    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => void stergeDocumentul() },
+    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => setDeSters(true) },
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza('/ntc') },
   ];
 
@@ -234,6 +239,15 @@ export function NtcDetaliu() {
       titlu={nou ? 'Notă contabilă — nouă' : `Notă contabilă ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}
+      confirmare={deSters && (
+        <ConfirmareInline
+          intrebare="Ștergeți definitiv acest draft, cu tot cu liniile lui?"
+          verb="Șterge documentul"
+          onConfirma={() => void stergeDocumentul()}
+          onRenunta={() => setDeSters(false)}
+        />
+      )}
+      inchideConfirmarea={() => setDeSters(false)}
       erori={erori}
       mesaje={mesaje}
       ocupat={salvare.isPending || citit.isFetching}
@@ -264,7 +278,6 @@ export function NtcDetaliu() {
                 entitate="UnitateInterna"
                 mod="local"
                 eticheta="Unitatea (de la)"
-                cauta={['Cod', 'Denumire']}
               />
               <div>
                 <Lookup<NtcWrite>
@@ -272,7 +285,6 @@ export function NtcDetaliu() {
                   entitate="UnitateInterna"
                   mod="local"
                   eticheta="Unitatea (către)"
-                  cauta={['Cod', 'Denumire']}
                 />
                 <p className="indiciu">
                   Laturile notei sunt interne (de regulă aceeași unitate) — partenerii compensării se culeg

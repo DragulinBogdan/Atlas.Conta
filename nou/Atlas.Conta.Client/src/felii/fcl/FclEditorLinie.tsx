@@ -101,7 +101,6 @@ export function FclEditorLinie(props: {
               entitate="Produs"
               mod="remote"
               afisare={codSiDenumire}
-              cauta={['Cod', 'Denumire']}
               expand={['TipMaterial']}
               laSelectie={(p) => {
                 // ODataStore deserializează Edm.Guid ca OBIECT `Guid` DevExtreme,
@@ -135,7 +134,6 @@ export function FclEditorLinie(props: {
             entitate="TipMaterial"
             mod="local"
             afisare={codSiDenumire}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({
               ...prev, TipMaterialCod: text(t?.Cod), TipMaterialDenumire: text(t?.Denumire),
             }))}
@@ -173,7 +171,6 @@ export function FclEditorLinie(props: {
             entitate="TipTva"
             mod="local"
             afisare={etichetaTipTva}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
           />
           <div>
@@ -199,7 +196,7 @@ export function FclEditorLinie(props: {
         <details className="sectiune-pliabila">
           <summary>Clasificație bugetară</summary>
           <div className="grila-campuri">
-            <Lookup<FclLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
+            <Lookup<FclLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} />
           </div>
         </details>
       </Formular>

@@ -46,7 +46,7 @@ export function EditorLinie(props: {
         aratErori={aratErori}
       >
         <div className="grila-campuri">
-          <Lookup<BtrLinieWrite> camp="TipMaterialId" entitate="TipMaterial" mod="local" cauta={['Cod', 'Denumire']} />
+          <Lookup<BtrLinieWrite> camp="TipMaterialId" entitate="TipMaterial" mod="local" />
           <Lookup<BtrLinieWrite>
             camp="LotId"
             entitate="Lot"

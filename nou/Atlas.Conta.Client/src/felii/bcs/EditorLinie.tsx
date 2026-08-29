@@ -4,6 +4,7 @@ import { CampNumar } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { etichetaLot } from '../../nucleu/lot';
+import { precompleteazaTip } from '../../nucleu/etichete';
 import { SCHEMA_LINIE, TIP_LINIE, type BcsLinieWrite } from './api';
 
 // Liniile de draft se editează cu VOCABULARUL `Camp*`, nu în grilă (43c): grila
@@ -60,7 +61,6 @@ export function EditorLinie(props: {
             camp="TipMaterialId"
             entitate="TipMaterial"
             mod="local"
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipMaterialDenumire: text(t?.Denumire) }))}
           />
           <div>
@@ -76,7 +76,20 @@ export function EditorLinie(props: {
               afisare={etichetaLot}
               cauta="Produs.Denumire"
               sortare="Data"
-              laSelectie={(l) => setEtichete((prev) => ({ ...prev, LotEticheta: l ? etichetaLot(l) : '' }))}
+              laSelectie={(l) => {
+                setEtichete((prev) => ({ ...prev, LotEticheta: l ? etichetaLot(l) : '' }));
+                // Tipul din PRODUSUL lotului, doar când e gol — același șablon
+                // ca pe ASM/RLF/RDC (F20-D3). `$expand=Produs` e deja cerut
+                // pentru eticheta lotului, deci `Produs.TipMaterialId` e în
+                // răspunsul selecției.
+                const p = l?.Produs as Record<string, unknown> | null | undefined;
+                precompleteazaTip({
+                  linie,
+                  tipId: p?.TipMaterialId == null ? undefined : String(p.TipMaterialId),
+                  setLinie,
+                  setEtichete,
+                });
+              }}
             />
             <p className="indiciu">
               Lotul consumat — din el iese prețul cu care se evaluează linia.

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
@@ -66,6 +67,10 @@ export function AsmDetaliu() {
   const [aratErori, setAratErori] = useState(false);
   const [erori, setErori] = useState<string[]>([]);
   const [mesaje, setMesaje] = useState<string[]>([]);
+  // Ștergerea draftului cere confirmare INLINE (F20-D4), nu `window.confirm`:
+  // dialogul nativ blochează renderer-ul și nu poate spune CE se pierde.
+  // Starea e a feliei; locul de randare îl dă `DocumentShell`.
+  const [deSters, setDeSters] = useState(false);
   const [inEditare, setInEditare] = useState<AsmLinieWrite | null>(null);
   const [indiceEditat, setIndiceEditat] = useState<number | null>(null);
   // Etichetele CULESE în sesiunea asta, per POZIȚIE de linie (paralel cu
@@ -191,7 +196,7 @@ export function AsmDetaliu() {
   }
 
   async function stergeDocumentul() {
-    if (!window.confirm('Ștergeți definitiv acest draft, cu tot cu linii?')) return;
+    setDeSters(false);
     setErori([]);
     setMesaje([]);
     try {
@@ -222,7 +227,7 @@ export function AsmDetaliu() {
       cereData: { eticheta: 'Data stornării' },
       ruleaza: (data) => { if (data) void comanda(() => asm.storneaza(id!, data)); },
     },
-    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => void stergeDocumentul() },
+    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => setDeSters(true) },
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza('/asm') },
   ];
 
@@ -266,6 +271,15 @@ export function AsmDetaliu() {
       titlu={nou ? 'Asamblare — nouă' : `Asamblare ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} diferenta={doc?.Diferenta} modificat={modificat || nou} />}
       comenzi={comenzi}
+      confirmare={deSters && (
+        <ConfirmareInline
+          intrebare="Ștergeți definitiv acest draft, cu tot cu liniile lui?"
+          verb="Șterge documentul"
+          onConfirma={() => void stergeDocumentul()}
+          onRenunta={() => setDeSters(false)}
+        />
+      )}
+      inchideConfirmarea={() => setDeSters(false)}
       erori={erori}
       mesaje={mesaje}
       ocupat={salvare.isPending || distribuire.isPending || citit.isFetching}
@@ -342,23 +356,16 @@ export function AsmDetaliu() {
           {confirmaDistribuirea && (
             // Confirmare INLINE (57f), nu `window.confirm`: comanda RESCRIE
             // prețurile de evaluare culese de operator.
-            <div className="cerere-data">
-              <span>
-                Prețurile de evaluare ale liniilor de produs se rescriu astfel încât produsele să valoreze
-                exact cât consumurile (proporțional cu ce e cules azi). Continuați?
-              </span>
-              <button
-                type="button"
-                className="buton buton--primar"
-                disabled={distribuire.isPending}
-                onClick={() => distribuire.mutate()}
-              >
-                Distribuie
-              </button>
-              <button type="button" className="buton" onClick={() => setConfirmaDistribuirea(false)}>
-                Renunță
-              </button>
-            </div>
+            <ConfirmareInline
+              intrebare={
+                'Prețurile de evaluare ale liniilor de produs se rescriu astfel încât produsele să valoreze '
+                + 'exact cât consumurile (proporțional cu ce e cules azi). Continuați?'
+              }
+              verb="Distribuie"
+              ocupat={distribuire.isPending}
+              onConfirma={() => distribuire.mutate()}
+              onRenunta={() => setConfirmaDistribuirea(false)}
+            />
           )}
 
           {!nou && !doc?.PoateDistribui && doc?.Stare === 'Draft' && (
@@ -390,7 +397,6 @@ export function AsmDetaliu() {
                 entitate="Gestiune"
                 mod="local"
                 eticheta="Gestiunea în care se asamblează"
-                cauta={['Cod', 'Denumire']}
               />
               <div>
                 <Lookup<AsmWrite>
@@ -398,7 +404,6 @@ export function AsmDetaliu() {
                   entitate="Gestiune"
                   mod="local"
                   eticheta="Gestiunea care primește"
-                  cauta={['Cod', 'Denumire']}
                 />
                 <p className="indiciu">
                   De regulă aceeași — dar pot diferi. Lotul produsului se naște în gestiunea în care se

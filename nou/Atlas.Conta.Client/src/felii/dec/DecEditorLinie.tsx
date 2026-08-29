@@ -99,7 +99,6 @@ export function DecEditorLinie(props: {
             entitate="TipMaterial"
             mod="local"
             afisare={codSiDenumire}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({
               ...prev, TipMaterialCod: text(t?.Cod), TipMaterialDenumire: text(t?.Denumire),
             }))}
@@ -117,7 +116,6 @@ export function DecEditorLinie(props: {
             entitate="TipTva"
             mod="local"
             afisare={etichetaTipTva}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
           />
           <div>
@@ -142,7 +140,6 @@ export function DecEditorLinie(props: {
               entitate="Cont"
               mod="remote"
               afisare={etichetaCont}
-              cauta={['Simbol', 'Denumire']}
               filtru={FILTRU_CONT_FRUNZA}
               laSelectie={(c) => setEtichete((prev) => ({ ...prev, ContDebitSimbol: text(c?.Simbol) }))}
             />
@@ -151,7 +148,6 @@ export function DecEditorLinie(props: {
               entitate="Cont"
               mod="remote"
               afisare={etichetaCont}
-              cauta={['Simbol', 'Denumire']}
               filtru={FILTRU_CONT_FRUNZA}
               laSelectie={(c) => setEtichete((prev) => ({ ...prev, ContCreditSimbol: text(c?.Simbol) }))}
             />
@@ -164,7 +160,6 @@ export function DecEditorLinie(props: {
               entitate="Repartitor"
               mod="remote"
               afisare={codSiDenumire}
-              cauta={['Denumire', 'Cod']}
               laSelectie={(r) => setEtichete((prev) => ({ ...prev, RepartitorDebitDenumire: text(r?.Denumire) }))}
             />
             <Lookup<DecLinieWrite>
@@ -172,7 +167,6 @@ export function DecEditorLinie(props: {
               entitate="Repartitor"
               mod="remote"
               afisare={codSiDenumire}
-              cauta={['Denumire', 'Cod']}
               laSelectie={(r) => setEtichete((prev) => ({ ...prev, RepartitorCreditDenumire: text(r?.Denumire) }))}
             />
           </div>
@@ -195,7 +189,6 @@ export function DecEditorLinie(props: {
               entitate="CodEconomic"
               mod="local"
               afisare={codSiDenumire}
-              cauta={['Cod', 'Denumire']}
               laSelectie={(d) => setEtichete((prev) => ({ ...prev, CodEconomicCod: text(d?.Cod) }))}
             />
             {/* Modulul de angajamente e amânat (22c), deci tabela e azi GOALĂ:
@@ -205,7 +198,6 @@ export function DecEditorLinie(props: {
               entitate="Angajament"
               mod="local"
               afisare={codSiDenumire}
-              cauta={['Cod', 'Denumire']}
               laSelectie={(a) => setEtichete((prev) => ({ ...prev, AngajamentCod: text(a?.Cod) }))}
             />
           </div>

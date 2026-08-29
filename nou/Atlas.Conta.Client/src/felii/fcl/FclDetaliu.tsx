@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DateBox } from 'devextreme-react';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
@@ -12,7 +13,7 @@ import { PanouErori } from '../../nucleu/PanouErori';
 import { PanouStingeri } from '../../nucleu/PanouStingeri';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
-import { existaInSet } from '../../nucleu/sonda';
+import { existaInSet } from '../../nucleu/odata';
 import { rutaTip } from '../../nucleu/stingeri';
 import { azi, izolataZi } from '../../nucleu/zi';
 import {
@@ -49,6 +50,10 @@ export function FclDetaliu() {
   const [aratErori, setAratErori] = useState(false);
   const [erori, setErori] = useState<string[]>([]);
   const [mesaje, setMesaje] = useState<string[]>([]);
+  // Ștergerea draftului cere confirmare INLINE (F20-D4), nu `window.confirm`:
+  // dialogul nativ blochează renderer-ul și nu poate spune CE se pierde.
+  // Starea e a feliei; locul de randare îl dă `DocumentShell`.
+  const [deSters, setDeSters] = useState(false);
   const [inEditare, setInEditare] = useState<FclLinieWrite | null>(null);
   const [indiceEditat, setIndiceEditat] = useState<number | null>(null);
   // Etichetele CULESE în sesiunea asta, per POZIȚIE de linie (paralel cu
@@ -159,7 +164,7 @@ export function FclDetaliu() {
   }
 
   async function stergeDocumentul() {
-    if (!window.confirm('Ștergeți definitiv acest draft, cu tot cu linii?')) return;
+    setDeSters(false);
     setErori([]);
     setMesaje([]);
     try {
@@ -190,7 +195,7 @@ export function FclDetaliu() {
       cereData: { eticheta: 'Data stornării' },
       ruleaza: (data) => { if (data) void comanda(() => fcl.storneaza(id!, data)); },
     },
-    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => void stergeDocumentul() },
+    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => setDeSters(true) },
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza('/fcl') },
   ];
 
@@ -228,6 +233,15 @@ export function FclDetaliu() {
       titlu={nou ? 'Factură de ieșire — nouă' : `Factură de ieșire ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}
+      confirmare={deSters && (
+        <ConfirmareInline
+          intrebare="Ștergeți definitiv acest draft, cu tot cu liniile lui?"
+          verb="Șterge documentul"
+          onConfirma={() => void stergeDocumentul()}
+          onRenunta={() => setDeSters(false)}
+        />
+      )}
+      inchideConfirmarea={() => setDeSters(false)}
       erori={erori}
       mesaje={mesaje}
       rezultatExtra={<Copii copii={doc?.Copii} />}
@@ -262,7 +276,6 @@ export function FclDetaliu() {
                     camp="PredatorId"
                     entitate="UnitateInterna"
                     mod="local"
-                    cauta={['Cod', 'Denumire']}
                     eticheta="Emitent"
                   />
                 )
@@ -273,7 +286,7 @@ export function FclDetaliu() {
                 camp="PrimitorId"
                 entitate="Partener"
                 mod="remote"
-                cauta={['Denumire', 'Cod', 'CodFiscal']}
+                cauta={['Cautare', 'CodFiscal']}
                 eticheta="Client"
               />
               {/* Necules ⇒ politica de scadență aplică default-ul (+30 zile) la
@@ -282,7 +295,7 @@ export function FclDetaliu() {
               {/* O gestiune per factură la P2 (37d): din ea se descarcă toate
                   liniile de stoc. Obligativitatea („există linii de stoc") e a
                   operării. */}
-              <Lookup<FclWrite> camp="GestiuneDescarcareId" entitate="Gestiune" mod="local" cauta={['Cod', 'Denumire']} />
+              <Lookup<FclWrite> camp="GestiuneDescarcareId" entitate="Gestiune" mod="local" />
             </div>
           </Formular>
         </>

@@ -175,8 +175,8 @@ export function BtrDetaliu() {
           >
             <div className="grila-campuri">
               <CampData<BtrWrite> camp="Data" />
-              <Lookup<BtrWrite> camp="PredatorId" entitate="Gestiune" mod="local" cauta={['Cod', 'Denumire']} />
-              <Lookup<BtrWrite> camp="PrimitorId" entitate="Gestiune" mod="local" cauta={['Cod', 'Denumire']} />
+              <Lookup<BtrWrite> camp="PredatorId" entitate="Gestiune" mod="local" />
+              <Lookup<BtrWrite> camp="PrimitorId" entitate="Gestiune" mod="local" />
               <CampText<BtrWrite> camp="NumarPV" />
               <CampData<BtrWrite> camp="DataPV" />
             </div>

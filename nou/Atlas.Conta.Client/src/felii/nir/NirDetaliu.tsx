@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
@@ -44,6 +45,10 @@ export function NirDetaliu() {
   const [aratErori, setAratErori] = useState(false);
   const [erori, setErori] = useState<string[]>([]);
   const [mesaje, setMesaje] = useState<string[]>([]);
+  // Ștergerea draftului cere confirmare INLINE (F20-D4), nu `window.confirm`:
+  // dialogul nativ blochează renderer-ul și nu poate spune CE se pierde.
+  // Starea e a feliei; locul de randare îl dă `DocumentShell`.
+  const [deSters, setDeSters] = useState(false);
   const [inEditare, setInEditare] = useState<NirLinieWrite | null>(null);
   const [indiceEditat, setIndiceEditat] = useState<number | null>(null);
   // Etichetele CULESE în sesiunea asta, per POZIȚIE de linie (paralel cu
@@ -131,7 +136,7 @@ export function NirDetaliu() {
   }
 
   async function stergeDocumentul() {
-    if (!window.confirm('Ștergeți definitiv acest draft, cu tot cu linii?')) return;
+    setDeSters(false);
     setErori([]);
     setMesaje([]);
     try {
@@ -173,7 +178,7 @@ export function NirDetaliu() {
     // operatorului: serverul îi refuză ștergerea (review advers F5-F2 — pe o
     // factură numai cu linii de stoc el poartă singura postare a datoriei), iar
     // butonul n-are ce căuta activ. Editarea RĂMÂNE (F5-D8b, recepția parțială).
-    { eticheta: 'Șterge', disponibila: !nou && poateEdita && !doc?.Autogenerat, ruleaza: () => void stergeDocumentul() },
+    { eticheta: 'Șterge', disponibila: !nou && poateEdita && !doc?.Autogenerat, ruleaza: () => setDeSters(true) },
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza('/nir') },
   ];
 
@@ -211,6 +216,15 @@ export function NirDetaliu() {
       titlu={nou ? 'NIR — nou' : `NIR ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}
+      confirmare={deSters && (
+        <ConfirmareInline
+          intrebare="Ștergeți definitiv acest draft, cu tot cu liniile lui?"
+          verb="Șterge documentul"
+          onConfirma={() => void stergeDocumentul()}
+          onRenunta={() => setDeSters(false)}
+        />
+      )}
+      inchideConfirmarea={() => setDeSters(false)}
       erori={erori}
       mesaje={mesaje}
       ocupat={salvare.isPending || citit.isFetching}
@@ -232,10 +246,10 @@ export function NirDetaliu() {
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<NirWrite> camp="Data" />
               {/* Furnizorul: 129k parteneri ⇒ căutare server-side. */}
-              <Lookup<NirWrite> camp="PredatorId" entitate="Partener" mod="remote" cauta={['Denumire', 'Cod', 'CodFiscal']} />
+              <Lookup<NirWrite> camp="PredatorId" entitate="Partener" mod="remote" cauta={['Cautare', 'CodFiscal']} />
               {/* Gestiunea primitoare: tot din ea se nasc loturile liniilor
                   culese manual (`GestiuneLoturiCulese` — F5-D2). */}
-              <Lookup<NirWrite> camp="PrimitorId" entitate="Gestiune" mod="local" cauta={['Cod', 'Denumire']} />
+              <Lookup<NirWrite> camp="PrimitorId" entitate="Gestiune" mod="local" />
               <Static membru="Stare" valoare={labelEnum('StareDocument', doc?.Stare)} />
               <Static membru="DataOperare" valoare={doc?.DataOperare?.slice(0, 10)} />
               <Static membru="Autogenerat" valoare={nou ? null : (doc?.Autogenerat ? 'da' : 'nu')} />

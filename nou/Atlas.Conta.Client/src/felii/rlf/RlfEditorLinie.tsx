@@ -5,6 +5,7 @@ import { Lookup } from '../../nucleu/Lookup';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta } from '../../nucleu/campMeta';
 import { etichetaLot } from '../../nucleu/lot';
+import { precompleteazaTip } from '../../nucleu/etichete';
 import { SCHEMA_LINIE, TIP_LINIE, type RlfLinieWrite } from './api';
 
 // Liniile de draft se editează cu VOCABULARUL `Camp*`, nu în grilă (43c): grila
@@ -116,16 +117,16 @@ export function RlfEditorLinie(props: {
               laSelectie={(l) => {
                 // Tipul se precompletează din PRODUSUL lotului: `$expand=Produs`
                 // aduce `Produs.TipMaterialId`, deci valoarea e reală, fără
-                // `$expand` imbricat. Aplicarea e UPDATE FUNCȚIONAL pe starea
-                // liniei: `seteaza`-ul valorii a rulat deja în același event, iar
-                // un patch din closure l-ar fi pierdut. Eticheta Tipului NU se
-                // inventează — vine de la server după Salvează (lookup-ul local o
-                // rezolvă oricum pe ecran).
+                // `$expand` imbricat. Id-ul și eticheta Tipului se scriu într-o
+                // SINGURĂ decizie (F20-D3), eticheta din cache-ul comun.
                 const p = l?.Produs as Record<string, unknown> | null | undefined;
-                const tip = p?.TipMaterialId == null ? undefined : String(p.TipMaterialId);
-                if (tip)
-                  setLinie((prev) => prev.TipMaterialId ? prev : { ...prev, TipMaterialId: tip });
                 setEtichete((prev) => ({ ...prev, LotEticheta: l ? etichetaLot(l) : '' }));
+                precompleteazaTip({
+                  linie,
+                  tipId: p?.TipMaterialId == null ? undefined : String(p.TipMaterialId),
+                  setLinie,
+                  setEtichete,
+                });
               }}
             />
             <p className="indiciu">
@@ -139,7 +140,6 @@ export function RlfEditorLinie(props: {
             entitate="TipMaterial"
             mod="local"
             afisare={codSiDenumire}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({
               ...prev, TipMaterialCod: text(t?.Cod), TipMaterialDenumire: text(t?.Denumire),
             }))}
@@ -156,7 +156,6 @@ export function RlfEditorLinie(props: {
             entitate="TipTva"
             mod="local"
             afisare={etichetaTipTva}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
           />
           <div>

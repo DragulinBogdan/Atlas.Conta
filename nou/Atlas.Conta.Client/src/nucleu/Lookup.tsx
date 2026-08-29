@@ -2,18 +2,17 @@ import { useMemo } from 'react';
 import { SelectBox } from 'devextreme-react';
 import type { ValueChangedEvent } from 'devextreme/ui/select_box';
 import DataSource from 'devextreme/data/data_source';
-import ODataStore from 'devextreme/data/odata/store';
 import { CampShell } from './CampShell';
 import { defaultProperty } from './campMeta';
 import { useCamp } from './formular';
-import { expiraSesiunea, token } from './auth';
+import { CAMP_CAUTARE, areCautare, storeOData } from './odata';
 import type { PropsCamp } from './campuri';
 
-// `Lookup` = SelectBox + `ODataStore` nativ (43f): consumatorul ușii OData
-// opt-in pe nomenclatoare (D7 + F2-D4 — Partener/Produs/TipTva/dimensiuni/
-// Gestiune/TipMaterial/Lot). Nu construim proiecții custom per nomenclator;
-// `$filter`/`$top`/`$select`/`$expand` sunt deja acolo și trec prin securitatea
-// aplicației.
+// `Lookup` = SelectBox + store-ul OData al nucleului (43f, F20-D2):
+// consumatorul ușii OData opt-in pe nomenclatoare (D7 + F2-D4 —
+// Partener/Produs/TipTva/dimensiuni/Gestiune/TipMaterial/Lot). Nu construim
+// proiecții custom per nomenclator; `$filter`/`$top`/`$select`/`$expand` sunt
+// deja acolo și trec prin securitatea aplicației.
 //
 // Mic vs mare = PROP EXPLICIT, nu mecanism (43f): `mod="local"` încarcă
 // integral și filtrează în browser (gestiuni, tipuri); `mod="remote"` caută
@@ -32,6 +31,12 @@ export type PropsLookup<T extends object> = PropsCamp<T> & {
   entitate: string;
   mod: 'local' | 'remote';
   afisare?: (element: ElementNomenclator) => string;
+  // Câmpul (sau câmpurile) pe care caută operatorul. DEFAULT: coloana generată
+  // `Cautare` a entității (F20-D1) — o singură coloană care acoperă și codul, și
+  // denumirea, fără diacritice; entitățile care n-o au (`Lot`) cad pe
+  // proprietatea de afișare, ca înainte. Apelantul o suprascrie când mai are
+  // câmpuri de căutat care NU intră în `Cautare` (`CodFiscal`, `Iban`, `Marca`)
+  // — atunci le scrie EXPLICIT, `Cautare` inclusă.
   cauta?: string | string[];
   expand?: string[];
   sortare?: string;
@@ -56,6 +61,9 @@ export function Lookup<T extends object>(props: PropsLookup<T>) {
   const { camp, readOnly, obligatoriu, eticheta, entitate, mod, afisare, cauta, expand, sortare, filtru, laSelectie } = props;
   const c = useCamp<string>(camp, readOnly, obligatoriu, eticheta);
   const proprietateAfisare = defaultProperty(entitate);
+  // Prezența coloanei se citește din `metadata.json` — nu dintr-o listă de
+  // entități scrisă de mână aici, care ar drifta la prima entitate nouă.
+  const campCautare = cauta ?? (areCautare(entitate) ? CAMP_CAUTARE : proprietateAfisare);
 
   // `expand`/`filtru` sunt ARRAY-uri scrise inline în JSX: ca dependențe directe
   // ar fi mereu „noi" și ar reconstrui sursa la fiecare randare (widget reîncărcat
@@ -64,19 +72,9 @@ export function Lookup<T extends object>(props: PropsLookup<T>) {
   const cheieFiltru = JSON.stringify(filtru ?? null);
 
   const sursa = useMemo(() => new DataSource({
-    store: new ODataStore({
-      url: `/api/odata/${entitate}`,
-      key: 'ID',
-      keyType: 'Guid',
-      version: 4,
-      fieldTypes: tipuriGuid(filtru),
-      // JWT-ul nu poate trece prin `http.ts` aici: cererea o face componenta
-      // DevExtreme. Același token, același header, un singur loc.
-      beforeSend: (e) => { e.headers = { ...e.headers, Authorization: `Bearer ${token() ?? ''}` }; },
-      // Sesiunea expirată trebuie tratată la fel pe TOATE conductele, nu doar pe
-      // `http.ts`: altfel lookup-urile rămân mute (listă goală) după expirare.
-      errorHandler: (e) => { if (e.httpStatus === 401) expiraSesiunea(); },
-    }),
+    // Store-ul e al NUCLEULUI (F20-D2): JWT, 401, normalizarea căutării și
+    // `byKey` prin cache-ul comun stau într-un singur loc, nu în fiecare widget.
+    store: storeOData(entitate, { fieldTypes: tipuriGuid(filtru) }),
     expand,
     filter: filtru,
     sort: sortare ?? proprietateAfisare,
@@ -94,7 +92,7 @@ export function Lookup<T extends object>(props: PropsLookup<T>) {
         valueExpr="ID"
         displayExpr={afisare ?? proprietateAfisare}
         searchEnabled
-        searchExpr={cauta ?? proprietateAfisare}
+        searchExpr={campCautare}
         searchTimeout={mod === 'remote' ? 400 : 200}
         showClearButton={!c.meta.obligatoriu}
         noDataText="Nimic găsit"

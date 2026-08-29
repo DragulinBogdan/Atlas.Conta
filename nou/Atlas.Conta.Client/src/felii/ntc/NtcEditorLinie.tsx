@@ -110,7 +110,6 @@ export function NtcEditorLinie(props: {
             entitate="TipMaterial"
             mod="local"
             afisare={codSiDenumire}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({
               ...prev, TipMaterialCod: text(t?.Cod), TipMaterialDenumire: text(t?.Denumire),
             }))}
@@ -137,7 +136,6 @@ export function NtcEditorLinie(props: {
             obligatoriu
             eticheta={ETICHETA_CONT_DEBIT}
             afisare={etichetaCont}
-            cauta={['Simbol', 'Denumire']}
             filtru={FILTRU_CONT_FRUNZA}
             laSelectie={(c) => setEtichete((prev) => ({ ...prev, ContDebitSimbol: text(c?.Simbol) }))}
           />
@@ -148,7 +146,6 @@ export function NtcEditorLinie(props: {
             obligatoriu
             eticheta={ETICHETA_CONT_CREDIT}
             afisare={etichetaCont}
-            cauta={['Simbol', 'Denumire']}
             filtru={FILTRU_CONT_FRUNZA}
             laSelectie={(c) => setEtichete((prev) => ({ ...prev, ContCreditSimbol: text(c?.Simbol) }))}
           />
@@ -162,7 +159,6 @@ export function NtcEditorLinie(props: {
               mod="remote"
               eticheta="Repartitor debit"
               afisare={codSiDenumire}
-              cauta={['Denumire', 'Cod']}
               laSelectie={(r) => setEtichete((prev) => ({ ...prev, RepartitorDebitDenumire: text(r?.Denumire) }))}
             />
             <p className="indiciu">
@@ -176,7 +172,6 @@ export function NtcEditorLinie(props: {
               mod="remote"
               eticheta="Repartitor credit"
               afisare={codSiDenumire}
-              cauta={['Denumire', 'Cod']}
               laSelectie={(r) => setEtichete((prev) => ({ ...prev, RepartitorCreditDenumire: text(r?.Denumire) }))}
             />
             <p className="indiciu">
@@ -197,7 +192,6 @@ export function NtcEditorLinie(props: {
               entitate="CodEconomic"
               mod="local"
               afisare={codSiDenumire}
-              cauta={['Cod', 'Denumire']}
               laSelectie={(c) => setEtichete((prev) => ({ ...prev, CodEconomicCod: text(c?.Cod) }))}
             />
           </div>

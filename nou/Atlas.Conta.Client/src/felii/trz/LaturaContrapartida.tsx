@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Lookup } from '../../nucleu/Lookup';
 import { useCamp } from '../../nucleu/formular';
-import { useSonda } from '../../nucleu/sonda';
+import { useSonda } from '../../nucleu/odata';
 
 // Latura NE-trezorerie a unei plăți/încasări: beneficiarul plății, respectiv
 // plătitorul încasării. Poate fi PARTENER, ANGAJAT (31a: ContPropriu →
@@ -86,11 +86,11 @@ export function LaturaContrapartida<T extends object>(props: {
       </div>
 
       {fel === 'Partener'
-        && <Lookup<T> camp={camp} eticheta={eticheta} entitate="Partener" mod="remote" readOnly={readOnly} cauta={['Denumire', 'Cod', 'CodFiscal']} />}
+        && <Lookup<T> camp={camp} eticheta={eticheta} entitate="Partener" mod="remote" readOnly={readOnly} cauta={['Cautare', 'CodFiscal']} />}
       {fel === 'Angajat'
-        && <Lookup<T> camp={camp} eticheta={eticheta} entitate="Angajat" mod="local" readOnly={readOnly} cauta={['Denumire', 'Cod', 'Marca']} />}
+        && <Lookup<T> camp={camp} eticheta={eticheta} entitate="Angajat" mod="local" readOnly={readOnly} cauta={['Cautare', 'Marca']} />}
       {fel === 'ContPropriu'
-        && <Lookup<T> camp={camp} eticheta={`${eticheta} — cont propriu (virament intern)`} entitate="ContPropriu" mod="local" readOnly={readOnly} cauta={['Cod', 'Denumire', 'Iban']} />}
+        && <Lookup<T> camp={camp} eticheta={`${eticheta} — cont propriu (virament intern)`} entitate="ContPropriu" mod="local" readOnly={readOnly} cauta={['Cautare', 'Iban']} />}
     </>
   );
 }

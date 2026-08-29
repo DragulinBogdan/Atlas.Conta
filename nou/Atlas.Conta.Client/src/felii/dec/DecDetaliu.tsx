@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData, CampText } from '../../nucleu/campuri';
@@ -11,7 +12,7 @@ import { PanouErori } from '../../nucleu/PanouErori';
 import { PanouStingeri } from '../../nucleu/PanouStingeri';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
-import { useSonda } from '../../nucleu/sonda';
+import { useSonda } from '../../nucleu/odata';
 import {
   antetGol, dec, linieGoala, spreWrite, RUTA,
   SCHEMA_ANTET, SCHEMA_LINIE, TIP_ANTET, TIP_LINIE,
@@ -43,6 +44,10 @@ export function DecDetaliu() {
   const [aratErori, setAratErori] = useState(false);
   const [erori, setErori] = useState<string[]>([]);
   const [mesaje, setMesaje] = useState<string[]>([]);
+  // Ștergerea draftului cere confirmare INLINE (F20-D4), nu `window.confirm`:
+  // dialogul nativ blochează renderer-ul și nu poate spune CE se pierde.
+  // Starea e a feliei; locul de randare îl dă `DocumentShell`.
+  const [deSters, setDeSters] = useState(false);
   const [inEditare, setInEditare] = useState<DecLinieWrite | null>(null);
   const [indiceEditat, setIndiceEditat] = useState<number | null>(null);
   // Etichetele CULESE în sesiunea asta, per POZIȚIE de linie (paralel cu
@@ -138,7 +143,7 @@ export function DecDetaliu() {
   }
 
   async function stergeDocumentul() {
-    if (!window.confirm('Ștergeți definitiv acest draft, cu tot cu linii?')) return;
+    setDeSters(false);
     setErori([]);
     setMesaje([]);
     try {
@@ -171,7 +176,7 @@ export function DecDetaliu() {
       cereData: { eticheta: 'Data stornării' },
       ruleaza: (data) => { if (data) void comanda(() => dec.storneaza(id!, data)); },
     },
-    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => void stergeDocumentul() },
+    { eticheta: 'Șterge', disponibila: !nou && poateEdita, ruleaza: () => setDeSters(true) },
     { eticheta: 'Înapoi la listă', disponibila: true, ruleaza: () => navigheaza(RUTA) },
   ];
 
@@ -209,6 +214,15 @@ export function DecDetaliu() {
       titlu={nou ? 'Decont — nou' : `Decont ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}
+      confirmare={deSters && (
+        <ConfirmareInline
+          intrebare="Ștergeți definitiv acest draft, cu tot cu liniile lui?"
+          verb="Șterge documentul"
+          onConfirma={() => void stergeDocumentul()}
+          onRenunta={() => setDeSters(false)}
+        />
+      )}
+      inchideConfirmarea={() => setDeSters(false)}
       erori={erori}
       mesaje={mesaje}
       ocupat={salvare.isPending || citit.isFetching}
@@ -238,7 +252,7 @@ export function DecDetaliu() {
                 entitate="Angajat"
                 mod="local"
                 eticheta="Titular"
-                cauta={['Denumire', 'Cod', 'Marca']}
+                cauta={['Cautare', 'Marca']}
               />
               <div>
                 {/* Unitatea internă care primește justificarea. Pe documentele
@@ -252,7 +266,6 @@ export function DecDetaliu() {
                       entitate="UnitateInterna"
                       mod="local"
                       eticheta="Unitatea care primește justificarea"
-                      cauta={['Cod', 'Denumire']}
                     />
                   )
                   : (

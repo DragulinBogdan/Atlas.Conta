@@ -71,7 +71,6 @@ export function TrezorerieEditorLinie(props: {
             entitate="TipMaterial"
             mod="local"
             afisare={codSiDenumire}
-            cauta={['Cod', 'Denumire']}
           />
           <div>
             <CampNumar<TrzLinieWrite> camp="Valoare" zecimale={2} />
@@ -85,10 +84,10 @@ export function TrezorerieEditorLinie(props: {
         <details className="sectiune-pliabila">
           <summary>Clasificație bugetară</summary>
           <div className="grila-campuri">
-            <Lookup<TrzLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
-            <Lookup<TrzLinieWrite> camp="SursaFinantareId" entitate="SursaFinantare" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
-            <Lookup<TrzLinieWrite> camp="CodFunctionalId" entitate="CodFunctional" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
-            <Lookup<TrzLinieWrite> camp="ProiectId" entitate="Proiect" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
+            <Lookup<TrzLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} />
+            <Lookup<TrzLinieWrite> camp="SursaFinantareId" entitate="SursaFinantare" mod="local" afisare={codSiDenumire} />
+            <Lookup<TrzLinieWrite> camp="CodFunctionalId" entitate="CodFunctional" mod="local" afisare={codSiDenumire} />
+            <Lookup<TrzLinieWrite> camp="ProiectId" entitate="Proiect" mod="local" afisare={codSiDenumire} />
           </div>
         </details>
       </Formular>

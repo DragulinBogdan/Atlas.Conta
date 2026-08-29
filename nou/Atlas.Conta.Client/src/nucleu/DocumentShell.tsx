@@ -41,12 +41,28 @@ export function DocumentShell(props: {
   // nu părți ale WriteDto-ului — 31d). Slot, nu componentă cunoscută de shell:
   // felia decide dacă și când îl montează.
   subsol?: ReactNode;
+  // Confirmarea unei acțiuni a FELIEI (ștergerea draftului), randată în același
+  // loc ca cererea de dată a shell-ului — de aceea slotul e aici și nu lângă
+  // butonul care o deschide: cele două cereri se exclud. Felia montează un
+  // `<ConfirmareInline>`; shell-ul îi dă doar locul.
+  confirmare?: ReactNode;
+  // Cum se închide confirmarea feliei. O SINGURĂ cerere în așteptare, iar
+  // starea celor două stă în locuri diferite (cererea de dată e a shell-ului,
+  // confirmarea e a feliei), deci regula are nevoie de câte un drum în fiecare
+  // sens: `confirmare` non-nulă ascunde cererea de dată (mai jos), iar
+  // deschiderea unei comenzi cu parametru cheamă callback-ul ăsta. Fără el,
+  // operatorul ar vedea două întrebări suprapuse și ar răspunde la cealaltă.
+  inchideConfirmarea?: () => void;
 }) {
-  const { titlu, sumar, comenzi, erori, mesaje = [], rezultatExtra, ocupat = false, antet, linii, subsol } = props;
+  const {
+    titlu, sumar, comenzi, erori, mesaje = [], rezultatExtra, ocupat = false,
+    antet, linii, subsol, confirmare, inchideConfirmarea,
+  } = props;
   const [cerere, setCerere] = useState<Comanda | null>(null);
   const [data, setData] = useState<string | undefined>(azi());
 
   function apasa(c: Comanda) {
+    inchideConfirmarea?.();
     if (!c.cereData) {
       c.ruleaza();
       return;
@@ -75,7 +91,9 @@ export function DocumentShell(props: {
         </div>
       </div>
 
-      {cerere?.cereData && (
+      {confirmare}
+
+      {confirmare == null && cerere?.cereData && (
         <div className="cerere-data">
           <label className="camp__eticheta">{cerere.cereData.eticheta}</label>
           <DateBox

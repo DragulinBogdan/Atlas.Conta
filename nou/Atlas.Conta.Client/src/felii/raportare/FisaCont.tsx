@@ -79,7 +79,9 @@ export function FisaCont() {
             // `Cont(id)` care înfometează grila. Găsit la smoke, exact așa.
             displayExpr={etichetaCont}
             searchEnabled
-            searchExpr={['Simbol', 'Denumire']}
+            // Coloana generată `Cautare` (F20-D1): simbol + denumire, fără
+            // diacritice. Literalul se normalizează în `storeOData`.
+            searchExpr="Cautare"
             searchTimeout={300}
             noDataText="Nimic găsit"
             width={340}

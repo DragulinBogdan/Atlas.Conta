@@ -32,7 +32,7 @@ export function PltDetaliu() {
             eticheta="Cont propriu (din care se plătește)"
             entitate="ContPropriu"
             mod="local"
-            cauta={['Cod', 'Denumire', 'Iban']}
+            cauta={['Cautare', 'Iban']}
           />
           <LaturaContrapartida<TrzWrite> camp="PrimitorId" eticheta="Beneficiar" />
         </>

@@ -82,7 +82,6 @@ export function NirEditorLinie(props: {
               // nu atinge nici lotul, nici produsul acolo (F5-D3/D4).
               readOnly={lotStrain}
               afisare={codSiDenumire}
-              cauta={['Cod', 'Denumire']}
               expand={['TipMaterial']}
               laSelectie={(p) => {
                 // ODataStore deserializează Edm.Guid ca OBIECT `Guid` DevExtreme,
@@ -117,7 +116,6 @@ export function NirEditorLinie(props: {
             entitate="TipMaterial"
             mod="local"
             afisare={codSiDenumire}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({
               ...prev, TipMaterialCod: text(t?.Cod), TipMaterialDenumire: text(t?.Denumire),
             }))}
@@ -153,10 +151,10 @@ export function NirEditorLinie(props: {
         <details className="sectiune-pliabila">
           <summary>Clasificație bugetară</summary>
           <div className="grila-campuri">
-            <Lookup<NirLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
-            <Lookup<NirLinieWrite> camp="SursaFinantareId" entitate="SursaFinantare" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
-            <Lookup<NirLinieWrite> camp="CodFunctionalId" entitate="CodFunctional" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
-            <Lookup<NirLinieWrite> camp="ProiectId" entitate="Proiect" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
+            <Lookup<NirLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} />
+            <Lookup<NirLinieWrite> camp="SursaFinantareId" entitate="SursaFinantare" mod="local" afisare={codSiDenumire} />
+            <Lookup<NirLinieWrite> camp="CodFunctionalId" entitate="CodFunctional" mod="local" afisare={codSiDenumire} />
+            <Lookup<NirLinieWrite> camp="ProiectId" entitate="Proiect" mod="local" afisare={codSiDenumire} />
           </div>
         </details>
       </Formular>

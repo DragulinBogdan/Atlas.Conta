@@ -5,6 +5,7 @@ import { Lookup } from '../../nucleu/Lookup';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta } from '../../nucleu/campMeta';
 import { etichetaLot } from '../../nucleu/lot';
+import { precompleteazaTip } from '../../nucleu/etichete';
 import { SCHEMA_LINIE, TIP_LINIE, type LdiLinieWrite } from './api';
 
 // Liniile de draft se editează cu VOCABULARUL `Camp*`, nu în grilă (43c): grila
@@ -134,7 +135,6 @@ export function LdiEditorLinie(props: {
             entitate="TipMaterial"
             mod="local"
             afisare={codSiDenumire}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({
               ...prev, TipMaterialCod: text(t?.Cod), TipMaterialDenumire: text(t?.Denumire),
             }))}
@@ -153,28 +153,20 @@ export function LdiEditorLinie(props: {
                   mod="remote"
                   obligatoriu
                   afisare={codSiDenumire}
-                  cauta={['Cod', 'Denumire']}
-                  expand={['TipMaterial']}
                   laSelectie={(p) => {
                     // ODataStore deserializează Edm.Guid ca OBIECT `Guid`
                     // DevExtreme, nu ca string — `String()` îl aduce la forma de
-                    // sârmă. Aplicarea e UPDATE FUNCȚIONAL pe starea liniei:
-                    // `seteaza`-ul valorii a rulat deja în același event, iar un
-                    // patch din closure l-ar fi pierdut.
-                    const tip = p?.TipMaterialId == null ? undefined : String(p.TipMaterialId);
-                    if (tip)
-                      setLinie((prev) => prev.TipMaterialId ? prev : { ...prev, TipMaterialId: tip });
-                    // Eticheta Tipului precompletat vine din `$expand=TipMaterial`
-                    // al aceleiași selecții; se reține doar când precompletarea
-                    // chiar se aplică.
-                    const tipEl = p?.TipMaterial as Record<string, unknown> | null | undefined;
-                    setEtichete((prev) => ({
-                      ...prev,
-                      ProdusDenumire: text(p?.Denumire),
-                      ...(tip && !linie.TipMaterialId
-                        ? { TipMaterialCod: text(tipEl?.Cod), TipMaterialDenumire: text(tipEl?.Denumire) }
-                        : {}),
-                    }));
+                    // sârmă.
+                    setEtichete((prev) => ({ ...prev, ProdusDenumire: text(p?.Denumire) }));
+                    // Tipul + eticheta lui, o singură decizie (F20-D3). Eticheta
+                    // vine din cache-ul de nomenclatoare, nu dintr-un
+                    // `$expand=TipMaterial` plătit pe fiecare pagină de căutare.
+                    precompleteazaTip({
+                      linie,
+                      tipId: p?.TipMaterialId == null ? undefined : String(p.TipMaterialId),
+                      setLinie,
+                      setEtichete,
+                    });
                   }}
                 />
                 <p className="indiciu">
@@ -224,7 +216,7 @@ export function LdiEditorLinie(props: {
         <details className="sectiune-pliabila">
           <summary>Clasificație bugetară</summary>
           <div className="grila-campuri">
-            <Lookup<LdiLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
+            <Lookup<LdiLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} />
           </div>
         </details>
       </Formular>

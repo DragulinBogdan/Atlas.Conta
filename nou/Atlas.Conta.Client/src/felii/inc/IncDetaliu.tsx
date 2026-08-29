@@ -31,7 +31,7 @@ export function IncDetaliu() {
             eticheta="Cont propriu (în care se încasează)"
             entitate="ContPropriu"
             mod="local"
-            cauta={['Cod', 'Denumire', 'Iban']}
+            cauta={['Cautare', 'Iban']}
           />
         </>
       }

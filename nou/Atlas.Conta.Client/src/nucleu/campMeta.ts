@@ -20,7 +20,15 @@ import openapiBrut from '../generated/openapi.json?raw';
 
 type MembriMeta = Record<string, string>;
 type TipMeta = { DefaultProperty: string | null; Membri: MembriMeta };
-type Metadata = { Enumuri: Record<string, Record<string, string>>; Tipuri: Record<string, TipMeta> };
+type Metadata = {
+  Enumuri: Record<string, Record<string, string>>;
+  // A treia secțiune a dump-ului (F20-D6): listele care sunt LEGE ÎN COD
+  // (`BazeContabile`, `CoduriMiscare`) plus tabelul de normalizare a căutării
+  // (`Cautare: {De, La}`). Nu sunt entități și nu au ușă OData — de aceea ajung
+  // în client prin dump, nu printr-o interogare.
+  Nomenclatoare: Record<string, unknown>;
+  Tipuri: Record<string, TipMeta>;
+};
 
 type ProprietateSchema = {
   type?: string;
@@ -80,6 +88,31 @@ export function useCampMeta(tip: string, membru: string, schema?: string): CampM
 // Display-ul lookup-urilor (43f): proprietatea de afișare a nomenclatorului.
 export function defaultProperty(tip: string): string {
   return metadata.Tipuri[tip]?.DefaultProperty ?? 'ID';
+}
+
+// Are tipul membrul ăsta? Întrebarea o pune azi `nucleu/odata.ts` despre coloana
+// `Cautare` (F20-D1/D2): prezența ei e o proprietate a MODELULUI, nu o listă de
+// entități scrisă de mână în TS — care ar drifta la prima entitate nouă.
+export function areMembru(tip: string, membru: string): boolean {
+  return metadata.Tipuri[tip]?.Membri[membru] !== undefined;
+}
+
+// O listă din secțiunea `Nomenclatoare` a dump-ului (F20-D6). Lista întoarsă e
+// cea a serverului, în ordinea lui — clientul n-o completează și n-o sortează.
+export function nomenclator<T = Record<string, string>>(nume: string): T[] {
+  const valoare = metadata.Nomenclatoare?.[nume];
+  if (valoare === undefined && import.meta.env.DEV)
+    console.warn(`[campMeta] nomenclatorul „${nume}" nu există în metadata.json — rulați ModelCheck --dump-metadata.`);
+  return Array.isArray(valoare) ? (valoare as T[]) : [];
+}
+
+// Tabelul de normalizare a căutării (F20-D1.1) — perechi de caractere, aceleași
+// pe care coloana generată `Cautare` le aplică în SQL. Se publică în dump tocmai
+// ca TS-ul să nu-l COPIEZE: o a doua listă ar putea drifta de coloană, iar
+// driftul s-ar vedea abia ca „lookup-ul nu găsește".
+export function tabelCautare(): { De: string; La: string } {
+  const t = metadata.Nomenclatoare?.Cautare as { De?: string; La?: string } | undefined;
+  return { De: t?.De ?? '', La: t?.La ?? '' };
 }
 
 // Label-ul unei valori de enum (`Stare`, `TipStoc` …) — serverul le pune pe

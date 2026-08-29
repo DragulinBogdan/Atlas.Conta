@@ -87,7 +87,6 @@ export function FctEditorLinie(props: {
             entitate="Produs"
             mod="remote"
             afisare={codSiDenumire}
-            cauta={['Cod', 'Denumire']}
             expand={['TipMaterial']}
             laSelectie={(p) => {
               // ODataStore deserializează Edm.Guid ca OBIECT `Guid` DevExtreme,
@@ -116,7 +115,6 @@ export function FctEditorLinie(props: {
             entitate="TipMaterial"
             mod="local"
             afisare={codSiDenumire}
-            cauta={['Cod', 'Denumire']}
             laSelectie={(t) => setEtichete((prev) => ({
               ...prev, TipMaterialCod: text(t?.Cod), TipMaterialDenumire: text(t?.Denumire),
             }))}
@@ -128,7 +126,6 @@ export function FctEditorLinie(props: {
             entitate="TipTva"
             mod="local"
             afisare={etichetaTipTva}
-            cauta={['Cod', 'Denumire']}
           />
           <div>
             <CampNumar<FctLinieWrite> camp="ValoareTva" zecimale={2} />
@@ -149,10 +146,10 @@ export function FctEditorLinie(props: {
         <details className="sectiune-pliabila">
           <summary>Clasificație bugetară</summary>
           <div className="grila-campuri">
-            <Lookup<FctLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
-            <Lookup<FctLinieWrite> camp="SursaFinantareId" entitate="SursaFinantare" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
-            <Lookup<FctLinieWrite> camp="CodFunctionalId" entitate="CodFunctional" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
-            <Lookup<FctLinieWrite> camp="ProiectId" entitate="Proiect" mod="local" afisare={codSiDenumire} cauta={['Cod', 'Denumire']} />
+            <Lookup<FctLinieWrite> camp="CodEconomicId" entitate="CodEconomic" mod="local" afisare={codSiDenumire} />
+            <Lookup<FctLinieWrite> camp="SursaFinantareId" entitate="SursaFinantare" mod="local" afisare={codSiDenumire} />
+            <Lookup<FctLinieWrite> camp="CodFunctionalId" entitate="CodFunctional" mod="local" afisare={codSiDenumire} />
+            <Lookup<FctLinieWrite> camp="ProiectId" entitate="Proiect" mod="local" afisare={codSiDenumire} />
           </div>
         </details>
       </Formular>
