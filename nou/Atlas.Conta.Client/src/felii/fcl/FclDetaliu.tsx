@@ -9,6 +9,7 @@ import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { PanouStingeri } from '../../nucleu/PanouStingeri';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
@@ -282,10 +283,9 @@ export function FclDetaliu() {
                 : <Static membru="PredatorId" eticheta="Emitent" valoare={doc?.PredatorDenumire} />}
 
               {/* Clientul: 129k parteneri ⇒ căutare server-side. */}
-              <Lookup<FclWrite>
+              <LookupGrila<FclWrite>
                 camp="PrimitorId"
                 entitate="Partener"
-                mod="remote"
                 cauta={['Cautare', 'CodFiscal']}
                 eticheta="Client"
               />

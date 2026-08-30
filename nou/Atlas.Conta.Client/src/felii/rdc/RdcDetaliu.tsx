@@ -8,6 +8,7 @@ import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
@@ -255,10 +256,9 @@ export function RdcDetaliu() {
                   WriteDto (F19-D6). */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<RdcWrite> camp="Data" />
-              <Lookup<RdcWrite>
+              <LookupGrila<RdcWrite>
                 camp="PredatorId"
                 entitate="Partener"
-                mod="remote"
                 eticheta="Clientul care returnează"
                 cauta={['Cautare', 'CodFiscal']}
               />

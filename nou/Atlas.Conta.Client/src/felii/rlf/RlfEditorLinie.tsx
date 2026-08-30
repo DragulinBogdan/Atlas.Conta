@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta } from '../../nucleu/campMeta';
 import { etichetaLot } from '../../nucleu/lot';
@@ -105,10 +106,9 @@ export function RlfEditorLinie(props: {
             {/* Lotul e OBLIGATORIU pe fiecare linie de retur (ieșirea e pe lot —
                 decizia 13): schema îl dă nullable fiindcă e nullable pe baza
                 detaliului, deci cerința se declară aici. */}
-            <Lookup<RlfLinieWrite>
+            <LookupGrila<RlfLinieWrite>
               camp="LotId"
               entitate="Lot"
-              mod="remote"
               obligatoriu
               expand={['Produs']}
               afisare={etichetaLot}

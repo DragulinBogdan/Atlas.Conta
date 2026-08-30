@@ -8,6 +8,7 @@ import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
@@ -259,10 +260,9 @@ export function RlfDetaliu() {
                 eticheta="Gestiunea din care iese marfa"
               />
               <div>
-                <Lookup<RlfWrite>
+                <LookupGrila<RlfWrite>
                   camp="PrimitorId"
                   entitate="Partener"
-                  mod="remote"
                   eticheta="Furnizorul căruia i se returnează"
                   cauta={['Cautare', 'CodFiscal']}
                 />

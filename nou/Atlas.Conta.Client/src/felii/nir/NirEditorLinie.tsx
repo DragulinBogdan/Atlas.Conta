@@ -3,6 +3,7 @@ import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData, CampNumar, CampText } from '../../nucleu/campuri';
 import { CampShell } from '../../nucleu/CampShell';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta } from '../../nucleu/campMeta';
 import { SCHEMA_LINIE, TIP_LINIE, type NirLinieWrite } from './api';
@@ -74,10 +75,9 @@ export function NirEditorLinie(props: {
       >
         <div className="grila-campuri">
           <div>
-            <Lookup<NirLinieWrite>
+            <LookupGrila<NirLinieWrite>
               camp="ProdusId"
               entitate="Produs"
-              mod="remote"
               // Inert pe linia cu lot moștenit: marfa e a LOTULUI, iar serverul
               // nu atinge nici lotul, nici produsul acolo (F5-D3/D4).
               readOnly={lotStrain}

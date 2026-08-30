@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { etichetaLot } from '../../nucleu/lot';
 import { precompleteazaTip } from '../../nucleu/etichete';
@@ -68,10 +69,9 @@ export function EditorLinie(props: {
                 F6-D8): locația curentă a unui lot e soldul din registru, nu
                 nașterea lui — un lot transferat trebuie să rămână consumabil.
                 Refuzul „nu există sold aici" e al gardianului motorului. */}
-            <Lookup<BcsLinieWrite>
+            <LookupGrila<BcsLinieWrite>
               camp="LotId"
               entitate="Lot"
-              mod="remote"
               expand={['Produs']}
               afisare={etichetaLot}
               cauta="Produs.Denumire"

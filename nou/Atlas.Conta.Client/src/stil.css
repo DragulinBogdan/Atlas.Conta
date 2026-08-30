@@ -21,23 +21,54 @@ body {
 h1, h2, h3 { margin: 0; font-weight: 600; }
 
 /* ── cadru ───────────────────────────────────────────────────────────── */
-.cadru__meniu {
+/* Bara orizontală care se rupea pe rânduri (smoke F20 D1) a MURIT: meniul e
+   vertical, în panoul unui Drawer DevExtreme — grupurile încap oricâte ar fi,
+   iar lista mai crește (ITV, politici). Bara de sus ține doar marca, comutatorul
+   de meniu și ieșirea, deci are înălțime FIXĂ — pe ea se sprijină
+   `calc(100vh - …)`-urile grilelor. */
+.cadru { height: 100vh; display: flex; flex-direction: column; }
+.cadru__bara {
   display: flex;
   align-items: center;
-  /* Bara se RUPE pe rânduri când nu încape (smoke F20 D1: la 1416 px grupurile
-     „Nomenclatoare"/„Politici" ieșeau din viewport și trăgeau body-ul în scroll
-     orizontal — ecranele noi erau practic inaccesibile din meniu). */
-  flex-wrap: wrap;
-  gap: 6px 18px;
-  padding: 10px 18px;
+  gap: 12px;
+  padding: 8px 14px;
   background: #ffffff;
   border-bottom: 1px solid var(--linie);
 }
-.cadru__marca { font-weight: 700; margin-right: 10px; }
-.cadru__meniu a { color: #35404e; text-decoration: none; padding: 4px 2px; }
-.cadru__meniu a.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
-.cadru__meniu > button { margin-left: auto; }
-.cadru__continut { padding: 16px 18px; }
+.cadru__marca { font-weight: 700; }
+.cadru__iesire { margin-left: auto; }
+/* Drawer-ul umple restul viewport-ului; `min-height: 0` e obligatoriu într-un
+   copil de flex-column care trebuie să-și țină PROPRIUL scroll. */
+.cadru__corp { flex: 1; min-height: 0; }
+.cadru__continut { padding: 16px 18px; height: 100%; overflow: auto; }
+
+/* panoul de meniu (conținutul Drawer-ului) */
+.meniu {
+  width: 210px;
+  height: 100%;
+  overflow-y: auto;
+  background: #ffffff;
+  border-right: 1px solid var(--linie);
+  padding: 10px 0;
+}
+.meniu a {
+  display: block;
+  padding: 4px 14px;
+  color: #35404e;
+  text-decoration: none;
+  border-right: 2px solid transparent;
+}
+.meniu a:hover { background: #f3f6fa; }
+.meniu a.active { color: var(--accent); background: #eef4fe; border-right-color: var(--accent); }
+.meniu__grup {
+  display: block;
+  margin: 14px 14px 4px;
+  color: #8a939d;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.meniu > .meniu__grup:first-child { margin-top: 0; }
 
 /* ── ecrane de listă ─────────────────────────────────────────────────── */
 .ecran__bara { display: flex; align-items: center; gap: 12px; margin-bottom: var(--gol); }
@@ -112,6 +143,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 /* comutatorul de fel al contrapartidei (partener / angajat) */
 .camp__comutator { display: flex; gap: 6px; padding: 3px 0; }
 .camp--eroare .dx-texteditor { border-color: var(--rosu); }
+
+/* panoul lookup-ului cu grilă: caseta de căutare deasupra grilei */
+.lookup-grila { display: flex; flex-direction: column; gap: 8px; }
 
 .editor-linie {
   margin-top: var(--gol);
@@ -268,16 +302,6 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .tabel-mic tr.saft__exemple details { max-height: 320px; overflow: auto; }
 
 /* ── nomenclatoare (felia 20) ────────────────────────────────────────── */
-/* separatorul de grup din meniu: „Nomenclatoare", „Politici" — etichetă, nu
-   link, deci nu poate fi apăsată din greșeală */
-.cadru__grup {
-  color: #8a939d;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  border-left: 1px solid var(--linie);
-  padding-left: 12px;
-}
 /* căutarea listei: un singur câmp, pe coloana generată `Cautare` */
 .nomenclator__cautare { min-width: 260px; }
 .nomenclator__titlu-grup {

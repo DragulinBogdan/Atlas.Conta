@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { useCamp } from '../../nucleu/formular';
 import { useSonda } from '../../nucleu/odata';
 
@@ -86,7 +87,7 @@ export function LaturaContrapartida<T extends object>(props: {
       </div>
 
       {fel === 'Partener'
-        && <Lookup<T> camp={camp} eticheta={eticheta} entitate="Partener" mod="remote" readOnly={readOnly} cauta={['Cautare', 'CodFiscal']} />}
+        && <LookupGrila<T> camp={camp} eticheta={eticheta} entitate="Partener" readOnly={readOnly} cauta={['Cautare', 'CodFiscal']} />}
       {fel === 'Angajat'
         && <Lookup<T> camp={camp} eticheta={eticheta} entitate="Angajat" mod="local" readOnly={readOnly} cauta={['Cautare', 'Marca']} />}
       {fel === 'ContPropriu'

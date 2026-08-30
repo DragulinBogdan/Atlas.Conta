@@ -127,7 +127,8 @@ export function Lookup<T extends object>(props: PropsLookup<T>) {
 // câmp text.
 const FORMA_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function tipuriGuid(filtru?: unknown[]): Record<string, 'Guid'> | undefined {
+// Exportat pentru `LookupGrila` — aceeași deducere, aceeași conductă OData.
+export function tipuriGuid(filtru?: unknown[]): Record<string, 'Guid'> | undefined {
   if (!filtru) return undefined;
   const tipuri: Record<string, 'Guid'> = {};
   const parcurge = (nod: unknown) => {

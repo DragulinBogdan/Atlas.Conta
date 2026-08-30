@@ -7,6 +7,7 @@ import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampBifa, CampData, CampSelectie, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { PanouStingeri } from '../../nucleu/PanouStingeri';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
@@ -245,8 +246,8 @@ export function FctDetaliu() {
             <div className="grila-campuri">
               <CampText<FctWrite> camp="Numar" obligatoriu />
               <CampData<FctWrite> camp="Data" />
-              {/* Furnizorul: 129k parteneri ⇒ căutare server-side (`mod="remote"`). */}
-              <Lookup<FctWrite> camp="PredatorId" entitate="Partener" mod="remote" cauta={['Cautare', 'CodFiscal']} />
+              {/* Furnizorul: 129k parteneri ⇒ lookup cu grilă, căutare server-side. */}
+              <LookupGrila<FctWrite> camp="PredatorId" entitate="Partener" cauta={['Cautare', 'CodFiscal']} />
               <Lookup<FctWrite> camp="PrimitorId" entitate="Gestiune" mod="local" />
               <CampData<FctWrite> camp="DataScadenta" />
               <CampText<FctWrite> camp="NumarPV" />

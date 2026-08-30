@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { etichetaLot } from '../../nucleu/lot';
 import { SCHEMA_LINIE, TIP_LINIE, type BtrLinieWrite } from './api';
@@ -47,10 +48,9 @@ export function EditorLinie(props: {
       >
         <div className="grila-campuri">
           <Lookup<BtrLinieWrite> camp="TipMaterialId" entitate="TipMaterial" mod="local" />
-          <Lookup<BtrLinieWrite>
+          <LookupGrila<BtrLinieWrite>
             camp="LotId"
             entitate="Lot"
-            mod="remote"
             expand={['Produs']}
             afisare={etichetaLot}
             cauta="Produs.Denumire"

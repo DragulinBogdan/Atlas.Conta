@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta } from '../../nucleu/campMeta';
 import { etichetaLot } from '../../nucleu/lot';
@@ -271,10 +272,9 @@ export function RdcEditorLinie(props: {
                     BTR/BCS/LDI): locația curentă a unui lot e soldul din
                     registru, nu nașterea lui. Din el iese costul cu care revine
                     marfa — de aceea rolul ăsta n-are editor de valoare. */}
-                <Lookup<RdcLinieWrite>
+                <LookupGrila<RdcLinieWrite>
                   camp="LotId"
                   entitate="Lot"
-                  mod="remote"
                   obligatoriu
                   expand={['Produs']}
                   afisare={etichetaLot}

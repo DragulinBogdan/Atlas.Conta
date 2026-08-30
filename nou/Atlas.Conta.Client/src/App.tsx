@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { NavLink, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
+import Drawer from 'devextreme-react/drawer';
 import { esteAutentificat, stergeToken } from './nucleu/auth';
 import { cache } from './nucleu/cache';
 import { Login } from './pagini/Login';
@@ -151,48 +153,77 @@ export function App() {
   );
 }
 
+// Meniul, în panoul Drawer-ului: grupuri VERTICALE în locul barei care se rupea
+// pe rânduri (smoke F20 D1 a prins grupurile ieșind din viewport la 1416 px, iar
+// lista mai crește — ITV, politici). `NavLink`-urile rămân ale react-router:
+// template-urile devextreme-react se randează în același arbore React, deci
+// contextul router-ului și clasa `active` trec neatinse.
+function Meniu() {
+  return (
+    <nav className="meniu">
+      <span className="meniu__grup">Documente</span>
+      <NavLink to="/fct">Facturi intrare</NavLink>
+      <NavLink to="/nir">NIR-uri</NavLink>
+      <NavLink to="/fcl">Facturi ieșire</NavLink>
+      <NavLink to="/dsc">Descărcări</NavLink>
+      <NavLink to="/btr">Note de transfer</NavLink>
+      <NavLink to="/bcs">Bonuri de consum</NavLink>
+      <NavLink to="/ldi">Diferențe inventar</NavLink>
+      <NavLink to="/asm">Asamblări</NavLink>
+      <NavLink to="/ntc">Note contabile</NavLink>
+      <NavLink to="/rlf">Retururi la furnizor</NavLink>
+      <NavLink to="/rdc">Retururi de la client</NavLink>
+      <span className="meniu__grup">Trezorerie</span>
+      <NavLink to="/plt">Plăți</NavLink>
+      <NavLink to="/inc">Încasări</NavLink>
+      <NavLink to="/dec">Deconturi</NavLink>
+      <span className="meniu__grup">Rapoarte</span>
+      <NavLink to="/stoc">Sold stoc</NavLink>
+      <NavLink to="/balanta">Balanță</NavLink>
+      <NavLink to="/balanta-plan">Balanță pe plan</NavLink>
+      <NavLink to="/jurnal">Registru-jurnal</NavLink>
+      <span className="meniu__grup">TVA și declarații</span>
+      <NavLink to="/jurnal-cumparari">Jurnal cumpărări</NavLink>
+      <NavLink to="/jurnal-vanzari">Jurnal vânzări</NavLink>
+      <NavLink to="/decont-tva">Decont TVA</NavLink>
+      <NavLink to="/d300">D300</NavLink>
+      <NavLink to="/d394">D394</NavLink>
+      <NavLink to="/saft">SAF-T</NavLink>
+      <span className="meniu__grup">Nomenclatoare</span>
+      <NavLink to="/parteneri">Parteneri</NavLink>
+      <NavLink to="/produse">Produse</NavLink>
+      <NavLink to="/societate">Societate</NavLink>
+      <span className="meniu__grup">Politici</span>
+      <NavLink to="/politici/miscare-saft">Mișcări SAF-T</NavLink>
+    </nav>
+  );
+}
+
+const randeazaMeniu = () => <Meniu />;
+
 function Cadru() {
   const navigheaza = useNavigate();
+  // Starea deschis/închis e EFEMERIDĂ locală (43c): nu merită un link — două
+  // ferestre pe același raport pot avea legitim meniul în stări diferite.
+  const [meniuDeschis, setMeniuDeschis] = useState(true);
   if (!esteAutentificat())
     return <Navigate to="/login" replace />;
 
   return (
     <div className="cadru">
-      <nav className="cadru__meniu">
-        <span className="cadru__marca">Atlas Conta</span>
-        <NavLink to="/fct">Facturi intrare</NavLink>
-        <NavLink to="/nir">NIR-uri</NavLink>
-        <NavLink to="/fcl">Facturi ieșire</NavLink>
-        <NavLink to="/dsc">Descărcări</NavLink>
-        <NavLink to="/plt">Plăți</NavLink>
-        <NavLink to="/inc">Încasări</NavLink>
-        <NavLink to="/dec">Deconturi</NavLink>
-        <NavLink to="/btr">Note de transfer</NavLink>
-        <NavLink to="/bcs">Bonuri de consum</NavLink>
-        <NavLink to="/ldi">Diferențe inventar</NavLink>
-        <NavLink to="/asm">Asamblări</NavLink>
-        <NavLink to="/ntc">Note contabile</NavLink>
-        <NavLink to="/rlf">Retururi la furnizor</NavLink>
-        <NavLink to="/rdc">Retururi de la client</NavLink>
-        <NavLink to="/stoc">Sold stoc</NavLink>
-        <NavLink to="/balanta">Balanță</NavLink>
-        <NavLink to="/balanta-plan">Balanță pe plan</NavLink>
-        <NavLink to="/jurnal">Jurnal</NavLink>
-        <NavLink to="/jurnal-cumparari">Jurnal cumpărări</NavLink>
-        <NavLink to="/jurnal-vanzari">Jurnal vânzări</NavLink>
-        <NavLink to="/decont-tva">Decont TVA</NavLink>
-        <NavLink to="/d300">D300</NavLink>
-        <NavLink to="/d394">D394</NavLink>
-        <NavLink to="/saft">SAF-T</NavLink>
-        <span className="cadru__grup">Nomenclatoare</span>
-        <NavLink to="/parteneri">Parteneri</NavLink>
-        <NavLink to="/produse">Produse</NavLink>
-        <NavLink to="/societate">Societate</NavLink>
-        <span className="cadru__grup">Politici</span>
-        <NavLink to="/politici/miscare-saft">Mișcări SAF-T</NavLink>
+      <header className="cadru__bara">
         <button
           type="button"
           className="buton buton--mic"
+          aria-label="Meniu"
+          onClick={() => setMeniuDeschis((d) => !d)}
+        >
+          ☰
+        </button>
+        <span className="cadru__marca">Atlas Conta</span>
+        <button
+          type="button"
+          className="buton buton--mic cadru__iesire"
           // Ieșirea e navigare SPA, deci contextul JS supraviețuiește: fără `clear()`
           // cache-ul (`staleTime: Infinity` pe nomenclatoare, F20-D2) ar servi
           // următorului utilizator din același tab datele celui dinainte (review F2).
@@ -200,8 +231,19 @@ function Cadru() {
         >
           Ieșire
         </button>
-      </nav>
-      <main className="cadru__continut"><Outlet /></main>
+      </header>
+      <div className="cadru__corp">
+        <Drawer
+          opened={meniuDeschis}
+          openedStateMode="shrink"
+          revealMode="slide"
+          position="left"
+          height="100%"
+          render={randeazaMeniu}
+        >
+          <main className="cadru__continut"><Outlet /></main>
+        </Drawer>
+      </div>
     </div>
   );
 }

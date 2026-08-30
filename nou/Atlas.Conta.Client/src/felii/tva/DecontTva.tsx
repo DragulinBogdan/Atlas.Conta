@@ -7,7 +7,7 @@ import type { components } from '../../generated/api-types';
 import { labelEnum } from '../../nucleu/campMeta';
 import { storeRemote } from '../../nucleu/dxStore';
 import { urlCu, useUrlStare } from '../../nucleu/urlStare';
-import { CasetaData, lunaCurenta } from '../raportare/comune';
+import { CasetaPerioada, lunaCurenta } from '../raportare/comune';
 
 // Scheletul D300 (JT-D7/JT-D9): cifrele perioadei per tip de TVA, cu codurile
 // SAF-T atașate — pe ambele sensuri deodată.
@@ -43,8 +43,7 @@ export function DecontTva() {
       <div className="ecran__bara"><h2>Decont TVA (schelet D300)</h2></div>
 
       <div className="bara-raport">
-        <CasetaData eticheta="De la" valoare={stare.dataStart} seteaza={(v) => seteaza({ dataStart: v })} />
-        <CasetaData eticheta="Până la" valoare={stare.dataEnd} seteaza={(v) => seteaza({ dataEnd: v })} />
+        <CasetaPerioada dataStart={stare.dataStart} dataEnd={stare.dataEnd} seteaza={seteaza} />
       </div>
 
       <DataGrid

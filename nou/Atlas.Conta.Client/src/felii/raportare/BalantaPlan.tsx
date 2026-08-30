@@ -7,7 +7,7 @@ import type { components } from '../../generated/api-types';
 import { ia } from '../../nucleu/http';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { urlCu, useDimensiuniUrl, useUrlStare } from '../../nucleu/urlStare';
-import { CasetaData, lunaCurenta } from './comune';
+import { CasetaPerioada, lunaCurenta } from './comune';
 
 // Balanța pliată pe planul de conturi (BP-D1…BP-D5) — rollup-ul pe care felia 9
 // l-a lăsat deschis cu un motiv (R-D5): pe un grup de grilă rulajele se pot
@@ -68,8 +68,7 @@ export function BalantaPlan() {
       </div>
 
       <div className="bara-raport">
-        <CasetaData eticheta="De la" valoare={stare.dataStart} seteaza={(v) => seteaza({ dataStart: v })} />
-        <CasetaData eticheta="Până la" valoare={stare.dataEnd} seteaza={(v) => seteaza({ dataEnd: v })} />
+        <CasetaPerioada dataStart={stare.dataStart} dataEnd={stare.dataEnd} seteaza={seteaza} />
         <label className="bara-raport__camp">
           <span className="camp__eticheta">Adâncime</span>
           <SelectBox

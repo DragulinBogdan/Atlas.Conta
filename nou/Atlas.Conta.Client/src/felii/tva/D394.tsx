@@ -8,7 +8,7 @@ import { labelEnum } from '../../nucleu/campMeta';
 import { eroriDin, ia } from '../../nucleu/http';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { urlCu, useUrlStare } from '../../nucleu/urlStare';
-import { CasetaData, lunaCurenta } from '../raportare/comune';
+import { CasetaPerioada, lunaCurenta } from '../raportare/comune';
 
 // D394 — declarația informativă (felia 14, D4-D7): aceleași cifre ca în D300,
 // așezate PER PARTENER (OPANAF 3769/2015, mod. 2194/2025). Ecran separat de
@@ -75,8 +75,7 @@ export function D394() {
       <div className="ecran__bara"><h2>D394 — declarație informativă</h2></div>
 
       <div className="bara-raport">
-        <CasetaData eticheta="De la" valoare={stare.dataStart} seteaza={(v) => seteaza({ dataStart: v })} />
-        <CasetaData eticheta="Până la" valoare={stare.dataEnd} seteaza={(v) => seteaza({ dataEnd: v })} />
+        <CasetaPerioada dataStart={stare.dataStart} dataEnd={stare.dataEnd} seteaza={seteaza} />
         {citit.data && (
           <span className="indiciu">
             Parteneri: C {citit.data.NrCui1 ?? 0} · D {citit.data.NrCui2 ?? 0} · E {citit.data.NrCui3 ?? 0} · F {citit.data.NrCui4 ?? 0}

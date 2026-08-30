@@ -8,6 +8,7 @@ import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
@@ -246,7 +247,7 @@ export function NirDetaliu() {
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<NirWrite> camp="Data" />
               {/* Furnizorul: 129k parteneri ⇒ căutare server-side. */}
-              <Lookup<NirWrite> camp="PredatorId" entitate="Partener" mod="remote" cauta={['Cautare', 'CodFiscal']} />
+              <LookupGrila<NirWrite> camp="PredatorId" entitate="Partener" cauta={['Cautare', 'CodFiscal']} />
               {/* Gestiunea primitoare: tot din ea se nasc loturile liniilor
                   culese manual (`GestiuneLoturiCulese` — F5-D2). */}
               <Lookup<NirWrite> camp="PrimitorId" entitate="Gestiune" mod="local" />

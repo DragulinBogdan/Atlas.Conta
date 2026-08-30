@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DateBox } from 'devextreme-react';
+import { DateRangeBox } from 'devextreme-react/date-range-box';
 import DataSource from 'devextreme/data/data_source';
 import { storeOData } from '../../nucleu/odata';
 import { izolataZi } from '../../nucleu/zi';
@@ -21,28 +21,42 @@ function zi(d: Date): string {
   return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, '0')}-${`${d.getDate()}`.padStart(2, '0')}`;
 }
 
-// Caseta de dată a barei de raport. NU e un `CampData`: acela e legat de
-// agregatul unui formular (`useCamp`), iar aici nu există formular — parametrul
-// trăiește în URL (43c). Aceeași regulă de propagare ca peste tot în client:
-// doar acțiunile omului (`e.event`) schimbă starea.
-export function CasetaData(props: {
-  eticheta: string;
-  valoare: string;
+// Perioada barei de raport — UN widget (`DateRangeBox`), nu două casete: cele
+// două date sunt UN parametru (un interval), iar start ≤ sfârșit vine din
+// componentă, nu dintr-o validare a noastră. NU e un `CampData`: acela e legat
+// de agregatul unui formular (`useCamp`), iar aici nu există formular —
+// parametrul trăiește în URL (43c). Aceeași regulă de propagare ca peste tot în
+// client: doar acțiunile omului (`e.event`) schimbă starea.
+export function CasetaPerioada(props: {
+  dataStart: string;
+  dataEnd: string;
+  // Ecranele cu perioadă OBLIGATORIE (balanța, fișa, formularele) primesc
+  // intervalul doar ÎNTREG: în calendar alegerea începe cu startul, iar un
+  // patch intermediar `[start, null]` ar pleca pe sârmă ca cerere invalidă
+  // (serverul refuză cu 400, pe bună dreptate). Pe cele cu perioadă opțională
+  // (registrul-jurnal) capetele sunt filtre independente, deci trec și singure.
   optionala?: boolean;
-  seteaza: (v: string) => void;
+  seteaza: (v: { dataStart: string; dataEnd: string }) => void;
 }) {
-  const { eticheta, valoare, optionala, seteaza } = props;
+  const { dataStart, dataEnd, optionala, seteaza } = props;
   return (
     <label className="bara-raport__camp">
-      <span className="camp__eticheta">{eticheta}</span>
-      <DateBox
-        type="date"
+      <span className="camp__eticheta">Perioada</span>
+      <DateRangeBox
         displayFormat="dd.MM.yyyy"
-        // Cu buton de golire, 140px taie data afișată („01.01.2…").
-        width={optionala ? 170 : 140}
-        value={valoare || null}
+        startDateLabel=""
+        endDateLabel=""
+        width={280}
+        value={[dataStart || null, dataEnd || null]}
         showClearButton={optionala}
-        onValueChanged={(e) => { if (e.event) seteaza(izolataZi(e.value) ?? ''); }}
+        onValueChanged={(e) => {
+          if (!e.event) return;
+          const [s, f] = (e.value ?? [null, null]) as [unknown, unknown];
+          const start = izolataZi(s) ?? '';
+          const sfarsit = izolataZi(f) ?? '';
+          if (!optionala && (!start || !sfarsit)) return;
+          seteaza({ dataStart: start, dataEnd: sfarsit });
+        }}
       />
     </label>
   );

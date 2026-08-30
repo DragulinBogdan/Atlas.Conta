@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData, CampNumar, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { SCHEMA_LINIE, TIP_LINIE, type FctLinieWrite } from './api';
 
@@ -82,10 +83,9 @@ export function FctEditorLinie(props: {
         aratErori={aratErori}
       >
         <div className="grila-campuri">
-          <Lookup<FctLinieWrite>
+          <LookupGrila<FctLinieWrite>
             camp="ProdusId"
             entitate="Produs"
-            mod="remote"
             afisare={codSiDenumire}
             expand={['TipMaterial']}
             laSelectie={(p) => {

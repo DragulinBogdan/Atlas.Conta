@@ -7,7 +7,7 @@ import type { components } from '../../generated/api-types';
 import { storeRemote } from '../../nucleu/dxStore';
 import { rutaTip } from '../../nucleu/stingeri';
 import { urlCu, useUrlStare } from '../../nucleu/urlStare';
-import { CasetaData } from './comune';
+import { CasetaPerioada } from './comune';
 
 // Registrul-jurnal (R-D9): listarea cronologică a notelor așa cum au fost
 // scrise — rândurile BRUTE ale registrului, nu atomii unpivotați (o notă apare
@@ -33,8 +33,7 @@ export function RegistruJurnal() {
       <div className="ecran__bara"><h2>Registru-jurnal</h2></div>
 
       <div className="bara-raport">
-        <CasetaData eticheta="De la" valoare={stare.dataStart} optionala seteaza={(v) => seteaza({ dataStart: v })} />
-        <CasetaData eticheta="Până la" valoare={stare.dataEnd} optionala seteaza={(v) => seteaza({ dataEnd: v })} />
+        <CasetaPerioada dataStart={stare.dataStart} dataEnd={stare.dataEnd} optionala seteaza={seteaza} />
         <span className="indiciu">Fără perioadă: tot registrul.</span>
       </div>
 

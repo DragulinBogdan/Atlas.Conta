@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData, CampNumar, CampSelectie, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta } from '../../nucleu/campMeta';
 import { etichetaLot } from '../../nucleu/lot';
@@ -148,10 +149,9 @@ export function AsmEditorLinie(props: {
           {produs && (
             <>
               <div>
-                <Lookup<AsmLinieWrite>
+                <LookupGrila<AsmLinieWrite>
                   camp="ProdusId"
                   entitate="Produs"
-                  mod="remote"
                   obligatoriu
                   afisare={codSiDenumire}
                   laSelectie={(p) => {
@@ -194,10 +194,9 @@ export function AsmEditorLinie(props: {
                   registru, nu nașterea lui. Refuzul „nu există sold aici" e al
                   gardianului motorului, ca și refuzul consumului dintr-un lot
                   produs de ACELAȘI document (46d). */}
-              <Lookup<AsmLinieWrite>
+              <LookupGrila<AsmLinieWrite>
                 camp="LotId"
                 entitate="Lot"
-                mod="remote"
                 obligatoriu
                 expand={['Produs']}
                 afisare={etichetaLot}

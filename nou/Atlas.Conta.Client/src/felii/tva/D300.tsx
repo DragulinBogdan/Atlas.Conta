@@ -9,7 +9,7 @@ import { labelEnum } from '../../nucleu/campMeta';
 import { eroriDin, ia } from '../../nucleu/http';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { urlCu, useUrlStare } from '../../nucleu/urlStare';
-import { CasetaData, lunaCurenta } from '../raportare/comune';
+import { CasetaPerioada, lunaCurenta } from '../raportare/comune';
 
 // D300 — decontul de TVA (felia 12, D3-D7): cele 55 de poziții ale formularului
 // OPANAF 174/2026, alimentate din `RegistruTva`.
@@ -89,8 +89,7 @@ export function D300() {
       <div className="ecran__bara"><h2>D300 — decont de TVA</h2></div>
 
       <div className="bara-raport">
-        <CasetaData eticheta="De la" valoare={stare.dataStart} seteaza={(v) => seteaza({ dataStart: v })} />
-        <CasetaData eticheta="Până la" valoare={stare.dataEnd} seteaza={(v) => seteaza({ dataEnd: v })} />
+        <CasetaPerioada dataStart={stare.dataStart} dataEnd={stare.dataEnd} seteaza={seteaza} />
         {EXTERNI.map(({ cheie: c, eticheta }) => (
           <CasetaExtern
             key={c}

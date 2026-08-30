@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData, CampNumar, CampSelectie, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta } from '../../nucleu/campMeta';
 import { etichetaLot } from '../../nucleu/lot';
@@ -149,10 +150,9 @@ export function LdiEditorLinie(props: {
           {plus && (
             <>
               <div>
-                <Lookup<LdiLinieWrite>
+                <LookupGrila<LdiLinieWrite>
                   camp="ProdusId"
                   entitate="Produs"
-                  mod="remote"
                   obligatoriu
                   afisare={codSiDenumire}
                   laSelectie={(p) => {
@@ -192,10 +192,9 @@ export function LdiEditorLinie(props: {
                   BTR/BCS) — locația curentă a unui lot e soldul din registru, nu
                   nașterea lui. Refuzul „nu există sold aici" e al gardianului
                   motorului. */}
-              <Lookup<LdiLinieWrite>
+              <LookupGrila<LdiLinieWrite>
                 camp="LotId"
                 entitate="Lot"
-                mod="remote"
                 obligatoriu
                 expand={['Produs']}
                 afisare={etichetaLot}

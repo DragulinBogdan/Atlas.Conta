@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { etichetaLot } from '../../nucleu/lot';
 import { SCHEMA_LINIE, TIP_LINIE, type FclLinieWrite } from './api';
@@ -96,10 +97,9 @@ export function FclEditorLinie(props: {
       >
         <div className="grila-campuri">
           <div>
-            <Lookup<FclLinieWrite>
+            <LookupGrila<FclLinieWrite>
               camp="ProdusId"
               entitate="Produs"
-              mod="remote"
               afisare={codSiDenumire}
               expand={['TipMaterial']}
               laSelectie={(p) => {
@@ -146,10 +146,9 @@ export function FclEditorLinie(props: {
                 traversează OData (restanța 40d) — de aceea eticheta se compune
                 aici din `$expand=Produs` + dată + preț, iar sortarea/căutarea se
                 dau pe coloane REALE (`Data` = ordinea FIFO, `LotFabricatie`). */}
-            <Lookup<FclLinieWrite>
+            <LookupGrila<FclLinieWrite>
               camp="LotId"
               entitate="Lot"
-              mod="remote"
               readOnly={produsId == null}
               afisare={etichetaLot}
               expand={['Produs']}

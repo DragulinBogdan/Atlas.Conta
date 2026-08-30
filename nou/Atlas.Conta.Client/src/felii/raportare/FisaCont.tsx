@@ -8,7 +8,7 @@ import type { components } from '../../generated/api-types';
 import { storeRemote } from '../../nucleu/dxStore';
 import { rutaTip } from '../../nucleu/stingeri';
 import { urlCu, useDimensiuniUrl, useUrlStare } from '../../nucleu/urlStare';
-import { CasetaData, etichetaCont, lunaCurenta, useSursaConturi, type ElementCont } from './comune';
+import { CasetaPerioada, etichetaCont, lunaCurenta, useSursaConturi, type ElementCont } from './comune';
 
 // Fișa de cont (R-D6): rândurile unui cont, cronologic, cu SOLDUL CURENT cumulat
 // până la fiecare rând inclusiv — calculat de o funcție de fereastră pe server.
@@ -103,8 +103,7 @@ export function FisaCont() {
             }}
           />
         </label>
-        <CasetaData eticheta="De la" valoare={stare.dataStart} seteaza={(v) => seteaza({ dataStart: v })} />
-        <CasetaData eticheta="Până la" valoare={stare.dataEnd} seteaza={(v) => seteaza({ dataEnd: v })} />
+        <CasetaPerioada dataStart={stare.dataStart} dataEnd={stare.dataEnd} seteaza={seteaza} />
       </div>
 
       {sursa === null ? (

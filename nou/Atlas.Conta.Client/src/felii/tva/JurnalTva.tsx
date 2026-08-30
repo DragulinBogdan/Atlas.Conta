@@ -9,7 +9,7 @@ import { labelEnum } from '../../nucleu/campMeta';
 import { storeRemote } from '../../nucleu/dxStore';
 import { rutaTip } from '../../nucleu/stingeri';
 import { urlCu, useUrlStare } from '../../nucleu/urlStare';
-import { CasetaData, lunaCurenta } from '../raportare/comune';
+import { CasetaPerioada, lunaCurenta } from '../raportare/comune';
 
 // Jurnalul de cumpărări / de vânzări (JT-D9) — UN component, DOUĂ ecrane.
 //
@@ -59,8 +59,7 @@ function JurnalTva({ sens, titlu }: { sens: Sens; titlu: string }) {
       <div className="ecran__bara"><h2>{titlu}</h2></div>
 
       <div className="bara-raport">
-        <CasetaData eticheta="De la" valoare={stare.dataStart} seteaza={(v) => seteaza({ dataStart: v })} />
-        <CasetaData eticheta="Până la" valoare={stare.dataEnd} seteaza={(v) => seteaza({ dataEnd: v })} />
+        <CasetaPerioada dataStart={stare.dataStart} dataEnd={stare.dataEnd} seteaza={seteaza} />
       </div>
 
       <DataGrid

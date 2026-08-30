@@ -8,7 +8,7 @@ import {
 import type { components } from '../../generated/api-types';
 import { storeRemote } from '../../nucleu/dxStore';
 import { urlCu, useDimensiuniUrl, useUrlStare } from '../../nucleu/urlStare';
-import { CasetaData, lunaCurenta } from './comune';
+import { CasetaPerioada, lunaCurenta } from './comune';
 
 // Balanța de verificare (R-D2…R-D5): agregarea registrului contabil, calculată
 // integral pe server. Grilă de CITIRE remote, ca `SoldStoc` — dar cu o
@@ -61,8 +61,7 @@ export function Balanta() {
       </div>
 
       <div className="bara-raport">
-        <CasetaData eticheta="De la" valoare={stare.dataStart} seteaza={(v) => seteaza({ dataStart: v })} />
-        <CasetaData eticheta="Până la" valoare={stare.dataEnd} seteaza={(v) => seteaza({ dataEnd: v })} />
+        <CasetaPerioada dataStart={stare.dataStart} dataEnd={stare.dataEnd} seteaza={seteaza} />
         <label className="bara-raport__camp">
           <span className="camp__eticheta">Analitic (pe repartitor)</span>
           <CheckBox
