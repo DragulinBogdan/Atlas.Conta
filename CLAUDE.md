@@ -747,6 +747,13 @@ decizia N.
     PUT-ul documentelor), lungimile din schemele OData ale `openapi.json`;
     Partener + ANAF, Societate, Produs; `PoliticaMiscareSaft` DOAR citire (56
     nu se redeschide). (i) Licența DevExtreme = `VITE_DEVEXTREME_LICENSE`.
+    (k) **Un nomenclator căutabil are cod și denumire**: pe orice `ICuCautare`,
+    coloana de cod (`Cod`/`Simbol`, `Cautare.NumeCod`) și `Denumire` sunt NOT
+    NULL + CHECK `btrim <> ''` în schemă (ușa de sistem), refuzate cu mesajul
+    câmpului de `GardianEditare` (ușa secured, înaintea switch-ului pe tip),
+    `[Required]` ⇒ OpenAPI `required[]` ⇒ asterisc/validare în client,
+    `[RuleRequiredField]` pentru XAF (Validation nu citește DataAnnotations).
+    Migrația nu maschează goluri — o bază cu rânduri goale pică zgomotos.
     (j) Restanțe 77-r1…r8 → jurnal.
 
 ## Stare și roadmap
@@ -779,9 +786,10 @@ detaliat în jurnal):
 în afara lui ITV (comandă, nu agregat — 76a) și a lui BPR (rezervat, 19).
 
 **Următorul pas**: felia ITV (comandă + ecran de rezultat, 76a), la cerere;
-restanțele de fond ale lui 77 (77-r2 obligativitatea `Cod`/`Denumire`, 77-r8
-decizia unică 404/403/422 pe toate ușile); `lista-react.md` mai ține doar
-itemii structurali și 77-r1/r3/r6.
+restanța de fond 77-r8 (decizia unică 404/403/422 pe toate ușile — cu cazul
+nou măsurat de 77k: `User` primește 422 de la gardian înaintea permisiunii);
+77-r2 e închisă de 77k; `lista-react.md` mai ține doar itemii structurali și
+77-r1/r3/r6.
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -858,7 +866,8 @@ shadow — decizie de bază de date), `Lookup` care refetchează eticheta per
 instanță, limita convenției 61b pe valorile din PRECOMPLETARE, `window.confirm`
 moștenit pe ștergere (toți patru închiși de 77)
 · 77-r1 BTR fără convenția 61b · 77-r2 `Cod`/`Denumire` neobligatorii pe nicio
-ușă · 77-r3 editarea `PoliticaMiscareSaft` din React, comanda ANAF de lot ·
+ușă (închisă de 77k) · 77-r3 editarea `PoliticaMiscareSaft` din React, comanda
+ANAF de lot ·
 77-r4 `CodFiscal`/`Iban`/`Marca` în afara lui `Cautare` · 77-r5 precompletarea
 nu distinge alegerea operatorului; invalidarea nu reîmprospătează
 `SelectBox`-urile montate · 77-r6 `displayExpr` de nucleu pentru `TipMaterial`

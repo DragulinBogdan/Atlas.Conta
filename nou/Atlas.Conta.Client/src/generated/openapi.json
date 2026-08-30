@@ -138556,6 +138556,10 @@
         "additionalProperties": false
       },
       "Angajat": {
+        "required": [
+          "Cod",
+          "Denumire"
+        ],
         "type": "object",
         "properties": {
           "ID": {
@@ -138563,12 +138567,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
@@ -138603,12 +138607,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
@@ -139484,6 +139488,10 @@
         "additionalProperties": false
       },
       "ContPropriu": {
+        "required": [
+          "Cod",
+          "Denumire"
+        ],
         "type": "object",
         "properties": {
           "ID": {
@@ -139491,12 +139499,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
@@ -141887,6 +141895,10 @@
         "additionalProperties": false
       },
       "Gestiune": {
+        "required": [
+          "Cod",
+          "Denumire"
+        ],
         "type": "object",
         "properties": {
           "ID": {
@@ -141894,12 +141906,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
@@ -141930,12 +141942,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
@@ -143694,6 +143706,10 @@
         "additionalProperties": false
       },
       "Partener": {
+        "required": [
+          "Cod",
+          "Denumire"
+        ],
         "type": "object",
         "properties": {
           "ID": {
@@ -143701,12 +143717,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
@@ -143799,12 +143815,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
@@ -143967,6 +143983,10 @@
         "additionalProperties": {}
       },
       "Produs": {
+        "required": [
+          "Cod",
+          "Denumire"
+        ],
         "type": "object",
         "properties": {
           "ID": {
@@ -143974,12 +143994,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "UM": {
             "type": "string",
@@ -144021,12 +144041,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "UM": {
             "type": "string",
@@ -144395,6 +144415,10 @@
         "type": "string"
       },
       "Repartitor": {
+        "required": [
+          "Cod",
+          "Denumire"
+        ],
         "type": "object",
         "properties": {
           "ID": {
@@ -144402,12 +144426,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
@@ -146580,6 +146604,10 @@
         "additionalProperties": false
       },
       "UnitateInterna": {
+        "required": [
+          "Cod",
+          "Denumire"
+        ],
         "type": "object",
         "properties": {
           "ID": {
@@ -146587,12 +146615,12 @@
             "format": "uuid"
           },
           "Cod": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Denumire": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"

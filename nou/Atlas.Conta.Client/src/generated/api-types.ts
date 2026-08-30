@@ -4566,8 +4566,8 @@ export interface components {
         Angajat: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod: string;
+            Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
             Activ?: boolean;
             /** Format: uuid */
@@ -4579,8 +4579,8 @@ export interface components {
         AngajatResourceDelta: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod?: string;
+            Denumire?: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
             Activ?: boolean;
             /** Format: uuid */
@@ -4898,8 +4898,8 @@ export interface components {
         ContPropriu: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod: string;
+            Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
             Activ?: boolean;
             /** Format: uuid */
@@ -5721,8 +5721,8 @@ export interface components {
         Gestiune: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod: string;
+            Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
             Activ?: boolean;
             /** Format: uuid */
@@ -5733,8 +5733,8 @@ export interface components {
         GestiuneResourceDelta: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod?: string;
+            Denumire?: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
             Activ?: boolean;
             /** Format: uuid */
@@ -6358,8 +6358,8 @@ export interface components {
         Partener: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod: string;
+            Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
             Activ?: boolean;
             /** Format: uuid */
@@ -6387,8 +6387,8 @@ export interface components {
         PartenerResourceDelta: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod?: string;
+            Denumire?: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
             Activ?: boolean;
             /** Format: uuid */
@@ -6443,8 +6443,8 @@ export interface components {
         Produs: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod: string;
+            Denumire: string;
             UM?: string | null;
             /** Format: uuid */
             TipMaterialId?: string | null;
@@ -6458,8 +6458,8 @@ export interface components {
         ProdusResourceDelta: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod?: string;
+            Denumire?: string;
             UM?: string | null;
             /** Format: uuid */
             TipMaterialId?: string | null;
@@ -6593,8 +6593,8 @@ export interface components {
         Repartitor: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod: string;
+            Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
             Activ?: boolean;
             /** Format: uuid */
@@ -7366,8 +7366,8 @@ export interface components {
         UnitateInterna: {
             /** Format: uuid */
             ID?: string;
-            Cod?: string | null;
-            Denumire?: string | null;
+            Cod: string;
+            Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
             Activ?: boolean;
             /** Format: uuid */

@@ -357,6 +357,16 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         //   * `Denumire` e obligatorie — un nomenclator care ar declara
         //     interfața fără ea ar produce o coloană tăcut inutilă, deci e
         //     eroare la construirea modelului (ca gardianul scării).
+        //
+        // 77-r2 — pe ACEEAȘI declarație stă și obligativitatea: un nomenclator
+        // care se caută după (cod, denumire) le are pe amândouă. NOT NULL +
+        // CHECK `btrim(...) <> ''` (NOT NULL singur lasă să treacă `''` și
+        // `'   '`) pe coloana de cod și pe `Denumire`, în tabelul care le
+        // DECLARĂ (sub TPT: `Repartitori`, o dată pentru toate frunzele). Ușa
+        // de sistem (Import1C, seed, motor) e apărată aici, de schemă; ușa
+        // secured primește mesajul de domeniu din `GardianEditare` înaintea
+        // bazei, iar violarea de constraint — dacă totuși ajunge — iese tot
+        // 422, tradusă (39a/60a, `CheckTemplate` cu numele regulii).
         private static void AplicaColoanaCautare(ModelBuilder modelBuilder) {
             foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
                 var clr = entityType.ClrType;
@@ -365,16 +375,24 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 var proprietate = clr.GetProperty(Cautare.NumeColoana);
                 if (proprietate == null || proprietate.DeclaringType != clr)
                     continue;
-                if (clr.GetProperty("Denumire") == null)
+                if (clr.GetProperty(Cautare.NumeDenumire) == null)
                     throw new InvalidOperationException(
                         $"{clr.Name} declară ICuCautare dar n-are `Denumire` — coloana generată " +
                         "n-ar avea ce normaliza.");
-                var coloanaCod =
-                    clr.GetProperty("Cod") != null ? "Cod" :
-                    clr.GetProperty("Simbol") != null ? "Simbol" : null;
-                modelBuilder.Entity(clr).Property(Cautare.NumeColoana)
-                    .HasComputedColumnSql(Cautare.ExpresieSql(coloanaCod, "Denumire"), stored: true)
+                var coloanaCod = Cautare.NumeCod(clr);
+                var entitate = modelBuilder.Entity(clr);
+                entitate.Property(Cautare.NumeColoana)
+                    .HasComputedColumnSql(Cautare.ExpresieSql(coloanaCod, Cautare.NumeDenumire), stored: true)
                     .ValueGeneratedOnAddOrUpdate();
+
+                var tabel = entityType.GetTableName() ?? clr.Name;
+                foreach (var coloana in new[] { coloanaCod, Cautare.NumeDenumire }) {
+                    if (coloana == null)
+                        continue;
+                    entitate.Property(coloana).IsRequired();
+                    entitate.ToTable(t => t.HasCheckConstraint(
+                        Cautare.NumeRegulaNeGol(tabel, coloana), Cautare.SqlNeGol(coloana)));
+                }
             }
         }
 

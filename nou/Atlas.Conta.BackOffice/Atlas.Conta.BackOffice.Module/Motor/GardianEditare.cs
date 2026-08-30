@@ -83,6 +83,11 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         var erori = new List<string>();
         var registruRaportat = false;
         foreach (var obj in os.ModifiedObjects) {
+            // (i) 77-r2 — orice nomenclator căutabil are cod și denumire.
+            // ÎNAINTEA switch-ului: regula e a INTERFEȚEI, nu a unui tip, iar
+            // `case Partener`/`case Cont` de mai jos ar înghiți potrivirea.
+            if (obj is ICuCautare rand && !EsteSters(os, obj))
+                VerificaCodDenumire(rand, erori);
             switch (obj) {
                 // (b) Registrele sunt append-only și EXCLUSIV ale motorului
                 // (decizia 14): nimeni nu le scrie prin UI/API, nici măcar
@@ -404,6 +409,30 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (!Societate.BazeContabile.Contains(societate.BazaContabila ?? "", StringComparer.Ordinal))
             erori.Add($"Baza contabilă „{societate.BazaContabila}” nu e una dintre valorile admise de "
                 + $"SAF-T (`TaxAccountingBasis`): {string.Join(", ", Societate.BazeContabile)}.");
+    }
+
+    // (i) 77-r2 — `Cod`/`Simbol` și `Denumire` obligatorii pe orice nomenclator
+    // care declară `ICuCautare` (aceeași declarație care îi dă coloana de
+    // căutare — regula stă pe interfață, nu pe o listă de tipuri). Jumătatea
+    // de DOMENIU a regulii: schema o repetă (NOT NULL + CHECK, ușa de sistem),
+    // dar pe ușa secured mesajul trebuie să fie al câmpului, nu al
+    // constraint-ului. `IsNullOrWhiteSpace`, ca la `PoliticaMiscareSaft`: un
+    // cod de „  ” nu e cod. Smoke-ul F20 a arătat gaura (partener fără
+    // denumire acceptat pe toate cele trei uși).
+    static void VerificaCodDenumire(ICuCautare rand, ICollection<string> erori) {
+        // Proxy-ul de change-tracking al EF e un tip dinamic derivat
+        // (`PartenerProxy`) — mesajul poartă numele CLASEI de domeniu.
+        var tip = rand.GetType();
+        if (tip.Assembly.IsDynamic && tip.BaseType != null)
+            tip = tip.BaseType;
+        var (cod, denumire) = Cautare.Citeste(rand);
+        var numeCod = Cautare.NumeCod(tip);
+        var eticheta = !string.IsNullOrWhiteSpace(denumire) ? denumire
+            : !string.IsNullOrWhiteSpace(cod) ? cod : "(nou)";
+        if (numeCod != null && string.IsNullOrWhiteSpace(cod))
+            erori.Add($"„{numeCod}” este obligatoriu pe {tip.Name} {eticheta}.");
+        if (string.IsNullOrWhiteSpace(denumire))
+            erori.Add($"„{Cautare.NumeDenumire}” este obligatorie pe {tip.Name} {eticheta}.");
     }
 
     // (g) Produsul (felia 16, D16-D2): `CodNc` are exact 8 cifre, sau e gol.

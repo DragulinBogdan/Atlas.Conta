@@ -62,6 +62,11 @@ void Check(string nume, bool ok) {
     if (!ok)
         esecuri++;
 }
+// Mesajul refuzului de domeniu, sau null dacă acțiunea a trecut.
+string Refuz(Action actiune) {
+    try { actiune(); return null; }
+    catch (OperareException e) { return e.Message; }
+}
 void CheckRefuza(string nume, Action actiune) {
     try {
         actiune();
@@ -248,6 +253,105 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
                 + (neconforme > 0 ? $" — {neconforme} neconforme, ex. {exemplu}" : ""), neconforme == 0);
         }
         Console.WriteLine($"Cautare: {totalEntitati} entități ICuCautare, {totalRanduri} rânduri verificate.");
+    }
+
+    // ═══ 77-r2 — `Cod`/`Simbol` + `Denumire` OBLIGATORII pe orice nomenclator căutabil ═══
+    // Trei uși, trei probe: (1) SCHEMA — pe fiecare `ICuCautare` coloana de cod
+    // și `Denumire` sunt NOT NULL și poartă CHECK-ul „ne-gol” (descoperite din
+    // model exact ca mai sus, deci un nomenclator nou intră automat);
+    // (2) GARDIANUL — pe ușa secured refuză cu mesajul CÂMPULUI (nu al
+    // constraint-ului), inclusiv pe spații, și tace pe un rând complet;
+    // (3) BAZA — pe ușa fără gardian (ModelCheck e exact „calea standalone”
+    // din antetul gardianului) commit-ul pică pe constraint, iar refuzul iese
+    // tradus ca mesaj de domeniu (39a), nu ca 23502/23514 brut.
+    {
+        var lipsuri = new List<string>();
+        var entitati = 0;
+        // CHECK-urile nu stau în modelul „read-optimized" de runtime — se citesc
+        // din modelul design-time (același din care iese migrația).
+        var modelDesign = Microsoft.EntityFrameworkCore.Infrastructure.AccessorExtensions
+            .GetService<Microsoft.EntityFrameworkCore.Metadata.IDesignTimeModel>(ctx).Model;
+        foreach (var et in modelDesign.GetEntityTypes()) {
+            var clr = et.ClrType;
+            if (clr == null || !typeof(ICuCautare).IsAssignableFrom(clr))
+                continue;
+            var propCautare = clr.GetProperty(Cautare.NumeColoana);
+            if (propCautare == null || propCautare.DeclaringType != clr)
+                continue;
+            entitati++;
+            var tabel = et.GetTableName();
+            var reguli = et.GetCheckConstraints().Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
+            foreach (var coloana in new[] { Cautare.NumeCod(clr), Cautare.NumeDenumire }) {
+                if (coloana == null)
+                    continue;
+                var prop = et.FindProperty(coloana);
+                if (prop == null || prop.IsNullable)
+                    lipsuri.Add($"{clr.Name}.{coloana} nullable");
+                if (!reguli.Contains(Cautare.NumeRegulaNeGol(tabel, coloana)))
+                    lipsuri.Add($"{clr.Name}.{coloana} fără CHECK");
+            }
+        }
+        Check($"77-r2 schema: pe toate cele {entitati} entități ICuCautare coloana de cod și `Denumire` sunt "
+            + "NOT NULL și poartă CHECK-ul „ne-gol” (`btrim <> ''`)"
+            + (lipsuri.Count > 0 ? $" — lipsesc: {string.Join(", ", lipsuri)}" : ""),
+            entitati >= 10 && lipsuri.Count == 0);
+
+        // (2) Gardianul — în memorie, fără commit, ca proba pe `Tara`.
+        string mesajGol, mesajSpatii, mesajCont, mesajComplet = null;
+        using (var osG = provider.CreateObjectSpace()) {
+            var p = osG.CreateObject<Partener>();
+            p.Cod = null; p.Denumire = null;
+            mesajGol = Refuz(() => GardianEditare.Verifica(osG));
+            p.Cod = "   "; p.Denumire = "\t";
+            mesajSpatii = Refuz(() => GardianEditare.Verifica(osG));
+            p.Cod = "77R2"; p.Denumire = "Partener 77-r2";
+            var c = osG.CreateObject<Cont>();
+            c.Simbol = ""; c.Denumire = "Cont fără simbol";
+            mesajCont = Refuz(() => GardianEditare.Verifica(osG));
+            c.Simbol = "9977";
+            mesajComplet = Refuz(() => GardianEditare.Verifica(osG));
+        }
+        Console.WriteLine($"     MĂSURAT (77-r2/gardian): gol → „{mesajGol}”; spații → „{mesajSpatii}”; "
+            + $"cont fără simbol → „{mesajCont}”; complet → „{mesajComplet ?? "acceptat"}”.");
+        Check("77-r2 gardian: `Partener` fără cod și denumire e refuzat cu AMBELE mesaje ale câmpurilor; "
+            + "spațiile/tab-ul nu sunt valori; `Cont` fără `Simbol` e refuzat pe numele LUI de cod; "
+            + "rândurile complete trec",
+            mesajGol != null && mesajGol.Contains("„Cod” este obligatoriu") && mesajGol.Contains("„Denumire” este obligatorie")
+            && mesajSpatii != null && mesajSpatii.Contains("„Cod”") && mesajSpatii.Contains("„Denumire”")
+            && mesajCont != null && mesajCont.Contains("„Simbol” este obligatoriu") && !mesajCont.Contains("„Cod”")
+            && mesajComplet == null);
+
+        // (3) Baza — ușa FĂRĂ gardian. Template-urile RO sunt ale host-ului
+        // (idempotent, ca la D17-V1).
+        Atlas.Conta.BackOffice.Module.BusinessObjects.MesajeConstraintRo.Aplica();
+        string Comite(Action<IObjectSpace> pregateste) {
+            using var osB = provider.CreateObjectSpace();
+            pregateste(osB);
+            try {
+                osB.CommitChanges();
+                return null;
+            }
+            catch (Exception e) {
+                var violare = Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationTranslator.TryTranslate(e);
+                return violare != null
+                    ? Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationMessages.Format(violare)
+                    : e.GetBaseException().Message;
+            }
+        }
+        var mesajNull = Comite(os => { var g = os.CreateObject<Gestiune>(); g.Cod = "77R2-NULL"; g.Denumire = null; });
+        var mesajBlank = Comite(os => { var g = os.CreateObject<Gestiune>(); g.Cod = "  "; g.Denumire = "Gestiune 77-r2"; });
+        var mesajProdus = Comite(os => { var pr = os.CreateObject<Produs>(); pr.Cod = "77R2"; pr.Denumire = ""; });
+        Console.WriteLine($"     MĂSURAT (77-r2/bază): Denumire null → „{mesajNull ?? "<A TRECUT>"}”; Cod „  ” → "
+            + $"„{mesajBlank ?? "<A TRECUT>"}”; Produs cu Denumire „” → „{mesajProdus ?? "<A TRECUT>"}”.");
+        Check("77-r2 baza (ușa fără gardian): NULL pică pe NOT NULL, „  ”/„” pică pe CHECK-ul `btrim <> ''` "
+            + "(pe `Repartitori` — tabelul BAZEI TPT — și pe `Produse`), iar refuzul iese ca mesaj de domeniu "
+            + "tradus (39a: „este obligatoriu” / numele regulii `CK_…_negol`), nu ca 23502/23514 brut",
+            mesajNull != null && mesajNull.Contains("obligatori")
+            && mesajBlank != null && mesajBlank.Contains(Cautare.NumeRegulaNeGol("Repartitori", "Cod"))
+            && mesajProdus != null && mesajProdus.Contains(Cautare.NumeRegulaNeGol("Produse", "Denumire")));
+        Check("77-r2 nimic nu rămâne în bază după probele picate",
+            !ctx.Repartitori.IgnoreQueryFilters().Any(r => r.Cod == "77R2-NULL" || r.Denumire == "Gestiune 77-r2")
+            && !ctx.Produse.IgnoreQueryFilters().Any(r => r.Cod == "77R2"));
     }
 
     // DIM-3: garda mapării PLATE — [Column] trebuie să conserve schema fostului

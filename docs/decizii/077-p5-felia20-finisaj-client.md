@@ -1,7 +1,7 @@
 # 77. Pasul 5, felia 20 — finisajul clientului: căutarea fără diacritice, cache-ul de nomenclator, confirmările, `Neincluse` agregat, primele ecrane de nomenclator
 
 - **Data**: 2026-08-29
-- **Stare**: activă (închide 70-r1, 72-r9, 73-r6, 73-r10, 74-r7, 74-r12 ca citire, 76-r6 integral, restanța F6 „placeholder pe linia existentă", datoria F12 „smoke vizual al jurnalelor"; amendează 56 doar prin excepția deja existentă a lui `Societate`)
+- **Stare**: activă (închide 70-r1, 72-r9, 73-r6, 73-r10, 74-r7, 74-r12 ca citire, 76-r6 integral, restanța F6 „placeholder pe linia existentă", datoria F12 „smoke vizual al jurnalelor"; amendează 56 doar prin excepția deja existentă a lui `Societate`; **(k) adăugat 2026-08-30** — închide propria restanță 77-r2)
 - **Docs**: `docs/api/p5-felia-finisaj-client-contract.md` (F20-D1…D10 + §Închidere), `docs/api/lista-react.md` (curățată de itemii închiși)
 
 ## Context
@@ -196,11 +196,66 @@ viewport la 1416 px — fixat, bara se rupe) + D2 (afișarea `TipMaterial` difer
 ASM vs BCS — restanță). Constatare nouă: **`Cod`/`Denumire` nu sunt obligatorii
 pe nicio ușă** (partener fără denumire acceptat) — restanță.
 
+### (k) `Cod`/`Simbol` + `Denumire` obligatorii pe orice nomenclator căutabil (77-r2, 2026-08-30)
+
+Smoke-ul (j) a arătat că un partener fără cod și fără denumire trecea pe toate
+cele trei uși (React → OData, XAF, Import1C/seed). Restanța cerea regula pe
+`Repartitor`/`Produs`; măsurarea a arătat că e a unei **declarații deja
+existente**: cele 14 nomenclatoare care implementează `ICuCautare` se caută
+după `(cod, denumire)` — un rând fără ele nu e găsibil, deci nu e nomenclator.
+Regula stă pe interfață, nu pe o listă de tipuri, în aceeași buclă generică din
+`OnModelCreating` care le dă coloana `Cautare` (a).
+
+Tranșări:
+
+1. **Schema (ușa de sistem — Import1C, seed, motor, orice OS non-secured)**:
+   coloana de cod (`Cod`, altfel `Simbol` — deducerea unică `Cautare.NumeCod`)
+   și `Denumire` sunt NOT NULL **și** poartă CHECK `btrim(...) <> ''` (NOT NULL
+   singur lasă să treacă `''` și `'  '`), pe tabelul care le DECLARĂ (sub TPT:
+   `Repartitori`, o dată pentru toate frunzele). Migrația
+   `20260830185257_CodDenumireObligatorii`: 14 tabele × 2 coloane + 28 de
+   constraint-uri `CK_<Tabel>_<Coloana>_negol`. Măsurat înainte: 0 rânduri
+   goale pe toate bazele de dev (Privat 20.411 repartitori / 22.727 produse,
+   bugetar, Flax, Flax.Api) în afara partenerului-probă din smoke (deja șters
+   logic) — purjat de mână; migrația nu maschează date (o bază cu goluri pică
+   zgomotos, 34f).
+2. **Gardianul (ușa secured — OData, XAF, REST)**: `GardianEditare` verifică
+   `ICuCautare` ÎNAINTEA switch-ului pe tip (altfel `case Partener`/`case Cont`
+   ar înghiți potrivirea), `IsNullOrWhiteSpace` pe ambele, mesajul câmpului —
+   `„Cod” este obligatoriu pe Partener (nou).` / `„Simbol” este obligatoriu pe
+   Cont …` — cu tipul de domeniu, nu proxy-ul EF (`PartenerProxy`, prins la
+   prima probă HTTP). Obiectele în curs de ștergere se sar.
+3. **Prezentarea**: `[Required]` (DataAnnotations) pe `Repartitor.Cod/Denumire`
+   și `Produs.Cod/Denumire` ⇒ OpenAPI `required[]` ⇒ `campMeta.obligatoriu` ⇒
+   asterisc + validare structurală în client, fără cod nou în felii;
+   `[RuleRequiredField]` pentru UI-ul XAF — Validation NU citește
+   DataAnnotations (nicio referință în sursele 26.1.3 `Persistent.Base/
+   Validation`), deci cele două atribute nu sunt redundante.
+4. Import1C rămâne neatins: toate `Upsert`-urile cad pe `Cod` (hex-ul 1C la
+   lipsă) și `Denumire ?? Cod`.
+
+Probe: ModelCheck — schema (model design-time: NOT NULL + CHECK pe toate cele
+14), gardianul (gol / spații+tab / `Cont` fără `Simbol` / rând complet),
+baza pe ușa fără gardian (NULL ⇒ `„Denumire” este obligatoriu pe
+„Repartitori”`, `'  '` ⇒ `Înregistrarea „Repartitori” încalcă regula
+„CK_Repartitori_Cod_negol”` — traduse 39a, nu 23502/23514 brute), nimic
+rămas în bază; 0 FAIL pe ambele profiluri. HTTP pe `api/odata/Partener`
+(`Admin`): POST cod gol / denumire spații / cheie `Denumire` lipsă ⇒ **422
+`EroriDto`** cu mesajul câmpului; POST valid 201; PATCH `{"Denumire":""}` ⇒
+422; PATCH `{"Localitate":…}` control ⇒ 204; `PATCH {"Cod":null}` ⇒ **400
+„Incorrect body”** — refuzul deserializatorului OData pe o proprietate
+declarată `required`, structural, nu al nostru (rămâne cum e: clientul nu
+trimite `null` pe câmpuri obligatorii). Constatare: `User` primește tot 422 de
+la gardian, înaintea permisiunii — familia 77-r8 (gardianul rulează la
+`Committing`, înaintea verificării de securitate a OS-ului secured), fără
+scurgere de date, dar codul e al regulii, nu al dreptului.
+
 ## Ce rămâne deschis (restanțele 77-r1…r8)
 
 - **77-r1** BTR fără convenția 61b (etichete, precompletare) — plumbing de felie.
-- **77-r2** `Cod`/`Denumire` neobligatorii pe `Repartitor`/`Produs` pe nicio ușă
-  (gardian, DB) — regulă de fond de pus în `GardianEditare`, cu proba pe HTTP.
+- ~~**77-r2** `Cod`/`Denumire` neobligatorii pe `Repartitor`/`Produs` pe nicio ușă
+  (gardian, DB)~~ — **închisă de (k)** (2026-08-30), lărgită la toate cele 14
+  nomenclatoare `ICuCautare`.
 - **77-r3** editarea `PoliticaMiscareSaft` din React (regula 56 rămâne; decizie
   separată) + comanda ANAF de LOT (nu există listă cu selecție multiplă).
 - **77-r4** `CodFiscal`/`Iban`/`Marca` în afara lui `Cautare` — căutarea după CUI
@@ -214,4 +269,5 @@ pe nicio ușă** (partener fără denumire acceptat) — restanță.
   seq scan — se măsoară când cifra o cere (59), nu preventiv.
 - **77-r8** refuzul de permisiune pe OData rămâne `text/plain` pe server (tradus
   doar în client); familia 70-r1/72-r10/76-r4/76-r5 cere o decizie unică pe
-  „404 vs 403 vs 422" pe toate ușile.
+  „404 vs 403 vs 422" pe toate ușile; (k) a adăugat un caz măsurat: `User`
+  primește 422 de la gardian înaintea refuzului de permisiune.

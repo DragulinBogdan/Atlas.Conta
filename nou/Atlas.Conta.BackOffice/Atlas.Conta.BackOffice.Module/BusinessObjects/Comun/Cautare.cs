@@ -92,6 +92,39 @@ public static class Cautare {
 
     /// <summary>Numele proprietății/coloanei — o singură ortografie.</summary>
     public const string NumeColoana = "Cautare";
+
+    /// <summary>Numele proprietății de denumire, aceeași pe orice nomenclator.</summary>
+    public const string NumeDenumire = "Denumire";
+
+    /// <summary>
+    /// Numele proprietății de cod a unui nomenclator căutabil: <c>Cod</c>,
+    /// altfel <c>Simbol</c> (planul de conturi), altfel <c>null</c>. O singură
+    /// deducere, consumată de configurarea EF, de gardian și de ModelCheck.
+    /// </summary>
+    public static string NumeCod(Type entitate) =>
+        entitate.GetProperty("Cod") != null ? "Cod" :
+        entitate.GetProperty("Simbol") != null ? "Simbol" : null;
+
+    /// <summary>
+    /// Numele constraint-ului CHECK „coloana nu e goală” (77-r2) — apare în
+    /// mesajul tradus al violării (<c>CheckTemplate</c>), deci e citibil.
+    /// </summary>
+    public static string NumeRegulaNeGol(string tabel, string coloana) => $"CK_{tabel}_{coloana}_negol";
+
+    /// <summary>SQL-ul regulii „coloana nu e goală” — NOT NULL nu prinde <c>''</c>/<c>'  '</c>.</summary>
+    public static string SqlNeGol(string coloana) => $"btrim(\"{coloana}\") <> ''";
+
+    /// <summary>
+    /// Perechea (cod, denumire) a unui nomenclator căutabil, citită de pe
+    /// instanță — jumătatea de domeniu a regulii 77-r2, pentru gardian: un
+    /// nomenclator care se caută după cod și denumire le ARE pe amândouă.
+    /// </summary>
+    public static (string Cod, string Denumire) Citeste(ICuCautare rand) {
+        var tip = rand.GetType();
+        var cod = NumeCod(tip) is { } numeCod ? tip.GetProperty(numeCod)?.GetValue(rand) as string : null;
+        var denumire = tip.GetProperty(NumeDenumire)?.GetValue(rand) as string;
+        return (cod, denumire);
+    }
 }
 
 /// <summary>

@@ -410,3 +410,11 @@ per felie):
   printr-un `== null` pe `ReactNode`; cache-ul supraviețuia „Ieșire"), 3 medii,
   6 cosmetice — F1–F9 fixate. Smoke 7/7 + F6 și datoria F12 închise de la
   sine. Decizia 77.
+- **2026-08-30 — 77-r2 (decizia 77k)**: `Cod`/`Simbol` + `Denumire`
+  obligatorii pe toate cele 14 nomenclatoare `ICuCautare` — NOT NULL + CHECK
+  `btrim <> ''` prin bucla generică a coloanei `Cautare` (migrația
+  `CodDenumireObligatorii`, 0 rânduri goale pe bazele de dev în afara
+  partenerului-probă), gardian cu mesajul câmpului pe ușa secured,
+  `[Required]` ⇒ OpenAPI ⇒ asterisc în client, `[RuleRequiredField]` pentru
+  XAF; probe ModelCheck pe trei uși (0 FAIL ambele profiluri) + HTTP 422 pe
+  `api/odata/Partener`.

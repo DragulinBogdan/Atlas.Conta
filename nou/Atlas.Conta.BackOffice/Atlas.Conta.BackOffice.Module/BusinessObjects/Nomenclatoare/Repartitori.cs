@@ -13,7 +13,19 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
 public abstract class Repartitor : BaseObject, ICuCautare {
+    // 77-r2: obligatorii pe toate ușile. Regula de fond e a lui `ICuCautare`
+    // (schema din `AplicaColoanaCautare` + `GardianEditare`); cele două
+    // atribute de aici sunt jumătățile de PREZENTARE — `[Required]` ajunge în
+    // OpenAPI (`required[]` ⇒ asterisc + validare în client), `[RuleRequiredField]`
+    // în UI-ul XAF (Validation nu citește DataAnnotations — probat pe sursele
+    // 26.1.3).
+    [System.ComponentModel.DataAnnotations.Required]
+    [RuleRequiredField("Repartitor_Cod_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Codul este obligatoriu.")]
     public virtual string Cod { get; set; }
+    [System.ComponentModel.DataAnnotations.Required]
+    [RuleRequiredField("Repartitor_Denumire_Necesara", DefaultContexts.Save,
+        CustomMessageTemplate = "Denumirea este obligatorie.")]
     public virtual string Denumire { get; set; }
     public virtual CalitateRepartitor Calitati { get; set; }
     public virtual bool Activ { get; set; } = true;

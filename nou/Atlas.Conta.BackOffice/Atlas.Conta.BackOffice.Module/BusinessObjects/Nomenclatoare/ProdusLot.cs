@@ -15,7 +15,15 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
 public class Produs : BaseObject, ICuCautare {
+    // 77-r2 — vezi nota de pe `Repartitor.Cod`: regula e a lui `ICuCautare`,
+    // atributele sunt prezentarea ei (OpenAPI/client + UI XAF).
+    [System.ComponentModel.DataAnnotations.Required]
+    [RuleRequiredField("Produs_Cod_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Codul este obligatoriu.")]
     public virtual string Cod { get; set; }
+    [System.ComponentModel.DataAnnotations.Required]
+    [RuleRequiredField("Produs_Denumire_Necesara", DefaultContexts.Save,
+        CustomMessageTemplate = "Denumirea este obligatorie.")]
     public virtual string Denumire { get; set; }
     // Unitatea de măsură ca TEXT LIBER, cum a fost dintotdeauna. RĂMÂNE lângă
     // FK-ul de mai jos (felia 16, D16-D2) — TECH-DEBT MARCAT, cu prag: se
