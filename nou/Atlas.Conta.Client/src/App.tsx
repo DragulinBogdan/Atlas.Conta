@@ -42,6 +42,8 @@ import { DecontTva } from './felii/tva/DecontTva';
 import { D300 } from './felii/tva/D300';
 import { D394 } from './felii/tva/D394';
 import { Saft } from './felii/tva/Saft';
+import { ItvLista } from './felii/itv/ItvLista';
+import { ItvDetaliu } from './felii/itv/ItvDetaliu';
 import { Parteneri } from './felii/nomenclatoare/Parteneri';
 import { PartenerDetaliu } from './felii/nomenclatoare/PartenerDetaliu';
 import { Produse } from './felii/nomenclatoare/Produse';
@@ -125,6 +127,12 @@ export function App() {
             TVA, cu codurile SAF-T; formularul propriu-zis, cu rândurile și
             totalurile lui, e `/d300` (felia 12). Nici unul nu produce declarația
             (35c): fișierul XML e altă unealtă. */}
+        {/* Închiderea de TVA (felia 21): singurul „document" care nu se
+            culege — `/itv` e consola de generare (an × lună × unitate) cu
+            istoricul dedesubt, `/itv/:id` e rezultatul. N-are rută `/nou`:
+            închiderea o produce un serviciu, nu un formular gol. */}
+        <Route path="/itv" element={<ItvLista />} />
+        <Route path="/itv/:id" element={<ItvDetaliu />} />
         <Route path="/jurnal-cumparari" element={<JurnalCumparari />} />
         <Route path="/jurnal-vanzari" element={<JurnalVanzari />} />
         <Route path="/decont-tva" element={<DecontTva />} />
@@ -155,7 +163,8 @@ export function App() {
 
 // Meniul, în panoul Drawer-ului: grupuri VERTICALE în locul barei care se rupea
 // pe rânduri (smoke F20 D1 a prins grupurile ieșind din viewport la 1416 px, iar
-// lista mai crește — ITV, politici). `NavLink`-urile rămân ale react-router:
+// lista mai crește — ITV a intrat la felia 21, politicile urmează). `NavLink`-urile
+// rămân ale react-router:
 // template-urile devextreme-react se randează în același arbore React, deci
 // contextul router-ului și clasa `active` trec neatinse.
 function Meniu() {
@@ -185,6 +194,7 @@ function Meniu() {
       <span className="meniu__grup">TVA și declarații</span>
       <NavLink to="/jurnal-cumparari">Jurnal cumpărări</NavLink>
       <NavLink to="/jurnal-vanzari">Jurnal vânzări</NavLink>
+      <NavLink to="/itv">Închidere TVA</NavLink>
       <NavLink to="/decont-tva">Decont TVA</NavLink>
       <NavLink to="/d300">D300</NavLink>
       <NavLink to="/d394">D394</NavLink>

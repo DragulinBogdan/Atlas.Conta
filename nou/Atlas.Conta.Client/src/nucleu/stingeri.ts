@@ -49,10 +49,10 @@ export const stingeri = {
 };
 
 // Ruta feliei pentru un cod de tip (`CelalaltTip`, `DocumentCuRestRand.Tip`,
-// `DocumentTip` din fișă/jurnal). Vocabular ÎNCHIS, scris explicit: tipurile
-// fără felie de client (ITV…) rămân TEXT, nu link mort. Se extinde
-// odată cu feliile, nu automat — DEC a ieșit din listă la felia 8, iar NTC,
-// ASM, RLF și RDC la felia 19.
+// `DocumentTip` din fișă/jurnal). Vocabularul e ÎNCHIS și scris explicit: un tip
+// fără felie de client rămâne TEXT, nu link mort. Se extinde odată cu feliile,
+// nu automat — DEC a ieșit din listă la felia 8, NTC/ASM/RLF/RDC la felia 19,
+// iar ITV la felia 21.
 export function rutaTip(tip: string | null | undefined, id: string): string | null {
   switch (tip) {
     case 'FCT': return `/fct/${id}`;
@@ -76,6 +76,10 @@ export function rutaTip(tip: string | null | undefined, id: string): string | nu
     // și acolo trebuie să fie link, nu text.
     case 'RLF': return `/rlf/${id}`;
     case 'RDC': return `/rdc/${id}`;
+    // Închiderea de TVA (felia 21): nu e stingător și nu apare în
+    // `DocumenteCuRest`, dar apare în fișa contului 4426/4427/4423/4424 și în
+    // registrul-jurnal — acolo trebuie să fie link către ecranul ei, nu text.
+    case 'ITV': return `/itv/${id}`;
     default: return null;
   }
 }

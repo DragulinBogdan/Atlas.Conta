@@ -288,6 +288,14 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .saft__sectiune { margin-top: 18px; }
 .saft__sectiune > h3 { margin-bottom: 6px; }
 .saft__sectiune > .indiciu { max-width: 900px; }
+
+/* Închiderea de TVA (felia 21) — aceleași reguli ca secțiunea SAF-T, sub numele
+   feliei ei: previzualizarea lunii, soldurile de pe document și istoricul sunt
+   blocuri de raport, nu formulare. Clasa e proprie, nu împrumutată, ca o
+   schimbare de stil pe SAF-T să nu miște ecranul de închidere. */
+.itv__sectiune { margin-top: 18px; }
+.itv__sectiune > h3 { margin-bottom: 6px; }
+.itv__sectiune > .indiciu { max-width: 900px; }
 .tabel-mic tr.saft__difera > td { background: #fff4e5; }
 /* Componentele S3 stau SUB contul lor: aceeași grilă, altă greutate — sunt
    detalierea unei cifre, nu un rând de sine stătător. */
