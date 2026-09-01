@@ -349,8 +349,14 @@ public static class NotaContabilaApply {
         // baza de import un partener poate avea sute de documente deschise.
         const int Plafon = 100;
 
+        // F21-D5, a patra ușă a feliei: `GetObjectByKey<NotaContabila>` întoarce și
+        // închiderile de TVA (TPT), deci panoul de compensare al notei răspundea 200
+        // pe un id de ITV. Practic era inert (`CapacitateStingere` pe ITV iese
+        // dicționar GOL — liniile n-au repartitori), dar un 200 pe o resursă care
+        // nu e a feliei e o afirmație falsă: aceeași frunză, același null ca
+        // `Citeste` ⇒ 404 pe `GET api/ntc/{id}/candidati`.
         var doc = os.GetObjectByKey<NotaContabila>(id);
-        if (doc == null)
+        if (doc == null || doc is InchidereTva)
             return null;
 
         var rezultat = new NtcCandidatiDto {

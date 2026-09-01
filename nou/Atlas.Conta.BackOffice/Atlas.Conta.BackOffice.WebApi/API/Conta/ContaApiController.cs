@@ -132,6 +132,35 @@ public abstract class ContaApiController : ControllerBase {
         return null;
     }
 
+    // ═══ Gate-ul de CITIRE pe INSTANȚĂ (felia 21, F21-D3) ═══
+    // Același tipar ca `Autorizeaza<T>`, cu `CanRead` în loc de `CanWrite`:
+    // inexistent SAU invizibil ⇒ 404 (fără sondare de existență), vizibil dar
+    // fără drept de citire ⇒ 403, `null` = are voie.
+    //
+    // DE CE există, când o citire obișnuită n-are nevoie de el: `GET api/itv/{id}`
+    // răspunde cu cifre ale MOTORULUI (soldurile 4426/4427 la data închiderii +
+    // verdictul anti-stale), calculate pe ușa NON-SECURED. Pe ușa securizată
+    // soldurile s-ar fi însumat peste rândurile de registru pe care permisiunile
+    // le ascund — adică o cifră FALSĂ prezentată ca adevărul motorului (argumentul
+    // 73g pentru fișierul SAF-T: filtrarea tăcută produce un răspuns plauzibil și
+    // greșit, nu unul gol). Deci verdictul de acces se ia AICI, pe instanță,
+    // înainte ca ușa non-secured să se deschidă.
+    //
+    // Listele nu-l cer și nu-l primesc: acolo ușa securizată filtrează rândurile,
+    // iar o listă goală pentru cine n-are drepturi e un răspuns adevărat (69g/71g).
+    protected IActionResult AutorizeazaCitire<T>(Guid id) where T : class {
+        using var os = Secured(typeof(T));
+        var obiect = os.GetObjectByKey<T>(id);
+        if (obiect == null)
+            return NotFound();
+        // Cast explicit la `object`, din același motiv ca la `Autorizeaza<T>`:
+        // supraîncărcarea care contează e `CanRead(IObjectSpace, object)` —
+        // permisiunea pe INSTANȚĂ, nu cea pe TIP.
+        if (securitate is not IRequestSecurityStrategy cerinte || !cerinte.CanRead(os, (object)obiect))
+            return Forbid();
+        return null;
+    }
+
     // Gate-ul de LOT (D15-D4): fiecare id trece SEPARAT, iar cel refuzat iese cu
     // motiv, nu aruncă tot lotul. Un 403 pe 500 de parteneri fiindcă unul singur
     // e invizibil ar fi „totul sau nimic" acolo unde utilizatorul a cerut „ce se
@@ -180,6 +209,22 @@ public abstract class ContaApiController : ControllerBase {
     // pe o instanță și are alt răspuns (404 pentru invizibil).
     protected bool PoateCiti(Type tip, IObjectSpace os) =>
         securitate is IRequestSecurityStrategy cerinte && cerinte.CanRead(tip, os);
+
+    // ═══ Gate-ul de CREARE, la nivel de TIP (felia 21, F21-D3) ═══
+    // Comanda de GENERARE n-are subiect: ea PRODUCE documentul, deci nu există
+    // instanță pe care `ComandaAutorizata<T>(id)` s-o rezolve (76-r4 numește
+    // aceeași asimetrie). Întrebarea corectă e „are voie omul ăsta să creeze un
+    // document de tipul ăsta?", iar securitatea XAF o răspunde direct:
+    // `CanCreate(Type, IObjectSpace)` = `PermissionRequest(os, tip,
+    // SecurityOperations.Create)` (`IsGrantedExtensions`, DevExpress 26.1.3).
+    //
+    // Fără el, ușa non-secured pe care generatorul își scrie draftul (58c: scrie
+    // câmpuri server-owned, deci nu poate rula securizat) ar fi însemnat că orice
+    // utilizator autentificat — inclusiv unul fără niciun drept pe documente —
+    // creează închideri de TVA. Gate-ul se ia ÎNAINTE, pe un OS securizat, ca la
+    // toate comenzile (55b).
+    protected bool PoateCrea(Type tip, IObjectSpace os) =>
+        securitate is IRequestSecurityStrategy cerinte && cerinte.CanCreate(tip, os);
 
     // Încărcarea unei proiecții prin `DataSourceLoader`, cu MATERIALIZARE
     // explicită înainte de întoarcere.

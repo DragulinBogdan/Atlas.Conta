@@ -2209,6 +2209,10 @@ if (profil == ProfilContabil.Privat) {
                 + "`GET api/ntc/{id}`), deși documentul EXISTĂ ca notă sub TPT",
                 NotaContabilaApply.Citeste(os, idItvFinal) == null
                 && os.GetObjectsQuery<NotaContabila>().Any(d => d.ID == idItvFinal));
+            Check("F21-D5 — `NotaContabilaApply.Candidati` pe un id de închidere întoarce null (⇒ 404 pe "
+                + "`GET api/ntc/{id}/candidati`), dar rămâne un panou pentru nota ADEVĂRATĂ",
+                NotaContabilaApply.Candidati(os, idItvFinal) == null
+                && NotaContabilaApply.Candidati(os, idNtcControl) != null);
             CheckRefuza("F21-D5 — `PUT api/ntc/{id}` pe o închidere DRAFT (`Aplica`) ⇒ refuz de domeniu: până "
                 + "acum reconcilierea accepta orice linii, iar gardianul anti-stale o prindea abia la OPERARE",
                 () => NotaContabilaApply.Aplica(os, idItvFinal, new NtcWriteDto {

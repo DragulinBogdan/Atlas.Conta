@@ -129,6 +129,9 @@ public sealed class PrevizualizareItvDto {
 // când există mai multe ar fi fost un default care minte. `[Range]` pe lună ⇒
 // 400 `EroriDto` din pipeline (70f), înaintea oricărei atingeri de bază.
 public sealed class GenerareItvRequestDto {
+    // Marginile anului ca pe ruta de previzualizare: fără ele `new DateOnly(0, …)`
+    // din serviciu ar fi aruncat un 500 pe o cerere pur și simplu malformată.
+    [System.ComponentModel.DataAnnotations.Range(2000, 2100)]
     public int An { get; set; }
     [System.ComponentModel.DataAnnotations.Range(1, 12)]
     public int Luna { get; set; }
