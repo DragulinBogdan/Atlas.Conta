@@ -120,6 +120,12 @@ public sealed class PrevizualizareItvDto {
     public Guid? InchidereVieId { get; set; }
     public string InchidereVieNumar { get; set; }
     public string InchidereVieStare { get; set; }
+    // Simbolurile celor patru conturi ale politicii (79 M6): etichetele
+    // ecranului le iau de aici, nu din cod. Null pe profil inert.
+    public string SimbolDeductibila { get; set; }
+    public string SimbolColectata { get; set; }
+    public string SimbolDePlata { get; set; }
+    public string SimbolDeRecuperat { get; set; }
 }
 
 // ── Comanda ────────────────────────────────────────────────────────────────

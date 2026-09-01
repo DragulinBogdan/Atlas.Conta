@@ -382,7 +382,14 @@ public enum CodAvertismentD394 {
 //   FaraSold      — ambele solduri de TVA sunt 0: luna n-are ce închide;
 //   NeCronologica — o închidere vie ULTERIOARĂ a închis deja cumulat și luna
 //                   asta. E motiv DOAR în `Previzualizeaza`, care e raport;
-//                   `Incearca` rămâne refuz zgomotos (`OperareException`, 46c).
+//                   `Incearca` rămâne refuz zgomotos (`OperareException`, 46c);
+//   DraftAnterior — o lună ANTERIOARĂ are un draft neoperat (review 79 F1):
+//                   generarea lunii de față ar cumula și soldurile lui, iar
+//                   operarea lui ulterioară le-ar închide a doua oară. Tot
+//                   motiv la raport / refuz la comandă;
+//   PerioadaInchisa — luna e închisă fiscal (decizia 14): un draft generat
+//                   acolo n-ar putea fi operat, dar ar bloca cronologic
+//                   lunile dinaintea lui (review 79 M2).
 //
 // Enum-ul stă AICI, nu lângă serviciu, fiindcă dump-ul de metadata (deci
 // eticheta din clientul React) ia doar tipurile din spațiul `BusinessObjects`
@@ -392,4 +399,6 @@ public enum MotivNegenerare {
     [XafDisplayName("Luna are deja o închidere")] InchidereVie = 2,
     [XafDisplayName("Luna n-are sold de TVA de închis")] FaraSold = 3,
     [XafDisplayName("Există o închidere pentru o lună ulterioară")] NeCronologica = 4,
+    [XafDisplayName("O lună anterioară are un draft de închidere neoperat")] DraftAnterior = 5,
+    [XafDisplayName("Perioada fiscală e închisă")] PerioadaInchisa = 6,
 }

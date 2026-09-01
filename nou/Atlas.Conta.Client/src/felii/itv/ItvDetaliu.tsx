@@ -94,6 +94,10 @@ export function ItvDetaliu() {
     }
     catch (e) {
       setErori(eroriDin(e));
+      // Și pe refuz se reîncarcă (review 79 F2): serverul garantează acum că un
+      // refuz lasă draftul intact, dar ecranul nu presupune — recitește ca să
+      // arate starea REALĂ a documentului, nu una ținută minte.
+      await cache.invalidateQueries({ queryKey: ['itv'] });
     }
   }
 
@@ -239,10 +243,12 @@ function SolduriTva({ doc }: { doc: ItvRead | undefined }) {
       <h3>Soldurile de TVA la data închiderii</h3>
       <table className="tabel-mic">
         <tbody>
+          {/* Fără simboluri de cont în etichete: conturile sunt ale POLITICII
+              (29) și se văd pe liniile de mai sus, nu se afirmă din cod. */}
           <tr>
-            <th>Sold 4426 (deductibilă)</th>
+            <th>Sold TVA deductibilă</th>
             <td className="num">{bani(doc.Sold4426Curent)}</td>
-            <th>Sold 4427 (colectată)</th>
+            <th>Sold TVA colectată</th>
             <td className="num">{bani(doc.Sold4427Curent)}</td>
           </tr>
           <tr>
@@ -260,8 +266,11 @@ function SolduriTva({ doc }: { doc: ItvRead | undefined }) {
         </tbody>
       </table>
       <p className="indiciu">
-        Pe un draft, primele două cifre sunt soldurile de <em>acum</em>; celelalte trei sunt cele cu care
-        s-a generat. Diferența dintre ele e exact ce raportează avertismentul de draft depășit.
+        {doc.Stare === 'Draft'
+          ? <>Pe un draft, primele două cifre sunt soldurile de <em>acum</em>; celelalte trei sunt cele cu care
+              s-a generat. Diferența dintre ele e exact ce raportează avertismentul de draft depășit.</>
+          : <>Închiderea e în registru: soldurile la data ei sunt cele de <em>după</em> închidere (zero, dacă
+              nimic n-a intrat între timp în lună), iar cele trei cifre sunt liniile documentului.</>}
       </p>
     </div>
   );

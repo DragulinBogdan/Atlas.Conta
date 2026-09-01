@@ -95,8 +95,12 @@ sealed class Catalog {
             proprii[cheie] = id;
         ConturiProprii = proprii;
         Angajati = Legaturi.Incarca(os, "PersoaneFizice");
-        SediuId = CereRepartitor(os, "SEDIU");
-        ComisieId = CereRepartitor(os, "COMISIE");
+        // Pe FRUNZĂ, nu pe baza `Repartitor` (review 79 M9): sub TPT `Cod` e unic
+        // per tabel de frunză, deci un partener 1C cu codul „SEDIU" ar fi putut
+        // câștiga `FirstOrDefault` — iar de la 79a o unitate ne-internă pică
+        // luna la generarea ITV, nu mai dă doar o notă cu latură greșită.
+        SediuId = CereRepartitor<UnitateInterna>(os, "SEDIU");
+        ComisieId = CereRepartitor<UnitateInterna>(os, "COMISIE");
         ConsumatorFinalId = CereRepartitor(os, "CF");
         foreach (var t in os.GetObjectsQuery<TipMaterial>()
                      .Select(t => new { t.ID, t.Cod, ClasaCod = t.Clasa.Cod, t.Clasa.Natura,
@@ -181,9 +185,12 @@ sealed class Catalog {
     // partenerul n-are cont implicit — adică întotdeauna, la partenerii importați.
     public const string ContDatorieImplicit = "401";
 
-    static Guid CereRepartitor(IObjectSpace os, string cod) =>
-        os.FirstOrDefault<Repartitor>(r => r.Cod == cod)?.ID
-            ?? throw new InvalidOperationException($"Profilul privat nu are repartitorul {cod} (seed).");
+    static Guid CereRepartitor(IObjectSpace os, string cod) => CereRepartitor<Repartitor>(os, cod);
+
+    static Guid CereRepartitor<T>(IObjectSpace os, string cod) where T : Repartitor =>
+        os.FirstOrDefault<T>(r => r.Cod == cod)?.ID
+            ?? throw new InvalidOperationException(
+                $"Profilul privat nu are repartitorul {cod} de tipul {typeof(T).Name} (seed).");
 
     // ======================= Clasă/Tip =======================
 

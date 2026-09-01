@@ -339,6 +339,106 @@ cd nou/Atlas.Conta.Client && pnpm build
 Niciodată `--no-build` la `dotnet ef`; nu e pas de model, deci nicio migrație
 — `dotnet ef migrations has-pending-model-changes` trebuie să rămână curat.
 
-## Închidere
+## Închidere (2026-09-01, decizia 79)
 
-(se completează la pasul 4)
+Trei commit-uri (`5fbd23e` Module + ModelCheck, `59625d6` WebApi + probe HTTP,
+`ac77fdc` client + smoke) + review-ul advers (fix-uri + 23 de probe noi) și
+docs. ModelCheck final: privat **944 OK / 0 FAIL**, bugetar **900 OK / 0
+FAIL** (re-rulate independent de main după fiecare pas); `has-pending-model-changes` curat; codegen doar
+adăugiri, idempotent; `metadata.json` cu `MotivNegenerare`.
+
+### Devieri de la contract (toate raportate, nu normalizate)
+
+- F21-D8 se înșela: dump-ul de metadata ia DOAR spațiul `BusinessObjects`
+  (`MetadataDump.EsteRelevant`), deci `MotivNegenerare` stă în
+  `BusinessObjects/Comun/Enums.cs`, nu în `Motor/`.
+- Lunile 11/12 2026 SUNT folosite de scenele `E2E-ASM`/`E2E-RET`, care
+  rulează după: blocul `E2E-API-ITV` stă imediat după `E2E-ITV`, cu
+  precondiție măsurată al cărei nume spune ce rupe o reordonare.
+- Gardul de unitate ne-internă stă ÎNAINTEA gardienilor de stare (e
+  verificare de argument): altfel pe o lună fără sold cererea greșită ar fi
+  ieșit `FaraSold`.
+- `[Range(2000, 2100)]` pe `An` în cerere (lipsea; `An = 0` dădea 500 din
+  `DateOnly`). Pe `previzualizare` validarea e explicită, cu parametri
+  nullable (forma SAF-T/D300): „lipsă" ≠ `0`, toate erorile deodată.
+- `Lookup` nu se poate folosi în afara unui formular (`useCamp`): unitatea
+  se culege prin `SelectBox` pe setul OData citit întreg (F21-D4 cere
+  NUMĂRUL rândurilor), tiparul fișei de cont.
+- `GET api/ntc/{id}/candidati` pe un id ITV răspundea 200 (inert): închis
+  minimal, `Candidati` ⇒ null ⇒ 404, cu probă anti-vacuă.
+- **Din review (decizia 79, §Review advers)**: F21-D7 „două commit-uri" a
+  MURIT — `Regenereaza` = `Incearca(…, inlocuieste: id)` înaintea ștergerii,
+  o singură tranzacție (F2); cronologia capătă sensul invers la generare
+  (`DraftAnterior`) și gard la OPERARE (F1); `PerioadaInchisa` (M2);
+  `LiniiPotrivescSoldurile` = criteriul unic anti-stale, `Stale = null` pe
+  politică incompletă (M4); `regenereaza` cere și `PoateCrea` (M5);
+  simbolurile conturilor în previzualizare vin din politică (M6);
+  `previzualizare` în `Domeniu` (M7); Import1C cere SEDIU/COMISIE pe
+  `UnitateInterna` (M9).
+
+### Probele HTTP (F21-D10) — Privat, host viu, `Admin` + `User`
+
+Baza avea `ITV-1`…`ITV-12` (2025, Operat). Luna probei L = 09/2026 (solduri
+357 / 8.463; 08/2026 are și ea TVA, deci proba cronologică nu e vacuă).
+
+| # | cerere | user | cod | corp (scurt) | ms |
+|---|---|---|---|---|---|
+| P1 | `GET api/itv/previzualizare?an=2026&luna=9` | Admin | 200 | `Motiv:null, Sold4426:357, Sold4427:8463, Transfer:357, DePlata:8106, DeRecuperat:0` | 52 |
+| P2 | idem | User | 403 | | 151 |
+| P3 | `POST genereaza {Luna:13}` | Admin | 400 | `Erori:["Luna: The field Luna must be between 1 and 12."]` (engleză — 79-r4) | 16 |
+| P4 | `previzualizare?an=1999` | Admin | 400 | `„an” trebuie să fie între 2000 și 2100.` | 6 |
+| P5 | `previzualizare?luna=13` | Admin | 400 | `„luna” trebuie să fie între 1 și 12 — …` | 6 |
+| P6 | `POST genereaza` cu `UnitateId` = Partener | Admin | 422 | `Laturile închiderii de TVA sunt unitatea internă … „Mikro Atlas - FURNIZOR” nu e o unitate internă.` | 50 |
+| P7 | `POST genereaza {2026,9,SEDIU}` | User | 403 | | 15 |
+| P8 | control după P7: `GET api/itv` | Admin | 200 | `totalCount: 12` — niciun draft scris | 162 |
+| P9 | `GET api/itv` | User | 200 | `data:[], totalCount:0` | 35 |
+| P10 | `POST genereaza {2026,9,SEDIU}` | Admin | 200 | `DocumentId:…, Motiv:null, Transfer:357, DePlata:8106` | 900 (rece) |
+| P11 | idem, a doua oară | Admin | 200 | `DocumentId:null, Motiv:"InchidereVie", InchidereVieId:…` | 39 |
+| P12 | `GET api/itv/{id}` | Admin | 200 | Draft, `Numar:null`, 2 linii, `Stale:false`, `PoateOpera/Sterge/Regenera:true` | 202 |
+| P13 | `GET api/itv/{id}` | User | 404 | invizibil, nu interzis (familia 72-r10) | 110 |
+| P14 | `GET api/ntc/{id}` pe id ITV | Admin | 404 | | 27 |
+| P15 | `GET api/ntc/{id}/candidati` pe id ITV | Admin | 404 | | 120 |
+| P16 | `PUT api/ntc/{id}` pe id ITV | Admin | 422 | `Documentul (30.09.2026) e o închidere de TVA — se gestionează din ecranul ei (/itv).` | 73 |
+| P17 | `POST {id}/valideaza` | Admin | 200 | `Erori:[]` | 1188 (rece) |
+| P18 | `POST {id}/regenereaza` | Admin | 200 | `DocumentId` NOU | 255 |
+| P19 | `GET api/itv/{idVechi}` | Admin | 404 | draftul vechi șters logic | 45 |
+| P20 | `GET api/itv/{idNou}` | Admin | 200 | aceleași cifre, `Stale:false` | 80 |
+| P21 | `POST {idNou}/opereaza` | Admin | 200 | `StareNoua:"Operat"` | 502 |
+| P22 | `GET api/itv/{idNou}` | Admin | 200 | `Numar:"ITV-13"`, `Sold*Curent:0`, `Stale:null`, `PoateAnula/PoateStorna:true` | 85 |
+| P23 | `POST genereaza {2026,8,SEDIU}` | Admin | 422 | `Există o închidere de TVA vie pentru o lună ulterioară lui 08/2026 — închiderile se generează cronologic.` | 42 |
+| P24 | `previzualizare?an=2026&luna=8` | Admin | 200 | `Motiv:"NeCronologica", InchidereVieNumar:"ITV-13", InchidereVieStare:"Operat"` | 42 |
+| P25 | `DELETE api/itv/{idNou}` (Operat) | Admin | 422 | `Închiderea ITV-13 nu mai e Draft (starea „Operat”) — nu se șterge.` | 102 |
+| P26 | `DELETE api/itv/{idNou}` | User | 404 | | 222 |
+| P27 | `POST {idNou}/storneaza {"Data":"2026-09-30"}` | Admin | 200 | `StareNoua:"Stornat"` | 717 |
+| P28 | `GET api/itv/{idNou}` | Admin | 200 | Stornat, liniile neatinse | 80 |
+| P29 | `previzualizare?an=2026&luna=9` după storno | Admin | 200 | `Motiv:null` — luna redevine închiderabilă | 39 |
+| P30 | `previzualizare?an=2026&luna=8` după storno | Admin | 200 | `Motiv:null` | 38 |
+| P31 | `DELETE api/itv/{id}` pe un Draft | Admin | 204 | | 161 |
+
+Timpi la cald (mediana din 5): lista 112 ms, previzualizare 38 ms, citire
+80 ms, generare 69 ms — sub pragul 59.
+
+Capcană de probare: `genereaza` SCRIE ori de câte ori luna e liberă — un
+„retry de măsurare" pe altă lună a creat un draft (șters cu `DELETE` ⇒ 204).
+Baza Privat de dev a rămas cu `ITV-13` (09/2026) și `ITV-14` (10/2026, din
+smoke) STORNATE la chiar data lor — soldurile 4426/4427 neatinse.
+
+### Smoke în browser (Privat, Admin) — 11/11
+
+Meniu → `/itv` (13 rânduri) → 10/2026: previzualizare 357/8.463 + linii,
+„Generează" inactiv fără unitate, `SelectBox` gol (două unități ⇒ fără
+precompletare) → 03/2026: „Luna n-are sold de TVA de închis" → generare ⇒
+`/itv/{id}` Draft, 2 linii, fără atenție → Verifică ⇒ „trece toți gardienii"
+→ Regenerează (confirmare) ⇒ id nou → Operează ⇒ `ITV-14`, solduri curente
+0/0 → listă 09/2026: „Există o închidere pentru o lună ulterioară" cu link
+`ITV-14` → Stornează cu data precompletată 31.10.2026 ⇒ Stornat → `/jurnal`
+pe 31.10.2026: `ITV-14` e link → `/itv?an=2026&luna=10` reîncărcat păstrează
+luna. Consolă fără erori, zero `[campMeta]`, toate cererile 200.
+
+### Restanțe cu nume, deschise de felie
+
+79-r1 acțiunea XAF de generare · 79-r2 `PoliticaInchidereTva` pe OData +
+ecran · 79-r3 închiderea perioadei fiscale din client · 79-r4 mesajul
+`[Range]` în engleză (70-r5) · 79-r5 `Stale` mai strict decât gardianul
+(doar pe linii editate de mână — cale închisă de F21-D5). Textul integral
+în `docs/decizii/079-p5-felia21-itv.md`.

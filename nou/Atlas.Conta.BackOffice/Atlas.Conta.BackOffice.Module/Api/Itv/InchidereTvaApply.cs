@@ -112,14 +112,15 @@ public static class InchidereTvaApply {
 
         // `Stale` DOAR pe Draft: pe Operat/Stornat cifra e deja în registru, iar
         // soldurile „curente" o includ — întrebarea n-ar mai avea sens. Criteriul
-        // e cel al gardianului, exprimat prin `CalculeazaLinii` (o singură
-        // aritmetică, F21-D2a): ce s-ar genera ACUM față de ce scrie pe document.
+        // e EXACT cel al gardianului (`LiniiPotrivescSoldurile`, 79 M4) — nu o
+        // formulă geamănă; pe politică incompletă gardianul refuză din prima
+        // ramură, deci aici nu există verdict (`null`), nu un `false` liniștitor.
         bool? stale = null;
-        if (h.Stare == StareDocument.Draft && politica?.ContDeductibilaId != null) {
-            var acum = InchidereTvaService.CalculeazaLinii(sold4426, sold4427);
-            stale = acum.Transfer != transfer || acum.DePlata != dePlata
-                || acum.DeRecuperat != deRecuperat;
-        }
+        var politicaCompleta = politica?.ContDeductibilaId != null && politica.ContColectataId != null
+            && politica.ContDePlataId != null && politica.ContDeRecuperatId != null;
+        if (h.Stare == StareDocument.Draft && politicaCompleta)
+            stale = !InchidereTvaService.LiniiPotrivescSoldurile(
+                new InchidereTvaService.LiniiInchidere(transfer, dePlata, deRecuperat), sold4426, sold4427);
 
         // Affordance ONESTĂ (57d): deși `CapacitateStingere` iese dicționar GOL pe
         // ITV (liniile n-au repartitori), afordanța se scrie pe aceeași sursă ca
@@ -157,12 +158,24 @@ public static class InchidereTvaApply {
     // poată face link în loc să afișeze un GUID.
     public static PrevizualizareItvDto Previzualizeaza(IObjectSpace os, int an, int luna) {
         var r = InchidereTvaService.Previzualizeaza(os, an, luna);
+        // Simbolurile conturilor vin din POLITICĂ (29), ca ecranul să nu le
+        // afirme din cod (review 79 M6): pe un profil cu alte conturi de
+        // închidere etichetele ar fi numit conturi care nu sunt ale lui.
+        var simboluri = os.GetObjectsQuery<PoliticaInchidereTva>()
+            .Where(p => p.TipDocument.ClrType == nameof(InchidereTva))
+            .Select(p => new {
+                Deductibila = p.ContDeductibila.Simbol, Colectata = p.ContColectata.Simbol,
+                DePlata = p.ContDePlata.Simbol, DeRecuperat = p.ContDeRecuperat.Simbol
+            })
+            .FirstOrDefault();
         var dto = new PrevizualizareItvDto {
             An = an, Luna = luna,
             Motiv = r.Motiv?.ToString(),
             Sold4426 = r.Sold4426, Sold4427 = r.Sold4427,
             Transfer = r.Linii.Transfer, DePlata = r.Linii.DePlata, DeRecuperat = r.Linii.DeRecuperat,
-            InchidereVieId = r.InchidereVieId
+            InchidereVieId = r.InchidereVieId,
+            SimbolDeductibila = simboluri?.Deductibila, SimbolColectata = simboluri?.Colectata,
+            SimbolDePlata = simboluri?.DePlata, SimbolDeRecuperat = simboluri?.DeRecuperat
         };
         if (r.InchidereVieId is Guid blocantId) {
             var blocant = os.GetObjectsQuery<InchidereTva>()
@@ -194,22 +207,23 @@ public static class InchidereTvaApply {
         return Rezultat(r);
     }
 
-    // Regenerarea unui DRAFT: ștergerea lui, apoi o generare nouă pe aceeași lună
-    // și aceeași unitate (`PredatorId` al draftului — unitatea nu se cere din nou,
-    // F21-D4). DOAR pe Draft: pe un document Operat „regenerarea" ar fi însemnat
-    // ștergerea unor rânduri de registru, adică exact ce interzice 14.
+    // Regenerarea unui DRAFT: o generare nouă pe aceeași lună și aceeași unitate
+    // (`PredatorId` al draftului — unitatea nu se cere din nou, F21-D4), care
+    // ÎNLOCUIEȘTE draftul vechi. DOAR pe Draft: pe un document Operat
+    // „regenerarea" ar fi însemnat ștergerea unor rânduri de registru, adică
+    // exact ce interzice 14.
     //
-    // DOUĂ COMMIT-URI SECVENȚIALE, nu o tranzacție, și e o alegere, nu o scăpare:
-    // ștergerea amânată (60a) pune `GCRecord`, iar filtrul global al
-    // ObjectSpace-ului ascunde draftul vechi abia DUPĂ commit — fără primul
-    // commit, gardianul de idempotență al serviciului l-ar fi văzut încă viu și
-    // ar fi întors `InchidereVie`. (Cusătura e MĂSURATĂ în ModelCheck: dacă
-    // filtrul n-ar ascunde draftul șters, proba pică zgomotos.)
+    // O SINGURĂ tranzacție, în ordinea „întâi se calculează, apoi se șterge"
+    // (review 79 F2): prima formă ștergea și COMITEA înainte de `Incearca`, iar
+    // un refuz al gardienilor (cronologie, unitate ștearsă între timp) lăsa
+    // draftul pierdut definitiv pe o acțiune al cărei text promite că îl reface.
+    // `Incearca(…, inlocuieste: id)` nu numără draftul de față ca „închidere
+    // vie", deci idempotența nu mai depinde de filtrul ștergerii amânate; dacă
+    // refuză, aruncă ÎNAINTE de orice `Delete`, iar draftul rămâne intact.
     //
-    // Cazul „ștergerea a reușit, generarea a dat `FaraSold`" e LEGITIM (luna nu
-    // mai are ce închide, de pildă după ce documentele ei au fost stornate) și
-    // iese ca raport cu `DocumentId = null`. Fereastra dintre commit-uri e
-    // limitarea asumată 25f (fără serializare între operatori concurenți).
+    // Cazul „luna nu mai are ce închide" (`FaraSold`, de pildă după stornarea
+    // documentelor ei) e LEGITIM: draftul vechi e depășit și se șterge, iar
+    // raportul iese cu `DocumentId = null`.
     public static GenerareItvRezultatDto Regenereaza(IObjectSpace os, Guid id) {
         var doc = os.GetObjectByKey<InchidereTva>(id)
             ?? throw new OperareException($"Închiderea de TVA {id} nu există.");
@@ -218,17 +232,12 @@ public static class InchidereTvaApply {
                 $"Închiderea {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se regenerează. "
                 + "Anulați operarea sau stornați-o, apoi generați luna din nou.");
 
-        var an = doc.Data.Year;
-        var luna = doc.Data.Month;
-        var unitateId = doc.PredatorId;
+        var r = InchidereTvaService.Incearca(os, doc.Data.Year, doc.Data.Month, doc.PredatorId,
+            inlocuieste: doc.ID);
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
         os.CommitChanges();
-
-        var r = InchidereTvaService.Incearca(os, an, luna, unitateId);
-        if (r.Document != null)
-            os.CommitChanges();
         return Rezultat(r);
     }
 

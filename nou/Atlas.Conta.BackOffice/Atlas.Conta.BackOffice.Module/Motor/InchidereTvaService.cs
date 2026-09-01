@@ -63,6 +63,15 @@ public static class InchidereTvaService {
             Scara.RotunjesteBani(sold4426 - transfer));
     }
 
+    // SINGURUL criteriu anti-stale (review 79 M4): liniile unui document se
+    // potrivesc cu soldurile dacă închid EXACT fiecare cont — două egalități de
+    // sumă, nu trei egalități pe linii. E criteriul gardianului din
+    // `InchidereTva.ValideazaOperare`, consumat și de `Stale` din ReadDto: o a
+    // doua formulă (egalitatea pe fiecare linie cu `CalculeazaLinii`) era mai
+    // strictă și ar fi cerut regenerarea unui draft pe care operarea îl acceptă.
+    public static bool LiniiPotrivescSoldurile(LiniiInchidere linii, decimal sold4426, decimal sold4427) =>
+        linii.Transfer + linii.DePlata == sold4427 && linii.Transfer + linii.DeRecuperat == sold4426;
+
     // Comanda: încearcă să genereze draftul lunii pe unitatea internă dată
     // (ambele laturi — nota nu are contrapartidă economică, convenția
     // NotaContabila). NU comite (contractul de apelant din antet).
@@ -71,7 +80,13 @@ public static class InchidereTvaService {
     // → cronologie (THROW) → solduri → TRZ. Singura adăugire e verificarea
     // ARGUMENTULUI, înaintea tuturor: `unitateId` care nu e o `UnitateInterna`
     // nu e o stare a bazei pe care raportul s-o poată descrie, e o cerere greșită.
-    public static RezultatInchidere Incearca(IObjectSpace os, int an, int luna, Guid unitateId) {
+    //
+    // `inlocuieste` = id-ul draftului pe care regenerarea îl ÎNLOCUIEȘTE (review 79
+    // F2): el nu contează ca „închidere vie" a lunii, iar apelantul îl șterge în
+    // ACEEAȘI tranzacție cu nașterea celui nou — nimic nu se pierde dacă vreun
+    // gardian refuză, fiindcă refuzul vine ÎNAINTEA ștergerii.
+    public static RezultatInchidere Incearca(IObjectSpace os, int an, int luna, Guid unitateId,
+            Guid? inlocuieste = null) {
         // F21-D2f: oglinda gardului din `NotaContabila.ValideazaOperare` („laturile
         // sunt repartitori INTERNI"), adusă la GENERARE. Fără el, o cerere HTTP cu
         // id de partener ar fi produs un draft care se refuză abia la operare, cu
@@ -82,7 +97,7 @@ public static class InchidereTvaService {
                 $"Laturile închiderii de TVA sunt unitatea internă care închide luna — "
                 + $"{(unitate == null ? unitateId.ToString() : $"„{unitate.Denumire}”")} nu e o unitate internă.");
 
-        var analiza = Analizeaza(os, an, luna, cronologiaCaMotiv: false);
+        var analiza = Analizeaza(os, an, luna, cronologiaCaMotiv: false, inlocuieste);
         if (analiza.Rezultat.Motiv != null)
             return analiza.Rezultat;
 
@@ -135,7 +150,7 @@ public static class InchidereTvaService {
     // Un raport care aruncă e un raport care nu poate spune „nu se poate,
     // fiindcă…" — exact întrebarea la care e chemat să răspundă (F21-D2b).
     public static RezultatInchidere Previzualizeaza(IObjectSpace os, int an, int luna) =>
-        Analizeaza(os, an, luna, cronologiaCaMotiv: true).Rezultat;
+        Analizeaza(os, an, luna, cronologiaCaMotiv: true, inlocuieste: null).Rezultat;
 
     // Ușa apelanților vechi (Import1C, probele de motor 1C-a): semnătura și
     // comportamentul de la 46c, neatinse — inclusiv cele trei `null`-uri și cele
@@ -151,7 +166,7 @@ public static class InchidereTvaService {
     // ceva ce comanda refuză.
     sealed record Analiza(PoliticaInchidereTva Politica, DateOnly UltimaZi, RezultatInchidere Rezultat);
 
-    static Analiza Analizeaza(IObjectSpace os, int an, int luna, bool cronologiaCaMotiv) {
+    static Analiza Analizeaza(IObjectSpace os, int an, int luna, bool cronologiaCaMotiv, Guid? inlocuieste) {
         var primaZi = new DateOnly(an, luna, 1);
         var ultimaZi = new DateOnly(an, luna, DateTime.DaysInMonth(an, luna));
 
@@ -179,7 +194,8 @@ public static class InchidereTvaService {
         //    Operat) ⇒ nu se mai generează una. Stornatul nu contează — după
         //    storno regenerarea e permisă natural (soldurile revin).
         var vie = os.GetObjectsQuery<InchidereTva>()
-            .Where(d => d.Data >= primaZi && d.Data <= ultimaZi && d.Stare != StareDocument.Stornat)
+            .Where(d => d.Data >= primaZi && d.Data <= ultimaZi && d.Stare != StareDocument.Stornat
+                && (inlocuieste == null || d.ID != inlocuieste))
             .Select(d => (Guid?)d.ID)
             .FirstOrDefault();
         if (vie != null)
@@ -198,6 +214,37 @@ public static class InchidereTvaService {
                 throw new OperareException(
                     $"Există o închidere de TVA vie pentru o lună ulterioară lui {luna:00}/{an} — închiderile se generează cronologic.");
             return Refuz(politica, MotivNegenerare.NeCronologica, sold4426, sold4427, ulterioara, linii);
+        }
+
+        // 2c. Simetricul cronologiei (review 79 F1): o lună ANTERIOARĂ cu draft
+        //     NEOPERAT. Soldurile cumulate ale lunii de față îl conțin pe al lui,
+        //     deci draftul de acum l-ar închide; iar dacă draftul vechi s-ar
+        //     opera DUPĂ, ar închide aceleași solduri a doua oară — exact
+        //     dublarea pe care 2b o oprește în celălalt sens. Operarea îl are
+        //     ca pereche pe gardianul din `InchidereTva.ValideazaOperare`.
+        var anterior = os.GetObjectsQuery<InchidereTva>()
+            .Where(d => d.Data < primaZi && d.Stare == StareDocument.Draft
+                && (inlocuieste == null || d.ID != inlocuieste))
+            .OrderBy(d => d.Data)
+            .Select(d => (Guid?)d.ID)
+            .FirstOrDefault();
+        if (anterior != null) {
+            if (!cronologiaCaMotiv)
+                throw new OperareException(
+                    $"O lună anterioară lui {luna:00}/{an} are un draft de închidere de TVA neoperat — "
+                    + "operați-l sau ștergeți-l întâi; închiderile se generează cronologic.");
+            return Refuz(politica, MotivNegenerare.DraftAnterior, sold4426, sold4427, anterior, linii);
+        }
+
+        // 2d. Perioada fiscală (decizia 14; review 79 M2): un draft într-o lună
+        //     închisă n-ar putea fi operat niciodată, dar ar sta ca „închidere
+        //     vie" și ar bloca cronologic lunile dinaintea lui. Același gardian
+        //     ca la operare — la comandă refuzul lui, la raport motivul.
+        try {
+            GardianPerioada.VerificaDeschisa(os, ultimaZi);
+        }
+        catch (OperareException) when (cronologiaCaMotiv) {
+            return Refuz(politica, MotivNegenerare.PerioadaInchisa, sold4426, sold4427, null, linii);
         }
 
         // 3. Soldurile CUMULATE la ultima zi a lunii (nu rulajele lunii).

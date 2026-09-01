@@ -153284,6 +153284,22 @@
           "InchidereVieStare": {
             "type": "string",
             "nullable": true
+          },
+          "SimbolDeductibila": {
+            "type": "string",
+            "nullable": true
+          },
+          "SimbolColectata": {
+            "type": "string",
+            "nullable": true
+          },
+          "SimbolDePlata": {
+            "type": "string",
+            "nullable": true
+          },
+          "SimbolDeRecuperat": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

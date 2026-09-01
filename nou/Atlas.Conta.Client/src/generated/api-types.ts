@@ -6693,6 +6693,10 @@ export interface components {
             InchidereVieId?: string | null;
             InchidereVieNumar?: string | null;
             InchidereVieStare?: string | null;
+            SimbolDeductibila?: string | null;
+            SimbolColectata?: string | null;
+            SimbolDePlata?: string | null;
+            SimbolDeRecuperat?: string | null;
         };
         ProblemDetails: {
             type?: string | null;

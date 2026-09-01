@@ -775,6 +775,41 @@ decizia N.
     (77-r7) sau pe expresie (IMMUTABLE, indexabilă fără persistare).
     Măsurat pe HTTP (Privat, 19k FCT): trei grafii ⇒ același total, 56–121 ms.
     Restanța 78-r1 → jurnal (grilele XAF rămân sensibile — asumat, 44/53).
+79. **ITV prin API și client — COMANDĂ cu cauză, nu agregat** (76a). (a)
+    `InchidereTvaService` întoarce `RezultatInchidere` cu `MotivNegenerare`
+    (`ProfilInert`/`InchidereVie`/`FaraSold`/`NeCronologica`; enum-ul stă în
+    `BusinessObjects/Comun` — dump-ul de metadata ia doar spațiul ăla);
+    `CalculeazaLinii` = SINGURA aritmetică a celor trei linii; `Analizeaza` =
+    ordinea gardienilor o singură dată; **raportul (`Previzualizeaza`, nu
+    scrie) și comanda (`Incearca`, nu comite) diferă printr-un bit: cronologia
+    e motiv la raport, refuz zgomotos la comandă** (46c rămâne); **cronologia
+    are AMBELE sensuri și AMBELE uși** (review): un draft neoperat pe o lună
+    anterioară blochează generarea (`DraftAnterior`), o închidere OPERATĂ
+    ulterioară blochează OPERAREA (gard în `ValideazaOperare` — altfel 4423
+    se dubla cu ecranul spunând că e în regulă); perioada fiscală închisă =
+    `PerioadaInchisa` la raport / refuz la comandă; solduri `null` (nu 0) pe
+    profil inert; unitatea ne-internă = refuz la GENERARE;
+    `LiniiPotrivescSoldurile` = SINGURUL criteriu anti-stale (gardian ȘI
+    `Stale` din DTO); `Genereaza` = wrapper, Import1C neatins. (b) **Gate-ul comenzii fără
+    subiect e pe TIP** (`PoateCrea` = `CanCreate(tip, os)`; `PoateCiti` pe
+    previzualizare; `AutorizeazaCitire<T>` pe instanță: invizibil 404,
+    vizibil fără drept 403), luat pe ușa securizată ÎNAINTE; **cifrele
+    motorului (solduri, `Stale`, liniile) se calculează pe ușa NON-SECURED**
+    — pe cea filtrată ar fi o cifră falsă, nu goală (73g). Listele rămân
+    securizate. (c) **ITV iese din felia NTC**: `Lista`/`Citeste`/`Candidati`
+    filtrează `!(d is InchidereTva)` (tradus pe TPT), PUT/DELETE refuză 422;
+    `is` la graniță, în Apply, nu în motor; comenzile NTC pe id ITV rămân
+    permise (`OperareApi` e agnostic). (d) `genereaza` răspunde **200 și când
+    nu generează** (raport: `Motiv` + `InchidereVieId`), 422 doar pe domeniu;
+    `regenereaza` = `Incearca(…, inlocuieste: id)` ÎNAINTE de ștergere, o
+    singură tranzacție — un refuz lasă draftul intact (review: forma
+    „șterge, comite, apoi încearcă" pierdea draftul); cere și `PoateCrea`
+    (produce un document nou); unitatea = parametru
+    cules, precompletat doar la exact un rând; lista cu ordine implicită
+    DECLARATĂ (`Data` desc). (e) Client: previzualizarea lunii pe listă
+    (motivul tradus, link către închiderea blocantă), documentul read-only cu
+    `Stale` ⇒ atenție, storno cu data implicită = data închiderii (46f);
+    `rutaTip('ITV')`. (f) Restanțe 79-r1…r5 → jurnal.
 
 ## Stare și roadmap
 
@@ -802,16 +837,19 @@ detaliat în jurnal):
   finisajul clientului — căutarea fără diacritice, cache-ul de nomenclator,
   confirmările, `Neincluse` agregat, primele ecrane de nomenclator (77),
   căutarea fără diacritice pe proiecții — filtrele grilelor prin
-  `DataSourceLoader`, prin același normalizator (78).
+  `DataSourceLoader`, prin același normalizator (78), ITV prin API și client
+  — comandă cu cauză + ecran de rezultat (79).
 
-**Toate tipurile de document au acum felie de scriere prin API și client**,
-în afara lui ITV (comandă, nu agregat — 76a) și a lui BPR (rezervat, 19).
+**Toate tipurile de document au acum felie prin API și client** — ITV ca
+COMANDĂ (79), nu agregat; singurul rămas e BPR (rezervat, 19).
 
-**Următorul pas**: felia ITV (comandă + ecran de rezultat, 76a), la cerere;
-restanța de fond 77-r8 (decizia unică 404/403/422 pe toate ușile — cu cazul
-nou măsurat de 77k: `User` primește 422 de la gardian înaintea permisiunii);
-77-r2 e închisă de 77k; `lista-react.md` mai ține doar itemii structurali și
-77-r1/r3/r6.
+**Următorul pas**: restanța de fond 77-r8 (decizia unică 404/403/422 pe
+toate ușile — cazurile măsurate: 77k `User` primește 422 de la gardian
+înaintea permisiunii; 79b `User` primește 404 pe `GET api/itv/{id}` fiindcă
+instanța e invizibilă); 79-r1 (acțiunea XAF de generare) la cerere;
+`lista-react.md` mai ține doar itemii structurali și 77-r1/r3/r6. Capcană
+de probare (79): `genereaza` SCRIE ori de câte ori luna e liberă — un „retry"
+pe altă lună creează un draft.
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -898,6 +936,16 @@ GIN `pg_trgm`, 78e) · 77-r8
 permisiunea pe OData `text/plain` pe server
 · 78-r1 căutarea din grilele XAF rămâne sensibilă la diacritice (nu trec prin
 `DataSourceLoader`; asumat, 44/53)
+· 79-r1 acțiunea XAF „Generează închiderea" (aditivă) · 79-r2
+`PoliticaInchidereTva` pe OData + ecran React (familia 77-r3) · 79-r3
+închiderea perioadei fiscale din client (53i) · 79-r4 mesajul `[Range]` în
+engleză pe `genereaza` (70-r5) · 79-r5 storno-ul unei închideri la o dată din
+ALTĂ lună ⇒ previzualizarea lunii raportează `FaraSold` (cauza greșită; data
+implicită din ecran e cea corectă) · 79-r6 cine are drept de citire pe
+`InchidereTva` vede prin previzualizare soldurile de TVA ale societății fără
+drept pe `RegistruContabil` (consecința asumată a lui 79b; familia 77-r8) ·
+79-r7 „Verifică" activ pe ne-Draft arată refuzul ca eroare (convenția NTC,
+transversală)
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

@@ -250,9 +250,10 @@ function Previzualizare({ prev }: { prev: PrevizualizareItv }) {
       <table className="tabel-mic">
         <tbody>
           <tr>
-            <th>Sold 4426 (TVA deductibilă)</th>
+            {/* Simbolurile vin din politică prin DTO (79 M6), nu din cod. */}
+            <th>Sold {prev.SimbolDeductibila ?? ''} (TVA deductibilă)</th>
             <td className="num">{bani(prev.Sold4426)}</td>
-            <th>Sold 4427 (TVA colectată)</th>
+            <th>Sold {prev.SimbolColectata ?? ''} (TVA colectată)</th>
             <td className="num">{bani(prev.Sold4427)}</td>
           </tr>
         </tbody>
@@ -267,15 +268,15 @@ function Previzualizare({ prev }: { prev: PrevizualizareItv }) {
         </thead>
         <tbody>
           <tr>
-            <td>Transfer (4427 = 4426)</td>
+            <td>Transfer ({prev.SimbolColectata ?? '…'} = {prev.SimbolDeductibila ?? '…'})</td>
             <td className="num">{bani(prev.Transfer)}</td>
           </tr>
           <tr>
-            <td>TVA de plată (4427 = 4423)</td>
+            <td>TVA de plată ({prev.SimbolColectata ?? '…'} = {prev.SimbolDePlata ?? '…'})</td>
             <td className="num">{bani(prev.DePlata)}</td>
           </tr>
           <tr>
-            <td>TVA de recuperat (4424 = 4426)</td>
+            <td>TVA de recuperat ({prev.SimbolDeRecuperat ?? '…'} = {prev.SimbolDeductibila ?? '…'})</td>
             <td className="num">{bani(prev.DeRecuperat)}</td>
           </tr>
         </tbody>
@@ -285,6 +286,8 @@ function Previzualizare({ prev }: { prev: PrevizualizareItv }) {
         {sePoate
           ? 'Cifrele sunt cele ale registrului contabil la ultima zi a lunii, calculate de motor — aceeași funcție care va genera liniile. Alegeți unitatea internă și apăsați „Generează”.'
           : 'Cifrele rămân afișate ca informație: sunt soldurile lunii, nu ce se va genera.'}
+        {' '}Închiderea e a SOCIETĂȚII (soldurile întregului registru); unitatea internă e doar latura pe care
+        o poartă nota, nu schimbă cifra (79 M1).
       </p>
     </div>
   );

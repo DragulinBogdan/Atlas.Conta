@@ -108,8 +108,13 @@ public class ItvController : ContaApiController {
             if (!PoateCiti(typeof(InchidereTva), osSecured))
                 return Forbid();
         }
-        using var os = NonSecured(typeof(InchidereTva));
-        return Ok(InchidereTvaApply.Previzualizeaza(os, an.Value, luna.Value));
+        // `Domeniu` și aici (review 79 M7): ancora `TipDocument` lipsă din seed
+        // aruncă `OperareException`, care fără traducere ar ieși 400 text/plain
+        // prin filtrul DevExpress — în afara contractului „un singur 400" (70f).
+        return Domeniu(() => {
+            using var os = NonSecured(typeof(InchidereTva));
+            return Ok(InchidereTvaApply.Previzualizeaza(os, an.Value, luna.Value));
+        });
     }
 
     // ── Comenzile proprii feliei ──────────────────────────────────────────
@@ -140,19 +145,28 @@ public class ItvController : ContaApiController {
         });
     }
 
-    // Regenerarea unui DRAFT: are subiect, deci gate-ul e cel al comenzilor
-    // (`ComandaAutorizata` ⇒ 404 invizibil / 403 fără Write), nu `PoateCrea`.
-    // Unitatea nu se cere din nou — `Apply` refolosește `PredatorId` al draftului
-    // (F21-D4). Pe un document care nu mai e Draft ⇒ 422.
+    // Regenerarea unui DRAFT: are subiect, deci gate-ul de instanță e cel al
+    // comenzilor (`ComandaAutorizata` ⇒ 404 invizibil / 403 fără Write) — dar
+    // PRODUCE și un document nou, cu alt Id, deci cere și dreptul de CREARE pe
+    // tip, ca `genereaza` (review 79 M5: altfel dreptul de scriere pe documente
+    // ar fi ocolit `PoateCrea`). Unitatea nu se cere din nou — `Apply`
+    // refolosește `PredatorId` al draftului (F21-D4). Pe un document care nu mai
+    // e Draft ⇒ 422.
     [HttpPost("{id:guid}/regenereaza")]
     [ProducesResponseType(typeof(GenerareItvRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Regenereaza(Guid id) => ComandaAutorizata(id, () => Domeniu(() => {
-        using var os = NonSecured(typeof(InchidereTva));
-        return Ok(InchidereTvaApply.Regenereaza(os, id));
-    }));
+    public IActionResult Regenereaza(Guid id) => ComandaAutorizata(id, () => {
+        using (var osSecured = Secured(typeof(InchidereTva))) {
+            if (!PoateCrea(typeof(InchidereTva), osSecured))
+                return Forbid();
+        }
+        return Domeniu(() => {
+            using var os = NonSecured(typeof(InchidereTva));
+            return Ok(InchidereTvaApply.Regenereaza(os, id));
+        });
+    });
 
     // Ștergerea unui DRAFT, pe ușa SECURED ca la NTC: pre-check-ul de domeniu e
     // în `Sterge` (mesaj propriu), gardianul de Committing rămâne plasa.

@@ -418,3 +418,17 @@ per felie):
   `[Required]` ⇒ OpenAPI ⇒ asterisc în client, `[RuleRequiredField]` pentru
   XAF; probe ModelCheck pe trei uși (0 FAIL ambele profiluri) + HTTP 422 pe
   `api/odata/Partener`.
+- **2026-09-01 — P5-F21, ITV prin API și client (decizia 79)**: ultimul tip
+  fără felie capătă ușa lui ca COMANDĂ, nu agregat — `InchidereTvaService`
+  întoarce rezultat cu cauză (`MotivNegenerare`; `Genereaza` rămâne wrapper
+  pentru Import1C), `CalculeazaLinii` = singura aritmetică, `Previzualizeaza`
+  = raport (cronologia ca motiv) vs `Incearca` = comandă (refuz zgomotos);
+  `api/itv` cu gate pe TIP (`PoateCrea`/`PoateCiti`) și `AutorizeazaCitire`
+  pe instanță, cifrele motorului (solduri, `Stale`) pe ușa non-secured după
+  verdictul de acces; ITV iese din felia NTC (patru uși); ecranul de listă cu
+  previzualizarea lunii + generare, ecranul documentului cu regenerare și
+  storno la data închiderii; review advers: 2 defecte de fond (cronologia
+  doar la generare și doar într-un sens ⇒ 4423 dublat; regenerarea ștergea
+  înainte de a verifica ⇒ draft pierdut) + 9 medii, fixate cu probe;
+  ModelCheck final privat 944 / bugetar 900, 0 FAIL; 31 de probe HTTP +
+  smoke 11/11 pe Privat. Decizia 79.
