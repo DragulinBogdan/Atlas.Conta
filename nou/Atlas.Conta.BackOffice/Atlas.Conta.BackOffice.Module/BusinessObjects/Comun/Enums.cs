@@ -370,3 +370,26 @@ public enum CodAvertismentD394 {
     [XafDisplayName("Combinație partener × tip refuzată de formular")] CombinatieRefuzata = 8,
     [XafDisplayName("Partener șters din nomenclator")] PartenerSters = 9,
 }
+
+// De ce n-a generat închiderea lunară de TVA (F21-D2). `InchidereTvaService`
+// colapsa cele trei cauze de „nimic de generat" pe un singur `null`, iar
+// apelantul le compensa cu un string pasat de el (`motivFaraDraft` în Import1C)
+// — adică ecranul nu putea spune DE CE. Cauzele sunt distincte pentru operator:
+//   ProfilInert   — profilul n-are `PoliticaInchidereTva` completă (bugetarul);
+//                   nici conturi, deci nici solduri de arătat;
+//   InchidereVie  — luna are deja o închidere Draft sau Operată (stornatul nu
+//                   contează — regenerarea e permisă natural);
+//   FaraSold      — ambele solduri de TVA sunt 0: luna n-are ce închide;
+//   NeCronologica — o închidere vie ULTERIOARĂ a închis deja cumulat și luna
+//                   asta. E motiv DOAR în `Previzualizeaza`, care e raport;
+//                   `Incearca` rămâne refuz zgomotos (`OperareException`, 46c).
+//
+// Enum-ul stă AICI, nu lângă serviciu, fiindcă dump-ul de metadata (deci
+// eticheta din clientul React) ia doar tipurile din spațiul `BusinessObjects`
+// (`MetadataDump.EsteRelevant`). Pe sârmă pleacă numele membrului (57a).
+public enum MotivNegenerare {
+    [XafDisplayName("Profilul nu are conturile închiderii")] ProfilInert = 1,
+    [XafDisplayName("Luna are deja o închidere")] InchidereVie = 2,
+    [XafDisplayName("Luna n-are sold de TVA de închis")] FaraSold = 3,
+    [XafDisplayName("Există o închidere pentru o lună ulterioară")] NeCronologica = 4,
+}

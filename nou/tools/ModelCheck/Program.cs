@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -12,6 +12,7 @@ using Atlas.Conta.BackOffice.Module.Api.Dec;
 using Atlas.Conta.BackOffice.Module.Api.Dsc;
 using Atlas.Conta.BackOffice.Module.Api.Fcl;
 using Atlas.Conta.BackOffice.Module.Api.Fct;
+using Atlas.Conta.BackOffice.Module.Api.Itv;
 using Atlas.Conta.BackOffice.Module.Api.Ldi;
 using Atlas.Conta.BackOffice.Module.Api.Nir;
 using Atlas.Conta.BackOffice.Module.Api.Ntc;
@@ -1897,6 +1898,373 @@ if (profil == ProfilContabil.Privat) {
                 !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajItv))
                 && !os.GetObjectsQuery<InchidereTva>().Any()
                 && SoldDebitor(cont4426, finalOct) == 0m && SoldCreditor(cont4427, finalOct) == 0m);
+        }
+    }
+
+    // ============= Felia API ITV (F21) — E2E-API-ITV (privat) =============
+    // Închiderea de TVA parcursă prin CONTRACTUL feliei: `Previzualizeaza` →
+    // `Genereaza` → `Citeste` → `Regenereaza` → `OperareApi` → storno →
+    // `Sterge`. Endpoint-urile din host sunt transport peste EXACT acest cod.
+    //
+    // Semantica de MOTOR e deja acoperită de blocul `E2E-ITV` de mai sus (lunile
+    // 9/10): transferul pe minim, excedentul într-un singur sens, idempotența,
+    // cronologia, anti-stale. Aici se probează UȘA, și mai ales cele patru
+    // cusături care, dacă se rup, fac ecranul să MINTĂ:
+    //   * previzualizarea și generarea sunt ACELAȘI calcul, nu două (F21-D2a);
+    //   * `Stale` din ReadDto spune exact ce refuză gardianul anti-stale la
+    //     operare (F21-D6) — altfel butonul „Operează" promite ce serverul neagă;
+    //   * `Regenereaza` chiar înlocuiește draftul: dacă filtrul global al
+    //     ștergerii amânate NU l-ar ascunde la a doua interogare a idempotenței,
+    //     generarea ar fi întors `InchidereVie` și luna ar fi rămas blocată
+    //     (regula de oprire F21-D11 — proba de mai jos e chiar detectorul);
+    //   * ITV a IEȘIT din felia NTC (F21-D5), pe toate cele patru uși.
+    //
+    // Luna de lucru e NOIEMBRIE 2026, decembrie ține nota de control a lui
+    // F21-D5. Blocul stă IMEDIAT după `E2E-ITV` și înaintea scenelor ASM
+    // (noiembrie) și RLF/RDC (decembrie), care folosesc aceleași luni: la
+    // punctul ăsta ele n-au rulat încă, iar blocul de față își purjează scena
+    // FIZIC înainte ca ele să pornească. Precondiția nu se presupune, se
+    // MĂSOARĂ — solduri 4426/4427 zero la 30.11 și 31.12 și NICIO închidere vie
+    // în bază (`E2E-ITV` tocmai a probat că nu mai există niciuna).
+    {
+        const string MarcajApiItv = "E2E-API-ITV";
+
+        void CurataApiItv(IObjectSpace os) {
+            // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+            var pj = new Purja(os);
+            var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+                .Where(r => r.Cod.StartsWith(MarcajApiItv)).Select(r => r.ID).ToList();
+            // Laturile ITV sunt unitatea marcată (predator = primitor), deci
+            // filtrul pe laturi prinde și închiderile, nu doar FCT/FCL/NTC.
+            var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+            var docIds = docs.Select(d => d.ID).ToList();
+            pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+                .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+                .Where(r => docIds.Contains(r.DocumentId)).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.DocumentId)).ToList());
+            foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+                pj.Adauga(doc);
+            pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+                .Where(r => r.Cod.StartsWith(MarcajApiItv)).ToList());
+            pj.Executa();
+        }
+
+        using (var os = provider.CreateObjectSpace()) {
+            CurataApiItv(os);
+
+            Cont ContApiItv(string simbol) => os.FirstOrDefault<Cont>(c => c.Simbol == simbol);
+            var cont4423 = ContApiItv("4423");
+            var cont4424 = ContApiItv("4424");
+            var cont4426 = ContApiItv("4426");
+            var cont4427 = ContApiItv("4427");
+            var contTranzit = ContApiItv("581");
+            var contCasa = ContApiItv("5311");
+            var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+            var tip704 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704");
+            var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+            var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+
+            decimal SoldDebitorApi(Cont cont, DateOnly la) =>
+                (os.GetObjectsQuery<RegistruContabil>().Where(r => r.Data <= la && r.ContDebitId == cont.ID).Sum(r => (decimal?)r.Valoare) ?? 0m)
+                - (os.GetObjectsQuery<RegistruContabil>().Where(r => r.Data <= la && r.ContCreditId == cont.ID).Sum(r => (decimal?)r.Valoare) ?? 0m);
+            decimal SoldCreditorApi(Cont cont, DateOnly la) => -SoldDebitorApi(cont, la);
+
+            var finalNoi = new DateOnly(2026, 11, 30);
+            var finalDec = new DateOnly(2026, 12, 31);
+            Check("F21-D9 precondiție — BLOCUL ĂSTA TREBUIE SĂ RĂMÂNĂ ÎNAINTEA SCENELOR `E2E-ASM` (noiembrie) "
+                + "și `E2E-RET` RLF/RDC (decembrie), care lucrează în ACELEAȘI luni: dacă proba de față pică, "
+                + "cineva a mutat blocul după ele (sau a adăugat TVA în 11/12 mai devreme în fișier), iar "
+                + "cifrele exacte de mai jos și gardul cronologic ar fi măsurate peste conținut străin. "
+                + "MĂSURAT aici: soldurile cumulate 4426/4427 sunt 0 la 30.11 ȘI la 31.12.2026, iar baza "
+                + "n-are NICIO închidere de TVA vie",
+                SoldDebitorApi(cont4426, finalNoi) == 0m && SoldCreditorApi(cont4427, finalNoi) == 0m
+                && SoldDebitorApi(cont4426, finalDec) == 0m && SoldCreditorApi(cont4427, finalDec) == 0m
+                && !os.GetObjectsQuery<InchidereTva>().Any(d => d.Stare != StareDocument.Stornat));
+
+            var furnizor = os.CreateObject<Partener>();
+            furnizor.Cod = MarcajApiItv + "-FURN";
+            furnizor.Denumire = "Furnizor probă felie ITV";
+            var client = os.CreateObject<Partener>();
+            client.Cod = MarcajApiItv + "-CL";
+            client.Denumire = "Client probă felie ITV";
+            var gestiune = os.CreateObject<Gestiune>();
+            gestiune.Cod = MarcajApiItv + "-MAG";
+            gestiune.Denumire = "Gestiune probă felie ITV";
+            var unitate = os.CreateObject<UnitateInterna>();
+            unitate.Cod = MarcajApiItv + "-UI";
+            unitate.Denumire = "Unitate probă felie ITV";
+            os.CommitChanges();
+
+            // ── (1) Previzualizarea pe o lună fără TVA: `FaraSold`, cu cifra ──
+            var prevGol = InchidereTvaApply.Previzualizeaza(os, 2026, 11);
+            Check("F21-D9.1 — `Previzualizeaza` pe o lună fără TVA: motivul e `FaraSold`, iar soldurile ies 0/0 "
+                + "NENULE ca valori (nu `null`: profilul ARE conturi, doar luna n-are ce închide — distincția "
+                + "față de `ProfilInert` e chiar ce trebuie să spună ecranul)",
+                prevGol.Motiv == nameof(MotivNegenerare.FaraSold)
+                && prevGol.Sold4426 == 0m && prevGol.Sold4427 == 0m
+                && prevGol.Transfer == 0m && prevGol.DePlata == 0m && prevGol.DeRecuperat == 0m
+                && prevGol.InchidereVieId == null);
+
+            // TVA-ul lunii: FCT servicii 100 (4426 = 21) + FCL 200 (4427 = 42).
+            var fctNoi = os.CreateObject<FacturaIntrare>();
+            fctNoi.Numar = MarcajApiItv + "-FF1";
+            fctNoi.Data = new DateOnly(2026, 11, 3);
+            fctNoi.Predator = furnizor;
+            fctNoi.Primitor = gestiune;
+            var linieFctNoi = os.CreateObject<FacturaIntrareDetaliu>();
+            linieFctNoi.Document = fctNoi;
+            linieFctNoi.TipMaterial = tip628;
+            linieFctNoi.Cantitate = 1m;
+            linieFctNoi.PretUnitar = 100m;
+            linieFctNoi.TipTva = n21;
+
+            var fclNoi = os.CreateObject<FacturaIesire>();
+            fclNoi.Data = new DateOnly(2026, 11, 4);
+            fclNoi.Predator = unitate;
+            fclNoi.Primitor = client;
+            var linieFclNoi = os.CreateObject<FacturaIesireDetaliu>();
+            linieFclNoi.Document = fclNoi;
+            linieFclNoi.TipMaterial = tip704;
+            linieFclNoi.Cantitate = 1m;
+            linieFclNoi.PretUnitar = 200m;
+            linieFclNoi.TipTva = n21;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, fctNoi);
+            MotorOperare.Opereaza(os, fclNoi);
+
+            var prevNoi = InchidereTvaApply.Previzualizeaza(os, 2026, 11);
+            var liniiAsteptate = InchidereTvaService.CalculeazaLinii(21m, 42m);
+            Check("F21-D9.1 — după FCT+FCL în lună: `Motiv == null` (luna se poate închide), soldurile 21/42 și "
+                + "cele trei linii IDENTICE cu `CalculeazaLinii(solduri)` — previzualizarea nu e o copie a "
+                + "calculului, e ACELAȘI calcul (42c). Anti-vacuitate: transferul și de-plata sunt NENULE, "
+                + "iar de-recuperat e 0 (egalitatea ar fi trecut și pe zero de ambele părți)",
+                prevNoi.Motiv == null && prevNoi.Sold4426 == 21m && prevNoi.Sold4427 == 42m
+                && prevNoi.Transfer == liniiAsteptate.Transfer
+                && prevNoi.DePlata == liniiAsteptate.DePlata
+                && prevNoi.DeRecuperat == liniiAsteptate.DeRecuperat
+                && prevNoi.Transfer == 21m && prevNoi.DePlata == 21m && prevNoi.DeRecuperat == 0m);
+
+            // ── (2) Generarea: draftul are EXACT liniile previzualizate ──
+            var rezGen = InchidereTvaApply.Genereaza(os,
+                new GenerareItvRequestDto { An = 2026, Luna = 11, UnitateId = unitate.ID });
+            var idItv = rezGen.DocumentId ?? Guid.Empty;
+            var citit = InchidereTvaApply.Citeste(os, idItv);
+            // Commit-ul e al Apply-ului (F21-D7): se probează dintr-un OS NOU,
+            // fiindcă în cel curent draftul ar fi vizibil și necomis.
+            bool persistat;
+            using (var osAlt = provider.CreateObjectSpace())
+                persistat = osAlt.GetObjectsQuery<InchidereTva>().Any(d => d.ID == idItv);
+            Check("F21-D9.2 — `Genereaza` ⇒ document COMIS (vizibil dintr-un alt ObjectSpace), fără motiv, iar "
+                + "liniile draftului sunt EXACT cele previzualizate: cusătura previzualizare ↔ generare "
+                + "(rolurile citite prin conturile POLITICII, nu prin simbol — 29)",
+                rezGen.DocumentId != null && rezGen.Motiv == null && persistat
+                && rezGen.Transfer == prevNoi.Transfer && rezGen.DePlata == prevNoi.DePlata
+                && rezGen.DeRecuperat == prevNoi.DeRecuperat
+                && citit != null && citit.Linii.Count == 2
+                && citit.Transfer == 21m && citit.DePlata == 21m && citit.DeRecuperat == 0m
+                && citit.Linii.Any(l => l.ContDebitId == cont4427.ID && l.ContCreditId == cont4426.ID && l.Valoare == 21m)
+                && citit.Linii.Any(l => l.ContDebitId == cont4427.ID && l.ContCreditId == cont4423.ID && l.Valoare == 21m)
+                && citit.An == 2026 && citit.Luna == 11 && citit.Data == finalNoi
+                && citit.UnitateId == unitate.ID && citit.Stare == "Draft" && citit.Numar == null);
+
+            // ── (3) A doua generare, cronologia ca refuz ȘI ca motiv ──
+            var rezGen2 = InchidereTvaApply.Genereaza(os,
+                new GenerareItvRequestDto { An = 2026, Luna = 11, UnitateId = unitate.ID });
+            Check("F21-D9.3 — a doua generare pe aceeași lună ⇒ RAPORT, nu eroare: `DocumentId == null`, motivul "
+                + "`InchidereVie` și `InchidereVieId` = chiar draftul existent (fără el ecranul n-ar putea face link)",
+                rezGen2.DocumentId == null && rezGen2.Motiv == nameof(MotivNegenerare.InchidereVie)
+                && rezGen2.InchidereVieId == idItv
+                && rezGen2.Sold4426 == 21m && rezGen2.Sold4427 == 42m);
+            CheckRefuza("F21-D9.3 — `Incearca` pe o lună ANTERIOARĂ unei închideri vii ⇒ refuz ZGOMOTOS "
+                + "(comanda nu raportează cronologia, o refuză — 46c)",
+                () => InchidereTvaService.Incearca(os, 2026, 10, unitate.ID));
+            var prevInapoi = InchidereTvaApply.Previzualizeaza(os, 2026, 10);
+            Check("F21-D9.3 — ACEEAȘI cronologie, pe ușa de RAPORT, iese ca MOTIV `NeCronologica` cu documentul "
+                + "care blochează (id + etichetă + stare): raportul răspunde „de ce nu se poate”, nu aruncă (F21-D2b)",
+                prevInapoi.Motiv == nameof(MotivNegenerare.NeCronologica)
+                && prevInapoi.InchidereVieId == idItv
+                && prevInapoi.InchidereVieStare == "Draft"
+                && prevInapoi.InchidereVieNumar == finalNoi.ToString("dd.MM.yyyy"));
+
+            // ── (4) `Stale`: DTO-ul și gardianul spun același lucru; regenerarea ──
+            Check("F21-D9.4 — pe draftul proaspăt: `Stale == false`, soldurile CURENTE din DTO sunt cele ale "
+                + "motorului (21/42) și afordanțele sunt cele de Draft",
+                citit.Stale == false && citit.Sold4426Curent == 21m && citit.Sold4427Curent == 42m
+                && citit.PoateOpera && citit.PoateSterge && citit.PoateRegenera
+                && !citit.PoateAnula && !citit.PoateStorna);
+
+            // Încă o factură în lună, DUPĂ generare: soldurile nu mai sunt cele
+            // din linii (fix-ul anti-stale de la 1C-a, văzut acum prin ușă).
+            var fctNoi2 = os.CreateObject<FacturaIntrare>();
+            fctNoi2.Numar = MarcajApiItv + "-FF2";
+            fctNoi2.Data = new DateOnly(2026, 11, 20);
+            fctNoi2.Predator = furnizor;
+            fctNoi2.Primitor = gestiune;
+            var linieFctNoi2 = os.CreateObject<FacturaIntrareDetaliu>();
+            linieFctNoi2.Document = fctNoi2;
+            linieFctNoi2.TipMaterial = tip628;
+            linieFctNoi2.Cantitate = 1m;
+            linieFctNoi2.PretUnitar = 50m;
+            linieFctNoi2.TipTva = n21;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, fctNoi2);
+
+            var citStale = InchidereTvaApply.Citeste(os, idItv);
+            // Dry-run pe un OS de UNICĂ FOLOSINȚĂ: `Valideaza` SCRIE (25b/55b).
+            List<string> eroriDry;
+            using (var osDry = provider.CreateObjectSpace())
+                eroriDry = OperareApi.Valideaza(osDry, idItv).ToList();
+            Check("F21-D9.4 — după încă o factură în lună: `Stale == true` ÎN DTO **și** dry-run-ul dă exact "
+                + "eroarea gardianului anti-stale — ecranul spune același lucru pe care operarea îl refuză "
+                + "(dacă cele două ar diverge, butonul „Operează” ar promite ce serverul neagă)",
+                citStale.Stale == true
+                && citStale.Sold4426Curent == 31.5m && citStale.Sold4427Curent == 42m
+                && eroriDry.Any(e => e.Contains("s-au schimbat de la generare")));
+
+            var rezRegen = InchidereTvaApply.Regenereaza(os, idItv);
+            var idItvNou = rezRegen.DocumentId ?? Guid.Empty;
+            var citRegen = InchidereTvaApply.Citeste(os, idItvNou);
+            Check("F21-D9.4 — `Regenereaza` ⇒ draft NOU (alt id) pe cifra curentă, `Stale == false`. Proba e chiar "
+                + "DETECTORUL cusăturii F21-D11: dacă filtrul global al ștergerii amânate nu ascundea draftul "
+                + "vechi la a doua interogare a idempotenței, generarea ar fi întors `InchidereVie` și "
+                + "`DocumentId` ar fi fost null",
+                rezRegen.DocumentId != null && rezRegen.Motiv == null && idItvNou != idItv
+                && citRegen != null && citRegen.Stale == false
+                && citRegen.Transfer == 31.5m && citRegen.DePlata == 10.5m && citRegen.DeRecuperat == 0m
+                && citRegen.Linii.Count == 2);
+            Check("F21-D9.4 — draftul vechi e șters LOGIC (a dispărut din interogări, rândul e încă acolo cu "
+                + "`GCRecord = 1` — 60a/F13-D2), iar `Citeste` pe el întoarce null",
+                !os.GetObjectsQuery<InchidereTva>().Any(d => d.ID == idItv)
+                && os.GetObjectsQuery<InchidereTva>().IgnoreQueryFilters().Any(d => d.ID == idItv)
+                && InchidereTvaApply.Citeste(os, idItv) == null);
+
+            // ── (5) Operarea, storno-ul și redeschiderea lunii ──
+            var rezOperare = OperareApi.Opereaza(os, idItvNou);
+            var citOperat = InchidereTvaApply.Citeste(os, idItvNou);
+            Check("F21-D9.5 — `OperareApi.Opereaza` ⇒ Operat cu numărul din politică (seria „ITV-”, consumată la "
+                + "MATERIALIZARE — 53b), iar `Stale` devine `null`: pe un document operat cifra e deja în "
+                + "registru, deci întrebarea n-are sens (un `false` acolo ar fi fost o afirmație despre altceva)",
+                rezOperare.StareNoua == StareDocument.Operat
+                && citOperat.Stare == "Operat" && citOperat.Numar?.StartsWith("ITV-") == true
+                && citOperat.DataOperare != null && citOperat.Stale == null
+                && !citOperat.PoateOpera && !citOperat.PoateSterge && !citOperat.PoateRegenera
+                && citOperat.PoateAnula && citOperat.PoateStorna);
+            Check("F21-D9.5 — după operare luna e închisă în REGISTRU: 4423 TVA de plată = 10,5, iar 4426/4427 "
+                + "revin la 0 pe 30.11",
+                SoldCreditorApi(cont4423, finalNoi) == 10.5m
+                && SoldDebitorApi(cont4426, finalNoi) == 0m && SoldCreditorApi(cont4427, finalNoi) == 0m);
+
+            OperareApi.Storneaza(os, idItvNou, finalNoi);
+            var prevDupaStorno = InchidereTvaApply.Previzualizeaza(os, 2026, 11);
+            Check("F21-D9.5 — storno la CHIAR data închiderii ⇒ luna redevine închiderabilă: previzualizarea dă "
+                + "din nou `Motiv == null` pe soldurile revenite (disciplina 46f, singura ei consecință pentru "
+                + "operator — indiciul de pe ecran)",
+                InchidereTvaApply.Citeste(os, idItvNou).Stare == "Stornat"
+                && prevDupaStorno.Motiv == null
+                && prevDupaStorno.Sold4426 == 31.5m && prevDupaStorno.Sold4427 == 42m
+                && prevDupaStorno.Transfer == 31.5m && prevDupaStorno.DePlata == 10.5m
+                && prevDupaStorno.DeRecuperat == 0m);
+
+            // ── (6) F21-D5: ITV a ieșit din felia NTC, pe toate cele patru uși ──
+            // Nota de control (decembrie, conturi de trezorerie — nu atinge TVA-ul
+            // lunii probate) există ca proba să NU fie vacuă: lista ITV trebuie să
+            // conțină DOAR închideri, iar lista NTC să conțină nota și NU închiderea.
+            var idNtcControl = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
+                Data = new DateOnly(2026, 12, 9),
+                PredatorId = unitate.ID,
+                PrimitorId = unitate.ID,
+                Linii = [new NtcLinieWriteDto {
+                    TipMaterialId = tipTrz.ID, Descriere = MarcajApiItv + " notă de control",
+                    ContDebitId = contTranzit.ID, ContCreditId = contCasa.ID, Valoare = 7m
+                }]
+            });
+            var rezGenFinal = InchidereTvaApply.Genereaza(os,
+                new GenerareItvRequestDto { An = 2026, Luna = 11, UnitateId = unitate.ID });
+            var idItvFinal = rezGenFinal.DocumentId ?? Guid.Empty;
+
+            var idsNtc = NotaContabilaApply.Lista(os).Select(x => x.Id).ToList();
+            var idsItv = InchidereTvaApply.Lista(os).Select(x => x.Id).ToList();
+            var sqlNtc = NotaContabilaApply.Lista(os).ToQueryString();
+            Check("F21-D5 — `NotaContabilaApply.Lista` NU mai conține închiderile de TVA, dar conține nota de "
+                + "control (anti-vacuitate: un filtru care ar fi golit lista ar fi trecut și el). Filtrul e "
+                + "SERVER-SIDE: `is` pe TPT ajunge în SQL, nu în memorie",
+                !idsNtc.Contains(idItvFinal) && idsNtc.Contains(idNtcControl)
+                && sqlNtc.Contains("InchideriTva"));
+            Check("F21-D5 — `InchidereTvaApply.Lista` conține DOAR închideri: nota de control lipsește, "
+                + "închiderea e acolo cu An/Luna DERIVATE din `Data` în SQL, iar fiecare rând e chiar o "
+                + "`InchidereTva`",
+                !idsItv.Contains(idNtcControl) && idsItv.Contains(idItvFinal)
+                && InchidereTvaApply.Lista(os).Where(x => x.Id == idItvFinal)
+                    .All(x => x.An == 2026 && x.Luna == 11 && x.Stare == "Draft"
+                        && x.UnitateDenumire == unitate.Denumire)
+                && os.GetObjectsQuery<InchidereTva>().Count(d => idsItv.Contains(d.ID)) == idsItv.Count);
+            Check("F21-D5 — `NotaContabilaApply.Citeste` pe un id de închidere întoarce null (⇒ 404 pe "
+                + "`GET api/ntc/{id}`), deși documentul EXISTĂ ca notă sub TPT",
+                NotaContabilaApply.Citeste(os, idItvFinal) == null
+                && os.GetObjectsQuery<NotaContabila>().Any(d => d.ID == idItvFinal));
+            CheckRefuza("F21-D5 — `PUT api/ntc/{id}` pe o închidere DRAFT (`Aplica`) ⇒ refuz de domeniu: până "
+                + "acum reconcilierea accepta orice linii, iar gardianul anti-stale o prindea abia la OPERARE",
+                () => NotaContabilaApply.Aplica(os, idItvFinal, new NtcWriteDto {
+                    Data = finalNoi, PredatorId = unitate.ID, PrimitorId = unitate.ID, Linii = []
+                }));
+            CheckRefuza("F21-D5 — `DELETE api/ntc/{id}` pe o închidere (`Sterge`) ⇒ refuz de domeniu "
+                + "(ștergerea ei trece prin ecranul propriu)",
+                () => NotaContabilaApply.Sterge(os, idItvFinal));
+            Check("F21-D5 — refuzul e neschimbat pentru o notă ADEVĂRATĂ: `Citeste`/`Sterge` merg mai departe "
+                + "pe nota de control (gardul e pe TIP, nu pe felie)",
+                NotaContabilaApply.Citeste(os, idNtcControl) != null
+                && Refuz(() => NotaContabilaApply.Sterge(os, idNtcControl)) == null);
+
+            // ── Ștergerea închiderii pe ușa PROPRIE (F21-D7) ──
+            InchidereTvaApply.Sterge(os, idItvFinal);
+            Check("F21-D7 — `InchidereTvaApply.Sterge` pe Draft: documentul și liniile lui ies din interogări, "
+                + "iar luna redevine închiderabilă",
+                !os.GetObjectsQuery<InchidereTva>().Any(d => d.ID == idItvFinal)
+                && !os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.DocumentId == idItvFinal)
+                && InchidereTvaApply.Previzualizeaza(os, 2026, 11).Motiv == null);
+            CheckRefuza("F21-D7 — `Sterge`/`Regenereaza` pe un document care nu mai e Draft (cel STORNAT) ⇒ "
+                + "refuz de domeniu: „regenerarea” unui document operat ar fi însemnat ștergerea unor rânduri "
+                + "de registru (14)",
+                () => InchidereTvaApply.Regenereaza(os, idItvNou));
+
+            // ── (7) Unitatea ne-internă (F21-D2f) ──
+            CheckRefuza("F21-D9.7 — `Incearca` cu o unitate care NU e `UnitateInterna` (un Partener) ⇒ refuz la "
+                + "GENERARE, nu abia la operare: oglinda gardului din `NotaContabila.ValideazaOperare`, adusă "
+                + "acolo unde cererea HTTP o poate greși",
+                () => InchidereTvaService.Incearca(os, 2026, 11, furnizor.ID));
+            CheckRefuza("F21-D9.7 — același refuz pentru un id care nu e repartitor deloc (mesajul numește "
+                + "id-ul, nu se preface că e o unitate)",
+                () => InchidereTvaService.Incearca(os, 2026, 11, Guid.NewGuid()));
+
+            // ── (9) Curățenia ──
+            CurataApiItv(os);
+            // Curățenia lasă ZERO închideri pe 11/12 — inclusiv cea STORNATĂ și
+            // regenerata ei. O închidere vie rămasă aici ar fi aprins gardul
+            // cronologic al scenelor de mai jos: premisa D300 („nicio închidere vie
+            // ulterioară lunii scenei") și proba condiționată SAF-T ar fi picat pe
+            // conținut STRĂIN, cu vinovatul la 13.000 de linii distanță. De aceea
+            // se verifică prin `IgnoreQueryFilters` (ștergerea amânată lasă rândul
+            // fizic) și pe TOATE stările, nu doar pe cele vii.
+            Check("F21-D9.9 — curățenie finală felia ITV: purjă FIZICĂ, ZERO închideri de TVA rămase pe 11/12 "
+                + "2026 (inclusiv cea stornată și regenerata ei, verificate cu `IgnoreQueryFilters`), fără "
+                + "repartitori de scenă, iar soldurile 4423/4426/4427 revin la 0 pe 31.12 — lunile 11/12 rămân "
+                + "CURATE pentru scenele ASM și RLF/RDC care urmează",
+                !os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Any(r => r.Cod.StartsWith(MarcajApiItv))
+                && !os.GetObjectsQuery<InchidereTva>().IgnoreQueryFilters()
+                    .Any(d => d.Data >= new DateOnly(2026, 11, 1))
+                && !os.GetObjectsQuery<InchidereTva>().Any(d => d.Stare != StareDocument.Stornat)
+                && !os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                    .Any(d => d.Data >= new DateOnly(2026, 11, 1) && d.Numar != null
+                        && d.Numar.StartsWith(MarcajApiItv))
+                && SoldDebitorApi(cont4426, finalDec) == 0m && SoldCreditorApi(cont4427, finalDec) == 0m
+                && SoldCreditorApi(cont4423, finalDec) == 0m);
         }
     }
 
@@ -6317,6 +6685,28 @@ using (var os = provider.CreateObjectSpace()) {
         InchidereTvaService.Genereaza(os, 2026, 9, sediu.ID) == null);
     Check("Bugetar: niciun document ITV creat de apelul de mai sus",
         !os.GetObjectsQuery<InchidereTva>().Any());
+
+    // ── Felia API ITV la BUGETAR (F21-D9.8) ──
+    // Ușa nu inventează un profil pe care baza nu-l are: previzualizarea spune
+    // `ProfilInert` cu soldurile `null` (nu 0 — fără conturi nu există cifră, iar
+    // un 0 acolo ar fi zis „n-ai ce închide" în loc de „profilul n-are închidere
+    // de TVA"), iar lista e goală fiindcă tipul e inert, nu fiindcă am filtrat-o.
+    var prevBugetar = InchidereTvaApply.Previzualizeaza(os, 2026, 9);
+    Check("Api ITV la bugetar: `Previzualizeaza` ⇒ `ProfilInert` cu soldurile NULL (distincte de 0 = „luna "
+        + "n-are ce închide”), fără document care să blocheze și cu cele trei linii zero",
+        prevBugetar.Motiv == nameof(MotivNegenerare.ProfilInert)
+        && prevBugetar.Sold4426 == null && prevBugetar.Sold4427 == null
+        && prevBugetar.InchidereVieId == null
+        && prevBugetar.Transfer == 0m && prevBugetar.DePlata == 0m && prevBugetar.DeRecuperat == 0m
+        && prevBugetar.An == 2026 && prevBugetar.Luna == 9);
+    var rezBugetar = InchidereTvaApply.Genereaza(os,
+        new GenerareItvRequestDto { An = 2026, Luna = 9, UnitateId = sediu.ID });
+    Check("Api ITV la bugetar: `Genereaza` ⇒ RAPORT cu `ProfilInert` (200, nu eroare), lista de închideri "
+        + "rămâne GOALĂ și nu s-a scris nimic",
+        rezBugetar.DocumentId == null && rezBugetar.Motiv == nameof(MotivNegenerare.ProfilInert)
+        && rezBugetar.Sold4426 == null && rezBugetar.Sold4427 == null
+        && !InchidereTvaApply.Lista(os).Any()
+        && !os.GetObjectsQuery<InchidereTva>().IgnoreQueryFilters().Any());
 }
 
 // ============== Scenariul e2e 1C-a: Asamblare la BUGETAR (tip inert) ==============
