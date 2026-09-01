@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Column, DataGrid, FilterRow, Grouping, GroupPanel, HeaderFilter, Paging, Scrolling, Sorting,
+  Column, DataGrid, FilterRow, Grouping, GroupPanel, HeaderFilter, Paging, Scrolling, Search, Sorting,
 } from 'devextreme-react/data-grid';
 import type { components } from '../../generated/api-types';
 import { labelEnum } from '../../nucleu/campMeta';
@@ -108,7 +108,7 @@ export function D394() {
                 — ordinea oficială o dau rezumatele și XML-ul, nu lista. */}
             <Sorting mode="multiple" />
             <FilterRow visible />
-            <HeaderFilter visible />
+            <HeaderFilter visible><Search enabled /></HeaderFilter>
             <Paging enabled={false} />
             <Scrolling mode="virtual" />
             <GroupPanel visible={false} />

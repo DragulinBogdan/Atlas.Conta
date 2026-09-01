@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Column, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Sorting, Summary, TotalItem } from 'devextreme-react/data-grid';
+import { Column, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Search, Sorting, Summary, TotalItem } from 'devextreme-react/data-grid';
 import { storeRemote } from '../../nucleu/dxStore';
 import { labelEnum } from '../../nucleu/campMeta';
 
@@ -26,7 +26,7 @@ export function SoldStoc() {
       >
         <Sorting mode="multiple" />
         <FilterRow visible />
-        <HeaderFilter visible />
+        <HeaderFilter visible><Search enabled /></HeaderFilter>
         <Paging defaultPageSize={50} />
         <Pager showInfo showPageSizeSelector allowedPageSizes={[50, 100, 200]} />
 

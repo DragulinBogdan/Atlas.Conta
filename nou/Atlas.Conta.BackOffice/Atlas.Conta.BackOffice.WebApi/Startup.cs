@@ -45,6 +45,12 @@ namespace Atlas.Conta.BackOffice.WebApi {
             // — consumate de catch-ul din `ContaApiController.Domeniu`; aceeași
             // sursă ca în Blazor.Server.
             Atlas.Conta.BackOffice.Module.BusinessObjects.MesajeConstraintRo.Aplica();
+            // Căutarea fără diacritice pe proiecții (decizia 78): predicatele de
+            // string ale `DataSourceLoader` (FilterRow + căutarea din
+            // HeaderFilter) se rescriu prin normalizatorul comun (`Cautare`).
+            // Înregistrare per PROCES (lista compilatoarelor e statică în
+            // bibliotecă), idempotentă.
+            Atlas.Conta.BackOffice.Module.Api.CautareFiltru.Inregistreaza();
             // Clientul registrului ANAF `PlatitorTva` (felia 15, D15-D2) —
             // singurul apel HTTP IEȘITOR al aplicației, cablat IDENTIC cu
             // `Blazor.Server/Startup.cs`: modulele XAF nu adaugă servicii în DI

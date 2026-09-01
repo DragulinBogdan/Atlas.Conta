@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { Column, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Sorting } from 'devextreme-react/data-grid';
+import { Column, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Search, Sorting } from 'devextreme-react/data-grid';
 import { dec, RUTA, TIP_ANTET } from './api';
 import { campMeta } from '../../nucleu/campMeta';
 
@@ -36,7 +36,7 @@ export function DecLista() {
       >
         <Sorting mode="multiple" />
         <FilterRow visible />
-        <HeaderFilter visible />
+        <HeaderFilter visible><Search enabled /></HeaderFilter>
         <Paging defaultPageSize={25} />
         <Pager showInfo showPageSizeSelector allowedPageSizes={[25, 50, 100]} />
 

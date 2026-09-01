@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { CheckBox } from 'devextreme-react';
 import {
   Column, ColumnFixing, DataGrid, FilterRow, GroupItem, Grouping, GroupPanel,
-  HeaderFilter, Pager, Paging, Sorting, Summary, TotalItem,
+  HeaderFilter, Pager, Paging, Search, Sorting, Summary, TotalItem,
 } from 'devextreme-react/data-grid';
 import type { components } from '../../generated/api-types';
 import { storeRemote } from '../../nucleu/dxStore';
@@ -107,7 +107,7 @@ export function Balanta() {
       >
         <Sorting mode="multiple" />
         <FilterRow visible />
-        <HeaderFilter visible />
+        <HeaderFilter visible><Search enabled /></HeaderFilter>
         <GroupPanel visible />
         <Grouping autoExpandAll={false} />
         <ColumnFixing enabled />

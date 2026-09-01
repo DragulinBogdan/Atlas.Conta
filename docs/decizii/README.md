@@ -92,3 +92,4 @@
 | 75 | [Pasul 5, felia 18 — restanțele grele ale lui S: golirea valorică (motor), reclasificarea ca mișcare, perf proiecție](075-p5-felia18-restante-s.md) | 2026-08-29 | activă |
 | 76 | [Pasul 5, felia 19 — NTC + ASM + retururi (RLF/RDC): scriere prin API și client; plafonul de stingere cu latură și netat](076-p5-felia19-ntc-asm-retururi.md) | 2026-08-29 | activă (amendează 31d/48b) |
 | 77 | [Pasul 5, felia 20 — finisajul clientului: căutarea fără diacritice (coloană generată), cache-ul de nomenclator, confirmările inline, `Neincluse` agregat, primele ecrane de nomenclator](077-p5-felia20-finisaj-client.md) | 2026-08-29 | activă |
+| 78 | [Căutarea fără diacritice pe proiecții — rescrierea predicatelor `DataSourceLoader` prin normalizatorul comun (`FaraDiacritice` + `CautareFiltru`)](078-cautare-fara-diacritice-proiectii.md) | 2026-09-01 | activă |

@@ -755,6 +755,26 @@ decizia N.
     `[RuleRequiredField]` pentru XAF (Validation nu citește DataAnnotations).
     Migrația nu maschează goluri — o bază cu rânduri goale pică zgomotos.
     (j) Restanțe 77-r1…r8 → jurnal.
+78. **Căutarea fără diacritice pe PROIECȚII** (perechea lui 77a — acolo
+    coloana generată pe OData, aici ușa `DataSourceLoader`). (a)
+    `Cautare.FaraDiacritice` = funcție de query (corp C# null-propagant),
+    tradusă de EF pe EXACT fragmentul coloanei generate —
+    `Cautare.FragmentSql` e UNICA ortografie a lui `translate(lower(…))`,
+    consumată și de `ExpresieSql`, și de `HasTranslation` (cusătura verificată
+    în ModelCheck pe `ToQueryString`). (b) `CautareFiltru` = compilator custom
+    global (`RegisterBinaryExpressionCompiler`, idempotent per proces,
+    înregistrat în Startup-ul WebApi și în ModelCheck): DOAR
+    `contains`/`notcontains`/`startswith`/`endswith` pe accessor `string` ⇒
+    `FaraDiacritice(coalesce(camp,'')) op literalNormalizat` (literalul în
+    C#); orice nerezolvare = compilarea standard; **`=`/`<>` rămân exacte**
+    (lista `HeaderFilter` trimite valoarea exactă; egalitatea normalizată ar
+    topi valori distincte). Zero schimbări per proiecție sau în client. (c)
+    `coalesce` apără sursele în memorie (fișa); pe `notcontains` nulul
+    CONTEAZĂ ca „nu conține" — asumat. (e) Perf: nimic preventiv (59) —
+    `contains` e ne-btree oricum; la cifră: GIN `pg_trgm` pe `Cautare`
+    (77-r7) sau pe expresie (IMMUTABLE, indexabilă fără persistare).
+    Măsurat pe HTTP (Privat, 19k FCT): trei grafii ⇒ același total, 56–121 ms.
+    Restanța 78-r1 → jurnal (grilele XAF rămân sensibile — asumat, 44/53).
 
 ## Stare și roadmap
 
@@ -780,7 +800,9 @@ detaliat în jurnal):
   golirea valorică în motor + reclasificarea ca mișcare (75), NTC + ASM +
   retururi prin API și client + plafonul de stingere cu latură și netat (76),
   finisajul clientului — căutarea fără diacritice, cache-ul de nomenclator,
-  confirmările, `Neincluse` agregat, primele ecrane de nomenclator (77).
+  confirmările, `Neincluse` agregat, primele ecrane de nomenclator (77),
+  căutarea fără diacritice pe proiecții — filtrele grilelor prin
+  `DataSourceLoader`, prin același normalizator (78).
 
 **Toate tipurile de document au acum felie de scriere prin API și client**,
 în afara lui ITV (comandă, nu agregat — 76a) și a lui BPR (rezervat, 19).
@@ -871,8 +893,11 @@ ANAF de lot ·
 77-r4 `CodFiscal`/`Iban`/`Marca` în afara lui `Cautare` · 77-r5 precompletarea
 nu distinge alegerea operatorului; invalidarea nu reîmprospătează
 `SelectBox`-urile montate · 77-r6 `displayExpr` de nucleu pentru `TipMaterial`
-· 77-r7 `Cautare` fără index (seq scan pe 20 k rânduri; cifra decide) · 77-r8
+· 77-r7 `Cautare` fără index (seq scan pe 20 k rânduri; cifra decide; calea:
+GIN `pg_trgm`, 78e) · 77-r8
 permisiunea pe OData `text/plain` pe server
+· 78-r1 căutarea din grilele XAF rămâne sensibilă la diacritice (nu trec prin
+`DataSourceLoader`; asumat, 44/53)
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

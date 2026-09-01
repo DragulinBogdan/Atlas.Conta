@@ -80,6 +80,30 @@ public static class Cautare {
         Normalizeaza((cod ?? "") + " " + (denumire ?? ""));
 
     /// <summary>
+    /// Normalizarea ca FUNCȚIE DE QUERY (decizia 78): mapată de EF
+    /// (`HasDbFunction` în `OnModelCreating`) pe exact fragmentul SQL al
+    /// coloanei generate (<see cref="FragmentSql"/>), cu corp C# real pentru
+    /// sursele materializate în memorie (LINQ-to-Objects le execută corpul).
+    /// `null` se PROPAGĂ — ca `translate(lower(null), …)` în SQL — spre
+    /// deosebire de <see cref="Normalizeaza"/>, care întoarce `""` (contractul
+    /// literalului tastat). Consumatorul: `CautareFiltru`, rescrierea
+    /// predicatelor de string ale `DataSourceLoader`.
+    /// </summary>
+    public static string FaraDiacritice(string text) =>
+        text == null ? null : Normalizeaza(text);
+
+    /// <summary>
+    /// Fragmentul SQL al normalizării, în jurul unei expresii deja formate —
+    /// UNICA ortografie a lui `translate(lower(…))`: din el se compun și
+    /// coloana generată (<see cref="ExpresieSql"/>), și traducerea funcției
+    /// <see cref="FaraDiacritice"/> (verificată în ModelCheck pe
+    /// `ToQueryString`). Două ortografii ar putea diverge doar împreună cu
+    /// proba.
+    /// </summary>
+    public static string FragmentSql(string expresie) =>
+        $"translate(lower({expresie}), '{De}', '{La}')";
+
+    /// <summary>
     /// SQL-ul coloanei generate. <paramref name="coloanaCod"/> poate fi
     /// <c>null</c> pentru entitățile fără cod (atunci rămâne doar denumirea,
     /// tot cu spațiul din față — ca forma din C# să fie identică).
@@ -87,7 +111,7 @@ public static class Cautare {
     public static string ExpresieSql(string coloanaCod, string coloanaDenumire) {
         var cod = coloanaCod == null ? "''" : $"coalesce(\"{coloanaCod}\", '')";
         var denumire = $"coalesce(\"{coloanaDenumire}\", '')";
-        return $"translate(lower({cod} || ' ' || {denumire}), '{De}', '{La}')";
+        return FragmentSql($"{cod} || ' ' || {denumire}");
     }
 
     /// <summary>Numele proprietății/coloanei — o singură ortografie.</summary>

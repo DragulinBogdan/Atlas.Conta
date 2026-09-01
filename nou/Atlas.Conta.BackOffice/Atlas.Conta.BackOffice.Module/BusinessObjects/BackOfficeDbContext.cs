@@ -5,6 +5,8 @@ using DevExpress.Persistent.BaseImpl.EF.PermissionPolicy;
 using DevExpress.Persistent.BaseImpl.EF.StateMachine;
 using DevExpress.Persistent.BaseImpl.EFCore.AuditTrail;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.Storage;
 // Numele DbSet-ului `RegistruContabil` umbrește tipul în interiorul contextului —
 // alias pentru nameof-urile de mai jos (AutoInclude pe navigațiile plate).
 using RegistruContabilEntitate = Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruContabil;
@@ -338,6 +340,35 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
             AplicaScaraNumerica(modelBuilder);
             AplicaColoanaCautare(modelBuilder);
+            AplicaFunctiaFaraDiacritice(modelBuilder);
+        }
+
+        // Căutarea fără diacritice pe PROIECȚII (decizia 78): `Cautare.
+        // FaraDiacritice` devine funcție de query, tradusă pe EXACT fragmentul
+        // SQL al coloanei generate (`Cautare.FragmentSql` — o singură
+        // ortografie a lui `translate(lower(…))`). Consumatorul e
+        // `CautareFiltru` (rescrierea predicatelor de string ale
+        // `DataSourceLoader`); pe sursele materializate în memorie rulează
+        // corpul C# — LINQ-to-Objects nu se uită la traducere.
+        //
+        // De ce nu `unaccent()` și nu colație: aceleași motive ca la coloana
+        // generată (antetul din `Cautare.cs`) — al doilea normalizator ar putea
+        // divergea de tabelul De/La, iar proba SQL == C# n-ar mai acoperi tot.
+        private static void AplicaFunctiaFaraDiacritice(ModelBuilder modelBuilder) {
+            // `text` e tipul real al coloanelor de string pe Postgres; literalii
+            // De/La ies prin generatorul standard de literal (apostrof dublat),
+            // identic cu felul în care migrația scrie expresia coloanei.
+            var text = new StringTypeMapping("text", System.Data.DbType.String);
+            modelBuilder
+                .HasDbFunction(typeof(Cautare).GetMethod(nameof(Cautare.FaraDiacritice), [typeof(string)])!)
+                .HasTranslation(argumente => new SqlFunctionExpression("translate",
+                    [
+                        new SqlFunctionExpression("lower", [argumente[0]],
+                            nullable: true, argumentsPropagateNullability: [true], typeof(string), text),
+                        new SqlConstantExpression(Cautare.De, text),
+                        new SqlConstantExpression(Cautare.La, text),
+                    ],
+                    nullable: true, argumentsPropagateNullability: [true, false, false], typeof(string), text));
         }
 
         // Căutarea fără diacritice (felia 20, F20-D1): coloană GENERATĂ STORED

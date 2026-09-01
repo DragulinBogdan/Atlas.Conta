@@ -354,6 +354,75 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
             && !ctx.Produse.IgnoreQueryFilters().Any(r => r.Cod == "77R2"));
     }
 
+    // ═══ 78 — căutarea fără diacritice pe PROIECȚII (`DataSourceLoader`) ═══
+    // Perechea oracolului F20-D1 de mai sus: acolo se probează COLOANA generată
+    // (ușa OData a nomenclatoarelor), aici REscrierea predicatelor de string ale
+    // `DataSourceLoader` (`CautareFiltru` + funcția `Cautare.FaraDiacritice`,
+    // tradusă de EF) — adică exact ce pun FilterRow și căutarea din HeaderFilter
+    // peste listele de documente. Scena: partener cu ambele familii de grafii
+    // (Ț-virguliță, Î) pe un FCT draft; proiecția e cea REALĂ a feliei
+    // (`FacturaIntrareApply.Lista`), încărcată prin aceeași bibliotecă în care
+    // compilarea rulează și pe HTTP.
+    {
+        CautareFiltru.Inregistreaza();
+        using var os = provider.CreateObjectSpace();
+        var partener78 = os.CreateObject<Partener>();
+        partener78.Cod = "P78-DIA";
+        partener78.Denumire = "Țestoasa Înțeleaptă P78";
+        var gestiune78 = os.CreateObject<Gestiune>();
+        gestiune78.Cod = "P78-GST";
+        gestiune78.Denumire = "Gestiune probă 78";
+        var fct78 = os.CreateObject<FacturaIntrare>();
+        fct78.Numar = "P78-FCT";
+        fct78.Data = new DateOnly(2026, 3, 3);
+        fct78.Predator = partener78;
+        fct78.Primitor = gestiune78;
+        os.CommitChanges();
+
+        List<Guid> PrinLoader(string operatie, string valoare) {
+            var optiuni = new DataSourceLoadOptionsBase {
+                Take = 1000,
+                Filter = new object[] { "PredatorDenumire", operatie, valoare },
+            };
+            return DataSourceLoader.Load(FacturaIntrareApply.Lista(os), optiuni)
+                .data.Cast<FacturaIntrareListDto>().Select(r => r.Id).ToList();
+        }
+
+        Check("78: `contains` prin `DataSourceLoader` e insensibil la diacritice și caz în AMBELE sensuri — "
+            + "literalul fără diacritice găsește rândul cu diacritice și invers, inclusiv grafia veche "
+            + "cu sedilă (ţ U+0163) pentru virgulița din bază (ț U+021B)",
+            PrinLoader("contains", "testoasa inteleapta").Contains(fct78.ID)
+            && PrinLoader("contains", "Țestoasa ÎNȚeleaptă").Contains(fct78.ID)
+            && PrinLoader("contains", "ţestoasa").Contains(fct78.ID));
+        Check("78: `startswith`/`endswith` trec prin aceeași normalizare, iar `notcontains` e negația exactă",
+            PrinLoader("startswith", "țes").Contains(fct78.ID)
+            && PrinLoader("startswith", "TES").Contains(fct78.ID)
+            && PrinLoader("endswith", "p78").Contains(fct78.ID)
+            && !PrinLoader("notcontains", "testoasa").Contains(fct78.ID));
+
+        // Cusătura de CONTRACT: traducerea funcției emite EXACT fragmentul SQL
+        // al coloanei generate — ambele ies din `Cautare.FragmentSql`, iar SQL-ul
+        // interogării reale trebuie să conțină prefixul și sufixul fragmentului
+        // (între ele stă coloana, redată de EF cu alias-ul lui).
+        var marcaj = "\u0001";
+        var fragment = Cautare.FragmentSql(marcaj);
+        var taietura = fragment.IndexOf(marcaj, StringComparison.Ordinal);
+        var sqlProba = FacturaIntrareApply.Lista(os)
+            .Where(r => Cautare.FaraDiacritice(r.PredatorDenumire).Contains("proba"))
+            .ToQueryString();
+        Check("78: traducerea EF a lui `FaraDiacritice` = fragmentul SQL al coloanei generate "
+            + "(`translate(lower(…), De, La)` — o singură ortografie, `Cautare.FragmentSql`)",
+            sqlProba.Contains(fragment[..taietura]) && sqlProba.Contains(fragment[(taietura + 1)..]));
+
+        new Purja(os)
+            .Adauga(new[] { fct78 })
+            .Adauga(new[] { partener78 })
+            .Adauga(new[] { gestiune78 })
+            .Executa();
+        Check("78: nimic nu rămâne în bază după scenă",
+            !ctx.Repartitori.IgnoreQueryFilters().Any(r => r.Cod == "P78-DIA" || r.Cod == "P78-GST"));
+    }
+
     // DIM-3: garda mapării PLATE — [Column] trebuie să conserve schema fostului
     // owned (round-trip insert/reread/update pe FK-ul plat al regulii de contare;
     // o nepotrivire de nume de coloană ar pica aici, nu în producție).

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  Column, ColumnFixing, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Sorting,
+  Column, ColumnFixing, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Search, Sorting,
   Summary, TotalItem,
 } from 'devextreme-react/data-grid';
 import type { components } from '../../generated/api-types';
@@ -58,7 +58,7 @@ export function DecontTva() {
       >
         <Sorting mode="multiple" />
         <FilterRow visible />
-        <HeaderFilter visible />
+        <HeaderFilter visible><Search enabled /></HeaderFilter>
         <ColumnFixing enabled />
         <Paging defaultPageSize={50} />
         <Pager showInfo showPageSizeSelector allowedPageSizes={[50, 100, 200]} />
