@@ -216,6 +216,7 @@ export function FctDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? 'Factură de intrare — nouă' : `Factură de intrare ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}

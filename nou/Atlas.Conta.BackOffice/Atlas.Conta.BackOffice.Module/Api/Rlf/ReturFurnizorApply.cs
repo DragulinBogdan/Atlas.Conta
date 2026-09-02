@@ -47,8 +47,7 @@ public static class ReturFurnizorApply {
 
         ReturFurnizor doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<ReturFurnizor>(existentId)
-                ?? throw new OperareException($"Returul la furnizor {existentId} nu există.");
+            doc = Rezolva.Cere<ReturFurnizor>(os, existentId, "Returul la furnizor");
             // Pre-check de DOMENIU: gardianul (`GardianEditare`) ar prinde oricum
             // la commit, dar abia după ce am rescris header-ul și liniile în
             // ObjectSpace-ul viu, cu mesajul lui generic. Aici oprim din prima.
@@ -87,8 +86,7 @@ public static class ReturFurnizorApply {
     // recepția), iar curățenia n-ar avea ce căuta. Un apel ar fi inofensiv, dar
     // mincinos.
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<ReturFurnizor>(id)
-            ?? throw new OperareException($"Returul la furnizor {id} nu există.");
+        var doc = Rezolva.Cere<ReturFurnizor>(os, id, "Returul la furnizor");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -133,11 +131,9 @@ public static class ReturFurnizorApply {
             var bazaVeche = noua ? 0m : Baza(os, detaliu.LotId, detaliu.Cantitate);
             Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
             if (l.LotId is Guid lotId) {
-                detaliu.Lot = os.GetObjectByKey<Lot>(lotId)
-                    ?? throw new OperareException($"Lotul {lotId} nu există.");
+                detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
             }
             else {
                 detaliu.Lot = null;
@@ -155,8 +151,7 @@ public static class ReturFurnizorApply {
             detaliu.Cantitate = Math.Abs(l.Cantitate);
 
             if (l.TipTvaId is Guid tipTvaId) {
-                detaliu.TipTva = os.GetObjectByKey<TipTva>(tipTvaId)
-                    ?? throw new OperareException($"Tipul de TVA {tipTvaId} nu există.");
+                detaliu.TipTva = Rezolva.Cere<TipTva>(os, tipTvaId, "Tipul de TVA");
             }
             else {
                 detaliu.TipTva = null;
@@ -235,8 +230,7 @@ public static class ReturFurnizorApply {
             : 0m;
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
     // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
@@ -261,7 +255,9 @@ public static class ReturFurnizorApply {
     // Direct pe `DocumentDetaliu`, fără `as`-cast: RLF n-are frunză (F19-D9),
     // deci toate liniile lui sunt de bază — șablonul BTR/BCS.
 
-    // `null` dacă documentul nu există (sau nu e un retur la furnizor).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e un retur la furnizor.
     public static RlfReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<ReturFurnizor>()
             .Where(d => d.ID == id)

@@ -27,11 +27,11 @@ public class LdiController : ContaApiController {
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(LdiReadDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) {
         using var os = Secured(typeof(ListaDiferenteInventar));
         var dto = ListaDiferenteInventarApply.Citeste(os, id);
-        return dto == null ? NotFound() : Ok(dto);
+        return dto == null ? Invizibil() : Ok(dto);
     }
 
     // ── Scriere: agregatul per document (42d) ─────────────────────────────
@@ -41,20 +41,25 @@ public class LdiController : ContaApiController {
     [HttpPost]
     [ProducesResponseType(typeof(LdiReadDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Post([FromBody] LdiWriteDto dto) => Domeniu(() => {
-        using var os = Secured(typeof(ListaDiferenteInventar));
-        var id = ListaDiferenteInventarApply.Aplica(os, null, dto);
-        return Created($"/api/ldi/{id}", ListaDiferenteInventarApply.Citeste(os, id));
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    public IActionResult Post([FromBody] LdiWriteDto dto) =>
+        CreareAutorizata<ListaDiferenteInventar>(() => Domeniu(() => {
+            using var os = Secured(typeof(ListaDiferenteInventar));
+            var id = ListaDiferenteInventarApply.Aplica(os, null, dto);
+            return Created($"/api/ldi/{id}", ListaDiferenteInventarApply.Citeste(os, id));
+        }));
 
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(LdiReadDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Put(Guid id, [FromBody] LdiWriteDto dto) => Domeniu(() => {
-        using var os = Secured(typeof(ListaDiferenteInventar));
-        ListaDiferenteInventarApply.Aplica(os, id, dto);
-        return Ok(ListaDiferenteInventarApply.Citeste(os, id));
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    public IActionResult Put(Guid id, [FromBody] LdiWriteDto dto) =>
+        ScriereAutorizata<ListaDiferenteInventar>(id, () => Domeniu(() => {
+            using var os = Secured(typeof(ListaDiferenteInventar));
+            ListaDiferenteInventarApply.Aplica(os, id, dto);
+            return Ok(ListaDiferenteInventarApply.Citeste(os, id));
+        }));
 
     // Ștergerea unui DRAFT. Pre-check-ul de domeniu e în `Sterge` (mesaj propriu),
     // gardianul de Committing rămâne plasa; curățenia loturilor născute la
@@ -62,40 +67,49 @@ public class LdiController : ContaApiController {
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Delete(Guid id) => Domeniu(() => {
-        using var os = Secured(typeof(ListaDiferenteInventar));
-        if (os.GetObjectByKey<ListaDiferenteInventar>(id) == null)
-            return NotFound();
-        ListaDiferenteInventarApply.Sterge(os, id);
-        return NoContent();
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    public IActionResult Delete(Guid id) =>
+        ScriereAutorizata<ListaDiferenteInventar>(id, () => Domeniu(() => {
+            using var os = Secured(typeof(ListaDiferenteInventar));
+            ListaDiferenteInventarApply.Sterge(os, id);
+            return NoContent();
+        }), OperatieAcces.Stergere);
 
     // ── Comenzi: OS NON-SECURED, tranzacția integral a motorului (42b) ─────
     [HttpPost("{id:guid}/opereaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Opereaza(Guid id) => Comanda(id, os => OperareApi.Opereaza(os, id));
 
     [HttpPost("{id:guid}/anuleaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Anuleaza(Guid id) => Comanda(id, os => OperareApi.AnuleazaOperarea(os, id));
 
     [HttpPost("{id:guid}/storneaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Storneaza(Guid id, [FromBody] StornoRequestDto cerere) =>
         Comanda(id, os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
 
     [HttpPost("{id:guid}/valideaza")]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
-    public IActionResult Valideaza(Guid id) => ComandaAutorizata(id, () => Domeniu(() => {
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    public IActionResult Valideaza(Guid id) => ComandaAutorizata<ListaDiferenteInventar>(id, () => Domeniu(() => {
         using var os = NonSecured(typeof(ListaDiferenteInventar));
         return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
     }));
 
     IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
-        ComandaAutorizata(id, () => Domeniu(() => {
+        ComandaAutorizata<ListaDiferenteInventar>(id, () => Domeniu(() => {
             using var os = NonSecured(typeof(ListaDiferenteInventar));
             return Ok(OperareRezultatDto.Din(comanda(os)));
         }));

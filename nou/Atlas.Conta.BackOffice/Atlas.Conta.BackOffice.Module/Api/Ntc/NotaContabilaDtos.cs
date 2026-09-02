@@ -56,7 +56,8 @@ public sealed class NtcLinieWriteDto {
     // TRZ"), Import1C îl pune convențional pe tipul tehnic „TRZ".
     // Felia NU inventează un default: un fallback în API ar însemna un simbol de
     // profil hardcodat în afara politicilor (29) — deci câmpul rămâne CERUT, iar
-    // absența lui iese ca refuz de DOMENIU („Tipul (contul/clasa) … nu există"),
+    // absența lui iese ca refuz de DOMENIU („Tipul (contul/clasa) … nu există
+    // sau nu e vizibil(ă)…", fraza unică din `Refuzuri.ReferintaInvizibila`, 22-D6),
     // nu ca violare de FK. Clientul îl culege dintr-un lookup, ca pe orice linie.
     public Guid TipMaterialId { get; set; }
     public string Descriere { get; set; }

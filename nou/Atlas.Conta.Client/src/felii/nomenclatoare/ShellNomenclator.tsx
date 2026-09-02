@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { PanouErori } from '../../nucleu/PanouErori';
+import type { CitireDocument } from '../../nucleu/DocumentShell';
+import { eroriDin } from '../../nucleu/http';
 
 // Rama unui ecran de nomenclator: titlu, comenzi, panourile de verdict, slotul
 // de confirmare, formularul.
@@ -40,12 +42,32 @@ export function ShellNomenclator(props: {
   confirmare?: ReactNode;
   // Rezultatul unei comenzi cu formă proprie (raportul sincronizării ANAF).
   rezultat?: ReactNode;
+  // Interogarea de citire a rândului (F22-D8), aceeași mecanică și cu aceeași
+  // formă ca pe documente (`CitireDocument`, tipul lui `DocumentShell`): un
+  // `GET api/odata/Partener(id)` refuzat — 404 pe rândul invizibil pentru
+  // utilizatorul curent, 403, ori o eroare tehnică — arată motivul serverului
+  // ȘI NU randează formularul. Altfel ecranul cădea pe valoarea locală goală și
+  // afișa un rând NOU, gol, ca și cum ar fi fost citit.
+  citire?: CitireDocument;
   children: ReactNode;
 }) {
   const {
     titlu, sumar, comenzi, erori, mesaje = [], atentionari = [],
-    ocupat = false, confirmare, rezultat, children,
+    ocupat = false, confirmare, rezultat, citire, children,
   } = props;
+
+  // Rama și motivul, fără comenzi: nu se salvează și nu se șterge un rând care
+  // nu s-a putut citi. Shell-ul n-are hook-uri, deci return-ul poate sta aici.
+  if (citire?.isError) {
+    return (
+      <div className="document">
+        <div className="document__bara">
+          <h2 className="document__titlu">{titlu}</h2>
+        </div>
+        <PanouErori erori={eroriDin(citire.error)} titlu="Rândul nu s-a putut citi" />
+      </div>
+    );
+  }
 
   return (
     <div className="document">

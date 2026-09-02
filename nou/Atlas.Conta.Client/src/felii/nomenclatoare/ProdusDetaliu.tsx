@@ -114,6 +114,7 @@ export function ProdusDetaliu() {
 
   return (
     <ShellNomenclator
+      citire={citit}
       titlu={nou ? 'Produs nou' : (citit.data?.Denumire ?? 'Produs')}
       comenzi={comenzi}
       erori={erori}

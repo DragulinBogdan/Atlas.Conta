@@ -775,6 +775,86 @@ decizia N.
     (77-r7) sau pe expresie (IMMUTABLE, indexabilă fără persistare).
     Măsurat pe HTTP (Privat, 19k FCT): trei grafii ⇒ același total, 56–121 ms.
     Restanța 78-r1 → jurnal (grilele XAF rămân sensibile — asumat, 44/53).
+79. **ITV prin API și client — COMANDĂ cu cauză, nu agregat** (76a). (a)
+    `InchidereTvaService` întoarce `RezultatInchidere` cu `MotivNegenerare`
+    (`ProfilInert`/`InchidereVie`/`FaraSold`/`NeCronologica`; enum-ul stă în
+    `BusinessObjects/Comun` — dump-ul de metadata ia doar spațiul ăla);
+    `CalculeazaLinii` = SINGURA aritmetică a celor trei linii; `Analizeaza` =
+    ordinea gardienilor o singură dată; **raportul (`Previzualizeaza`, nu
+    scrie) și comanda (`Incearca`, nu comite) diferă printr-un bit: cronologia
+    e motiv la raport, refuz zgomotos la comandă** (46c rămâne); **cronologia
+    are AMBELE sensuri și AMBELE uși** (review): un draft neoperat pe o lună
+    anterioară blochează generarea (`DraftAnterior`), o închidere OPERATĂ
+    ulterioară blochează OPERAREA (gard în `ValideazaOperare` — altfel 4423
+    se dubla cu ecranul spunând că e în regulă); perioada fiscală închisă =
+    `PerioadaInchisa` la raport / refuz la comandă; solduri `null` (nu 0) pe
+    profil inert; unitatea ne-internă = refuz la GENERARE;
+    `LiniiPotrivescSoldurile` = SINGURUL criteriu anti-stale (gardian ȘI
+    `Stale` din DTO); `Genereaza` = wrapper, Import1C neatins. (b) **Gate-ul comenzii fără
+    subiect e pe TIP** (`PoateCrea` = `CanCreate(tip, os)`; `PoateCiti` pe
+    previzualizare; `AutorizeazaCitire<T>` pe instanță: invizibil 404,
+    vizibil fără drept 403), luat pe ușa securizată ÎNAINTE; **cifrele
+    motorului (solduri, `Stale`, liniile) se calculează pe ușa NON-SECURED**
+    — pe cea filtrată ar fi o cifră falsă, nu goală (73g). Listele rămân
+    securizate. (c) **ITV iese din felia NTC**: `Lista`/`Citeste`/`Candidati`
+    filtrează `!(d is InchidereTva)` (tradus pe TPT), PUT/DELETE refuză 422;
+    `is` la graniță, în Apply, nu în motor; comenzile NTC pe id ITV NU mai
+    sunt permise — 404 pe toată ușa NTC (amendat de 80b, `peUsaAsta`). (d) `genereaza` răspunde **200 și când
+    nu generează** (raport: `Motiv` + `InchidereVieId`), 422 doar pe domeniu;
+    `regenereaza` = `Incearca(…, inlocuieste: id)` ÎNAINTE de ștergere, o
+    singură tranzacție — un refuz lasă draftul intact (review: forma
+    „șterge, comite, apoi încearcă" pierdea draftul); cere și `PoateCrea`
+    (produce un document nou); unitatea = parametru
+    cules, precompletat doar la exact un rând; lista cu ordine implicită
+    DECLARATĂ (`Data` desc). (e) Client: previzualizarea lunii pe listă
+    (motivul tradus, link către închiderea blocantă), documentul read-only cu
+    `Stale` ⇒ atenție, storno cu data implicită = data închiderii (46f);
+    `rutaTip('ITV')`. (f) Restanțe 79-r1…r5 → jurnal (79-r1 închisă:
+    acțiunea XAF „Generează închiderea" = dialog pe obiect non-persistent,
+    același gate pe TIP și același `Apply` ca ruta `genereaza`, draftul în
+    tab nou — `TargetWindow.NewWindow` pe MDI).
+80. **Refuzurile de acces pe toate ușile: 404 / 403 / 422, o singură ordine,
+    un singur corp** (închide 77-r8 și familia 70-r1/72-r10/76-r4/76-r5/77k/
+    79-r6; amendează 79b). (a) **404** = subiectul cererii e inexistent SAU
+    invizibil, DELIBERAT nedistinse (fără oracol de existență), doar pe rutele
+    cu subiect; **403** = vizibil (sau întrebarea e pe TIP), dar operația e
+    refuzată (Create pe tip, Write/Delete pe instanță, Read pe tip); **422** =
+    domeniu, doar pe cereri permise — un 422 nu poate ascunde un refuz de
+    permisiune; listele/sumarele rămân 200 filtrat. Ordinea pe sârmă, pe TOATE
+    ușile: **401 → 400 → 404 → 403 → 422**. (b) **Ușa de scriere REST are gate
+    explicit pe tipul FELIEI**: `CreareAutorizata<T>` (`CanCreate` pe tip,
+    înaintea Apply-ului și a oricărei rezolvări de FK), `ScriereAutorizata<T>(id,
+    Modificare|Stergere)` — Write și Delete sunt permisiuni DISTINCTE, deci
+    operația e PARAMETRU al gate-ului, nu a doua metodă; `ComandaAutorizata<T>`
+    cu `T` = tipul feliei, nu `Document` (id de alt tip ⇒ 404); predicatul
+    opțional `peUsaAsta` exclude ce TPT găsește dar felia nu servește (NTC ⇒
+    ITV e 404 pe toate verbele; amendează 79c). Pe obiecte NOI gate-ul și
+    pasul zero cer Create ȘI Write (plasa DevExpress le cere pe amândouă).
+    `GET {id}` rămâne fără gate (ușa securizată filtrează). (c) **Gardianul întreabă
+    securitatea ÎNAINTEA domeniului**: pasul zero din `GardianEditare.
+    OnCommitting` (`CanCreate`/`CanDelete`/`CanWrite` per obiect din
+    `ModifiedObjects`) aruncă `RefuzAcces : IUserFriendlySecurityException`
+    (NU derivă din `OperareException`), apoi `Verifica`; strategia e injectată
+    NULLABLE — fără ea (ModelCheck, ușa de sistem) pasul tace; plasa DevExpress
+    din `SaveChanges` rămâne. (d) **Un singur corp**: `EroriDto` pe 403/404 pe
+    REST și OData, mesajele cu o singură sursă în Module (`Api/Refuzuri.cs`:
+    `Invizibil`, `FaraDrept(operație, tip)`); niciun `Forbid()`/`NotFound()`
+    gol; `RefuzOdataFilter` traduce `HttpUserFriendlyException` (pe TIP, înaintea
+    interfeței; 404 ⇒ `Invizibil`), `IUserFriendlySecurityException` ⇒ 403,
+    `IUserFriendlyException` ⇒ 422. (e) **Cifrele motorului cer dreptul de
+    citire pe REGISTRUL din care se însumează**: ITV `GET {id}`/`previzualizare`
+    cer și `CanRead(RegistruContabil)`; regula generală pentru orice rută cu
+    sumă pe ușa non-secured (73g). (f) **FK invizibil pe ușa securizată = 422 cu
+    mesaj onest** printr-un singur helper (`Rezolva.Cere`/`Optional`: „nu există
+    sau nu e vizibil(ă) pentru utilizatorul curent"). (g) Rolul `Cititori`
+    (`ReadOnlyAllByDefault`) + userul `Cititor`, dev-only — 403-ul pur e
+    măsurabil. (h) Clientul: o singură ramură pe `Erori[]` (400/403/404/422 ⇒
+    `EroareDomeniu`, `status` informativ, fără ramificare), textele inventate pe
+    `/api/odata/` au murit; `dxStore.onAjaxError` rescrie `e.error`. (i)
+    **Securitatea se măsoară pe HTTP**, cu script repetabil
+    (`nou/tools/ProbeHttp/refuzuri.ps1`, Admin/Cititor/User, PASS/FAIL, fără
+    urme); ModelCheck nu capătă strategie de securitate. (j) Restanțe
+    80-r1…r5 → jurnal.
 
 ## Stare și roadmap
 
@@ -802,16 +882,22 @@ detaliat în jurnal):
   finisajul clientului — căutarea fără diacritice, cache-ul de nomenclator,
   confirmările, `Neincluse` agregat, primele ecrane de nomenclator (77),
   căutarea fără diacritice pe proiecții — filtrele grilelor prin
-  `DataSourceLoader`, prin același normalizator (78).
+  `DataSourceLoader`, prin același normalizator (78), ITV prin API și client
+  — comandă cu cauză + ecran de rezultat (79), refuzurile de acces pe toate
+  ușile — 404/403/422 cu o singură ordine și un singur corp, gate pe scriere,
+  pasul zero al gardianului, probele HTTP cu script (80).
 
-**Toate tipurile de document au acum felie de scriere prin API și client**,
-în afara lui ITV (comandă, nu agregat — 76a) și a lui BPR (rezervat, 19).
+**Toate tipurile de document au acum felie prin API și client** — ITV ca
+COMANDĂ (79), nu agregat; singurul rămas e BPR (rezervat, 19). Refuzurile de
+acces sunt uniforme pe REST și OData și MĂSURATE (80).
 
-**Următorul pas**: felia ITV (comandă + ecran de rezultat, 76a), la cerere;
-restanța de fond 77-r8 (decizia unică 404/403/422 pe toate ușile — cu cazul
-nou măsurat de 77k: `User` primește 422 de la gardian înaintea permisiunii);
-77-r2 e închisă de 77k; `lista-react.md` mai ține doar itemii structurali și
-77-r1/r3/r6.
+**Următorul pas**: 80-r1 (motivul refuzului pe conducta `ODataStore` a
+clientului) dacă expunerea crește; 79-r2 (`PoliticaInchidereTva` pe OData +
+ecran) la cerere; `lista-react.md` mai ține doar itemii structurali și
+77-r1/r3/r6. 79-r1 (acțiunea XAF de generare) e închisă (2026-09-02).
+Capcane de probare: `genereaza` SCRIE ori de câte ori luna e liberă (79);
+probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe
+host viu (Privat, după re-seed pentru `Cititor`), nu se refac de mână.
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -832,7 +918,7 @@ pentru ciclul din `Cont.Parinte` · 68j smoke vizual, storno/regimuri fără TVA
 în backfill · 69-r1 versionarea formularului D300 · 69-r2 rândurile
 intracomunitare/agricultori/pro-rata/secțiunile A-B · 69-r3 regularizările pe
 cauză juridică · 69-r6 fișierul XML D300 · 70-r1 refuzurile gardianului pe scrierile OData ies
-`400 text/plain` (decizie proprie) · 70-r2 smoke XAF al gardianului de ciclu ·
+`400 text/plain` (închisă de 77g + 80d) · 70-r2 smoke XAF al gardianului de ciclu ·
 70-r3 poziția „linia N" fără criteriu · 70-r4 `DirectiePentru` per
 `ObjectChanged` · 70-r5 mesajele de binding în engleză · 70-r6 `TvaSuprascris` ·
 D4-r1 istoricul statutului de TVA (canonicul = registrul ANAF) · D4-r2 adresa
@@ -848,7 +934,7 @@ D394 (35c; precedentul `SaftXml`) · 72-r1 rate-limit ANAF cross-request ·
 neconsumată · 72-r5 smoke vizual XAF al acțiunii ANAF · 72-r6
 `RegistruContraAnaf` real abia la a doua rulare · 72-r7 ordinea la egalitate
 în raportul de reconciliere · 72-r8 `CuiInterogabil("00")` · 72-r9 ecranul
-React de partener · 72-r10 `User` ⇒ 404 vs 403 pe comanda ANAF · 73-r2 `T`/`R`/nerezidenți ·
+React de partener · 72-r10 `User` ⇒ 404 vs 403 pe comanda ANAF (închisă de 80g) · 73-r2 `T`/`R`/nerezidenți ·
 73-r3 segmentarea · 73-r4 nomenclatorul NC8 + corecturile `ml`/`pac`/TARIC ·
 73-r5 `Produs.UM` string · 73-r6 ecranul React `Societate`, `CodNc`/UM pe
 produs · 73-r7 OpANAF 1783/2021 (termene/praguri) · 73-r8 kitul DUK J2.2.8
@@ -880,8 +966,9 @@ oracolul golirii
 un tip cu partener pe latură capătă capacitate bidirecțională** · 76-r3 perf
 `AsignatFataDe` (entități polimorfe, chemat de 2 × nr. contrapartide) · 76-r4
 gate-ul comenzilor e pe `Document`, nu pe tipul feliei (422 vs 404 pe aceeași
-cauză) · 76-r5 `Candidati` sub-raportează pe ușa secured, iar `User` pe ușa de
-scriere e refuzat de primul FK invizibil, nu de o permisiune (familia 72-r10) ·
+cauză; închisă de 80b) · 76-r5 `Candidati` sub-raportează pe ușa secured, iar `User` pe ușa de
+scriere e refuzat de primul FK invizibil, nu de o permisiune (familia 72-r10;
+închisă de 80b/80f) ·
 76-r6 patru itemi de client în `lista-react.md`: căutarea sensibilă la
 diacritice în TOATE lookup-urile remote (colație `unaccent`/ICU sau coloană
 shadow — decizie de bază de date), `Lookup` care refetchează eticheta per
@@ -895,9 +982,29 @@ nu distinge alegerea operatorului; invalidarea nu reîmprospătează
 `SelectBox`-urile montate · 77-r6 `displayExpr` de nucleu pentru `TipMaterial`
 · 77-r7 `Cautare` fără index (seq scan pe 20 k rânduri; cifra decide; calea:
 GIN `pg_trgm`, 78e) · 77-r8
-permisiunea pe OData `text/plain` pe server
+permisiunea pe OData `text/plain` pe server (închisă de 80)
 · 78-r1 căutarea din grilele XAF rămâne sensibilă la diacritice (nu trec prin
 `DataSourceLoader`; asumat, 44/53)
+· 79-r1 acțiunea XAF „Generează închiderea" (închisă 2026-09-02) · 79-r2
+`PoliticaInchidereTva` pe OData + ecran React (familia 77-r3) · 79-r3
+închiderea perioadei fiscale din client (53i) · 79-r4 mesajul `[Range]` în
+engleză pe `genereaza` (70-r5) · 79-r5 storno-ul unei închideri la o dată din
+ALTĂ lună ⇒ previzualizarea lunii raportează `FaraSold` (cauza greșită; data
+implicită din ecran e cea corectă) · 79-r6 cine are drept de citire pe
+`InchidereTva` vede prin previzualizare soldurile de TVA ale societății fără
+drept pe `RegistruContabil` (consecința asumată a lui 79b; închisă de 80e) ·
+79-r7 „Verifică" activ pe ne-Draft arată refuzul ca eroare (convenția NTC,
+transversală)
+· 80-r1 pe conducta `ODataStore` a clientului (lookup-uri, `byKey`) refuzul
+ajunge ca `statusText`, nu ca mesajul serverului (limita DevExtreme
+`errorFromResponse`) · 80-r2 mesajul plasei DevExpress din `SaveChanges`
+(permisiuni pe membru) iese 403 `EroriDto` cu text englezesc (70-r5) · 80-r3
+`ReportController` (scaffold) păstrează `NotFound()` gol · 80-r4 refuzurile pe
+`$expand` OData nemăsurate · 80-r5 captionul din mesajele 403 e numele CLR pe
+WebApi (fără model de aplicație XAF în host; `Refuzuri.Caption` are calea) ·
+80-r6 `400 "Incorrect body."` englezesc prin filtrul OData (70-r5) · 80-r7
+`distribuie-valoarea` (ASM) întoarce sume din prețurile loturilor pe ușa
+non-secured fără drept pe `Lot` (familia 79-r6; nu e sumă peste registru)
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

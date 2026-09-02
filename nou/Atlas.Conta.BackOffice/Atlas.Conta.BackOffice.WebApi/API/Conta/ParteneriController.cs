@@ -59,8 +59,8 @@ public class ParteneriController : ContaApiController {
     //             concurente înseamnă 2 apeluri/s, peste plafonul ANAF).
     [HttpPost("{id:guid}/sincronizeaza-anaf")]
     [ProducesResponseType(typeof(SincronizareAnafDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> SincronizeazaAnaf(Guid id, [FromQuery] bool suprascrie = false,

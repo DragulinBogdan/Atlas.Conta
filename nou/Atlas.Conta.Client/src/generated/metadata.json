@@ -92,6 +92,14 @@
       "Predator": "Predator",
       "Primitor": "Primitor"
     },
+    "MotivNegenerare": {
+      "ProfilInert": "Profilul nu are conturile închiderii",
+      "InchidereVie": "Luna are deja o închidere",
+      "FaraSold": "Luna n-are sold de TVA de închis",
+      "NeCronologica": "Există o închidere pentru o lună ulterioară",
+      "DraftAnterior": "O lună anterioară are un draft de închidere neoperat",
+      "PerioadaInchisa": "Perioada fiscală e închisă"
+    },
     "NaturaClasa": {
       "Stoc": "Stoc",
       "Serviciu": "Serviciu",

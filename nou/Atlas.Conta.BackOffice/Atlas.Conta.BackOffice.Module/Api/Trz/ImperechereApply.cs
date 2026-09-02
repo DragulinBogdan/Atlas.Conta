@@ -36,11 +36,8 @@ public static class ImperechereApply {
         // CLIENT și merită refuz explicit, ca la BTR/FCT.
         VerificaScara(dto.Suma, Scara.Bani, "Suma imperecheată");
 
-        var stingator = os.GetObjectByKey<Document>(dto.DocumentStingatorId)
-            ?? throw new OperareException(
-                $"Documentul care stinge ({dto.DocumentStingatorId}) nu există.");
-        var document = os.GetObjectByKey<Document>(dto.DocumentId)
-            ?? throw new OperareException($"Documentul stins ({dto.DocumentId}) nu există.");
+        var stingator = Rezolva.Cere<Document>(os, dto.DocumentStingatorId, "Documentul care stinge");
+        var document = Rezolva.Cere<Document>(os, dto.DocumentId, "Documentul stins");
 
         // Restul invarianților (ambele operate, sensuri opuse, contrapartidă
         // comună, plafoane) rămân EXCLUSIV în serviciu — un al doilea exemplar
@@ -60,8 +57,7 @@ public static class ImperechereApply {
     // ei doar eliberează restul celor două documente (și deblochează
     // anularea/stornarea lor — vezi `ApiProiectii.AreImperecheri`).
     public static void Sterge(IObjectSpace os, Guid imperechereId) {
-        var imperechere = os.GetObjectByKey<Imperechere>(imperechereId)
-            ?? throw new OperareException($"Imperecherea {imperechereId} nu există.");
+        var imperechere = Rezolva.Cere<Imperechere>(os, imperechereId, "Imperecherea");
         os.Delete(imperechere);
         os.CommitChanges();
     }
@@ -69,7 +65,7 @@ public static class ImperechereApply {
     // ═══════════════════════ Citire ═══════════════════════
 
     // Panoul de stingeri al unui document: numerele + rândurile, într-un singur
-    // apel (F3-D3). `null` dacă documentul nu există.
+    // apel (F3-D3). `null` dacă documentul nu există / nu e vizibil (F22-D1).
     public static StingeriDto Stingeri(IObjectSpace os, Guid documentId) {
         var doc = os.GetObjectByKey<Document>(documentId);
         if (doc == null)

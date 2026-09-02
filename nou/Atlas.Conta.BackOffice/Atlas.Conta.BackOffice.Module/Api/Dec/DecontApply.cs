@@ -40,8 +40,7 @@ public static class DecontApply {
 
         Decont doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<Decont>(existentId)
-                ?? throw new OperareException($"Decontul {existentId} nu există.");
+            doc = Rezolva.Cere<Decont>(os, existentId, "Decontul");
             // Pre-check de DOMENIU: gardianul (`GardianEditare`) ar prinde oricum
             // la commit, dar abia după ce am rescris header-ul și liniile în
             // ObjectSpace-ul viu, cu mesajul lui generic. Aici oprim din prima.
@@ -85,8 +84,7 @@ public static class DecontApply {
     // unei operări — nu e țintă de `PoliticaConex` și niciun tip nu-l produce ca
     // secundar.
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<Decont>(id)
-            ?? throw new OperareException($"Decontul {id} nu există.");
+        var doc = Rezolva.Cere<Decont>(os, id, "Decontul");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -138,8 +136,7 @@ public static class DecontApply {
             var bazaVeche = noua ? 0m : detaliu.PretUnitar * detaliu.Cantitate;
             Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
             detaliu.Descriere = l.Descriere;
 
             // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
@@ -156,8 +153,7 @@ public static class DecontApply {
             detaliu.PretUnitar = l.PretUnitar;
 
             if (l.TipTvaId is Guid tipTvaId) {
-                detaliu.TipTva = os.GetObjectByKey<TipTva>(tipTvaId)
-                    ?? throw new OperareException($"Tipul de TVA {tipTvaId} nu există.");
+                detaliu.TipTva = Rezolva.Cere<TipTva>(os, tipTvaId, "Tipul de TVA");
             }
             else {
                 detaliu.TipTva = null;
@@ -232,16 +228,11 @@ public static class DecontApply {
             os.Delete(sterse);
     }
 
-    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol) where T : class {
-        if (id == null)
-            return null;
-        return os.GetObjectByKey<T>(id.Value)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclator.");
-    }
+    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
+            where T : class => Rezolva.Optional<T>(os, id, rol);
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
     // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
@@ -264,7 +255,9 @@ public static class DecontApply {
     // Proiecții PLATE (42c): `Select` înainte de materializare, niciun membru
     // [NotMapped] și nicio navigație enumerată în afara query-ului (25b).
 
-    // `null` dacă documentul nu există (sau nu e un decont).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e un decont.
     public static DecontReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<Decont>()
             .Where(d => d.ID == id)

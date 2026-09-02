@@ -276,6 +276,7 @@ export function TrezorerieDetaliu(props: {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? titluNou : titluExistent(doc?.Numar ?? '')}
       sumar={<Sumar doc={doc} modificat={modificat || nou} esteVirament={esteVirament} />}
       comenzi={comenzi}

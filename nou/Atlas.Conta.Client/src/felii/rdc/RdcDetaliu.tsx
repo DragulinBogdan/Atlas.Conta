@@ -205,6 +205,7 @@ export function RdcDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? 'Retur de la client — nou' : `Retur de la client ${doc?.Numar ?? ''}`}
       sumar={(
         <Sumar

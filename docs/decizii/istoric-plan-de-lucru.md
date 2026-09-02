@@ -418,3 +418,49 @@ per felie):
   `[Required]` ⇒ OpenAPI ⇒ asterisc în client, `[RuleRequiredField]` pentru
   XAF; probe ModelCheck pe trei uși (0 FAIL ambele profiluri) + HTTP 422 pe
   `api/odata/Partener`.
+- **2026-09-01 — P5-F21, ITV prin API și client (decizia 79)**: ultimul tip
+  fără felie capătă ușa lui ca COMANDĂ, nu agregat — `InchidereTvaService`
+  întoarce rezultat cu cauză (`MotivNegenerare`; `Genereaza` rămâne wrapper
+  pentru Import1C), `CalculeazaLinii` = singura aritmetică, `Previzualizeaza`
+  = raport (cronologia ca motiv) vs `Incearca` = comandă (refuz zgomotos);
+  `api/itv` cu gate pe TIP (`PoateCrea`/`PoateCiti`) și `AutorizeazaCitire`
+  pe instanță, cifrele motorului (solduri, `Stale`) pe ușa non-secured după
+  verdictul de acces; ITV iese din felia NTC (patru uși); ecranul de listă cu
+  previzualizarea lunii + generare, ecranul documentului cu regenerare și
+  storno la data închiderii; review advers: 2 defecte de fond (cronologia
+  doar la generare și doar într-un sens ⇒ 4423 dublat; regenerarea ștergea
+  înainte de a verifica ⇒ draft pierdut) + 9 medii, fixate cu probe;
+  ModelCheck final privat 944 / bugetar 900, 0 FAIL; 31 de probe HTTP +
+  smoke 11/11 pe Privat. Decizia 79.
+
+- **2026-09-02 — P5-F22, refuzurile de acces pe toate ușile (decizia 80)**:
+  restanța de fond 77-r8 și familia ei (70-r1/72-r10/76-r4/76-r5/77k/79-r6)
+  închise printr-o singură regulă: 404 = inexistent SAU invizibil (nedistins,
+  fără oracol de existență), 403 = vizibil / pe tip dar operația refuzată,
+  422 = domeniu doar pe cereri permise; ordinea 401→400→404→403→422 pe REST și
+  OData. Module: `Refuzuri` (mesaje unice, `RefuzAcces :
+  IUserFriendlySecurityException`), `Rezolva.Cere` (88 de throw-uri „nu
+  există" ⇒ fraza onestă „nu există sau nu e vizibil"), pasul zero al
+  `GardianEditare` (securitatea înaintea domeniului — inversarea lui 77k),
+  rolul `Cititori`/userul `Cititor` dev-only. WebApi: gate explicit pe ușa de
+  scriere pe tipul feliei (`CreareAutorizata`/`ScriereAutorizata(id, op)`,
+  Create+Write pe nou, Delete distinct), `ComandaAutorizata<T>` pe tipul
+  feliei + `peUsaAsta`, corpuri `EroriDto` pe 403/404, `RefuzOdataFilter`
+  (404 → 403 → 422), ITV cere Read pe `RegistruContabil`. Client: o singură
+  ramură pe `Erori[]`, `dxStore.onAjaxError`. Probe: script repetabil
+  `nou/tools/ProbeHttp/refuzuri.ps1` — 42 de probe, 42 PASS pe Privat
+  (Admin/Cititor/User), fără urme; review advers 0 fond / 2 medii (M1 ușa NTC
+  pe id ITV, M2 Create fără Write) fixate cu probe; ModelCheck final privat
+  947 / bugetar 903, 0 FAIL. Capcană: agenții au rescris fișiere CRLF ca LF —
+  regula e terminatorul fișierului. Decizia 80.
+- **2026-09-02 — 79-r1, acțiunea XAF „Generează închiderea"** (făcută
+  direct, un singur pas): `Module/Controllers/InchidereTvaGenerareController.cs`
+  — `PopupWindowShowAction` pe lista ITV cu dialog pe obiect non-persistent
+  (an/lună/unitate; lookup-ul prin `PopulateAdditionalObjectSpaces` local
+  dialogului; tipul exportat în `Module.cs`), gate-ul de pe API (Create ȘI
+  Write pe tip, `Refuzuri.FaraDrept`), comanda prin `InchidereTvaApply.Genereaza`
+  pe ușa non-secured, motivul negenerării ca toast cu `[XafDisplayName]`,
+  draftul deschis în tab nou (`TargetWindow.NewWindow` — MDI; `Default` și
+  `Current` probate și respinse pe sursa `BlazorMdiShowViewStrategy`). Smoke
+  în browser 7/7 (Admin + Cititor), fără urme; capcană: `EditMask "0"` pe
+  `int` afișează `0`, masca e `"d"`. Textul în decizia 079 (restanța 79-r1).

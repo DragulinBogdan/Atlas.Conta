@@ -43,8 +43,7 @@ public static class AsamblareApply {
 
         Asamblare doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<Asamblare>(existentId)
-                ?? throw new OperareException($"Asamblarea {existentId} nu există.");
+            doc = Rezolva.Cere<Asamblare>(os, existentId, "Asamblarea");
             if (doc.Stare != StareDocument.Draft)
                 throw new OperareException(
                     $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se mai modifică. "
@@ -92,8 +91,7 @@ public static class AsamblareApply {
     // Fără refuzul pe `Autogenerat`: ASM nu e niciodată artefactul unei operări
     // (nu e țintă de `PoliticaConex` și niciun tip nu-l produce ca secundar).
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<Asamblare>(id)
-            ?? throw new OperareException($"Asamblarea {id} nu există.");
+        var doc = Rezolva.Cere<Asamblare>(os, id, "Asamblarea");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -143,8 +141,7 @@ public static class AsamblareApply {
                 detaliu.Document = doc;
                 detaliu.Directie = directie;
             }
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
 
             // Scara numerică (49e) e gard la construirea MODELULUI: o valoare în
             // afara coloanei ar ieși ca DbUpdateException brută din Postgres.
@@ -166,8 +163,7 @@ public static class AsamblareApply {
                 // Pinul lotului consumat — singura direcție pe care `LotId` se
                 // aplică.
                 if (l.LotId is Guid lotId) {
-                    detaliu.Lot = os.GetObjectByKey<Lot>(lotId)
-                        ?? throw new OperareException($"Lotul {lotId} nu există.");
+                    detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
                 }
                 else {
                     detaliu.Lot = null;
@@ -178,8 +174,7 @@ public static class AsamblareApply {
                 // Produsul e mecanismul lotului (F19-D3): îl consumă
                 // `LoturiCulegereService` după reconciliere.
                 if (l.ProdusId is Guid produsId) {
-                    detaliu.Produs = os.GetObjectByKey<Produs>(produsId)
-                        ?? throw new OperareException($"Produsul {produsId} nu există în catalog.");
+                    detaliu.Produs = Rezolva.Cere<Produs>(os, produsId, "Produsul");
                 }
                 else {
                     detaliu.Produs = null;
@@ -324,8 +319,7 @@ public static class AsamblareApply {
     // aceleași cifre — cheia de repartizare devine chiar valorile scrise de prima
     // rulare, iar prețul e normalizat ca funcție a valorii finale (vezi mai jos).
     public static AsmDistribuireDto DistribuieValoarea(IObjectSpace os, Func<IObjectSpace> fabricaPredictie, Guid id) {
-        var doc = os.GetObjectByKey<Asamblare>(id)
-            ?? throw new OperareException($"Asamblarea {id} nu există.");
+        var doc = Rezolva.Cere<Asamblare>(os, id, "Asamblarea");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — valoarea nu se mai distribuie.");
@@ -492,8 +486,7 @@ public static class AsamblareApply {
     // `−Abs(Cantitate)`, iar apelantul a verificat deja că nicio cantitate nu e 0
     // ⇒ dacă vreun consum a rămas cu cantitate pozitivă, calculul n-a rulat.
     static decimal PrezicSumaConsum(IObjectSpace osPredictie, Guid id) {
-        var doc = osPredictie.GetObjectByKey<Asamblare>(id)
-            ?? throw new OperareException($"Asamblarea {id} nu există.");
+        var doc = Rezolva.Cere<Asamblare>(osPredictie, id, "Asamblarea");
         var erori = MotorOperare.Valideaza(osPredictie, doc);
         var consumuri = doc.Detalii.OfType<AsamblareDetaliu>()
             .Where(d => d.Directie == DirectieAsamblare.Consum).ToList();
@@ -506,16 +499,11 @@ public static class AsamblareApply {
         return -consumuri.Sum(d => d.Valoare);
     }
 
-    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol) where T : class {
-        if (id == null)
-            return null;
-        return os.GetObjectByKey<T>(id.Value)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclator.");
-    }
+    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
+            where T : class => Rezolva.Optional<T>(os, id, rol);
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
     // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
@@ -538,7 +526,9 @@ public static class AsamblareApply {
     // Proiecții PLATE (42c): `Select` înainte de materializare, niciun membru
     // [NotMapped] și nicio navigație enumerată în afara query-ului (25b).
 
-    // `null` dacă documentul nu există (sau nu e o asamblare).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e o asamblare.
     public static AsmReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<Asamblare>()
             .Where(d => d.ID == id)

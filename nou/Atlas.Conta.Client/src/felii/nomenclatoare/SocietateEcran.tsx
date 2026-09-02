@@ -101,6 +101,7 @@ export function SocietateEcran() {
 
   return (
     <ShellNomenclator
+      citire={citit}
       titlu="Societatea raportoare"
       comenzi={comenzi}
       erori={erori}

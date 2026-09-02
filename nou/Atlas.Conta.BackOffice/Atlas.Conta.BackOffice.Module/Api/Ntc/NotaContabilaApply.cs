@@ -43,8 +43,8 @@ public static class NotaContabilaApply {
 
         NotaContabila doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<NotaContabila>(existentId)
-                ?? throw new OperareException($"Nota contabilă {existentId} nu există.");
+            doc = Rezolva.Cere<NotaContabila>(os, existentId, "Nota contabilă");
+            RefuzaInchidereaTva(doc);
             // Pre-check de DOMENIU: gardianul (`GardianEditare`) ar prinde oricum
             // la commit, dar abia după ce am rescris header-ul și liniile în
             // ObjectSpace-ul viu, cu mesajul lui generic. Aici oprim din prima.
@@ -82,8 +82,8 @@ public static class NotaContabilaApply {
     // dar mincinos. FĂRĂ refuz pe `Autogenerat`: nota nu e artefactul unei
     // operări (închiderea de TVA are tipul ei, ITV).
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<NotaContabila>(id)
-            ?? throw new OperareException($"Nota contabilă {id} nu există.");
+        var doc = Rezolva.Cere<NotaContabila>(os, id, "Nota contabilă");
+        RefuzaInchidereaTva(doc);
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -123,8 +123,7 @@ public static class NotaContabilaApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
             detaliu.Descriere = l.Descriere;
 
             // Postarea explicită pe linie (32a) — trăsătura tipului. Toate patru
@@ -160,16 +159,31 @@ public static class NotaContabilaApply {
             os.Delete(sterse);
     }
 
-    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol) where T : class {
-        if (id == null)
-            return null;
-        return os.GetObjectByKey<T>(id.Value)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclator.");
+    // ═══ ITV nu e o notă contabilă a acestei felii (F21-D5) ═══
+    //
+    // Sub TPT, `InchidereTva : NotaContabila` — deci `GetObjectByKey<NotaContabila>`
+    // ÎNTOARCE și închiderile de TVA, iar până la felia 21 un draft ITV se putea
+    // rescrie prin `PUT api/ntc/{id}` (reconcilierea acceptă orice linii; gardianul
+    // anti-stale l-ar fi prins abia la OPERARE) sau șterge prin `DELETE`. Nu e o
+    // notă pe care operatorul o culege: liniile ei sunt calculate din soldurile
+    // registrului, iar „modificarea" ei e REGENERAREA, din ecranul propriu.
+    //
+    // `is` aici e la GRANIȚĂ, în Apply, nu în motor — regula „motorul nu cunoaște
+    // frunzele" nu e atinsă. Comenzile (`opereaza`/`anuleaza`/`storneaza`) rămân
+    // PERMISE pe ruta NTC: sunt `OperareApi` pe `Document`, agnostic la tip, și
+    // produc exact același rezultat ca pe ruta ITV — un al doilea gard acolo ar fi
+    // fost o regulă fără miză.
+    static void RefuzaInchidereaTva(NotaContabila doc) {
+        if (doc is InchidereTva)
+            throw new OperareException(
+                $"Documentul {Eticheta(doc)} e o închidere de TVA — se gestionează din ecranul ei (/itv).");
     }
 
+    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
+            where T : class => Rezolva.Optional<T>(os, id, rol);
+
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
     // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
@@ -192,9 +206,16 @@ public static class NotaContabilaApply {
     // Proiecții PLATE (42c): `Select` înainte de materializare, niciun membru
     // [NotMapped] și nicio navigație enumerată în afara query-ului (25b).
 
-    // `null` dacă documentul nu există (sau nu e o notă contabilă).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e o notă contabilă.
     public static NtcReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<NotaContabila>()
+            // F21-D5: închiderea de TVA are felia ei. EF traduce `is` pe TPT
+            // printr-un test pe frunză, deci filtrul rămâne server-side, iar
+            // `GET api/ntc/{id}` pe un ITV întoarce 404, nu o reprezentare
+            // parțială a unui document pe care ecranul de notă nu-l poate scrie.
+            .Where(d => !(d is InchidereTva))
             .Where(d => d.ID == id)
             .Select(d => new {
                 d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
@@ -280,7 +301,8 @@ public static class NotaContabilaApply {
             .GroupBy(l => l.DocumentId)
             .Select(g => new { DocumentId = g.Key, Total = g.Sum(x => x.Valoare + x.ValoareTva) });
 
-        return from d in os.GetObjectsQuery<NotaContabila>()
+        // F21-D5: fără filtru, lista notelor conținea și închiderile de TVA (TPT).
+        return from d in os.GetObjectsQuery<NotaContabila>().Where(d => !(d is InchidereTva))
                join t in totaluri on d.ID equals t.DocumentId into agregat
                from t in agregat.DefaultIfEmpty()
                select new NtcListDto {
@@ -315,14 +337,22 @@ public static class NotaContabilaApply {
     // față de contrapartida respectivă (plafonată în plus de `Rest`-ul
     // documentului ales).
     //
-    // `null` dacă documentul nu există (sau nu e o notă contabilă).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e o notă contabilă.
     public static NtcCandidatiDto Candidati(IObjectSpace os, Guid id) {
         // Plafon de pagină per contrapartidă, ca la orice listă (`Incarca`): pe
         // baza de import un partener poate avea sute de documente deschise.
         const int Plafon = 100;
 
+        // F21-D5, a patra ușă a feliei: `GetObjectByKey<NotaContabila>` întoarce și
+        // închiderile de TVA (TPT), deci panoul de compensare al notei răspundea 200
+        // pe un id de ITV. Practic era inert (`CapacitateStingere` pe ITV iese
+        // dicționar GOL — liniile n-au repartitori), dar un 200 pe o resursă care
+        // nu e a feliei e o afirmație falsă: aceeași frunză, același null ca
+        // `Citeste` ⇒ 404 pe `GET api/ntc/{id}/candidati`.
         var doc = os.GetObjectByKey<NotaContabila>(id);
-        if (doc == null)
+        if (doc == null || doc is InchidereTva)
             return null;
 
         var rezultat = new NtcCandidatiDto {

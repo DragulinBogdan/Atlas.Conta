@@ -15,8 +15,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 //
 // Ce NU face (design §6): închiderea NU închide perioada fiscală (GardianPerioada
 // rămâne mecanism separat) și NU atinge 121 (închiderea de exercițiu e în afara
-// scope-ului). Acțiunea UI de generare rămâne aditivă, la nevoie — felia 1C-d
-// folosește consola (Import1C), ca precedentele Migrare/ModelCheck.
+// scope-ului). Generarea are trei apelanți pe același serviciu: consola
+// Import1C (1C-d), ruta `POST api/itv/genereaza` (felia 21) și acțiunea XAF
+// „Generează închiderea" (`Controllers/InchidereTvaGenerareController.cs`,
+// 79-r1) — toți prin `InchidereTvaApply`/`InchidereTvaService`, niciunul cu
+// aritmetică proprie.
 //
 // [TipDetaliu] se re-declară: atributul e Inherited=false (UI/TipDetaliuAttribute).
 [TipDetaliu(typeof(NotaContabilaDetaliu))]
@@ -43,11 +46,31 @@ public class InchidereTva : NotaContabila {
         decimal Suma(Guid? debit, Guid? credit) => Detalii.OfType<NotaContabilaDetaliu>()
             .Where(d => d.ContDebitId == debit && d.ContCreditId == credit)
             .Sum(d => d.Valoare);
-        var transfer = Suma(politica.ContColectataId, politica.ContDeductibilaId);
-        var dePlata = Suma(politica.ContColectataId, politica.ContDePlataId);
-        var deRecuperat = Suma(politica.ContDeRecuperatId, politica.ContDeductibilaId);
-        if (transfer + dePlata != sold4427 || transfer + deRecuperat != sold4426)
+        var linii = new Motor.InchidereTvaService.LiniiInchidere(
+            Suma(politica.ContColectataId, politica.ContDeductibilaId),
+            Suma(politica.ContColectataId, politica.ContDePlataId),
+            Suma(politica.ContDeRecuperatId, politica.ContDeductibilaId));
+        // Criteriul e UNUL singur, partajat cu `Stale` din ReadDto (79 M4).
+        if (!Motor.InchidereTvaService.LiniiPotrivescSoldurile(linii, sold4426, sold4427))
             erori.Add($"Soldurile de TVA s-au schimbat de la generare (4426: {sold4426}, 4427: {sold4427} " +
                 $"față de liniile documentului) — ștergeți draftul și regenerați închiderea.");
+
+        // Cronologia la OPERARE (review 79 F1): o închidere OPERATĂ pentru o lună
+        // ulterioară a închis deja, cumulat, și soldurile acestei luni — a opera
+        // acum draftul de față le-ar închide a doua oară (4423/4424 dublate, iar
+        // reziduul negativ pe 4426/4427 ar fi mascat de `Max(0, …)` din `Solduri`).
+        // Gardianul de la generare (`Analizeaza`, 2b/2c) oprește sensul celălalt;
+        // acesta e perechea lui, pe ușa prin care trece ORICE operare (XAF, API,
+        // consolă). Un draft ulterior NU blochează: el va deveni stale și îl
+        // refuză gardianul de mai sus.
+        var ulterioara = os.GetObjectsQuery<InchidereTva>()
+            .Where(d => d.Data > Data && d.Stare == StareDocument.Operat)
+            .OrderBy(d => d.Data)
+            .Select(d => new { d.Numar, d.Data })
+            .FirstOrDefault();
+        if (ulterioara != null)
+            erori.Add($"Există o închidere de TVA operată pentru o lună ulterioară ({ulterioara.Numar}, "
+                + $"{ulterioara.Data:dd.MM.yyyy}) — a opera acum închiderea lunii {Data.Month:00}/{Data.Year} ar închide "
+                + "aceleași solduri a doua oară. Stornați-o pe cea ulterioară sau ștergeți acest draft.");
     }
 }

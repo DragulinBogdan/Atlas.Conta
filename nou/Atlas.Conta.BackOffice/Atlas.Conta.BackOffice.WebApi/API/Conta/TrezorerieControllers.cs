@@ -51,11 +51,11 @@ public abstract class TrezorerieControllerBase<T> : ContaApiController
     // 404, nu documentul altcuiva.
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(TrezorerieReadDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) {
         using var os = Secured(typeof(T));
         var dto = TrezorerieApply.Citeste<T>(os, id);
-        return dto == null ? NotFound() : Ok(dto);
+        return dto == null ? Invizibil() : Ok(dto);
     }
 
     // Candidații de latură pereche (F8-D11) — CITIRE, deci ușa SECURED, ca la
@@ -84,36 +84,40 @@ public abstract class TrezorerieControllerBase<T> : ContaApiController
     [HttpPost]
     [ProducesResponseType(typeof(TrezorerieReadDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Post([FromBody] TrezorerieWriteDto dto) => Domeniu(() => {
-        using var os = Secured(typeof(T));
-        var id = TrezorerieApply.Aplica<T>(os, null, dto);
-        return Created($"{Ruta}/{id}", TrezorerieApply.Citeste<T>(os, id));
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    public IActionResult Post([FromBody] TrezorerieWriteDto dto) =>
+        CreareAutorizata<T>(() => Domeniu(() => {
+            using var os = Secured(typeof(T));
+            var id = TrezorerieApply.Aplica<T>(os, null, dto);
+            return Created($"{Ruta}/{id}", TrezorerieApply.Citeste<T>(os, id));
+        }));
 
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(TrezorerieReadDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult Put(Guid id, [FromBody] TrezorerieWriteDto dto) => Domeniu(() => {
-        using var os = Secured(typeof(T));
-        TrezorerieApply.Aplica<T>(os, id, dto);
-        return Ok(TrezorerieApply.Citeste<T>(os, id));
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    public IActionResult Put(Guid id, [FromBody] TrezorerieWriteDto dto) =>
+        ScriereAutorizata<T>(id, () => Domeniu(() => {
+            using var os = Secured(typeof(T));
+            TrezorerieApply.Aplica<T>(os, id, dto);
+            return Ok(TrezorerieApply.Citeste<T>(os, id));
+        }));
 
     // Ștergerea unui DRAFT. Ca la FCT: existența se verifică o dată AICI, ca
     // statusul să fie 404 (mesajul „nu există" al Apply-ului ar fi ieșit 422);
     // restul (pre-check-ul de Draft) rămâne în `Apply.Sterge`.
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Delete(Guid id) => Domeniu(() => {
-        using var os = Secured(typeof(T));
-        if (os.GetObjectByKey<T>(id) == null)
-            return NotFound();
-        TrezorerieApply.Sterge<T>(os, id);
-        return NoContent();
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    public IActionResult Delete(Guid id) =>
+        ScriereAutorizata<T>(id, () => Domeniu(() => {
+            using var os = Secured(typeof(T));
+            TrezorerieApply.Sterge<T>(os, id);
+            return NoContent();
+        }), OperatieAcces.Stergere);
 
     // ── Comenzi: OS NON-SECURED, tranzacția integral a motorului (42b) ─────
     // `ComandaAutorizata` decide CINE are voie (404 pe inexistent/invizibil,
@@ -121,16 +125,22 @@ public abstract class TrezorerieControllerBase<T> : ContaApiController
     [HttpPost("{id:guid}/opereaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Opereaza(Guid id) => Comanda(id, os => OperareApi.Opereaza(os, id));
 
     [HttpPost("{id:guid}/anuleaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Anuleaza(Guid id) => Comanda(id, os => OperareApi.AnuleazaOperarea(os, id));
 
     [HttpPost("{id:guid}/storneaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Storneaza(Guid id, [FromBody] StornoRequestDto cerere) =>
         Comanda(id, os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
 
@@ -139,13 +149,15 @@ public abstract class TrezorerieControllerBase<T> : ContaApiController
     // cerere, e răspunsul întrebării.
     [HttpPost("{id:guid}/valideaza")]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
-    public IActionResult Valideaza(Guid id) => ComandaAutorizata(id, () => Domeniu(() => {
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    public IActionResult Valideaza(Guid id) => ComandaAutorizata<T>(id, () => Domeniu(() => {
         using var os = NonSecured(typeof(T));
         return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
     }));
 
     IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
-        ComandaAutorizata(id, () => Domeniu(() => {
+        ComandaAutorizata<T>(id, () => Domeniu(() => {
             using var os = NonSecured(typeof(T));
             return Ok(OperareRezultatDto.Din(comanda(os)));
         }));

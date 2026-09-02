@@ -34,47 +34,51 @@ public class FclController : ContaApiController {
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(FacturaIesireReadDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) {
         using var os = Secured(typeof(FacturaIesire));
         var dto = FacturaIesireApply.Citeste(os, id);
-        return dto == null ? NotFound() : Ok(dto);
+        return dto == null ? Invizibil() : Ok(dto);
     }
 
     // ── Scriere: agregatul per document (42d) ─────────────────────────────
     [HttpPost]
     [ProducesResponseType(typeof(FacturaIesireReadDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Post([FromBody] FacturaIesireWriteDto dto) => Domeniu(() => {
-        using var os = Secured(typeof(FacturaIesire));
-        var id = FacturaIesireApply.Aplica(os, null, dto);
-        return Created($"/api/fcl/{id}", FacturaIesireApply.Citeste(os, id));
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    public IActionResult Post([FromBody] FacturaIesireWriteDto dto) =>
+        CreareAutorizata<FacturaIesire>(() => Domeniu(() => {
+            using var os = Secured(typeof(FacturaIesire));
+            var id = FacturaIesireApply.Aplica(os, null, dto);
+            return Created($"/api/fcl/{id}", FacturaIesireApply.Citeste(os, id));
+        }));
 
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(FacturaIesireReadDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult Put(Guid id, [FromBody] FacturaIesireWriteDto dto) => Domeniu(() => {
-        using var os = Secured(typeof(FacturaIesire));
-        FacturaIesireApply.Aplica(os, id, dto);
-        return Ok(FacturaIesireApply.Citeste(os, id));
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    public IActionResult Put(Guid id, [FromBody] FacturaIesireWriteDto dto) =>
+        ScriereAutorizata<FacturaIesire>(id, () => Domeniu(() => {
+            using var os = Secured(typeof(FacturaIesire));
+            FacturaIesireApply.Aplica(os, id, dto);
+            return Ok(FacturaIesireApply.Citeste(os, id));
+        }));
 
     // Ștergerea unui DRAFT: pre-check-ul de Draft e în `Apply.Sterge` (mesaj de
     // domeniu ⇒ 422). Existența se verifică o dată aici, ca documentul
     // inexistent să iasă 404, nu 422 (ca la FCT).
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Delete(Guid id) => Domeniu(() => {
-        using var os = Secured(typeof(FacturaIesire));
-        if (os.GetObjectByKey<FacturaIesire>(id) == null)
-            return NotFound();
-        FacturaIesireApply.Sterge(os, id);
-        return NoContent();
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    public IActionResult Delete(Guid id) =>
+        ScriereAutorizata<FacturaIesire>(id, () => Domeniu(() => {
+            using var os = Secured(typeof(FacturaIesire));
+            FacturaIesireApply.Sterge(os, id);
+            return NoContent();
+        }), OperatieAcces.Stergere);
 
     // ── Comenzi: OS NON-SECURED, tranzacția integral a motorului (42b) ─────
     // `ComandaAutorizata` decide CINE are voie (404 pe inexistent/invizibil, 403
@@ -85,23 +89,31 @@ public class FclController : ContaApiController {
     [HttpPost("{id:guid}/opereaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Opereaza(Guid id) => Comanda(id, os => OperareApi.Opereaza(os, id));
 
     [HttpPost("{id:guid}/anuleaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Anuleaza(Guid id) => Comanda(id, os => OperareApi.AnuleazaOperarea(os, id));
 
     [HttpPost("{id:guid}/storneaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Storneaza(Guid id, [FromBody] StornoRequestDto cerere) =>
         Comanda(id, os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
 
     // Dry-run (D3): „calculează + validează" fără materializare și fără commit.
     [HttpPost("{id:guid}/valideaza")]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
-    public IActionResult Valideaza(Guid id) => ComandaAutorizata(id, () => Domeniu(() => {
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    public IActionResult Valideaza(Guid id) => ComandaAutorizata<FacturaIesire>(id, () => Domeniu(() => {
         using var os = NonSecured(typeof(FacturaIesire));
         return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
     }));
@@ -119,8 +131,10 @@ public class FclController : ContaApiController {
     [HttpPost("{id:guid}/genereaza-descarcare")]
     [ProducesResponseType(typeof(GenerareDescarcareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult GenereazaDescarcare(Guid id, [FromBody] GenerareDescarcareRequestDto cerere) =>
-        ComandaAutorizata(id, () => Domeniu(() => {
+        ComandaAutorizata<FacturaIesire>(id, () => Domeniu(() => {
             using var os = NonSecured(typeof(FacturaIesire));
             var data = cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today);
             return Ok(FacturaIesireApply.GenereazaDescarcare(os, id, data));
@@ -131,17 +145,17 @@ public class FclController : ContaApiController {
     // mesajul de domeniu al Apply-ului (422).
     [HttpGet("{id:guid}/rest-nedescarcat")]
     [ProducesResponseType(typeof(IReadOnlyList<RestNedescarcatRandDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult RestNedescarcat(Guid id) => Domeniu(() => {
         using var os = Secured(typeof(FacturaIesire));
         if (os.GetObjectByKey<FacturaIesire>(id) == null)
-            return NotFound();
+            return Invizibil();
         return Ok(FacturaIesireApply.RestNedescarcat(os, id));
     });
 
     IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
-        ComandaAutorizata(id, () => Domeniu(() => {
+        ComandaAutorizata<FacturaIesire>(id, () => Domeniu(() => {
             using var os = NonSecured(typeof(FacturaIesire));
             return Ok(OperareRezultatDto.Din(comanda(os)));
         }));

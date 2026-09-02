@@ -113,7 +113,7 @@ public class SaftController : ContaApiController {
     [HttpGet("xml")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Xml([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
         Fisier(an, luna, SaftProiectii.Saft, PrefixL);
@@ -124,7 +124,7 @@ public class SaftController : ContaApiController {
     [HttpGet("stocuri/xml")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult XmlStocuri([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
         Fisier(an, luna, SaftProiectii.SaftStocuri, PrefixS);
@@ -146,7 +146,7 @@ public class SaftController : ContaApiController {
         // se calculează declarația — refuzul e al fișierului ca atare, nu al
         // conținutului lui.
         if (!PoateCiti(typeof(RegistruContabil), os))
-            return Forbid();
+            return RefuzCitire(typeof(RegistruContabil));
 
         var dto = proiectie(os, an.Value, luna.Value, null);
         if (dto.Neaplicabil != null)

@@ -5,6 +5,7 @@ using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Core;
 using DevExpress.ExpressApp.EFCore;
+using DevExpress.ExpressApp.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -61,6 +62,17 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     static readonly ConditionalWeakTable<IObjectSpace, object> abonate = new();
     static readonly object marcaj = new();
 
+    // Strategia de securitate a CERERII curente, injectată (felia 22, F22-D3).
+    // Nullable DELIBERAT: gardianul e înregistrat în DI-ul host-urilor, dar
+    // aceeași clasă e folosită și acolo unde nu există securitate. Parametrul
+    // opțional e onorat de containerul Microsoft — `CallSiteFactory` cade pe
+    // `ParameterDefaultValue` când tipul nu e înregistrat — deci înregistrarea
+    // rămâne cea din `AddContaGardianEditare`, fără fabrică proprie.
+    readonly ISecurityStrategyBase securitate;
+
+    public GardianEditare(ISecurityStrategyBase securitate = null) =>
+        this.securitate = securitate;
+
     public void OnObjectSpaceCreated(IObjectSpace objectSpace) {
         if (objectSpace == null)
             return;
@@ -72,13 +84,93 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         objectSpace.Committing += OnCommitting;
     }
 
-    static void OnCommitting(object sender, CancelEventArgs e) {
-        if (sender is IObjectSpace os)
-            Verifica(os);
+    // Ordinea e conținutul deciziei F22-D3: ÎNTÂI dreptul, apoi domeniul.
+    // Nu mai e statică fiindcă pasul zero are nevoie de strategia injectată.
+    void OnCommitting(object sender, CancelEventArgs e) {
+        if (sender is not IObjectSpace os)
+            return;
+        VerificaAcces(os);
+        Verifica(os);
     }
 
-    // Regulile, în ordinea din contract (D4). Toate lipsurile se cumulează și se
-    // raportează împreună, ca în motor (mesajele se despart pe „\n").
+    // ═══ Pasul ZERO: are voie? (felia 22, F22-D3) ═══
+    //
+    // De ce ÎNAINTEA domeniului. Mecanica DevExpress (26.1.3) e:
+    // `BaseObjectSpace.CommitChanges` → `OnCommitting` (aici) → `DoCommit` →
+    // `SaveChanges` → `SecurityStateManager.GetEntriesToSave`, adică verificarea
+    // Create/Write/Delete per entitate. Verificarea EXISTĂ, dar rulează DUPĂ
+    // noi — așa că un utilizator fără niciun drept de scriere primea mai întâi
+    // refuzul nostru de DOMENIU (422 „Codul e obligatoriu…") și nu afla
+    // niciodată că, de fapt, n-avea voie să scrie deloc (77k). Un 422 nu poate
+    // ascunde un refuz de permisiune (F22-D1), deci întrebarea de drept se pune
+    // prima.
+    //
+    // Ce NU face: nu înlocuiește verificarea din `SaveChanges`. Aceea rămâne
+    // plasa — permisiuni pe MEMBRU, criterii pe obiect evaluate în alt punct al
+    // ciclului, tot ce nu vedem noi din `ModifiedObjects`. Aici se rezolvă
+    // ORDINEA față de domeniu, nu se mută securitatea.
+    //
+    // Fără strategie (ModelCheck, unelte standalone, orice host care nu
+    // înregistrează `ISecurityStrategyBase`) pasul TACE: acolo nu există
+    // utilizator, deci nu există întrebare de drept — nu „refuz din prudență".
+    // La fel când strategia nu e una care poate răspunde la cereri de
+    // permisiune (`SecurityDummy` implementează `IRequestSecurity`, dar nu
+    // `IRequestSecurityStrategy`, și oricum răspunde `true` la orice).
+    //
+    // Utilizatorul ADMINISTRATIV trece întreg pasul: un rol cu
+    // `IsAdministrative` produce `IsAdministratorPermission`
+    // (`PermissionsExtractor.cs:51-53`), pe care `PermissionRequestProcessor`
+    // îl citește ca `RoleType.AllowAllWithoutPermissions`
+    // (`PermissionRequestProcessor.cs:671-672`) — orice operație e acordată.
+    // Rolul `Administrators` al bazei e chiar `IsAdministrative = true`
+    // (`Updater.CreateAdminRole`), deci `Admin` nu poate fi refuzat aici.
+    void VerificaAcces(IObjectSpace os) {
+        if (securitate is not IRequestSecurityStrategy cerinte)
+            return;
+        foreach (var obj in os.ModifiedObjects) {
+            if (obj == null)
+                continue;
+            // Trei întrebări diferite, nu una: în XAF `Write` și `Delete` sunt
+            // permisiuni DISTINCTE, iar `Create` se pune pe TIP (obiectul nou
+            // încă nu are identitate pe care să se evalueze un criteriu).
+            // Tipul se dezproxează: `CanCreate` primește un `Type`, iar
+            // `FacturaIntrareProxy` nu e în modelul de securitate.
+            if (os.IsNewObject(obj)) {
+                // Create ȘI Write (review 80 M2): plasa DevExpress cere pe `Added`
+                // Create + Write + Read (`SecurityStateManager.
+                // CheckIsGrantedToSave` :94-96, :197-198). Un rol cu Create fără
+                // Write ar fi trecut aici și ar fi picat în plasă cu textul ei
+                // englezesc. Mesajul rămâne „crea" — dreptul lipsă e al creării
+                // complete.
+                var tip = Api.Refuzuri.TipReal(obj.GetType());
+                if (!cerinte.CanCreate(tip, os) || !cerinte.CanWrite(os, (object)obj))
+                    throw new Api.RefuzAcces(Api.OperatieAcces.Creare, tip);
+            }
+            else if (EsteSters(os, obj)) {
+                // Supraîncărcarea pe INSTANȚĂ (cast explicit la `object`, ca în
+                // gate-urile din controllere): permisiunea de ștergere poate
+                // purta criteriu pe obiect. `PermissionRequestProcessor.
+                // GetTypeToProcess` dezproxează el tipul pentru aceste
+                // supraîncărcări.
+                if (!cerinte.CanDelete(os, (object)obj))
+                    throw new Api.RefuzAcces(Api.OperatieAcces.Stergere,
+                        Api.Refuzuri.TipReal(obj.GetType()));
+            }
+            else if (!cerinte.CanWrite(os, (object)obj)) {
+                throw new Api.RefuzAcces(Api.OperatieAcces.Modificare,
+                    Api.Refuzuri.TipReal(obj.GetType()));
+            }
+        }
+    }
+
+    // Regulile de DOMENIU, în ordinea din contract (D4). Toate lipsurile se
+    // cumulează și se raportează împreună, ca în motor (mesajele se despart pe
+    // „\n").
+    //
+    // Rămâne STATICĂ și neatinsă de pasul zero (F22-D3): ModelCheck o cheamă
+    // direct, pe ObjectSpace-uri fără securitate, ca să probeze regulile de
+    // domeniu izolat de orice permisiune. Dreptul se verifică în `OnCommitting`,
+    // înaintea ei — nu înăuntru.
     public static void Verifica(IObjectSpace os) {
         var erori = new List<string>();
         var registruRaportat = false;
@@ -574,6 +666,13 @@ public static class GardianStartupExtensions {
     public static IServiceCollection AddContaGardianEditare(this IServiceCollection services) {
         // Scoped + TryAddEnumerable = exact forma în care XAF își înregistrează
         // proprii customizeri (`ObjectSpaceCustomizerStartupExtensions.cs:65`).
+        //
+        // Constructorul cere `ISecurityStrategyBase` cu valoare implicită `null`
+        // (F22-D3). Nu e nevoie de fabrică: containerul Microsoft rezolvă
+        // parametrul din scope când tipul e înregistrat (ambele host-uri îl
+        // înregistrează scoped — controllerele WebApi îl injectează deja) și
+        // cade pe valoarea implicită când nu e. Scope-ul gardianului e același
+        // cu al strategiei, deci strategia primită e a CERERII curente.
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IObjectSpaceCustomizer, GardianEditare>());
         return services;
     }

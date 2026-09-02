@@ -42,8 +42,7 @@ public static class FacturaIesireApply {
 
         FacturaIesire doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<FacturaIesire>(existentId)
-                ?? throw new OperareException($"Factura de ieșire {existentId} nu există.");
+            doc = Rezolva.Cere<FacturaIesire>(os, existentId, "Factura de ieșire");
             if (doc.Stare != StareDocument.Draft)
                 throw new OperareException(
                     $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se mai modifică. "
@@ -71,9 +70,7 @@ public static class FacturaIesireApply {
         // Gestiunea de descărcare (P2 §4): obligatorie doar când există linii de
         // stoc — cerința e a operării, aici se validează doar existența.
         if (dto.GestiuneDescarcareId is Guid gestiuneId) {
-            doc.GestiuneDescarcare = os.GetObjectByKey<Gestiune>(gestiuneId)
-                ?? throw new OperareException(
-                    $"Gestiunea de descărcare {gestiuneId} nu există în nomenclator.");
+            doc.GestiuneDescarcare = Rezolva.Cere<Gestiune>(os, gestiuneId, "Gestiunea de descărcare");
         }
         else {
             doc.GestiuneDescarcare = null;
@@ -92,8 +89,7 @@ public static class FacturaIesireApply {
     // Fără gardian de imperecheri: un link cere ambele documente OPERATE (31d),
     // deci un draft nu poate avea niciunul.
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<FacturaIesire>(id)
-            ?? throw new OperareException($"Factura de ieșire {id} nu există.");
+        var doc = Rezolva.Cere<FacturaIesire>(os, id, "Factura de ieșire");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -147,14 +143,12 @@ public static class FacturaIesireApply {
             var bazaVeche = noua ? 0m : detaliu.PretUnitar * detaliu.Cantitate;
             Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
 
             // „General!" — identitatea liniei de stoc (P2 §4). Obligativitatea pe
             // liniile de stoc e a OPERĂRII; aici doar existența.
             if (l.ProdusId is Guid produsId) {
-                detaliu.Produs = os.GetObjectByKey<Produs>(produsId)
-                    ?? throw new OperareException($"Produsul {produsId} nu există în catalog.");
+                detaliu.Produs = Rezolva.Cere<Produs>(os, produsId, "Produsul");
             }
             else {
                 detaliu.Produs = null;
@@ -166,8 +160,7 @@ public static class FacturaIesireApply {
             // se verifică la OPERARE: pinul e intenția magazinului, iar un draft
             // are voie s-o poarte înainte ca stocul să existe.
             if (l.LotId is Guid lotId) {
-                detaliu.Lot = os.GetObjectByKey<Lot>(lotId)
-                    ?? throw new OperareException($"Lotul {lotId} nu există.");
+                detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
             }
             else {
                 detaliu.Lot = null;
@@ -184,8 +177,7 @@ public static class FacturaIesireApply {
             detaliu.Descriere = l.Descriere;
 
             if (l.TipTvaId is Guid tipTvaId) {
-                detaliu.TipTva = os.GetObjectByKey<TipTva>(tipTvaId)
-                    ?? throw new OperareException($"Tipul de TVA {tipTvaId} nu există.");
+                detaliu.TipTva = Rezolva.Cere<TipTva>(os, tipTvaId, "Tipul de TVA");
             }
             else {
                 detaliu.TipTva = null;
@@ -254,16 +246,11 @@ public static class FacturaIesireApply {
             os.Delete(sterse);
     }
 
-    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol) where T : class {
-        if (id == null)
-            return null;
-        return os.GetObjectByKey<T>(id.Value)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclator.");
-    }
+    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
+            where T : class => Rezolva.Optional<T>(os, id, rol);
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară — geamănul celui din `FacturaIntrareApply`: `numeric(18,s)`
     // ⇒ cel mult `s` zecimale și `18 − s` cifre întregi (49e).
@@ -300,8 +287,7 @@ public static class FacturaIesireApply {
     // secured/non-secured răspunde la „cum scrie motorul", nu la „cine comandă").
     // Comite: draftul generat trebuie să existe ca să poată fi deschis și operat.
     public static GenerareDescarcareRezultatDto GenereazaDescarcare(IObjectSpace os, Guid id, DateOnly data) {
-        var fcl = os.GetObjectByKey<FacturaIesire>(id)
-            ?? throw new OperareException($"Factura de ieșire {id} nu există.");
+        var fcl = Rezolva.Cere<FacturaIesire>(os, id, "Factura de ieșire");
         // Refuz de DOMENIU: pe un draft nu există încă acoperire de generat
         // (oglinda lui `ActualizeazaDisponibilitatea` din controllerul XAF), iar
         // pe o factură stornată descărcarea n-ar avea ce acoperi.
@@ -329,8 +315,7 @@ public static class FacturaIesireApply {
     // din client arată starea acoperirii, nu doar lipsa. Comanda de generare
     // filtrează ea `Rest > 0` — acolo întrebarea e „ce mai așteaptă".
     public static IReadOnlyList<RestNedescarcatRandDto> RestNedescarcat(IObjectSpace os, Guid id) {
-        var fcl = os.GetObjectByKey<FacturaIesire>(id)
-            ?? throw new OperareException($"Factura de ieșire {id} nu există.");
+        var fcl = Rezolva.Cere<FacturaIesire>(os, id, "Factura de ieșire");
         return Resturi(os, fcl);
     }
 
@@ -367,7 +352,9 @@ public static class FacturaIesireApply {
     // Proiecții PLATE (42c): `Select` înainte de materializare, niciun membru
     // [NotMapped] și nicio navigație enumerată în afara query-ului (25b).
 
-    // `null` dacă documentul nu există (sau nu e o factură de ieșire).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e o factură de ieșire.
     public static FacturaIesireReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<FacturaIesire>()
             .Where(d => d.ID == id)

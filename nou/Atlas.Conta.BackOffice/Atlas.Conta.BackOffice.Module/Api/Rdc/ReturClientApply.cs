@@ -40,8 +40,7 @@ public static class ReturClientApply {
 
         ReturClient doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<ReturClient>(existentId)
-                ?? throw new OperareException($"Returul de la client {existentId} nu există.");
+            doc = Rezolva.Cere<ReturClient>(os, existentId, "Returul de la client");
             // Pre-check de DOMENIU: gardianul (`GardianEditare`) ar prinde oricum
             // la commit, dar abia după ce am rescris header-ul și liniile în
             // ObjectSpace-ul viu, cu mesajul lui generic. Aici oprim din prima.
@@ -73,8 +72,7 @@ public static class ReturClientApply {
     // Committing rămâne plasa). Fără curățenie de loturi: nicio linie de RDC nu
     // naște lot (marfa revine pe cel ORIGINAL).
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<ReturClient>(id)
-            ?? throw new OperareException($"Returul de la client {id} nu există.");
+        var doc = Rezolva.Cere<ReturClient>(os, id, "Returul de la client");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -131,11 +129,9 @@ public static class ReturClientApply {
             var bazaVeche = noua ? 0m : Math.Abs(detaliu.Valoare);
             Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
             if (l.LotId is Guid lotId) {
-                detaliu.Lot = os.GetObjectByKey<Lot>(lotId)
-                    ?? throw new OperareException($"Lotul {lotId} nu există.");
+                detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
             }
             else {
                 detaliu.Lot = null;
@@ -167,8 +163,7 @@ public static class ReturClientApply {
 
             // ── Linia de VENIT (venitul stornat) ──
             if (l.TipTvaId is Guid tipTvaId) {
-                detaliu.TipTva = os.GetObjectByKey<TipTva>(tipTvaId)
-                    ?? throw new OperareException($"Tipul de TVA {tipTvaId} nu există.");
+                detaliu.TipTva = Rezolva.Cere<TipTva>(os, tipTvaId, "Tipul de TVA");
             }
             else {
                 detaliu.TipTva = null;
@@ -213,8 +208,7 @@ public static class ReturClientApply {
     }
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
     // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
@@ -237,7 +231,9 @@ public static class ReturClientApply {
     // Proiecții PLATE (42c), direct pe `DocumentDetaliu`: RDC n-are frunză
     // (F19-D9), deci toate liniile lui sunt de bază.
 
-    // `null` dacă documentul nu există (sau nu e un retur de la client).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e un retur de la client.
     public static RdcReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<ReturClient>()
             .Where(d => d.ID == id)
