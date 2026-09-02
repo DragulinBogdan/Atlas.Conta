@@ -3932,6 +3932,13 @@ if (profil == ProfilContabil.Privat) {
     // moarte (retururile sunt singurele tipuri ale feliei cu TVA).
     VerificaApiRlf();
     VerificaApiRdc();
+    // Felia 23 — implicitele de culegere și întreținerea politicilor (F23-V1…V6).
+    VerificaF23Model(privat: true);
+    VerificaF23Rezolvare(privat: true);
+    VerificaF23Seed(privat: true);
+    VerificaF23Gardian(privat: true);
+    VerificaF23Raport(privat: true);
+    VerificaF23ClasaFiscala();
 
     Rezumat();
     return;
@@ -8983,6 +8990,13 @@ VerificaAxaTaxareInversa();
 VerificaGardianCicluCont();
 VerificaValoareIesire(privat: false);
 VerificaApiNtc(privat: false);
+// Felia 23 — implicitele de culegere și întreținerea politicilor (F23-V1…V6).
+VerificaF23Model(privat: false);
+VerificaF23Rezolvare(privat: false);
+VerificaF23Seed(privat: false);
+VerificaF23Gardian(privat: false);
+VerificaF23Raport(privat: false);
+VerificaF23ClasaFiscala();
 
 Rezumat();
 
@@ -19575,4 +19589,967 @@ void VerificaApiRdc() {
         !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(Marcaj))
         && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(Marcaj))
         && os.GetObjectByKey<ReturClient>(idRdc) == null);
+}
+
+// ═══════════ Felia 23 — implicitele de culegere și întreținerea politicilor ═══════════
+// Șase grupuri, în ordinea în care se sprijină unul pe altul: modelul (F23-V1)
+// spune că schema apără cheile; rezolvarea (V2) e funcția pe care o cheamă toate
+// cele trei uși; seed-ul (V3) e cel care umple tabelul și îl repară idempotent;
+// gardianul (V4) e jumătatea de FOND a validării, fiindcă regulile XAF nu rulează
+// pe API (55b); raportul (V5) e cel care ARATĂ ce s-a abătut de la profilul
+// livrat; iar V6 măsoară că funcția legii, mutată din D394, dă aceleași cifre.
+//
+// Convenția de scenă: marcajul `E2E-F23` și purjă FIZICĂ la final (70e) —
+// `os.Delete` DOAR acolo unde ștergerea logică e chiar obiectul probei (V3:
+// „șters de utilizator”; V5: referința spre un rând șters).
+
+// ---------------------------------------------------------------------------
+// F23-V1 — MODELUL: unicitatea din F23-D3 e în SCHEMĂ, nu în convenție
+// ---------------------------------------------------------------------------
+// Până la felia asta nouă politici per tip de document și cinci coduri de
+// nomenclator erau chei DOAR prin convenție (seed-ul le trata ca atare, motorul
+// le citea cu `FirstOrDefault`). Proba citește indexurile din modelul
+// DESIGN-TIME — același din care iese migrația, singurul care poartă filtrele și
+// adnotările relaționale — și le compară LITERAL, ca la D17-V1.
+//
+// Cele trei chei cu coloane nullable au nevoie de `NULLS NOT DISTINCT`: în
+// Postgres `NULL <> NULL`, deci fără adnotare două rânduri „orice clasă” /
+// „regulă generică” ar fi trecut nestingherite pe aceeași cheie — exact dublura
+// pe care indexul există s-o oprească.
+void VerificaF23Model(bool privat) {
+    using var os = provider.CreateObjectSpace();
+    var ctxModel = ((EFCoreObjectSpace)os).DbContext;
+    var model = Microsoft.EntityFrameworkCore.Infrastructure.AccessorExtensions
+        .GetService<Microsoft.EntityFrameworkCore.Metadata.IDesignTimeModel>(ctxModel).Model;
+
+    // Tip · coloanele cheii · cheia are nullable-uri (⇒ `NULLS NOT DISTINCT`)
+    (Type Tip, string[] Coloane, bool NullsNotDistinct)[] asteptate = [
+        (typeof(PoliticaTva), [nameof(PoliticaTva.TipDocumentId)], false),
+        (typeof(PoliticaConex), [nameof(PoliticaConex.TipDocumentSursaId)], false),
+        (typeof(PoliticaScadenta), [nameof(PoliticaScadenta.TipDocumentId)], false),
+        (typeof(PoliticaValidare), [nameof(PoliticaValidare.TipDocumentId)], false),
+        (typeof(PoliticaNumerotare), [nameof(PoliticaNumerotare.TipDocumentId)], false),
+        (typeof(PoliticaInchidereTva), [nameof(PoliticaInchidereTva.TipDocumentId)], false),
+        (typeof(RegulaStoc), [nameof(RegulaStoc.TipDocumentId), nameof(RegulaStoc.Latura),
+            nameof(RegulaStoc.ClasaId)], true),
+        (typeof(RegulaContare), [nameof(RegulaContare.TipDocumentId), nameof(RegulaContare.TipMaterialId),
+            nameof(RegulaContare.NaturaFiltru), nameof(RegulaContare.SemnFiltru)], true),
+        (typeof(PoliticaTvaImplicit), [nameof(PoliticaTvaImplicit.TipDocumentId),
+            nameof(PoliticaTvaImplicit.ClasaFiscala), nameof(PoliticaTvaImplicit.ValabilDeLa)], true),
+        (typeof(TipDocument), [nameof(TipDocument.Cod)], false),
+        (typeof(TipDocument), [nameof(TipDocument.ClrType)], false),
+        (typeof(TipTva), [nameof(TipTva.Cod)], false),
+        (typeof(Cont), [nameof(Cont.Simbol)], false),
+        (typeof(ClasaProdus), [nameof(ClasaProdus.Cod)], false),
+        (typeof(TipMaterial), [nameof(TipMaterial.Cod)], false),
+    ];
+
+    var lipsuri = new List<string>();
+    var masurate = new List<string>();
+    foreach (var (tip, coloane, nnd) in asteptate) {
+        var et = model.FindEntityType(tip);
+        var index = et?.GetIndexes().FirstOrDefault(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(coloane));
+        var cheie = $"{tip.Name}({string.Join(",", coloane)})";
+        if (index == null) {
+            lipsuri.Add($"{cheie}: LIPSĂ");
+            continue;
+        }
+        var filtru = index.GetFilter();
+        // `GetAreNullsDistinct` e forma de CITIRE a lui `AreNullsDistinct(false)`
+        // (Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3, `NpgsqlIndexExtensions`):
+        // builder-ul scrie, extensia asta citește.
+        var distincte = index.GetAreNullsDistinct();
+        masurate.Add($"{cheie} unic={index.IsUnique} filtru=„{filtru ?? "<niciunul>"}” "
+            + $"nullsDistinct={distincte?.ToString() ?? "<neconfigurat>"}");
+        if (!index.IsUnique)
+            lipsuri.Add($"{cheie}: nu e UNIC");
+        if (filtru != "\"GCRecord\" = 0")
+            lipsuri.Add($"{cheie}: filtru „{filtru ?? "<niciunul>"}”");
+        // `GetAreNullsDistinct` întoarce `bool?`: `null` = neconfigurat, adică
+        // default-ul Postgres („NULL <> NULL”, deci nulurile SUNT distincte).
+        // Cele trei chei cu nullable-uri cer explicit `false`; celelalte n-au
+        // voie să-l poarte. `null` NU e o trecere pentru primele — de-aia
+        // comparația e pe `!= false`, nu pe `== nnd`.
+        if (nnd ? distincte != false : distincte == false)
+            lipsuri.Add($"{cheie}: AreNullsDistinct={distincte?.ToString() ?? "<neconfigurat>"}, "
+                + $"așteptat {(nnd ? "false" : "neconfigurat/true")}");
+    }
+    Console.WriteLine($"     MĂSURAT (F23-V1/indexuri): {asteptate.Length} chei; "
+        + string.Join("; ", masurate) + ".");
+    Check($"F23-V1 ({(privat ? "privat" : "bugetar")}) cele 15 chei din F23-D3 sunt indexuri UNICE în model, "
+        + "toate filtrate literal pe „\"GCRecord\" = 0” (ștergerea amânată nu blochează recrearea unui rând "
+        + "corectat), iar cele TREI cu coloane nullable (`PoliticaTvaImplicit`, `RegulaStoc`, `RegulaContare`) "
+        + "poartă `NULLS NOT DISTINCT` — fără el două rânduri „orice clasă” / „regulă generică” ar fi trecut, "
+        + "iar motorul ar fi devenit nedeterminist TĂCUT"
+        + (lipsuri.Count > 0 ? $" — abateri: {string.Join(", ", lipsuri)}" : ""),
+        lipsuri.Count == 0);
+
+    // `Activ` are DOUĂ jumătăți: inițializatorul `= true` (rândul nou) și
+    // default-ul din schemă (rândurile EXISTENTE la adăugarea coloanei). A doua e
+    // cea care decide dacă un `database update` golește sau nu toate lookup-urile
+    // de culegere ale unei baze vii.
+    var propActiv = model.FindEntityType(typeof(TipTva))?.FindProperty(nameof(TipTva.Activ));
+    Console.WriteLine($"     MĂSURAT (F23-V1/Activ): default în model = "
+        + $"{propActiv?.GetDefaultValue()?.ToString() ?? "<niciunul>"}; nullable={propActiv?.IsNullable}.");
+    Check("F23-V1 `TipTva.Activ` e NOT NULL cu default `true` în schemă — la migrație rândurile existente "
+        + "rămân VII (un nomenclator care s-ar stinge în întregime ar goli tăcut culegerea)",
+        propActiv != null && !propActiv.IsNullable
+        && propActiv.GetDefaultValue() is bool implicitActiv && implicitActiv);
+
+    // Proveniența (F23-D4) se descoperă prin REFLECȚIE pe assembly-ul Module, nu
+    // dintr-o listă scrisă aici: o politică nouă care declară interfața intră
+    // automat în probă, iar una care o pierde pică.
+    var tipuriProvenienta = typeof(ICuProvenienta).Assembly.GetTypes()
+        .Where(t => t.IsClass && !t.IsAbstract && typeof(ICuProvenienta).IsAssignableFrom(t))
+        .OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
+    var faraColoana = tipuriProvenienta
+        .Where(t => model.FindEntityType(t)?.FindProperty(nameof(ICuProvenienta.DinSeed)) == null)
+        .Select(t => t.Name).ToList();
+    Console.WriteLine($"     MĂSURAT (F23-V1/proveniență): {tipuriProvenienta.Count} tipuri `ICuProvenienta` "
+        + $"({string.Join(", ", tipuriProvenienta.Select(t => t.Name))})"
+        + (faraColoana.Count > 0 ? $"; FĂRĂ coloană: {string.Join(", ", faraColoana)}" : "; toate au coloană")
+        + ".");
+    Check("F23-V1 `DinSeed` există ca proprietate MAPATĂ pe toate cele 17 tipuri care declară "
+        + "`ICuProvenienta` (12 politici + `PoliticaTvaImplicit` + `TipTva`/`Cont`/`ClasaProdus`/"
+        + "`TipMaterial`) — lista se descoperă prin reflecție, deci o politică nouă intră singură în probă",
+        tipuriProvenienta.Count == 17 && faraColoana.Count == 0);
+}
+
+// ---------------------------------------------------------------------------
+// F23-V2 — REZOLVAREA (`ImpliciteService.TipTva`), pe funcția REALĂ
+// ---------------------------------------------------------------------------
+// Regimul e al PARTENERULUI, cota e a PRODUSULUI (F23-D2): de-aia rezolvarea are
+// două picioare care se împacă la final, nu o listă de trepte care se
+// scurtcircuitează la prima potrivire. Scena e proprie și purjată fizic; `data` e
+// ziua de azi, ca rândul cu `ValabilDeLa` de mâine să poată fi probat în AMBELE
+// sensuri (azi nu se aplică, mâine bate „dintotdeauna”).
+void VerificaF23Rezolvare(bool privat) {
+    const string Marcaj = "E2E-F23";
+    var azi = DateOnly.FromDateTime(DateTime.Today);
+    var maine = azi.AddDays(1);
+
+    void CurataF23(IObjectSpace osC) {
+        var pj = new Purja(osC);
+        // Rândurile de politică ale scenei se recunosc după `ValabilDeLa` NEnul:
+        // toate cele șase rânduri seed-uite sunt „dintotdeauna”.
+        pj.Adauga(osC.GetObjectsQuery<PoliticaTvaImplicit>().Where(p => p.ValabilDeLa != null));
+        pj.Adauga(osC.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(Marcaj)));
+        pj.Adauga(osC.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(Marcaj)));
+        pj.Executa();
+    }
+
+    using var os = provider.CreateObjectSpace();
+    CurataF23(os);
+
+    var fcl = os.FirstOrDefault<TipDocument>(t => t.Cod == "FCL");
+    var fct = os.FirstOrDefault<TipDocument>(t => t.Cod == "FCT");
+    var btr = os.FirstOrDefault<TipDocument>(t => t.Cod == "BTR");
+    // Ancorele profilului: privat N21, bugetar CAP21 — proba nu le scrie în
+    // literă, le citește de pe tipul de document (29: motorul e agnostic la plan).
+    string Cod(Guid? id) => id == null ? null
+        : os.GetObjectsQuery<TipTva>().Where(t => t.ID == id.Value).Select(t => t.Cod).FirstOrDefault();
+    var codAncoraFcl = Cod(fcl.TipTvaImplicitId);
+    var codAncoraFct = Cod(fct.TipTvaImplicitId);
+
+    Partener Part(string sufix, string tara, bool inregistrat, TipTva implicitTva = null) {
+        var p = os.CreateObject<Partener>();
+        p.Cod = Marcaj + sufix;
+        p.Denumire = "Partener probă F23 " + sufix;
+        p.TipPersoana = TipPersoana.Juridica;
+        p.Tara = tara;
+        p.InregistratTva = inregistrat;
+        p.TipTvaImplicit = implicitTva;
+        return p;
+    }
+    var pRo = Part("-RO", "RO", true);
+    var pUe = Part("-UE", "DE", false);
+    var pXu = Part("-XU", "US", false);
+    os.CommitChanges();
+
+    if (!privat) {
+        // Bugetarul e neplătitor: zero rânduri de politică, ancora ajunge
+        // (F23-D2). Absența se PROBEAZĂ, nu se presupune.
+        var randuriB = os.GetObjectsQuery<PoliticaTvaImplicit>().Count();
+        var rUe = ImpliciteService.TipTva(os, fct.ID, pUe.ID, null, azi);
+        var rRo = ImpliciteService.TipTva(os, fct.ID, pRo.ID, null, azi);
+        var rXu = ImpliciteService.TipTva(os, fct.ID, pXu.ID, null, azi);
+        Console.WriteLine($"     MĂSURAT (F23-V2/bugetar): {randuriB} rânduri `PoliticaTvaImplicit`; "
+            + $"ancora FCT = {codAncoraFct}; FCT×UE → {Cod(rUe.TipTvaId) ?? "<niciun tip>"}/{rUe.Sursa}; "
+            + $"FCT×RO → {Cod(rRo.TipTvaId) ?? "<niciun tip>"}/{rRo.Sursa}; "
+            + $"FCT×extraUE → {Cod(rXu.TipTvaId) ?? "<niciun tip>"}/{rXu.Sursa}.");
+        Check("F23-V2 (bugetar) profilul n-are NICIO politică de implicit: totul e capitalizat, deci "
+            + $"rezolvarea cade pe ancora tipului ({codAncoraFct}) indiferent de clasa fiscală a "
+            + "partenerului — RO, UE și extra-UE dau ACEEAȘI cifră, din aceeași sursă",
+            randuriB == 0
+            && Cod(rUe.TipTvaId) == codAncoraFct && rUe.Sursa == SursaImplicit.Ancora
+            && Cod(rRo.TipTvaId) == codAncoraFct && rRo.Sursa == SursaImplicit.Ancora
+            && Cod(rXu.TipTvaId) == codAncoraFct && rXu.Sursa == SursaImplicit.Ancora);
+        CurataF23(os);
+        return;
+    }
+
+    // ---------------- Scena privată ----------------
+    var n11 = os.FirstOrDefault<TipTva>(t => t.Cod == "N11");
+    var n19 = os.FirstOrDefault<TipTva>(t => t.Cod == "N19");
+    var pN19 = Part("-N19", "RO", true, n19);
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = Marcaj + "-P";
+    produs.Denumire = "Produs probă F23 (cotă redusă)";
+    produs.UM = "BUC";
+    produs.TipTvaImplicit = n11;
+    // Rândul cu VALABILITATE: „de mâine, livrarea intracomunitară trece pe N11”.
+    // Nu e realist fiscal — e proba MECANISMULUI cu care se schimbă cotele la o
+    // dată (1 august 2025 e precedentul real).
+    var randMaine = os.CreateObject<PoliticaTvaImplicit>();
+    randMaine.TipDocument = fcl;
+    randMaine.ClasaFiscala = ClasaFiscalaPartener.Ue;
+    randMaine.ValabilDeLa = maine;
+    randMaine.TipTva = n11;
+    os.CommitChanges();
+
+    var rezRo = ImpliciteService.TipTva(os, fcl.ID, pRo.ID, null, azi);
+    var rezUe = ImpliciteService.TipTva(os, fcl.ID, pUe.ID, null, azi);
+    var rezXu = ImpliciteService.TipTva(os, fcl.ID, pXu.ID, null, azi);
+    var rezFara = ImpliciteService.TipTva(os, fcl.ID, null, null, azi);
+    var rezInexistent = ImpliciteService.TipTva(os, fcl.ID, Guid.NewGuid(), null, azi);
+    var rezFctUe = ImpliciteService.TipTva(os, fct.ID, pUe.ID, null, azi);
+    var rezRoProdus = ImpliciteService.TipTva(os, fcl.ID, pRo.ID, produs.ID, azi);
+    var rezUeProdus = ImpliciteService.TipTva(os, fcl.ID, pUe.ID, produs.ID, azi);
+    var rezBtr = ImpliciteService.TipTva(os, btr.ID, pRo.ID, null, azi);
+    var rezInactiv = ImpliciteService.TipTva(os, fcl.ID, pN19.ID, null, azi);
+    var rezMaine = ImpliciteService.TipTva(os, fcl.ID, pUe.ID, null, maine);
+
+    string Descrie(ImpliciteService.RezultatImplicit r) =>
+        $"{Cod(r.TipTvaId) ?? "<niciun tip>"}/{r.Sursa}";
+    Console.WriteLine($"     MĂSURAT (F23-V2/rezolvare, ancora FCL = {codAncoraFcl}): "
+        + $"FCL×RO → {Descrie(rezRo)}; FCL×UE → {Descrie(rezUe)}; FCL×extraUE → {Descrie(rezXu)}; "
+        + $"FCL×fără partener → {Descrie(rezFara)}; FCL×partener inexistent → {Descrie(rezInexistent)}; "
+        + $"FCT×UE → {Descrie(rezFctUe)}; FCL×RO+produs N11 → {Descrie(rezRoProdus)}; "
+        + $"FCL×UE+produs N11 → {Descrie(rezUeProdus)}; BTR×RO → {Descrie(rezBtr)}; "
+        + $"FCL×partener cu implicit N19 (inactiv) → {Descrie(rezInactiv)}; "
+        + $"FCL×UE la {maine:dd.MM.yyyy} → {Descrie(rezMaine)}.");
+
+    Check("F23-V2 treptele de REGIM, în ordinea din F23-D2: partenerul înregistrat RO n-are rând de politică "
+        + $"⇒ cade pe ancora tipului ({codAncoraFcl}); UE și extra-UE potrivesc rândurile seed-uite ⇒ SDD din "
+        + "POLITICĂ (livrarea intracomunitară e scutită, art. 294); pe FCT aceeași clasă UE dă TI21 — sensul "
+        + "e al tipului de document, nu al partenerului",
+        Cod(rezRo.TipTvaId) == codAncoraFcl && rezRo.Sursa == SursaImplicit.Ancora
+        && Cod(rezUe.TipTvaId) == "SDD" && rezUe.Sursa == SursaImplicit.Politica
+        && Cod(rezXu.TipTvaId) == "SDD" && rezXu.Sursa == SursaImplicit.Politica
+        && Cod(rezFctUe.TipTvaId) == "TI21" && rezFctUe.Sursa == SursaImplicit.Politica);
+
+    Check("F23-V2 FĂRĂ ORACOL DE EXISTENȚĂ (80a): partenerul LIPSĂ de pe document și partenerul INEXISTENT "
+        + "(un Guid aleator) dau același rezultat ȘI EXACT ACELAȘI motiv, șir cu șir — altfel un utilizator "
+        + "fără drept pe nomenclator ar afla din indiciul de sub câmp că partenerul cerut există",
+        rezFara.Motiv == rezInexistent.Motiv
+        && Cod(rezFara.TipTvaId) == codAncoraFcl && rezFara.Sursa == SursaImplicit.Ancora
+        && Cod(rezInexistent.TipTvaId) == codAncoraFcl && rezInexistent.Sursa == SursaImplicit.Ancora
+        && rezFara.Motiv.Contains("Fără partener vizibil"));
+
+    Check("F23-V2 ÎMPĂCAREA (F23-D2.3): produsul își impune COTA doar când regimul coincide — pe un partener "
+        + "RO înregistrat (regim Normal, ca N11) câștigă N11 din PRODUS; pe un partener UE (SDD, regim "
+        + "Scutit) câștigă SDD din POLITICĂ, fiindcă o livrare intracomunitară e scutită indiferent ce produs "
+        + "conține",
+        Cod(rezRoProdus.TipTvaId) == "N11" && rezRoProdus.Sursa == SursaImplicit.Produs
+        && Cod(rezUeProdus.TipTvaId) == "SDD" && rezUeProdus.Sursa == SursaImplicit.Politica);
+
+    Check("F23-V2 un tip de document fără ancoră și fără politică (BTR) nu inventează un implicit: `Niciuna`, "
+        + "cu motiv — linia rămâne fără TVA, ceea ce e chiar adevărul (transferul n-are fapt de TVA)",
+        rezBtr.TipTvaId == null && rezBtr.Sursa == SursaImplicit.Niciuna
+        && !string.IsNullOrWhiteSpace(rezBtr.Motiv));
+
+    Check("F23-V2 tipul INACTIV nu se alege niciodată (F23-D2.6): partenerul are implicit N19 (cotă istorică, "
+        + "stinsă de seed), deci se sare TOATĂ treapta partenerului — rezultatul cade pe ancoră "
+        + $"({codAncoraFcl}), iar motivul SPUNE că s-a sărit un tip inactiv",
+        Cod(rezInactiv.TipTvaId) == codAncoraFcl && rezInactiv.Sursa == SursaImplicit.Ancora
+        && rezInactiv.Motiv.Contains("INACTIV") && rezInactiv.Motiv.Contains("N19"));
+
+    Check("F23-V2 `ValabilDeLa`: rândul cu dată NU se aplică înaintea ei (azi rămâne SDD, „dintotdeauna”), iar "
+        + "de la data lui bate „dintotdeauna” la egalitate de clasă (mâine devine N11) — mecanismul cu care o "
+        + "schimbare de cotă intră fără să rescrie facturile vechi",
+        Cod(rezUe.TipTvaId) == "SDD"
+        && Cod(rezMaine.TipTvaId) == "N11" && rezMaine.Sursa == SursaImplicit.Politica);
+
+    // `PartenerulDocumentului` — fără `is`/`switch` pe frunze (invariantul II).
+    // Documentele NU se comit: proba e despre CITIREA laturilor, nu despre
+    // persistență, iar FK-urile se pun direct ca să nu depindă de `SaveChanges`.
+    Guid? partenerFcl, partenerBtr;
+    using (var osDoc = provider.CreateObjectSpace()) {
+        var gestiuni = osDoc.GetObjectsQuery<Gestiune>().Select(g => g.ID).Take(2).ToList();
+        var unitate = osDoc.GetObjectsQuery<UnitateInterna>().Select(u => u.ID).FirstOrDefault();
+        var docFcl = osDoc.CreateObject<FacturaIesire>();
+        docFcl.PredatorId = unitate;
+        docFcl.PrimitorId = pRo.ID;
+        partenerFcl = ImpliciteService.PartenerulDocumentului(osDoc, docFcl);
+        var docBtr = osDoc.CreateObject<NotaTransfer>();
+        docBtr.PredatorId = gestiuni.Count > 0 ? gestiuni[0] : Guid.NewGuid();
+        docBtr.PrimitorId = gestiuni.Count > 1 ? gestiuni[1] : Guid.NewGuid();
+        partenerBtr = ImpliciteService.PartenerulDocumentului(osDoc, docBtr);
+        osDoc.Rollback();
+    }
+    Console.WriteLine($"     MĂSURAT (F23-V2/laturi): FCL (primitor = partener) → "
+        + $"{(partenerFcl == pRo.ID ? "primitorul" : partenerFcl?.ToString() ?? "null")}; "
+        + $"BTR (două gestiuni) → {partenerBtr?.ToString() ?? "null"}.");
+    Check("F23-V2 `PartenerulDocumentului` pune întrebarea NOMENCLATORULUI („e `Partener` cel de pe latura "
+        + "asta?”), nu documentului: pe o factură de ieșire întoarce primitorul, pe un transfer între două "
+        + "gestiuni întoarce null — zero `is`/`switch` pe frunze (invariantul II)",
+        partenerFcl == pRo.ID && partenerBtr == null);
+
+    CurataF23(os);
+    Check("F23-V2 curățenie: scena purjată FIZIC (70e) — partenerii, produsul și rândul de politică cu "
+        + "`ValabilDeLa` dispar, iar cele șase rânduri seed-uite rămân neatinse",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<PoliticaTvaImplicit>().Any(p => p.ValabilDeLa != null)
+        && os.GetObjectsQuery<PoliticaTvaImplicit>().Count() == 6);
+}
+
+// ---------------------------------------------------------------------------
+// F23-V3 — SEED-ul implicitelor, pe funcția REALĂ
+// ---------------------------------------------------------------------------
+// Ca la D17-V1: numărul nu e o constantă scrisă în probă, e cardinalitatea
+// tabelului de seed × „fiecare rând al lui există exact o dată în bază”. Un rând
+// adăugat în tabel fără rând în bază (sau invers) pică aici.
+void VerificaF23Seed(bool privat) {
+    if (!privat) {
+        using var osB = provider.CreateObjectSpace();
+        var randuriB = osB.GetObjectsQuery<PoliticaTvaImplicit>().Count();
+        var coduriInactiveB = osB.GetObjectsQuery<TipTva>().Where(t => !t.Activ).Select(t => t.Cod)
+            .ToList().OrderBy(c => c, StringComparer.Ordinal).ToList();
+        var activeB = osB.GetObjectsQuery<TipTva>().Count(t => t.Activ);
+        Console.WriteLine($"     MĂSURAT (F23-V3/bugetar): {randuriB} implicite de TVA; {activeB} tipuri "
+            + $"active, {coduriInactiveB.Count} inactive ({string.Join(", ", coduriInactiveB)}).");
+        Check("F23-V3 (bugetar) profilul n-are rânduri de implicit (totul e capitalizat, ancora ajunge — "
+            + "F23-D2), iar din cele patru cote capitalizate DOAR `CAP19` (istorică) e stinsă din culegere; "
+            + "restul rămân active",
+            randuriB == 0 && activeB == 3
+            && coduriInactiveB.SequenceEqual(new[] { "CAP19" }));
+        return;
+    }
+
+    var asteptate = ContaSeeder.ImpliciteTvaPrivat;
+    List<(string Tip, ClasaFiscalaPartener? Clasa, DateOnly? DeLa, string Tva, bool DinSeed)> randuriBd;
+    using (var os = provider.CreateObjectSpace())
+        randuriBd = os.GetObjectsQuery<PoliticaTvaImplicit>()
+            .Select(p => new {
+                Tip = p.TipDocument.Cod, p.ClasaFiscala, p.ValabilDeLa, Tva = p.TipTva.Cod, p.DinSeed })
+            .ToList()
+            .Select(p => (p.Tip, p.ClasaFiscala, p.ValabilDeLa, p.Tva, p.DinSeed)).ToList();
+    Console.WriteLine($"     MĂSURAT (F23-V3/privat): {randuriBd.Count} rânduri (tabel: {asteptate.Count}); "
+        + string.Join(", ", randuriBd
+            .OrderBy(r => r.Tip, StringComparer.Ordinal).ThenBy(r => (int?)r.Clasa)
+            .Select(r => $"{r.Tip}×{r.Clasa?.ToString() ?? "orice"}"
+                + $"{(r.DeLa == null ? "" : "@" + r.DeLa.Value.ToString("dd.MM.yyyy"))}→{r.Tva}"
+                + $"{(r.DinSeed ? "" : " (MANUAL)")}")) + ".");
+    Check("F23-V3 (privat) seed-ul scrie EXACT tabelul F23-D2 — 6 rânduri, câte unul pentru fiecare pereche "
+        + "(tip × clasă fiscală) SIGURĂ în lege: livrarea scutită pe FCL/RDC × UE/extra-UE, taxarea inversă "
+        + "intracomunitară pe FCT/RLF × UE; toate „dintotdeauna” (niciunul nu depinde de cotă) și toate cu "
+        + "timbrul seed-ului. Achiziția extra-UE și cea de la neînregistratul RO rămân DECLARATE ca lipsă, "
+        + "nu inventate",
+        randuriBd.Count == asteptate.Count && randuriBd.Count == 6
+        && randuriBd.Select(r => (r.Tip, r.Clasa, r.DeLa)).Distinct().Count() == 6
+        && asteptate.All(a => randuriBd.Count(r => r.Tip == a.TipDocument && r.Clasa == a.Clasa
+            && r.DeLa == null && r.Tva == a.TipTva) == 1)
+        && randuriBd.All(r => r.DinSeed));
+
+    List<string> codInactive;
+    int codActive;
+    using (var os = provider.CreateObjectSpace()) {
+        codInactive = os.GetObjectsQuery<TipTva>().Where(t => !t.Activ).Select(t => t.Cod)
+            .ToList().OrderBy(c => c, StringComparer.Ordinal).ToList();
+        codActive = os.GetObjectsQuery<TipTva>().Count(t => t.Activ);
+    }
+    Console.WriteLine($"     MĂSURAT (F23-V3/activi): {codActive} tipuri active, {codInactive.Count} inactive "
+        + $"({string.Join(", ", codInactive)}).");
+    Check("F23-V3 (privat) cotele ISTORICE ies din culegere: `N19` și `TI19` (până la 31.07.2025) sunt stinse "
+        + "de seed, restul rămân active. Un tip inactiv NU invalidează istoria — rămâne pe documentele lui —, "
+        + "doar nu se mai propune",
+        codInactive.SequenceEqual(new[] { "N19", "TI19" }) && codActive >= 5);
+
+    // Idempotența, pe FUNCȚIA REALĂ (nu pe o copie a tabelului).
+    using (var osSeed = provider.CreateObjectSpace()) {
+        ContaSeeder.SeedPoliticiTvaImplicitPrivat(osSeed);
+        osSeed.CommitChanges();
+    }
+    int dupaReseed;
+    using (var os = provider.CreateObjectSpace())
+        dupaReseed = os.GetObjectsQuery<PoliticaTvaImplicit>().Count();
+    Console.WriteLine($"     MĂSURAT (F23-V3/re-seed): {randuriBd.Count} → {dupaReseed} rânduri după a doua "
+        + "rulare a seed-ului real.");
+    Check("F23-V3 (privat) `SeedPoliticiTvaImplicit` e IDEMPOTENT pe cheia indexului (tip × clasă × "
+        + "valabilitate): `--forceUpdate` pe o bază deja seed-uită nu adaugă un al doilea rând, care ar fi "
+        + "făcut rezolvarea nedeterministă",
+        dupaReseed == 6);
+
+    // „Șters de utilizator” — SINGURUL loc din grup unde ștergerea e LOGICĂ,
+    // fiindcă ea e chiar obiectul probei (70e): politica e date (decizia 4), iar
+    // un rând pe care clientul l-a scos nu se recreează pe la spatele lui.
+    Guid idSters;
+    int dupaStergere;
+    using (var os = provider.CreateObjectSpace()) {
+        var idFcl = os.FirstOrDefault<TipDocument>(t => t.Cod == "FCL").ID;
+        var rand = os.GetObjectsQuery<PoliticaTvaImplicit>().ToList()
+            .First(p => p.TipDocumentId == idFcl && p.ClasaFiscala == ClasaFiscalaPartener.Ue
+                && p.ValabilDeLa == null);
+        idSters = rand.ID;
+        os.Delete(rand);
+        os.CommitChanges();
+    }
+    using (var osSeed = provider.CreateObjectSpace()) {
+        ContaSeeder.SeedPoliticiTvaImplicitPrivat(osSeed);
+        osSeed.CommitChanges();
+    }
+    using (var os = provider.CreateObjectSpace())
+        dupaStergere = os.GetObjectsQuery<PoliticaTvaImplicit>().Count();
+    Console.WriteLine($"     MĂSURAT (F23-V3/șters de utilizator): FCL×Ue șters logic, apoi seed re-rulat ⇒ "
+        + $"{dupaStergere} rânduri vii (așteptat 5, adică NU s-a recreat).");
+    Check("F23-V3 (privat) rândul ȘTERS de utilizator NU se recreează la re-seed (aceeași disciplină ca "
+        + "mapările D300/D394): politica e DATE, iar ștergerea e o decizie a clientului — seed-ul o respectă "
+        + "și o SPUNE în consolă, nu o anulează tăcut",
+        dupaStergere == 5);
+
+    // Restaurarea: purjă FIZICĂ a rândului marcat șters (o ștergere logică lăsată
+    // în urmă ar face rularea următoare să spună „șters de utilizator” despre un
+    // rând inventat de probă), apoi seed-ul îl recreează cu timbru.
+    using (var os = provider.CreateObjectSpace())
+        new Purja(os).Adauga(os.GetObjectsQuery<PoliticaTvaImplicit>().Where(p => p.ID == idSters))
+            .Executa();
+    using (var osSeed = provider.CreateObjectSpace()) {
+        ContaSeeder.SeedPoliticiTvaImplicitPrivat(osSeed);
+        osSeed.CommitChanges();
+    }
+    int dupaRestaurare, cuTimbru;
+    using (var os = provider.CreateObjectSpace()) {
+        dupaRestaurare = os.GetObjectsQuery<PoliticaTvaImplicit>().Count();
+        cuTimbru = os.GetObjectsQuery<PoliticaTvaImplicit>().Count(p => p.DinSeed);
+    }
+    Console.WriteLine($"     MĂSURAT (F23-V3/restaurare): {dupaRestaurare} rânduri, {cuTimbru} cu timbru.");
+    Check("F23-V3 (privat) restaurare: după purja fizică a rândului șters, seed-ul îl recreează — 6 rânduri, "
+        + "toate cu `DinSeed`; baza rămâne exact cum a găsit-o proba",
+        dupaRestaurare == 6 && cuTimbru == 6);
+}
+
+// ---------------------------------------------------------------------------
+// F23-V4 — GARDIANUL: tabelul F23-D5, rând cu rând, pe ușa COMUNĂ
+// ---------------------------------------------------------------------------
+// De ce aici și nu ca reguli XAF: de la felia 23 politicile se editează prin
+// OData, iar validarea XAF nu rulează pe API (55b). `GardianEditare.Verifica` e
+// `public static` și se cheamă direct pe un ObjectSpace fără securitate — exact
+// „calea standalone” din antetul gardianului.
+//
+// Fiecare probă rulează pe ObjectSpace-ul EI, cu `Rollback` la final: nimic nu se
+// comite, deci nu e nevoie de curățenie, iar proba NEGATIVĂ („rândul valid
+// trece”) poate cere mesaj null fără să înghită erorile altei probe.
+void VerificaF23Gardian(bool privat) {
+    var eticheta = privat ? "privat" : "bugetar";
+    var sarite = new List<string>();
+
+    string RefuzF23(Action<IObjectSpace> pregateste) {
+        using var osG = provider.CreateObjectSpace();
+        try {
+            pregateste(osG);
+            GardianEditare.Verifica(osG);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+        finally {
+            osG.Rollback();
+        }
+    }
+
+    // ---- Proveniența (F23-D4), regula INTERFEȚEI ----
+    var provNou = RefuzF23(os => {
+        var p = os.CreateObject<PoliticaScadenta>();
+        p.TipDocument = os.GetObjectsQuery<TipDocument>().First();
+        p.ZileDefault = 30;
+        p.DinSeed = true;
+    });
+    bool timbruStins = false, aAruncat = false, areScadenta = false;
+    var zileInainte = 0;
+    using (var osProv = provider.CreateObjectSpace()) {
+        var rand = osProv.GetObjectsQuery<PoliticaScadenta>().ToList().FirstOrDefault(p => p.DinSeed);
+        if (rand == null)
+            sarite.Add("proveniența pe rând EXISTENT (profilul n-are nicio `PoliticaScadenta` seed-uită)");
+        else {
+            areScadenta = true;
+            zileInainte = rand.ZileDefault;
+            rand.ZileDefault = zileInainte + 1;
+            try { GardianEditare.Verifica(osProv); } catch (OperareException) { aAruncat = true; }
+            timbruStins = !rand.DinSeed;
+        }
+        osProv.Rollback();
+    }
+    Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/proveniență): rând NOU cu `DinSeed = true` → "
+        + $"„{provNou ?? "<NU A ARUNCAT>"}”; rând seed-uit editat ({zileInainte} → {zileInainte + 1} zile) → "
+        + $"{(aAruncat ? "a ARUNCAT" : "acceptat")}, `DinSeed` devine {(timbruStins ? "false" : "TOT true")}.");
+    Check($"F23-V4 ({eticheta}) proveniența e un câmp SERVER-OWNED INVERSAT: pe un rând NOU „Din seed” cules "
+        + "de client se REFUZĂ (și-ar fabrica proveniența, arătând în raportul de profil ca livrat), iar pe "
+        + "un rând EXISTENT editarea nu se refuză — se TIMBREAZĂ, gardianul stingând flag-ul. Regula e a "
+        + "INTERFEȚEI `ICuProvenienta`, chemată înaintea switch-ului pe tip",
+        provNou != null && provNou.Contains("proveniența") && provNou.Contains("Din seed")
+        && (!areScadenta || (!aAruncat && timbruStins)));
+
+    // ---- `TipDocument` = ancora claselor (decizia 20) ----
+    var tipDocNou = RefuzF23(os => {
+        var t = os.CreateObject<TipDocument>();
+        t.Cod = "ZZZ"; t.Denumire = "Tip inventat"; t.ClrType = "Nimic";
+    });
+    var tipDocCod = RefuzF23(os => {
+        var t = os.GetObjectsQuery<TipDocument>().ToList().First(x => x.Cod == "FCT");
+        t.Cod = "FCT2";
+    });
+    var tipDocDenumire = RefuzF23(os => {
+        var t = os.GetObjectsQuery<TipDocument>().ToList().First(x => x.Cod == "FCT");
+        t.Denumire = (t.Denumire ?? "") + " (editat)";
+    });
+    Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/TipDocument): rând nou → "
+        + $"„{tipDocNou ?? "<NU A ARUNCAT>"}”; `Cod` schimbat → „{tipDocCod ?? "<NU A ARUNCAT>"}”; "
+        + $"`Denumire` schimbată → „{tipDocDenumire ?? "acceptat"}”.");
+    Check($"F23-V4 ({eticheta}) `TipDocument` rămâne ANCORA: un rând NOU se refuză (n-ar avea clasă în "
+        + "spate), `Cod` schimbat pe un rând existent se refuză (politicile îl referă prin el, iar schimbarea "
+        + "l-ar rupe tăcut) — dar `Denumire` rămâne editabilă, fiindcă ea chiar e politică",
+        tipDocNou != null && tipDocNou.Contains("nu se creează")
+        && tipDocCod != null && tipDocCod.Contains("identitatea")
+        && tipDocDenumire == null);
+
+    // ---- `TipTva`: cota e procent; dezactivarea unui implicit e refuzată ----
+    var tvaCota = RefuzF23(os => os.GetObjectsQuery<TipTva>().ToList().First().Cota = 150m);
+    var tvaCotaBuna = RefuzF23(os => os.GetObjectsQuery<TipTva>().ToList().First().Cota = 12m);
+    string codAncora = null, tvaDezactivare = null, tvaDezactivareLibera = null;
+    using (var osT = provider.CreateObjectSpace()) {
+        var idAncora = osT.GetObjectsQuery<TipDocument>().Where(t => t.Cod == "FCT")
+            .Select(t => t.TipTvaImplicitId).FirstOrDefault();
+        codAncora = osT.GetObjectsQuery<TipTva>().Where(t => t.ID == idAncora).Select(t => t.Cod)
+            .FirstOrDefault();
+        // Un tip ACTIV care nu e implicit NICĂIERI: dezactivarea lui e legitimă,
+        // deci e proba negativă. Setul de referințe e cel din gardian.
+        var referite = new HashSet<Guid>(
+            osT.GetObjectsQuery<TipDocument>().Where(t => t.TipTvaImplicitId != null)
+                .Select(t => t.TipTvaImplicitId.Value).ToList()
+            .Concat(osT.GetObjectsQuery<PoliticaTvaImplicit>().Select(p => p.TipTvaId).ToList())
+            .Concat(osT.GetObjectsQuery<Partener>().Where(p => p.TipTvaImplicitId != null)
+                .Select(p => p.TipTvaImplicitId.Value).ToList())
+            .Concat(osT.GetObjectsQuery<Produs>().Where(p => p.TipTvaImplicitId != null)
+                .Select(p => p.TipTvaImplicitId.Value).ToList()));
+        var liber = osT.GetObjectsQuery<TipTva>().Where(t => t.Activ).Select(t => t.ID).ToList()
+            .FirstOrDefault(id => !referite.Contains(id));
+        if (idAncora is Guid ancora && ancora != Guid.Empty)
+            tvaDezactivare = RefuzF23(os => os.GetObjectByKey<TipTva>(ancora).Activ = false);
+        else
+            sarite.Add("dezactivarea unui tip ANCORAT (FCT n-are `TipTvaImplicit`)");
+        if (liber != Guid.Empty)
+            tvaDezactivareLibera = RefuzF23(os => os.GetObjectByKey<TipTva>(liber).Activ = false);
+        else
+            sarite.Add("dezactivarea unui tip NEREFERIT (toate tipurile active sunt implicite undeva)");
+    }
+    Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/TipTva): `Cota = 150` → „{tvaCota ?? "<NU A ARUNCAT>"}”; "
+        + $"`Cota = 12` → „{tvaCotaBuna ?? "acceptat"}”; dezactivarea ancorei ({codAncora}) → "
+        + $"„{tvaDezactivare ?? "<NESONDAT>"}”; dezactivarea unui tip nereferit → "
+        + $"„{tvaDezactivareLibera ?? "acceptat"}”.");
+    Check($"F23-V4 ({eticheta}) `TipTva`: cota e un procent (150 se refuză, 12 trece), iar dezactivarea unui "
+        + "tip REFERIT ca implicit se refuză CU LISTA referințelor — un implicit care țintește un inactiv ar "
+        + "fi sărit tăcut la culegere (62f: un gard care tace devine capcană). Un tip nereferit rămâne liber "
+        + "să fie stins",
+        tvaCota != null && tvaCota.Contains("150") && tvaCotaBuna == null
+        && (tvaDezactivare == null
+            || (tvaDezactivare.Contains("ancora") && tvaDezactivare.Contains("FCT")))
+        && tvaDezactivareLibera == null);
+
+    // ---- `PoliticaTvaImplicit`: ținta activă + MESAJUL unicității ----
+    string implInactiv = null, implBun = null, implDublu = null;
+    using (var osI = provider.CreateObjectSpace()) {
+        var idInactiv = osI.GetObjectsQuery<TipTva>().Where(t => !t.Activ).Select(t => t.ID)
+            .FirstOrDefault();
+        var idActiv = osI.GetObjectsQuery<TipTva>().Where(t => t.Activ).Select(t => t.ID).FirstOrDefault();
+        var idBtr = osI.GetObjectsQuery<TipDocument>().Where(t => t.Cod == "BTR").Select(t => t.ID)
+            .FirstOrDefault();
+        if (idInactiv != Guid.Empty)
+            implInactiv = RefuzF23(os => {
+                var p = os.CreateObject<PoliticaTvaImplicit>();
+                p.TipDocument = os.GetObjectByKey<TipDocument>(idBtr);
+                p.ClasaFiscala = ClasaFiscalaPartener.InregistratRo;
+                p.TipTva = os.GetObjectByKey<TipTva>(idInactiv);
+            });
+        else
+            sarite.Add("implicit spre tip INACTIV (profilul n-are niciun `TipTva` stins)");
+        implBun = RefuzF23(os => {
+            var p = os.CreateObject<PoliticaTvaImplicit>();
+            p.TipDocument = os.GetObjectByKey<TipDocument>(idBtr);
+            p.ClasaFiscala = ClasaFiscalaPartener.InregistratRo;
+            p.TipTva = os.GetObjectByKey<TipTva>(idActiv);
+        });
+    }
+    if (privat)
+        implDublu = RefuzF23(os => {
+            var p = os.CreateObject<PoliticaTvaImplicit>();
+            p.TipDocument = os.GetObjectsQuery<TipDocument>().ToList().First(t => t.Cod == "FCL");
+            p.ClasaFiscala = ClasaFiscalaPartener.Ue;
+            p.TipTva = os.GetObjectsQuery<TipTva>().ToList().First(t => t.Cod == "SDD");
+        });
+    else
+        sarite.Add("al doilea rând pe aceeași cheie (bugetarul n-are rânduri de implicit)");
+    Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/PoliticaTvaImplicit): spre tip inactiv → "
+        + $"„{implInactiv ?? "<NESONDAT>"}”; cheie liberă spre tip activ → „{implBun ?? "acceptat"}”; al "
+        + $"doilea rând pe FCL×Ue → „{implDublu ?? "<NESONDAT>"}”.");
+    Check($"F23-V4 ({eticheta}) `PoliticaTvaImplicit`: un implicit nu poate ținti un tip INACTIV (gardul "
+        + "geamăn al celui de mai sus, pe cealaltă direcție — altfel ar fi ocolibil în doi pași), iar un al "
+        + "doilea rând pe aceeași cheie primește MESAJUL gardianului înaintea lui `23505` brut (indexul "
+        + "rămâne plasa, 60a); o cheie liberă spre un tip activ trece",
+        (implInactiv == null || implInactiv.Contains("inactiv"))
+        && implBun == null
+        && (implDublu == null || (implDublu.Contains("deja") && implDublu.Contains("FCL"))));
+
+    // ---- `PoliticaTva` / `RegulaContare` / `RegulaStoc` ----
+    Guid idCont, idTipDoc, idTipMaterial;
+    using (var osR = provider.CreateObjectSpace()) {
+        idCont = osR.GetObjectsQuery<Cont>().Select(c => c.ID).First();
+        idTipDoc = osR.GetObjectsQuery<TipDocument>().Select(t => t.ID).First();
+        idTipMaterial = osR.GetObjectsQuery<TipMaterial>().Select(t => t.ID).First();
+    }
+    var ptvaExplicit = RefuzF23(os => {
+        var p = os.CreateObject<PoliticaTva>();
+        p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        p.SursaContrapartida = SursaCont.Explicit;
+    });
+    var ptvaBun = RefuzF23(os => {
+        var p = os.CreateObject<PoliticaTva>();
+        p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        p.SursaContrapartida = SursaCont.Explicit;
+        p.ContrapartidaFallback = os.GetObjectByKey<Cont>(idCont);
+    });
+    RegulaContare RcNoua(IObjectSpace os) {
+        var r = os.CreateObject<RegulaContare>();
+        r.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        // `SursaCont.Explicit` e valoarea 0, deci default-ul unui rând nou: probele
+        // NEGATIVE trebuie s-o schimbe, altfel ar măsura chiar refuzul de mai jos.
+        r.SursaContDebit = SursaCont.TipMaterial;
+        r.SursaContCredit = SursaCont.TipMaterial;
+        return r;
+    }
+    var rcAmbele = RefuzF23(os => {
+        var r = RcNoua(os);
+        r.TipMaterial = os.GetObjectByKey<TipMaterial>(idTipMaterial);
+        r.NaturaFiltru = NaturaClasa.Serviciu;
+    });
+    var rcSemn = RefuzF23(os => RcNoua(os).SemnFiltru = 2);
+    var rcExplicit = RefuzF23(os => RcNoua(os).SursaContDebit = SursaCont.Explicit);
+    var rcBuna = RefuzF23(os => RcNoua(os).SemnFiltru = -1);
+    var rsSemn = RefuzF23(os => {
+        var r = os.CreateObject<RegulaStoc>();
+        r.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        r.Semn = 0;
+    });
+    var rsBuna = RefuzF23(os => {
+        var r = os.CreateObject<RegulaStoc>();
+        r.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        r.Semn = 1;
+    });
+    Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/reguli): `PoliticaTva` Explicit fără cont → "
+        + $"„{ptvaExplicit ?? "<NU A ARUNCAT>"}”, cu cont → „{ptvaBun ?? "acceptat"}”; `RegulaContare` "
+        + $"tip+natură → „{rcAmbele ?? "<NU A ARUNCAT>"}”, SemnFiltru=2 → „{rcSemn ?? "<NU A ARUNCAT>"}”, "
+        + $"debit Explicit fără cont → „{rcExplicit ?? "<NU A ARUNCAT>"}”, regulă validă → "
+        + $"„{rcBuna ?? "acceptat"}”; `RegulaStoc` Semn=0 → „{rsSemn ?? "<NU A ARUNCAT>"}”, Semn=+1 → "
+        + $"„{rsBuna ?? "acceptat"}”.");
+    Check($"F23-V4 ({eticheta}) invarianții de POTRIVIRE: sursa „Explicit” fără cont (pe `PoliticaTva` și pe "
+        + "latura debitoare a `RegulaContare`) e o contrapartidă care nu se rezolvă niciodată; tipul de "
+        + "material ȘI filtrul de natură pe aceeași regulă sunt trepte ALTERNATIVE (26c), nu „mai specific”; "
+        + "`SemnFiltru = 2` e o regulă care nu s-ar potrivi NICIODATĂ, tăcut; `RegulaStoc.Semn` e direcția, "
+        + "deci −1 sau +1, fără „orice semn” — rândurile valide trec",
+        ptvaExplicit != null && ptvaExplicit.Contains("Explicit") && ptvaBun == null
+        && rcAmbele != null && rcAmbele.Contains("ALTERNATIVE")
+        && rcSemn != null && rcSemn.Contains("2")
+        && rcExplicit != null && rcExplicit.Contains("debitor")
+        && rcBuna == null
+        && rsSemn != null && rsSemn.Contains("0") && rsBuna == null);
+
+    // ---- `PoliticaNumerotare` (cu DEVIEREA declarată pe `Format`) / `PoliticaScadenta` ----
+    PoliticaNumerotare NumNoua(IObjectSpace os) {
+        var p = os.CreateObject<PoliticaNumerotare>();
+        p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        p.Serie = "F23";
+        p.UrmatorulNumar = 1;
+        return p;
+    }
+    var numSerie = RefuzF23(os => NumNoua(os).Serie = "   ");
+    var numContor = RefuzF23(os => NumNoua(os).UrmatorulNumar = 0);
+    var numFormat = RefuzF23(os => NumNoua(os).Format = "{2}-{0}");
+    var numFaraFormat = RefuzF23(os => NumNoua(os).Format = null);
+    var scadNegativa = RefuzF23(os => {
+        var p = os.CreateObject<PoliticaScadenta>();
+        p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        p.ZileDefault = -1;
+    });
+    var scadBuna = RefuzF23(os => {
+        var p = os.CreateObject<PoliticaScadenta>();
+        p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        p.ZileDefault = 30;
+    });
+    Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/numerotare+scadență): `Serie` goală → "
+        + $"„{numSerie ?? "<NU A ARUNCAT>"}”; `UrmatorulNumar = 0` → „{numContor ?? "<NU A ARUNCAT>"}”; "
+        + $"`Format` = „{{2}}-{{0}}” → „{numFormat ?? "<NU A ARUNCAT>"}”; `Format` gol → "
+        + $"„{numFaraFormat ?? "acceptat"}”; `ZileDefault = -1` → „{scadNegativa ?? "<NU A ARUNCAT>"}”; "
+        + $"`ZileDefault = 30` → „{scadBuna ?? "acceptat"}”.");
+    Check($"F23-V4 ({eticheta}) `PoliticaNumerotare` — cu DEVIEREA declarată de la F23-D5: `Serie` nevidă "
+        + "(numărul se compune din ea), contor ≥ 1, și un `Format` CULES compunabil („{2}” aruncă la operare, "
+        + "adică un document care nu se mai poate opera); dar `Format` GOL TRECE — e opțional în motor și "
+        + "seed-ul nu-l scrie niciodată, deci regula literală ar fi refuzat rândurile propriului seed. "
+        + "`PoliticaScadenta`: zile ≥ 0",
+        numSerie != null && numSerie.Contains("serie")
+        && numContor != null && numContor.Contains("de la 1")
+        && numFormat != null && numFormat.Contains("compune")
+        && numFaraFormat == null
+        && scadNegativa != null && scadNegativa.Contains("-1") && scadBuna == null);
+
+    // ---- `PoliticaInchidereTva`: cele patru conturi sunt un SET ----
+    List<Guid> conturi;
+    using (var osC = provider.CreateObjectSpace())
+        conturi = osC.GetObjectsQuery<Cont>().Select(c => c.ID).Take(4).ToList();
+    string inchTrei = null, inchPatru = null, inchZero = null;
+    if (conturi.Count == 4) {
+        void Inchidere(IObjectSpace os, int cate) {
+            var p = os.CreateObject<PoliticaInchidereTva>();
+            p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+            if (cate > 0) p.ContDeductibila = os.GetObjectByKey<Cont>(conturi[0]);
+            if (cate > 1) p.ContColectata = os.GetObjectByKey<Cont>(conturi[1]);
+            if (cate > 2) p.ContDePlata = os.GetObjectByKey<Cont>(conturi[2]);
+            if (cate > 3) p.ContDeRecuperat = os.GetObjectByKey<Cont>(conturi[3]);
+        }
+        inchTrei = RefuzF23(os => Inchidere(os, 3));
+        inchPatru = RefuzF23(os => Inchidere(os, 4));
+        inchZero = RefuzF23(os => Inchidere(os, 0));
+    }
+    else
+        sarite.Add("politica de închidere TVA (baza n-are patru conturi)");
+    Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/închidere TVA): 3 din 4 conturi → "
+        + $"„{inchTrei ?? "<NESONDAT>"}”; 4 din 4 → „{inchPatru ?? "acceptat"}”; niciunul → "
+        + $"„{inchZero ?? "acceptat"}”.");
+    Check($"F23-V4 ({eticheta}) `PoliticaInchidereTva`: cele patru conturi sunt un SET — serviciul cere setul "
+        + "COMPLET ca să genereze ceva (46c), deci o politică pe jumătate culeasă nu e „în lucru”, e un tip "
+        + "inert care ARATĂ configurat; ori toate, ori niciunul",
+        inchTrei != null && inchTrei.Contains("3 din 4") && inchPatru == null && inchZero == null);
+
+    // ---- `MapareD300` / `MapareD394`: o regulă, două uși ----
+    // Pe privat perechea (NED21 × Livrare) e NEMAPATĂ deliberat (regimul e
+    // exclusiv de achiziție), deci proba negativă nu lovește gardul de dublă
+    // numărare; pe bugetar niciun tip n-are mapări.
+    var codTvaMapare = privat ? "NED21" : "CAP0";
+    Guid idTvaMapare;
+    using (var osM = provider.CreateObjectSpace())
+        idTvaMapare = osM.GetObjectsQuery<TipTva>().Where(t => t.Cod == codTvaMapare).Select(t => t.ID)
+            .FirstOrDefault();
+    string d300Total = null, d300Operatiuni = null;
+    if (idTvaMapare != Guid.Empty) {
+        void Mapare(IObjectSpace os, string codRand) {
+            var m = os.CreateObject<MapareD300>();
+            m.TipTva = os.GetObjectByKey<TipTva>(idTvaMapare);
+            m.Sens = SensTva.Livrare;
+            m.Rand = os.GetObjectsQuery<RandD300>().ToList().First(r => r.Cod == codRand);
+        }
+        d300Total = RefuzF23(os => Mapare(os, "19"));
+        d300Operatiuni = RefuzF23(os => Mapare(os, "9"));
+    }
+    else
+        sarite.Add($"maparea D300 (profilul n-are tipul {codTvaMapare})");
+    var d394Gresit = RefuzF23(os => {
+        var m = os.CreateObject<MapareD394>();
+        m.TipTva = os.GetObjectsQuery<TipTva>().ToList().First();
+        m.Sens = SensTva.Achizitie;
+        m.Tip = TipOperatiuneD394.L;
+    });
+    var d394Bun = RefuzF23(os => {
+        var m = os.CreateObject<MapareD394>();
+        m.TipTva = os.GetObjectsQuery<TipTva>().ToList().First();
+        m.Sens = SensTva.Livrare;
+        m.Tip = TipOperatiuneD394.L;
+    });
+    Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/mapări): D300 spre rd. 19 (TOTAL) → "
+        + $"„{d300Total ?? "<NESONDAT>"}”; spre rd. 9 (operațiuni) → „{d300Operatiuni ?? "acceptat"}”; D394 "
+        + $"`L` pe achiziție → „{d394Gresit ?? "<NU A ARUNCAT>"}”; `L` pe livrare → „{d394Bun ?? "acceptat"}”.");
+    Check($"F23-V4 ({eticheta}) mapările: aceleași reguli ca atributele XAF de pe clasă, chemate prin "
+        + "funcțiile lor STATICE (`MapareD300.EsteDeOperatiuni`, `MapareD394.TintaPermisa`) — un corp, două "
+        + "uși (77k). Un rând de TOTAL nu se alimentează din mapări (se calculează), iar `L` e permis doar pe "
+        + "livrare",
+        (d300Total == null || (d300Total.Contains("rd. 19") && d300Operatiuni == null))
+        && d394Gresit != null && d394Gresit.Contains("Achizitie") && d394Bun == null);
+
+    if (sarite.Count > 0)
+        Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/sărite): {sarite.Count} probe fără subiect pe "
+            + $"acest profil — {string.Join("; ", sarite)}.");
+}
+
+// ---------------------------------------------------------------------------
+// F23-V5 — RAPORTUL de verificare a profilului (F23-D8)
+// ---------------------------------------------------------------------------
+// Seed-ul ARUNCĂ, raportul ARATĂ. Proba are trei timpi: baza curată n-are ce
+// raporta; o scenă produce câte o constatare din fiecare categorie pe care felia
+// o poate PRODUCE fără host (`RandManual` / `TipTvaInactivReferit` /
+// `ReferintaStearsa`); după curățenie raportul tace din nou — altfel ar fi un
+// jurnal care se acumulează, nu o funcție de starea bazei.
+void VerificaF23Raport(bool privat) {
+    const string Marcaj = "E2E-F23";
+    var eticheta = privat ? "privat" : "bugetar";
+    var cronometru = System.Diagnostics.Stopwatch.StartNew();
+    IReadOnlyList<ConstatareProfil> initiale;
+    using (var os = provider.CreateObjectSpace())
+        initiale = VerificareProfilService.Raporteaza(os);
+    cronometru.Stop();
+    Console.WriteLine($"     MĂSURAT (F23-V5/{eticheta}/bază curată): {initiale.Count} constatări în "
+        + $"{cronometru.ElapsedMilliseconds} ms"
+        + (initiale.Count == 0 ? "." : " — " + string.Join("; ", initiale.Take(10)
+            .Select(c => $"{c.Tabel}/{c.Cheie}/{c.Fel}")) + "."));
+    Check($"F23-V5 ({eticheta}) pe o bază seed-uită și neatinsă raportul e GOL: fiecare rând de politică "
+        + "poartă timbrul seed-ului, nicio referință nu arată spre un rând șters, niciun implicit nu țintește "
+        + "un tip inactiv, fiecare tip cu politică de TVA are ancoră și nicio mapare nu lipsește",
+        initiale.Count == 0);
+
+    // ---- Scena ----
+    // (a) trece prin GARDIAN, fiindcă exact el stinge timbrul; (b) și (c) se scriu
+    // pe ușa de SISTEM, cu `DinSeed = true` pus de mână, ca rândurile de scenă să
+    // NU producă ele însele `RandManual` — categoria (a) rămâne a singurului rând
+    // care chiar a fost editat.
+    Guid idScadenta = Guid.Empty, idTvaProba, idImplicitProba;
+    var zileInainte = 0;
+    string cheieScadenta = null;
+    using (var os = provider.CreateObjectSpace()) {
+        var scadenta = os.GetObjectsQuery<PoliticaScadenta>().ToList().FirstOrDefault(p => p.DinSeed);
+        if (scadenta == null)
+            Console.WriteLine($"     MĂSURAT (F23-V5/{eticheta}): profilul n-are `PoliticaScadenta` "
+                + "seed-uită — categoria `RandManual` rămâne nesondată pe el.");
+        else {
+            idScadenta = scadenta.ID;
+            zileInainte = scadenta.ZileDefault;
+            cheieScadenta = scadenta.TipDocument?.Cod;
+            scadenta.ZileDefault = zileInainte + 1;
+            // Prin GARDIAN, nu prin scriere directă: exact drumul pe care umblă un
+            // PATCH de OData, adică drumul care stinge timbrul.
+            GardianEditare.Verifica(os);
+            os.CommitChanges();
+        }
+    }
+    string codInactiv = null;
+    using (var os = provider.CreateObjectSpace()) {
+        var inactiv = os.GetObjectsQuery<TipTva>().ToList().FirstOrDefault(t => !t.Activ);
+        codInactiv = inactiv?.Cod;
+        if (inactiv != null) {
+            var partener = os.CreateObject<Partener>();
+            partener.Cod = Marcaj + "-RAP";
+            partener.Denumire = "Partener probă F23 (implicit inactiv)";
+            partener.Tara = "RO";
+            partener.TipTvaImplicit = inactiv;
+        }
+        var tvaProba = os.CreateObject<TipTva>();
+        tvaProba.Cod = Marcaj + "-TVA";
+        tvaProba.Denumire = "Tip TVA probă F23";
+        tvaProba.Cota = 21m;
+        tvaProba.DinSeed = true;
+        idTvaProba = tvaProba.ID;
+        var implicitProba = os.CreateObject<PoliticaTvaImplicit>();
+        implicitProba.TipDocument = os.GetObjectsQuery<TipDocument>().ToList().First(t => t.Cod == "BTR");
+        implicitProba.ClasaFiscala = ClasaFiscalaPartener.ExtraUe;
+        implicitProba.TipTva = tvaProba;
+        implicitProba.DinSeed = true;
+        idImplicitProba = implicitProba.ID;
+        os.CommitChanges();
+    }
+    // Ștergere LOGICĂ deliberată: aici ea E obiectul probei (70e) — categoria (b)
+    // caută exact capătul mort pe care ștergerea amânată îl lasă în urmă.
+    using (var os = provider.CreateObjectSpace()) {
+        os.Delete(os.GetObjectByKey<TipTva>(idTvaProba));
+        os.CommitChanges();
+    }
+
+    IReadOnlyList<ConstatareProfil> dupaScena;
+    using (var os = provider.CreateObjectSpace())
+        dupaScena = VerificareProfilService.Raporteaza(os);
+    var manuale = dupaScena.Where(c => c.Fel == FelConstatare.RandManual).ToList();
+    var inactiveReferite = dupaScena.Where(c => c.Fel == FelConstatare.TipTvaInactivReferit).ToList();
+    var sterse = dupaScena.Where(c => c.Fel == FelConstatare.ReferintaStearsa).ToList();
+    Console.WriteLine($"     MĂSURAT (F23-V5/{eticheta}/scenă): {dupaScena.Count} constatări — "
+        + $"{manuale.Count} RandManual, {inactiveReferite.Count} TipTvaInactivReferit, {sterse.Count} "
+        + $"ReferintaStearsa; " + string.Join("; ", dupaScena.Select(c => $"{c.Tabel}/{c.Cheie}/{c.Fel}")) + ".");
+    Check($"F23-V5 ({eticheta}) cele trei categorii pe care felia le poate PRODUCE fără host apar exact o "
+        + "dată fiecare, cu tabelul și cheia LIZIBILE: (a) politica de scadență editată PRIN GARDIAN e "
+        + $"`RandManual` pe „{cheieScadenta ?? "(nesondat)"}” (timbrul se stinge la scriere); (b) partenerul "
+        + $"cu implicit „{codInactiv ?? "(niciun tip stins)"}” e `TipTvaInactivReferit`; (c) implicitul care "
+        + "arată spre un tip ȘTERS LOGIC e `ReferintaStearsa` — motorul îl citește ca absent și TACE, "
+        + "raportul strigă",
+        (cheieScadenta == null
+            ? manuale.Count == 0
+            : manuale.Count == 1 && manuale[0].Tabel == "Politici de scadență"
+                && manuale[0].Cheie == cheieScadenta)
+        && (codInactiv == null
+            ? inactiveReferite.Count == 0
+            : inactiveReferite.Count == 1 && inactiveReferite[0].Tabel == "Parteneri"
+                && inactiveReferite[0].Cheie == Marcaj + "-RAP")
+        && sterse.Count == 1 && sterse[0].Tabel == "Implicite de TVA"
+        && sterse[0].Mesaj.Contains("Tip TVA"));
+
+    // ---- Curățenia: purjă FIZICĂ + restaurarea timbrului ----
+    using (var os = provider.CreateObjectSpace()) {
+        var pj = new Purja(os);
+        pj.Adauga(os.GetObjectsQuery<PoliticaTvaImplicit>().Where(p => p.ID == idImplicitProba));
+        pj.Adauga(os.GetObjectsQuery<TipTva>().Where(t => t.ID == idTvaProba));
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(Marcaj)));
+        pj.Executa();
+    }
+    if (idScadenta != Guid.Empty)
+        using (var os = provider.CreateObjectSpace()) {
+            var scadenta = os.GetObjectByKey<PoliticaScadenta>(idScadenta);
+            scadenta.ZileDefault = zileInainte;
+            // Reaprinderea timbrului pe ușa de SISTEM (fără gardian) — exact felul
+            // în care seed-ul l-ar fi pus, dacă rândul ar fi lipsit.
+            scadenta.DinSeed = true;
+            os.CommitChanges();
+        }
+    IReadOnlyList<ConstatareProfil> finale;
+    using (var os = provider.CreateObjectSpace())
+        finale = VerificareProfilService.Raporteaza(os);
+    Console.WriteLine($"     MĂSURAT (F23-V5/{eticheta}/după curățenie): {finale.Count} constatări"
+        + (finale.Count == 0 ? "." : " — " + string.Join("; ", finale
+            .Select(c => $"{c.Tabel}/{c.Cheie}/{c.Fel}")) + "."));
+    Check($"F23-V5 ({eticheta}) raportul e o FUNCȚIE de starea bazei, nu un jurnal care se acumulează: după "
+        + "purja fizică a scenei și restaurarea timbrului, numărul de constatări revine la cel dinaintea "
+        + "probei",
+        finale.Count == initiale.Count);
+}
+
+// ---------------------------------------------------------------------------
+// F23-V6 — funcția LEGII, mutată, dă aceleași cifre
+// ---------------------------------------------------------------------------
+// `ClasaFiscala.APartenerului` e corpul mutat din `D394Proiectii.TipPartener`
+// (F23-D2). Cele 13 aserțiuni de pe `TipPartener` din `VerificaD394` rămân
+// neatinse și acoperă cifra formularului; aici se măsoară CUSĂTURA — că enum-ul
+// și cifra sunt aceeași funcție, pe toate cele patru clase, în ambele grafii ale
+// axei „înregistrat bate tot”.
+void VerificaF23ClasaFiscala() {
+    (TipPersoana Tip, string Tara, bool Inregistrat, ClasaFiscalaPartener Asteptat)[] combinatii = [
+        (TipPersoana.Juridica, "RO", true, ClasaFiscalaPartener.InregistratRo),
+        (TipPersoana.Juridica, "RO", false, ClasaFiscalaPartener.NeinregistratRo),
+        (TipPersoana.Fizica, "RO", true, ClasaFiscalaPartener.InregistratRo),
+        (TipPersoana.Fizica, "RO", false, ClasaFiscalaPartener.NeinregistratRo),
+        (TipPersoana.Juridica, "DE", true, ClasaFiscalaPartener.InregistratRo),
+        (TipPersoana.Juridica, "DE", false, ClasaFiscalaPartener.Ue),
+        (TipPersoana.Juridica, "US", true, ClasaFiscalaPartener.InregistratRo),
+        (TipPersoana.Juridica, "US", false, ClasaFiscalaPartener.ExtraUe),
+    ];
+    var divergente = new List<string>();
+    var masurate = new List<string>();
+    foreach (var (tip, tara, inregistrat, asteptat) in combinatii) {
+        var clasa = ClasaFiscala.APartenerului(tip, tara, inregistrat);
+        var cifra = D394Proiectii.TipPartener(tip, tara, inregistrat);
+        masurate.Add($"{tip}/{tara}/{(inregistrat ? "înreg" : "neînreg")}→{(int)clasa} ({clasa})");
+        if ((int)clasa != cifra || clasa != asteptat)
+            divergente.Add($"{tip}/{tara}/{inregistrat}: enum {(int)clasa}, D394 {cifra}, așteptat "
+                + $"{(int)asteptat}");
+    }
+    Console.WriteLine($"     MĂSURAT (F23-V6): {string.Join(", ", masurate)}.");
+    Check("F23-V6 `ClasaFiscala.APartenerului` (enum) și `D394Proiectii.TipPartener` (cifra formularului) "
+        + "sunt ACEEAȘI funcție a legii, mutată o singură dată: pe cele 8 combinații PF/PJ × RO/DE/US × "
+        + "înregistrat/nu valorile coincid — „înregistrat bate tot” (71b) taie prin fel și prin țară, apoi PF "
+        + "⇒ 2, RO neînregistrat ⇒ 2, UE ⇒ 3, restul ⇒ 4"
+        + (divergente.Count > 0 ? $" — divergențe: {string.Join("; ", divergente)}" : ""),
+        divergente.Count == 0);
 }
