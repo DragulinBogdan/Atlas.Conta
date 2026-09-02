@@ -136,8 +136,14 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             // Tipul se dezproxează: `CanCreate` primește un `Type`, iar
             // `FacturaIntrareProxy` nu e în modelul de securitate.
             if (os.IsNewObject(obj)) {
+                // Create ȘI Write (review 80 M2): plasa DevExpress cere pe `Added`
+                // Create + Write + Read (`SecurityStateManager.
+                // CheckIsGrantedToSave` :94-96, :197-198). Un rol cu Create fără
+                // Write ar fi trecut aici și ar fi picat în plasă cu textul ei
+                // englezesc. Mesajul rămâne „crea" — dreptul lipsă e al creării
+                // complete.
                 var tip = Api.Refuzuri.TipReal(obj.GetType());
-                if (!cerinte.CanCreate(tip, os))
+                if (!cerinte.CanCreate(tip, os) || !cerinte.CanWrite(os, (object)obj))
                     throw new Api.RefuzAcces(Api.OperatieAcces.Creare, tip);
             }
             else if (EsteSters(os, obj)) {

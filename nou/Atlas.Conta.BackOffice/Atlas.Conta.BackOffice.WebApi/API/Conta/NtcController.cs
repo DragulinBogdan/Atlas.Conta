@@ -65,6 +65,15 @@ public class NtcController : ContaApiController {
         return dto == null ? Invizibil() : Ok(dto);
     }
 
+    // Ce servește ușa asta (review 80 M1): sub TPT `GetObjectByKey<NotaContabila>`
+    // găsește și `InchidereTva`, dar felia NTC îl EXCLUDE la citire (79c,
+    // `NotaContabilaApply.Citeste`). Gate-ul primește același criteriu, altfel
+    // aceeași ușă ar spune 404 pe GET și 403/422 pe PUT/DELETE/comenzi — două
+    // adevăruri, iar 422-ul ar divulga numărul închiderii pe care GET o neagă.
+    // Amendează 79c: comenzile NTC pe un id ITV NU mai sunt permise — ITV are
+    // ușa lui (`api/itv`), cu aceleași comenzi.
+    static readonly Func<NotaContabila, bool> PeUsaNtc = d => d is not InchidereTva;
+
     // ── Scriere: agregatul per document (42d) ─────────────────────────────
     // `Numar` nu apare în WriteDto: NTC are politică de numerotare („NTC-") în
     // AMBELE profiluri, deci seria e server-owned și se consumă la operare
@@ -86,7 +95,7 @@ public class NtcController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Put(Guid id, [FromBody] NtcWriteDto dto) =>
-        ScriereAutorizata<NotaContabila>(id, () => Domeniu(() => {
+        ScriereAutorizata<NotaContabila>(id, peUsaAsta: PeUsaNtc, actiune: () => Domeniu(() => {
             using var os = Secured(typeof(NotaContabila));
             NotaContabilaApply.Aplica(os, id, dto);
             return Ok(NotaContabilaApply.Citeste(os, id));
@@ -100,11 +109,11 @@ public class NtcController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Delete(Guid id) =>
-        ScriereAutorizata<NotaContabila>(id, () => Domeniu(() => {
+        ScriereAutorizata<NotaContabila>(id, peUsaAsta: PeUsaNtc, actiune: () => Domeniu(() => {
             using var os = Secured(typeof(NotaContabila));
             NotaContabilaApply.Sterge(os, id);
             return NoContent();
-        }), OperatieAcces.Stergere);
+        }), operatie: OperatieAcces.Stergere);
 
     // ── Comenzi: OS NON-SECURED, tranzacția integral a motorului (42b) ─────
     [HttpPost("{id:guid}/opereaza")]
@@ -133,13 +142,13 @@ public class NtcController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
-    public IActionResult Valideaza(Guid id) => ComandaAutorizata<NotaContabila>(id, () => Domeniu(() => {
+    public IActionResult Valideaza(Guid id) => ComandaAutorizata<NotaContabila>(id, peUsaAsta: PeUsaNtc, comanda: () => Domeniu(() => {
         using var os = NonSecured(typeof(NotaContabila));
         return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
     }));
 
     IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
-        ComandaAutorizata<NotaContabila>(id, () => Domeniu(() => {
+        ComandaAutorizata<NotaContabila>(id, peUsaAsta: PeUsaNtc, comanda: () => Domeniu(() => {
             using var os = NonSecured(typeof(NotaContabila));
             return Ok(OperareRezultatDto.Din(comanda(os)));
         }));

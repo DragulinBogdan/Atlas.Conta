@@ -339,15 +339,17 @@ try {
     $script:Numar++
     $verdictSaft = 'PASS'
     $motivSaft = ''
-    if ($saftCititor.Status -eq 403) {
+    # Review 80 m4: PASS doar pe 200 (fișier) sau 422 (profil/societate) —
+    # un 403 e defect (Cititor are Read pe tot), iar un 500 nu e „oricare".
+    if ($saftCititor.Status -notin 200, 422) {
         $verdictSaft = 'FAIL'
-        $motivSaft = 'Cititor are Read pe tot — un 403 aici ar fi un defect'
+        $motivSaft = if ($saftCititor.Status -eq 403) { 'Cititor are Read pe tot — un 403 aici ar fi un defect' } else { "așteptat 200 sau 422, primit $($saftCititor.Status)" }
     }
     $script:Rezultate.Add([pscustomobject]@{
             Nr         = $script:Numar
             Cerere     = "``GET /api/proiectii/saft/xml?an=$anSaft&luna=$lunaSaft``"
             User       = 'Cititor'
-            Asteptat   = 'oricare ≠ 403 (raportat, nu impus)'
+            Asteptat   = '200 sau 422 (raportat, nu impus)'
             Primit     = "$($saftCititor.Status) $(($saftCititor.ContentType -split ';')[0])"
             Corp       = Scurt $saftCititor.Corp
             Ms         = $saftCititor.Ms
@@ -355,6 +357,15 @@ try {
             Motive     = $motivSaft
             CorpIntreg = $saftCititor.Corp
         })
+
+    # ── Ușa NTC pe un id de ITV (review 80 M1) ─────────────────────────────
+    # Sub TPT `GetObjectByKey<NotaContabila>` găsește și închiderea; felia NTC o
+    # EXCLUDE la citire (79c), deci gate-ul o exclude și el (`PeUsaNtc`): 404 pe
+    # TOATE verbele, pentru toți — nu 422 cu numărul închiderii pe care GET o neagă.
+    Proba -Cerere 'citire ITV pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/ntc/$idItv" -Contine 'nu există sau nu e vizibil' -Nota 'M1' | Out-Null
+    Proba -Cerere 'modificare ITV pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda PUT -Cale "/api/ntc/$idItv" -Corp @{ Data = '2026-10-31'; Linii = @() } -Contine 'nu există sau nu e vizibil' -Nota 'M1: NU 422' | Out-Null
+    Proba -Cerere 'modificare ITV pe ușa NTC' -User 'Cititor' -Asteptat 404 -Metoda PUT -Cale "/api/ntc/$idItv" -Corp @{ Data = '2026-10-31'; Linii = @() } -Contine 'nu există sau nu e vizibil' -Nota 'M1: NU 403' | Out-Null
+    Proba -Cerere 'validare ITV pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/ntc/$idItv/valideaza" -Contine 'nu există sau nu e vizibil' -Nota 'M1: NU 200' | Out-Null
 
     # ── Imperecheri: aceeași formă ca feliile de document ───────────────────
     # Corpul e deliberat MINIM: gate-ul de creare e pe TIP și vine ÎNAINTEA

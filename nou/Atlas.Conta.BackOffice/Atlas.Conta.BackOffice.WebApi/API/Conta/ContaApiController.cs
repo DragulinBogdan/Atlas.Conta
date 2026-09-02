@@ -129,8 +129,8 @@ public abstract class ContaApiController : ControllerBase {
     // vizibil. Acum `GetObjectByKey<FacturaIntrare>` nu-l vede și răspunsul e
     // 404: „nu e vizibil PE UȘA ASTA".
     protected IActionResult ComandaAutorizata<T>(Guid id, Func<IActionResult> comanda,
-            OperatieAcces operatie = OperatieAcces.Modificare) where T : class {
-        var refuz = Autorizeaza<T>(id, operatie);
+            OperatieAcces operatie = OperatieAcces.Modificare, Func<T, bool> peUsaAsta = null) where T : class {
+        var refuz = Autorizeaza<T>(id, operatie, peUsaAsta);
         return refuz ?? comanda();
     }
 
@@ -147,13 +147,20 @@ public abstract class ContaApiController : ControllerBase {
     // culegerii (secured) — rămân distincte la citire, iar verdictul rămâne
     // scris o singură dată, în `Autorizeaza<T>`.
     protected IActionResult ScriereAutorizata<T>(Guid id, Func<IActionResult> actiune,
-            OperatieAcces operatie = OperatieAcces.Modificare) where T : class =>
-        ComandaAutorizata<T>(id, actiune, operatie);
+            OperatieAcces operatie = OperatieAcces.Modificare, Func<T, bool> peUsaAsta = null) where T : class =>
+        ComandaAutorizata<T>(id, actiune, operatie, peUsaAsta);
 
     // Perechea fără SUBIECT a lui `ComandaAutorizata` (F22-D2): crearea. Nu există
     // instanță de rezolvat — deci nici 404 — iar întrebarea se pune pe TIP.
     // Gate-ul se ia pe un OS SECURED, ÎNAINTE de orice atingere a bazei prin
     // Apply, ca refuzul să nu depindă de ordinea în care Apply-ul rezolvă FK-urile.
+    //
+    // Create ȘI Write (review 80 M2): plasa DevExpress din `SaveChanges` cere pe
+    // un obiect `Added` toate trei — Create, Write, Read
+    // (`SecurityStateManager.CheckIsGrantedToSave`, :94-96 + :197-198). Un rol cu
+    // Create fără Write ar fi trecut gate-ul și ar fi picat abia în plasă, cu
+    // textul ei englezesc (80-r2) — pe o cale NORMALĂ, nu excepțională. Mesajul
+    // rămâne „crea": dreptul care lipsește e al creării COMPLETE (`PoateCrea`).
     protected IActionResult CreareAutorizata<T>(Func<IActionResult> comanda) where T : class {
         using (var os = Secured(typeof(T)))
             if (!PoateCrea(typeof(T), os))
@@ -172,8 +179,15 @@ public abstract class ContaApiController : ControllerBase {
     // aceeași ușă (vezi `AutorizeazaCitire<T>`); `Creare` n-are instanță, deci
     // n-are ce căuta aici — o cerere de genul ăsta e un bug de apelant, nu un
     // refuz de utilizator.
+    //
+    // `peUsaAsta` (review 80 M1): sub TPT, `GetObjectByKey<T>` găsește și
+    // derivatele lui `T` — un id de `InchidereTva` e „vizibil" ca `NotaContabila`,
+    // deși felia NTC îl EXCLUDE la citire (79c). Fără predicat, aceeași ușă ar
+    // spune 404 pe GET și 403/422 pe PUT, adică două adevăruri. Predicatul e
+    // al feliei (ea știe ce servește), iar un obiect care nu-l trece e, pentru
+    // ușa asta, invizibil ⇒ 404, aceeași frază.
     protected IActionResult Autorizeaza<T>(Guid id,
-            OperatieAcces operatie = OperatieAcces.Modificare) where T : class {
+            OperatieAcces operatie = OperatieAcces.Modificare, Func<T, bool> peUsaAsta = null) where T : class {
         if (operatie == OperatieAcces.Creare)
             throw new ArgumentException(
                 "Crearea n-are subiect — se întreabă pe TIP (`CreareAutorizata`/`PoateCrea`).",
@@ -181,8 +195,9 @@ public abstract class ContaApiController : ControllerBase {
 
         using var os = Secured(typeof(T));
         var obiect = os.GetObjectByKey<T>(id);
-        // Inexistent SAU invizibil, aceeași frază: 404 nu distinge, deliberat.
-        if (obiect == null)
+        // Inexistent SAU invizibil SAU în afara ușii, aceeași frază: 404 nu
+        // distinge, deliberat.
+        if (obiect == null || (peUsaAsta != null && !peUsaAsta(obiect)))
             return Invizibil();
         // Cast explicit la `object`: supraîncărcările care contează sunt cele pe
         // INSTANȚĂ (`CanWrite(IObjectSpace, object targetObject)` etc.). Fără
@@ -282,7 +297,8 @@ public abstract class ContaApiController : ControllerBase {
     // creează închideri de TVA. Gate-ul se ia ÎNAINTE, pe un OS securizat, ca la
     // toate comenzile (55b).
     protected bool PoateCrea(Type tip, IObjectSpace os) =>
-        securitate is IRequestSecurityStrategy cerinte && cerinte.CanCreate(tip, os);
+        securitate is IRequestSecurityStrategy cerinte
+            && cerinte.CanCreate(tip, os) && cerinte.CanWrite(tip, os);
 
     // ═══ 404-ul, cu MOTIV (F22-D4) ═══
     // `NotFound()` gol obligă clientul să inventeze textul — exact ce făcea
