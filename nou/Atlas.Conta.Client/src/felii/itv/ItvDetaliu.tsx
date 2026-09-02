@@ -156,6 +156,7 @@ export function ItvDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={`Închidere de TVA ${doc?.Numar ?? '(draft)'}`}
       sumar={<Sumar doc={doc} />}
       comenzi={comenzi}

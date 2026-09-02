@@ -208,6 +208,7 @@ export function RlfDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? 'Retur la furnizor — nou' : `Retur la furnizor ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}

@@ -84,6 +84,7 @@ export function DscDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={`Descărcare de gestiune ${doc?.Numar ?? ''}`}
       sumar={
         <div className="sumar">

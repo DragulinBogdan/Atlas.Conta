@@ -163,6 +163,7 @@ export function PartenerDetaliu() {
 
   return (
     <ShellNomenclator
+      citire={citit}
       titlu={nou ? 'Partener nou' : (citit.data?.Denumire ?? 'Partener')}
       sumar={!nou && citit.data?.InactivFiscal ? <span className="sumar__stare">Inactiv fiscal</span> : undefined}
       comenzi={comenzi}

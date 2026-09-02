@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { DateBox } from 'devextreme-react';
 import { PanouErori } from './PanouErori';
+import { eroriDin } from './http';
 import { azi, izolataZi } from './zi';
 
 // `DocumentShell` (43a): zona de antet, zona de linii, bara de comenzi condusă
@@ -23,6 +24,14 @@ export type Comanda = {
   cereData?: { eticheta: string; implicit?: string };
   ruleaza: (data?: string) => void;
 };
+
+// Rezultatul interogării de CITIRE a documentului, în forma pe care o are un
+// `useQuery` — felia îi pasează chiar obiectul ei (`citire={citit}`), fără să
+// desfacă nimic. Shell-ul citește DOAR `isError`/`error`: `isPending` face parte
+// din formă (ca ecranul să nu fie nevoit să construiască un obiect ad-hoc), dar
+// nu-l ramifică nimeni aici — cât timp citirea e în curs se randează ecranul
+// normal, iar „ocupat" rămâne al feliei.
+export type CitireDocument = { isError: boolean; error: unknown; isPending?: boolean };
 
 export function DocumentShell(props: {
   titlu: string;
@@ -58,10 +67,19 @@ export function DocumentShell(props: {
   // deschiderea unei comenzi cu parametru cheamă callback-ul ăsta. Fără el,
   // operatorul ar vedea două întrebări suprapuse și ar răspunde la cealaltă.
   inchideConfirmarea?: () => void;
+  // Interogarea de citire a documentului (F22-D8). Când ea a EȘUAT — 404 pe un
+  // document invizibil pentru utilizatorul curent, 403, sau o eroare tehnică —
+  // shell-ul arată mesajul serverului ȘI NU randează copiii: fără el, ecranul
+  // cădea pe agregatul gol al feliei și afișa un formular NOU, gol, ca și cum
+  // documentul ar fi fost citit. Un formular gol pe un refuz e o minciună; mai
+  // rău, „Salvează" de pe el ar fi creat un al doilea document.
+  // Zero ramificare pe status (43b): se arată fraza pe care a scris-o singura
+  // ușă care știe motivul.
+  citire?: CitireDocument;
 }) {
   const {
     titlu, sumar, comenzi, erori, mesaje = [], rezultatExtra, ocupat = false,
-    antet, linii, subsol, confirmare, inchideConfirmarea,
+    antet, linii, subsol, confirmare, inchideConfirmarea, citire,
   } = props;
   const [cerere, setCerere] = useState<Comanda | null>(null);
   const [data, setData] = useState<string | undefined>(azi());
@@ -79,6 +97,20 @@ export function DocumentShell(props: {
     }
     setData(c.cereData.implicit ?? azi());
     setCerere(c);
+  }
+
+  // Citirea a eșuat ⇒ rama și motivul, nimic altceva. Return-ul e DUPĂ toate
+  // hook-urile shell-ului (altfel ordinea lor s-ar schimba între randări), iar
+  // bara rămâne fără comenzi: nu se operează un document care nu s-a putut citi.
+  if (citire?.isError) {
+    return (
+      <div className="document">
+        <div className="document__bara">
+          <h2 className="document__titlu">{titlu}</h2>
+        </div>
+        <PanouErori erori={eroriDin(citire.error)} titlu="Documentul nu s-a putut citi" />
+      </div>
+    );
   }
 
   return (

@@ -198,6 +198,7 @@ export function LdiDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? 'Listă de diferențe — nouă' : `Listă de diferențe ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}

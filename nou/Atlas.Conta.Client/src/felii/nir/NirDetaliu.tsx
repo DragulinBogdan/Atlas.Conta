@@ -214,6 +214,7 @@ export function NirDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? 'NIR — nou' : `NIR ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}

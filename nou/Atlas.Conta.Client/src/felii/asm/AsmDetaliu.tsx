@@ -268,6 +268,7 @@ export function AsmDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? 'Asamblare — nouă' : `Asamblare ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} diferenta={doc?.Diferenta} modificat={modificat || nou} />}
       comenzi={comenzi}

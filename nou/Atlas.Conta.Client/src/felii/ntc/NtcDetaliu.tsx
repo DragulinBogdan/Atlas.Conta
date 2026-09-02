@@ -236,6 +236,7 @@ export function NtcDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? 'Notă contabilă — nouă' : `Notă contabilă ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}

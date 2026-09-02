@@ -152,6 +152,7 @@ export function BtrDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? 'Notă de transfer — nouă' : `Notă de transfer ${doc?.Numar ?? ''}`}
       sumar={<Sumar
         stare={doc?.Stare}

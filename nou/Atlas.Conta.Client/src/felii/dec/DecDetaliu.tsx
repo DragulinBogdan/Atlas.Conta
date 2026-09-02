@@ -211,6 +211,7 @@ export function DecDetaliu() {
 
   return (
     <DocumentShell
+      citire={citit}
       titlu={nou ? 'Decont — nou' : `Decont ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
       comenzi={comenzi}
