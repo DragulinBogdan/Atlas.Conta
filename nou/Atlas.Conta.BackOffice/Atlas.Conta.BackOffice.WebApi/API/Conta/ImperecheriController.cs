@@ -26,45 +26,52 @@ public class ImperecheriController : ContaApiController {
         DevExpress.ExpressApp.Security.ISecurityStrategyBase securitate)
         : base(secured, nonSecured, securitate) { }
 
-    // Refuzurile de invariant (documente neoperate, sensuri identice,
-    // contrapartidă lipsă, sumă peste rest) sunt de DOMENIU ⇒ 422 prin
+    // Gate-ul de CREARE pe TIP, ca la orice `POST` de felie (F22-D2): fără el,
+    // `User` era refuzat abia de primul document invizibil rezolvat de Apply, cu
+    // 422 și cu fraza domeniului — cod al regulii, unde adevărul e al dreptului.
+    //
+    // După gate, refuzurile de invariant (documente neoperate, sensuri identice,
+    // contrapartidă lipsă, sumă peste rest) rămân de DOMENIU ⇒ 422 prin
     // `Domeniu`, cu erorile ca listă — inclusiv id-urile inexistente, pe care
     // Apply le traduce în mesaj de domeniu (abaterea documentată de la 42b).
     [HttpPost]
     [ProducesResponseType(typeof(ImperechereReadDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Post([FromBody] ImperechereWriteDto dto) => Domeniu(() => {
-        using var os = Secured(typeof(Imperechere));
-        var creata = ImperechereApply.Creeaza(os, dto);
-        return Created($"/api/imperecheri/{creata.Id}", creata);
-    });
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    public IActionResult Post([FromBody] ImperechereWriteDto dto) =>
+        CreareAutorizata<Imperechere>(() => Domeniu(() => {
+            using var os = Secured(typeof(Imperechere));
+            var creata = ImperechereApply.Creeaza(os, dto);
+            return Created($"/api/imperecheri/{creata.Id}", creata);
+        }));
 
-    // 404 pe inexistent, ca la ștergerea drafturilor (FCT/trezorerie):
-    // existența se verifică o dată AICI, altfel mesajul „nu există" al
-    // Apply-ului ar fi ieșit ca 422. Restul e liber — legătura n-are registre
-    // proprii, iar dispariția ei doar eliberează restul celor două documente
-    // (și le redeschide anularea/stornarea — `AreImperecheri`).
+    // Gate-ul de ȘTERGERE pe instanță (F22-D2), care înlocuiește verificarea de
+    // existență scrisă cu mâna: 404 pe inexistent SAU invizibil (altfel mesajul
+    // „nu există" al Apply-ului ar fi ieșit 422), 403 fără drept de **Delete** —
+    // permisiune distinctă de Write în XAF. Restul e liber: legătura n-are
+    // registre proprii, iar dispariția ei doar eliberează restul celor două
+    // documente (și le redeschide anularea/stornarea — `AreImperecheri`).
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Delete(Guid id) => Domeniu(() => {
-        using var os = Secured(typeof(Imperechere));
-        if (os.GetObjectByKey<Imperechere>(id) == null)
-            return NotFound();
-        ImperechereApply.Sterge(os, id);
-        return NoContent();
-    });
+    public IActionResult Delete(Guid id) =>
+        ScriereAutorizata<Imperechere>(id, () => Domeniu(() => {
+            using var os = Secured(typeof(Imperechere));
+            ImperechereApply.Sterge(os, id);
+            return NoContent();
+        }), OperatieAcces.Stergere);
 
     // Panoul de stingeri al unui document, într-un singur apel (F3-D3):
     // Total/Asignat/Rămas din `ImperechereService` + rândurile cu partea opusă.
     // 404 dacă documentul nu există (Apply întoarce null).
     [HttpGet("{documentId:guid}/stingeri")]
     [ProducesResponseType(typeof(StingeriDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Stingeri(Guid documentId) {
         using var os = Secured(typeof(Document));
         var dto = ImperechereApply.Stingeri(os, documentId);
-        return dto == null ? NotFound() : Ok(dto);
+        return dto == null ? Invizibil() : Ok(dto);
     }
 }

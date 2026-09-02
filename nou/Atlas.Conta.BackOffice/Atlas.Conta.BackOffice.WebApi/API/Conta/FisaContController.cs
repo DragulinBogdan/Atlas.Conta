@@ -21,7 +21,7 @@ public class FisaContController : ContaApiController {
     [HttpGet]
     [ProducesResponseType(typeof(PaginaDto<FisaContRand>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     public IActionResult Get(DataSourceLoadOptions loadOptions,
         [FromQuery] Guid? contId = null,
@@ -103,7 +103,7 @@ public class FisaContController : ContaApiController {
         // Ambele obligatorii; ordinea contează (404 înaintea oricărei atingeri a
         // registrului).
         if (os.GetObjectByKey<Cont>(contId.Value) == null)
-            return NotFound();
+            return Invizibil();
         if (!ContabilProiectii.CaleaBrutaEchivalenta(os, contId.Value, dataEnd.Value))
             return StatusCode(StatusCodes.Status403Forbidden, EroriDto.Din(new[] {
                 "Fișa de cont nu poate fi servită: drepturile dumneavoastră restrâng rândurile de registru, "

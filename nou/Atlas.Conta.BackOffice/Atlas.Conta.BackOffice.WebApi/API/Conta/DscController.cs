@@ -30,39 +30,47 @@ public class DscController : ContaApiController {
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(DscReadDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) {
         using var os = Secured(typeof(DescarcareGestiune));
         var dto = DscApply.Citeste(os, id);
-        return dto == null ? NotFound() : Ok(dto);
+        return dto == null ? Invizibil() : Ok(dto);
     }
 
     // ── Comenzi: OS NON-SECURED, tranzacția integral a motorului (42b) ─────
     [HttpPost("{id:guid}/opereaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Opereaza(Guid id) => Comanda(id, os => OperareApi.Opereaza(os, id));
 
     [HttpPost("{id:guid}/anuleaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Anuleaza(Guid id) => Comanda(id, os => OperareApi.AnuleazaOperarea(os, id));
 
     [HttpPost("{id:guid}/storneaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Storneaza(Guid id, [FromBody] StornoRequestDto cerere) =>
         Comanda(id, os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
 
     [HttpPost("{id:guid}/valideaza")]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
-    public IActionResult Valideaza(Guid id) => ComandaAutorizata(id, () => Domeniu(() => {
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    public IActionResult Valideaza(Guid id) => ComandaAutorizata<DescarcareGestiune>(id, () => Domeniu(() => {
         using var os = NonSecured(typeof(DescarcareGestiune));
         return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
     }));
 
     IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
-        ComandaAutorizata(id, () => Domeniu(() => {
+        ComandaAutorizata<DescarcareGestiune>(id, () => Domeniu(() => {
             using var os = NonSecured(typeof(DescarcareGestiune));
             return Ok(OperareRezultatDto.Din(comanda(os)));
         }));

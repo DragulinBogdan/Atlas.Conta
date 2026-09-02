@@ -41,6 +41,18 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 //     asimetria numită de 76-r4: `ComandaAutorizata(id)` n-are ce rezolva;
 //   * `GET` lista        — ușa securizată filtrează rândurile, deci lista goală
 //     pentru cine n-are drepturi e un răspuns adevărat (69g/71g), fără gate.
+//
+// ═══ Al doilea drept al celor două rute cu CIFRE (felia 22, F22-D5) ═══
+// Închide 79-r6. Dreptul de citire pe `InchidereTva` spune că ai voie să vezi
+// ÎNCHIDEREA; el nu spune nimic despre soldurile 4426/4427 ale societății, care
+// vin din `RegistruContabil` și se însumează pe ușa NON-SECURED tocmai ca să nu
+// fie filtrate. Cine n-are drept pe registru vedea deci, prin previzualizare,
+// exact cifra pe care permisiunile lui i-o ascund în balanță și în fișă — o
+// scurgere, nu o afordanță. Regula generală a feliei 22: **o rută care întoarce
+// o SUMĂ peste un registru, calculată pe ușa non-secured, cere dreptul de
+// CITIRE pe tipul acelui registru** (aceeași regulă ca fișierul SAF-T, 73g).
+// `genereaza`/`regenereaza` NU-l cer: ele produc rânduri (un draft), nu cifre
+// arătate operatorului — iar dreptul lor e cel de CREARE.
 [Route("api/itv")]
 public class ItvController : ContaApiController {
     public ItvController(IObjectSpaceFactory secured, INonSecuredObjectSpaceFactory nonSecured,
@@ -75,15 +87,24 @@ public class ItvController : ContaApiController {
     // deja 404, fiindcă `GetObjectByKey<InchidereTva>` nu-l vede.
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ItvReadDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) {
-        var refuz = AutorizeazaCitire<InchidereTva>(id);
+        var refuz = AutorizeazaCitire<InchidereTva>(id) ?? RegistrulCitibil();
         if (refuz != null)
             return refuz;
         using var os = NonSecured(typeof(InchidereTva));
         var dto = InchidereTvaApply.Citeste(os, id);
-        return dto == null ? NotFound() : Ok(dto);
+        return dto == null ? Invizibil() : Ok(dto);
+    }
+
+    // F22-D5: al doilea drept al rutelor care întorc CIFRE ale registrului.
+    // Ordinea contează și e cea a lui F22-D1 — întâi 404-ul instanței (ce nu-ți
+    // e vizibil nici nu-ți spune că există), abia apoi 403-ul registrului.
+    // `null` = are voie.
+    IActionResult RegistrulCitibil() {
+        using var os = Secured(typeof(RegistruContabil));
+        return PoateCiti(typeof(RegistruContabil), os) ? null : RefuzCitire(typeof(RegistruContabil));
     }
 
     // Dry-run-ul comenzii. NU scrie nimic — de aceea e GET, și de aceea gate-ul e
@@ -98,16 +119,21 @@ public class ItvController : ContaApiController {
     [HttpGet("previzualizare")]
     [ProducesResponseType(typeof(PrevizualizareItvDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     public IActionResult Previzualizare([FromQuery] int? an = null, [FromQuery] int? luna = null) {
         var erori = Perioada(an, luna);
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
 
+        // DOUĂ drepturi, nu unul (F22-D5): închiderea (tipul cerut) ȘI registrul
+        // din care se însumează soldurile arătate în raport.
         using (var osSecured = Secured(typeof(InchidereTva))) {
             if (!PoateCiti(typeof(InchidereTva), osSecured))
-                return Forbid();
+                return RefuzCitire(typeof(InchidereTva));
         }
+        var refuzRegistru = RegistrulCitibil();
+        if (refuzRegistru != null)
+            return refuzRegistru;
         // `Domeniu` și aici (review 79 M7): ancora `TipDocument` lipsă din seed
         // aruncă `OperareException`, care fără traducere ar ieși 400 text/plain
         // prin filtrul DevExpress — în afara contractului „un singur 400" (70f).
@@ -132,18 +158,13 @@ public class ItvController : ContaApiController {
     // singur, condiționat pe existența draftului.
     [HttpPost("genereaza")]
     [ProducesResponseType(typeof(GenerareItvRezultatDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Genereaza([FromBody] GenerareItvRequestDto cerere) {
-        using (var osSecured = Secured(typeof(InchidereTva))) {
-            if (!PoateCrea(typeof(InchidereTva), osSecured))
-                return Forbid();
-        }
-        return Domeniu(() => {
+    public IActionResult Genereaza([FromBody] GenerareItvRequestDto cerere) =>
+        CreareAutorizata<InchidereTva>(() => Domeniu(() => {
             using var os = NonSecured(typeof(InchidereTva));
             return Ok(InchidereTvaApply.Genereaza(os, cerere));
-        });
-    }
+        }));
 
     // Regenerarea unui DRAFT: are subiect, deci gate-ul de instanță e cel al
     // comenzilor (`ComandaAutorizata` ⇒ 404 invizibil / 403 fără Write) — dar
@@ -154,48 +175,44 @@ public class ItvController : ContaApiController {
     // e Draft ⇒ 422.
     [HttpPost("{id:guid}/regenereaza")]
     [ProducesResponseType(typeof(GenerareItvRezultatDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Regenereaza(Guid id) => ComandaAutorizata(id, () => {
-        using (var osSecured = Secured(typeof(InchidereTva))) {
-            if (!PoateCrea(typeof(InchidereTva), osSecured))
-                return Forbid();
-        }
-        return Domeniu(() => {
+    public IActionResult Regenereaza(Guid id) =>
+        ComandaAutorizata<InchidereTva>(id, () => CreareAutorizata<InchidereTva>(() => Domeniu(() => {
             using var os = NonSecured(typeof(InchidereTva));
             return Ok(InchidereTvaApply.Regenereaza(os, id));
-        });
-    });
+        })));
 
     // Ștergerea unui DRAFT, pe ușa SECURED ca la NTC: pre-check-ul de domeniu e
     // în `Sterge` (mesaj propriu), gardianul de Committing rămâne plasa.
     // `Apply`-ul comite singur.
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Delete(Guid id) => ComandaAutorizata(id, () => Domeniu(() => {
-        using var os = Secured(typeof(InchidereTva));
-        InchidereTvaApply.Sterge(os, id);
-        return NoContent();
-    }));
+    public IActionResult Delete(Guid id) =>
+        ScriereAutorizata<InchidereTva>(id, () => Domeniu(() => {
+            using var os = Secured(typeof(InchidereTva));
+            InchidereTvaApply.Sterge(os, id);
+            return NoContent();
+        }), OperatieAcces.Stergere);
 
     // ── Comenzi: OS NON-SECURED, tranzacția integral a motorului (42b) ─────
     // Identic `NtcController`: `OperareApi` lucrează pe `Document`, agnostic la
     // tip. Singura diferență e `typeof` din fabrica de ObjectSpace.
     [HttpPost("{id:guid}/opereaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Opereaza(Guid id) => Comanda(id, os => OperareApi.Opereaza(os, id));
 
     [HttpPost("{id:guid}/anuleaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Anuleaza(Guid id) => Comanda(id, os => OperareApi.AnuleazaOperarea(os, id));
 
@@ -204,23 +221,23 @@ public class ItvController : ContaApiController {
     // (F21-D7) — dar alegerea rămâne a operatorului, deci serverul nu o impune.
     [HttpPost("{id:guid}/storneaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Storneaza(Guid id, [FromBody] StornoRequestDto cerere) =>
         Comanda(id, os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
 
     [HttpPost("{id:guid}/valideaza")]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult Valideaza(Guid id) => ComandaAutorizata(id, () => Domeniu(() => {
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    public IActionResult Valideaza(Guid id) => ComandaAutorizata<InchidereTva>(id, () => Domeniu(() => {
         using var os = NonSecured(typeof(InchidereTva));
         return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
     }));
 
     IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
-        ComandaAutorizata(id, () => Domeniu(() => {
+        ComandaAutorizata<InchidereTva>(id, () => Domeniu(() => {
             using var os = NonSecured(typeof(InchidereTva));
             return Ok(OperareRezultatDto.Din(comanda(os)));
         }));

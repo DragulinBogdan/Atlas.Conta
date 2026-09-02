@@ -33,6 +33,24 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 // nostru: **422** + `EroriDto { Erori: [] }`, cu mesajul cumulat spart pe „\n".
 // 422 (nu 400) fiindcă cererea e sintactic validă — o refuză DOMENIUL.
 //
+// ═══ Ordinea de pe sârmă (felia 22, F22-D1) ═══
+//   401 → 400 (binding) → **404** → **403** → 422
+// Autorizarea vine ÎNAINTEA domeniului, pe toate ușile: un 422 n-are voie să
+// ascundă un refuz de permisiune, iar un 404 n-are voie să distingă „nu există"
+// de „nu ți-e vizibil" (altfel API-ul e un oracol de existență peste rândurile
+// pe care securitatea le ascunde). Sintaxa (400) rămâne a pipeline-ului.
+// Cele trei întrebări, și unde se pun:
+//   * 404 — „subiectul cererii îmi e vizibil?" ⇒ `Autorizeaza<T>` /
+//     `AutorizeazaCitire<T>`, pe rutele cu `{id}`;
+//   * 403 — „am voie operația cerută?" ⇒ același gate pe instanță (Write/
+//     Delete/Read) sau `PoateCrea`/`PoateCiti` + `RefuzCreare`/`RefuzCitire` pe
+//     TIP, unde întrebarea n-are subiect;
+//   * 422 — refuz de DOMENIU, pe o cerere pe care AI dreptul s-o faci.
+// Corpul e ACELAȘI peste tot: `EroriDto`, cu frazele din `Api/Refuzuri.cs`
+// (Module) — o singură sursă pentru controller, gardian și filtrul OData.
+// `Forbid()` și `NotFound()` cu corp GOL nu se mai folosesc nicăieri: un corp
+// gol îl obligă pe client să inventeze textul (exact defectul închis de F22-D4).
+//
 // ═══ Validarea XAF pe acest tier: NU rulează (necunoscuta notată în 40b) ═══
 // Probă pe surse (26.1.3): `PersistenceValidationController : ViewController`
 // (DevExpress.ExpressApp.Validation\PersistenceValidationController.cs:298) se
@@ -102,40 +120,87 @@ public abstract class ContaApiController : ControllerBase {
     // `Partener`, nu pe un document, dar întrebarea („există pentru mine? am voie
     // să scriu?") și răspunsurile (404/403) sunt aceleași. Tipul e singurul lucru
     // care se schimbă, deci intră ca parametru de tip — nu ca a doua copie a
-    // gate-ului. Supraîncărcarea fără parametru de tip de mai jos păstrează
-    // apelurile existente NESCHIMBATE: `T` nu se poate deduce din argumente, iar
-    // un refactor mecanic peste 20 de call-site-uri de documente ar fi fost
-    // zgomot fără câștig.
-    protected IActionResult ComandaAutorizata<T>(Guid id, Func<IActionResult> comanda) where T : class {
-        var refuz = Autorizeaza<T>(id);
+    // gate-ului.
+    //
+    // `T` = tipul FELIEI, nu `Document` (F22-D2, închide 76-r4): supraîncărcarea
+    // fără parametru de tip a MURIT. Cât gate-ul întreba pe `Document`, un id de
+    // NIR trecea autorizarea pe `api/fct/{id}/opereaza` și pica abia în Apply, cu
+    // 422 — adică un refuz de domeniu pentru o rută pe care documentul nici nu e
+    // vizibil. Acum `GetObjectByKey<FacturaIntrare>` nu-l vede și răspunsul e
+    // 404: „nu e vizibil PE UȘA ASTA".
+    protected IActionResult ComandaAutorizata<T>(Guid id, Func<IActionResult> comanda,
+            OperatieAcces operatie = OperatieAcces.Modificare) where T : class {
+        var refuz = Autorizeaza<T>(id, operatie);
         return refuz ?? comanda();
     }
 
-    protected IActionResult ComandaAutorizata(Guid documentId, Func<IActionResult> comanda) =>
-        ComandaAutorizata<Document>(documentId, comanda);
+    // Ușa de SCRIERE a agregatului (F22-D2, închide 76-r5): `PUT {id}` cere
+    // `Modificare`, `DELETE {id}` cere `Stergere`. Până acum n-avea NICIUN gate:
+    // `User` era refuzat de primul FK invizibil rezolvat de Apply („nu există în
+    // nomenclatorul…", 422) sau de `GardianEditare` — cu alte cuvinte codul era
+    // al regulii, nu al dreptului, iar mesajul spunea „nu există" unde adevărul
+    // era „nu e vizibil". Gate-ul se ia ÎNAINTE de Apply, deci înaintea oricărei
+    // rezolvări de FK.
+    //
+    // Același gate ca `ComandaAutorizata`, sub alt nume și nu ca a doua copie:
+    // cele două uși ale lui 42b — comanda motorului (non-secured) și scrierea
+    // culegerii (secured) — rămân distincte la citire, iar verdictul rămâne
+    // scris o singură dată, în `Autorizeaza<T>`.
+    protected IActionResult ScriereAutorizata<T>(Guid id, Func<IActionResult> actiune,
+            OperatieAcces operatie = OperatieAcces.Modificare) where T : class =>
+        ComandaAutorizata<T>(id, actiune, operatie);
 
-    // Gate-ul, ca funcție: `null` = are voie, altfel refuzul gata format.
-    // Separat de `ComandaAutorizata` fiindcă LOTUL (D15-D4) are nevoie de verdict
-    // per id — acolo un refuz nu e răspunsul cererii, ci un rând în `Sarite`.
-    protected IActionResult Autorizeaza<T>(Guid id) where T : class {
+    // Perechea fără SUBIECT a lui `ComandaAutorizata` (F22-D2): crearea. Nu există
+    // instanță de rezolvat — deci nici 404 — iar întrebarea se pune pe TIP.
+    // Gate-ul se ia pe un OS SECURED, ÎNAINTE de orice atingere a bazei prin
+    // Apply, ca refuzul să nu depindă de ordinea în care Apply-ul rezolvă FK-urile.
+    protected IActionResult CreareAutorizata<T>(Func<IActionResult> comanda) where T : class {
+        using (var os = Secured(typeof(T)))
+            if (!PoateCrea(typeof(T), os))
+                return RefuzCreare(typeof(T));
+        return comanda();
+    }
+
+    // Gate-ul de INSTANȚĂ, ca funcție: `null` = are voie, altfel refuzul gata
+    // format. Separat de `ComandaAutorizata` fiindcă îl cheamă și PUT/DELETE
+    // direct, și fiindcă LOTUL (D15-D4) are nevoie de verdict per id — acolo un
+    // refuz nu e răspunsul cererii, ci un rând în `Sarite`.
+    //
+    // OPERAȚIA e parametru, nu a doua metodă (F22-D2): Write și Delete sunt
+    // permisiuni DISTINCTE în XAF, iar a le fi întrebat pe amândouă cu `CanWrite`
+    // ar fi însemnat că cine poate modifica poate și șterge. `Citire` intră pe
+    // aceeași ușă (vezi `AutorizeazaCitire<T>`); `Creare` n-are instanță, deci
+    // n-are ce căuta aici — o cerere de genul ăsta e un bug de apelant, nu un
+    // refuz de utilizator.
+    protected IActionResult Autorizeaza<T>(Guid id,
+            OperatieAcces operatie = OperatieAcces.Modificare) where T : class {
+        if (operatie == OperatieAcces.Creare)
+            throw new ArgumentException(
+                "Crearea n-are subiect — se întreabă pe TIP (`CreareAutorizata`/`PoateCrea`).",
+                nameof(operatie));
+
         using var os = Secured(typeof(T));
         var obiect = os.GetObjectByKey<T>(id);
+        // Inexistent SAU invizibil, aceeași frază: 404 nu distinge, deliberat.
         if (obiect == null)
-            return NotFound();
-        // Cast explicit la `object`: supraîncărcarea care contează e
-        // `CanWrite(IObjectSpace, object targetObject)` — permisiunea pe
-        // INSTANȚĂ, cea pe care o folosea și varianta pe `Document`. Fără cast,
-        // un `T` care s-ar nimeri `Type` ar aluneca pe supraîncărcarea de TIP
-        // (`CanWrite(Type, IObjectSpace, …)`), adică altă întrebare.
-        if (securitate is not IRequestSecurityStrategy cerinte || !cerinte.CanWrite(os, (object)obiect))
-            return Forbid();
-        return null;
+            return Invizibil();
+        // Cast explicit la `object`: supraîncărcările care contează sunt cele pe
+        // INSTANȚĂ (`CanWrite(IObjectSpace, object targetObject)` etc.). Fără
+        // cast, un `T` care s-ar nimeri `Type` ar aluneca pe supraîncărcarea de
+        // TIP (`CanWrite(Type, IObjectSpace, …)`), adică altă întrebare.
+        var tinta = (object)obiect;
+        var permis = securitate is IRequestSecurityStrategy cerinte && operatie switch {
+            OperatieAcces.Stergere => cerinte.CanDelete(os, tinta),
+            OperatieAcces.Citire => cerinte.CanRead(os, tinta),
+            _ => cerinte.CanWrite(os, tinta)
+        };
+        return permis ? null : RefuzAccesRezultat(operatie, typeof(T));
     }
 
     // ═══ Gate-ul de CITIRE pe INSTANȚĂ (felia 21, F21-D3) ═══
-    // Același tipar ca `Autorizeaza<T>`, cu `CanRead` în loc de `CanWrite`:
-    // inexistent SAU invizibil ⇒ 404 (fără sondare de existență), vizibil dar
-    // fără drept de citire ⇒ 403, `null` = are voie.
+    // Aceeași ușă ca `Autorizeaza<T>`, cu `CanRead`: inexistent SAU invizibil ⇒
+    // 404 (fără sondare de existență), vizibil dar fără drept de citire ⇒ 403,
+    // `null` = are voie.
     //
     // DE CE există, când o citire obișnuită n-are nevoie de el: `GET api/itv/{id}`
     // răspunde cu cifre ale MOTORULUI (soldurile 4426/4427 la data închiderii +
@@ -148,18 +213,8 @@ public abstract class ContaApiController : ControllerBase {
     //
     // Listele nu-l cer și nu-l primesc: acolo ușa securizată filtrează rândurile,
     // iar o listă goală pentru cine n-are drepturi e un răspuns adevărat (69g/71g).
-    protected IActionResult AutorizeazaCitire<T>(Guid id) where T : class {
-        using var os = Secured(typeof(T));
-        var obiect = os.GetObjectByKey<T>(id);
-        if (obiect == null)
-            return NotFound();
-        // Cast explicit la `object`, din același motiv ca la `Autorizeaza<T>`:
-        // supraîncărcarea care contează e `CanRead(IObjectSpace, object)` —
-        // permisiunea pe INSTANȚĂ, nu cea pe TIP.
-        if (securitate is not IRequestSecurityStrategy cerinte || !cerinte.CanRead(os, (object)obiect))
-            return Forbid();
-        return null;
-    }
+    protected IActionResult AutorizeazaCitire<T>(Guid id) where T : class =>
+        Autorizeaza<T>(id, OperatieAcces.Citire);
 
     // Gate-ul de LOT (D15-D4): fiecare id trece SEPARAT, iar cel refuzat iese cu
     // motiv, nu aruncă tot lotul. Un 403 pe 500 de parteneri fiindcă unul singur
@@ -179,10 +234,13 @@ public abstract class ContaApiController : ControllerBase {
             // Inexistent SAU invizibil pentru user — aceeași frază, deliberat:
             // altfel lotul ar fi un oracol de existență pentru rândurile pe care
             // securitatea le ascunde (motivul lui 404 din gate-ul simplu).
+            // Frazele sunt cele din `Refuzuri` (F22-D4): un lot n-are voie să
+            // spună altfel decât ruta cu un singur id ce spune același refuz.
             if (obiect == null)
-                refuzate.Add(new IdRefuzat(id, null, "nu există sau nu e vizibil pentru utilizatorul curent"));
+                refuzate.Add(new IdRefuzat(id, null, Refuzuri.Invizibil));
             else if (cerinte == null || !cerinte.CanWrite(os, (object)obiect))
-                refuzate.Add(new IdRefuzat(id, eticheta?.Invoke(obiect), "fără drept de scriere"));
+                refuzate.Add(new IdRefuzat(id, eticheta?.Invoke(obiect),
+                    Refuzuri.FaraDrept(OperatieAcces.Modificare, typeof(T))));
             else
                 permise.Add(id);
         }
@@ -225,6 +283,33 @@ public abstract class ContaApiController : ControllerBase {
     // toate comenzile (55b).
     protected bool PoateCrea(Type tip, IObjectSpace os) =>
         securitate is IRequestSecurityStrategy cerinte && cerinte.CanCreate(tip, os);
+
+    // ═══ 404-ul, cu MOTIV (F22-D4) ═══
+    // `NotFound()` gol obligă clientul să inventeze textul — exact ce făcea
+    // `nucleu/http.ts` pe rutele OData, cu fraze scrise în TS care nu aveau de
+    // unde ști ce s-a întâmplat. Fraza e una singură, în Module, și NU distinge
+    // „nu există" de „nu-ți e vizibil": vezi `Refuzuri.Invizibil`.
+    //
+    // O folosesc și rutele de citire fără gate (`GET {id}` unde `Citeste`
+    // întoarce `null` pentru un rând filtrat de securitate): răspunsul lor e
+    // deja 404 din același motiv, deci merită același corp.
+    protected IActionResult Invizibil() => NotFound(EroriDto.DinMesaj(Refuzuri.Invizibil));
+
+    // ═══ Refuzurile pe TIP, ca rezultat (F22-D4) ═══
+    // `PoateCiti`/`PoateCrea` întorc `bool` fiindcă unele rute au de făcut ceva
+    // ÎNTRE verdict și răspuns (SAF-T calculează un sumar filtrat în loc de
+    // fișier). Când verdictul ESTE răspunsul, forma lui e una singură: 403 cu
+    // `EroriDto` și fraza din Module — niciodată `Forbid()`, care produce un corp
+    // GOL (și, pe scheme de autentificare cu challenge, chiar alt status).
+    protected IActionResult RefuzCitire(Type tip) =>
+        RefuzAccesRezultat(OperatieAcces.Citire, tip);
+
+    protected IActionResult RefuzCreare(Type tip) =>
+        RefuzAccesRezultat(OperatieAcces.Creare, tip);
+
+    IActionResult RefuzAccesRezultat(OperatieAcces operatie, Type tip) =>
+        StatusCode(StatusCodes.Status403Forbidden,
+            EroriDto.DinMesaj(Refuzuri.FaraDrept(operatie, tip)));
 
     // Încărcarea unei proiecții prin `DataSourceLoader`, cu MATERIALIZARE
     // explicită înainte de întoarcere.
@@ -319,9 +404,28 @@ public abstract class ContaApiController : ControllerBase {
         }
     }
 
-    // `null` = nu e o eroare de domeniu (apelantul o lasă să treacă mai departe,
-    // cu `throw;` din catch-ul lui).
+    // `null` = nu e nici refuz de acces, nici eroare de domeniu (apelantul o lasă
+    // să treacă mai departe, cu `throw;` din catch-ul lui).
+    //
+    // Ordinea e cea de pe sârmă (F22-D1): DREPTUL înaintea domeniului. Cele două
+    // ramuri de 403 sunt PLASA — pe calea normală refuzul de acces s-a dat deja
+    // în gate, înainte ca Apply-ul să atingă baza. Ele prind ce trece pe lângă:
+    //   * `RefuzAcces` — pasul zero al lui `GardianEditare` (F22-D3), ridicat la
+    //     `Committing`, adică din interiorul lui `CommitChanges`, deci în plin
+    //     `Domeniu`;
+    //   * orice alt `IUserFriendlySecurityException` — `UserFriendlyEFCoreSecurityException`,
+    //     pe care `SecuredEFCoreObjectSpace.DoCommit` o împachetează din
+    //     verificarea de permisiuni a lui `SaveChanges` (inclusiv permisiunile pe
+    //     MEMBRU, pe care noi nu le întrebăm — F22-D11). Mesajul ei e al
+    //     DevExpress și e în engleză (70-r5), asumat: pe calea normală nu se mai
+    //     ajunge aici.
+    // De ce nu se pot amesteca cu 422: `RefuzAcces` NU derivă din
+    // `OperareException` (e `Exception, IUserFriendlySecurityException`, iar
+    // `OperareException : UserFriendlyException`), tocmai ca un refuz de drept să
+    // nu poată fi înghițit de un acumulator de erori de domeniu.
     IActionResult RefuzDeDomeniu(Exception ex) {
+        if (ex is IUserFriendlySecurityException)
+            return StatusCode(StatusCodes.Status403Forbidden, EroriDto.DinMesaj(ex.Message));
         if (ex is OperareException)
             return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(ex.Message));
         // Violările de constraint DB (F4-M2): pe rutele fără pre-check propriu
