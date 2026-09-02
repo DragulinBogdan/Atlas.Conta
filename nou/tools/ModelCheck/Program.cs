@@ -19896,6 +19896,55 @@ void VerificaF23Rezolvare(bool privat) {
         + "gestiuni întoarce null — zero `is`/`switch` pe frunze (invariantul II)",
         partenerFcl == pRo.ID && partenerBtr == null);
 
+    // ACEEAȘI întrebare, dar cu laturile MATERIALIZATE în ObjectSpace — adică
+    // exact calea REST, unde `Apply` rezolvă FK-urile înainte, deci repartitorul e
+    // deja în change tracker-ul EF. Proba de mai sus NU prindea defectul tocmai
+    // fiindcă un id nematerializat nu găsește nimic de castat.
+    //
+    // Ce s-a măsurat pe host (F23 pas 2): cu forma dintâi
+    // (`os.GetObjectByKey<Partener>(id) != null`), `BaseObjectSpace.GetObjectByKey<T>`
+    // găsea proxy-ul de `UnitateInterna` și ARUNCA `InvalidCastException` în loc să
+    // întoarcă null — adică 500 pe ORICE `POST`/`PUT` al celor cinci felii cu TVA,
+    // fiindcă predatorul e intern pe FCL/RLF/RDC. De aceea întrebarea se pune prin
+    // INTEROGARE pe nomenclator (`GetObjectsQuery<Partener>().Any(...)`): același
+    // răspuns dorit — null pentru altă frunză ȘI pentru un partener invizibil
+    // (80a) —, fără cast.
+    Guid? partenerFclMaterializat, partenerFctMaterializat;
+    Exception exceptieLaturi = null;
+    using (var osDoc = provider.CreateObjectSpace()) {
+        partenerFclMaterializat = partenerFctMaterializat = null;
+        try {
+            // Materializarea e ESENȚA probei: obiectele, nu id-urile.
+            var unitate = osDoc.GetObjectsQuery<UnitateInterna>().FirstOrDefault();
+            var gestiune = osDoc.GetObjectsQuery<Gestiune>().FirstOrDefault();
+            var partener = osDoc.GetObjectByKey<Partener>(pRo.ID);
+            var docFcl = osDoc.CreateObject<FacturaIesire>();
+            docFcl.PredatorId = unitate?.ID ?? Guid.Empty;
+            docFcl.PrimitorId = partener?.ID ?? pRo.ID;
+            partenerFclMaterializat = ImpliciteService.PartenerulDocumentului(osDoc, docFcl);
+            var docFct = osDoc.CreateObject<FacturaIntrare>();
+            docFct.PredatorId = partener?.ID ?? pRo.ID;
+            docFct.PrimitorId = gestiune?.ID ?? Guid.Empty;
+            partenerFctMaterializat = ImpliciteService.PartenerulDocumentului(osDoc, docFct);
+        }
+        catch (Exception ex) {
+            exceptieLaturi = ex;
+        }
+        osDoc.Rollback();
+    }
+    Console.WriteLine("     MĂSURAT (F23-V2/laturi materializate): FCL (predator `UnitateInterna` ÎNCĂRCATĂ) → "
+        + $"{(partenerFclMaterializat == pRo.ID ? "primitorul" : partenerFclMaterializat?.ToString() ?? "null")}; "
+        + $"FCT (predator partener, primitor `Gestiune` ÎNCĂRCATĂ) → "
+        + $"{(partenerFctMaterializat == pRo.ID ? "predatorul" : partenerFctMaterializat?.ToString() ?? "null")}; "
+        + $"excepție: {exceptieLaturi?.GetType().Name ?? "niciuna"}.");
+    Check("F23-V2 `PartenerulDocumentului` nu ARUNCĂ pe o latură de altă frunză, nici când repartitorul e deja "
+        + "MATERIALIZAT în ObjectSpace (calea REST, unde `Apply` rezolvă FK-urile înainte): FCL cu predator "
+        + "`UnitateInterna` → primitorul, FCT cu primitor `Gestiune` → predatorul. `GetObjectByKey<Partener>` "
+        + "CASTA proxy-ul celeilalte frunze (`InvalidCastException` ⇒ 500 pe toate scrierile cu TVA, măsurat pe "
+        + "host); întrebarea se pune acum prin interogare pe nomenclator",
+        exceptieLaturi == null
+        && partenerFclMaterializat == pRo.ID && partenerFctMaterializat == pRo.ID);
+
     CurataF23(os);
     Check("F23-V2 curățenie: scena purjată FIZIC (70e) — partenerii, produsul și rândul de politică cu "
         + "`ValabilDeLa` dispar, iar cele șase rânduri seed-uite rămân neatinse",

@@ -170,21 +170,32 @@ public static class ImpliciteService {
     /// <summary>
     /// Partenerul documentului, FĂRĂ `is`/`switch` pe frunze (F23-D2.5,
     /// invariantul II): întrebarea se pune nomenclatorului („e `Partener` cel de
-    /// pe latura asta?"), nu documentului („ce fel de document ești?"). Sub TPT
-    /// `GetObjectByKey&lt;Partener&gt;` întoarce null pentru un repartitor de altă
-    /// frunză — și tot null pentru unul invizibil pe ușa securizată, ceea ce e
-    /// exact răspunsul pe care rezolvarea îl vrea (80a: fără oracol de existență).
-    /// Dacă AMBELE laturi ar fi parteneri (nu există azi), câștigă predatorul.
+    /// pe latura asta?"), nu documentului („ce fel de document ești?"). Răspunsul
+    /// e `null` deopotrivă pentru un repartitor de ALTĂ frunză și pentru un
+    /// partener INVIZIBIL pe ușa securizată — exact ce vrea rezolvarea (80a: fără
+    /// oracol de existență). Dacă AMBELE laturi ar fi parteneri (nu există azi),
+    /// câștigă predatorul.
+    ///
+    /// Întrebarea se pune prin INTEROGARE, nu prin `GetObjectByKey&lt;Partener&gt;`:
+    /// măsurat pe host (F23 pas 2), `BaseObjectSpace.GetObjectByKey&lt;T&gt;` CASTEAZĂ
+    /// rândul găsit, deci pe un id de `UnitateInterna` aruncă
+    /// `InvalidCastException` („Castle.Proxies.UnitateInternaProxy … to
+    /// Partener") în loc să întoarcă null. Cum predatorul e intern pe FCL/RLF/RDC,
+    /// varianta cu `GetObjectByKey` scotea 500 pe TOATE scrierile celor cinci
+    /// felii cu TVA. `Any` pe nomenclator răspunde la aceeași întrebare fără cast.
     /// </summary>
     public static Guid? PartenerulDocumentului(IObjectSpace os, Document doc) {
         if (doc == null)
             return null;
-        if (doc.PredatorId != Guid.Empty && os.GetObjectByKey<Partener>(doc.PredatorId) != null)
+        if (EstePartener(os, doc.PredatorId))
             return doc.PredatorId;
-        if (doc.PrimitorId != Guid.Empty && os.GetObjectByKey<Partener>(doc.PrimitorId) != null)
+        if (EstePartener(os, doc.PrimitorId))
             return doc.PrimitorId;
         return null;
     }
+
+    static bool EstePartener(IObjectSpace os, Guid id) =>
+        id != Guid.Empty && os.GetObjectsQuery<Partener>().Any(p => p.ID == id);
 
     static string Eticheta(SursaImplicit sursa) => sursa switch {
         SursaImplicit.Partener => "regimul propriu al partenerului",

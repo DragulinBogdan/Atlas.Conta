@@ -92,13 +92,32 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // plăți poate fi un salariat nou (avans/decont), cules în
                     // fluxul operațional ca și furnizorul.
                     options.BusinessObject<Angajat>();
-                    // Restul e READ-ONLY prin construcție: sunt nomenclatoare de
-                    // POLITICĂ, administrate în back-office (planul de conturi,
-                    // regimurile de TVA cu conturile lor, clasificația bugetară).
-                    // Clientul le citește pentru lookup-uri; a le lăsa scriibile
-                    // prin OData ar însemna politică editată pe ușa din dos, în
-                    // afara oricărei validări de profil (deciziile 4/29).
-                    options.BusinessObject<TipTva>().ConfigureController(c => c.ReadOnly());
+                    // ═══ Politicile se DESCHID (felia 23, F23-D5) ═══
+                    // Comentariul de dinainte („restul e read-only prin
+                    // construcție… politică editată pe ușa din dos, în afara
+                    // oricărei validări de profil") descria o stare de fapt care
+                    // a EXPIRAT, nu o regulă: cât timp singura validare de profil
+                    // trăia în seed și în ecranele XAF, ușa OData chiar era o ușă
+                    // din dos. De la felia 23 invarianții politicilor stau în
+                    // `GardianEditare` — pe UȘA COMUNĂ, adică pe ObjectSpace-urile
+                    // secured ale ORICĂRUI host (42a): XAF, REST și OData trec
+                    // toate prin același `Committing`. Deci „administrată în
+                    // back-office" nu mai e o protecție, e doar o limitare de
+                    // ecran; politica devine editabilă din client, cu refuzurile
+                    // ieșind `422 EroriDto` prin `RefuzOdataFilter` (80d), iar
+                    // permisiunea 403/404 înaintea lor (80a).
+                    //
+                    // Ce rămâne `ReadOnly` NU mai rămâne „pentru că e politică":
+                    // fiecare tip își poartă motivul PROPRIU, scris la locul lui
+                    // (lege seed-uită, nomenclator de structură, entitate cu
+                    // semantică load-bearing în motor, jurnal de audit).
+                    //
+                    // `TipTva` = cotă × regim: e nomenclatorul pe care se sprijină
+                    // toate implicitele feliei (F23-D2), iar `Activ` (F23-D3) e
+                    // chiar câmpul pe care clientul trebuie să-l poată stinge.
+                    // Gardianul îi păzește cota (0–100) și refuză dezactivarea
+                    // unui tip încă referit ca implicit.
+                    options.BusinessObject<TipTva>();
                     // Județele (felia 15, D15-D1) sunt LEGE (ISO 3166-2:RO),
                     // seed-uite de nucleu și `[ForbidCRUD]` în XAF: clientul le
                     // citește pentru lookup-ul de adresă, nimeni nu le scrie.
@@ -160,20 +179,77 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     //   * `RandD300` — nomenclatorul rândurilor. E LEGE, nu
                     //     configurare: `[ForbidCRUD]` în XAF, ReadOnly aici, se
                     //     schimbă prin seed odată cu ordinul (D3-D1).
-                    //   * `MapareD300` — politică, deci EDITABILĂ… dar în
-                    //     back-office, ca toate politicile (56): ReadOnly pe
-                    //     OData înseamnă „citește-o din client, schimb-o unde are
-                    //     validare de profil". Prin ușa din dos ar fi ocolit atât
-                    //     regula rândului de operațiuni, cât și gardul de
-                    //     ascendent (F4).
+                    //   * `MapareD300` — politică; CRUD de la felia 23 (F23-D5).
+                    //     Regula rândului de operațiuni și gardul de ascendent (F4)
+                    //     nu mai depind de ecranul pe care se editează: sunt funcții
+                    //     statice pe `MapareD300`, chemate ȘI de `[RuleFromBoolProperty]`
+                    //     (XAF), ȘI de `GardianEditare` (ușa comună).
                     options.BusinessObject<RandD300>().ConfigureController(c => c.ReadOnly());
-                    options.BusinessObject<MapareD300>().ConfigureController(c => c.ReadOnly());
-                    // Felia D394: aceeași regulă — politica se CITEȘTE din client
-                    // (ecranul arată de ce un grup e „neinclus"), se schimbă în
-                    // back-office, unde are validarea de țintă (D4-D2).
-                    options.BusinessObject<MapareD394>().ConfigureController(c => c.ReadOnly());
-                // Politica de mișcare SAF-T S (felia 17, D17-D1): politicile sunt ReadOnly pe OData (56).
-                options.BusinessObject<PoliticaMiscareSaft>().ConfigureController(c => c.ReadOnly());
+                    options.BusinessObject<MapareD300>();
+                    // Felia D394: aceeași regulă, aceeași deschidere — validarea de
+                    // țintă (D4-D2, `TintaPermisa`) e tot funcție statică, chemată
+                    // din gardian.
+                    options.BusinessObject<MapareD394>();
+                    // Politica de mișcare SAF-T S (felia 17, D17-D1): CRUD de la
+                    // felia 23; ramura ei din gardian exista deja (74a), deci
+                    // deschiderea nu adaugă nicio regulă nouă. Închide 74-r12 pe
+                    // partea de server.
+                    options.BusinessObject<PoliticaMiscareSaft>();
+
+                    // ═══ Restul politicilor (F23-D5) ═══
+                    // Ancora tipurilor de document și cele opt politici pe care
+                    // clientul nu le putea vedea deloc până acum. `TipDocument` e
+                    // scriibil DOAR pe câmpurile care nu-l identifică: gardianul
+                    // refuză rândul nou și schimbarea lui `Cod`/`ClrType` (ancora
+                    // oglindește clasele 1:1 — decizia 20), dar `TipTvaImplicit`
+                    // (datoria P1 a implicitelor) se editează.
+                    options.BusinessObject<TipDocument>();
+                    options.BusinessObject<RegulaStoc>();
+                    options.BusinessObject<RegulaContare>();
+                    options.BusinessObject<PoliticaConex>();
+                    options.BusinessObject<PoliticaScadenta>();
+                    options.BusinessObject<PoliticaValidare>();
+                    options.BusinessObject<PoliticaTva>();
+                    options.BusinessObject<PoliticaInchidereTva>();
+                    options.BusinessObject<PoliticaNumerotare>();
+                    // Politica implicitelor de TVA (F23-D2), tipul NOU al feliei:
+                    // tip de document × clasă fiscală × valabil-de-la → `TipTva`.
+                    // Cheia ei are unicitate în schemă (F23-D3), iar gardianul dă
+                    // MESAJUL înaintea constraint-ului (60a rămâne plasa).
+                    options.BusinessObject<PoliticaTvaImplicit>();
+                    // `ClasaProdus` — lookup pentru `TipMaterial` și pentru coloana
+                    // de clasă a regulilor de stoc. `ReadOnly`: `Natura` decide
+                    // dacă o linie intră în regulile de stoc (23b), iar clasele se
+                    // seed-uiesc odată cu planul; ecranul lor, dacă apare, vine cu
+                    // felia planului de conturi.
+                    options.BusinessObject<ClasaProdus>().ConfigureController(c => c.ReadOnly());
+
+                    // ═══ Jurnalul de audit (F23-D9) ═══
+                    // `ReadOnly`, ca orice jurnal: rândurile le scrie modulul
+                    // `AuditTrail` la commit, nimeni altcineva. Se expun ca să
+                    // devină ISTORIC per rând în client („cine, când, ce câmp, din
+                    // ce în ce") pe politicile pe care felia tocmai le-a deschis
+                    // — o politică editabilă fără istoric ar fi o schimbare fără
+                    // urmă.
+                    //
+                    // Securitatea rămâne a XAF-ului, ca peste tot. Măsurat pe host
+                    // (F23 pas 2): `Cititor` vede rânduri, `User` vede ZERO — deci
+                    // istoricul unei politici e vizibil exact cui îi e vizibilă
+                    // politica.
+                    //
+                    // Filtrarea per obiect trece prin referința slabă:
+                    // `AuditedObject/TypeName` (numele CLR complet) +
+                    // `AuditedObject/Key` (`Guid`-ul ca STRING), de unde și
+                    // expunerea celui de-al doilea tip. Utilizatorul se ia prin
+                    // `$expand=UserObject` ⇒ `DefaultString`, NU din `UserName`:
+                    // acela, ca și `ObjectType`/`AuditedDefaultString`, e
+                    // `[NotMapped]` pe `AuditDataItemPersistent` (sursa DevExpress
+                    // 26.1.3) și nu intră deloc în EDM — măsurat, `$select=UserName`
+                    // iese 400 „Could not find a property named 'UserName'".
+                    options.BusinessObject<DevExpress.Persistent.BaseImpl.EFCore.AuditTrail.AuditDataItemPersistent>()
+                        .ConfigureController(c => c.ReadOnly());
+                    options.BusinessObject<DevExpress.Persistent.BaseImpl.EFCore.AuditTrail.AuditEFCoreWeakReference>()
+                        .ConfigureController(c => c.ReadOnly());
                 });
 
                 // Paritate de configurare cu `Blazor.Server/Startup.cs` (aceeași
