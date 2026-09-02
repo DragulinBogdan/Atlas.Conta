@@ -1,7 +1,7 @@
 # 79. Pasul 5, felia 21 — ITV (închiderea de TVA) prin API și client: comandă cu cauză + ecran de rezultat
 
 - **Data**: 2026-09-01
-- **Stare**: activă (b amendată de 80e: cifrele motorului cer și dreptul de citire pe `RegistruContabil`; c amendată de 80b: comenzile NTC pe un id ITV nu mai sunt permise — 404 pe toată ușa NTC; 79-r6 închisă de 80)
+- **Stare**: activă (b amendată de 80e: cifrele motorului cer și dreptul de citire pe `RegistruContabil`; c amendată de 80b: comenzile NTC pe un id ITV nu mai sunt permise — 404 pe toată ușa NTC; 79-r6 închisă de 80; 79-r1 închisă la 2026-09-02 — acțiunea XAF „Generează închiderea", vezi restanța)
 - **Docs**: `docs/api/p5-felia-itv-contract.md` (F21-D1…D12 + §Închidere cu cifrele HTTP), `nou/.../Module/Motor/InchidereTvaService.cs`, `nou/.../Module/Api/Itv/`, `nou/.../WebApi/API/Conta/ItvController.cs`, `nou/Atlas.Conta.Client/src/felii/itv/`; probele în `nou/tools/ModelCheck/Program.cs` (blocul `E2E-API-ITV`)
 
 ## Context
@@ -180,7 +180,33 @@ o comandă trimit două cereri (a doua ia 422).
 ## Ce rămâne deschis (restanțe cu nume)
 
 - **79-r1** acțiunea XAF „Generează închiderea" (aditivă; 44/53) — un
-  contabil pe Blazor tot nu poate genera.
+  contabil pe Blazor tot nu poate genera. **ÎNCHISĂ la 2026-09-02**:
+  `Module/Controllers/InchidereTvaGenerareController.cs` — `PopupWindowShowAction`
+  pe `InchidereTva_ListView`, parametrii (an, lună, unitate internă) pe un
+  obiect NON-PERSISTENT (`GenerareInchidereTvaParametri`, `[DomainComponent]`,
+  exportat în `Module.cs`; lookup-ul de unitate prin
+  `NonPersistentObjectSpace.PopulateAdditionalObjectSpaces` LOCAL dialogului,
+  nu un hook global pe `ObjectSpaceCreated`); default = luna după ultima
+  închidere vie, unitatea precompletată doar la exact un rând (F21-D4);
+  gate-ul de pe API (F21-D3 + 80b: `CanCreate` ȘI `CanWrite` pe TIP, pe OS-ul
+  securizat, ÎNAINTE de ușa non-secured) cu fraza `Refuzuri.FaraDrept`;
+  comanda = `InchidereTvaApply.Genereaza` pe ușa non-secured (aceeași ca REST
+  și ModelCheck); „nu s-a generat" = toast informativ cu motivul din
+  `[XafDisplayName]` + soldurile + închiderea blocantă (79d), refuzul de
+  domeniu = `UserFriendlyException`, draftul născut se deschide într-un TAB
+  nou (`TargetWindow.NewWindow` — aplicația e MDI; `Default` cât dialogul e
+  deschis devine `NewModalWindow`, `Current` înlocuia view-ul tab-ului fără
+  să-i reconstruiască toolbar-ul — probate în browser, explicate pe sursa
+  `BlazorMdiShowViewStrategy`). Smoke în browser (Privat): Admin — fără
+  unitate ⇒ „Alegeți unitatea internă", 01/2026 ⇒ „Luna n-are sold" cu
+  solduri, 10/2026 ⇒ draft cu 2 linii deschis în tab cu Operează/Stornează,
+  09/2026 cu draft ulterior ⇒ refuz de cronologie, 12/2025 ⇒ „Luna are deja
+  o închidere"; Cititor — dialogul se deschide, „Generează" ⇒ „Nu aveți
+  dreptul de a crea „Inchidere Tva”", niciun draft scris. Ce NU face,
+  deliberat: previzualizare în dialog, regenerare (pe Blazor = ștergere +
+  generare), butonul rămâne VIZIBIL fără drept (refuzul explicit bate gardul
+  care tace, 62f). Capcană: `[ModelDefault("EditMask", "0")]` pe `int` arată
+  `0` în Blazor — masca întreagă fără separator e `"d"`.
 - **79-r2** `PoliticaInchidereTva` pe OData ReadOnly + ecran React (familia
   77-r3).
 - **79-r3** închiderea perioadei fiscale din client (rămâne XAF/seed, 53i);

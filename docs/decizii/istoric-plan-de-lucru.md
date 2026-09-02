@@ -453,3 +453,14 @@ per felie):
   pe id ITV, M2 Create fără Write) fixate cu probe; ModelCheck final privat
   947 / bugetar 903, 0 FAIL. Capcană: agenții au rescris fișiere CRLF ca LF —
   regula e terminatorul fișierului. Decizia 80.
+- **2026-09-02 — 79-r1, acțiunea XAF „Generează închiderea"** (făcută
+  direct, un singur pas): `Module/Controllers/InchidereTvaGenerareController.cs`
+  — `PopupWindowShowAction` pe lista ITV cu dialog pe obiect non-persistent
+  (an/lună/unitate; lookup-ul prin `PopulateAdditionalObjectSpaces` local
+  dialogului; tipul exportat în `Module.cs`), gate-ul de pe API (Create ȘI
+  Write pe tip, `Refuzuri.FaraDrept`), comanda prin `InchidereTvaApply.Genereaza`
+  pe ușa non-secured, motivul negenerării ca toast cu `[XafDisplayName]`,
+  draftul deschis în tab nou (`TargetWindow.NewWindow` — MDI; `Default` și
+  `Current` probate și respinse pe sursa `BlazorMdiShowViewStrategy`). Smoke
+  în browser 7/7 (Admin + Cititor), fără urme; capcană: `EditMask "0"` pe
+  `int` afișează `0`, masca e `"d"`. Textul în decizia 079 (restanța 79-r1).

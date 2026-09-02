@@ -15,8 +15,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 //
 // Ce NU face (design §6): închiderea NU închide perioada fiscală (GardianPerioada
 // rămâne mecanism separat) și NU atinge 121 (închiderea de exercițiu e în afara
-// scope-ului). Acțiunea UI de generare rămâne aditivă, la nevoie — felia 1C-d
-// folosește consola (Import1C), ca precedentele Migrare/ModelCheck.
+// scope-ului). Generarea are trei apelanți pe același serviciu: consola
+// Import1C (1C-d), ruta `POST api/itv/genereaza` (felia 21) și acțiunea XAF
+// „Generează închiderea" (`Controllers/InchidereTvaGenerareController.cs`,
+// 79-r1) — toți prin `InchidereTvaApply`/`InchidereTvaService`, niciunul cu
+// aritmetică proprie.
 //
 // [TipDetaliu] se re-declară: atributul e Inherited=false (UI/TipDetaliuAttribute).
 [TipDetaliu(typeof(NotaContabilaDetaliu))]

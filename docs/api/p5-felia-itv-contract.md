@@ -43,7 +43,9 @@ ReadOnly, `PoliticaInchidereTva` NU intră — F21-D12). Motorul de operare
 | POST | `{id:guid}/opereaza` · `anuleaza` · `storneaza` · `valideaza` | ca la NTC (`OperareRezultatDto` / `EroriDto`) |
 
 Acțiunea XAF de generare rămâne aditivă (comentariul din `InchidereTva.cs`,
-44) — NU intră (restanță cu nume, F21-D12).
+44) — NU intră (restanță cu nume, F21-D12). *Post-felie (2026-09-02)*: 79-r1
+închisă — `InchidereTvaGenerareController` (dialog pe obiect non-persistent,
+același gate și același `Apply` ca ruta `genereaza`); vezi §Închidere.
 
 ### F21-D2 — Serviciul capătă REZULTAT cu cauză; `Genereaza` rămâne pentru apelanții vechi
 
@@ -299,7 +301,8 @@ apare în `metadata.json`; setul OData `UnitateInterna` nu răspunde la `Lookup`
 
 ### F21-D12 — Ce NU intră (restanțe cu nume, deschise de felie)
 
-- **79-r1** acțiunea XAF „Generează închiderea" (aditivă; 44/53).
+- **79-r1** acțiunea XAF „Generează închiderea" (aditivă; 44/53) — închisă
+  la 2026-09-02 (textul în decizia 079).
 - **79-r2** `PoliticaInchidereTva` pe OData ReadOnly + ecran React (familia
   77-r3 — politicile din React).
 - **79-r3** închiderea perioadei fiscale din client (rămâne XAF/seed, 53i);
@@ -435,9 +438,23 @@ precompletare) → 03/2026: „Luna n-are sold de TVA de închis" → generare �
 pe 31.10.2026: `ITV-14` e link → `/itv?an=2026&luna=10` reîncărcat păstrează
 luna. Consolă fără erori, zero `[campMeta]`, toate cererile 200.
 
+### Smoke XAF Blazor (Privat, 2026-09-02, 79-r1) — 7/7
+
+`InchidereTva_ListView` → „Generează închiderea" → dialog cu default
+01/2026 (luna după ITV-12, ultima vie) și unitatea goală (două unități ⇒
+fără precompletare) → „Generează" fără unitate ⇒ „Alegeți unitatea internă
+care închide luna", dialogul rămâne → 01/2026 ⇒ toast „Nu s-a generat nimic
+pentru 01/2026: Luna n-are sold de TVA de închis. Solduri…" → 10/2026 ⇒
+draft 357/8.106 deschis în tab nou cu Operează/Stornează, lista reîncărcată
+→ 09/2026 cu draftul ulterior viu ⇒ „Există o închidere de TVA vie pentru o
+lună ulterioară…" (refuz de domeniu, dialogul rămâne) → 12/2025 ⇒ „Luna are
+deja o închidere" cu solduri → Cititor: dialogul se deschide, „Generează" ⇒
+„Nu aveți dreptul de a crea „Inchidere Tva”", `GET api/itv` fără draft.
+Drafturile de probă șterse prin `DELETE api/itv/{id}` (204), fără urme.
+
 ### Restanțe cu nume, deschise de felie
 
-79-r1 acțiunea XAF de generare · 79-r2 `PoliticaInchidereTva` pe OData +
+79-r1 acțiunea XAF de generare (închisă 2026-09-02) · 79-r2 `PoliticaInchidereTva` pe OData +
 ecran · 79-r3 închiderea perioadei fiscale din client · 79-r4 mesajul
 `[Range]` în engleză (70-r5) · 79-r5 `Stale` mai strict decât gardianul
 (doar pe linii editate de mână — cale închisă de F21-D5). Textul integral

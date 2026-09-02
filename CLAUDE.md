@@ -809,7 +809,10 @@ decizia N.
     DECLARATĂ (`Data` desc). (e) Client: previzualizarea lunii pe listă
     (motivul tradus, link către închiderea blocantă), documentul read-only cu
     `Stale` ⇒ atenție, storno cu data implicită = data închiderii (46f);
-    `rutaTip('ITV')`. (f) Restanțe 79-r1…r5 → jurnal.
+    `rutaTip('ITV')`. (f) Restanțe 79-r1…r5 → jurnal (79-r1 închisă:
+    acțiunea XAF „Generează închiderea" = dialog pe obiect non-persistent,
+    același gate pe TIP și același `Apply` ca ruta `genereaza`, draftul în
+    tab nou — `TargetWindow.NewWindow` pe MDI).
 80. **Refuzurile de acces pe toate ușile: 404 / 403 / 422, o singură ordine,
     un singur corp** (închide 77-r8 și familia 70-r1/72-r10/76-r4/76-r5/77k/
     79-r6; amendează 79b). (a) **404** = subiectul cererii e inexistent SAU
@@ -888,9 +891,10 @@ detaliat în jurnal):
 COMANDĂ (79), nu agregat; singurul rămas e BPR (rezervat, 19). Refuzurile de
 acces sunt uniforme pe REST și OData și MĂSURATE (80).
 
-**Următorul pas**: 79-r1 (acțiunea XAF de generare) la cerere; 80-r1
-(motivul refuzului pe conducta `ODataStore` a clientului) dacă expunerea
-crește; `lista-react.md` mai ține doar itemii structurali și 77-r1/r3/r6.
+**Următorul pas**: 80-r1 (motivul refuzului pe conducta `ODataStore` a
+clientului) dacă expunerea crește; 79-r2 (`PoliticaInchidereTva` pe OData +
+ecran) la cerere; `lista-react.md` mai ține doar itemii structurali și
+77-r1/r3/r6. 79-r1 (acțiunea XAF de generare) e închisă (2026-09-02).
 Capcane de probare: `genereaza` SCRIE ori de câte ori luna e liberă (79);
 probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe
 host viu (Privat, după re-seed pentru `Cititor`), nu se refac de mână.
@@ -981,7 +985,7 @@ GIN `pg_trgm`, 78e) · 77-r8
 permisiunea pe OData `text/plain` pe server (închisă de 80)
 · 78-r1 căutarea din grilele XAF rămâne sensibilă la diacritice (nu trec prin
 `DataSourceLoader`; asumat, 44/53)
-· 79-r1 acțiunea XAF „Generează închiderea" (aditivă) · 79-r2
+· 79-r1 acțiunea XAF „Generează închiderea" (închisă 2026-09-02) · 79-r2
 `PoliticaInchidereTva` pe OData + ecran React (familia 77-r3) · 79-r3
 închiderea perioadei fiscale din client (53i) · 79-r4 mesajul `[Range]` în
 engleză pe `genereaza` (70-r5) · 79-r5 storno-ul unei închideri la o dată din
