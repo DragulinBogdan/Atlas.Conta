@@ -6,6 +6,9 @@
 
 CE PROBEAZĂ
   Regula unică a lui F22-D1, pe toate ușile: 401 → 400 (binding) → 404 → 403 → 422.
+  De la felia 23, aceeași regulă și pe POLITICI (ușa OData li s-a deschis,
+  F23-D5): ce e refuz de domeniu pentru `Admin` (422 din `GardianEditare`)
+  rămâne refuz de permisiune pentru ceilalți doi, cu verbul potrivit.
     * 404 = subiectul cererii nu ți-e vizibil (inexistent SAU ascuns de securitate,
       DELIBERAT nedistinse — altfel API-ul devine un oracol de existență);
     * 403 = subiectul e vizibil (sau întrebarea e pe TIP), dar operația nu ți-e
@@ -30,11 +33,17 @@ CEI TREI UTILIZATORI (F22-D7)
             403 pe întrebările fără subiect (tip), 200 gol pe liste.
 
 FĂRĂ URME
-  Tot ce scrie pe `Admin` (un NIR draft) se șterge în `finally`. `POST
-  api/itv/genereaza` se probează DOAR ca `Cititor`/`User`: pe `Admin` ar SCRIE un
-  draft ori de câte ori luna e liberă (capcana feliei 21) — iar luna cerută e
-  una DEJA închisă (`InchidereVie`), ca nici măcar un gate picat să nu scrie.
+  Tot ce scrie pe `Admin` (un NIR draft, iar de la felia 23 un partener și un
+  rând de politică) se șterge în `finally`. `POST api/itv/genereaza` se probează
+  DOAR ca `Cititor`/`User`: pe `Admin` ar SCRIE un draft ori de câte ori luna e
+  liberă (capcana feliei 21) — iar luna cerută e una DEJA închisă
+  (`InchidereVie`), ca nici măcar un gate picat să nu scrie. Niciun rând
+  SEED-uit nu se modifică: probele de politică se fac pe rânduri create de
+  script (vezi blocul F23 pentru ce anume NU se poate măsura din cauza asta).
   A doua rulare consecutivă trebuie să dea exact aceleași rezultate.
+
+  Singura urmă rămasă, deliberat: rândurile de AUDIT produse de scrierile de mai
+  sus. Un jurnal nu se șterge — de-aia e jurnal.
 
 UTILIZARE
   pwsh -File nou/tools/ProbeHttp/refuzuri.ps1
@@ -215,11 +224,16 @@ if (-not $tokenAdmin) { Write-Error 'Admin lipsește din -Utilizatori: matricea 
 # Scriptul nu presupune nimic despre baza pe care rulează: își găsește singur
 # un partener, o gestiune, o unitate internă și o lună de ITV DEJA închisă.
 function Get-PrimaEntitate {
-    param([string]$Set)
-    $r = Invoke-Cerere -Metoda GET -Cale "/api/odata/$Set`?`$top=1" -Token $tokenAdmin
+    # `-Filtru` (OData `$filter`, ne-encodat) pentru descoperirile care au nevoie
+    # de un rând ANUME, pe codul lui: tipurile de document și de TVA sunt referite
+    # prin cod în tot restul sistemului, deci scriptul le caută la fel.
+    param([string]$Set, [string]$Filtru)
+    $cale = "/api/odata/$Set`?`$top=1"
+    if ($Filtru) { $cale += '&$filter=' + [uri]::EscapeDataString($Filtru) }
+    $r = Invoke-Cerere -Metoda GET -Cale $cale -Token $tokenAdmin
     if ($r.Status -ne 200) { throw "Descoperirea lui $Set a picat: HTTP $($r.Status)" }
     $valori = ($r.Corp | ConvertFrom-Json).value
-    if (-not $valori) { throw "Setul OData $Set e GOL — matricea are nevoie de un rând." }
+    if (-not $valori) { throw "Setul OData $Set$(if ($Filtru) { " ($Filtru)" }) e GOL — matricea are nevoie de un rând." }
     $valori[0]
 }
 
@@ -374,6 +388,181 @@ try {
     Proba -Cerere 'creare împerechere' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/imperecheri' -Corp $corpImperechere -Contine 'crea' | Out-Null
     Proba -Cerere 'creare împerechere' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/imperecheri' -Corp $corpImperechere -Contine 'crea' | Out-Null
     Proba -Cerere 'ștergere împerechere inexistentă' -User 'Admin' -Asteptat 404 -Metoda DELETE -Cale "/api/imperecheri/$idInexistent" -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    # ── F23: politicile, implicitele și auditul (F23-D10 + F23-D9) ─────────
+    # Ce a schimbat măsurătoarea pasului 2 față de tabelul din contract, și de
+    # ce probele de mai jos arată altfel decât acolo:
+    #   * un PATCH OData care nu SCHIMBĂ nimic nu ajunge nici la gardian, nici
+    #     la plasa de permisiuni (fără modificare, EF nu pune obiectul în
+    #     `ModifiedObjects`) — un `Cititor` primește atunci 204, nu 403. Toate
+    #     PATCH-urile de aici trimit deci o valoare DIFERITĂ de cea din bază;
+    #     altfel proba ar fi vacuă, defectul m4 al feliei 22.
+    #   * `DinSeed = true` se refuză doar pe rând NOU; pe unul EXISTENT e o
+    #     stingere tăcută (204, rândul rămâne manual) — deci rândul „PATCH cu
+    #     DinSeed ⇒ 422" din F23-D10 se scrie numai ca POST.
+    #   * `GET api/politici/verificare` ca `User` e 403 („citi"), nu 200 gol:
+    #     raportul e un VERDICT calculat pe ușa non-secured, iar un verdict
+    #     filtrat n-ar fi gol, ar fi FALS (F23-D8 amendat, familia 73g/80e).
+    #
+    # FĂRĂ URME — și ce NU se poate proba din cauza asta. Rândurile de politică
+    # atinse aici sunt CREATE de script și șterse la final; niciun rând seed-uit
+    # nu se modifică. Consecința, declarată: stingerea timbrului `DinSeed` la
+    # editare (F23-D4) nu se poate măsura pe HTTP fără urme — ar cere un PATCH
+    # pe un rând `DinSeed = true`, iar OData nu poate scrie flagul înapoi
+    # (scrierea lui pe rând existent e ignorată tăcut, pe rând nou e refuzată).
+    # Proba acelei reguli rămâne cea din ModelCheck (F23-V4). Rândurile de
+    # AUDIT produse de probe RĂMÂN în bază: un jurnal nu se șterge.
+
+    # Descoperirea, ca peste tot: prin API, pe coduri, nimic hardcodat.
+    $tipFcl = Get-PrimaEntitate 'TipDocument' "Cod eq 'FCL'"
+    $tipFct = Get-PrimaEntitate 'TipDocument' "Cod eq 'FCT'"
+    $tvaN21 = Get-PrimaEntitate 'TipTva' "Cod eq 'N21'"
+    $tvaN19 = Get-PrimaEntitate 'TipTva' "Cod eq 'N19'"
+    $implicitSeed = Get-PrimaEntitate 'PoliticaTvaImplicit' "TipDocumentId eq $($tipFcl.ID) and ClasaFiscala eq 'Ue'"
+    Write-Host "  FCL: $($tipFcl.ID)  FCT: $($tipFct.ID)  N21: $($tvaN21.ID)  N19: $($tvaN19.ID)" -ForegroundColor DarkGray
+
+    # Raportul de profil ÎNAINTE de rândurile de probă: pe o bază fără divergențe
+    # e `[]`. Dacă aici iese ceva, e o constatare REALĂ a bazei — se raportează,
+    # nu se normalizează (F23-D11).
+    Proba -Cerere 'verificare profil' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/politici/verificare' -Contine '[]' -Nota 'bază fără divergențe' | Out-Null
+    Proba -Cerere 'verificare profil' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/politici/verificare' -Contine '[]' | Out-Null
+    # `User` n-are Read pe tipurile din care se compune verdictul ⇒ 403 pe TIP,
+    # nu 200 gol: un raport calculat non-secured cere dreptul de citire pe tot ce
+    # citește (F23-D8, perechea lui 80e).
+    Proba -Cerere 'verificare profil' -User 'User' -Asteptat 403 -Metoda GET -Cale '/api/politici/verificare' -Contine 'citi' -Nota 'F23-D8: verdict, nu listă' | Out-Null
+
+    # Partenerul UE de probă (regimul vine de la el) și rândul de politică pe
+    # care se fac PATCH-urile. `Cod` poartă un timbru de timp: o a doua rulare
+    # nu se ciocnește de rândul șters logic al primei.
+    $corpPartenerUe = @{
+        Cod            = "PROBA-F23-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+        Denumire       = 'Probă F23 (refuzuri)'
+        Tara           = 'DE'
+        TipPersoana    = 'Juridica'
+        InregistratTva = $false
+    }
+    $creareUe = Proba -Cerere 'creare partener UE' -User 'Admin' -Asteptat 201 -Metoda POST -Cale '/api/odata/Partener' -Corp $corpPartenerUe -Nota 'subiectul probelor de implicite'
+    if ($creareUe.Verdict -ne 'PASS') { throw "Nu s-a putut crea partenerul de probă: $($creareUe.CorpIntreg)" }
+    $idPartenerUe = ($creareUe.CorpIntreg | ConvertFrom-Json).ID
+    $curatenie.Add({
+            $sters = Invoke-Cerere -Metoda DELETE -Cale "/api/odata/Partener($idPartenerUe)" -Token $tokenAdmin
+            Write-Host "curățenie: DELETE /api/odata/Partener($idPartenerUe) → $($sters.Status)" -ForegroundColor DarkGray
+        }.GetNewClosure())
+
+    # FCT × ExtraUe nu e în seed (seed-ul are FCL/RDC × Ue/ExtraUe, FCT/RLF × Ue),
+    # deci rândul de probă nu se ciocnește de nimic și nu ascunde nimic.
+    $corpImplicitProba = @{ TipDocumentId = $tipFct.ID; ClasaFiscala = 'ExtraUe'; TipTvaId = $tvaN21.ID }
+    $creareImplicit = Proba -Cerere 'creare PoliticaTvaImplicit (FCT × ExtraUe)' -User 'Admin' -Asteptat 201 -Metoda POST -Cale '/api/odata/PoliticaTvaImplicit' -Corp $corpImplicitProba -Contine '"DinSeed":false' -Nota 'rândul de lucru; DinSeed nu se fabrică'
+    if ($creareImplicit.Verdict -ne 'PASS') { throw "Nu s-a putut crea rândul de politică de probă: $($creareImplicit.CorpIntreg)" }
+    $idImplicitProba = ($creareImplicit.CorpIntreg | ConvertFrom-Json).ID
+    $curatenie.Add({
+            $sters = Invoke-Cerere -Metoda DELETE -Cale "/api/odata/PoliticaTvaImplicit($idImplicitProba)" -Token $tokenAdmin
+            Write-Host "curățenie: DELETE /api/odata/PoliticaTvaImplicit($idImplicitProba) → $($sters.Status)" -ForegroundColor DarkGray
+        }.GetNewClosure())
+
+    # PATCH pe rândul de probă: aceeași matrice ca pe documente (403 vizibil /
+    # 404 invizibil), pe o politică. ORDINEA contează — `Cititor` și `User`
+    # merg ÎNAINTEA lui `Admin`, ca valoarea trimisă să fie încă diferită de cea
+    # din bază; după PATCH-ul lui Admin aceeași cerere ar fi un no-op și ar da
+    # 204 pentru oricine (vezi antetul blocului).
+    $patchImplicit = @{ ValabilDeLa = '2030-01-01' }
+    Proba -Cerere 'modificare politică' -User 'Cititor' -Asteptat 403 -Metoda PATCH -Cale "/api/odata/PoliticaTvaImplicit($idImplicitProba)" -Corp $patchImplicit -Contine 'modifica' | Out-Null
+    Proba -Cerere 'modificare politică' -User 'User' -Asteptat 404 -Metoda PATCH -Cale "/api/odata/PoliticaTvaImplicit($idImplicitProba)" -Corp $patchImplicit -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'modificare politică' -User 'Admin' -Asteptat 204 -Metoda PATCH -Cale "/api/odata/PoliticaTvaImplicit($idImplicitProba)" -Corp $patchImplicit -FaraJson -Nota 'schimbare REALĂ' | Out-Null
+
+    # Gardianul pe politici (F23-D5): trei refuzuri de DOMENIU pe care numai
+    # `Admin` le poate atinge — pentru ceilalți doi, permisiunea răspunde
+    # ÎNAINTEA gardianului (80c), deci 403 „crea", nu 422.
+    $corpTvaInactiv = @{ TipDocumentId = $tipFct.ID; ClasaFiscala = 'NeinregistratRo'; TipTvaId = $tvaN19.ID }
+    Proba -Cerere 'creare politică spre TVA inactiv' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/PoliticaTvaImplicit' -Corp $corpTvaInactiv -Contine 'inactiv' -Nota 'un implicit spre inactiv ar fi sărit tăcut' | Out-Null
+    Proba -Cerere 'creare politică spre TVA inactiv' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaTvaImplicit' -Corp $corpTvaInactiv -Contine 'crea' -Nota '80c: dreptul înaintea domeniului' | Out-Null
+    Proba -Cerere 'creare politică spre TVA inactiv' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaTvaImplicit' -Corp $corpTvaInactiv -Contine 'crea' | Out-Null
+    # Dublu pe cheia unui rând SEED-uit: mesajul e al GARDIANULUI (spune ce cheie
+    # s-a repetat), nu textul constraint-ului — indexul rămâne plasa (60a).
+    $corpDublu = @{ TipDocumentId = $tipFcl.ID; ClasaFiscala = 'Ue'; TipTvaId = $implicitSeed.TipTvaId }
+    Proba -Cerere 'creare politică DUBLĂ pe cheie' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/PoliticaTvaImplicit' -Corp $corpDublu -Contine 'deja' -Nota 'mesajul gardianului, nu 23505' | Out-Null
+    # Proveniența nu se declară de client (F23-D4): pe rând NOU, `DinSeed` = refuz.
+    $corpProvenienta = @{ TipDocumentId = $tipFct.ID; ClasaFiscala = 'ExtraUe'; ValabilDeLa = '2031-01-01'; TipTvaId = $tvaN21.ID; DinSeed = $true }
+    Proba -Cerere 'creare politică cu DinSeed=true' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/PoliticaTvaImplicit' -Corp $corpProvenienta -Contine 'proveniența' | Out-Null
+
+    # Dezactivarea unui `TipTva` REFERIT ca implicit: refuzul vine cu LISTA
+    # referințelor (ancorele + politica de probă de mai sus).
+    Proba -Cerere 'dezactivare TipTva referit' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale "/api/odata/TipTva($($tvaN21.ID))" -Corp @{ Activ = $false } -Contine 'ancora' -Nota 'lista referințelor' | Out-Null
+
+    # `TipDocument` = ANCORA (decizia 20): `Cod` e identitate, rândurile nu se
+    # creează și nu se șterg — dar ce e refuz de DOMENIU pentru Admin rămâne
+    # refuz de PERMISIUNE pentru ceilalți, cu verbul potrivit și în ordinea 80a.
+    Proba -Cerere 'modificare Cod pe ancoră' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale "/api/odata/TipDocument($($tipFct.ID))" -Corp @{ Cod = 'XXX' } -Contine 'identitatea' | Out-Null
+    Proba -Cerere 'modificare Cod pe ancoră' -User 'Cititor' -Asteptat 403 -Metoda PATCH -Cale "/api/odata/TipDocument($($tipFct.ID))" -Corp @{ Cod = 'XXX' } -Contine 'modifica' | Out-Null
+    Proba -Cerere 'modificare Cod pe ancoră' -User 'User' -Asteptat 404 -Metoda PATCH -Cale "/api/odata/TipDocument($($tipFct.ID))" -Corp @{ Cod = 'XXX' } -Contine 'nu există sau nu e vizibil' | Out-Null
+    $corpTipNou = @{ Cod = 'ZZZ'; Denumire = 'Probă'; ClrType = 'nimic' }
+    Proba -Cerere 'creare tip de document' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/TipDocument' -Corp $corpTipNou -Contine 'nu se creează' | Out-Null
+    Proba -Cerere 'creare tip de document' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/odata/TipDocument' -Corp $corpTipNou -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare tip de document' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/odata/TipDocument' -Corp $corpTipNou -Contine 'crea' | Out-Null
+    Proba -Cerere 'ștergere ancoră' -User 'Admin' -Asteptat 422 -Metoda DELETE -Cale "/api/odata/TipDocument($($tipFct.ID))" -Contine 'ancora' -Nota 'CRUD deschis ≠ ancoră ștergibilă' | Out-Null
+    Proba -Cerere 'ștergere ancoră' -User 'Cititor' -Asteptat 403 -Metoda DELETE -Cale "/api/odata/TipDocument($($tipFct.ID))" -Contine 'șterge' | Out-Null
+    Proba -Cerere 'ștergere ancoră' -User 'User' -Asteptat 404 -Metoda DELETE -Cale "/api/odata/TipDocument($($tipFct.ID))" -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    # ── Implicitele (F23-D6): afordanță, nu validare ────────────────────────
+    # Ruta n-are gate pe TIP — cine poate culege o linie poate întreba implicitul
+    # ei. Ce vede fiecare e ce-i arată ușa SECURIZATĂ: `Admin`/`Cititor` văd
+    # partenerul UE și politica lui, `User` nu vede nomenclatoarele, deci
+    # primește un răspuns GOL și adevărat (`Niciuna`), nu unul generic și fals.
+    Proba -Cerere 'implicit FCL × partener UE' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/implicite/tip-tva?tipDocument=FCL&partenerId=$idPartenerUe" -Contine 'SDD', 'Politica' | Out-Null
+    Proba -Cerere 'implicit FCL × partener UE' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/implicite/tip-tva?tipDocument=FCL&partenerId=$idPartenerUe" -Contine 'SDD' | Out-Null
+    Proba -Cerere 'implicit FCL × partener UE' -User 'User' -Asteptat 200 -Metoda GET -Cale "/api/implicite/tip-tva?tipDocument=FCL&partenerId=$idPartenerUe" -Contine 'Niciuna' -Nota 'ce nu vezi nu-ți poate fi propus' | Out-Null
+    # Fără oracol de existență (80a): partener LIPSĂ și partener INEXISTENT dau
+    # același răspuns, până la ultimul octet — altfel `Motiv` ar fi un canal prin
+    # care se află ce parteneri există.
+    $implFaraPartener = Proba -Cerere 'implicit FCL fără partener' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/implicite/tip-tva?tipDocument=FCL' -Contine 'Ancora', 'Fără partener vizibil'
+    $implPartenerFals = Proba -Cerere 'implicit FCL × partener inexistent' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/implicite/tip-tva?tipDocument=FCL&partenerId=$idInexistent" -Contine 'Ancora', 'Fără partener vizibil'
+    $script:Numar++
+    $verdictOracol = 'PASS'
+    $motivOracol = ''
+    if ($implFaraPartener.CorpIntreg -cne $implPartenerFals.CorpIntreg) {
+        $verdictOracol = 'FAIL'
+        $motivOracol = 'corpurile DIFERĂ ⇒ oracol de existență pe partener'
+    }
+    $script:Rezultate.Add([pscustomobject]@{
+            Nr         = $script:Numar
+            Cerere     = '(comparație) implicit fără partener == implicit cu partener inexistent'
+            User       = 'Admin'
+            Asteptat   = 'corpuri IDENTICE (80a: fără oracol de existență)'
+            Primit     = $(if ($verdictOracol -eq 'PASS') { 'identice' } else { 'diferite' })
+            Corp       = Scurt $implFaraPartener.Corp
+            Ms         = 0
+            Verdict    = $verdictOracol
+            Motive     = $motivOracol
+            CorpIntreg = $implPartenerFals.CorpIntreg
+        })
+    # Cod necunoscut = 400, ACELAȘI pentru toți: maparea cod → ancoră se face pe
+    # ușa non-secured, tocmai ca 400 să însemne un singur lucru („codul nu există
+    # în ancoră"), nu „nu ți-e vizibil TipDocument".
+    Proba -Cerere 'implicit pe cod necunoscut' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/implicite/tip-tva?tipDocument=XYZ' -Contine 'necunoscut' | Out-Null
+    Proba -Cerere 'implicit pe cod necunoscut' -User 'User' -Asteptat 400 -Metoda GET -Cale '/api/implicite/tip-tva?tipDocument=XYZ' -Contine 'necunoscut' -Nota 'același text ca Admin' | Out-Null
+
+    # ── Auditul pe OData (F23-D9) ──────────────────────────────────────────
+    # `UserName`/`ObjectType` sunt `[NotMapped]` pe `AuditDataItemPersistent` și
+    # NU intră în EDM; utilizatorul se ia prin `$expand=UserObject` ⇒
+    # `DefaultString`. Filtrul merge pe referința slabă: numele CLR COMPLET +
+    # `Key` = Guid-ul ca string. Rândurile de mai jos sunt cele produse de POST-ul
+    # și PATCH-ul de la începutul blocului — deci proba e a scrierilor REALE.
+    $tipClrImplicit = 'Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaTvaImplicit'
+    $filtruAudit = [uri]::EscapeDataString("AuditedObject/TypeName eq '$tipClrImplicit' and AuditedObject/Key eq '$idImplicitProba'")
+    $caleAudit = '/api/odata/AuditDataItemPersistent?$filter=' + $filtruAudit + '&$expand=UserObject&$orderby=' + [uri]::EscapeDataString('ModifiedOn desc')
+    Proba -Cerere 'audit pe rândul de politică' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleAudit -Contine '"OperationType":"ObjectChanged"', '"PropertyName":"ValabilDeLa"', '"DefaultString":"Admin"' -Nota 'cine, când, ce câmp' | Out-Null
+    Proba -Cerere 'audit pe rândul de politică' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale $caleAudit -Contine '"OperationType":"ObjectChanged"' -Nota 'Read pe tot' | Out-Null
+    # Rolul `Default` vede DOAR rândurile de audit proprii (Updater.cs) — deci un
+    # jurnal expus pe OData nu devine o fereastră spre activitatea altora.
+    Proba -Cerere 'audit pe rândul de politică' -User 'User' -Asteptat 200 -Metoda GET -Cale $caleAudit -Contine '"value":[]' -Nota 'doar rândurile proprii' | Out-Null
+    # Jurnalul e ReadOnly pe OData: scrierea nici nu are rută (405).
+    Proba -Cerere 'scriere în jurnalul de audit' -User 'Admin' -Asteptat 405 -Metoda POST -Cale '/api/odata/AuditDataItemPersistent' -Corp @{ OperationType = 'x' } -FaraJson -Nota 'ReadOnly' | Out-Null
+
+    # Curățenia rândurilor de probă, ca PROBE (ștergerea e tot o operație a
+    # matricei), urmată de raportul de profil: dacă a rămas vreo urmă, el o vede.
+    Proba -Cerere 'ștergere politică de probă' -User 'Admin' -Asteptat 200 -Metoda DELETE -Cale "/api/odata/PoliticaTvaImplicit($idImplicitProba)" -FaraJson -Nota 'curățenie' | Out-Null
+    Proba -Cerere 'ștergere partener de probă' -User 'Admin' -Asteptat 200 -Metoda DELETE -Cale "/api/odata/Partener($idPartenerUe)" -FaraJson -Nota 'curățenie' | Out-Null
+    Proba -Cerere 'verificare profil (după curățenie)' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/politici/verificare' -Contine '[]' -Nota 'fără urme' | Out-Null
 
     # ── Neautentificat: 401 rămâne primul (F22-D11) ────────────────────────
     $anonim = Invoke-Cerere -Metoda GET -Cale "/api/nir/$idNir"
