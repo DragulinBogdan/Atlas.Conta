@@ -1,7 +1,7 @@
 # 79. Pasul 5, felia 21 — ITV (închiderea de TVA) prin API și client: comandă cu cauză + ecran de rezultat
 
 - **Data**: 2026-09-01
-- **Stare**: activă
+- **Stare**: activă (b amendată de 80e: cifrele motorului cer și dreptul de citire pe `RegistruContabil`; c amendată de 80b: comenzile NTC pe un id ITV nu mai sunt permise — 404 pe toată ușa NTC; 79-r6 închisă de 80)
 - **Docs**: `docs/api/p5-felia-itv-contract.md` (F21-D1…D12 + §Închidere cu cifrele HTTP), `nou/.../Module/Motor/InchidereTvaService.cs`, `nou/.../Module/Api/Itv/`, `nou/.../WebApi/API/Conta/ItvController.cs`, `nou/Atlas.Conta.Client/src/felii/itv/`; probele în `nou/tools/ModelCheck/Program.cs` (blocul `E2E-API-ITV`)
 
 ## Context

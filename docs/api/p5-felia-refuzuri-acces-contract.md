@@ -1,6 +1,6 @@
 # Pasul 5, felia 22 — refuzurile de acces pe toate ușile: 404 / 403 / 422 (contract)
 
-Data: 2026-09-02. Stare: în lucru. Restanța de fond 77-r8 (familia
+Data: 2026-09-02. Stare: închisă (decizia 80). Restanța de fond 77-r8 (familia
 70-r1 / 72-r10 / 76-r4 / 76-r5 / 77k / 79b / 79-r6). Decizia rezultată: 080.
 
 ## Scop
@@ -219,6 +219,115 @@ roluri de producție (doar cele trei de dev); 400 `[Range]` în engleză
 6. **Docs** — decizia 080, README, istoric, CLAUDE.md (§80 + restanțele
    închise: 70-r1, 72-r10, 76-r4, 76-r5, 77-r8, 79-r6; 79b amendat).
 
-## Închidere
+## Închidere (2026-09-02, decizia 80)
 
-(se completează la final)
+### Devieri de la contract
+
+- **F22-D2, gate-ul NTC** (review M1): sub TPT `GetObjectByKey<NotaContabila>`
+  găsește și `InchidereTva`, deci gate-ul spunea „vizibil" (403/422) acolo
+  unde `Citeste` spunea 404. `Autorizeaza<T>` capătă un predicat opțional
+  `peUsaAsta`; NTC îl dă (`d is not InchidereTva`) ⇒ 404 pe toate verbele.
+  **Amendează 79c**: comenzile NTC pe un id ITV NU mai sunt permise (ITV are
+  ușa lui, cu aceleași comenzi).
+- **F22-D3/D2, obiectele NOI** (review M2): plasa DevExpress cere pe `Added`
+  Create + Write + Read; pasul zero și `PoateCrea` întrebau doar Create. Acum
+  `CanCreate(tip) && CanWrite(tip|obiect)`; mesajul rămâne „crea".
+- **F22-D4, captionul**: pe WebApi nu există model de aplicație XAF, deci
+  `CaptionHelper` întoarce numele complet și `Refuzuri.Caption` cade pe numele
+  CLR („InchidereTva", nu „Închidere TVA") — 80-r5.
+- **F22-D8, `ODataStore`**: `errorFromResponse` (DevExtreme) păstrează doar
+  `statusText` pe ≥ 400 — motivul serverului nu ajunge în `errorHandler`;
+  declarat (80-r1), nu cârpit cu texte inventate.
+- **F22-D9, proba fișierului SAF-T pe `Cititor`** (review m4): „oricare ≠ 403"
+  era vacuă pe 500 ⇒ PASS doar pe 200/422.
+- **Terminatorii de linie**: agenții au rescris fișiere CRLF ca LF (comise
+  așa în pașii 1/2/4) și au lăsat patru fișiere mixte; normalizate la
+  terminatorul original în commit-ul de review. Repo-ul e mixt per fișier
+  (`autocrlf=false`) — regula: se păstrează terminatorul fișierului.
+
+### Review advers (Fable, read-only, 40 de probe HTTP proprii)
+
+0 defecte de FOND; 2 MEDII (M1, M2 — fixate, cu probe în script); 5 MINORE:
+m1 captionul (80-r5), m2 `400 {"Erori":["Incorrect body."]}` pe OData cu corp
+non-JSON — mesajul DevExpress englezesc trecut prin filtru (80-r6, familia
+70-r5), m3 rute cu cifre pe ușa non-secured în afara regulii (e):
+`distribuie-valoarea` (ASM) întoarce sume din prețurile loturilor unui rol cu
+Write pe ASM fără Read pe `Lot` (80-r7, familia 79-r6), m4 (fixată), m5
+`EroareDomeniu.status` neconsumat (conform D8). Verificate și trecute: fără
+oracol de existență (timpi identici invizibil/inexistent, `$filter`/`$count`/
+`$expand` goale), niciun `Domeniu(Secured…)` fără gate, pasul zero nu rulează
+pe ușa de sistem, obiect nou+șters = detached, `SelectDataSecurity` cache-uit
+per OS, filtrele OData în ordinea 404 → 403 → 422, `ApplicationUser` nu e pe
+OData.
+
+### Probele HTTP (F22-D9) — Privat, host viu, `nou/tools/ProbeHttp/refuzuri.ps1`
+
+Rulat de cinci ori (agent ×2, verificare independentă, după fix-urile
+review-ului ×2), fără urme; ultima rulare, cu cele 4 probe M1:
+
+| # | cerere | user | așteptat | primit | corp (scurt) | ms | verdict |
+|---|---|---|---|---|---|---|---|
+| 1 | `POST /api/nir` | Admin | 201 (draftul de lucru) | 201 application/json | {"Id":"{id}","Numar":null,"Data":"2026-09-02","Stare":"Dra… | 788 | **PASS** |
+| 2 | `POST /api/nir` | Cititor | 403 + „crea” | 403 application/json | {"Erori":["Nu aveți dreptul de a crea „NIR”."]} | 13 | **PASS** |
+| 3 | `POST /api/nir` | User | 403 + „crea” (76-r5: NU 422 „nu există”) | 403 application/json | {"Erori":["Nu aveți dreptul de a crea „NIR”."]} | 14 | **PASS** |
+| 4 | `PUT /api/nir/{id}` | Cititor | 403 + „modifica” | 403 application/json | {"Erori":["Nu aveți dreptul de a modifica „NIR”."]} | 129 | **PASS** |
+| 5 | `PUT /api/nir/{id}` | User | 404 + „nu există sau nu e vizibil” | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 96 | **PASS** |
+| 6 | `DELETE /api/nir/{id}` | Cititor | 403 + „șterge” | 403 application/json | {"Erori":["Nu aveți dreptul de a șterge „NIR”."]} | 61 | **PASS** |
+| 7 | `DELETE /api/nir/{id}` | User | 404 + „nu există sau nu e vizibil” | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 43 | **PASS** |
+| 8 | `POST /api/nir/{id}/valideaza` | Cititor | 403 + „modifica” | 403 application/json | {"Erori":["Nu aveți dreptul de a modifica „NIR”."]} | 53 | **PASS** |
+| 9 | `POST /api/nir/{id}/valideaza` | User | 404 + „nu există sau nu e vizibil” | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 47 | **PASS** |
+| 10 | `POST /api/fct/{id}/opereaza` | Admin | 404 + „nu există sau nu e vizibil” (76-r4) | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 108 | **PASS** |
+| 11 | `POST /api/nir/{id}/opereaza` | Admin | 404 + „nu există sau nu e vizibil” | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 43 | **PASS** |
+| 12 | `GET /api/nir/{id}` | Admin | 200 | 200 application/json | {"Id":"{id}","Numar":null,"Data":"2026-09-02","Stare":"Dra… | 17 | **PASS** |
+| 13 | `GET /api/nir/{id}` | Cititor | 200 | 200 application/json | {"Id":"{id}","Numar":null,"Data":"2026-09-02","Stare":"Dra… | 17 | **PASS** |
+| 14 | `GET /api/nir/{id}` | User | 404 + „nu există sau nu e vizibil” | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 17 | **PASS** |
+| 15 | `GET /api/nir?take=5` | User | 200 + „"data":[]” (200 filtrat) | 200 application/json | {"data":[],"totalCount":-1,"groupCount":-1} | 24 | **PASS** |
+| 16 | `GET /api/itv/previzualizare?an=2025&luna=12` | Admin | 200 | 200 application/json | {"An":2025,"Luna":12,"Motiv":"InchidereVie","Sold4426":0,"Sold4427":0,"Transfer":0,"DePlat… | 134 | **PASS** |
+| 17 | `GET /api/itv/previzualizare?an=2025&luna=12` | Cititor | 200 (Read pe tot, inclusiv registru) | 200 application/json | {"An":2025,"Luna":12,"Motiv":"InchidereVie","Sold4426":0,"Sold4427":0,"Transfer":0,"DePlat… | 49 | **PASS** |
+| 18 | `GET /api/itv/previzualizare?an=2025&luna=12` | User | 403 + „citi” | 403 application/json | {"Erori":["Nu aveți dreptul de a citi „InchidereTva”."]} | 15 | **PASS** |
+| 19 | `GET /api/itv/{id}` | Cititor | 200 | 200 application/json | {"Id":"{id}","Numar":"ITV-14","Data":"2026-10-31","An":202… | 91 | **PASS** |
+| 20 | `GET /api/itv/{id}` | User | 404 + „nu există sau nu e vizibil” | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 95 | **PASS** |
+| 21 | `POST /api/itv/genereaza` | Cititor | 403 + „crea” | 403 application/json | {"Erori":["Nu aveți dreptul de a crea „InchidereTva”."]} | 18 | **PASS** |
+| 22 | `POST /api/itv/genereaza` | User | 403 + „crea” | 403 application/json | {"Erori":["Nu aveți dreptul de a crea „InchidereTva”."]} | 14 | **PASS** |
+| 23 | `GET /api/odata/Partener({id})` | Cititor | 200 | 200 application/json | {"@odata.context":"https://localhost:5001/api/odata/$metadata#Partener/$entity","ID":"019f… | 32 | **PASS** |
+| 24 | `GET /api/odata/Partener({id})` | User | 404 + „nu există sau nu e vizibil” (EroriDto, nu text/plain) | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 36 | **PASS** |
+| 25 | `POST /api/odata/Partener` | Cititor | 403 + „crea” (F22-D3: dreptul înaintea domeniului) | 403 application/json | {"Erori":["Nu aveți dreptul de a crea „Partener”."]} | 103 | **PASS** |
+| 26 | `POST /api/odata/Partener` | User | 403 + „crea” | 403 application/json | {"Erori":["Nu aveți dreptul de a crea „Partener”."]} | 18 | **PASS** |
+| 27 | `POST /api/odata/Partener` | Admin | 422 + „obligatoriu” (domeniul rămâne) | 422 application/json | {"Erori":["„Cod” este obligatoriu pe Partener (nou).","„Denumire” este obligatorie pe Part… | 14 | **PASS** |
+| 28 | `PATCH /api/odata/Partener({id})` | Cititor | 403 + „modifica” | 403 application/json | {"Erori":["Nu aveți dreptul de a modifica „Partener”."]} | 22 | **PASS** |
+| 29 | `PATCH /api/odata/Partener({id})` | User | 404 + „nu există sau nu e vizibil” | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 37 | **PASS** |
+| 30 | `DELETE /api/odata/Partener({id})` | Cititor | 403 + „șterge” | 403 application/json | {"Erori":["Nu aveți dreptul de a șterge „Partener”."]} | 15 | **PASS** |
+| 31 | `DELETE /api/odata/Partener({id})` | User | 404 + „nu există sau nu e vizibil” | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 15 | **PASS** |
+| 32 | `GET /api/proiectii/saft/xml?an=2025&luna=12` | User | 403 + „citi” | 403 application/json | {"Erori":["Nu aveți dreptul de a citi „RegistruContabil”."]} | 15 | **PASS** |
+| 33 | `GET /api/proiectii/saft/xml?an=2025&luna=12` | Cititor | 200 sau 422 (raportat, nu impus) | 422 application/json | {"Erori":["Declarația D406 n-are codul fiscal al societății raportoare — fișierul nu se po… | 3872 | **PASS** |
+| 34 | `GET /api/ntc/{id}` | Admin | 404 + „nu există sau nu e vizibil” (M1) | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 16 | **PASS** |
+| 35 | `PUT /api/ntc/{id}` | Admin | 404 + „nu există sau nu e vizibil” (M1: NU 422) | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 52 | **PASS** |
+| 36 | `PUT /api/ntc/{id}` | Cititor | 404 + „nu există sau nu e vizibil” (M1: NU 403) | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 53 | **PASS** |
+| 37 | `POST /api/ntc/{id}/valideaza` | Admin | 404 + „nu există sau nu e vizibil” (M1: NU 200) | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 55 | **PASS** |
+| 38 | `POST /api/imperecheri` | Cititor | 403 + „crea” | 403 application/json | {"Erori":["Nu aveți dreptul de a crea „Imperechere”."]} | 14 | **PASS** |
+| 39 | `POST /api/imperecheri` | User | 403 + „crea” | 403 application/json | {"Erori":["Nu aveți dreptul de a crea „Imperechere”."]} | 13 | **PASS** |
+| 40 | `DELETE /api/imperecheri/{id}` | Admin | 404 + „nu există sau nu e vizibil” | 404 application/json | {"Erori":["Înregistrarea nu există sau nu e vizibilă pentru utilizatorul curent."]} | 149 | **PASS** |
+| 41 | `GET /api/nir/{draft}` fără token | (anonim) | 401 | 401 — |  | 7 | **PASS** |
+| 42 | `DELETE /api/nir/{id}` | Admin | 204 (curățenie) | 204 — |  | 124 | **PASS** |
+
+Total: 42 probe, 42 PASS, 0 FAIL.
+
+### Smoke în browser (Vite + WebApi pe Privat)
+
+`Cititor`: listele se încarcă (FCT 19.042, Parteneri 20.119, NIR 17.818);
+pe un draft NIR — Salvează/Verifică/Operează ⇒ 403 „Nu aveți dreptul de a
+modifica „NIR”.", Șterge ⇒ „…de a șterge „NIR”." (Delete distinct de Write
+SE VEDE pe ecran), NIR nou ⇒ „…de a crea „NIR”."; Partener: PATCH ⇒ „…de a
+modifica „Partener”.", partener nou ⇒ „…de a crea…" (nimic scris în bază);
+grila remote pe `fisa-cont` cu cont inexistent ⇒ 404 afișat ca mesajul
+serverului, nu JSON brut; SAF-T ca `User` ⇒ „Nu aveți dreptul de a citi
+„RegistruContabil”." (F22-D5 pe ecran). Consolă fără erori neprinse, zero
+5xx (două 503 raportate de extensie, infirmate cu curl — capcana cunoscută).
+
+**Defect găsit (client, de fond)**: `User` pe `/nir/{id}` al unui document
+existent primea de la server 404 `EroriDto` corect, dar ecranul randa un
+formular NOU, gol, „nesalvat" — interogarea de citire n-avea ramură de
+eroare pe niciunul din cele 16 ecrane de detaliu (`NirDetaliu.tsx:60`;
+doar `ItvLista`/`BalantaPlan`/`D300`/`D394`/`Saft` randau `error`). Fix
+(pas 4b): mecanica e UNA, în `DocumentShell` (`citire={citit}` ⇒ pe eroare
+`PanouErori` cu mesajul serverului și FĂRĂ formular), nu 16 copii.

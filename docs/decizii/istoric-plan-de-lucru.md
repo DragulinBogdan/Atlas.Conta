@@ -432,3 +432,24 @@ per felie):
   înainte de a verifica ⇒ draft pierdut) + 9 medii, fixate cu probe;
   ModelCheck final privat 944 / bugetar 900, 0 FAIL; 31 de probe HTTP +
   smoke 11/11 pe Privat. Decizia 79.
+
+- **2026-09-02 — P5-F22, refuzurile de acces pe toate ușile (decizia 80)**:
+  restanța de fond 77-r8 și familia ei (70-r1/72-r10/76-r4/76-r5/77k/79-r6)
+  închise printr-o singură regulă: 404 = inexistent SAU invizibil (nedistins,
+  fără oracol de existență), 403 = vizibil / pe tip dar operația refuzată,
+  422 = domeniu doar pe cereri permise; ordinea 401→400→404→403→422 pe REST și
+  OData. Module: `Refuzuri` (mesaje unice, `RefuzAcces :
+  IUserFriendlySecurityException`), `Rezolva.Cere` (88 de throw-uri „nu
+  există" ⇒ fraza onestă „nu există sau nu e vizibil"), pasul zero al
+  `GardianEditare` (securitatea înaintea domeniului — inversarea lui 77k),
+  rolul `Cititori`/userul `Cititor` dev-only. WebApi: gate explicit pe ușa de
+  scriere pe tipul feliei (`CreareAutorizata`/`ScriereAutorizata(id, op)`,
+  Create+Write pe nou, Delete distinct), `ComandaAutorizata<T>` pe tipul
+  feliei + `peUsaAsta`, corpuri `EroriDto` pe 403/404, `RefuzOdataFilter`
+  (404 → 403 → 422), ITV cere Read pe `RegistruContabil`. Client: o singură
+  ramură pe `Erori[]`, `dxStore.onAjaxError`. Probe: script repetabil
+  `nou/tools/ProbeHttp/refuzuri.ps1` — 42 de probe, 42 PASS pe Privat
+  (Admin/Cititor/User), fără urme; review advers 0 fond / 2 medii (M1 ușa NTC
+  pe id ITV, M2 Create fără Write) fixate cu probe; ModelCheck final privat
+  947 / bugetar 903, 0 FAIL. Capcană: agenții au rescris fișiere CRLF ca LF —
+  regula e terminatorul fișierului. Decizia 80.
