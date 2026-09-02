@@ -71,8 +71,7 @@ public static class OperareApi {
     // instanța tipului derivat real (același apel îl face motorul pe
     // `DocumentSursaId` la imperecherea automată — MotorOperare.Opereaza).
     static Document Incarca(IObjectSpace os, Guid documentId) =>
-        os.GetObjectByKey<Document>(documentId)
-            ?? throw new OperareException($"Documentul {documentId} nu există.");
+        Rezolva.Cere<Document>(os, documentId, "Documentul");
 
     // Eticheta unui draft autogenerat: numărul dacă îl are (nu-l are — numărul
     // se consumă abia la propria operare, GATE XAF D6), altfel codul tipului.

@@ -14,7 +14,9 @@ namespace Atlas.Conta.BackOffice.Module.Api.Dsc;
 // [NotMapped] și nicio navigație enumerată în afara query-ului (25b).
 public static class DscApply {
 
-    // `null` dacă documentul nu există (sau nu e o descărcare de gestiune).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e o descărcare de gestiune.
     public static DscReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<DescarcareGestiune>()
             .Where(d => d.ID == id)

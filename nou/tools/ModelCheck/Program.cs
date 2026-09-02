@@ -355,6 +355,47 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
             && !ctx.Produse.IgnoreQueryFilters().Any(r => r.Cod == "77R2"));
     }
 
+    // ═══ 22 (F22-D6) — fraza unică a referinței nerezolvabile ═══
+    // Ce se probează: pe ușa securizată `GetObjectByKey` întoarce `null` și
+    // pentru „nu există", și pentru „există dar securitatea îl ascunde"
+    // (`SecurityQueryCompiler` înfășoară orice query, inclusiv `Find`), deci
+    // mesajul nu are voie să afirme prima cauză. Cele ~84 de rezolvări de FK ale
+    // feliilor trec acum printr-un helper unic, iar fraza LUI e contractul.
+    //
+    // Ce NU se probează aici (declarat, F22-D9): ModelCheck n-are strategie de
+    // securitate — OS-urile lui sunt neautentificate, deci cauza „invizibil" nu
+    // se poate PRODUCE. Aceea se măsoară pe HTTP, cu utilizatorul `User`. Aici
+    // se fixează doar textul și forma refuzului (domeniu, nu acces).
+    {
+        using var osR = provider.CreateObjectSpace();
+        var idFantoma = Guid.NewGuid();
+        var asteptat = $"Furnizorul ({idFantoma}) nu există sau nu e vizibil(ă) "
+            + "pentru utilizatorul curent.";
+        var mesajCere = Refuz(() => Rezolva.Cere<Partener>(osR, idFantoma, "Furnizorul"));
+        var mesajOptional = Refuz(() => Rezolva.Optional<Partener>(osR, idFantoma, "Furnizorul"));
+        Partener peNull = null;
+        var mesajNullOptional = Refuz(() => peNull = Rezolva.Optional<Partener>(osR, null, "Furnizorul"));
+        // Gol ≠ absent: `Guid.Empty` e o valoare CULEASĂ care nu se rezolvă, deci
+        // refuz — semantica de care depinde proba NTC pe `TipMaterialId` gol.
+        var mesajGolOptional = Refuz(() =>
+            Rezolva.Optional<TipMaterial>(osR, Guid.Empty, "Tipul (contul/clasa)"));
+        Console.WriteLine($"     MĂSURAT (F22-D6): Cere → „{mesajCere ?? "<A TRECUT>"}”; "
+            + $"Optional(null) → „{mesajNullOptional ?? "acceptat, null"}”; "
+            + $"Optional(Guid.Empty) → „{mesajGolOptional ?? "<A TRECUT>"}”.");
+        Check("F22-D6: `Rezolva.Cere` pe un id nerezolvabil refuză ca DOMENIU (`OperareException`, adică "
+            + "422 pe sârmă — referința nu e subiectul cererii, deci nu e 404), cu fraza care spune "
+            + "adevărul („nu există SAU nu e vizibil(ă)”), purtând rolul și id-ul; `Optional` are "
+            + "exact același text",
+            mesajCere == asteptat && mesajOptional == asteptat);
+        Check("F22-D6: `Optional` cu id absent (null) nu interoghează și nu refuză; `Guid.Empty` NU e "
+            + "„absent” — e o valoare culeasă care nu se rezolvă, deci primește aceeași frază",
+            mesajNullOptional == null && peNull == null
+            && mesajGolOptional == $"Tipul (contul/clasa) ({Guid.Empty}) nu există sau nu e "
+                + "vizibil(ă) pentru utilizatorul curent.");
+        Check("F22-D6: fraza e a lui `Refuzuri`, o singură sursă — helper-ul nu-și scrie propriul text",
+            Refuzuri.ReferintaInvizibila("Furnizorul", idFantoma) == asteptat);
+    }
+
     // ═══ 78 — căutarea fără diacritice pe PROIECȚII (`DataSourceLoader`) ═══
     // Perechea oracolului F20-D1 de mai sus: acolo se probează COLOANA generată
     // (ușa OData a nomenclatoarelor), aici REscrierea predicatelor de string ale
@@ -17356,8 +17397,9 @@ void VerificaApiNtc(bool privat) {
         };
         NotaContabilaApply.Aplica(os, idNtc, Payload(l, l));
     });
-    CheckRefuza("Api NTC: `TipMaterialId` absent din payload → refuz de DOMENIU („tipul … nu există”), "
-        + "nu violare de FK NOT NULL (singurul câmp fără rol pe notă, dar obligatoriu pe BAZĂ)", () => {
+    CheckRefuza("Api NTC: `TipMaterialId` absent din payload → refuz de DOMENIU („Tipul (contul/clasa) … "
+        + "nu există sau nu e vizibil(ă)…”, fraza unică F22-D6), nu violare de FK NOT NULL "
+        + "(singurul câmp fără rol pe notă, dar obligatoriu pe BAZĂ)", () => {
         var l = LinieValida(); l.TipMaterialId = Guid.Empty;
         NotaContabilaApply.Aplica(os, idNtc, Payload(l));
     });

@@ -43,8 +43,7 @@ public static class FacturaIntrareApply {
 
         FacturaIntrare doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<FacturaIntrare>(existentId)
-                ?? throw new OperareException($"Factura de intrare {existentId} nu există.");
+            doc = Rezolva.Cere<FacturaIntrare>(os, existentId, "Factura de intrare");
             if (doc.Stare != StareDocument.Draft)
                 throw new OperareException(
                     $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se mai modifică. "
@@ -82,9 +81,7 @@ public static class FacturaIntrareApply {
         doc.GenereazaPlata = dto.GenereazaPlata;
         // Navigația, ca la laturi: existența se validează cu mesaj de domeniu.
         if (dto.PlataContPropriuId is Guid contPropriuId) {
-            doc.PlataContPropriu = os.GetObjectByKey<ContPropriu>(contPropriuId)
-                ?? throw new OperareException(
-                    $"Contul propriu (casă/bancă) {contPropriuId} nu există în nomenclator.");
+            doc.PlataContPropriu = Rezolva.Cere<ContPropriu>(os, contPropriuId, "Contul propriu (casă/bancă)");
         }
         else {
             doc.PlataContPropriu = null;
@@ -113,8 +110,7 @@ public static class FacturaIntrareApply {
     // să vadă ștergerile DEJA marcate, dar înaintea commit-ului (loturile intră
     // în același SaveChanges). Loturile FINALIZATE de motor nu se ating niciodată.
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<FacturaIntrare>(id)
-            ?? throw new OperareException($"Factura de intrare {id} nu există.");
+        var doc = Rezolva.Cere<FacturaIntrare>(os, id, "Factura de intrare");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -168,15 +164,13 @@ public static class FacturaIntrareApply {
             var bazaVeche = noua ? 0m : detaliu.PretUnitar * detaliu.Cantitate;
             Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
 
             // Produsul e mecanismul lotului (GATE XAF D1): îl consumă
             // `LoturiCulegereService` după reconciliere. `LotId` NU se atinge —
             // e server-owned pe FCT.
             if (l.ProdusId is Guid produsId) {
-                detaliu.Produs = os.GetObjectByKey<Produs>(produsId)
-                    ?? throw new OperareException($"Produsul {produsId} nu există în catalog.");
+                detaliu.Produs = Rezolva.Cere<Produs>(os, produsId, "Produsul");
             }
             else {
                 detaliu.Produs = null;
@@ -195,8 +189,7 @@ public static class FacturaIntrareApply {
             detaliu.LotFabricatie = l.LotFabricatie;
 
             if (l.TipTvaId is Guid tipTvaId) {
-                detaliu.TipTva = os.GetObjectByKey<TipTva>(tipTvaId)
-                    ?? throw new OperareException($"Tipul de TVA {tipTvaId} nu există.");
+                detaliu.TipTva = Rezolva.Cere<TipTva>(os, tipTvaId, "Tipul de TVA");
             }
             else {
                 detaliu.TipTva = null;
@@ -204,8 +197,7 @@ public static class FacturaIntrareApply {
             }
 
             if (l.AngajamentId is Guid angajamentId) {
-                detaliu.Angajament = os.GetObjectByKey<Angajament>(angajamentId)
-                    ?? throw new OperareException($"Angajamentul {angajamentId} nu există.");
+                detaliu.Angajament = Rezolva.Cere<Angajament>(os, angajamentId, "Angajamentul");
             }
             else {
                 detaliu.Angajament = null;
@@ -273,16 +265,11 @@ public static class FacturaIntrareApply {
             os.Delete(sterse);
     }
 
-    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol) where T : class {
-        if (id == null)
-            return null;
-        return os.GetObjectByKey<T>(id.Value)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclator.");
-    }
+    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
+            where T : class => Rezolva.Optional<T>(os, id, rol);
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
     // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
@@ -305,7 +292,9 @@ public static class FacturaIntrareApply {
     // Proiecții PLATE (42c): `Select` înainte de materializare, niciun membru
     // [NotMapped] și nicio navigație enumerată în afara query-ului (25b).
 
-    // `null` dacă documentul nu există (sau nu e o factură de intrare).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e o factură de intrare.
     public static FacturaIntrareReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<FacturaIntrare>()
             .Where(d => d.ID == id)

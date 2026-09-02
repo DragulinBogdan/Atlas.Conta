@@ -42,8 +42,7 @@ public static class TrezorerieApply {
         if (id is Guid existentId) {
             // `GetObjectByKey<T>` filtrează și pe TIP sub TPT: un id de încasare
             // cerut pe ruta plăților nu „adoptă" documentul, ci întoarce null.
-            doc = os.GetObjectByKey<T>(existentId)
-                ?? throw new OperareException($"{Fel<T>()} {existentId} nu există.");
+            doc = Rezolva.Cere<T>(os, existentId, Fel<T>());
             if (doc.Stare != StareDocument.Draft)
                 throw new OperareException(
                     $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se mai modifică. "
@@ -80,9 +79,7 @@ public static class TrezorerieApply {
             if (perecheId == doc.ID)
                 throw new OperareException(
                     "Latura pereche nu poate fi documentul însuși — alegeți celălalt picior al viramentului.");
-            doc.LaturaPereche = os.GetObjectByKey<DocumentTrezorerie>(perecheId)
-                ?? throw new OperareException(
-                    $"Documentul indicat ca latură pereche ({perecheId}) nu există.");
+            doc.LaturaPereche = Rezolva.Cere<DocumentTrezorerie>(os, perecheId, "Documentul indicat ca latură pereche");
         }
         else {
             doc.LaturaPereche = null;
@@ -102,8 +99,7 @@ public static class TrezorerieApply {
     // stoc) și fără gardian de imperecheri: un link cere ambele documente
     // OPERATE (31d), deci un draft nu poate avea niciunul.
     public static void Sterge<T>(IObjectSpace os, Guid id) where T : DocumentTrezorerie {
-        var doc = os.GetObjectByKey<T>(id)
-            ?? throw new OperareException($"{Fel<T>()} {id} nu există.");
+        var doc = Rezolva.Cere<T>(os, id, Fel<T>());
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -172,8 +168,7 @@ public static class TrezorerieApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
 
             // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
             // o sumă în afara lui numeric(18,2) ar ieși ca DbUpdateException brută
@@ -188,8 +183,7 @@ public static class TrezorerieApply {
             // (plata autogenerată) rămân exact cum le-a lăsat motorul.
 
             if (l.AngajamentId is Guid angajamentId) {
-                detaliu.Angajament = os.GetObjectByKey<Angajament>(angajamentId)
-                    ?? throw new OperareException($"Angajamentul {angajamentId} nu există.");
+                detaliu.Angajament = Rezolva.Cere<Angajament>(os, angajamentId, "Angajamentul");
             }
             else {
                 detaliu.Angajament = null;
@@ -214,16 +208,10 @@ public static class TrezorerieApply {
     }
 
     static TNomenclator Nomenclator<TNomenclator>(IObjectSpace os, Guid? id, string rol)
-        where TNomenclator : class {
-        if (id == null)
-            return null;
-        return os.GetObjectByKey<TNomenclator>(id.Value)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclator.");
-    }
+            where TNomenclator : class => Rezolva.Optional<TNomenclator>(os, id, rol);
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară — geamănul celui din `FacturaIntrareApply`: `numeric(18,s)`
     // ⇒ cel mult `s` zecimale și `18 − s` cifre întregi (49e).
@@ -257,7 +245,7 @@ public static class TrezorerieApply {
     // Proiecții PLATE (42c): `Select` înainte de materializare, niciun membru
     // [NotMapped] și nicio navigație enumerată în afara query-ului (25b).
 
-    // `null` dacă documentul nu există SAU nu e de tipul cerut (sub TPT,
+    // `null` dacă documentul nu există / nu e vizibil (F22-D1) SAU nu e de tipul cerut (sub TPT,
     // `GetObjectsQuery<Plata>` nu vede încasările — filtrarea e în SQL).
     public static TrezorerieReadDto Citeste<T>(IObjectSpace os, Guid id) where T : DocumentTrezorerie {
         var h = os.GetObjectsQuery<T>()

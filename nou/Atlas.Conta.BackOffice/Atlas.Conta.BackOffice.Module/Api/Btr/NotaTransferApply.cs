@@ -26,8 +26,7 @@ public static class NotaTransferApply {
 
         NotaTransfer doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<NotaTransfer>(existentId)
-                ?? throw new OperareException($"Nota de transfer {existentId} nu există.");
+            doc = Rezolva.Cere<NotaTransfer>(os, existentId, "Nota de transfer");
             // Pre-check de DOMENIU: gardianul (`GardianEditare`) ar prinde oricum
             // la commit, dar abia după ce am rescris header-ul și liniile în
             // ObjectSpace-ul viu, cu mesajul lui generic. Aici oprim din prima.
@@ -80,11 +79,9 @@ public static class NotaTransferApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
             if (l.LotId is Guid lotId) {
-                detaliu.Lot = os.GetObjectByKey<Lot>(lotId)
-                    ?? throw new OperareException($"Lotul {lotId} nu există.");
+                detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
             }
             else {
                 detaliu.Lot = null;
@@ -108,8 +105,7 @@ public static class NotaTransferApply {
     }
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;
@@ -121,7 +117,9 @@ public static class NotaTransferApply {
     // (reconfirmarea 25b). Owned-ul nu mai există (DIM-3), dar principiul e
     // același: pe sârmă trec câmpuri, nu grafuri.
 
-    // `null` dacă documentul nu există (sau nu e o notă de transfer).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e o notă de transfer.
     public static NotaTransferReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<NotaTransfer>()
             .Where(d => d.ID == id)

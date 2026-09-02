@@ -61,7 +61,9 @@ public static class InchidereTvaApply {
                };
     }
 
-    // `null` dacă documentul nu există (sau nu e o închidere de TVA).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e o închidere de TVA.
     public static ItvReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<InchidereTva>()
             .Where(d => d.ID == id)
@@ -225,8 +227,7 @@ public static class InchidereTvaApply {
     // documentelor ei) e LEGITIM: draftul vechi e depășit și se șterge, iar
     // raportul iese cu `DocumentId = null`.
     public static GenerareItvRezultatDto Regenereaza(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<InchidereTva>(id)
-            ?? throw new OperareException($"Închiderea de TVA {id} nu există.");
+        var doc = Rezolva.Cere<InchidereTva>(os, id, "Închiderea de TVA");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Închiderea {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se regenerează. "
@@ -246,8 +247,7 @@ public static class InchidereTvaApply {
     // — liniile închiderii nu nasc loturi, deci un apel ar fi fost inofensiv, dar
     // mincinos.
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<InchidereTva>(id)
-            ?? throw new OperareException($"Închiderea de TVA {id} nu există.");
+        var doc = Rezolva.Cere<InchidereTva>(os, id, "Închiderea de TVA");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Închiderea {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "

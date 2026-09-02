@@ -32,8 +32,7 @@ public static class BonConsumApply {
 
         BonConsum doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<BonConsum>(existentId)
-                ?? throw new OperareException($"Bonul de consum {existentId} nu există.");
+            doc = Rezolva.Cere<BonConsum>(os, existentId, "Bonul de consum");
             // Pre-check de DOMENIU: gardianul (`GardianEditare`) ar prinde oricum
             // la commit, dar abia după ce am rescris header-ul și liniile în
             // ObjectSpace-ul viu, cu mesajul lui generic. Aici oprim din prima.
@@ -72,8 +71,7 @@ public static class BonConsumApply {
     // lotul unei linii de consum e al altcuiva (l-a născut o recepție), iar
     // curățenia nu are ce să caute. Un apel ar fi inofensiv, dar mincinos.
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<BonConsum>(id)
-            ?? throw new OperareException($"Bonul de consum {id} nu există.");
+        var doc = Rezolva.Cere<BonConsum>(os, id, "Bonul de consum");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -105,11 +103,9 @@ public static class BonConsumApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
             if (l.LotId is Guid lotId) {
-                detaliu.Lot = os.GetObjectByKey<Lot>(lotId)
-                    ?? throw new OperareException($"Lotul {lotId} nu există.");
+                detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
             }
             else {
                 detaliu.Lot = null;
@@ -150,8 +146,7 @@ public static class BonConsumApply {
     }
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
     // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
@@ -176,7 +171,9 @@ public static class BonConsumApply {
     // Direct pe `DocumentDetaliu`, fără `as`-cast: BCS n-are frunză (DIM-2 nu i-a
     // dat una — nu culege nicio dimensiune), deci toate liniile lui sunt de bază.
 
-    // `null` dacă documentul nu există (sau nu e un bon de consum).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e un bon de consum.
     public static BcsReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<BonConsum>()
             .Where(d => d.ID == id)

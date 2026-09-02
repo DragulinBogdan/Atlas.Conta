@@ -33,8 +33,7 @@ public static class NirApply {
 
         NIR doc;
         if (id is Guid existentId) {
-            doc = os.GetObjectByKey<NIR>(existentId)
-                ?? throw new OperareException($"NIR-ul {existentId} nu există.");
+            doc = Rezolva.Cere<NIR>(os, existentId, "NIR-ul");
             if (doc.Stare != StareDocument.Draft)
                 throw new OperareException(
                     $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se mai modifică. "
@@ -79,8 +78,7 @@ public static class NirApply {
     // FINALIZATE de motor nu se ating niciodată — inclusiv lotul STRĂIN al unei
     // clone conexe, care nici măcar nu e al liniilor de aici.
     public static void Sterge(IObjectSpace os, Guid id) {
-        var doc = os.GetObjectByKey<NIR>(id)
-            ?? throw new OperareException($"NIR-ul {id} nu există.");
+        var doc = Rezolva.Cere<NIR>(os, id, "NIR-ul");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -134,8 +132,7 @@ public static class NirApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = os.GetObjectByKey<TipMaterial>(l.TipMaterialId)
-                ?? throw new OperareException($"Tipul (contul/clasa) {l.TipMaterialId} nu există.");
+            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
 
             // Produsul e mecanismul lotului (F5-D2): îl consumă
             // `LoturiCulegereService` după reconciliere. `LotId` NU se atinge —
@@ -156,8 +153,7 @@ public static class NirApply {
                 detaliu.ProdusId = null;
             }
             else if (l.ProdusId is Guid produsId) {
-                detaliu.Produs = os.GetObjectByKey<Produs>(produsId)
-                    ?? throw new OperareException($"Produsul {produsId} nu există în catalog.");
+                detaliu.Produs = Rezolva.Cere<Produs>(os, produsId, "Produsul");
             }
             else {
                 detaliu.Produs = null;
@@ -179,8 +175,7 @@ public static class NirApply {
             // factură — un PUT nu are voie să i-l șteargă.
 
             if (l.AngajamentId is Guid angajamentId) {
-                detaliu.Angajament = os.GetObjectByKey<Angajament>(angajamentId)
-                    ?? throw new OperareException($"Angajamentul {angajamentId} nu există.");
+                detaliu.Angajament = Rezolva.Cere<Angajament>(os, angajamentId, "Angajamentul");
             }
             else {
                 detaliu.Angajament = null;
@@ -238,16 +233,11 @@ public static class NirApply {
         }
     }
 
-    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol) where T : class {
-        if (id == null)
-            return null;
-        return os.GetObjectByKey<T>(id.Value)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclator.");
-    }
+    static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
+            where T : class => Rezolva.Optional<T>(os, id, rol);
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
-        os.GetObjectByKey<Repartitor>(id)
-            ?? throw new OperareException($"{rol} ({id}) nu există în nomenclatorul de repartitori.");
+        Rezolva.Cere<Repartitor>(os, id, rol);
 
     // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
     // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
@@ -270,7 +260,9 @@ public static class NirApply {
     // Proiecții PLATE (42c): `Select` înainte de materializare, niciun membru
     // [NotMapped] și nicio navigație enumerată în afara query-ului (25b).
 
-    // `null` dacă documentul nu există (sau nu e un NIR).
+    // `null` dacă documentul nu există, nu e vizibil (pe ușa securizată cele
+    // două nu se disting — F22-D1, apelantul le traduce în același 404)
+    // sau nu e un NIR.
     public static NirReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<NIR>()
             .Where(d => d.ID == id)

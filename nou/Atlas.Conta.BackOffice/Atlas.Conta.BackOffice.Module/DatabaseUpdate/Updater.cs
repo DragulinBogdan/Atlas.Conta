@@ -32,6 +32,7 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
             // If a role doesn't exist in the database, create this role
             var defaultRole = CreateDefaultRole();
             var adminRole = CreateAdminRole();
+            var cititoriRole = CreateCititoriRole();
 
             ObjectSpace.CommitChanges(); //This line persists created object(s).
 
@@ -54,6 +55,21 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
                 _ = userManager.CreateUser<ApplicationUser>(ObjectSpace, "Admin", EmptyPassword, (user) => {
                     // Add the Administrators role to the user
                     user.Roles.Add(adminRole);
+                });
+            }
+
+            // Utilizatorul „Cititor" (felia 22, F22-D7) — al treilea colț al
+            // matricei de probare a refuzurilor. Fără el, 403-ul de scriere nu
+            // era MĂSURABIL pe nicio ușă: `Admin` trece tot (rol administrativ),
+            // iar `User` e refuzat mai devreme, de invizibilitate (404/422 pe
+            // primul FK pe care nu-l vede — 72-r10/76-r5), deci nu ajunge
+            // niciodată la întrebarea „ai voie să scrii?". `Cititor` vede TOT și
+            // n-are voie să scrie NIMIC: exact cazul care izolează dreptul de
+            // vizibilitate. Parolă goală, ca la ceilalți doi — dev-only.
+            if (userManager.FindUserByName<ApplicationUser>(ObjectSpace, "Cititor") == null) {
+                string EmptyPassword = "";
+                _ = userManager.CreateUser<ApplicationUser>(ObjectSpace, "Cititor", EmptyPassword, (user) => {
+                    user.Roles.Add(cititoriRole);
                 });
             }
 
@@ -86,6 +102,36 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
                 adminRole.IsAdministrative = true;
             }
             return adminRole;
+        }
+        // Rolul „Cititori" (felia 22, F22-D7): Read pe TOT, niciun Write, Create
+        // sau Delete. DEV-ONLY, ca `Default`/`Administrators` — trăiește în
+        // blocul `#if !RELEASE` de mai sus și nu e un rol de producție (F22-D11).
+        //
+        // Forma aleasă e `PermissionPolicy = ReadOnlyAllByDefault`, nu o listă de
+        // `AddTypePermissionsRecursively<...>(Read, Allow)`. Motivul e că
+        // politica dă EXACT semantica cerută, la sursă:
+        // `PermissionsContainer.IsOperationAllowByPolicy` (26.1.3,
+        // `PermissionsContainer.cs:279-281`) acordă, pentru
+        // `ReadOnlyAllByDefault`, DOAR `Read` și `Navigate` — deci navigația e
+        // permisă fără nicio `AddNavigationPermission`, iar Write/Create/Delete
+        // sunt refuzate pe orice tip, inclusiv pe tipurile care s-ar adăuga
+        // mâine. O listă enumerată ar fi trebuit ținută la zi, și fiecare tip
+        // uitat ar fi făcut proba să treacă din alt motiv decât cel probat.
+        //
+        // Nu primește permisiunile de „propriul ApplicationUser" ale rolului
+        // `Default`: acolo ele sunt EXCEPȚII de la o politică deny-all (citirea
+        // propriului user, scrierea parolei). Aici citirea e deja permisă peste
+        // tot, iar scrierile alea sunt exact ce rolul trebuie să nu poată face —
+        // un `Cititor` care ar putea scrie ceva n-ar mai fi oracolul lui 403.
+        PermissionPolicyRole CreateCititoriRole() {
+            PermissionPolicyRole cititoriRole =
+                ObjectSpace.FirstOrDefault<PermissionPolicyRole>(r => r.Name == "Cititori");
+            if (cititoriRole == null) {
+                cititoriRole = ObjectSpace.CreateObject<PermissionPolicyRole>();
+                cititoriRole.Name = "Cititori";
+                cititoriRole.PermissionPolicy = SecurityPermissionPolicy.ReadOnlyAllByDefault;
+            }
+            return cititoriRole;
         }
         PermissionPolicyRole CreateDefaultRole() {
             PermissionPolicyRole defaultRole = ObjectSpace.FirstOrDefault<PermissionPolicyRole>(role => role.Name == "Default");
