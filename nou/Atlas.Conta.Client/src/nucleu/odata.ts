@@ -186,6 +186,18 @@ export function storeOData(entitate: string, optiuni: OptiuniStore = {}): ODataS
     },
     // Sesiunea expirată trebuie tratată la fel pe TOATE conductele, nu doar pe
     // `http.ts`: altfel lookup-urile rămân mute (listă goală) după expirare.
+    //
+    // Ce NU se poate face aici (F22-D8, măsurat pe sursele DevExtreme 26.1.4):
+    // motivul unui 403/404 nu ajunge până la handler. `errorFromResponse`
+    // (`esm/__internal/data/odata/m_utils.js`) construiește `Error(message)` cu
+    // `message = xhr.statusText` și păstrează din corp DOAR formele OData
+    // (`error` / `odata.error` / `@odata.error`); `EroriDto`-ul nostru
+    // (`{Erori:[…]}`) nu e niciuna dintre ele, iar `responseText` nu ajunge pe
+    // obiectul de eroare. Deci pe conducta `ODataStore` operatorul vede tot
+    // „Not Found"/„Forbidden" — rescrierea ar cere înlocuirea lui `sendRequest`,
+    // nu un handler. SCRIERILE de nomenclator nu sunt afectate: ele trec prin
+    // `http.ts` (`posteaza`/`modifica`/`sterge`), unde corpul e citit; la fel
+    // grilele `DataSourceLoader`, unde `dxStore.ts` rescrie `e.error`.
     errorHandler: (e: { httpStatus?: number }) => { if (e.httpStatus === 401) expiraSesiunea(); },
   }) as ODataStore;
 }
