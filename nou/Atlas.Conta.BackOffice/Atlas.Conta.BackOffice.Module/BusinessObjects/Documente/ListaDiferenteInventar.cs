@@ -121,6 +121,10 @@ public class ListaDiferenteInventarDetaliu : DocumentDetaliu, ILinieCuAtributeLo
     [XafDisplayName("Produs")]
     public virtual Produs Produs { get; set; }
 
+    // F23-D2 — produsul cules, prin contractul bazei (`ProdusCules`), ca
+    // implicitul de TVA să nu întrebe frunza prin `is` sau prin reflecție.
+    public override Guid? ProdusCules() => ProdusId;
+
     // F6-D3: doar plusul naște. Direcția nesetată (enum-ul n-are default valid —
     // 28e) cade tot pe `false`: o linie fără direcție culeasă nu inventează marfă.
     // Flag de MECANISM, nu câmp: nu se mapează (n-ar avea backing field oricum,

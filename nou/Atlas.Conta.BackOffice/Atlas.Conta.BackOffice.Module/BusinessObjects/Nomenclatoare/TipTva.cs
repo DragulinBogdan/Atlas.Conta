@@ -1,5 +1,6 @@
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
+using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -11,11 +12,30 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // ca atribute (SAF-T e direcțional: serii separate livrare/achiziție).
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class TipTva : BaseObject, ICuCautare {
+public class TipTva : BaseObject, ICuCautare, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     public virtual decimal Cota { get; set; }
     public virtual RegimTva Regim { get; set; }
+
+    // F23-D3 — tipul VIU al nomenclatorului. Un tip inactiv nu mai apare în
+    // lookup-urile de CULEGERE ale clientului (`Activ eq true`) și nu e ales
+    // niciodată de rezolvarea implicitelor (`ImpliciteService`: treapta care
+    // l-ar întoarce se SARE, cu motiv). Ce NU face: nu invalidează istoria — un
+    // tip inactiv pe o linie EXISTENTĂ e legitim (cota de 19% de dinainte de
+    // august 2025 rămâne pe facturile ei) și nu se refuză nicăieri.
+    //
+    // Inițializatorul `= true` e jumătatea de CULEGERE (un tip nou e viu), iar
+    // `HasDefaultValue(true)` din `BackOfficeDbContext` e jumătatea de MIGRAȚIE
+    // (rândurile existente rămân vii la adăugarea coloanei).
+    [XafDisplayName("Activ")]
+    public virtual bool Activ { get; set; } = true;
 
     // Conturile de TVA (4426/4427/4428) trăiesc în planul mare — lookup standard
     // (SmartLookup revertat, decizia 40d/gate).

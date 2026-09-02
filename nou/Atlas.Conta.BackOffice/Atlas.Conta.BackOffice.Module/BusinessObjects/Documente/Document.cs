@@ -322,6 +322,18 @@ public class DocumentDetaliu : BaseObject {
     // plata autogenerată, descărcarea): copiere frunză→frunză prin contract.
     public virtual void PreiaDimensiuni(Dimensiuni sursa) { }
 
+    // Produsul CULES pe linie, ca CONTRACT — nu ca reflecție și nu ca `is` pe
+    // frunze (invariantul II / 25b). Baza nu poartă `ProdusId` (decizia 25c),
+    // dar cinci frunze îl au, cu semantici opuse: pe FCT/NIR/LDI+/ASM-produs
+    // naște lotul (`ILinieCareNasteLot`), pe FCL e pin de picking (37d).
+    // Pentru IMPLICITUL de TVA (felia 23, F23-D2) distincția nu contează —
+    // întrebarea e „despre ce produs vorbește linia asta?", iar ambele
+    // semantici răspund la fel. De-aia contractul e propriu și mai larg decât
+    // `ILinieCareNasteLot`: acela e despre a CREA stoc, ăsta despre a NUMI un
+    // produs. Frunzele fără produs (trezorerie, decont, notă, retururi)
+    // moștenesc `null` și cad natural pe treapta partenerului.
+    public virtual Guid? ProdusCules() => null;
+
     // Decizia 25c: lotul se naște LA CULEGERE pe linia de intrare (NIR manual,
     // FacturaIntrare pentru lanțul conex, plus de inventar, producție) — baza nu
     // poartă ProdusId, deci produsul ales intră direct pe Lot. Motorul îl

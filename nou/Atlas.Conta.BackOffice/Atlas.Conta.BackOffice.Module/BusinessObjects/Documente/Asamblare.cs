@@ -190,6 +190,10 @@ public class AsamblareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCare
     [XafDisplayName("Produs")]
     public virtual Produs Produs { get; set; }
 
+    // F23-D2 — produsul cules, prin contractul bazei (`ProdusCules`), ca
+    // implicitul de TVA să nu întrebe frunza prin `is` sau prin reflecție.
+    public override Guid? ProdusCules() => ProdusId;
+
     // F6-D3 aplicat pe ASM: doar produsul naște. Consumul descarcă un lot
     // EXISTENT, iar un produs rămas cules pe el ar naște lot-artefact pe draft.
     // Direcția nesetată (enum-ul n-are membru 0 — `Consum = 1`, `Produs = 2`, ca

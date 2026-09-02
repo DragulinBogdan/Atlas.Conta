@@ -141,6 +141,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Politica SAF-T S (felia 17, D17-D1): (TipDocument × TipStoc × Semn?) →
         // cod de mișcare + rolul terțului; cod null = excludere deliberată.
         public DbSet<PoliticaMiscareSaft> PoliticiMiscareSaft { get; set; }
+        // Implicitul de TVA la culegere (felia 23, F23-D2): (TipDocument ×
+        // ClasaFiscalaPartener? × ValabilDeLa?) → TipTva. Purtătorul de REGIM al
+        // rezolvării din `ImpliciteService`; cota vine de pe produs.
+        public DbSet<PoliticaTvaImplicit> PoliticiTvaImplicit { get; set; }
         // Setarea de profil a bazei (decizia 51c): un singur rând, scris de seed.
         public DbSet<SetareProfil> SetariProfil { get; set; }
 
@@ -338,9 +342,102 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasIndex(p => new { p.TipDocumentId, p.TipStoc }).IsUnique()
                 .HasFilter("\"Semn\" IS NULL AND \"GCRecord\" = 0");
 
+            AplicaUnicitatiPolitici(modelBuilder);
+
+            // F23-D3 — `Activ` e jumătatea de MIGRAȚIE a tipului viu: coloana se
+            // adaugă cu `DEFAULT true`, deci rândurile EXISTENTE rămân vii (un
+            // nomenclator care s-ar stinge în întregime la un `database update`
+            // ar goli tăcut toate lookup-urile de culegere). Perechea ei e
+            // inițializatorul `= true` de pe proprietate, pentru rândurile noi.
+            modelBuilder.Entity<TipTva>().Property(t => t.Activ).HasDefaultValue(true);
+
             AplicaScaraNumerica(modelBuilder);
             AplicaColoanaCautare(modelBuilder);
             AplicaFunctiaFaraDiacritice(modelBuilder);
+        }
+
+        // UNICITATEA POLITICILOR ȘI A CODURILOR DE NOMENCLATOR (felia 23,
+        // F23-D3). Până acum, nouă politici per tip de document și cinci coduri
+        // de nomenclator erau chei DOAR prin convenție: seed-ul le trata ca
+        // atare, motorul le citea cu `FirstOrDefault`, iar comentariul din
+        // `Cautare` afirma deja că indexurile există. Un al doilea rând pe
+        // aceeași cheie — creabil din XAF sau, de la felia asta, prin OData —
+        // făcea motorul NEDETERMINIST și TĂCUT: nu pică nimic, doar postează
+        // uneori altfel.
+        //
+        // Trei reguli comune, toate deja precedent în fișier:
+        //   * FILTRAT pe `"GCRecord" = 0` (60a): rândul șters logic rămâne fizic
+        //     în tabelă, iar un index nefiltrat i-ar bloca definitiv recrearea —
+        //     tocmai remediul unei greșeli de culegere;
+        //   * `NULLS NOT DISTINCT` (`AreNullsDistinct(false)`) unde cheia are
+        //     coloane nullable. În Postgres `NULL <> NULL`, deci fără asta două
+        //     rânduri „orice clasă / orice semn / regulă generică" pe aceeași
+        //     cheie ar trece nestingherite — exact dublura pe care indexul
+        //     există s-o oprească. Perechea de indexuri parțiale din 74a
+        //     (`PoliticaMiscareSaft`) a fost forma de dinaintea lui Postgres 15;
+        //     rămâne acolo, nu se rescrie într-o felie care nu e a ei.
+        //   * NIMIC nu se maschează: cheile de mai jos au fost măsurate pe cele
+        //     șase baze de dev înaintea migrației (0 grupuri duble). Un dublu
+        //     real ar fi fost regulă de oprire, nu un `DISTINCT ON` în migrație
+        //     (77k).
+        //
+        // Ce NU intră, declarat: `Repartitor.Cod`. Spațiul de coduri e PARTAJAT
+        // pe TPT între parteneri, gestiuni, angajați și conturi proprii, iar
+        // bazele de import au coliziuni legitime între familii — restanță cu
+        // nume, nu o unicitate impusă pe tăcute.
+        private static void AplicaUnicitatiPolitici(ModelBuilder modelBuilder) {
+            const string viu = "\"GCRecord\" = 0";
+
+            // (1) Politicile cu UN rând per tip de document — cheia e FK-ul,
+            // fără nullable, deci indexul simplu ajunge.
+            modelBuilder.Entity<PoliticaTva>()
+                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<PoliticaConex>()
+                .HasIndex(p => p.TipDocumentSursaId).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<PoliticaScadenta>()
+                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<PoliticaValidare>()
+                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<PoliticaNumerotare>()
+                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<PoliticaInchidereTva>()
+                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+
+            // (2) Regulile de alimentare — cheia lor e cheia de POTRIVIRE a
+            // motorului, cu nullable-uri pe trepte (`ClasaId`, `TipMaterialId`,
+            // `NaturaFiltru`, `SemnFiltru`). Aici `NULLS NOT DISTINCT` e chiar
+            // conținutul regulii: două reguli generice pe același tip ar fi
+            // ales-o pe prima întoarsă de bază.
+            modelBuilder.Entity<RegulaStoc>()
+                .HasIndex(r => new { r.TipDocumentId, r.Latura, r.ClasaId }).IsUnique()
+                .AreNullsDistinct(false).HasFilter(viu);
+            modelBuilder.Entity<RegulaContare>()
+                .HasIndex(r => new { r.TipDocumentId, r.TipMaterialId, r.NaturaFiltru, r.SemnFiltru })
+                .IsUnique().AreNullsDistinct(false).HasFilter(viu);
+
+            // (3) Implicitul de TVA (F23-D2): două dintre cele trei coloane ale
+            // cheii sunt nullable („orice clasă", „dintotdeauna").
+            modelBuilder.Entity<PoliticaTvaImplicit>()
+                .HasIndex(p => new { p.TipDocumentId, p.ClasaFiscala, p.ValabilDeLa }).IsUnique()
+                .AreNullsDistinct(false).HasFilter(viu);
+
+            // (4) Codurile de nomenclator pe care seed-ul le folosește DEJA ca
+            // chei de idempotență (`os.FirstOrDefault<T>(x => x.Cod == …)`).
+            // `TipDocument` are două: `Cod` e ancora de politică, `ClrType` e
+            // ancora de motor (`GasesteTipDocument`) — un al doilea rând pe
+            // oricare dintre ele ar rupe rezoluția de tip.
+            modelBuilder.Entity<TipDocument>()
+                .HasIndex(t => t.Cod).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<TipDocument>()
+                .HasIndex(t => t.ClrType).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<TipTva>()
+                .HasIndex(t => t.Cod).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<Cont>()
+                .HasIndex(c => c.Simbol).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<ClasaProdus>()
+                .HasIndex(c => c.Cod).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<TipMaterial>()
+                .HasIndex(t => t.Cod).IsUnique().HasFilter(viu);
         }
 
         // Căutarea fără diacritice pe PROIECȚII (decizia 78): `Cautare.

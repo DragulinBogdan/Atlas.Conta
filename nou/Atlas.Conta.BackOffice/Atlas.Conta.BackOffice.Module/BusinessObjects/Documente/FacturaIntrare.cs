@@ -184,6 +184,10 @@ public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILini
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Produs Produs { get; set; }
 
+    // F23-D2 — produsul cules, prin contractul bazei (`ProdusCules`), ca
+    // implicitul de TVA să nu întrebe frunza prin `is` sau prin reflecție.
+    public override Guid? ProdusCules() => ProdusId;
+
     // Atribute de lot culese la intrare; motorul le copiază pe Lot la operare.
     [XafDisplayName("Dată expirare")]
     public virtual DateOnly? DataExpirare { get; set; }

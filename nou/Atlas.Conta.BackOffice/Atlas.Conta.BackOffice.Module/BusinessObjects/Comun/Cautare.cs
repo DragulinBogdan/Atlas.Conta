@@ -12,7 +12,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 //   * colație ICU nedeterministă — `contains` al OData se traduce prin
 //     `LIKE`/`strpos`, al căror suport pe colații nedeterministe e recent și
 //     parțial, iar colația ar schimba și semantica egalității și a indexurilor
-//     unice existente (`Cod`, `Simbol`);
+//     unice pe coduri (`Cod`, `Simbol`). Când s-a scris nota, indexurile alea
+//     erau doar convenție de seed; felia 23 le-a pus în schemă (F23-D3,
+//     `BackOfficeDbContext.AplicaUnicitatiPolitici`), deci argumentul e acum
+//     literal: sub o colație nedeterministă „N21" și „Ñ21" ar fi devenit
+//     același cod;
 //   * `unaccent(...)` în jurul coloanei — filtrul îl compune `ODataStore` în
 //     client și EF îl traduce mecanic; nimeni nu poate injecta o funcție în
 //     jurul coloanei fără să intercepteze query-ul OData. În plus `unaccent`

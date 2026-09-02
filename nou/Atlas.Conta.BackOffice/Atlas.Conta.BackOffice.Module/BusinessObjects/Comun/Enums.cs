@@ -402,3 +402,42 @@ public enum MotivNegenerare {
     [XafDisplayName("O lună anterioară are un draft de închidere neoperat")] DraftAnterior = 5,
     [XafDisplayName("Perioada fiscală e închisă")] PerioadaInchisa = 6,
 }
+
+// Clasa fiscală a partenerului (felia 23, F23-D2) — aceleași patru valori cu
+// `tip_partener` din D394 (1–4), fiindcă e ACEEAȘI funcție a legii: „înregistrat
+// bate tot" (71b). Enum-ul e forma tipizată a cifrei, iar corpul lui trăiește o
+// singură dată, în `ClasaFiscala.APartenerului`; `D394Proiectii.TipPartener`
+// rămâne cu semnătura `int` (formularul scrie cifra), dar o cheamă de acolo.
+//
+// De ce enum și nu `int`: aici clasa e CHEIE de politică
+// (`PoliticaTvaImplicit.ClasaFiscala`), iar o coloană `int` ar fi lăsat să se
+// culeagă `7`. Stă în `BusinessObjects` ca dump-ul de metadata să-i ia
+// etichetele (`MetadataDump.EsteRelevant`), ca la `MotivNegenerare`.
+public enum ClasaFiscalaPartener {
+    [XafDisplayName("Înregistrat în scopuri de TVA în România")] InregistratRo = 1,
+    [XafDisplayName("Neînregistrat, din România")] NeinregistratRo = 2,
+    [XafDisplayName("Din Uniunea Europeană")] Ue = 3,
+    [XafDisplayName("Din afara Uniunii Europene")] ExtraUe = 4,
+}
+
+// De unde a venit tipul de TVA implicit al unei linii (felia 23, F23-D1/D2).
+// Serverul spune sursa, clientul o ARATĂ sub câmp („cota produsului", „ancora
+// tipului") — implicitul nu e o valoare care apare din senin, e un răspuns cu
+// motiv. `Niciuna` = nicio treaptă n-a dat un tip (linia rămâne fără TVA).
+public enum SursaImplicit {
+    [XafDisplayName("Niciuna")] Niciuna = 0,
+    [XafDisplayName("Regimul propriu al partenerului")] Partener = 1,
+    [XafDisplayName("Cota proprie a produsului")] Produs = 2,
+    [XafDisplayName("Politica tipului × clasa fiscală")] Politica = 3,
+    [XafDisplayName("Ancora tipului de document")] Ancora = 4,
+}
+
+// Felul unei constatări din raportul de verificare a profilului (F23-D8).
+// Raportul ARATĂ, seed-ul ARUNCĂ: aceleași fapte, două uși, un singur vocabular.
+public enum FelConstatare {
+    [XafDisplayName("Rând creat sau editat manual")] RandManual = 1,
+    [XafDisplayName("Referință spre un rând șters")] ReferintaStearsa = 2,
+    [XafDisplayName("Tip de TVA inactiv, referit ca implicit")] TipTvaInactivReferit = 3,
+    [XafDisplayName("Politică lipsă")] PoliticaLipsa = 4,
+    [XafDisplayName("Mapare lipsă")] MapareLipsa = 5,
+}

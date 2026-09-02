@@ -175,6 +175,10 @@ public class FacturaIesireDetaliu : DocumentDetaliu, ILinieCuPretUnitar {
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Produs Produs { get; set; }
 
+    // F23-D2 — produsul cules, prin contractul bazei (`ProdusCules`), ca
+    // implicitul de TVA să nu întrebe frunza prin `is` sau prin reflecție.
+    public override Guid? ProdusCules() => ProdusId;
+
     [NotMapped]
     [XafDisplayName("Valoare livrare")]
     public decimal ValoareLivrare => PretUnitar * Cantitate;

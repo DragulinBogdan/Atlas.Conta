@@ -145,15 +145,27 @@ public static class TvaService {
                     + $"linia {c.Pozitie} poartă TVA {c.TvaCules:N2} — goliți-o înainte de operare.");
     }
 
-    // Datoria P1 (design §8): default TipTva per tip de document, aplicat la
-    // CULEGERE (nu în motor) — TipDocument.TipTvaImplicit. No-op dacă linia are
-    // deja un TipTva cules (culegerea explicită bate default-ul). Apelantul:
-    // controllerul XAF de creare a liniei (pasul 5); ModelCheck o exersează direct.
+    // Datoria P1 (design §8): default TipTva aplicat la CULEGERE, nu în motor.
+    // No-op dacă linia are deja un TipTva cules — culegerea explicită bate
+    // default-ul, iar pe o linie EXISTENTĂ absența e golire deliberată (56).
+    //
+    // De la felia 23 e un WRAPPER peste `ImpliciteService.TipTva`: ancora
+    // `TipDocument.TipTvaImplicit` a devenit ultima treaptă a unei rezolvări cu
+    // trei picioare (partener → politică → ancoră, împăcate cu cota produsului),
+    // dar semnătura NU se schimbă — cei șase apelanți (cinci Apply-uri +
+    // `DefaultTipTvaController`) rămân neatinși, iar serverul și clientul nu pot
+    // diverge fiindcă amândoi trec prin aceeași funcție (F23-D1/D6).
+    //
+    // Data e a DOCUMENTULUI (rândurile de politică au valabilitate), produsul
+    // vine prin contractul bazei (`ProdusCules`), partenerul prin întrebarea
+    // pusă nomenclatorului — niciun `is` pe frunze (25b).
     public static void AplicaTipTvaImplicit(IObjectSpace os, Document doc, DocumentDetaliu linie) {
         if (linie.TipTvaId != null)
             return;
         var tip = MotorOperare.GasesteTipDocument(os, doc);
-        if (tip.TipTvaImplicitId != null)
-            linie.TipTvaId = tip.TipTvaImplicitId;
+        var rezultat = ImpliciteService.TipTva(os, tip.ID,
+            ImpliciteService.PartenerulDocumentului(os, doc), linie.ProdusCules(), doc.Data);
+        if (rezultat.TipTvaId != null)
+            linie.TipTvaId = rezultat.TipTvaId;
     }
 }

@@ -178,25 +178,16 @@ public static class D394Proiectii {
     // ── D4-D1: funcțiile nomenclatorului, publice și reutilizabile ──────────
 
     /// <summary>
-    /// `tip_partener` (1–4) din identitatea fiscală a partenerului (D4-D1, cu
-    /// fixurile 2/3 ale review-ului advers): **ÎNREGISTRAT BATE TOT** —
-    /// înregistrat în scopuri de TVA în România ⇒ 1, indiferent de felul
-    /// persoanei (PFA/II înregistrate) sau de țară (străin cu cod RO, art.
-    /// 316); apoi PF ⇒ 2; RO neînregistrat ⇒ 2; UE ⇒ 3; altfel 4. §4.2: tip 1 =
-    /// „persoane impozabile înregistrate în scopuri de TVA în România", tip 3 =
-    /// „neînregistrate și care nu sunt obligate să se înregistreze".
-    /// `Tara` goală se citește ca RO (default-ul nomenclatorului), nu ca 4.
+    /// `tip_partener` (1–4) din identitatea fiscală a partenerului. Corpul
+    /// regulii („înregistrat bate tot", D4-D1 cu fixurile 2/3 ale review-ului
+    /// advers) s-a mutat în <see cref="ClasaFiscala.APartenerului"/> la felia 23
+    /// (F23-D2): aceeași funcție a legii clasifică acum și rândul de
+    /// `PoliticaTvaImplicit`, deci nu mai poate trăi într-o proiecție de
+    /// formular. Semnătura rămâne `int` — formularul scrie cifra, iar niciun
+    /// apelant D394 nu se schimbă.
     /// </summary>
-    public static int TipPartener(TipPersoana tipPersoana, string tara, bool inregistratTva) {
-        if (inregistratTva)
-            return 1;
-        if (tipPersoana == TipPersoana.Fizica)
-            return 2;
-        var cod = Partener.NormalizeazaTara(tara);
-        if (cod == "RO")
-            return 2;
-        return TariUe.Contine(cod) ? 3 : 4;
-    }
+    public static int TipPartener(TipPersoana tipPersoana, string tara, bool inregistratTva) =>
+        (int)ClasaFiscala.APartenerului(tipPersoana, tara, inregistratTva);
 
     /// <summary>
     /// `cuiP`: `CodFiscal` normalizat — trim, majuscule, spațiile interioare
