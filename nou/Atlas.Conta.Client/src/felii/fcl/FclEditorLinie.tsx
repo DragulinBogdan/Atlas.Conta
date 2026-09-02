@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { usePrecompletareTipTva } from '../../nucleu/implicite';
 import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { etichetaLot } from '../../nucleu/lot';
@@ -22,9 +23,13 @@ import { SCHEMA_LINIE, TIP_LINIE, type FclLinieWrite } from './api';
 //     produsului se stinge (vezi `schimba`) — altfel ar rămâne un lot al altui
 //     produs, refuzat abia la operare.
 //  3. **TVA-ul se poartă la fel ca la FCT** (o singură semantică pe tot
-//     clientul): pe linie NOUĂ `TipTva` gol = implicitul tipului de document; pe
-//     linie EXISTENTĂ golirea e deliberată; `ValoareTva` se trimite DOAR dacă
-//     operatorul a atins câmpul în sesiunea asta (override manual — regula 36a).
+//     clientul): pe linie EXISTENTĂ golirea e deliberată și se trimite ca atare;
+//     pe linie NOUĂ cu câmpul gol clientul PRE-COMPLETEAZĂ ce ar aplica serverul,
+//     cerându-i chiar lui (F23-D6, aceeași funcție ca la PUT), cu motivul afișat
+//     sub câmp; `ValoareTva` se trimite DOAR dacă operatorul a atins câmpul în
+//     sesiunea asta (override manual — regula 36a). Pe FCL partenerul care
+//     poartă REGIMUL e PRIMITORUL (clientul): o livrare intracomunitară e
+//     scutită indiferent de produs.
 //
 // Ce NU face: nu decide dacă linia e „de stoc" (o spune natura Tipului, la
 // server), nu verifică soldul lotului („întâi BTR" e refuz al motorului — F4-D6)
@@ -49,6 +54,9 @@ export function FclEditorLinie(props: {
   linie: FclLinieWrite;
   // Ce a calculat SERVERUL pentru linia asta (ReadDto) — doar pentru afișare.
   valoareTvaCitita?: number | null;
+  // Contextul implicitului de TVA (F23-D6): pe FCL partenerul e PRIMITORUL.
+  partenerId?: string | null;
+  data?: string | null;
   readOnly: boolean;
   onSalveaza: (l: FclLinieWrite, etichete: EticheteCulese) => void;
   onRenunta: () => void;
@@ -66,6 +74,16 @@ export function FclEditorLinie(props: {
   const [aratErori, setAratErori] = useState(false);
   const structurale = eroriStructurale(TIP_LINIE, SCHEMA_LINIE, linie as Record<string, unknown>, CAMPURI);
   const produsId = linie.ProdusId ?? null;
+
+  // Implicitul se cere DOAR pe linie nouă cu câmpul gol; aplicarea e update
+  // FUNCȚIONAL și nu trece niciodată peste o valoare existentă (77c).
+  const motivImplicit = usePrecompletareTipTva(
+    { tipDocument: 'FCL', partenerId: props.partenerId, produsId, data: props.data },
+    props.linie.Id == null && linie.TipTvaId == null,
+    (tipTvaId, cod) => {
+      setLinie((prev) => (prev.TipTvaId ? prev : { ...prev, TipTvaId: tipTvaId }));
+      setEtichete((prev) => (prev.TipTvaCod ? prev : { ...prev, TipTvaCod: cod ?? '' }));
+    });
 
   function schimba(v: FclLinieWrite) {
     if (v.ValoareTva !== linie.ValoareTva)
@@ -165,13 +183,16 @@ export function FclEditorLinie(props: {
           </div>
           <CampNumar<FclLinieWrite> camp="Cantitate" />
           <CampNumar<FclLinieWrite> camp="PretUnitar" zecimale={6} />
-          <Lookup<FclLinieWrite>
-            camp="TipTvaId"
-            entitate="TipTva"
-            mod="local"
-            afisare={etichetaTipTva}
-            laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
-          />
+          <div>
+            <Lookup<FclLinieWrite>
+              camp="TipTvaId"
+              entitate="TipTva"
+              mod="local"
+              afisare={etichetaTipTva}
+              laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
+            />
+            {motivImplicit && <p className="indiciu">{motivImplicit}</p>}
+          </div>
           <div>
             <CampNumar<FclLinieWrite> camp="ValoareTva" zecimale={2} />
             <p className="indiciu">

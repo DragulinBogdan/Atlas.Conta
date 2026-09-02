@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { usePrecompletareTipTva } from '../../nucleu/implicite';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { SCHEMA_LINIE, TIP_LINIE, type DecLinieWrite } from './api';
 
@@ -22,9 +23,13 @@ import { SCHEMA_LINIE, TIP_LINIE, type DecLinieWrite } from './api';
 //  3. **Cantitatea e PRO-FORMĂ** (32d): 0 rămâne 0 aici și devine 1 la SERVER,
 //     la culegere (F8-D2) — nu se normalizează în TS.
 //  4. **TVA-ul se poartă la fel ca la FCT/FCL** (o singură semantică pe tot
-//     clientul): pe linie NOUĂ `TipTva` gol = implicitul tipului de document; pe
-//     linie EXISTENTĂ golirea e deliberată; `ValoareTva` se trimite DOAR dacă
-//     operatorul a atins câmpul în sesiunea asta (override manual — regula 36a).
+//     clientul): pe linie EXISTENTĂ golirea e deliberată și se trimite ca atare;
+//     pe linie NOUĂ cu câmpul gol clientul PRE-COMPLETEAZĂ ce ar aplica serverul,
+//     cerându-i chiar lui (F23-D6, aceeași funcție ca la PUT); `ValoareTva` se
+//     trimite DOAR dacă operatorul a atins câmpul în sesiunea asta (override
+//     manual — regula 36a). Decontul n-are partener pe laturi (predatorul e
+//     ANGAJATUL) și n-are produs pe linie, deci rezolvarea cade natural pe
+//     politica generică a tipului, apoi pe ancoră.
 const CAMPURI: (keyof DecLinieWrite & string)[] = ['TipMaterialId', 'Cantitate', 'PretUnitar'];
 
 // Etichetele CULESE la selecție, pentru grila documentului (mecanismul 61b):
@@ -53,6 +58,8 @@ export function DecEditorLinie(props: {
   linie: DecLinieWrite;
   // Ce a calculat SERVERUL pentru linia asta (ReadDto) — doar pentru afișare.
   valoareTvaCitita?: number | null;
+  // Contextul implicitului de TVA (F23-D6): decontul n-are partener, doar data.
+  data?: string | null;
   readOnly: boolean;
   onSalveaza: (l: DecLinieWrite, etichete: EticheteCulese) => void;
   onRenunta: () => void;
@@ -69,6 +76,16 @@ export function DecEditorLinie(props: {
   const [tvaAtins, setTvaAtins] = useState(props.linie.ValoareTva != null);
   const [aratErori, setAratErori] = useState(false);
   const structurale = eroriStructurale(TIP_LINIE, SCHEMA_LINIE, linie as Record<string, unknown>, CAMPURI);
+
+  // Implicitul se cere DOAR pe linie nouă cu câmpul gol; aplicarea e update
+  // FUNCȚIONAL și nu trece niciodată peste o valoare existentă (77c).
+  const motivImplicit = usePrecompletareTipTva(
+    { tipDocument: 'DEC', data: props.data },
+    props.linie.Id == null && linie.TipTvaId == null,
+    (tipTvaId, cod) => {
+      setLinie((prev) => (prev.TipTvaId ? prev : { ...prev, TipTvaId: tipTvaId }));
+      setEtichete((prev) => (prev.TipTvaCod ? prev : { ...prev, TipTvaCod: cod ?? '' }));
+    });
 
   function schimba(v: DecLinieWrite) {
     if (v.ValoareTva !== linie.ValoareTva)
@@ -111,13 +128,16 @@ export function DecEditorLinie(props: {
             </p>
           </div>
           <CampNumar<DecLinieWrite> camp="PretUnitar" zecimale={6} />
-          <Lookup<DecLinieWrite>
-            camp="TipTvaId"
-            entitate="TipTva"
-            mod="local"
-            afisare={etichetaTipTva}
-            laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
-          />
+          <div>
+            <Lookup<DecLinieWrite>
+              camp="TipTvaId"
+              entitate="TipTva"
+              mod="local"
+              afisare={etichetaTipTva}
+              laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
+            />
+            {motivImplicit && <p className="indiciu">{motivImplicit}</p>}
+          </div>
           <div>
             <CampNumar<DecLinieWrite> camp="ValoareTva" zecimale={2} />
             <p className="indiciu">

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { usePrecompletareTipTva } from '../../nucleu/implicite';
 import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta } from '../../nucleu/campMeta';
@@ -22,9 +23,11 @@ import { SCHEMA_LINIE, TIP_LINIE, type RlfLinieWrite } from './api';
 //     lotului (`$expand=Produs` aduce `Produs.TipMaterialId` — un Guid, fără
 //     `$expand` imbricat), doar când e gol: nu suprascriem alegerea omului.
 //  2. **TVA-ul, cu aceeași semantică pe tot clientul** (o singură regulă, 36a):
-//     pe o linie NOUĂ `TipTva` gol = implicitul tipului de document (N21); pe o
-//     linie EXISTENTĂ golirea e deliberată și se trimite ca atare (round-trip în
-//     `spreWrite`); `ValoareTva` se trimite DOAR dacă operatorul a atins câmpul
+//     pe o linie EXISTENTĂ golirea e deliberată și se trimite ca atare
+//     (round-trip în `spreWrite`); pe o linie NOUĂ cu câmpul gol clientul
+//     PRE-COMPLETEAZĂ ce ar aplica serverul, cerându-i chiar lui (F23-D6, aceeași
+//     funcție ca la PUT) — pe retur partenerul care poartă regimul e PRIMITORUL
+//     (furnizorul căruia i se întoarce marfa), iar linia n-are produs cules; `ValoareTva` se trimite DOAR dacă operatorul a atins câmpul
 //     în sesiunea asta — pe sârmă valoarea înseamnă „override manual", și e
 //     tocmai ce cere returul: nota de credit a furnizorului bate rotunjirea
 //     noastră. Serverul recalculează TVA-ul când se schimbă DECLANȘATORII bazei
@@ -54,6 +57,9 @@ export function RlfEditorLinie(props: {
   linie: RlfLinieWrite;
   // Ce a calculat SERVERUL pentru linia asta (ReadDto) — doar pentru afișare.
   valoareTvaCitita?: number | null;
+  // Contextul implicitului de TVA (F23-D6): pe RLF partenerul e PRIMITORUL.
+  partenerId?: string | null;
+  data?: string | null;
   readOnly: boolean;
   onSalveaza: (l: RlfLinieWrite, etichete: EticheteCulese) => void;
   onRenunta: () => void;
@@ -77,6 +83,16 @@ export function RlfEditorLinie(props: {
     ...eroriStructurale(TIP_LINIE, SCHEMA_LINIE, linie as Record<string, unknown>, CAMPURI),
     ...cerut('LotId', linie.LotId != null),
   ];
+
+  // Implicitul se cere DOAR pe linie nouă cu câmpul gol; aplicarea e update
+  // FUNCȚIONAL și nu trece niciodată peste o valoare existentă (77c).
+  const motivImplicit = usePrecompletareTipTva(
+    { tipDocument: 'RLF', partenerId: props.partenerId, data: props.data },
+    props.linie.Id == null && linie.TipTvaId == null,
+    (tipTvaId, cod) => {
+      setLinie((prev) => (prev.TipTvaId ? prev : { ...prev, TipTvaId: tipTvaId }));
+      setEtichete((prev) => (prev.TipTvaCod ? prev : { ...prev, TipTvaCod: cod ?? '' }));
+    });
 
   function schimba(v: RlfLinieWrite) {
     if (v.ValoareTva !== linie.ValoareTva)
@@ -151,13 +167,16 @@ export function RlfEditorLinie(props: {
               pune operarea.
             </p>
           </div>
-          <Lookup<RlfLinieWrite>
-            camp="TipTvaId"
-            entitate="TipTva"
-            mod="local"
-            afisare={etichetaTipTva}
-            laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
-          />
+          <div>
+            <Lookup<RlfLinieWrite>
+              camp="TipTvaId"
+              entitate="TipTva"
+              mod="local"
+              afisare={etichetaTipTva}
+              laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
+            />
+            {motivImplicit && <p className="indiciu">{motivImplicit}</p>}
+          </div>
           <div>
             <CampNumar<RlfLinieWrite> camp="ValoareTva" zecimale={2} />
             <p className="indiciu">

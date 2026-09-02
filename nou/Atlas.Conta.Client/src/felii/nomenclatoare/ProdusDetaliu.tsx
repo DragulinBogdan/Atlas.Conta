@@ -27,7 +27,7 @@ import { corpScriere, creeazaRand, invalideaza, modificaRand, stergeRand, useRan
 
 type Produs = components['schemas']['Produs'];
 
-const CAMPURI = ['Cod', 'Denumire', 'UM', 'TipMaterialId', 'UnitateMasuraId', 'CodNc'] as const;
+const CAMPURI = ['Cod', 'Denumire', 'UM', 'TipMaterialId', 'UnitateMasuraId', 'CodNc', 'TipTvaImplicitId'] as const;
 type Formularul = Partial<Pick<Produs, (typeof CAMPURI)[number]>>;
 
 const FORMA_COD_NC = /^\d{8}$/;
@@ -147,6 +147,23 @@ export function ProdusDetaliu() {
             afisare={codSiDenumire}
           />
           <CampText<Formularul> camp="CodNc" />
+          {/* Implicitul de SUBIECT (F23-D1): cota proprie a produsului. Se aplică
+              doar când REGIMUL rezultat coincide — pâinea rămâne 11% de la orice
+              furnizor înregistrat, dar o livrare intracomunitară e scutită
+              indiferent de produs. */}
+          <div>
+            <Lookup<Formularul>
+              camp="TipTvaImplicitId"
+              entitate="TipTva"
+              mod="local"
+              filtru={['Activ', '=', true]}
+              afisare={etichetaTipTva}
+            />
+            <p className="indiciu">
+              Cota proprie a produsului. Se aplică atunci când regimul coincide cu cel dat de
+              partener; la regimuri diferite, regimul partenerului bate cota produsului.
+            </p>
+          </div>
         </div>
         <p className="indiciu">
           Codul NC (Nomenclatura Combinată, 8 cifre) merge în SAF-T ca `ProductCommodityCode`;
@@ -155,6 +172,14 @@ export function ProdusDetaliu() {
       </Formular>
     </ShellNomenclator>
   );
+}
+
+// Cota face parte din identitatea unui tip de TVA: „N11" și „N21" se aleg
+// tocmai după ea.
+function etichetaTipTva(e: Record<string, unknown>): string {
+  if (!e) return '';
+  const cota = e.Cota == null ? null : Number(e.Cota);
+  return `${codSiDenumire(e)}${cota == null ? '' : ` (${cota}%)`}`;
 }
 
 function codSiDenumire(e: Record<string, unknown>): string {

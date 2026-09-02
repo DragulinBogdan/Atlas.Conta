@@ -372,6 +372,8 @@ export function FctDetaliu() {
               key={indiceEditat ?? 'linie-noua'}
               linie={inEditare}
               valoareTvaCitita={etichete(doc?.Linii, inEditare).ValoareTva}
+              partenerId={agregat.PredatorId}
+              data={agregat.Data}
               readOnly={!poateEdita}
               onSalveaza={salveazaLinie}
               onRenunta={() => { setInEditare(null); setIndiceEditat(null); }}

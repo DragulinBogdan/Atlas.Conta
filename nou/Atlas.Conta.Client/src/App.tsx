@@ -49,7 +49,14 @@ import { PartenerDetaliu } from './felii/nomenclatoare/PartenerDetaliu';
 import { Produse } from './felii/nomenclatoare/Produse';
 import { ProdusDetaliu } from './felii/nomenclatoare/ProdusDetaliu';
 import { SocietateEcran } from './felii/nomenclatoare/SocietateEcran';
-import { PoliticiMiscareSaft } from './felii/nomenclatoare/PoliticiMiscareSaft';
+import { PoliticiTvaImplicit } from './felii/politici/PoliticiTvaImplicit';
+import { TipuriTva } from './felii/politici/TipuriTva';
+import { TipuriDocument } from './felii/politici/TipuriDocument';
+import { PoliticiMiscareSaft } from './felii/politici/PoliticiMiscareSaft';
+import { PoliticiScadenta } from './felii/politici/PoliticiScadenta';
+import { PoliticiNumerotare } from './felii/politici/PoliticiNumerotare';
+import { PoliticiInchidereTva } from './felii/politici/PoliticiInchidereTva';
+import { Verificare } from './felii/politici/Verificare';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
@@ -145,8 +152,7 @@ export function App() {
         {/* Nomenclatoarele (felia 20, F20-D8): primele ecrane care scriu prin
             OData, nu prin REST — o entitate plată n-are agregat, deci n-are ce
             reconcilia un controller de felie. `Societate` n-are listă și n-are
-            `/nou`: e un singur rând prin definiție (gardianul refuză al doilea).
-            Politica de mișcare SAF-T e DOAR de citit (56). */}
+            `/nou`: e un singur rând prin definiție (gardianul refuză al doilea). */}
         <Route path="/parteneri" element={<Parteneri />} />
         <Route path="/parteneri/nou" element={<PartenerDetaliu />} />
         <Route path="/parteneri/:id" element={<PartenerDetaliu />} />
@@ -154,7 +160,18 @@ export function App() {
         <Route path="/produse/nou" element={<ProdusDetaliu />} />
         <Route path="/produse/:id" element={<ProdusDetaliu />} />
         <Route path="/societate" element={<SocietateEcran />} />
+        {/* Politicile (felia 23, F23-D7): aceeași grilă comună peste ușa OData
+            deschisă de F23-D5 — un fișier scurt per politică, cu coloanele scrise
+            în cod (43a). `/politici/verificare` nu e o politică: e verdictul asupra
+            tuturor — ce s-a abătut de la seed și ce lipsește. */}
+        <Route path="/politici/tva-implicit" element={<PoliticiTvaImplicit />} />
+        <Route path="/politici/tipuri-tva" element={<TipuriTva />} />
+        <Route path="/politici/tipuri-document" element={<TipuriDocument />} />
         <Route path="/politici/miscare-saft" element={<PoliticiMiscareSaft />} />
+        <Route path="/politici/scadente" element={<PoliticiScadenta />} />
+        <Route path="/politici/numerotare" element={<PoliticiNumerotare />} />
+        <Route path="/politici/inchidere-tva" element={<PoliticiInchidereTva />} />
+        <Route path="/politici/verificare" element={<Verificare />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
     </Routes>
@@ -204,7 +221,14 @@ function Meniu() {
       <NavLink to="/produse">Produse</NavLink>
       <NavLink to="/societate">Societate</NavLink>
       <span className="meniu__grup">Politici</span>
+      <NavLink to="/politici/tva-implicit">Implicite TVA</NavLink>
+      <NavLink to="/politici/tipuri-tva">Tipuri TVA</NavLink>
+      <NavLink to="/politici/tipuri-document">Tipuri document</NavLink>
       <NavLink to="/politici/miscare-saft">Mișcări SAF-T</NavLink>
+      <NavLink to="/politici/scadente">Scadențe</NavLink>
+      <NavLink to="/politici/numerotare">Numerotare</NavLink>
+      <NavLink to="/politici/inchidere-tva">Închidere TVA</NavLink>
+      <NavLink to="/politici/verificare">Verificare profil</NavLink>
     </nav>
   );
 }

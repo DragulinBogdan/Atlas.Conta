@@ -42,7 +42,7 @@ type Sincronizare = components['schemas']['SincronizareAnafDto'];
 // cele două server-owned de mai sus.
 const CAMPURI = [
   'Cod', 'Denumire', 'CodFiscal', 'RegistruComert', 'TipPersoana', 'Tara',
-  'InregistratTva', 'TvaLaIncasare', 'Activ',
+  'InregistratTva', 'TvaLaIncasare', 'Activ', 'TipTvaImplicitId',
   'Strada', 'Numar', 'DetaliiAdresa', 'Localitate', 'CodPostal', 'JudetId',
 ] as const;
 
@@ -216,6 +216,23 @@ export function PartenerDetaliu() {
           <CampBifa<Formularul> camp="InregistratTva" />
           <CampBifa<Formularul> camp="TvaLaIncasare" />
           <CampBifa<Formularul> camp="Activ" />
+          {/* Implicitul de SUBIECT (F23-D1): regimul propriu al partenerului,
+              prima treaptă a rezolvării — bate politica tipului de document.
+              Lookup-ul oferă doar tipuri ACTIVE; unul retras n-ar fi ales
+              niciodată de rezolvare, deci n-are ce căuta în ofertă. */}
+          <div>
+            <Lookup<Formularul>
+              camp="TipTvaImplicitId"
+              entitate="TipTva"
+              mod="local"
+              filtru={['Activ', '=', true]}
+              afisare={etichetaTipTva}
+            />
+            <p className="indiciu">
+              Regimul propriu al partenerului. Bate politica tipului de document; gol = clasa
+              lui fiscală (înregistrat RO / neînregistrat RO / UE / extra-UE) decide.
+            </p>
+          </div>
         </div>
 
         <h3 className="nomenclator__titlu-grup">Adresă</h3>
@@ -334,6 +351,14 @@ function RaportAnaf({ raport }: { raport: Sincronizare }) {
       )}
     </div>
   );
+}
+
+// Cota face parte din identitatea unui tip de TVA: „N11" și „N21" se aleg
+// tocmai după ea.
+function etichetaTipTva(e: Record<string, unknown>): string {
+  if (!e) return '';
+  const cota = e.Cota == null ? null : Number(e.Cota);
+  return `${codSiDenumire(e)}${cota == null ? '' : ` (${cota}%)`}`;
 }
 
 function codSiDenumire(e: Record<string, unknown>): string {
