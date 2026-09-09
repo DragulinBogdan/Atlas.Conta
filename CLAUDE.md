@@ -1,5 +1,8 @@
 ﻿# CLAUDE.md — Atlas.Conta: contabilitate/gestiune (Delphi + SQL → XAF + React)
 
+> **Starea curentă, organizată pe domenii:** [docs/stare-curenta/README.md](docs/stare-curenta/README.md)
+> — regulile aplicabile, acoperirea și limitele implementării, fără parcursul deciziilor.
+>
 > **Constituția: `docs/invarianti.md`** — cei 6 invarianți (2026-08-02), fiecare
 > cu clauzele lui de interdicție; orice propunere arhitecturală se testează
 > întâi contra lor.
@@ -48,6 +51,7 @@ e sursa de cerințe; profilul bugetar rămâne pachet de seed funcțional.
 | Întrebarea | Unde |
 |---|---|
 | Ce trebuie să rămână adevărat | `docs/invarianti.md` |
+| Regulile și acoperirea curentă, pe responsabilități | [docs/stare-curenta/README.md](docs/stare-curenta/README.md) |
 | De ce e așa (text integral, sub-puncte) | `docs/decizii/NNN-*.md` (index: `docs/decizii/README.md`) |
 | Istoricul de execuție al planului (feliile, în ordine) | `docs/decizii/istoric-plan-de-lucru.md` |
 | Testul bazei (câmpurile `Document`/`DocumentDetaliu`) | `db/inventar/11-testul-bazei.md` |
@@ -1045,6 +1049,25 @@ non-secured fără drept pe `Lot` (familia 79-r6; nu e sumă peste registru)
   mari, nu la orice commit.
 - Rulările lungi = proces detașat + monitor, nu task de fundal al harness-ului
   (jurnal 50d).
+- **Straturile cunoașterii** (2026-09-09): `docs/invarianti.md` = ce trebuie să
+  rămână adevărat; `docs/stare-curenta/` = CE și CUM, pe responsabilități,
+  fără istoric și fără alternative respinse, fiecare regulă cu puntea spre
+  jurnal ca identificator între paranteze (`(42b)`, `(76-r1)`);
+  `docs/decizii/` = DE CE, integral; codul = implementarea. O regulă are o
+  singură descriere detaliată, în pagina responsabilității ei. O schimbare de
+  comportament actualizează stare-curenta (regula, acoperirea, limitele,
+  data) în ACELAȘI commit; rezumatul numerotat de aici rămâne regula
+  durabilă per decizie.
+- **Codul e slim: „ce" și „cum" se citesc din cod, „de ce" din decizii.**
+  Fără comentarii narative, raționament sau istoric în cod („review advers
+  D8", „înainte era…"). XML doc pe API-ul public doar cât servește completării:
+  o propoziție de contract, nu motivația. Un comentariu e permis DOAR pentru
+  ce codul nu poate exprima (contract de apelant, capcană de bibliotecă cu
+  sursă, decizie contra-intuitivă): o linie, cu trimiterea la decizie ca
+  identificator (`// 33d`), nu cu textul ei. Un avertisment care merită păstrat
+  devine PROBĂ în ModelCheck, nu comentariu. Tranziție: codul existent nu se
+  curăță în masă; se taie la atingere, iar capcana reală care dispare din
+  comentariu se mută în probă sau în stare-curenta în același commit.
 
 ## Cunoștințe utilizator (context)
 
