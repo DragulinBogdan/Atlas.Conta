@@ -291,8 +291,10 @@ decizia N.
 
 39. **Atlas.DXF în Conta.** (a) Violările de constraint DB → mesaje de domeniu
     prin `ConstraintViolationTranslator` (bibliotecă); template-urile RO
-    (`MesajeConstraintRo`) sunt comune ambelor host-uri. Pachetele PINNATE
-    (upgrade = bump explicit). (c) Baseline UI = EntityFluent în
+    (`MesajeConstraintRo`) sunt comune ambelor host-uri. Pachetele Atlas.DXF
+    și DevExpress FLOTANTE pe linia `26.1.*` (amendat 2026-09-09: pinul exact
+    a murit; compatibilitatea între versiunile mici e a bibliotecii, care se
+    ține la zi de autor; upgrade = `restore`). (c) Baseline UI = EntityFluent în
     `ContaUiBaseline`, discovery MANUAL.
 40. **Polish XAF.** (a) `[TipDetaliu]` per document: New creează derivata,
     coloanele ei; baseline-ul ascunde FK-urile brute. (b) `RuleRequiredField`
@@ -305,7 +307,8 @@ decizia N.
     `AutoInclude` DOAR pe navigațiile registrului contabil; liniile și regulile
     rămân lazy. (d) Imperechere: New PERMIS, validat la commit (azi 55a); Edit
     blocat; refuz Plata↔Plata; două link-uri în același commit nu se văd. (e)
-    Pachete prin `pack-and-push.ps1` (push-ul = utilizatorul); consum = bump.
+    Pachete prin `pack-and-push.ps1` (push-ul = utilizatorul); consum =
+    `restore` pe `26.1.*` (39a amendat).
 
 ### Pasul 5 — designurile fixate și reordonarea (42–44)
 
