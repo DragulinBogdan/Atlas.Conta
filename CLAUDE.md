@@ -950,10 +950,10 @@ detaliat în jurnal):
 COMANDĂ (79), nu agregat; singurul rămas e BPR (rezervat, 19). Refuzurile de
 acces sunt uniforme pe REST și OData și MĂSURATE (80).
 
-**Următorul pas**: contractul pentru izolarea motorului de `IObjectSpace`
-(plan independent de ORM, contracte de citire „economice", tranzacția în
-serviciul comenzii; analiza din 2026-09-09) — prioritatea se decide pe
-contract; felia 24 (81k: „Explică" + ecranele `RegulaContare`/`RegulaStoc`/
+**Următorul pas**: izolarea motorului de `IObjectSpace` — contract scris
+(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, pașii 0–7,
+criteriul de prioritate: felia 24 „Explică" / async cu cifră / al doilea
+host); prioritatea se decide pe contract; felia 24 (81k: „Explică" + ecranele `RegulaContare`/`RegulaStoc`/
 `MapareD300`/`MapareD394`/`PoliticaTva`/`Conex`/`Validare`) la cerere; 80-r1
 dacă expunerea crește; `lista-react.md` mai ține doar itemii structurali și
 77-r1/r6.
