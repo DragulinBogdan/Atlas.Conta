@@ -68,12 +68,12 @@ a tuturor situațiilor fiscale. Profilul bugetar nu primește aceste rânduri. (
 `GET /api/implicite/tip-tva` întoarce valoarea, sursa și motivul rezolvării.
 Datele partenerului și produsului sunt citite securizat. Un obiect invizibil
 nu devine sursă de implicit și nu este deosebit public de unul inexistent.
-Un cod de tip document necunoscut este cerere invalidă. (80a, 81f)
+Un cod de tip document necunoscut este cerere invalidă. (80a, 81f, 81-r6)
 
 Dezactivarea unui tip TVA folosit ca implicit este refuzată cu lista
 referințelor. Tipurile inactive rămân valabile pentru istoricul documentelor;
 selectoarele React pentru culegere nouă oferă tipurile active. Filtrarea
-echivalentă a selectoarelor XAF este o limită curentă. (81c, 81e, 81k)
+echivalentă a selectoarelor XAF este o limită curentă. (81c, 81e, 81-r7)
 
 ## Proveniență și verificarea configurației
 
@@ -85,7 +85,7 @@ iar reseed-ul nu îl reactivează pe un rând existent. (81d)
 Marcajul nu este permisiune, jurnal de audit sau criteriu pentru corecții
 automate. Rândurile istorice marcate prin backfill nu permit reconstituirea
 modificărilor manuale anterioare. Un PATCH fără modificări efective poate
-răspunde cu succes fără a constitui o scriere. (81d, 81-r3)
+răspunde cu succes fără a constitui o scriere. (81d, 81-r3, 81-r5)
 
 Verificarea profilului citește configurația completă după verificarea
 dreptului de citire asupra tuturor tipurilor implicate, inclusiv partener și

@@ -68,7 +68,7 @@ fiecărei entități. (42f, 56)
 
 | Grup | Entități |
 |---|---|
-| Nomenclatoare cu scriere | Gestiune, TipMaterial, Partener, Produs, Angajat, TipTva, Societate (56, 77h) |
+| Nomenclatoare cu scriere | Gestiune, TipMaterial, Partener, Produs, Angajat, TipTva, Societate (56, 77h, 81e) |
 | Politici cu scriere controlată | MapareD300, MapareD394, PoliticaMiscareSaft, TipDocument, RegulaStoc, RegulaContare, PoliticaConex, PoliticaScadenta, PoliticaValidare, PoliticaTva, PoliticaInchidereTva, PoliticaNumerotare, PoliticaTvaImplicit (81e) |
 | Nomenclatoare pentru citire | Judet, UnitateMasura, CodEconomic, SursaFinantare, CodFunctional, Proiect, ContPropriu, UnitateInterna, Lot, Cont, Angajament, Repartitor, RandD300, ClasaProdus (56, 81e) |
 | Audit pentru citire | AuditDataItemPersistent, AuditEFCoreWeakReference (81e, 81h) |

@@ -11,7 +11,7 @@
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server` | Host XAF, administrare și actualizarea explicită a bazei (23a) |
 | `nou/Atlas.Conta.Client` | React, formulare, raportare și contractele generate (43e) |
 | `nou/tools/ModelCheck` | Verificarea modelului și scenarii de domeniu pe PostgreSQL (23) |
-| `nou/tools/ProbeHttp` | Probe ale contractului HTTP și ale permisiunilor reale (80i) |
+| `nou/tools/ProbeHttp` | Probe ale contractului HTTP și ale permisiunilor reale (80i, 81j) |
 | `nou/tools/Import1C` | Import operațional și reconcilierea sursei (45f) |
 | `nou/tools/Migrare` | Prototipul migrării nomenclatoarelor și soldurilor legacy (34, 35a) |
 | `legacy`, `db` | Dovezi despre aplicația și datele vechi (21, 35b) |
@@ -34,12 +34,17 @@ orice comandă care aplică migrări sau seed. (23a, 42f)
 Seed-ul este specific profilului și idempotent conform regulii fiecărui
 tabel. Nu este o resetare generală a configurației editate. Rândurile
 existente, proveniența și ștergerea logică se tratează conform serviciului
-responsabil; reseed-ul nu autorizează suprascrierea datelor societății. (21, 69b, 73a)
+responsabil; reseed-ul nu autorizează suprascrierea datelor societății. (69b, 73a, 81d)
 
 Profilurile nu se amestecă în aceeași bază. `SetareProfil` și rotunjirea sunt
-stabile după inițializare. Unicitatea politicilor ține cont de ștergerea
-logică. Absența FK-ului pentru `Lot.LinieIntrareId` este intenționată pentru
-ciclul de inserare; integritatea este verificată de mecanismele domeniului. (26e, 36c, 52a)
+stabile după inițializare. (36c, 52a)
+
+Unicitatea politicilor și a codurilor de nomenclator este în schemă, prin
+indexuri unice filtrate pe `GCRecord = 0`: un rând șters logic nu este dublu,
+iar cheia lui se poate reface. (81c)
+
+Absența FK-ului pentru `Lot.LinieIntrareId` este intenționată pentru ciclul de
+inserare; integritatea este verificată de mecanismele domeniului. (26e)
 
 Versiunile backend sunt centralizate în `Directory.Packages.props`.
 Pachetele Atlas.DXF și DevExpress folosesc intervalul flotant al liniei de
@@ -73,14 +78,14 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 |---|---|
 | Model, motor, politici, proiecții | Build și ModelCheck pe ambele profiluri (23) |
 | DTO, atribute, expunere API | Build WebApi, regenerare și verificarea contractelor; probe HTTP pentru comportamentul afectat (56, 80i) |
-| Autorizare | Probe HTTP cu rolurile reale; o probă pe context nesecurizat nu demonstrează securitatea (80i) |
+| Autorizare | Probe HTTP cu rolurile reale; o probă pe context nesecurizat nu demonstrează securitatea (80i, 81j) |
 | Formular sau interacțiune | Build client și verificarea fluxului în browser (66) |
 | Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
 ModelCheck verifică modelul și execută scenarii de integrare. Nu are
 strategie de securitate XAF; autorizarea se probează prin
-`nou/tools/ProbeHttp/refuzuri.ps1`, cu rolurile Admin, Cititor și User. (80i)
+`nou/tools/ProbeHttp/refuzuri.ps1`, cu rolurile Admin, Cititor și User. (80i, 81j)
 
 **ModelCheck scrie în baze de date.** Profilul bugetar implicit folosește
 baza configurată de aplicație (`Atlas.Conta.BackOffice` în configurația

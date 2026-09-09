@@ -1,6 +1,6 @@
 # Pasul 5, felia 23 — implicitele de culegere și întreținerea politicilor (contract)
 
-Data: 2026-09-02. Stare: deschisă. Pleacă din discuția de arhitectură
+Data: 2026-09-02. Stare: închisă (2026-09-09, decizia 81). Pleacă din discuția de arhitectură
 „extindere în cod vs. în date; valorile implicite" (2026-09-02) și din
 restanțele 77-r3 (editarea politicilor din React), 79-r2 (`PoliticaInchidereTva`
 pe OData + ecran), 74-r12 (ecran `PoliticaMiscareSaft`). Decizia rezultată: 081
@@ -363,3 +363,45 @@ OData.
    deschis), README-ul deciziilor, istoricul, CLAUDE.md (§81, roadmap,
    „Următorul pas" = felia 24: Explică + restul politicilor; restanțele
    închise 77-r3 parțial, 79-r2, 74-r12; cele noi cu nume), §Închidere aici.
+
+## Închidere (2026-09-09, decizia 81)
+
+### Devieri de la contract
+
+- **F23-D4, proveniența** (pas 1a): „seed-ul marchează și ce GĂSEȘTE" respinsă —
+  re-marcarea la `--forceUpdate` ștergea exact divergența pe care flag-ul
+  există s-o arate. Seed-ul timbrează DOAR ce creează; backfill o singură dată
+  în migrație; gardianul stinge la editare și refuză `DinSeed = true` pe nou.
+- **F23-D5, `PoliticaNumerotare.Format`**: „nevid" ar fi refuzat rândurile
+  seed-ului (`Format` e opțional în motor); regula e „cules ⇒ compunabil".
+- **F23-D6, `User` pe `api/implicite`**: primește `Niciuna`, nu implicitul
+  generic — rezolvarea stă pe ușa securizată, ca PUT-ul care ar consuma
+  valoarea; ce nu vezi nu-ți poate fi propus.
+- **F23-D8, `api/politici/verificare`**: pe ușa securizată raportul era FALS,
+  nu gol (`User` vedea 20 de constatări inventate) ⇒ gate `CanRead` pe toate
+  tipurile citite + calcul pe ușa non-secured; `User` ⇒ 403.
+- **Fix de fond în afara contractului** (pas 2, regula de oprire):
+  `GetObjectByKey<Partener>` sub TPT aruncă `InvalidCastException` pe proxy-ul
+  altei frunze ⇒ 500 pe orice POST/PUT FCL/RLF/RDC; acum `Any()` pe
+  nomenclator, cu probă care materializează laturile.
+
+### Review advers (pasul 5)
+
+Tabelul scenariilor și verdictele: decizia 081, §„Review advers și probe".
+Un singur scenariu era neprobat (rândul șters logic văzut ca dublu); proba
+nouă F23-V4/„șters logic" îl închide negativ pe ambele profiluri.
+
+### Cifre
+
+ModelCheck privat 978 / bugetar 927, 0 FAIL; `refuzuri.ps1` 80/80; smoke în
+browser PASS; `verifica:drift` verde; `metadata.json` regenerat.
+
+### Rămase (81-r1…r9 → decizia 081)
+
+Implicitul pe achiziția extra-UE / de la neînregistrat RO (81-r1); seed-ul nu
+corectează rândurile `DinSeed` (r2); backfill-ul marchează seed și rândurile
+editate înaintea migrației (r3); `Repartitor.Cod` fără unicitate (r4); PATCH
+fără schimbare = 204 pentru orice rol (r5); `User` ⇒ `Niciuna` (r6); XAF fără
+filtrul `Activ` și fără baseline pe 8 politici (r7); `SursaCont.Explicit == 0`
+pe rând nou (r8); `400 "Incorrect body."` (r9). Felia 24: „Explică" + restul
+ecranelor de politici (k).

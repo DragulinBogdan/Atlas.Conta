@@ -464,3 +464,16 @@ per felie):
   `Current` probate și respinse pe sursa `BlazorMdiShowViewStrategy`). Smoke
   în browser 7/7 (Admin + Cititor), fără urme; capcană: `EditMask "0"` pe
   `int` afișează `0`, masca e `"d"`. Textul în decizia 079 (restanța 79-r1).
+- **2026-09-02 → 2026-09-09 — Pasul 5, felia 23: implicitele de culegere +
+  întreținerea politicilor** (contract
+  `docs/api/p5-felia23-implicite-politici-contract.md`, decizia 81; șase
+  pași, un agent per pas, verificare independentă): 1a Module
+  (`ImpliciteService`, `ClasaFiscala`, `PoliticaTvaImplicit`, `TipTva.Activ`,
+  `DinSeed` + 15 indexuri unice, ramurile gardianului, `VerificareProfilService`),
+  1b ModelCheck (F23-V1…V6), 2 WebApi (OData deschis pe politici, `api/implicite`,
+  `api/politici/verificare`; fix de fond `GetObjectByKey<Partener>` sub TPT),
+  3 probe HTTP (blocul „politici", 80/80), 4 client (`GrilaPolitica`, 7 ecrane,
+  precompletarea), 5 review advers (tabelul scenariilor în 081; proba nouă
+  „rândul șters logic nu e dublu"), 6 docs. Între ele, decizia 82 (stingerea
+  automată prin contract) și guvernanța documentației (`docs/stare-curenta`,
+  regula codului slim).

@@ -17,7 +17,7 @@ respectă această declarație. (3, 40a, 54e)
 |---|---|
 | `Document` | Număr, dată, laturi, stare, data operării, sursă, marcaj autogenerat și total derivat (22) |
 | `DocumentDetaliu` | Tip material, lot opțional, cantitate semnată, valoare de postare, angajament opțional, tip TVA opțional și valoare TVA (22, 36a) |
-| Tipul concret al liniei | Preț, produs cules, direcție, descriere, dimensiuni și alte date specifice (22a, 54c) |
+| Tipul concret al liniei | Preț, produs cules, direcție, descriere, dimensiuni și alte date specifice (22a, 54c, 81a) |
 | `Repartitor` | Identitate comună; derivate pentru partener, gestiune, angajat, unitate internă și cont propriu (16) |
 | `Produs` | Identitatea din catalog; nu reprezintă o intrare în stoc (13) |
 | `Lot` | Identitatea intrării, produsul, proveniența, data și prețul de evaluare (13, 26e) |

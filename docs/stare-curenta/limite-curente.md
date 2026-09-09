@@ -67,9 +67,9 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   dedicat pentru întregul flux. (77-r3)
 - Editorii React pentru RegulaContare, RegulaStoc, MapareD300, MapareD394,
   PoliticaTva, PoliticaConex și PoliticaValidare nu sunt disponibili, deși
-  configurația este expusă cu scriere controlată prin API. (81k)
+  configurația este expusă cu scriere controlată prin API. (81k, 81-r8)
 - Selectoarele XAF de tip TVA nu filtrează încă `Activ`; unele grile de
-  politici afișează FK-uri brute și nu au configurarea vizuală completă. (81k)
+  politici afișează FK-uri brute și nu au configurarea vizuală completă. (81k, 81-r7)
 - Nu există explicație completă a rezolvării tuturor politicilor, import/
   export general al configurației sau corecție automată pe baza `DinSeed`.
   Marcajul istoric nu distinge toate intervențiile manuale anterioare. (81k, 81-r2, 81-r3)
@@ -84,7 +84,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Invalidarea cache-ului nu garantează reîncărcarea imediată a tuturor
   widgeturilor deja montate. Selectoarele pot necesita reîmprospătare. (77-r5)
 - La unele citiri OData, transportul DevExtreme reduce eroarea la status și
-  pierde mesajele `Erori`. Unele mesaje de transport rămân în engleză. (80-r1, 70-r5)
+  pierde mesajele `Erori`. Unele mesaje de transport rămân în engleză. (80-r1, 70-r5, 81-r9)
 - Refuzurile asupra navigațiilor OData expandate nu au acoperire completă
   prin probe HTTP pe roluri restrânse. (80-r4)
 - Calculul ASM `distribuie-valoarea` citește prețuri prin context nesecurizat

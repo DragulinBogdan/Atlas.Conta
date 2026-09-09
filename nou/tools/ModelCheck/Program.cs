@@ -20328,6 +20328,42 @@ void VerificaF23Gardian(bool privat) {
         && implBun == null
         && (implDublu == null || (implDublu.Contains("deja") && implDublu.Contains("FCL"))));
 
+    // ---- rândul ȘTERS LOGIC nu e dublu (81, review advers) ----
+    string stersDublu = null; var stersRefacut = false; var stersRamas = 0; Guid idCheie;
+    using (var osS = provider.CreateObjectSpace()) {
+        idCheie = osS.GetObjectsQuery<TipDocument>().Where(t => t.Cod == "BTR").Select(t => t.ID).First();
+        var idActiv = osS.GetObjectsQuery<TipTva>().Where(t => t.Activ).Select(t => t.ID).First();
+        var valabil = new DateOnly(2026, 1, 15);
+        PoliticaTvaImplicit Rand(IObjectSpace os) {
+            var p = os.CreateObject<PoliticaTvaImplicit>();
+            p.TipDocument = os.GetObjectByKey<TipDocument>(idCheie);
+            p.ClasaFiscala = ClasaFiscalaPartener.NeinregistratRo;
+            p.ValabilDeLa = valabil;
+            p.TipTva = os.GetObjectByKey<TipTva>(idActiv);
+            return p;
+        }
+        var primul = Rand(osS);
+        osS.CommitChanges();
+        osS.Delete(primul);
+        osS.CommitChanges();
+        using (var os2 = provider.CreateObjectSpace()) {
+            Rand(os2);
+            try { GardianEditare.Verifica(os2); os2.CommitChanges(); stersRefacut = true; }
+            catch (Exception e) { stersDublu = e.Message; }
+        }
+        stersRamas = osS.GetObjectsQuery<PoliticaTvaImplicit>().IgnoreQueryFilters()
+            .Count(p => p.TipDocumentId == idCheie && p.ClasaFiscala == ClasaFiscalaPartener.NeinregistratRo
+                && p.ValabilDeLa == valabil);
+        new Purja(osS).Adauga(osS.GetObjectsQuery<PoliticaTvaImplicit>().IgnoreQueryFilters()
+            .Where(p => p.TipDocumentId == idCheie && p.ClasaFiscala == ClasaFiscalaPartener.NeinregistratRo)
+            .ToList()).Executa();
+    }
+    Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/șters logic): a doua politică pe cheia rândului șters → "
+        + $"„{stersDublu ?? "acceptată și comisă"}”; rânduri pe cheie cu `IgnoreQueryFilters` = {stersRamas}.");
+    Check($"F23-V4 ({eticheta}) un rând de politică ȘTERS LOGIC nu e dublu: gardianul și indexul unic văd "
+        + "amândoi doar `GCRecord = 0`, cheia se reface, iar rândul șters rămâne în tabelă",
+        stersDublu == null && stersRefacut && stersRamas == 2);
+
     // ---- `PoliticaTva` / `RegulaContare` / `RegulaStoc` ----
     Guid idCont, idTipDoc, idTipMaterial;
     using (var osR = provider.CreateObjectSpace()) {
