@@ -122,6 +122,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -137,6 +140,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasDefaultValue(0);
 
                     b.HasKey("ID");
+
+                    b.HasIndex("Cod")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.ToTable("ClaseProduse", t =>
                         {
@@ -244,6 +251,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("DimensiuniObligatorii")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Functie")
                         .HasColumnType("text");
 
@@ -274,6 +284,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasKey("ID");
 
                     b.HasIndex("ParinteId");
+
+                    b.HasIndex("Simbol")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.ToTable("Conturi", t =>
                         {
@@ -544,6 +558,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -580,6 +597,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
@@ -681,6 +701,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -706,7 +729,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("TipDocumentSursaId");
+                    b.HasIndex("TipDocumentSursaId")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.HasIndex("TipDocumentTintaId");
 
@@ -730,6 +755,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<Guid?>("ContDeductibilaId")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
@@ -755,7 +783,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("ContDeductibilaId");
 
-                    b.HasIndex("TipDocumentId");
+                    b.HasIndex("TipDocumentId")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.ToTable("PoliticiInchidereTva");
                 });
@@ -769,6 +799,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<string>("CodMiscare")
                         .HasMaxLength(9)
                         .HasColumnType("character varying(9)");
+
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
@@ -816,6 +849,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Format")
                         .HasColumnType("text");
 
@@ -841,7 +877,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("TipDocumentId");
+                    b.HasIndex("TipDocumentId")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.ToTable("PoliticiNumerotare");
                 });
@@ -851,6 +889,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
@@ -871,7 +912,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("TipDocumentId");
+                    b.HasIndex("TipDocumentId")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.ToTable("PoliticiScadenta");
                 });
@@ -884,6 +927,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<Guid?>("ContrapartidaFallbackId")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("Directie")
                         .HasColumnType("integer");
@@ -909,9 +955,56 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("ContrapartidaFallbackId");
 
-                    b.HasIndex("TipDocumentId");
+                    b.HasIndex("TipDocumentId")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.ToTable("PoliticiTva");
+                });
+
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaTvaImplicit", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("ClasaFiscala")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("GCRecord")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("OptimisticLockField")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid>("TipDocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TipTvaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly?>("ValabilDeLa")
+                        .HasColumnType("date");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("TipTvaId");
+
+                    b.HasIndex("TipDocumentId", "ClasaFiscala", "ValabilDeLa")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("TipDocumentId", "ClasaFiscala", "ValabilDeLa"), false);
+
+                    b.ToTable("PoliticiTvaImplicit");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaValidare", b =>
@@ -921,6 +1014,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<bool>("CereClasificatieBugetara")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("DinSeed")
                         .HasColumnType("boolean");
 
                     b.Property<int>("GCRecord")
@@ -942,7 +1038,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("TipDocumentId");
+                    b.HasIndex("TipDocumentId")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.ToTable("PoliticiValidare");
                 });
@@ -984,6 +1082,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("TipMaterialId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("TipTvaImplicitId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("UM")
                         .HasColumnType("text");
 
@@ -993,6 +1094,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasKey("ID");
 
                     b.HasIndex("TipMaterialId");
+
+                    b.HasIndex("TipTvaImplicitId");
 
                     b.HasIndex("UnitateMasuraId");
 
@@ -1421,6 +1524,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("ContDebitId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -1571,9 +1677,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("OverrideDebitUnitateId");
 
-                    b.HasIndex("TipDocumentId");
-
                     b.HasIndex("TipMaterialId");
+
+                    b.HasIndex("TipDocumentId", "TipMaterialId", "NaturaFiltru", "SemnFiltru")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("TipDocumentId", "TipMaterialId", "NaturaFiltru", "SemnFiltru"), false);
 
                     b.ToTable("ReguliContare");
                 });
@@ -1586,6 +1696,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<Guid?>("ClasaId")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
@@ -1614,7 +1727,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("ClasaId");
 
-                    b.HasIndex("TipDocumentId");
+                    b.HasIndex("TipDocumentId", "Latura", "ClasaId")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("TipDocumentId", "Latura", "ClasaId"), false);
 
                     b.ToTable("ReguliStoc");
                 });
@@ -1856,6 +1973,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -1871,6 +1991,14 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("ID");
+
+                    b.HasIndex("ClrType")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
+
+                    b.HasIndex("Cod")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.HasIndex("TipTvaImplicitId");
 
@@ -1907,6 +2035,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -1921,6 +2052,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasKey("ID");
 
                     b.HasIndex("ClasaId");
+
+                    b.HasIndex("Cod")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.HasIndex("ContImplicitId");
 
@@ -1937,6 +2072,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("Activ")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Cautare")
                         .ValueGeneratedOnAddOrUpdate()
@@ -1970,6 +2110,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("GCRecord")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -1985,6 +2128,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("ID");
+
+                    b.HasIndex("Cod")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
 
                     b.HasIndex("ContTvaColectatId");
 
@@ -3461,10 +3608,15 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("TipPersoana")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("TipTvaImplicitId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("TvaLaIncasare")
                         .HasColumnType("boolean");
 
                     b.HasIndex("JudetId");
+
+                    b.HasIndex("TipTvaImplicitId");
 
                     b.ToTable("Parteneri", t =>
                         {
@@ -3781,6 +3933,25 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Navigation("TipDocument");
                 });
 
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaTvaImplicit", b =>
+                {
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipDocument", "TipDocument")
+                        .WithMany()
+                        .HasForeignKey("TipDocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipTva", "TipTva")
+                        .WithMany()
+                        .HasForeignKey("TipTvaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TipDocument");
+
+                    b.Navigation("TipTva");
+                });
+
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaValidare", b =>
                 {
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipDocument", "TipDocument")
@@ -3798,12 +3969,18 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .WithMany()
                         .HasForeignKey("TipMaterialId");
 
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipTva", "TipTvaImplicit")
+                        .WithMany()
+                        .HasForeignKey("TipTvaImplicitId");
+
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.UnitateMasura", "UnitateMasura")
                         .WithMany()
                         .HasForeignKey("UnitateMasuraId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("TipMaterial");
+
+                    b.Navigation("TipTvaImplicit");
 
                     b.Navigation("UnitateMasura");
                 });
@@ -4912,7 +5089,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasForeignKey("JudetId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipTva", "TipTvaImplicit")
+                        .WithMany()
+                        .HasForeignKey("TipTvaImplicitId");
+
                     b.Navigation("Judet");
+
+                    b.Navigation("TipTvaImplicit");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.UnitateInterna", b =>

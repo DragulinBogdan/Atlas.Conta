@@ -22,6 +22,12 @@
       "FaraContStoc": "Produs fără cont de stoc",
       "CodMiscareNecunoscut": "Cod de mișcare necunoscut în politică"
     },
+    "ClasaFiscalaPartener": {
+      "InregistratRo": "Înregistrat în scopuri de TVA în România",
+      "NeinregistratRo": "Neînregistrat, din România",
+      "Ue": "Din Uniunea Europeană",
+      "ExtraUe": "Din afara Uniunii Europene"
+    },
     "CodAvertismentD394": {
       "CuiUnit": "Parteneri uniți pe același CUI",
       "ClasificariDiferite": "Același CUI cu clasificări diferite",
@@ -81,6 +87,13 @@
     "DirectieTva": {
       "Deductibil": "Deductibil",
       "Colectat": "Colectat"
+    },
+    "FelConstatare": {
+      "RandManual": "Rând creat sau editat manual",
+      "ReferintaStearsa": "Referință spre un rând șters",
+      "TipTvaInactivReferit": "Tip de TVA inactiv, referit ca implicit",
+      "PoliticaLipsa": "Politică lipsă",
+      "MapareLipsa": "Mapare lipsă"
     },
     "FelRandD300": {
       "Operatiuni": "Operațiuni",
@@ -148,6 +161,13 @@
       "TipMaterial": "TipMaterial",
       "RepartitorPredator": "RepartitorPredator",
       "RepartitorPrimitor": "RepartitorPrimitor"
+    },
+    "SursaImplicit": {
+      "Niciuna": "Niciuna",
+      "Partener": "Regimul propriu al partenerului",
+      "Produs": "Cota proprie a produsului",
+      "Politica": "Politica tipului × clasa fiscală",
+      "Ancora": "Ancora tipului de document"
     },
     "TipInstrumentPlata": {
       "OrdinPlata": "Ordin de plată",
@@ -428,6 +448,7 @@
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
+        "DinSeed": "Din seed",
         "ID": "ID",
         "Natura": "Natura"
       }
@@ -456,6 +477,7 @@
         "Cautare": "Căutare",
         "Denumire": "Denumire",
         "DimensiuniObligatorii": "DimensiuniObligatorii",
+        "DinSeed": "Din seed",
         "Functie": "Functie",
         "ID": "ID",
         "Parinte": "Parinte",
@@ -917,6 +939,7 @@
       "DefaultProperty": null,
       "Membri": {
         "CriteriuRandOperatiuni": "CriteriuRandOperatiuni",
+        "DinSeed": "Din seed",
         "ID": "ID",
         "Rand": "Rând D300",
         "RandEsteDeOperatiuni": "RandEsteDeOperatiuni",
@@ -930,6 +953,7 @@
     "MapareD394": {
       "DefaultProperty": null,
       "Membri": {
+        "DinSeed": "Din seed",
         "ID": "ID",
         "Sens": "Sens",
         "TintaEstePermisa": "TintaEstePermisa",
@@ -1090,6 +1114,8 @@
         "Strada": "Stradă",
         "Tara": "Țară",
         "TipPersoana": "Tip persoană",
+        "TipTvaImplicit": "Tip TVA implicit",
+        "TipTvaImplicitId": "Tip TVA implicit",
         "TvaLaIncasare": "TVA la încasare"
       }
     },
@@ -1128,6 +1154,7 @@
     "PoliticaConex": {
       "DefaultProperty": null,
       "Membri": {
+        "DinSeed": "Din seed",
         "ID": "ID",
         "InverseazaLaturi": "InverseazaLaturi",
         "NaturaFiltru": "NaturaFiltru",
@@ -1148,6 +1175,7 @@
         "ContDeRecuperatId": "ContDeRecuperat",
         "ContDeductibila": "ContDeductibila",
         "ContDeductibilaId": "ContDeductibila",
+        "DinSeed": "Din seed",
         "ID": "ID",
         "TipDocument": "TipDocument",
         "TipDocumentId": "TipDocument"
@@ -1157,6 +1185,7 @@
       "DefaultProperty": null,
       "Membri": {
         "CodMiscare": "Cod mișcare",
+        "DinSeed": "Din seed",
         "ID": "ID",
         "Motiv": "Motiv",
         "RolTert": "Rol terț",
@@ -1169,6 +1198,7 @@
     "PoliticaNumerotare": {
       "DefaultProperty": null,
       "Membri": {
+        "DinSeed": "Din seed",
         "Format": "Format",
         "ID": "ID",
         "Serie": "Serie",
@@ -1180,6 +1210,7 @@
     "PoliticaScadenta": {
       "DefaultProperty": null,
       "Membri": {
+        "DinSeed": "Din seed",
         "ID": "ID",
         "TipDocument": "TipDocument",
         "TipDocumentId": "TipDocument",
@@ -1191,6 +1222,7 @@
       "Membri": {
         "ContrapartidaFallback": "ContrapartidaFallback",
         "ContrapartidaFallbackId": "ContrapartidaFallback",
+        "DinSeed": "Din seed",
         "Directie": "Directie",
         "ID": "ID",
         "SursaContrapartida": "SursaContrapartida",
@@ -1198,10 +1230,24 @@
         "TipDocumentId": "TipDocument"
       }
     },
+    "PoliticaTvaImplicit": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ClasaFiscala": "Clasă fiscală",
+        "DinSeed": "Din seed",
+        "ID": "ID",
+        "TipDocument": "Tip document",
+        "TipDocumentId": "Tip document",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "ValabilDeLa": "Valabil de la"
+      }
+    },
     "PoliticaValidare": {
       "DefaultProperty": null,
       "Membri": {
         "CereClasificatieBugetara": "CereClasificatieBugetara",
+        "DinSeed": "Din seed",
         "ID": "ID",
         "NaturaInterzisa": "NaturaInterzisa",
         "TipDocument": "TipDocument",
@@ -1218,6 +1264,8 @@
         "ID": "ID",
         "TipMaterial": "TipMaterial",
         "TipMaterialId": "TipMaterial",
+        "TipTvaImplicit": "Tip TVA implicit",
+        "TipTvaImplicitId": "Tip TVA implicit",
         "UM": "UM",
         "UnitateMasura": "Unitate de măsură (SAF-T)",
         "UnitateMasuraId": "Unitate de măsură (SAF-T)"
@@ -1380,6 +1428,7 @@
         "ContCreditId": "ContCredit",
         "ContDebit": "ContDebit",
         "ContDebitId": "ContDebit",
+        "DinSeed": "Din seed",
         "ID": "ID",
         "NaturaFiltru": "NaturaFiltru",
         "OverrideCreditCentruCost": "Centru cost override credit",
@@ -1429,6 +1478,7 @@
       "Membri": {
         "Clasa": "Clasa",
         "ClasaId": "Clasa",
+        "DinSeed": "Din seed",
         "ID": "ID",
         "Latura": "Latura",
         "Semn": "Semn",
@@ -1536,6 +1586,7 @@
         "ClrType": "ClrType",
         "Cod": "Cod",
         "Denumire": "Denumire",
+        "DinSeed": "Din seed",
         "ID": "ID",
         "TipTvaImplicit": "TipTvaImplicit",
         "TipTvaImplicitId": "TipTvaImplicit"
@@ -1551,12 +1602,14 @@
         "ContImplicit": "ContImplicit",
         "ContImplicitId": "ContImplicit",
         "Denumire": "Denumire",
+        "DinSeed": "Din seed",
         "ID": "ID"
       }
     },
     "TipTva": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "CodSafTAchizitie": "CodSafTAchizitie",
@@ -1569,6 +1622,7 @@
         "ContTvaNeexigibilId": "ContTvaNeexigibil",
         "Cota": "Cota",
         "Denumire": "Denumire",
+        "DinSeed": "Din seed",
         "ID": "ID",
         "Regim": "Regim"
       }

@@ -144,6 +144,10 @@ public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteL
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Produs Produs { get; set; }
 
+    // F23-D2 — produsul cules, prin contractul bazei (`ProdusCules`), ca
+    // implicitul de TVA să nu întrebe frunza prin `is` sau prin reflecție.
+    public override Guid? ProdusCules() => ProdusId;
+
     // Prețul de recepție cules de pe hârtia furnizorului: `Valoare` rămâne
     // REZULTAT (GATE 53c), materializat din `PretUnitar × Cantitate` — la
     // culegere pe calea API și la operare în `NIR.PregatesteOperare` (F5-D6a).

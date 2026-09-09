@@ -93,6 +93,18 @@ public class Partener : Repartitor {
     [XafDisplayName("TVA la încasare")]
     public virtual bool TvaLaIncasare { get; set; }
 
+    // Implicitul de TVA de SUBIECT (felia 23, F23-D1), pe modelul lui
+    // `ContImplicit` de pe `Repartitor` (26b/31a): regimul PROPRIU al acestui
+    // partener, ca override explicit peste politica `(tip × clasă fiscală)`.
+    // E purtătorul de REGIM al rezolvării (`ImpliciteService.TipTva`), deci bate
+    // politica; cota produsului i se suprapune doar dacă regimurile coincid.
+    // Nullable, și rămâne aproape mereu gol: se culege pentru partenerul care
+    // face excepție de la clasa lui, nu pentru fiecare partener.
+    public virtual Guid? TipTvaImplicitId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip TVA implicit")]
+    public virtual TipTva TipTvaImplicit { get; set; }
+
     // ADRESA STRUCTURATĂ (felia 15, D15-D1) — amendamentul la 71b: satelitul
     // 34g se deschide EXACT cât cere adresa, restul (contact, IBAN, delegați,
     // adrese multiple) rămâne acolo. Coloane PLATE pe frunză, toate nullable:

@@ -58,7 +58,27 @@ public static class ImperechereService {
         return imperechere;
     }
 
-    // Fără commit — motorul o cheamă din tranzacția operării plății autogenerate.
+    // Decizia 82: motorul cunoaște mecanismul, tipul declară participarea.
+    // Se apelează cu registrele materializate și starea Operat, FĂRĂ commit:
+    // împerecherea și operarea se persistă împreună prin commit-ul motorului.
+    internal static void CreeazaAutomataLaOperare(IObjectSpace os, Document document) {
+        if (document.SursaStingeriiAutomate(os) is not Guid sursaId)
+            return;
+        var sursa = os.GetObjectByKey<Document>(sursaId);
+        // Ambele roluri contează (F7-D5): un copil recules ca plată obișnuită
+        // poate încă avea un virament ca sursă, care nu se lasă stins.
+        if (!sursa.PoateFiStins(os))
+            return;
+        // Liniile documentului sunt cele din ObjectSpace, încă necomise.
+        // Păstrăm calculul 31d, inclusiv restul sursei deja parțial stinse.
+        var suma = Math.Min(
+            document.Detalii.Sum(d => d.Valoare + d.ValoareTva) - Asignat(os, document.ID),
+            Ramas(os, sursa.ID));
+        if (suma > 0)
+            Creeaza(os, document, sursa, suma, autogenerat: true);
+    }
+
+    // Fără commit — folosită în tranzacția operării și de împerecherea manuală.
     internal static Imperechere Creeaza(IObjectSpace os,
         Document stingator, Document document, decimal suma, bool autogenerat,
         Guid? contrapartidaId = null) {

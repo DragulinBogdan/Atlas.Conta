@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData, CampNumar, CampText } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { usePrecompletareTipTva } from '../../nucleu/implicite';
 import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { SCHEMA_LINIE, TIP_LINIE, type FctLinieWrite } from './api';
@@ -16,9 +17,12 @@ import { SCHEMA_LINIE, TIP_LINIE, type FctLinieWrite } from './api';
 //     el face linia „de stoc", iar Tipul (contul/clasa) rămâne obligatoriu în
 //     contract. Îl precompletăm din răspunsul OData al SELECȚIEI (`laSelectie`),
 //     fără fetch în plus și doar când e gol — nu suprascriem alegerea omului.
-//  2. **TVA: tăcerea are semantică.** Pe o linie NOUĂ, `TipTva` lăsat gol =
-//     serverul aplică implicitul tipului de document; pe o linie EXISTENTĂ,
-//     golirea e deliberată și se trimite ca atare (round-trip în `spreWrite`).
+//  2. **TVA: tăcerea are semantică — dar nu e nevoie să rămână tăcere.** Pe o
+//     linie EXISTENTĂ golirea e deliberată și se trimite ca atare (round-trip în
+//     `spreWrite`); regula 56 nu se atinge. Pe o linie NOUĂ cu câmpul gol,
+//     clientul PRE-COMPLETEAZĂ ce ar aplica serverul, cerându-i chiar lui
+//     (F23-D6): aceeași funcție care rulează și la PUT, deci cele două nu pot
+//     diverge. Sub câmp apare motivul serverului, nu unul reconstruit în TS.
 //  3. **`ValoareTva` se trimite DOAR dacă operatorul a atins câmpul** în sesiunea
 //     asta de editare: pe sârmă valoarea înseamnă „override manual, bate
 //     rotunjirea" (regula 36a). Câmpul se PREPOPULEAZĂ cu ce a calculat serverul,
@@ -41,6 +45,10 @@ export function FctEditorLinie(props: {
   linie: FctLinieWrite;
   // Ce a calculat SERVERUL pentru linia asta (ReadDto) — doar pentru afișare.
   valoareTvaCitita?: number | null;
+  // Contextul implicitului de TVA (F23-D6): pe FCT partenerul e PREDATORUL
+  // (furnizorul), iar data e a documentului, nu ziua de azi.
+  partenerId?: string | null;
+  data?: string | null;
   readOnly: boolean;
   onSalveaza: (l: FctLinieWrite, etichete: EticheteCulese) => void;
   onRenunta: () => void;
@@ -58,6 +66,18 @@ export function FctEditorLinie(props: {
   const [tvaAtins, setTvaAtins] = useState(props.linie.ValoareTva != null);
   const [aratErori, setAratErori] = useState(false);
   const structurale = eroriStructurale(TIP_LINIE, SCHEMA_LINIE, linie as Record<string, unknown>, CAMPURI);
+
+  // Implicitul se cere DOAR pe linie nouă cu câmpul gol; aplicarea e update
+  // FUNCȚIONAL și nu trece niciodată peste o valoare existentă (77c).
+  const motivImplicit = usePrecompletareTipTva(
+    {
+      tipDocument: 'FCT',
+      partenerId: props.partenerId,
+      produsId: linie.ProdusId,
+      data: props.data,
+    },
+    props.linie.Id == null && linie.TipTvaId == null,
+    (tipTvaId) => setLinie((prev) => (prev.TipTvaId ? prev : { ...prev, TipTvaId: tipTvaId })));
 
   function schimba(v: FctLinieWrite) {
     if (v.ValoareTva !== linie.ValoareTva)
@@ -121,12 +141,15 @@ export function FctEditorLinie(props: {
           />
           <CampNumar<FctLinieWrite> camp="Cantitate" />
           <CampNumar<FctLinieWrite> camp="PretUnitar" zecimale={6} />
-          <Lookup<FctLinieWrite>
-            camp="TipTvaId"
-            entitate="TipTva"
-            mod="local"
-            afisare={etichetaTipTva}
-          />
+          <div>
+            <Lookup<FctLinieWrite>
+              camp="TipTvaId"
+              entitate="TipTva"
+              mod="local"
+              afisare={etichetaTipTva}
+            />
+            {motivImplicit && <p className="indiciu">{motivImplicit}</p>}
+          </div>
           <div>
             <CampNumar<FctLinieWrite> camp="ValoareTva" zecimale={2} />
             <p className="indiciu">

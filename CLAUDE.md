@@ -1,5 +1,8 @@
 ﻿# CLAUDE.md — Atlas.Conta: contabilitate/gestiune (Delphi + SQL → XAF + React)
 
+> **Starea curentă, organizată pe domenii:** [docs/stare-curenta/README.md](docs/stare-curenta/README.md)
+> — regulile aplicabile, acoperirea și limitele implementării, fără parcursul deciziilor.
+>
 > **Constituția: `docs/invarianti.md`** — cei 6 invarianți (2026-08-02), fiecare
 > cu clauzele lui de interdicție; orice propunere arhitecturală se testează
 > întâi contra lor.
@@ -48,6 +51,7 @@ e sursa de cerințe; profilul bugetar rămâne pachet de seed funcțional.
 | Întrebarea | Unde |
 |---|---|
 | Ce trebuie să rămână adevărat | `docs/invarianti.md` |
+| Regulile și acoperirea curentă, pe responsabilități | [docs/stare-curenta/README.md](docs/stare-curenta/README.md) |
 | De ce e așa (text integral, sub-puncte) | `docs/decizii/NNN-*.md` (index: `docs/decizii/README.md`) |
 | Istoricul de execuție al planului (feliile, în ordine) | `docs/decizii/istoric-plan-de-lucru.md` |
 | Testul bazei (câmpurile `Document`/`DocumentDetaliu`) | `db/inventar/11-testul-bazei.md` |
@@ -287,8 +291,10 @@ decizia N.
 
 39. **Atlas.DXF în Conta.** (a) Violările de constraint DB → mesaje de domeniu
     prin `ConstraintViolationTranslator` (bibliotecă); template-urile RO
-    (`MesajeConstraintRo`) sunt comune ambelor host-uri. Pachetele PINNATE
-    (upgrade = bump explicit). (c) Baseline UI = EntityFluent în
+    (`MesajeConstraintRo`) sunt comune ambelor host-uri. Pachetele Atlas.DXF
+    și DevExpress FLOTANTE pe linia `26.1.*` (amendat 2026-09-09: pinul exact
+    a murit; compatibilitatea între versiunile mici e a bibliotecii, care se
+    ține la zi de autor; upgrade = `restore`). (c) Baseline UI = EntityFluent în
     `ContaUiBaseline`, discovery MANUAL.
 40. **Polish XAF.** (a) `[TipDetaliu]` per document: New creează derivata,
     coloanele ei; baseline-ul ascunde FK-urile brute. (b) `RuleRequiredField`
@@ -301,7 +307,8 @@ decizia N.
     `AutoInclude` DOAR pe navigațiile registrului contabil; liniile și regulile
     rămân lazy. (d) Imperechere: New PERMIS, validat la commit (azi 55a); Edit
     blocat; refuz Plata↔Plata; două link-uri în același commit nu se văd. (e)
-    Pachete prin `pack-and-push.ps1` (push-ul = utilizatorul); consum = bump.
+    Pachete prin `pack-and-push.ps1` (push-ul = utilizatorul); consum =
+    `restore` pe `26.1.*` (39a amendat).
 
 ### Pasul 5 — designurile fixate și reordonarea (42–44)
 
@@ -856,6 +863,54 @@ decizia N.
     urme); ModelCheck nu capătă strategie de securitate. (j) Restanțe
     80-r1…r5 → jurnal.
 
+81. **Felia 23 — implicitele de culegere + întreținerea politicilor.** (a)
+    Trei feluri de implicite, aplicate la CULEGERE, o singură sursă
+    (`ImpliciteService`): de SUBIECT (`Partener/Produs.TipTvaImplicit`, ca
+    `ContImplicit`), de POLITICĂ (`PoliticaTvaImplicit`, tabel tipizat cu
+    prioritate declarată), de SESIUNE (al clientului); doar pe linia NOUĂ fără
+    valoare, absența pe linia existentă = golire (56). Produsul liniei prin
+    `DocumentDetaliu.ProdusCules()` polimorf; partenerul prin `Any` pe
+    nomenclator (`GetObjectByKey<Partener>` sub TPT aruncă pe proxy-ul altei
+    frunze). (b) **Regimul e al partenerului, cota e a produsului**:
+    `ClasaFiscala.APartenerului` (funcția legii din D394, mutată în `Comun`);
+    R = override-ul partenerului → rândul cel mai SPECIFIC → ancora tipului;
+    P = implicitul produsului; rezultat = P dacă același regim, altfel R ?? P;
+    tipul INACTIV sare treapta cu motiv; partener lipsă/inexistent/invizibil =
+    UN text (80a). Seed privat doar ce e sigur în lege (FCL/RDC × UE/extra-UE
+    → SDD, FCT/RLF × UE → TI21); bugetar zero. (c) Unicitatea în SCHEMĂ: 15
+    indexuri unice filtrate `GCRecord = 0` (politicile per tip, `RegulaStoc`/
+    `RegulaContare`/`PoliticaTvaImplicit` cu `NULLS NOT DISTINCT`, codurile
+    nomenclatoarelor, `Cont.Simbol`); `TipTva.Activ` (lookup-urile filtrează;
+    N19/TI19/CAP19 inactive din seed). (d) **Proveniența = `DinSeed`**
+    (`ICuProvenienta`, 17 tipuri): seed-ul timbrează DOAR ce creează, backfill
+    o singură dată în migrație, gardianul stinge la EDITARE și refuză
+    `DinSeed = true` pe nou; timbrul stins supraviețuiește re-seed-ului. (e)
+    Ușa OData se DESCHIDE pe politici (12 + `PoliticaTvaImplicit` + `TipTva`;
+    amendează 56), cu invarianții în `GardianEditare` (`TipDocument` = ancoră
+    read-only; cotă ∈ [0,100]; dezactivare refuzată cât e implicit; `Explicit
+    ⇒ cont`; `Format` cules compunabil; `MapareD300/D394` prin aceleași funcții
+    ca atributele). (f) `GET api/implicite/tip-tva` pe ușa SECURIZATĂ: `User`
+    ⇒ `Niciuna` (ce nu vezi nu-ți poate fi propus); clientul arată SURSA sub
+    câmp, zero calcul în TS. (g) `GET api/politici/verificare` = raportul de
+    profil (manuale, FK spre șterse, inactiv referit, tip fără ancoră, goluri
+    D300/D394): gate `CanRead` pe toate tipurile citite + calcul pe ușa
+    NON-SECURED (pe cea filtrată raportul era FALS, nu gol; 73g/80e). (h)
+    Auditul MĂSURAT pe OData, istoric per rând (`AuditedObject/TypeName+Key`,
+    `$expand=UserObject`). (i) `GrilaPolitica`: citire prin `storeOData`,
+    scriere prin `http.ts` (mesajul `EroriDto` în rând; 80-r1), coloane COD
+    per politică; 7 ecrane + lookup `TipTvaImplicit` pe Partener/Produs
+    (închide 79-r2, 74-r12, 77-r3 pe `PoliticaMiscareSaft`). (j) Blocul
+    „politici" în `refuzuri.ps1` (80 de probe). (k) Felia 24 = „Explică" +
+    restul ecranelor de politici. Restanțe 81-r1…r9 → jurnal.
+
+82. **Stingerea automată prin contract** (invariantul II). (a) Hook-ul
+    `Document.SursaStingeriiAutomate(os)` întoarce implicit null; trezoreria declară sursa
+    doar când e autogenerată și are capacitate de stingere. Capacitatea manuală
+    a NTC nu o înscrie automat. (b) `ImperechereService.CreeazaAutomataLaOperare`
+    verifică rolul sursei și păstrează calculul din liniile curente + restul
+    sursei, prin validările existente. (c) Motorul apelează mecanismul după
+    materializare și starea Operat, înainte de commit; serviciul nu comite.
+
 ## Stare și roadmap
 
 Executate, în ordine (contractele/design-urile per felie în `docs/`; istoricul
@@ -885,16 +940,23 @@ detaliat în jurnal):
   `DataSourceLoader`, prin același normalizator (78), ITV prin API și client
   — comandă cu cauză + ecran de rezultat (79), refuzurile de acces pe toate
   ușile — 404/403/422 cu o singură ordine și un singur corp, gate pe scriere,
-  pasul zero al gardianului, probele HTTP cu script (80).
+  pasul zero al gardianului, probele HTTP cu script (80), implicitele de
+  culegere + întreținerea politicilor — regimul e al partenerului, cota e a
+  produsului; politicile pe OData cu invarianții în gardian, unicitatea în
+  schemă, `DinSeed`, raportul de profil, grila comună (81); stingerea
+  automată prin contract (82).
 
 **Toate tipurile de document au acum felie prin API și client** — ITV ca
 COMANDĂ (79), nu agregat; singurul rămas e BPR (rezervat, 19). Refuzurile de
 acces sunt uniforme pe REST și OData și MĂSURATE (80).
 
-**Următorul pas**: 80-r1 (motivul refuzului pe conducta `ODataStore` a
-clientului) dacă expunerea crește; 79-r2 (`PoliticaInchidereTva` pe OData +
-ecran) la cerere; `lista-react.md` mai ține doar itemii structurali și
-77-r1/r3/r6. 79-r1 (acțiunea XAF de generare) e închisă (2026-09-02).
+**Următorul pas**: izolarea motorului de `IObjectSpace` — contract scris
+(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, pașii 0–7,
+criteriul de prioritate: felia 24 „Explică" / async cu cifră / al doilea
+host); prioritatea se decide pe contract; felia 24 (81k: „Explică" + ecranele `RegulaContare`/`RegulaStoc`/
+`MapareD300`/`MapareD394`/`PoliticaTva`/`Conex`/`Validare`) la cerere; 80-r1
+dacă expunerea crește; `lista-react.md` mai ține doar itemii structurali și
+77-r1/r6.
 Capcane de probare: `genereaza` SCRIE ori de câte ori luna e liberă (79);
 probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe
 host viu (Privat, după re-seed pentru `Cititor`), nu se refac de mână.
@@ -951,7 +1013,7 @@ multi-valută · 73-r17 categoria `op11` · 73-r18 contact/IBAN parteneri ·
 74-r7 `Neincluse` per
 produs în sumar · 74-r8 stornoul S doar pe scenă ·
 74-r10 `T`/segmentare pe S · 74-r11 D17-V6 doar privat,
-proba ștergerii logice · 74-r12 ecran React `PoliticaMiscareSaft` · 74-r13
+proba ștergerii logice · 74-r12 ecran React `PoliticaMiscareSaft` (închisă de 81i) · 74-r13
 DUK J2.2.18 · 74-r14 gardian produs de stoc fără cont · 74-r15 `FaraCodNc`
 pe Flax
 · 75-r1 ASM UI: derivarea valorii produsului din consum · 75-r2 scalarea
@@ -975,8 +1037,8 @@ shadow — decizie de bază de date), `Lookup` care refetchează eticheta per
 instanță, limita convenției 61b pe valorile din PRECOMPLETARE, `window.confirm`
 moștenit pe ștergere (toți patru închiși de 77)
 · 77-r1 BTR fără convenția 61b · 77-r2 `Cod`/`Denumire` neobligatorii pe nicio
-ușă (închisă de 77k) · 77-r3 editarea `PoliticaMiscareSaft` din React, comanda
-ANAF de lot ·
+ușă (închisă de 77k) · 77-r3 editarea `PoliticaMiscareSaft` din React (închisă
+de 81i), comanda ANAF de lot ·
 77-r4 `CodFiscal`/`Iban`/`Marca` în afara lui `Cautare` · 77-r5 precompletarea
 nu distinge alegerea operatorului; invalidarea nu reîmprospătează
 `SelectBox`-urile montate · 77-r6 `displayExpr` de nucleu pentru `TipMaterial`
@@ -986,7 +1048,7 @@ permisiunea pe OData `text/plain` pe server (închisă de 80)
 · 78-r1 căutarea din grilele XAF rămâne sensibilă la diacritice (nu trec prin
 `DataSourceLoader`; asumat, 44/53)
 · 79-r1 acțiunea XAF „Generează închiderea" (închisă 2026-09-02) · 79-r2
-`PoliticaInchidereTva` pe OData + ecran React (familia 77-r3) · 79-r3
+`PoliticaInchidereTva` pe OData + ecran React (închisă de 81i) · 79-r3
 închiderea perioadei fiscale din client (53i) · 79-r4 mesajul `[Range]` în
 engleză pe `genereaza` (70-r5) · 79-r5 storno-ul unei închideri la o dată din
 ALTĂ lună ⇒ previzualizarea lunii raportează `FaraSold` (cauza greșită; data
@@ -1005,6 +1067,14 @@ WebApi (fără model de aplicație XAF în host; `Refuzuri.Caption` are calea) �
 80-r6 `400 "Incorrect body."` englezesc prin filtrul OData (70-r5) · 80-r7
 `distribuie-valoarea` (ASM) întoarce sume din prețurile loturilor pe ușa
 non-secured fără drept pe `Lot` (familia 79-r6; nu e sumă peste registru)
+· 81-r1 implicitul pe achiziția extra-UE / de la neînregistrat RO (cad pe
+ancora N21) · 81-r2 seed-ul nu corectează rândurile `DinSeed` · 81-r3 rândul
+editat înaintea migrației F23 e marcat seed de backfill · 81-r4
+`Repartitor.Cod` fără unicitate (spațiu partajat pe TPT) · 81-r5 PATCH fără
+schimbare = 204 pentru orice rol (capcană de probă) · 81-r6 `User` pe
+`api/implicite` ⇒ `Niciuna` · 81-r7 XAF: lookup-urile `TipTva` fără filtrul
+`Activ`, baseline lipsă pe 8 politici (44/53) · 81-r8 `SursaCont.Explicit ==
+0` pe rând nou (ecranele feliei 24) · 81-r9 `400 "Incorrect body."` (80-r6)
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 
@@ -1037,6 +1107,25 @@ non-secured fără drept pe `Lot` (familia 79-r6; nu e sumă peste registru)
   mari, nu la orice commit.
 - Rulările lungi = proces detașat + monitor, nu task de fundal al harness-ului
   (jurnal 50d).
+- **Straturile cunoașterii** (2026-09-09): `docs/invarianti.md` = ce trebuie să
+  rămână adevărat; `docs/stare-curenta/` = CE și CUM, pe responsabilități,
+  fără istoric și fără alternative respinse, fiecare regulă cu puntea spre
+  jurnal ca identificator între paranteze (`(42b)`, `(76-r1)`);
+  `docs/decizii/` = DE CE, integral; codul = implementarea. O regulă are o
+  singură descriere detaliată, în pagina responsabilității ei. O schimbare de
+  comportament actualizează stare-curenta (regula, acoperirea, limitele,
+  data) în ACELAȘI commit; rezumatul numerotat de aici rămâne regula
+  durabilă per decizie.
+- **Codul e slim: „ce" și „cum" se citesc din cod, „de ce" din decizii.**
+  Fără comentarii narative, raționament sau istoric în cod („review advers
+  D8", „înainte era…"). XML doc pe API-ul public doar cât servește completării:
+  o propoziție de contract, nu motivația. Un comentariu e permis DOAR pentru
+  ce codul nu poate exprima (contract de apelant, capcană de bibliotecă cu
+  sursă, decizie contra-intuitivă): o linie, cu trimiterea la decizie ca
+  identificator (`// 33d`), nu cu textul ei. Un avertisment care merită păstrat
+  devine PROBĂ în ModelCheck, nu comentariu. Tranziție: codul existent nu se
+  curăță în masă; se taie la atingere, iar capcana reală care dispare din
+  comentariu se mută în probă sau în stare-curenta în același commit.
 
 ## Cunoștințe utilizator (context)
 

@@ -57,6 +57,17 @@ public class Produs : BaseObject, ICuCautare {
         CustomMessageTemplate = "Codul NC are exact 8 cifre (sau rămâne gol).")]
     public virtual string CodNc { get; set; }
 
+    // Implicitul de TVA de SUBIECT (felia 23, F23-D1) — perechea celui de pe
+    // `Partener`, cu rol OPUS: aici e purtătorul de COTĂ, nu de regim. Pâinea
+    // rămâne 11% de la orice furnizor înregistrat, dar o livrare
+    // intracomunitară e scutită indiferent ce produs conține — de-aia
+    // `ImpliciteService.TipTva` lasă produsul să-și impună cota DOAR când
+    // regimul lui coincide cu cel al partenerului, și cedează altfel.
+    public virtual Guid? TipTvaImplicitId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip TVA implicit")]
+    public virtual TipTva TipTvaImplicit { get; set; }
+
     // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
     // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
     [XafDisplayName("Căutare")]

@@ -1,7 +1,7 @@
 # Decizia 39 — Pre-polish
 
 - **Data**: 2026-07-23 (primul commit în jurnal)
-- **Stare**: activă
+- **Stare**: activă; (a) amendată 2026-09-09 — pachetele Atlas.DXF nu mai sunt pinnate, ci flotante pe `26.1.*` ca DevExpress (`Directory.Packages.props`); autorul ține biblioteca la zi, compatibilitatea între versiunile mici e a ei
 - **Rezumat durabil**: `CLAUDE.md` §39
 
 ---

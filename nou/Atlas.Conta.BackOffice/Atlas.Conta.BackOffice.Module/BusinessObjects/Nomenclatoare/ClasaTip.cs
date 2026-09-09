@@ -1,4 +1,5 @@
 using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Model;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
@@ -10,7 +11,13 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class ClasaProdus : BaseObject, ICuCautare {
+public class ClasaProdus : BaseObject, ICuCautare, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     // Doar clasele cu Natura=Stoc intră în regulile de stoc; cele tehnice
@@ -26,7 +33,13 @@ public class ClasaProdus : BaseObject, ICuCautare {
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class TipMaterial : BaseObject, ICuCautare {
+public class TipMaterial : BaseObject, ICuCautare, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     // Fiecare Tip aparține unei Clase (10 §2) — de aceea baza detaliului poartă

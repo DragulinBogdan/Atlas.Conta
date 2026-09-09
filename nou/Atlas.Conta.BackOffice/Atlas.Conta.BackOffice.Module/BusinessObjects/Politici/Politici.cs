@@ -5,6 +5,7 @@ using DevExpress.Data.Filtering;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
+using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.Validation;
@@ -17,7 +18,13 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Ancoră seed care oglindește clasele 1:1 (decizia 20) — doar FK + UI.
 [NavigationItem("Politici")]
 [XafDefaultProperty(nameof(Denumire))]
-public class TipDocument : BaseObject, ICuCautare {
+public class TipDocument : BaseObject, ICuCautare, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     // Numele CLR al clasei derivate corespunzătoare (ex. "FacturaIntrare").
@@ -41,7 +48,13 @@ public class TipDocument : BaseObject, ICuCautare {
 // Regula de alimentare a registrului de stoc: tip document × latură × filtru
 // Clasă → tip stoc + semn (00 §4, curățat: filtrul SEMN_ITEMS moare).
 [NavigationItem("Politici")]
-public class RegulaStoc : BaseObject {
+public class RegulaStoc : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipDocumentId { get; set; }
     public virtual TipDocument TipDocument { get; set; }
     public virtual LaturaDocument Latura { get; set; }
@@ -57,7 +70,13 @@ public class RegulaStoc : BaseObject {
 // generică (ambele null). Fără regulă potrivită = linia nu contează pe acest
 // tip de document (așa se împarte lanțul FCT/NIR fără dublă postare).
 [NavigationItem("Politici")]
-public class RegulaContare : BaseObject {
+public class RegulaContare : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipDocumentId { get; set; }
     public virtual TipDocument TipDocument { get; set; }
     public virtual Guid? TipMaterialId { get; set; }
@@ -218,7 +237,13 @@ public class RegulaContare : BaseObject {
 // liniei (pe NIR trec exact liniile purtătoare de stoc) — decizia 21: politica
 // se definește pe funcționalitate, nu prin transcrierea listelor legacy.
 [NavigationItem("Politici")]
-public class PoliticaConex : BaseObject {
+public class PoliticaConex : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipDocumentSursaId { get; set; }
     public virtual TipDocument TipDocumentSursa { get; set; }
     public virtual Guid TipDocumentTintaId { get; set; }
@@ -233,7 +258,13 @@ public class PoliticaConex : BaseObject {
 // formulă de header în legacy — politică de scadență, nu structură). Motorul o
 // aplică la operare pe IDocumentCuScadenta DOAR dacă scadența nu a fost culeasă.
 [NavigationItem("Politici")]
-public class PoliticaScadenta : BaseObject {
+public class PoliticaScadenta : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipDocumentId { get; set; }
     public virtual TipDocument TipDocument { get; set; }
     public virtual int ZileDefault { get; set; }
@@ -244,7 +275,13 @@ public class PoliticaScadenta : BaseObject {
 // nu a clasei de document; la privat rândurile pur și simplu lipsesc).
 // Motorul o aplică generic înaintea hook-urilor proprii tipului.
 [NavigationItem("Politici")]
-public class PoliticaValidare : BaseObject {
+public class PoliticaValidare : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipDocumentId { get; set; }
     public virtual TipDocument TipDocument { get; set; }
     // Fiecare linie cere clasificație bugetară: angajament SAU cod economic
@@ -261,7 +298,13 @@ public class PoliticaValidare : BaseObject {
 // Simetrică cu PoliticaScadenta/PoliticaValidare; fără rând = niciun rând TVA
 // (profilul bugetar nu primește rânduri — zero schimbare de comportament).
 [NavigationItem("Politici")]
-public class PoliticaTva : BaseObject {
+public class PoliticaTva : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipDocumentId { get; set; }
     public virtual TipDocument TipDocument { get; set; }
     public virtual DirectieTva Directie { get; set; }
@@ -279,7 +322,13 @@ public class PoliticaTva : BaseObject {
 // Toate cele patru conturi sunt nullable în schemă (politică editabilă, culeasă
 // în trepte), dar serviciul cere setul COMPLET ca să genereze ceva.
 [NavigationItem("Politici")]
-public class PoliticaInchidereTva : BaseObject {
+public class PoliticaInchidereTva : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipDocumentId { get; set; }
     public virtual TipDocument TipDocument { get; set; }
     // 4426 — TVA deductibilă (sold debitor de închis).
@@ -301,7 +350,13 @@ public class PoliticaInchidereTva : BaseObject {
 }
 
 [NavigationItem("Politici")]
-public class PoliticaNumerotare : BaseObject {
+public class PoliticaNumerotare : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipDocumentId { get; set; }
     public virtual TipDocument TipDocument { get; set; }
     public virtual string Serie { get; set; }
@@ -326,7 +381,13 @@ public class PoliticaNumerotare : BaseObject {
 // fi suprascrisă tăcut de formulă la prima proiecție, adică exact „un gard care
 // tace devine capcană" (62f).
 [NavigationItem("Politici")]
-public class MapareD300 : BaseObject {
+public class MapareD300 : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     // Validare de culegere pe NAVIGAȚII, nu pe Guid-uri (decizia 40b:
     // `RuleRequiredField` nu poate sta pe un `Guid` nenullabil — o linie culeasă
     // fără tip ar produce un INSERT cu FK invalid).
@@ -375,7 +436,14 @@ public class MapareD300 : BaseObject {
     [RuleFromBoolProperty("MapareD300_RandOperatiuni", DefaultContexts.Save,
         CustomMessageTemplate = "Rândul de decont trebuie să fie de fel „Operațiuni” — "
             + "rândurile de total, oglindă și extern se calculează, nu se alimentează din mapări.")]
-    public bool RandEsteDeOperatiuni => Rand == null || Rand.Fel == FelRandD300.Operatiuni;
+    public bool RandEsteDeOperatiuni => EsteDeOperatiuni(Rand);
+
+    // F23-D5: aceeași regulă, două uși. Atributul de mai sus e prezentarea ei în
+    // XAF; `GardianEditare` cheamă funcția STATICĂ, fiindcă validarea XAF nu
+    // rulează pe API (55b) și politica devine editabilă pe OData. O regulă, un
+    // corp — nu două jumătăți care pot diverge (77k).
+    public static bool EsteDeOperatiuni(RandD300 rand) =>
+        rand == null || rand.Fel == FelRandD300.Operatiuni;
 
     // A DOUA jumătate a gardului contra dublei numărări (fix F4 al review-ului
     // advers), geamăna celui din `ContaSeeder.VerificaD300`: aceeași pereche
@@ -397,25 +465,30 @@ public class MapareD300 : BaseObject {
         CustomMessageTemplate = "Aceeași pereche (tip de TVA × sens) țintește deja un rând aflat pe "
             + "aceeași verticală „din care” cu cel ales — cifra ar intra de două ori în rândul-părinte "
             + "și în totalul lui. Păstrați o singură mapare pe verticală.")]
-    public bool RandFaraAscendentMapat {
-        get {
-            var os = ((IObjectSpaceLink)this).ObjectSpace;
-            var tipId = TipTva?.ID ?? TipTvaId;
-            if (os == null || Rand == null || tipId == Guid.Empty)
-                return true;
-            var sens = Sens;
-            // Doar mapările VII ale aceleiași perechi: una ștearsă logic nu mai
-            // alimentează nimic, deci nu poate dubla nimic (F5).
-            var altele = os.GetObjectsQuery<MapareD300>()
-                .Where(m => m.TipTvaId == tipId && m.Sens == sens).ToList();
-            foreach (var alta in altele) {
-                if (ReferenceEquals(alta, this) || alta.Rand == null || alta.RandId == Rand.ID)
-                    continue;
-                if (EsteAscendent(alta.Rand, Rand) || EsteAscendent(Rand, alta.Rand))
-                    return false;
-            }
+    public bool RandFaraAscendentMapat =>
+        FaraAscendentMapat(((IObjectSpaceLink)this).ObjectSpace, this);
+
+    // F23-D5, ca mai sus: un corp, două uși (atributul XAF + `GardianEditare`).
+    // `os` explicit — pe ușa API obiectul poate să nu fie legat de un
+    // ObjectSpace prin `IObjectSpaceLink`, iar gardianul îl are oricum în mână.
+    public static bool FaraAscendentMapat(IObjectSpace os, MapareD300 mapare) {
+        var tipId = mapare.TipTva?.ID ?? mapare.TipTvaId;
+        var rand = mapare.Rand
+            ?? (mapare.RandId != Guid.Empty ? os?.GetObjectByKey<RandD300>(mapare.RandId) : null);
+        if (os == null || rand == null || tipId == Guid.Empty)
             return true;
+        var sens = mapare.Sens;
+        // Doar mapările VII ale aceleiași perechi: una ștearsă logic nu mai
+        // alimentează nimic, deci nu poate dubla nimic (F5).
+        var altele = os.GetObjectsQuery<MapareD300>()
+            .Where(m => m.TipTvaId == tipId && m.Sens == sens).ToList();
+        foreach (var alta in altele) {
+            if (ReferenceEquals(alta, mapare) || alta.Rand == null || alta.RandId == rand.ID)
+                continue;
+            if (EsteAscendent(alta.Rand, rand) || EsteAscendent(rand, alta.Rand))
+                return false;
         }
+        return true;
     }
 
     // „`posibil` e undeva pe lanțul de părinți al lui `rand`" — cu gardă de
@@ -444,7 +517,13 @@ public class MapareD300 : BaseObject {
 // ar clasifica un furnizor cu sistem normal ca fiind la încasare —, iar `N`
 // n-are sursă în registru (D4-r3) — mapată, ar promite o coloană goală.
 [NavigationItem("Politici")]
-public class MapareD394 : BaseObject {
+public class MapareD394 : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipTvaId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Tip TVA")]
@@ -515,7 +594,13 @@ public class MapareD394 : BaseObject {
 // declarat. Un rând FĂRĂ nicio politică e altceva — acela iese în `Neincluse`,
 // cu cauza lui. „Nimic nu se pierde" cere ca cele două să se deosebească.
 [NavigationItem("Politici")]
-public class PoliticaMiscareSaft : BaseObject {
+public class PoliticaMiscareSaft : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
     public virtual Guid TipDocumentId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Tip document")]
@@ -551,4 +636,64 @@ public class PoliticaMiscareSaft : BaseObject {
     // (regulă de fond, pe toate ușile), nu doar `RuleRequiredField`.
     [MaxLength(256)]
     public virtual string Motiv { get; set; }
+}
+
+// Implicitul de TVA al unei linii, ca POLITICĂ (felia 23, F23-D2): cheia de
+// potrivire `(TipDocument × ClasaFiscalaPartener? × ValabilDeLa?)` → un `TipTva`.
+//
+// DE CE există, lângă `TipDocument.TipTvaImplicit` (ancora, datoria P1): ancora
+// e o singură axă, iar implicitul real depinde de COMBINAȚIE. O livrare către
+// un partener din UE e scutită (SDD) indiferent de produs; una către un
+// înregistrat RO e N21. Fără tabelul ăsta operatorul corecta de mână, de fiecare
+// dată — și tăcut, fiindcă N21 arată la fel de plauzibil pe orice linie.
+//
+// REGIMUL E AL PARTENERULUI, COTA E A PRODUSULUI — asta e regula care explică
+// forma. `TipTva` = cotă × regim, iar cele două jumătăți vin din surse diferite:
+// regimul din clasa fiscală a partenerului (scutire intracomunitară, taxare
+// inversă), cota de pe produs (pâinea rămâne 11% de la orice furnizor
+// înregistrat). Politica de aici e purtătorul de REGIM; `Produs.TipTvaImplicit`
+// e purtătorul de COTĂ, iar `ImpliciteService.TipTva` le împacă: produsul își
+// impune cota DOAR când regimurile coincid, altfel regimul bate.
+//
+// `ClasaFiscala` null = „orice clasă" (rândul generic al tipului); clasa exactă
+// bate genericul. `ValabilDeLa` null = „dintotdeauna"; altfel rândul se aplică
+// documentelor cu `Data >= ValabilDeLa`, iar la egalitate de clasă câștigă cel
+// mai RECENT. Nu e o coloană decorativă: cotele s-au schimbat pe 1 august 2025,
+// iar o factură cu data de iulie trebuie să primească în continuare implicitul
+// vechi.
+//
+// Unicitatea tripletei e index (`BackOfficeDbContext`), cu `NULLS NOT DISTINCT`
+// fiindcă două dintre coloane sunt nullable: două rânduri „orice clasă,
+// dintotdeauna" pe același tip ar face rezolvarea nedeterministă, tăcut.
+[NavigationItem("Politici")]
+public class PoliticaTvaImplicit : BaseObject, ICuProvenienta {
+    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
+    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
+    public virtual Guid TipDocumentId { get; set; }
+    // Validare de culegere pe NAVIGAȚIE, nu pe `Guid` (decizia 40b), ca la
+    // `MapareD300`/`MapareD394`/`PoliticaMiscareSaft`.
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip document")]
+    [RuleRequiredField("PoliticaTvaImplicit_TipDocument_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Tipul de document este obligatoriu.")]
+    public virtual TipDocument TipDocument { get; set; }
+
+    // `null` = orice clasă fiscală (rândul generic al tipului).
+    [XafDisplayName("Clasă fiscală")]
+    public virtual ClasaFiscalaPartener? ClasaFiscala { get; set; }
+
+    // `null` = dintotdeauna; altfel se aplică documentelor cu `Data >= ValabilDeLa`.
+    [XafDisplayName("Valabil de la")]
+    public virtual DateOnly? ValabilDeLa { get; set; }
+
+    public virtual Guid TipTvaId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip TVA")]
+    [RuleRequiredField("PoliticaTvaImplicit_TipTva_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
+    public virtual TipTva TipTva { get; set; }
 }

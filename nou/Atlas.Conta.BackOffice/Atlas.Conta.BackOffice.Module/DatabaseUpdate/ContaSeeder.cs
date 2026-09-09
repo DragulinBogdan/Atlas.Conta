@@ -81,6 +81,46 @@ public static class ContaSeeder {
         return setare.RotunjireBani;
     }
 
+    // ── PROVENIENȚA (felia 23, F23-D4, amendat) ────────────────────────────
+    //
+    // Seed-ul timbrează DOAR rândurile pe care le CREEAZĂ. Wrap, nu linie
+    // separată — `Seedat(os.CreateObject<T>())` —, ca semantica de re-seed să
+    // rămână NESCHIMBATĂ: nu decide nimic despre ce se creează, doar timbrează.
+    //
+    // DE CE nu și pe rândurile GĂSITE pe cheia lui, cum cerea prima formă a
+    // deciziei: gardianul stinge timbrul la orice scriere securizată, deci un
+    // rând seed-uit și apoi EDITAT de client ajunge `DinSeed = false` — exact
+    // semnalul pe care raportul de profil (F23-D8) există să-l arate. Dacă
+    // seed-ul l-ar re-aprinde pe ce găsește, primul `--forceUpdate` ar șterge
+    // semnalul, iar flag-ul ar deveni decorativ pe orice bază vie.
+    //
+    // Bazele DEJA seed-uite își primesc timbrul o SINGURĂ dată, din migrația
+    // `F23ImpliciteSiPolitici` („tot ce există la migrație e considerat
+    // livrat"), nu de la seed. De acolo încolo, singurul lucru care mai aprinde
+    // timbrul e crearea.
+    //
+    // `null` trece nevătămat: gărzile de idempotență sunt scrise ca
+    // „găsit == null ⇒ creează", iar timbrul n-are voie să le schimbe forma.
+    internal static T Seedat<T>(T rand) where T : class, ICuProvenienta {
+        if (rand != null)
+            rand.DinSeed = true;
+        return rand;
+    }
+
+    // Tipurile de TVA scoase din CULEGERE (F23-D3): cotele istorice rămân pe
+    // documentele lor, dar nu se mai propun. Se sting DOAR rândurile `DinSeed`:
+    // un tip cu același cod creat sau reînviat de client e al lui, iar seed-ul
+    // n-are ce căuta în decizia aia. Pe o bază existentă timbrul vine din
+    // backfill-ul migrației; pe una nouă, de la crearea din `SeedTipTva`.
+    // Idempotent, și fără efect pe un cod absent.
+    internal static void SeedTipuriTvaInactive(IObjectSpace os, params string[] coduri) {
+        foreach (var cod in coduri) {
+            var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
+            if (tip is { DinSeed: true })
+                tip.Activ = false;
+        }
+    }
+
     // Bootstrap-ul host-urilor care NU seed-uiesc (unelte pe bază existentă,
     // aplicația la pornire normală): convenția se citește o dată și se fixează.
     // Fără rând (bază pre-51c, încă ne-seed-uită) rămâne default-ul AwayFromZero.
@@ -141,7 +181,7 @@ public static class ContaSeeder {
         ];
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipDocument>(x => x.Cod == t.Cod) == null) {
-                var tip = os.CreateObject<TipDocument>();
+                var tip = Seedat(os.CreateObject<TipDocument>());
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
@@ -488,6 +528,29 @@ public static class ContaSeeder {
     public static IReadOnlyCollection<(string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv)>
         MiscariSaftPrivat => ProfilPrivat.MiscariSaft;
 
+    // Același seam pentru implicitele de TVA (felia 23, F23-D2): idempotența și
+    // respectarea ștergerii logice se probează pe FUNCȚIA REALĂ, iar tabelul se
+    // citește tot de aici — proba nu-și scrie o a doua copie a cifrelor pe care
+    // le verifică (precedentul `SeedPoliticiMiscareSaftPrivat`).
+    public static void SeedPoliticiTvaImplicitPrivat(IObjectSpace os) =>
+        ProfilPrivat.SeedPoliticiTvaImplicit(os);
+
+    public static IReadOnlyCollection<(string TipDocument, ClasaFiscalaPartener Clasa, string TipTva)>
+        ImpliciteTvaPrivat => ProfilPrivat.ImpliciteTva;
+
+    // F23-D8 — golurile de mapare, ca LISTĂ. Seed-ul le aruncă (prima), raportul
+    // de profil le arată pe toate; corpul e unul singur, în pachetul de profil.
+    // Pe bugetar sunt vide prin construcție: profilul n-are registru fiscal.
+    public static IReadOnlyList<string> GoluriMapari(IObjectSpace os, ProfilContabil profil) {
+        if (profil == ProfilContabil.Bugetar)
+            return [];
+        return [
+            .. ProfilPrivat.GoluriMapariD300(os, os.GetObjectsQuery<MapareD300>().ToList()),
+            .. ProfilPrivat.GoluriMapariD394(os, os.GetObjectsQuery<MapareD394>().ToList()),
+        ];
+    }
+
+
     // Lista nemapatelor deliberate e parte din contract (D4-D2): proiecția și
     // ModelCheck o citesc prin nucleu (pachetul de profil rămâne internal).
     public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD394Privat =>
@@ -621,7 +684,7 @@ public static class ContaSeeder {
             var contDebit = ContDinSimbol(conturi, simbol);
             if (contDebit == null)
                 continue;
-            var regula = os.CreateObject<RegulaContare>();
+            var regula = Seedat(os.CreateObject<RegulaContare>());
             regula.TipDocument = tipDoc;
             regula.TipMaterialId = tip.ID;
             regula.SemnFiltru = semnFiltru;
@@ -658,7 +721,7 @@ public static class ContaSeeder {
             var contVenit = ContDinSimbol(conturi, simbolVenit);
             if (contVenit == null)
                 continue;
-            var regula = os.CreateObject<RegulaContare>();
+            var regula = Seedat(os.CreateObject<RegulaContare>());
             regula.TipDocument = tipDoc;
             regula.TipMaterialId = tip.ID;
             regula.SursaContDebit = SursaCont.RepartitorPrimitor;
@@ -709,14 +772,14 @@ public static class ContaSeeder {
         TipDocument plt, TipDocument inc, string simbolTranzit) {
         var clasa = os.FirstOrDefault<ClasaProdus>(c => c.Cod == "VIR");
         if (clasa == null) {
-            clasa = os.CreateObject<ClasaProdus>();
+            clasa = Seedat(os.CreateObject<ClasaProdus>());
             clasa.Cod = "VIR";
             clasa.Denumire = "Viramente interne";
             clasa.Natura = NaturaClasa.Virament;
         }
         var tip = os.FirstOrDefault<TipMaterial>(t => t.Cod == "VIR");
         if (tip == null) {
-            tip = os.CreateObject<TipMaterial>();
+            tip = Seedat(os.CreateObject<TipMaterial>());
             tip.Cod = "VIR";
             tip.Denumire = "Virament intern";
             tip.Clasa = clasa;
@@ -725,14 +788,14 @@ public static class ContaSeeder {
             tip.ContImplicitId = os.FirstOrDefault<Cont>(c => c.Simbol == simbolTranzit)?.ID;
 
         if (RegulaContareLipsa(os, plt, tip.ID, null)) {
-            var iesire = os.CreateObject<RegulaContare>();
+            var iesire = Seedat(os.CreateObject<RegulaContare>());
             iesire.TipDocument = plt;
             iesire.TipMaterial = tip;
             iesire.SursaContDebit = SursaCont.TipMaterial;
             iesire.SursaContCredit = SursaCont.RepartitorPredator;
         }
         if (RegulaContareLipsa(os, inc, tip.ID, null)) {
-            var intrare = os.CreateObject<RegulaContare>();
+            var intrare = Seedat(os.CreateObject<RegulaContare>());
             intrare.TipDocument = inc;
             intrare.TipMaterial = tip;
             intrare.SursaContDebit = SursaCont.RepartitorPrimitor;
@@ -742,7 +805,7 @@ public static class ContaSeeder {
 
     internal static void SeedNumerotare(IObjectSpace os, string codTip, string serie) {
         if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == codTip) == null) {
-            var numerotare = os.CreateObject<PoliticaNumerotare>();
+            var numerotare = Seedat(os.CreateObject<PoliticaNumerotare>());
             numerotare.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == codTip);
             numerotare.Serie = serie;
             numerotare.UrmatorulNumar = 1;

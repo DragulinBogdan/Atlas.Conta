@@ -199,6 +199,11 @@ public abstract class Document : BaseObject {
     // contrapartida asta?" rămân neatinși.
     public virtual IReadOnlyDictionary<Guid, PlafonStingere> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) => null;
 
+    // Decizia 82: participarea la stingerea AUTOMATĂ e explicită, distinctă de
+    // capacitatea de stingere manuală. Fără efecte secundare; null = nu participă.
+    // Serviciul consumă sursa după materializarea registrelor, înainte de commit.
+    public virtual Guid? SursaStingeriiAutomate(DevExpress.ExpressApp.IObjectSpace os) => null;
+
     // Cealaltă jumătate a rolului: `CapacitateStingere` spune „pot STINGE",
     // asta spune „pot fi STINS". Default `true` — orice document cu rest e
     // candidat de stins (facturi, deconturi, plăți în lanțul avans↔
@@ -321,6 +326,18 @@ public class DocumentDetaliu : BaseObject {
     // Perechea de scriere — folosită DOAR de clonările motorului (conexul,
     // plata autogenerată, descărcarea): copiere frunză→frunză prin contract.
     public virtual void PreiaDimensiuni(Dimensiuni sursa) { }
+
+    // Produsul CULES pe linie, ca CONTRACT — nu ca reflecție și nu ca `is` pe
+    // frunze (invariantul II / 25b). Baza nu poartă `ProdusId` (decizia 25c),
+    // dar cinci frunze îl au, cu semantici opuse: pe FCT/NIR/LDI+/ASM-produs
+    // naște lotul (`ILinieCareNasteLot`), pe FCL e pin de picking (37d).
+    // Pentru IMPLICITUL de TVA (felia 23, F23-D2) distincția nu contează —
+    // întrebarea e „despre ce produs vorbește linia asta?", iar ambele
+    // semantici răspund la fel. De-aia contractul e propriu și mai larg decât
+    // `ILinieCareNasteLot`: acela e despre a CREA stoc, ăsta despre a NUMI un
+    // produs. Frunzele fără produs (trezorerie, decont, notă, retururi)
+    // moștenesc `null` și cad natural pe treapta partenerului.
+    public virtual Guid? ProdusCules() => null;
 
     // Decizia 25c: lotul se naște LA CULEGERE pe linia de intrare (NIR manual,
     // FacturaIntrare pentru lanțul conex, plus de inventar, producție) — baza nu

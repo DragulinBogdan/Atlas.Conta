@@ -317,3 +317,18 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
   font-size: 13px;
   color: #46525f;
 }
+
+/* ── politici (felia 23) ─────────────────────────────────────────────── */
+/* Refuzul gardianului poate avea mai multe motive; `DataGrid` le pune pe
+   toate într-un singur `div` de text, deci separatorul de linie trebuie să
+   rămână vizibil — altfel cele trei fraze se lipesc într-una singură. */
+.dx-error-message { white-space: pre-line; }
+/* Istoricul rândului selectat: un tabel mic sub grilă, nu un panou care se
+   deschide — se citește dintr-o privire, lângă valoarea pe care o explică. */
+.istoric { margin-top: 14px; }
+.istoric > h3 { margin-bottom: 6px; font-size: 13px; }
+.verificare__grup { margin-top: 14px; }
+.verificare__grup > h3 { margin-bottom: 6px; font-size: 13px; }
+.verificare__contor { color: #6b7683; font-weight: 400; }
+/* Mesajul constatării e o frază, nu o cifră: are voie să se rupă pe rânduri. */
+.tabel-mic td.verificare__mesaj { white-space: normal; max-width: 720px; }

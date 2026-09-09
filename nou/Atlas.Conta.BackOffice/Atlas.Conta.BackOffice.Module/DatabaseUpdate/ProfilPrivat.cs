@@ -63,6 +63,12 @@ internal static class ProfilPrivat {
         SeedPoliticiTva(os);
         // Default TipTva de CULEGERE: N21 referit — după commit-ul TipTva.
         SeedTipTvaImplicit(os);
+        // Implicitele de POLITICĂ (felia 23, F23-D2): referă TipDocument (comise
+        // de nucleu) și TipTva (comise mai sus), deci stau lângă ancoră.
+        SeedPoliticiTvaImplicit(os);
+        // Cotele ISTORICE ies din culegere (F23-D3): rămân pe documentele lor,
+        // dar nu se mai propun și nu mai pot fi alese de rezolvarea implicitelor.
+        ContaSeeder.SeedTipuriTvaInactive(os, "N19", "TI19");
         // Așezarea pe decontul de TVA (D3-D2): referă tipurile comise mai sus și
         // rândurile D300 comise de nucleu înaintea pachetului de profil.
         SeedMapareD300(os);
@@ -99,7 +105,7 @@ internal static class ProfilPrivat {
         foreach (var c in clase) {
             var clasa = os.FirstOrDefault<ClasaProdus>(x => x.Cod == c.Cod);
             if (clasa == null) {
-                clasa = os.CreateObject<ClasaProdus>();
+                clasa = ContaSeeder.Seedat(os.CreateObject<ClasaProdus>());
                 clasa.Cod = c.Cod;
                 clasa.Denumire = c.Denumire;
                 clasa.Natura = c.Natura;
@@ -146,7 +152,7 @@ internal static class ProfilPrivat {
         ];
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipMaterial>(x => x.Cod == t.Cod) == null) {
-                var tip = os.CreateObject<TipMaterial>();
+                var tip = ContaSeeder.Seedat(os.CreateObject<TipMaterial>());
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.Clasa = claseMap[t.Clasa];
@@ -204,7 +210,7 @@ internal static class ProfilPrivat {
             ("VEN", "7588", "Alte venituri din exploatare"),
         ];
         foreach (var t in tipuriPromovate) {
-            var tip = os.FirstOrDefault<TipMaterial>(x => x.Cod == t.Cod) ?? os.CreateObject<TipMaterial>();
+            var tip = os.FirstOrDefault<TipMaterial>(x => x.Cod == t.Cod) ?? ContaSeeder.Seedat(os.CreateObject<TipMaterial>());
             tip.Cod = t.Cod;
             tip.Denumire = t.Denumire;
             tip.Clasa = claseMap[t.Clasa];
@@ -289,7 +295,7 @@ internal static class ProfilPrivat {
                 continue;
             var f = line.Split(',', 4);
             if (!conturi.TryGetValue(f[0], out var cont)) {
-                cont = os.CreateObject<Cont>();
+                cont = ContaSeeder.Seedat(os.CreateObject<Cont>());
                 cont.Simbol = f[0];
                 cont.Denumire = f[3];
                 // CSV-ul e ordonat pe nivel (părinții înaintea copiilor).
@@ -401,7 +407,7 @@ internal static class ProfilPrivat {
         foreach (var t in tipuri) {
             if (os.FirstOrDefault<TipTva>(x => x.Cod == t.Cod) != null)
                 continue;
-            var tip = os.CreateObject<TipTva>();
+            var tip = ContaSeeder.Seedat(os.CreateObject<TipTva>());
             tip.Cod = t.Cod;
             tip.Denumire = t.Denumire;
             tip.Cota = t.Cota;
@@ -425,7 +431,7 @@ internal static class ProfilPrivat {
         void Politica(string codTip, DirectieTva directie, SursaCont sursa, string fallback) {
             if (os.FirstOrDefault<PoliticaTva>(p => p.TipDocument.Cod == codTip) != null)
                 return;
-            var p = os.CreateObject<PoliticaTva>();
+            var p = ContaSeeder.Seedat(os.CreateObject<PoliticaTva>());
             p.TipDocument = os.FirstOrDefault<TipDocument>(t => t.Cod == codTip);
             p.Directie = directie;
             p.SursaContrapartida = sursa;
@@ -459,6 +465,62 @@ internal static class ProfilPrivat {
             var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == cod);
             if (tip != null && tip.TipTvaImplicitId == null)
                 tip.TipTvaImplicitId = n21.ID;
+        }
+    }
+
+    // ── Implicitele de TVA ca POLITICĂ (felia 23, F23-D2) ──────────────────
+    //
+    // DOAR ce e sigur în lege. Rândurile care ar cere o decizie de profil se
+    // DECLARĂ ca lipsă, nu se inventează (decizia 21):
+    //   * achiziția extra-UE — importul cu TVA în vamă e un document propriu
+    //     (familia 36f), nu un regim de linie;
+    //   * achiziția de la un neînregistrat RO — linia n-are fapt de TVA; rămâne
+    //     pe ancora N21 până la o decizie proprie (restanță cu nume).
+    // `ValabilDeLa` e null peste tot: niciunul dintre rândurile de mai jos nu
+    // depinde de cotă, deci nu are dată de la care se schimbă.
+    //
+    // Scutirea de livrare (art. 294 alin. 2 Cod fiscal) e a LIVRĂRII, deci apare
+    // și pe RDC — returul de la client stornează aceeași livrare, pe aceeași
+    // corespondență (46e), și trebuie să poarte același regim. Taxarea inversă
+    // intracomunitară e a ACHIZIȚIEI, deci apare pe FCT și pe RLF, simetric.
+    internal static readonly (string TipDocument, ClasaFiscalaPartener Clasa, string TipTva)[] ImpliciteTva = [
+        ("FCL", ClasaFiscalaPartener.Ue, "SDD"),
+        ("FCL", ClasaFiscalaPartener.ExtraUe, "SDD"),
+        ("RDC", ClasaFiscalaPartener.Ue, "SDD"),
+        ("RDC", ClasaFiscalaPartener.ExtraUe, "SDD"),
+        ("FCT", ClasaFiscalaPartener.Ue, "TI21"),
+        ("RLF", ClasaFiscalaPartener.Ue, "TI21"),
+    ];
+
+    // Idempotent pe cheia INDEXULUI (tip × clasă × valabilitate), cu aceeași
+    // disciplină ca mapările D300/D394: rândul șters de utilizator NU se
+    // recreează (politica e date — decizia 4), dar se SPUNE.
+    public static void SeedPoliticiTvaImplicit(IObjectSpace os) {
+        foreach (var i in ImpliciteTva) {
+            var tipDoc = os.FirstOrDefault<TipDocument>(t => t.Cod == i.TipDocument)
+                ?? throw new InvalidOperationException(
+                    $"Implicitul de TVA {i.TipDocument}/{i.Clasa} → {i.TipTva} nu se poate seed-ui: "
+                    + $"lipsește din bază tipul de document {i.TipDocument}.");
+            var tipTva = os.FirstOrDefault<TipTva>(t => t.Cod == i.TipTva)
+                ?? throw new InvalidOperationException(
+                    $"Implicitul de TVA {i.TipDocument}/{i.Clasa} → {i.TipTva} nu se poate seed-ui: "
+                    + $"lipsește din bază tipul de TVA {i.TipTva}.");
+            var clasa = i.Clasa;
+            if (os.GetObjectsQuery<PoliticaTvaImplicit>()
+                    .Any(x => x.TipDocumentId == tipDoc.ID
+                        && x.ClasaFiscala == clasa && x.ValabilDeLa == null))
+                continue;
+            if (os.GetObjectsQuery<PoliticaTvaImplicit>().IgnoreQueryFilters()
+                    .Any(x => x.TipDocumentId == tipDoc.ID
+                        && x.ClasaFiscala == clasa && x.ValabilDeLa == null)) {
+                Console.WriteLine($"  Implicit de TVA {i.TipDocument}/{i.Clasa} → {i.TipTva}: ȘTERS de "
+                    + "utilizator, nu se recreează (politica e date — decizia 4).");
+                continue;
+            }
+            var rand = ContaSeeder.Seedat(os.CreateObject<PoliticaTvaImplicit>());
+            rand.TipDocument = tipDoc;
+            rand.ClasaFiscala = clasa;
+            rand.TipTva = tipTva;
         }
     }
 
@@ -548,7 +610,7 @@ internal static class ProfilPrivat {
                     + "nu se recreează (politica e date — decizia 4).");
                 continue;
             }
-            var mapare = os.CreateObject<MapareD300>();
+            var mapare = ContaSeeder.Seedat(os.CreateObject<MapareD300>());
             mapare.TipTva = tip;
             mapare.Sens = sens;
             mapare.Rand = rand;
@@ -562,6 +624,17 @@ internal static class ProfilPrivat {
     // prima cifră în panoul „Operațiuni neincluse în decont" (D3-D8: raportarea
     // nu refuză ce operarea a acceptat).
     internal static void VerificaMapariD300(IObjectSpace os, IReadOnlyCollection<MapareD300> mapari) {
+        var goluri = GoluriMapariD300(os, mapari);
+        if (goluri.Count > 0)
+            throw new InvalidOperationException(goluri[0]);
+    }
+
+    // F23-D8 — aceleași goluri, două uși: seed-ul le ARUNCĂ (prima, ca înainte),
+    // raportul de profil le LISTEAZĂ pe toate. Corpul e unul singur, deci
+    // raportul nu poate rămâne în urmă față de ce refuză `--updateDatabase`.
+    internal static IReadOnlyList<string> GoluriMapariD300(
+            IObjectSpace os, IReadOnlyCollection<MapareD300> mapari) {
+        var goluri = new List<string>();
         var coduri = MapariD300.Select(m => m.TipTva)
             .Concat(NemapateDeliberat.Select(n => n.TipTva)).Distinct().ToList();
         // Perechile a căror mapare a fost ȘTEARSĂ de utilizator (fix F5): a
@@ -577,9 +650,10 @@ internal static class ProfilPrivat {
             .ToHashSet();
         foreach (var cod in coduri) {
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
-            if (tip == null)
-                throw new InvalidOperationException(
-                    $"Tabelul de mapare D300 referă tipul de TVA {cod}, care nu există în bază.");
+            if (tip == null) {
+                goluri.Add($"Tabelul de mapare D300 referă tipul de TVA {cod}, care nu există în bază.");
+                continue;
+            }
             foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
                 if (mapari.Any(m => m.TipTvaId == tip.ID && m.Sens == sens))
                     continue;
@@ -588,11 +662,12 @@ internal static class ProfilPrivat {
                 var deliberat = NemapateDeliberat
                     .Where(n => n.TipTva == cod && n.Sens == sens).Select(n => n.Motiv).FirstOrDefault();
                 if (deliberat == null)
-                    throw new InvalidOperationException(
+                    goluri.Add(
                         $"Tipul de TVA {cod} nu are nicio mapare D300 pe sensul {sens} și nici nu e "
                         + "declarat nemapat deliberat — operațiunile lui ar cădea tăcut în afara decontului.");
             }
         }
+        return goluri;
     }
 
     // ---------------- D394 (felia 14, D4-D2) ----------------
@@ -660,7 +735,7 @@ internal static class ProfilPrivat {
                     + "nu se recreează (politica e date — decizia 4).");
                 continue;
             }
-            var mapare = os.CreateObject<MapareD394>();
+            var mapare = ContaSeeder.Seedat(os.CreateObject<MapareD394>());
             mapare.TipTva = tip;
             mapare.Sens = sens;
             mapare.Tip = m.Tip;
@@ -672,6 +747,15 @@ internal static class ProfilPrivat {
     // de utilizator (a treia categorie, F5). Domeniul = tipurile scrise de ACEST
     // seed; un `TipTva` al clientului fără mapare apare în `Neincluse`, nu e refuzat.
     internal static void VerificaMapariD394(IObjectSpace os, IReadOnlyCollection<MapareD394> mapari) {
+        var goluri = GoluriMapariD394(os, mapari);
+        if (goluri.Count > 0)
+            throw new InvalidOperationException(goluri[0]);
+    }
+
+    // Geamăna lui `GoluriMapariD300` (F23-D8).
+    internal static IReadOnlyList<string> GoluriMapariD394(
+            IObjectSpace os, IReadOnlyCollection<MapareD394> mapari) {
+        var goluri = new List<string>();
         var coduri = MapariD394.Select(m => m.TipTva)
             .Concat(NemapateDeliberatD394.Select(n => n.TipTva)).Distinct().ToList();
         var stersDeUtilizator = os.GetObjectsQuery<MapareD394>().IgnoreQueryFilters()
@@ -680,20 +764,23 @@ internal static class ProfilPrivat {
             .Select(m => (m.TipTvaId, m.Sens))
             .ToHashSet();
         foreach (var cod in coduri) {
-            var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod)
-                ?? throw new InvalidOperationException(
-                    $"Tabelul de mapare D394 referă tipul de TVA {cod}, care nu există în bază.");
+            var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
+            if (tip == null) {
+                goluri.Add($"Tabelul de mapare D394 referă tipul de TVA {cod}, care nu există în bază.");
+                continue;
+            }
             foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
                 if (mapari.Any(m => m.TipTvaId == tip.ID && m.Sens == sens))
                     continue;
                 if (stersDeUtilizator.Contains((tip.ID, sens)))
                     continue;
                 if (!NemapateDeliberatD394.Any(n => n.TipTva == cod && n.Sens == sens))
-                    throw new InvalidOperationException(
+                    goluri.Add(
                         $"Tipul de TVA {cod} nu are mapare D394 pe sensul {sens} și nici nu e declarat nemapat "
                         + "deliberat — operațiunile lui ar cădea tăcut în afara declarației.");
             }
         }
+        return goluri;
     }
 
     // ── Politica de mișcare SAF-T S (felia 17, D17-D1) ──────────────────────
@@ -783,7 +870,7 @@ internal static class ProfilPrivat {
                     + "ȘTEARSĂ de utilizator, nu se recreează (politica e date — decizia 4).");
                 continue;
             }
-            var politica = os.CreateObject<PoliticaMiscareSaft>();
+            var politica = ContaSeeder.Seedat(os.CreateObject<PoliticaMiscareSaft>());
             politica.TipDocument = tip;
             politica.TipStoc = tipStoc;
             politica.Semn = semn;
@@ -813,7 +900,7 @@ internal static class ProfilPrivat {
                     && x.Latura == latura && x.ClasaId == clasaId);
             if (exista != null)
                 continue;
-            var regula = os.CreateObject<RegulaStoc>();
+            var regula = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
             regula.TipDocument = tipDoc;
             regula.Latura = latura;
             regula.ClasaId = clasaId;
@@ -848,7 +935,7 @@ internal static class ProfilPrivat {
 
         var conex = os.FirstOrDefault<PoliticaConex>(x => x.TipDocumentSursa.Cod == "FCT");
         if (conex == null) {
-            conex = os.CreateObject<PoliticaConex>();
+            conex = ContaSeeder.Seedat(os.CreateObject<PoliticaConex>());
             conex.TipDocumentSursa = fct;
             conex.TipDocumentTinta = nir;
         }
@@ -863,7 +950,7 @@ internal static class ProfilPrivat {
                 ("MF", TipStoc.Marfuri),
             ];
             foreach (var r in reguli) {
-                var regula = os.CreateObject<RegulaStoc>();
+                var regula = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
                 regula.TipDocument = nir;
                 regula.Latura = LaturaDocument.Primitor;
                 regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
@@ -874,7 +961,7 @@ internal static class ProfilPrivat {
 
         // Contare NIR: 3xx (contul Tipului) = furnizor, la NET.
         if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "NIR") == null) {
-            var receptie = os.CreateObject<RegulaContare>();
+            var receptie = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
             receptie.TipDocument = nir;
             receptie.NaturaFiltru = NaturaClasa.Stoc;
             receptie.SursaContDebit = SursaCont.TipMaterial;
@@ -890,7 +977,7 @@ internal static class ProfilPrivat {
                 (NaturaClasa.Imobilizare, cont404),
             ];
             foreach (var r in reguli) {
-                var regula = os.CreateObject<RegulaContare>();
+                var regula = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
                 regula.TipDocument = fct;
                 regula.NaturaFiltru = r.Natura;
                 regula.SursaContDebit = SursaCont.TipMaterial;
@@ -925,7 +1012,7 @@ internal static class ProfilPrivat {
                 ("MF", TipStoc.Marfuri),
             ];
             foreach (var r in reguli) {
-                var regula = os.CreateObject<RegulaStoc>();
+                var regula = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
                 regula.TipDocument = ldi;
                 regula.Latura = LaturaDocument.Predator;
                 regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
@@ -934,7 +1021,7 @@ internal static class ProfilPrivat {
             }
         }
         if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "LDI" && x.TipMaterialId == null) == null) {
-            var plus = os.CreateObject<RegulaContare>();
+            var plus = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
             plus.TipDocument = ldi;
             plus.NaturaFiltru = NaturaClasa.Stoc;
             plus.SemnFiltru = +1;
@@ -951,12 +1038,12 @@ internal static class ProfilPrivat {
         var fcl = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCL");
         ContaSeeder.SeedNumerotare(os, "FCL", "FCL-");
         if (os.FirstOrDefault<PoliticaScadenta>(x => x.TipDocument.Cod == "FCL") == null) {
-            var scadenta = os.CreateObject<PoliticaScadenta>();
+            var scadenta = ContaSeeder.Seedat(os.CreateObject<PoliticaScadenta>());
             scadenta.TipDocument = fcl;
             scadenta.ZileDefault = 30;
         }
         if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "FCL") == null) {
-            var facturare = os.CreateObject<RegulaContare>();
+            var facturare = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
             facturare.TipDocument = fcl;
             facturare.SursaContDebit = SursaCont.RepartitorPrimitor;
             facturare.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "4111");
@@ -986,7 +1073,7 @@ internal static class ProfilPrivat {
                 ("MF", TipStoc.Marfuri),
             ];
             foreach (var r in reguli) {
-                var regula = os.CreateObject<RegulaStoc>();
+                var regula = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
                 regula.TipDocument = dsc;
                 regula.Latura = LaturaDocument.Predator;
                 regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
@@ -1046,14 +1133,14 @@ internal static class ProfilPrivat {
         // cheia lui (tip document + fără filtre): garda veche „există vreo regulă
         // pe PLT" ar sări rândul de virament de mai jos pe orice bază existentă.
         if (ContaSeeder.RegulaContareLipsa(os, plt, null, null)) {
-            var plata = os.CreateObject<RegulaContare>();
+            var plata = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
             plata.TipDocument = plt;
             plata.SursaContDebit = SursaCont.RepartitorPrimitor;
             plata.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
             plata.SursaContCredit = SursaCont.RepartitorPredator;
         }
         if (ContaSeeder.RegulaContareLipsa(os, inc, null, null)) {
-            var incasare = os.CreateObject<RegulaContare>();
+            var incasare = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
             incasare.TipDocument = inc;
             incasare.SursaContDebit = SursaCont.RepartitorPrimitor;
             incasare.SursaContCredit = SursaCont.RepartitorPredator;
@@ -1079,7 +1166,7 @@ internal static class ProfilPrivat {
         ContaSeeder.SeedNumerotare(os, "ITV", "ITV-");
         if (os.FirstOrDefault<PoliticaInchidereTva>(p => p.TipDocument.Cod == "ITV") != null)
             return;
-        var politica = os.CreateObject<PoliticaInchidereTva>();
+        var politica = ContaSeeder.Seedat(os.CreateObject<PoliticaInchidereTva>());
         politica.TipDocument = os.FirstOrDefault<TipDocument>(t => t.Cod == "ITV");
         politica.ContDeductibila = os.FirstOrDefault<Cont>(c => c.Simbol == "4426");
         politica.ContColectata = os.FirstOrDefault<Cont>(c => c.Simbol == "4427");
@@ -1105,7 +1192,7 @@ internal static class ProfilPrivat {
             ("MF", TipStoc.Marfuri),
         ];
         foreach (var r in reguli) {
-            var regula = os.CreateObject<RegulaStoc>();
+            var regula = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
             regula.TipDocument = asm;
             regula.Latura = LaturaDocument.Predator;
             regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
@@ -1141,7 +1228,7 @@ internal static class ProfilPrivat {
                 ("MF", TipStoc.Marfuri),
             ];
             foreach (var r in reguli) {
-                var regula = os.CreateObject<RegulaStoc>();
+                var regula = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
                 regula.TipDocument = tipDoc;
                 regula.Latura = latura;
                 regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
@@ -1154,7 +1241,7 @@ internal static class ProfilPrivat {
 
         // RLF: stornarea achiziției — contul de stoc al Tipului = furnizorul.
         if (os.FirstOrDefault<RegulaContare>(x => x.TipDocumentId == rlf.ID) == null) {
-            var retur = os.CreateObject<RegulaContare>();
+            var retur = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
             retur.TipDocument = rlf;
             retur.NaturaFiltru = NaturaClasa.Stoc;
             retur.PastreazaSemn = true;
@@ -1167,7 +1254,7 @@ internal static class ProfilPrivat {
         // contul de venit al Tipului, FĂRĂ fallback (Tip fără cont = eroare
         // clară la operare, filozofia 30b).
         if (os.FirstOrDefault<RegulaContare>(x => x.TipDocumentId == rdc.ID && x.TipMaterialId == null) == null) {
-            var venit = os.CreateObject<RegulaContare>();
+            var venit = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
             venit.TipDocument = rdc;
             venit.NaturaFiltru = NaturaClasa.Serviciu;
             venit.PastreazaSemn = true;
@@ -1188,7 +1275,7 @@ internal static class ProfilPrivat {
         var dec = os.FirstOrDefault<TipDocument>(x => x.Cod == "DEC");
         ContaSeeder.SeedNumerotare(os, "DEC", "DEC-");
         if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "DEC") == null) {
-            var justificare = os.CreateObject<RegulaContare>();
+            var justificare = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
             justificare.TipDocument = dec;
             justificare.SursaContDebit = SursaCont.TipMaterial;
             justificare.SursaContCredit = SursaCont.RepartitorPredator;

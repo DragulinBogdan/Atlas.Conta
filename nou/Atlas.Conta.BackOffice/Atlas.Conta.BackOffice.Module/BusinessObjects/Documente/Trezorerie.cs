@@ -196,6 +196,13 @@ public abstract class DocumentTrezorerie : Document {
     // ascunde panoul de stingeri pe virament (F7-D8) ⇒ operatorul n-ar vedea DE CE.
     public override bool PoateFiStins(DevExpress.ExpressApp.IObjectSpace os) => !EsteVirament(os);
 
+    // Plata/încasarea autogenerată stinge sursa la propria operare (31d/82).
+    // Viramentul nu participă: CapacitateStingere întoarce null (F7-D5).
+    public override Guid? SursaStingeriiAutomate(DevExpress.ExpressApp.IObjectSpace os) =>
+        Autogenerat && DocumentSursaId != null && CapacitateStingere(os) != null
+            ? DocumentSursaId
+            : null;
+
     // Dimensiunea Repartitor a notei (F7-D5b): pe virament AMBELE laturi
     // primesc contul propriu AL PICIORULUI. Default-ul bazei (debit←Predator,
     // credit←Primitor) pune pe fiecare rând contrapartida laturii — corect când

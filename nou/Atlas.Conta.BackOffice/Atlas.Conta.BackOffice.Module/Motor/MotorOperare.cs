@@ -414,35 +414,9 @@ public static class MotorOperare {
         doc.Stare = StareDocument.Operat;
         doc.DataOperare = DateTime.UtcNow;
 
-        // 6. Plata autogenerată își creează imperecherea cu sursa la PROPRIA
-        //    operare (ambele părți au registre abia acum) — echivalentul
-        //    GEST_DECONTARI.AUTOGENERAT din plata automată legacy. Suma =
-        //    restul stingibil (documentul poate fi deja parțial imperecheat).
-        //
-        //    Condiția „documentul STINGE" e polimorfă (F7-D5): nu orice document
-        //    de trezorerie autogenerat cu sursă e o plată automată de factură —
-        //    latura pereche a unui virament e tot asta, dar ea nu închide nicio
-        //    datorie (`CapacitateStingere` = null pe virament). Fără gard,
-        //    imperecherea cu propria sursă ar bloca anularea/stornarea ambelor
-        //    picioare și ar polua panoul de stingeri.
-        //
-        //    Poarta întreabă AMBELE jumătăți ale rolului, pe copil ȘI pe sursă:
-        //    „copilul stinge?" (`CapacitateStingere`) și „sursa se lasă stinsă?"
-        //    (`PoateFiStins`). Fără a doua, un operator care editează laturile
-        //    sau Tipul liniilor pe draftul autogenerat al perechii (până nu mai e
-        //    virament) ar trece poarta, iar `Creeaza` ar arunca „nu împart
-        //    aceeași contrapartidă" pe o încasare pe care el doar voia s-o
-        //    opereze. Refuzul de imperechere nu are ce căuta pe calea operării.
-        if (doc is DocumentTrezorerie trezorerie && trezorerie.Autogenerat && trezorerie.DocumentSursaId != null) {
-            var sursa = os.GetObjectByKey<Document>(trezorerie.DocumentSursaId.Value);
-            if (trezorerie.CapacitateStingere(os) != null && sursa.PoateFiStins(os)) {
-                var suma = Math.Min(
-                    doc.Detalii.Sum(d => d.Valoare + d.ValoareTva) - ImperechereService.Asignat(os, doc.ID),
-                    ImperechereService.Ramas(os, sursa.ID));
-                if (suma > 0)
-                    ImperechereService.Creeaza(os, trezorerie, sursa, suma, autogenerat: true);
-            }
-        }
+        // 6. Stingerea automată (82): tipul declară sursa prin contract,
+        //    serviciul materializează relația în aceeași tranzacție.
+        ImperechereService.CreeazaAutomataLaOperare(os, doc);
 
         os.CommitChanges();
         return conex ?? secundar;

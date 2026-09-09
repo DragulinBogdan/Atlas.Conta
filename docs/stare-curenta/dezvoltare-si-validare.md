@@ -1,0 +1,148 @@
+# Dezvoltare și validare
+
+**Actualizat: 2026-09-09.** [Index](README.md)
+
+## Organizarea sursei
+
+| Zonă | Responsabilitate |
+|---|---|
+| `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module` | Model, motor, DTO/Apply, proiecții, ANAF, SAF-T, seed și migrări (42d) |
+| `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.WebApi` | Contracte HTTP, securizarea comenzilor, OData și integrarea hostului (42f) |
+| `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server` | Host XAF, administrare și actualizarea explicită a bazei (23a) |
+| `nou/Atlas.Conta.Client` | React, formulare, raportare și contractele generate (43e) |
+| `nou/tools/ModelCheck` | Verificarea modelului și scenarii de domeniu pe PostgreSQL (23) |
+| `nou/tools/ProbeHttp` | Probe ale contractului HTTP și ale permisiunilor reale (80i, 81j) |
+| `nou/tools/Import1C` | Import operațional și reconcilierea sursei (45f) |
+| `nou/tools/Migrare` | Prototipul migrării nomenclatoarelor și soldurilor legacy (34, 35a) |
+| `legacy`, `db` | Dovezi despre aplicația și datele vechi (21, 35b) |
+
+Într-un repository cu `.codegraph/`, explorarea codului începe cu CodeGraph.
+Sursa curentă rămâne autoritatea când indexul semnalează informații depășite.
+Lipsa indexului nu cere crearea lui automată.
+
+## Model și persistență
+
+EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
+automată a schemei prin XAF este dezactivată. Module este comun celor două
+hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
+
+Actualizarea bazei se execută explicit prin hostul Blazor, cu opțiunile
+`--updateDatabase --forceUpdate --silent`. WebApi verifică compatibilitatea
+și nu devine al doilea updater automat. Baza țintă se verifică înainte de
+orice comandă care aplică migrări sau seed. (23a, 42f)
+
+Seed-ul este specific profilului și idempotent conform regulii fiecărui
+tabel. Nu este o resetare generală a configurației editate. Rândurile
+existente, proveniența și ștergerea logică se tratează conform serviciului
+responsabil; reseed-ul nu autorizează suprascrierea datelor societății. (69b, 73a, 81d)
+
+Profilurile nu se amestecă în aceeași bază. `SetareProfil` și rotunjirea sunt
+stabile după inițializare. (36c, 52a)
+
+Unicitatea politicilor și a codurilor de nomenclator este în schemă, prin
+indexuri unice filtrate pe `GCRecord = 0`: un rând șters logic nu este dublu,
+iar cheia lui se poate reface. (81c)
+
+Absența FK-ului pentru `Lot.LinieIntrareId` este intenționată pentru ciclul de
+inserare; integritatea este verificată de mecanismele domeniului. (26e)
+
+Versiunile backend sunt centralizate în `Directory.Packages.props`.
+Pachetele Atlas.DXF și DevExpress folosesc intervalul flotant al liniei de
+versiune (`26.1.*`); versiunea restaurată trebuie să fie coerentă între
+proiecte. (39a, 41e)
+Clientul folosește pnpm și versiunile declarate în `package.json` și lockfile.
+
+## Contracte generate și build
+
+OpenAPI poate fi extras offline din configurația hostului, fără pornirea
+serviciilor găzduite și fără baza de date. Metadata este derivată din model
+prin instrumentul dedicat; nu se extrage dintr-un model de ecran XAF.
+Artefactele generate sunt versionate împreună cu sursa care le definește. (43d, 56)
+
+Comenzile uzuale, din rădăcina repository-ului, sunt:
+
+```powershell
+dotnet build nou/tools/ModelCheck/ModelCheck.csproj
+dotnet build nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.WebApi/Atlas.Conta.BackOffice.WebApi.csproj
+pnpm --dir nou/Atlas.Conta.Client build
+pnpm --dir nou/Atlas.Conta.Client verifica:drift
+```
+
+Verificarea de drift regenerează contractele și refuză diferențele față de
+fișierele versionate. O schimbare intenționată de contract se regenerează și
+se examinează înainte de includerea artefactelor în modificare. (43d, 56)
+
+## Verificări proporționale cu modificarea
+
+| Schimbare | Verificare necesară |
+|---|---|
+| Model, motor, politici, proiecții | Build și ModelCheck pe ambele profiluri (23) |
+| DTO, atribute, expunere API | Build WebApi, regenerare și verificarea contractelor; probe HTTP pentru comportamentul afectat (56, 80i) |
+| Autorizare | Probe HTTP cu rolurile reale; o probă pe context nesecurizat nu demonstrează securitatea (80i, 81j) |
+| Formular sau interacțiune | Build client și verificarea fluxului în browser (66) |
+| Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
+| Documentație | Concordanță cu implementarea, link-uri locale și diff |
+
+ModelCheck verifică modelul și execută scenarii de integrare. Nu are
+strategie de securitate XAF; autorizarea se probează prin
+`nou/tools/ProbeHttp/refuzuri.ps1`, cu rolurile Admin, Cititor și User. (80i, 81j)
+
+**ModelCheck scrie în baze de date.** Profilul bugetar implicit folosește
+baza configurată de aplicație (`Atlas.Conta.BackOffice` în configurația
+curentă); profilul privat folosește baza dedicată
+`Atlas.Conta.ModelCheck.Privat`. Nu se tratează ca suită izolată, sigură de
+rulat pe orice configurație. Conexiunea și compatibilitatea schemei se
+verifică înainte de execuție.
+
+Lipsa bazei sau migrările neaplicate pot lăsa doar verificarea modelului
+executată. Codul de ieșire singur nu dovedește rularea scenariilor; jurnalul
+trebuie să confirme execuția lor și absența eșecurilor.
+
+Scenariile își curăță datele marcate. Întreruperea procesului poate lăsa
+documente care influențează alte scenarii; curățarea se limitează la datele
+identificate ale testului, în baza verificată. Auditul se păstrează. (70e, 81h)
+
+Procesele lungi se lansează cu jurnal și cod de ieșire capturat. Pe Windows,
+procesele de fundal se lansează cu fereastra ascunsă. Validatorul DUK cere
+un director temporar accesibil procesului. Jurnalele publicate nu includ
+parole, tokenuri sau adrese de feed cu credențiale. (50d, 73f)
+
+## Import operațional 1C
+
+Importul lucrează într-o bază dedicată, cu mapări explicite și verificare
+prealabilă. Documentele sunt operate prin motor în ordinea timestamp-ului
+sursei; nu se copiază registre pentru a evita regulile domeniului.
+Tranzacția operațională este per document. (45a, 47a, 50a)
+
+`MigrareLegatura` asigură legătura și idempotenta importului. Recuperarea
+după un commit fără legătură și reluarea drafturilor folosesc identitatea
+stabilă de import. Configurația legacy nu este importată ca limbaj de
+politici, iar instrumentele de migrare nu impun o bibliotecă de domeniu
+comună cu aplicația veche. (45f, 47b, 50a)
+
+Nomenclatoarele sunt create la nevoie. Identitatea materialului importat
+ține cont de catalog și cont; lotul, de document × produs × cont. Mapările
+de cont sunt explicite și se verifică înainte de import. (47d, 48c, 50a)
+
+NTC este punte numai pentru cazurile permise explicit, nu fallback universal
+pentru documente nerecunoscute. Transformările și transferurile sunt
+clasificate în ASM, BTR sau NTC după faptul economic. FCL importată postează
+venitul; DSC folosește loturile identificate de sursă. (49a, 49d, 75b)
+
+## Reconciliere și migrare legacy
+
+Reconcilierea recitește PostgreSQL după operare. Compară pe luni conturile,
+TVA-ul, creanțele/datoriile și stocul pe produs × gestiune. Toleranța numerică
+este 0,005; o diferență neexplicată este eșec, nu motiv pentru ajustarea
+ascunsă a valorii postate. Explicațiile trebuie sprijinite de documentele
+sursei. (45e, 47e, 51d)
+
+Rulajele pe lot nu sunt țintă când identitatea lotului nu este comparabilă
+structural. Evaluarea exactă, excepția returului fiscal și efectele
+retroactivității se verifică separat. Probele deliberate de sabotaj trebuie
+să demonstreze că reconcilierea detectează abaterile. (45e, 47a, 75c)
+
+Prototipul legacy migrează nomenclatoare și solduri de deschidere la granița
+aleasă. Istoricul rămâne în sursă. Deschiderile contabile folosesc convenția
+de cont de deschidere, iar soldurile terților nu sunt transformate în facturi
+inventate. Legăturile de migrare fac reluarea identificabilă și idempotentă. (34a, 34b, 34d)

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampNumar } from '../../nucleu/campuri';
 import { Lookup } from '../../nucleu/Lookup';
+import { usePrecompletareTipTva } from '../../nucleu/implicite';
 import { LookupGrila } from '../../nucleu/LookupGrila';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { campMeta } from '../../nucleu/campMeta';
@@ -81,6 +82,12 @@ export function RdcEditorLinie(props: {
   linie: RdcLinieWrite;
   // Ce a calculat SERVERUL pentru linia asta (ReadDto) — doar pentru afișare.
   valoareTvaCitita?: number | null;
+  // Contextul implicitului de TVA (F23-D6): pe RDC partenerul (clientul care
+  // returnează) e PREDATORUL. Se cere DOAR pe rolul de venit — linia de cost n-are
+  // identitate fiscală prin construcție (F19-D7), iar un implicit propus acolo ar
+  // fi contrazis chiar golirea pe care o face `spreLinie`.
+  partenerId?: string | null;
+  data?: string | null;
   readOnly: boolean;
   onSalveaza: (l: RdcLinieWrite, etichete: EticheteCulese) => void;
   onRenunta: () => void;
@@ -107,6 +114,16 @@ export function RdcEditorLinie(props: {
 
   const venit = rol === 'venit';
   const marfa = rol === 'marfa';
+
+  // Implicitul se cere DOAR pe linie nouă, de VENIT, cu câmpul gol; aplicarea e
+  // update FUNCȚIONAL și nu trece niciodată peste o valoare existentă (77c).
+  const motivImplicit = usePrecompletareTipTva(
+    { tipDocument: 'RDC', partenerId: props.partenerId, data: props.data },
+    !existenta && venit && linie.TipTvaId == null,
+    (tipTvaId, cod) => {
+      setLinie((prev) => (prev.TipTvaId ? prev : { ...prev, TipTvaId: tipTvaId }));
+      setEtichete((prev) => (prev.TipTvaCod ? prev : { ...prev, TipTvaCod: cod ?? '' }));
+    });
 
   const structurale = [
     ...eroriStructurale(TIP_LINIE, SCHEMA_LINIE, linie as Record<string, unknown>, CAMPURI_COMUNE),
@@ -247,13 +264,16 @@ export function RdcEditorLinie(props: {
                   Venitul stornat — prețul de vânzare de pe factura originală, pozitiv.
                 </p>
               </div>
-              <Lookup<RdcLinieWrite>
-                camp="TipTvaId"
-                entitate="TipTva"
-                mod="local"
-                afisare={etichetaTipTva}
-                laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
-              />
+              <div>
+                <Lookup<RdcLinieWrite>
+                  camp="TipTvaId"
+                  entitate="TipTva"
+                  mod="local"
+                  afisare={etichetaTipTva}
+                  laSelectie={(t) => setEtichete((prev) => ({ ...prev, TipTvaCod: text(t?.Cod) }))}
+                />
+                {motivImplicit && <p className="indiciu">{motivImplicit}</p>}
+              </div>
               <div>
                 <CampNumar<RdcLinieWrite> camp="ValoareTva" zecimale={2} />
                 <p className="indiciu">
