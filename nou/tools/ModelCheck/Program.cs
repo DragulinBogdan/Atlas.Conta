@@ -1603,7 +1603,19 @@ if (profil == ProfilContabil.Privat) {
             CheckRefuza("Factura NU e stingător — rolul e declarat de tip (CapacitateStingere), nu de FK",
                 () => ImperechereService.Imperecheaza(os, fcl, fct, 10m));
 
+            // 82: capacitatea manuală + proveniența nu înscriu NTC în
+            // stingerea automată. O înscriere accidentală ar consuma plafonul.
+            ntcDraft.Autogenerat = true;
+            ntcDraft.DocumentSursa = fct;
+            os.CommitChanges();
             MotorOperare.Opereaza(os, ntcDraft);
+            Check("82: nota cu sursă și capacitate de stingere NU împerechează automat",
+                ntcDraft.CapacitateStingere(os)?.Count > 0
+                && !os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == ntcDraft.ID));
+            // Restul scenei continuă pe nota manuală originală.
+            ntcDraft.Autogenerat = false;
+            ntcDraft.DocumentSursa = null;
+            os.CommitChanges();
             var ntc = ntcDraft;
             Check("Nota de compensare operată: 401 = 4111 pe X (60), fără stoc și fără TVA",
                 ntc.Stare == StareDocument.Operat
@@ -5627,6 +5639,71 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Storno încasare → nota inversată append-only (−119) la data stornării",
         inc.Stare == StareDocument.Stornat && toateNoteInc.Count == 2
         && toateNoteInc.Single(r => r.Storno).Valoare == -119m);
+
+    // 82: același motor, cu rest parțial/zero și cu linii încă necomise.
+    os.Delete(os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentStingatorId == plataAuto.ID).ToList());
+    os.CommitChanges();
+    MotorOperare.AnuleazaOperarea(os, plataAuto);
+
+    Plata PlataCuSursa(Document sursa, decimal valoare, bool automata = true) {
+        var p = os.CreateObject<Plata>();
+        p.Data = new DateOnly(2026, 3, 12);
+        p.Predator = trezoreria;
+        p.Primitor = furnizor;
+        p.Autogenerat = automata;
+        p.DocumentSursa = sursa;
+        var d = os.CreateObject<DocumentTrezorerieDetaliu>();
+        d.Document = p;
+        d.TipMaterial = tipTrz;
+        d.Valoare = valoare;
+        d.CodEconomicId = codEc.ID;
+        os.CommitChanges();
+        return p;
+    }
+
+    var partialaManuala = PlataCuSursa(fct, 60m, automata: false);
+    MotorOperare.Opereaza(os, partialaManuala);
+    Check("82: plata cu sursă, dar neautogenerată, NU stinge automat",
+        !os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == partialaManuala.ID));
+    ImperechereService.Imperecheaza(os, partialaManuala, fct, 60m);
+
+    var partialaAuto = PlataCuSursa(fct, 40m);
+    partialaAuto.Detalii.Single().Valoare = 30m; // fără commit intermediar
+    MotorOperare.Opereaza(os, partialaAuto);
+    Check("82: stingerea automată folosește liniile curente (30), nu valoarea persistată (40)",
+        os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == partialaAuto.ID).Suma == 30m
+        && ImperechereService.Ramas(os, fct.ID) == 69.5m);
+
+    var restAuto = PlataCuSursa(fct, 100m);
+    MotorOperare.Opereaza(os, restAuto);
+    Check("82: plata automată se plafonează la restul sursei (69,5 din 100)",
+        os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == restAuto.ID).Suma == 69.5m
+        && ImperechereService.Ramas(os, fct.ID) == 0m);
+
+    var faraRest = PlataCuSursa(fct, 20m);
+    MotorOperare.Opereaza(os, faraRest);
+    Check("82: sursa fără rest permite operarea, fără împerechere zero",
+        faraRest.Stare == StareDocument.Operat
+        && !os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == faraRest.ID));
+
+    // Sursa FCL e din nou nestinsă după ștergerea împerecherii încasării.
+    // Beneficiarul plății e FURN, sursa e a CL: refuzul vine din Creeaza,
+    // DUPĂ materializare. ObjectSpace-ul comenzii se aruncă fără commit.
+    var refuzata = PlataCuSursa(fcl, 10m);
+    using (var comanda = provider.CreateObjectSpace()) {
+        var mesaj = Refuz(() => MotorOperare.Opereaza(comanda, comanda.GetObjectByKey<Plata>(refuzata.ID)));
+        Check("82: împerecherea automată păstrează refuzul de contrapartidă",
+            mesaj?.Contains("aceeași contrapartidă") == true);
+    }
+    using (var citire = provider.CreateObjectSpace()) {
+        var persistat = citire.GetObjectByKey<Plata>(refuzata.ID);
+        Check("82: refuzul stingerii NU persistă operarea, numărul sau registrele/relația",
+            persistat.Stare == StareDocument.Draft && persistat.DataOperare == null && persistat.Numar == null
+            && !citire.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == refuzata.ID)
+            && !citire.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == refuzata.ID)
+            && !citire.GetObjectsQuery<RegistruTva>().Any(r => r.DocumentId == refuzata.ID)
+            && !citire.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == refuzata.ID));
+    }
 
     CurataTrz(os);
     Check("Curățenie finală trezorerie (fără reziduuri e2e)",

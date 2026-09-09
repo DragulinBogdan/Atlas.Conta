@@ -199,6 +199,11 @@ public abstract class Document : BaseObject {
     // contrapartida asta?" rămân neatinși.
     public virtual IReadOnlyDictionary<Guid, PlafonStingere> CapacitateStingere(DevExpress.ExpressApp.IObjectSpace os) => null;
 
+    // Decizia 82: participarea la stingerea AUTOMATĂ e explicită, distinctă de
+    // capacitatea de stingere manuală. Fără efecte secundare; null = nu participă.
+    // Serviciul consumă sursa după materializarea registrelor, înainte de commit.
+    public virtual Guid? SursaStingeriiAutomate(DevExpress.ExpressApp.IObjectSpace os) => null;
+
     // Cealaltă jumătate a rolului: `CapacitateStingere` spune „pot STINGE",
     // asta spune „pot fi STINS". Default `true` — orice document cu rest e
     // candidat de stins (facturi, deconturi, plăți în lanțul avans↔

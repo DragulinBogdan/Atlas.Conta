@@ -856,6 +856,14 @@ decizia N.
     urme); ModelCheck nu capătă strategie de securitate. (j) Restanțe
     80-r1…r5 → jurnal.
 
+82. **Stingerea automată prin contract** (invariantul II). (a) Hook-ul
+    `Document.SursaStingeriiAutomate(os)` întoarce implicit null; trezoreria declară sursa
+    doar când e autogenerată și are capacitate de stingere. Capacitatea manuală
+    a NTC nu o înscrie automat. (b) `ImperechereService.CreeazaAutomataLaOperare`
+    verifică rolul sursei și păstrează calculul din liniile curente + restul
+    sursei, prin validările existente. (c) Motorul apelează mecanismul după
+    materializare și starea Operat, înainte de commit; serviciul nu comite.
+
 ## Stare și roadmap
 
 Executate, în ordine (contractele/design-urile per felie în `docs/`; istoricul
