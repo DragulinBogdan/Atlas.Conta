@@ -54,8 +54,9 @@ using Microsoft.EntityFrameworkCore;
 
 var profil = args.Any(a => a.Contains("privat", StringComparison.OrdinalIgnoreCase))
     ? ProfilContabil.Privat : ProfilContabil.Bugetar;
+var sufixBaza = Environment.GetEnvironmentVariable("MODELCHECK_BAZA_SUFIX") ?? "";
 var connectionString = "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database="
-    + (profil == ProfilContabil.Privat ? "Atlas.Conta.ModelCheck.Privat" : "Atlas.Conta.BackOffice");
+    + (profil == ProfilContabil.Privat ? "Atlas.Conta.ModelCheck.Privat" : "Atlas.Conta.BackOffice") + sufixBaza;
 
 var esecuri = 0;
 void Check(string nume, bool ok) {
