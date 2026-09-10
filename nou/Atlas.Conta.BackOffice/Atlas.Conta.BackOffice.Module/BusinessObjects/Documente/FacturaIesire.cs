@@ -77,13 +77,9 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
 
         // P2 (design §4): culegerea de stoc — General! (produsul e identitatea
         // liniei) + Specific? (lotul e pinul opțional). Totul pe proiecții (25b).
-        var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
-        var infoTip = os.GetObjectsQuery<TipMaterial>()
-            .Where(t => idsTip.Contains(t.ID))
-            .Select(t => new { t.ID, t.ClasaId, t.Clasa.Natura })
-            .ToDictionary(t => t.ID, t => (t.ClasaId, t.Natura));
+        var claseTip = Motor.Fapte.ClaseTip(os, Detalii.Select(d => d.TipMaterialId));
         var liniiStoc = Detalii.OfType<FacturaIesireDetaliu>()
-            .Where(d => infoTip.GetValueOrDefault(d.TipMaterialId).Natura == NaturaClasa.Stoc)
+            .Where(d => claseTip.GetValueOrDefault(d.TipMaterialId).Natura == NaturaClasa.Stoc)
             .ToList();
 
         foreach (var d in liniiStoc)
@@ -100,9 +96,7 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
             // rândul derivat: refuz explicit, nu postare greșită silențioasă
             // (filozofia 30b — fără fallback = eroare clară; review P2 defect 1).
             var tipFcl = Motor.MotorOperare.GasesteTipDocument(os, this);
-            var tipuriCuRegula = os.GetObjectsQuery<RegulaContare>()
-                .Where(r => r.TipDocumentId == tipFcl.ID && r.TipMaterialId != null)
-                .Select(r => r.TipMaterialId.Value).ToList();
+            var reguliContare = Motor.Fapte.ReguliContare(os, tipFcl.ID);
             // Identitatea dublă a liniei (Tip + Produs) trebuie să fie coerentă:
             // un produs de alt Tip ar conta pe conturile Tipului greșit deși
             // stocul se mișcă pe lotul produsului (review P2 defect 4).
@@ -113,7 +107,8 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
                 .Select(p => new { p.ID, p.TipMaterialId })
                 .ToDictionary(p => p.ID, p => p.TipMaterialId);
             foreach (var d in liniiStoc) {
-                if (!tipuriCuRegula.Contains(d.TipMaterialId))
+                if (Motor.Potrivire.Contare(reguliContare, Motor.Fapte.Linie(d, claseTip)).Nivel
+                        != Motor.NivelContare.TipMaterialExact)
                     erori.Add("Linia de stoc nu are regulă de contare de vânzare pentru Tipul ei — adăugați rândul de politică (sau rulați updater-ul).");
                 if (d.ProdusId != null && tipPerProdus.TryGetValue(d.ProdusId.Value, out var tipProdus)
                         && tipProdus != null && tipProdus != d.TipMaterialId)
@@ -135,8 +130,8 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
                 .ToDictionary(l => l.ID, l => l.ProdusId);
 
             var tipDsc = Motor.MotorOperare.GasesteTipDocument(os, nameof(DescarcareGestiune));
-            var reguliDsc = os.GetObjectsQuery<RegulaStoc>()
-                .Where(r => r.TipDocumentId == tipDsc.ID && r.Latura == LaturaDocument.Predator && r.Semn < 0)
+            var reguliDsc = Motor.Fapte.ReguliStoc(os, tipDsc.ID)
+                .Where(r => r.Latura == LaturaDocument.Predator && r.Semn < 0)
                 .ToList();
 
             foreach (var d in pinuri) {
@@ -145,10 +140,10 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
                     erori.Add("Lotul ales pe linia de stoc nu aparține produsului liniei.");
                 if (reguliDsc.Count == 0 || GestiuneDescarcareId == null)
                     continue;
-                var tipStoc = Motor.DescarcareService.TipStocPentruClasa(
-                    reguliDsc, infoTip.GetValueOrDefault(d.TipMaterialId).ClasaId);
-                if (tipStoc != null && Motor.StocService.Sold(os,
-                        new Motor.CheieStoc(lotId, GestiuneDescarcareId.Value, tipStoc.Value), Data) <= 0)
+                var potrivit = Motor.Potrivire.Stoc(reguliDsc, Motor.Fapte.Linie(d, claseTip))
+                    .FirstOrDefault(p => p.Latura == LaturaDocument.Predator);
+                if (potrivit is { Reguli.Count: > 0 } && Motor.StocService.Sold(os,
+                        new Motor.CheieStoc(lotId, GestiuneDescarcareId.Value, potrivit.Reguli[0].TipStoc), Data) <= 0)
                     erori.Add($"Lotul ales nu are sold în gestiunea de descărcare — întâi transfer (BTR).");
             }
         }

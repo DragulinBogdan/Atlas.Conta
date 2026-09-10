@@ -47,16 +47,16 @@ public class DescarcareGestiune : Document {
         // refuz explicit (review P2 defect 1). Coerența Tip ↔ produsul lotului:
         // altfel costul contează pe conturile Tipului greșit (defect 4).
         var tipDsc = Motor.MotorOperare.GasesteTipDocument(os, this);
-        var tipuriCuRegula = os.GetObjectsQuery<RegulaContare>()
-            .Where(r => r.TipDocumentId == tipDsc.ID && r.TipMaterialId != null)
-            .Select(r => r.TipMaterialId.Value).ToList();
+        var reguliContare = Motor.Fapte.ReguliContare(os, tipDsc.ID);
+        var claseTip = Motor.Fapte.ClaseTip(os, Detalii.Select(d => d.TipMaterialId));
         var idsLot = Detalii.Where(d => d.LotId != null).Select(d => d.LotId.Value).Distinct().ToList();
         var infoLot = os.GetObjectsQuery<Lot>()
             .Where(l => idsLot.Contains(l.ID))
             .Select(l => new { l.ID, l.ProdusId, l.Produs.TipMaterialId })
             .ToDictionary(l => l.ID, l => (l.ProdusId, l.TipMaterialId));
         foreach (var d in Detalii) {
-            if (!tipuriCuRegula.Contains(d.TipMaterialId))
+            if (Motor.Potrivire.Contare(reguliContare, Motor.Fapte.Linie(d, claseTip)).Nivel
+                    != Motor.NivelContare.TipMaterialExact)
                 erori.Add("Linia descărcării nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc) — adăugați rândul de politică (sau rulați updater-ul).");
             if (d.LotId != null && infoLot.TryGetValue(d.LotId.Value, out var lot)
                     && lot.TipMaterialId != null && lot.TipMaterialId != d.TipMaterialId)

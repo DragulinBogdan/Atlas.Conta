@@ -1349,6 +1349,66 @@ if (profil == ProfilContabil.Privat) {
         os.Delete(tipNou);
         os.CommitChanges();
 
+        // F24-P8 (felia 24, track B): axa pe care gardurile 38c NU o aveau — o
+        // regulă de contare EXACTĂ pe Tip, dar cu `SemnFiltru` nepotrivit liniei,
+        // e scoasă din joc de motor la TOATE nivelurile (F24-P1), deci linia ar
+        // mișca stocul fără notă; gardul, care acum întreabă `Potrivire`, o vede
+        // exact ca motorul (64).
+        var tipSemn = os.CreateObject<TipMaterial>();
+        tipSemn.Cod = MarcajDsc + "-TIPSEMN";
+        tipSemn.Denumire = "Tip de stoc cu regulă pe semnul greșit";
+        tipSemn.Clasa = tip371.Clasa;
+        var produsSemn = CreeazaProdus("-S", tipSemn);
+        RegulaContare RegulaSemnGresit(string codTip) {
+            var regula = os.CreateObject<RegulaContare>();
+            regula.TipDocument = os.FirstOrDefault<TipDocument>(t => t.Cod == codTip);
+            regula.TipMaterial = tipSemn;
+            regula.SemnFiltru = -1;
+            regula.SursaContDebit = SursaCont.RepartitorPrimitor;
+            regula.SursaContCredit = SursaCont.TipMaterial;
+            return regula;
+        }
+        var regulaFclSemn = RegulaSemnGresit("FCL");
+        var regulaDscSemn = RegulaSemnGresit("DSC");
+        os.CommitChanges();
+
+        var fclSemn = os.CreateObject<FacturaIesire>();
+        fclSemn.Data = d6; fclSemn.Predator = sediu; fclSemn.Primitor = client; fclSemn.GestiuneDescarcare = mag1;
+        var lFclSemn = os.CreateObject<FacturaIesireDetaliu>();
+        lFclSemn.Document = fclSemn; lFclSemn.TipMaterial = tipSemn; lFclSemn.Produs = produsSemn;
+        lFclSemn.Cantitate = 1m; lFclSemn.PretUnitar = 10m; lFclSemn.TipTva = n21;
+        os.CommitChanges();
+        Check("F24-P8 (FCL): regula de contare EXACTĂ pe Tip cu `SemnFiltru = −1` NU e o potrivire pentru linia "
+            + "POZITIVĂ (motorul o exclude înaintea nivelurilor de specificitate) ⇒ refuzul 38c, ca și cum regula "
+            + "ar lipsi — axa de semn pe care gardul n-o avea",
+            Refuz(() => MotorOperare.Opereaza(os, fclSemn))
+                ?.Contains("nu are regulă de contare de vânzare pentru Tipul ei") == true);
+
+        var lotSemn = os.CreateObject<Lot>();
+        lotSemn.Produs = produsSemn; lotSemn.Gestiune = mag1; lotSemn.PretUnitar = 5m; lotSemn.Data = d1;
+        var dscSemn = os.CreateObject<DescarcareGestiune>();
+        dscSemn.Data = d6; dscSemn.Predator = mag1; dscSemn.Primitor = client;
+        var lDscSemn = os.CreateObject<DescarcareGestiuneDetaliu>();
+        lDscSemn.Document = dscSemn; lDscSemn.TipMaterial = tipSemn; lDscSemn.Lot = lotSemn; lDscSemn.Cantitate = 1m;
+        os.CommitChanges();
+        Check("F24-P8 (DSC manual): aceeași regulă cu semnul greșit ⇒ refuzul 38c de cost, nu o linie care mișcă "
+            + "stocul fără notă",
+            Refuz(() => MotorOperare.Opereaza(os, dscSemn))
+                ?.Contains("nu are regulă de contare de cost pentru Tipul ei") == true);
+
+        // F13-D2: fixtura e artefact de scenă — purjă FIZICĂ.
+        new Purja(os)
+            .Adauga(fclSemn.Detalii.ToList())
+            .Adauga(dscSemn.Detalii.ToList())
+            .Adauga(fclSemn)
+            .Adauga(dscSemn)
+            .Adauga(lotSemn)
+            .Adauga(produsSemn)
+            .Adauga(regulaFclSemn)
+            .Adauga(regulaDscSemn)
+            .Adauga(tipSemn)
+            .Executa();
+
         // Defect 4: produs de ALT Tip decât Tipul liniei (linie tip371 × produsC/345).
         RefuzFcl("Defect 4 (FCL): linie de stoc cu produs de alt Tip decât Tipul liniei → refuz", mag1, produsC, null);
 
@@ -3132,6 +3192,45 @@ if (profil == ProfilContabil.Privat) {
             });
             os.Delete(lotNou); os.Delete(produsNou); os.Delete(tipNou);
             os.CommitChanges();
+
+            // F24-P8 (felia 24, track B): linia de COST a returului e NEGATIVĂ după
+            // semnarea din `PregatesteOperare`, deci un `SemnFiltru = +1` pus pe
+            // rândul exact al Tipului o ratează în motor. Gardul, care acum
+            // întreabă `Potrivire`, o ratează la fel (64).
+            var tipSemnRet = os.CreateObject<TipMaterial>();
+            tipSemnRet.Cod = MarcajRet + "-TIPSEMN";
+            tipSemnRet.Denumire = "Tip cu regulă pe semnul greșit (probă)";
+            tipSemnRet.Clasa = clasaMf;
+            var produsSemnRet = os.CreateObject<Produs>();
+            produsSemnRet.Cod = MarcajRet + "-PRS"; produsSemnRet.Denumire = "Produs Tip semn"; produsSemnRet.UM = "BUC";
+            produsSemnRet.TipMaterial = tipSemnRet;
+            var lotSemnRet = os.CreateObject<Lot>();
+            lotSemnRet.Produs = produsSemnRet; lotSemnRet.Gestiune = gestiune;
+            lotSemnRet.PretUnitar = 5m; lotSemnRet.Data = new DateOnly(2026, 12, 1);
+            var regulaSemnRet = os.CreateObject<RegulaContare>();
+            regulaSemnRet.TipDocument = os.FirstOrDefault<TipDocument>(t => t.Cod == "RDC");
+            regulaSemnRet.TipMaterial = tipSemnRet;
+            regulaSemnRet.SemnFiltru = +1;
+            regulaSemnRet.PastreazaSemn = true;
+            regulaSemnRet.SursaContDebit = SursaCont.RepartitorPredator;
+            regulaSemnRet.SursaContCredit = SursaCont.TipMaterial;
+            os.CommitChanges();
+            var rdcSemn = RdcNou();
+            LinieRdc(rdcSemn, tip707, 1m, 100m, null);
+            LinieRdc(rdcSemn, tipSemnRet, 1m, 0m, lotSemnRet);
+            os.CommitChanges();
+            Check("F24-P8 (RDC): regula de contare EXACTĂ pe Tip cu `SemnFiltru = +1` NU e o potrivire pentru linia "
+                + "de cost, negativă după semnarea din `PregatesteOperare` ⇒ refuzul 38c, ca și cum regula ar lipsi",
+                Refuz(() => MotorOperare.Opereaza(os, rdcSemn))
+                    ?.Contains("nu are regulă de contare de cost pentru Tipul ei") == true);
+            new Purja(os)
+                .Adauga(rdcSemn.Detalii.ToList())
+                .Adauga(rdcSemn)
+                .Adauga(lotSemnRet)
+                .Adauga(produsSemnRet)
+                .Adauga(regulaSemnRet)
+                .Adauga(tipSemnRet)
+                .Executa();
             // Fix post-review pas 4: Capitalizat pe venitul stornat n-are sens
             // economic și ar compunda brutul la re-operare — refuz la validare.
             var ned21Ret = os.FirstOrDefault<TipTva>(t => t.Cod == "NED21");
@@ -3952,6 +4051,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaF23Gardian(privat: true);
     VerificaF23Raport(privat: true);
     VerificaF23ClasaFiscala();
+    // Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
+    VerificaPotrivire();
 
     Rezumat();
     return;
@@ -9075,6 +9176,8 @@ VerificaF23Seed(privat: false);
 VerificaF23Gardian(privat: false);
 VerificaF23Raport(privat: false);
 VerificaF23ClasaFiscala();
+// Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
+VerificaPotrivire();
 
 Rezumat();
 
@@ -20715,4 +20818,219 @@ void VerificaF23ClasaFiscala() {
         + "⇒ 2, RO neînregistrat ⇒ 2, UE ⇒ 3, restul ⇒ 4"
         + (divergente.Count > 0 ? $" — divergențe: {string.Join("; ", divergente)}" : ""),
         divergente.Count == 0);
+}
+
+// ---------------------------------------------------------------------------
+// F24-P1…P7 — POTRIVIREA politicilor, ca funcții PURE pe fapte fabricate
+// ---------------------------------------------------------------------------
+// `Potrivire` e SINGURA definiție a potrivirii: o consumă motorul și cele cinci
+// foste oglinzi de mână (F24-D5). Probele de aici exercită axele care nu se pot
+// fabrica economic cu documente reale — semnul care scoate rândul din joc la
+// TOATE nivelurile, dublura, natura necunoscută — și fixează divergența
+// DECLARATĂ față de a doua definiție a potrivirii de stoc, care trăia în
+// `DescarcareService` și a murit: căderea pe regula generică de stoc e păzită
+// de `Natura == Stoc`, acolo nu era.
+void VerificaPotrivire() {
+    var divergente = new List<string>();
+    void Cere(string ce, bool ok) {
+        if (!ok)
+            divergente.Add(ce);
+    }
+    void Regula(string enunt) {
+        Check(enunt + (divergente.Count > 0 ? $" — divergențe: {string.Join("; ", divergente)}" : ""),
+            divergente.Count == 0);
+        divergente.Clear();
+    }
+
+    var tipUnu = Guid.NewGuid();
+    var tipDoi = Guid.NewGuid();
+    var tipTrei = Guid.NewGuid();
+    var clasaUnu = Guid.NewGuid();
+    var clasaDoi = Guid.NewGuid();
+    RegulaContareFapt Rc(Guid? tipMaterial, NaturaClasa? naturaFiltru, int? semnFiltru) =>
+        new(Guid.NewGuid(), tipMaterial, naturaFiltru, semnFiltru, false, SursaCont.Explicit, null,
+            SursaCont.Explicit, null, false, null, null, null);
+    RegulaStocFapt Rs(LaturaDocument latura, Guid? clasaId, TipStoc tipStoc, int semn) =>
+        new(Guid.NewGuid(), latura, clasaId, tipStoc, semn, false);
+    LinieFapt LinieDe(Guid tipMaterial, Guid? clasaId, NaturaClasa? natura, int semn) =>
+        new(tipMaterial, clasaId, natura, semn, null, null);
+
+    // ── F24-P1: semnul scoate rândul din joc la TOATE nivelurile ─────────────
+    var rExactMinus = Rc(tipUnu, null, -1);
+    var rNaturaMinus = Rc(null, NaturaClasa.Stoc, -1);
+    var rGenericPlus = Rc(null, null, +1);
+    IReadOnlyList<RegulaContareFapt> reguliSemn = [rExactMinus, rNaturaMinus, rGenericPlus];
+    var pePlus = Potrivire.Contare(reguliSemn, LinieDe(tipUnu, clasaUnu, NaturaClasa.Stoc, +1));
+    var peMinus = Potrivire.Contare(reguliSemn, LinieDe(tipUnu, clasaUnu, NaturaClasa.Stoc, -1));
+    Cere("linia + cade pe generic", pePlus.Castigator?.Id == rGenericPlus.Id && pePlus.Nivel == NivelContare.Generic);
+    Cere("exactul de minus e eliminat pe semn", pePlus.Candidati[0].Motiv == MotivEliminare.SemnNepotrivit);
+    Cere("natura de minus e eliminată pe semn", pePlus.Candidati[1].Motiv == MotivEliminare.SemnNepotrivit);
+    Cere("câștigătorul n-are motiv", pePlus.Candidati[2].Motiv == null);
+    Cere("linia − ia exactul", peMinus.Castigator?.Id == rExactMinus.Id
+        && peMinus.Nivel == NivelContare.TipMaterialExact);
+    Cere("natura rămâne nivel mai slab pe −", peMinus.Candidati[1].Motiv == MotivEliminare.NivelMaiSlab);
+    Cere("genericul de plus iese pe semn la −", peMinus.Candidati[2].Motiv == MotivEliminare.SemnNepotrivit);
+    Console.WriteLine($"     MĂSURAT (F24-P1): linie + ⇒ {pePlus.Nivel}, linie − ⇒ {peMinus.Nivel}.");
+    Regula("F24-P1 `RegulaContare`: filtrul de SEMN se aplică ÎNAINTEA nivelurilor de specificitate — "
+        + "o linie pozitivă sare peste regula exactă de minus ȘI peste cea de natură, și cade pe regula "
+        + "generică de plus (axa pe care gardul VIR o oglindea, iar cele trei garduri 38c nu — 64)");
+
+    // ── F24-P2: Tip exact bate Natura bate generic ───────────────────────────
+    var rExact = Rc(tipUnu, null, null);
+    var rExactDublura = Rc(tipUnu, null, null);
+    var rAltTip = Rc(tipDoi, null, null);
+    var rNaturaStoc = Rc(null, NaturaClasa.Stoc, null);
+    var rNaturaServiciu = Rc(null, NaturaClasa.Serviciu, null);
+    var rGeneric = Rc(null, null, null);
+    IReadOnlyList<RegulaContareFapt> reguliNivel =
+        [rAltTip, rNaturaServiciu, rGeneric, rNaturaStoc, rExact, rExactDublura];
+    var peExact = Potrivire.Contare(reguliNivel, LinieDe(tipUnu, clasaUnu, NaturaClasa.Stoc, +1));
+    var peNatura = Potrivire.Contare(reguliNivel, LinieDe(tipTrei, clasaUnu, NaturaClasa.Stoc, +1));
+    var peGeneric = Potrivire.Contare(reguliNivel, LinieDe(tipTrei, clasaUnu, NaturaClasa.Imobilizare, +1));
+    var peNecunoscut = Potrivire.Contare([rNaturaStoc], LinieDe(tipTrei, null, null, +1));
+    var faraReguli = Potrivire.Contare([], LinieDe(tipUnu, clasaUnu, NaturaClasa.Stoc, +1));
+    Cere("exactul câștigă", peExact.Castigator?.Id == rExact.Id && peExact.Nivel == NivelContare.TipMaterialExact);
+    Cere("alt Tip ⇒ TipMaterialDiferit", peExact.Candidati[0].Motiv == MotivEliminare.TipMaterialDiferit);
+    Cere("altă natură ⇒ NaturaDiferita", peExact.Candidati[1].Motiv == MotivEliminare.NaturaDiferita);
+    Cere("genericul ⇒ NivelMaiSlab", peExact.Candidati[2].Motiv == MotivEliminare.NivelMaiSlab);
+    Cere("natura potrivită ⇒ NivelMaiSlab", peExact.Candidati[3].Motiv == MotivEliminare.NivelMaiSlab);
+    Cere("al doilea exact ⇒ Dublura", peExact.Candidati[5].Motiv == MotivEliminare.Dublura);
+    Cere("fără exact ⇒ natura", peNatura.Castigator?.Id == rNaturaStoc.Id && peNatura.Nivel == NivelContare.Natura);
+    Cere("fără natură potrivită ⇒ generic", peGeneric.Castigator?.Id == rGeneric.Id
+        && peGeneric.Nivel == NivelContare.Generic);
+    Cere("natura necunoscută nu potrivește un filtru de natură", peNecunoscut.Castigator == null
+        && peNecunoscut.Nivel == NivelContare.Niciuna
+        && peNecunoscut.Candidati[0].Motiv == MotivEliminare.NaturaDiferita);
+    Cere("fără reguli ⇒ Niciuna", faraReguli.Castigator == null && faraReguli.Nivel == NivelContare.Niciuna
+        && faraReguli.Candidati.Count == 0);
+    Console.WriteLine($"     MĂSURAT (F24-P2): {peExact.Nivel} / {peNatura.Nivel} / {peGeneric.Nivel} / "
+        + $"{peNecunoscut.Nivel} / {faraReguli.Nivel}.");
+    Regula("F24-P2 `RegulaContare`: TipMaterial exact bate `NaturaFiltru`, care bate regula generică (26c); "
+        + "câștigătorul e PRIMUL de la cel mai înalt nivel (al doilea rând exact e `Dublura`), rândurile "
+        + "valide de sub el sunt `NivelMaiSlab`, iar o linie cu Tipul lipsă din nomenclator (natură "
+        + "necunoscută) NU potrivește niciun filtru de natură");
+
+    // ── F24-P3: stoc, per latură ─────────────────────────────────────────────
+    var rsSpecMarfuri = Rs(LaturaDocument.Predator, clasaUnu, TipStoc.Marfuri, -1);
+    var rsSpecConsum = Rs(LaturaDocument.Predator, clasaUnu, TipStoc.Consum, -1);
+    var rsPredGeneric = Rs(LaturaDocument.Predator, null, TipStoc.Magazie, -1);
+    var rsPrimGeneric = Rs(LaturaDocument.Primitor, null, TipStoc.Consum, +1);
+    IReadOnlyList<RegulaStocFapt> reguliStoc = [rsSpecMarfuri, rsPredGeneric, rsSpecConsum, rsPrimGeneric];
+    var stocSpecific = Potrivire.Stoc(reguliStoc, LinieDe(tipUnu, clasaUnu, NaturaClasa.Stoc, -1));
+    var stocGeneric = Potrivire.Stoc(reguliStoc, LinieDe(tipUnu, clasaDoi, NaturaClasa.Stoc, -1));
+    var oLatura = Potrivire.Stoc([rsPredGeneric], LinieDe(tipUnu, clasaDoi, NaturaClasa.Stoc, -1));
+    Cere("două laturi", stocSpecific.Count == 2);
+    Cere("predatorul ia clasa exactă, cu AMBELE reguli specifice",
+        stocSpecific[0].Latura == LaturaDocument.Predator && stocSpecific[0].Nivel == NivelStoc.ClasaExacta
+        && stocSpecific[0].Reguli.Count == 2);
+    Cere("primitorul rămâne pe generic", stocSpecific[1].Latura == LaturaDocument.Primitor
+        && stocSpecific[1].Nivel == NivelStoc.Generic && stocSpecific[1].Reguli.Count == 1);
+    Cere("altă clasă ⇒ genericul laturii", stocGeneric[0].Nivel == NivelStoc.Generic
+        && stocGeneric[0].Reguli[0].Id == rsPredGeneric.Id);
+    Cere("o latură fără reguli nu apare", oLatura.Count == 1 && oLatura[0].Latura == LaturaDocument.Predator);
+    Console.WriteLine($"     MĂSURAT (F24-P3): clasă exactă ⇒ {stocSpecific[0].Nivel} ({stocSpecific[0].Reguli.Count} "
+        + $"reguli), altă clasă ⇒ {stocGeneric[0].Nivel}.");
+    Regula("F24-P3 `RegulaStoc`: potrivirea e PER LATURĂ, regulile specifice pe Clasa liniei bat regula "
+        + "generică, iar TOATE regulile specifice ale laturii trag (o latură poate scrie în două registre); "
+        + "o latură fără nicio regulă nu apare în rezultat");
+
+    // ── F24-P4: divergența DECLARATĂ față de a doua definiție, moartă ────────
+    var neStoc = Potrivire.Stoc([rsPredGeneric], LinieDe(tipUnu, clasaDoi, NaturaClasa.Serviciu, -1));
+    var deStoc = Potrivire.Stoc([rsPredGeneric], LinieDe(tipUnu, clasaDoi, NaturaClasa.Stoc, -1));
+    var faraGeneric = Potrivire.Stoc([rsSpecMarfuri], LinieDe(tipUnu, clasaDoi, NaturaClasa.Stoc, -1));
+    Cere("linia ne-Stoc nu primește TipStoc din genericul laturii", neStoc[0].Nivel == NivelStoc.Niciuna
+        && neStoc[0].Reguli.Count == 0 && neStoc[0].Motiv == MotivStoc.NaturaNuEsteStoc);
+    Cere("linia de Stoc îl primește", deStoc[0].Nivel == NivelStoc.Generic);
+    Cere("fără generic pe latură ⇒ FaraRegula", faraGeneric[0].Nivel == NivelStoc.Niciuna
+        && faraGeneric[0].Motiv == MotivStoc.FaraRegula);
+    Console.WriteLine($"     MĂSURAT (F24-P4): Natura=Serviciu ⇒ {neStoc[0].Nivel}/{neStoc[0].Motiv}, "
+        + $"Natura=Stoc ⇒ {deStoc[0].Nivel}.");
+    Regula("F24-P4 divergența DECLARATĂ (F24-D5): căderea pe regula generică de stoc e păzită de "
+        + "`Natura == Stoc` — a doua definiție a potrivirii de stoc, moartă odată cu felia, "
+        + "întorcea `TipStoc`-ul genericului și pentru o clasă ne-Stoc; motivul distinge „natura nu e stoc” "
+        + "de „latura n-are regulă generică”");
+
+    // ── F24-P5: rezolvarea contului, cu sursa care l-a dat ───────────────────
+    var contExplicit = Guid.NewGuid();
+    var contTip = Guid.NewGuid();
+    var contPredator = Guid.NewGuid();
+    var contPrimitor = Guid.NewGuid();
+    var laturiPline = new LaturiFapt(contPredator, contPrimitor);
+    var laturiGoale = new LaturiFapt(null, null);
+    Cere("Explicit", Potrivire.Cont(SursaCont.Explicit, contExplicit, contTip, laturiPline)
+        == new RezolvareCont(contExplicit, SursaRezolvata.Explicit));
+    Cere("TipMaterial", Potrivire.Cont(SursaCont.TipMaterial, contExplicit, contTip, laturiPline)
+        == new RezolvareCont(contTip, SursaRezolvata.TipMaterial));
+    Cere("RepartitorPredator", Potrivire.Cont(SursaCont.RepartitorPredator, contExplicit, contTip, laturiPline)
+        == new RezolvareCont(contPredator, SursaRezolvata.RepartitorPredator));
+    Cere("RepartitorPrimitor", Potrivire.Cont(SursaCont.RepartitorPrimitor, contExplicit, contTip, laturiPline)
+        == new RezolvareCont(contPrimitor, SursaRezolvata.RepartitorPrimitor));
+    Cere("fallback pe contul explicit", Potrivire.Cont(SursaCont.TipMaterial, contExplicit, null, laturiGoale)
+        == new RezolvareCont(contExplicit, SursaRezolvata.FallbackExplicit));
+    Cere("nerezolvat", Potrivire.Cont(SursaCont.RepartitorPredator, null, contTip, laturiGoale)
+        == new RezolvareCont(null, SursaRezolvata.Nerezolvat));
+    Regula("F24-P5 `SursaCont`: contul vine din sursa DECLARATĂ (TipMaterial / repartitorul unei laturi / "
+        + "explicit), iar contul explicit al regulii e fallback-ul când sursa nu rezolvă; fără nici sursă, "
+        + "nici fallback, rezolvarea e `Nerezolvat` (refuzul cu mesaj al motorului)");
+
+    // ── F24-P6: implicitul de TVA ────────────────────────────────────────────
+    var tvaN21 = new TipTvaFapt(Guid.NewGuid(), "N21", RegimTva.Normal, true);
+    var tvaN11 = new TipTvaFapt(Guid.NewGuid(), "N11", RegimTva.Normal, true);
+    var tvaSdd = new TipTvaFapt(Guid.NewGuid(), "SDD", RegimTva.Scutit, true);
+    var tvaMort = new TipTvaFapt(Guid.NewGuid(), "N19", RegimTva.Normal, false);
+    var tipuriTva = new[] { tvaN21, tvaN11, tvaSdd, tvaMort }.ToDictionary(t => t.Id);
+    var ziDoc = new DateOnly(2026, 6, 15);
+    PoliticaTvaImplicitFapt Rt(ClasaFiscalaPartener? clasaFiscala, DateOnly? deLa, Guid tipTvaId) =>
+        new(Guid.NewGuid(), clasaFiscala, deLa, tipTvaId, false);
+    var randGeneric = Rt(null, null, tvaN21.Id);
+    var randUe = Rt(ClasaFiscalaPartener.Ue, null, tvaSdd.Id);
+    var randViitor = Rt(ClasaFiscalaPartener.Ue, new DateOnly(2027, 1, 1), tvaN11.Id);
+    IReadOnlyList<PoliticaTvaImplicitFapt> randuri = [randGeneric, randUe, randViitor];
+    var peUe = Potrivire.TvaImplicit(randuri, ClasaFiscalaPartener.Ue, ziDoc, null, null, null, tipuriTva, false);
+    var randVechi = Rt(ClasaFiscalaPartener.InregistratRo, null, tvaN21.Id);
+    var randNou = Rt(ClasaFiscalaPartener.InregistratRo, new DateOnly(2026, 1, 1), tvaN11.Id);
+    var peEgalitate = Potrivire.TvaImplicit([randVechi, randNou], ClasaFiscalaPartener.InregistratRo,
+        ziDoc, null, null, null, tipuriTva, false);
+    var randMort = Rt(ClasaFiscalaPartener.Ue, null, tvaMort.Id);
+    var peInactiv = Potrivire.TvaImplicit([randMort], ClasaFiscalaPartener.Ue, ziDoc, null, tvaN21.Id,
+        null, tipuriTva, false);
+    var peProdus = Potrivire.TvaImplicit([], null, ziDoc, tvaN21.Id, null, tvaN11.Id, tipuriTva, false);
+    var peRegim = Potrivire.TvaImplicit([], null, ziDoc, tvaSdd.Id, null, tvaN11.Id, tipuriTva, false);
+    var peFaraPartener = Potrivire.TvaImplicit(randuri, null, ziDoc, null, null, null, tipuriTva, true);
+    Cere("clasa exactă bate genericul", peUe.Rezultat.TipTvaId == tvaSdd.Id
+        && peUe.Rezultat.Sursa == SursaImplicit.Politica && peUe.RandPolitica?.Id == randUe.Id);
+    Cere("genericul rămâne nivel mai slab", peUe.Candidati[0].Motiv == MotivEliminare.NivelMaiSlab);
+    Cere("rândul cu dată viitoare iese", peUe.Candidati[2].Motiv == MotivEliminare.DataViitoare);
+    Cere("la egalitate de clasă câștigă `ValabilDeLa` cel mai recent",
+        peEgalitate.Rezultat.TipTvaId == tvaN11.Id);
+    Cere("tipul INACTIV sare treapta, cu motiv", peInactiv.Rezultat.TipTvaId == tvaN21.Id
+        && peInactiv.Rezultat.Sursa == SursaImplicit.Ancora
+        && peInactiv.Rezultat.Motiv.Contains("INACTIV")
+        && peInactiv.Candidati[0].Motiv == MotivEliminare.Inactiv);
+    Cere("cota produsului peste același regim", peProdus.Rezultat.TipTvaId == tvaN11.Id
+        && peProdus.Rezultat.Sursa == SursaImplicit.Produs);
+    Cere("regimul bate cota la regimuri diferite", peRegim.Rezultat.TipTvaId == tvaSdd.Id
+        && peRegim.Rezultat.Sursa == SursaImplicit.Partener);
+    Cere("fără partener rămân doar rândurile generice", peFaraPartener.Rezultat.TipTvaId == tvaN21.Id
+        && peFaraPartener.Rezultat.Motiv.Contains("Fără partener vizibil")
+        && peFaraPartener.Candidati[1].Motiv == MotivEliminare.ClasaDiferita);
+    Console.WriteLine($"     MĂSURAT (F24-P6): UE ⇒ {peUe.Rezultat.Sursa}, inactiv ⇒ {peInactiv.Rezultat.Sursa}, "
+        + $"produs ⇒ {peProdus.Rezultat.Sursa}, regim ⇒ {peRegim.Rezultat.Sursa}.");
+    Regula("F24-P6 implicitul de TVA (F23-D2), pe funcția pură: rândul de politică cel mai SPECIFIC bate "
+        + "genericul și, la egalitate de clasă, `ValabilDeLa` cel mai recent; rândul cu dată viitoare și cel "
+        + "de altă clasă ies cu motiv; tipul INACTIV sare TREAPTA (nu caută al doilea rând); cota produsului "
+        + "se impune doar la ACELAȘI regim, altfel regimul bate; fără partener vizibil rămân doar rândurile "
+        + "generice");
+
+    // ── F24-P7: filtrul de natură al conexului ───────────────────────────────
+    var conexTot = new PoliticaConexFapt(Guid.NewGuid(), Guid.NewGuid(), false, null);
+    var conexStoc = new PoliticaConexFapt(Guid.NewGuid(), Guid.NewGuid(), true, NaturaClasa.Stoc);
+    Cere("filtrul null trece tot", Potrivire.Conex(conexTot, LinieDe(tipUnu, clasaUnu, NaturaClasa.Serviciu, +1))
+        && Potrivire.Conex(conexTot, LinieDe(tipUnu, null, null, +1)));
+    Cere("filtrul Stoc trece doar Stoc",
+        Potrivire.Conex(conexStoc, LinieDe(tipUnu, clasaUnu, NaturaClasa.Stoc, +1))
+        && !Potrivire.Conex(conexStoc, LinieDe(tipUnu, clasaUnu, NaturaClasa.Serviciu, +1))
+        && !Potrivire.Conex(conexStoc, LinieDe(tipUnu, null, null, +1)));
+    Regula("F24-P7 `PoliticaConex`: filtrul de natură null trece TOATE liniile, filtrul pe o natură trece "
+        + "doar liniile ei (o factură doar de servicii nu produce NIR)");
 }
