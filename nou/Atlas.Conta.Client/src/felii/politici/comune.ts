@@ -1,4 +1,5 @@
 import { campMeta, valoriEnum } from '../../nucleu/campMeta';
+import { CAMP_CAUTARE } from '../../nucleu/odata';
 
 // Bucățile pe care le împart ecranele de politică. Nimic „inteligent": compuneri
 // de etichetă și liste de opțiuni. Identitatea coloanelor rămâne cod, în fiecare
@@ -72,3 +73,10 @@ export function optiuniEnum(enumerare: string, etichetaGol?: string): OptiuneLoo
   const lista: OptiuneLookup[] = valoriEnum(enumerare).map((v) => ({ valoare: v.valoare, label: v.label }));
   return etichetaGol === undefined ? lista : [{ valoare: null, label: etichetaGol }, ...lista];
 }
+
+// Opțiunile editorului unui lookup de coloană care caută pe coloana GENERATĂ
+// `Cautare` (F20-D1) — nomenclatoarele mari (`Cont`: 644 de rânduri private)
+// n-au cum fi parcurse cu ochiul, iar normalizarea diacriticelor e a bazei, nu
+// a widget-ului. Ajung la SelectBox prin `column.editorOptions`, pe care grila
+// le extinde peste opțiunile pe care le compune ea (`renderFormEditorTemplate`).
+export const editorCautare = { searchEnabled: true, searchExpr: CAMP_CAUTARE, searchTimeout: 400 };

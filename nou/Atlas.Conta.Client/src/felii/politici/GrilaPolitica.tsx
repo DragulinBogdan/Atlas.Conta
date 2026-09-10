@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Column, DataGrid, Editing, Pager, Paging, Sorting } from 'devextreme-react/data-grid';
+import { Column, DataGrid, Editing, Form, Pager, Paging, Popup, Sorting } from 'devextreme-react/data-grid';
 import DataSource from 'devextreme/data/data_source';
 import CustomStore from 'devextreme/data/custom_store';
 import { storeOData } from '../../nucleu/odata';
@@ -58,6 +58,10 @@ function corpPolitica(valori: Record<string, unknown>): Record<string, unknown> 
   return corp;
 }
 
+// Gruparea câmpurilor pe formularul de editare. Grupurile sunt ale ECRANULUI
+// (43a) — grila doar le așază; nimic aici nu deduce ce câmp intră în ce grup.
+export type GrupFormular = { titlu: string; campuri: string[] };
+
 export function GrilaPolitica(props: {
   titlu: string;
   entitate: string;
@@ -69,12 +73,22 @@ export function GrilaPolitica(props: {
   // (toate clasele de model stau într-un singur namespace — verificat).
   tipClr?: string;
   indiciu?: ReactNode;
+  // Prezent ⇒ editarea trece din rând în POPUP, cu grupurile de aici. Absent ⇒
+  // editarea pe rând, neschimbată.
+  formular?: GrupFormular[];
+  // Valorile propuse pe rândul NOU (`onInitNewRow`) — afordanță, nu regulă: ce
+  // se refuză rămâne al gardianului (81-r8). Se propune și pentru enum-urile
+  // fără membrul 0 (`LaturaDocument`, `TipStoc`, `DirectieTva`, `SensTva`,
+  // `TipOperatiuneD394` — convenția „default invalid" din `Enums.cs`): pe ușa
+  // OData un câmp neatins pleacă absent, EF scrie 0, iar rândul se întoarce cu
+  // un enum care nu e niciun membru — celulă goală, nu greșită.
+  laRandNou?: (rand: Record<string, unknown>) => void;
   // Coloanele — `<Column>`-uri scrise de ecran (43a). Coloana `DinSeed` o pune
   // grila, fiindcă e a ȘABLONULUI: orice politică are proveniență (F23-D4).
   children: ReactNode;
 }) {
   const {
-    titlu, entitate, expand,
+    titlu, entitate, expand, formular, laRandNou,
     poateAdauga = true, poateSterge = true, tipClr, indiciu, children,
   } = props;
   const cache = useQueryClient();
@@ -83,6 +97,24 @@ export function GrilaPolitica(props: {
   // `expand` e un literal scris în JSX: ca dependență directă ar reconstrui sursa
   // la fiecare randare (tiparul din `Lookup`/`ListaNomenclator`).
   const cheieExpand = JSON.stringify(expand ?? null);
+
+  // Itemii formularului de editare. `editing.form.items` e ce face modul popup
+  // să merite: FĂRĂ el DevExtreme compune formularul din `getColumns()`, care
+  // întoarce doar coloanele VIZIBILE; cu el, fiecare `dataField` se rezolvă prin
+  // `columnOption('dataField:…')`, care caută în toate coloanele — deci o
+  // coloană `visible={false}` ajunge editabilă pe formular (sursa:
+  // `devextreme/esm/__internal/grids/grid_core/editing/m_editing_form_based.js`,
+  // `getEditFormOptions`). Aceeași cheie de conținut ca la `expand`.
+  const cheieFormular = JSON.stringify(formular ?? null);
+  const itemiFormular = useMemo(
+    () => formular?.map((g) => ({
+      itemType: 'group' as const,
+      caption: g.titlu,
+      colCount: 2,
+      items: g.campuri.map((dataField) => ({ dataField })),
+    })),
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `formular` intră prin cheia de conținut.
+  [cheieFormular]);
 
   const sursa = useMemo(() => {
     const citire = storeOData(entitate);
@@ -143,11 +175,25 @@ export function GrilaPolitica(props: {
           invalideaza(cache, entitate);
           void cache.invalidateQueries({ queryKey: ['audit'] });
         }}
+        onInitNewRow={(e) => laRandNou?.(e.data as Record<string, unknown>)}
       >
         <Sorting mode="multiple" />
         <Paging defaultPageSize={25} />
         <Pager showInfo showPageSizeSelector allowedPageSizes={[25, 50, 100]} />
-        <Editing mode="row" useIcons allowUpdating allowAdding={poateAdauga} allowDeleting={poateSterge} />
+        {/* Refuzul serverului se vede la fel pe amândouă modurile: `renderErrorRow`
+            primește conținutul popup-ului și prepend-ează mesajul în el
+            (`grid_core/error_handling/m_error_handling.js`), iar rândul rămâne
+            în editare. */}
+        <Editing
+          mode={itemiFormular ? 'popup' : 'row'}
+          useIcons
+          allowUpdating
+          allowAdding={poateAdauga}
+          allowDeleting={poateSterge}
+        >
+          {itemiFormular && <Popup title={titlu} showTitle width={960} height={620} />}
+          {itemiFormular && <Form items={itemiFormular} labelLocation="top" />}
+        </Editing>
 
         {children}
 
