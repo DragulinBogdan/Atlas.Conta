@@ -26,7 +26,7 @@ public static class MotorOperare {
     sealed class PlanOperare {
         public TipDocument TipDoc;
         public Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> ClaseTip;
-        public List<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)> Miscari;
+        public List<(DocumentDetaliu Detaliu, RegulaStocFapt Regula, MiscareStoc Miscare)> Miscari;
         public List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
             decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)> Note;
         // Felia 11 (JT-D1): faptele fiscale ale liniilor, derivate de
@@ -79,11 +79,7 @@ public static class MotorOperare {
 
         // Clasa/natura/contul fiecărui Tip de pe linii, preîncărcate — motorul nu
         // se bazează pe navigații (contextul apelant nu garantează lazy loading).
-        var idsTip = doc.Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
-        var claseTip = os.GetObjectsQuery<TipMaterial>()
-            .Where(t => idsTip.Contains(t.ID))
-            .Select(t => new { t.ID, t.ClasaId, t.Clasa.Natura, t.Denumire, t.ContImplicitId })
-            .ToDictionary(t => t.ID, t => (t.ClasaId, t.Natura, t.Denumire, t.ContImplicitId));
+        var claseTip = Fapte.ClaseTip(os, doc.Detalii.Select(d => d.TipMaterialId));
 
         // Obligativitățile per tip (PoliticaValidare — profil de validare, 3d)
         // rulează generic, alături de invariantele proprii tipului din hook.
@@ -110,7 +106,7 @@ public static class MotorOperare {
         // înainte de orice materializare. Potrivirea e TOLERANTĂ aici (linia
         // fără lot e sărită — o refuză validarea de mai jos, cu mesajul ei);
         // pasul 1 o reface STRICT, pe aceleași reguli.
-        var reguliStoc = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipDoc.ID).ToList();
+        var reguliStoc = Fapte.ReguliStoc(os, tipDoc.ID);
         StocService.AplicaValoareIesire(os, doc, PotrivesteReguliStoc(doc, claseTip, reguliStoc, strict: false));
 
         doc.ValideazaOperare(os, erori);
@@ -133,9 +129,9 @@ public static class MotorOperare {
         //    fallback. Toți gardienii (sold, cont nerezolvabil, dimensiuni
         //    obligatorii) refuză ÎNAINTE de primul rând creat — un refuz nu
         //    lasă nimic în ObjectSpace-ul apelantului.
-        var reguliContare = os.GetObjectsQuery<RegulaContare>().Where(r => r.TipDocumentId == tipDoc.ID).ToList();
-        var repartitorPredator = os.GetObjectByKey<Repartitor>(doc.PredatorId);
-        var repartitorPrimitor = os.GetObjectByKey<Repartitor>(doc.PrimitorId);
+        var reguliContare = Fapte.ReguliContare(os, tipDoc.ID);
+        var laturi = Fapte.Laturi(os.GetObjectByKey<Repartitor>(doc.PredatorId),
+            os.GetObjectByKey<Repartitor>(doc.PrimitorId));
         // Dimensiunea Material = Produsul lotului liniei (analitic de stoc) —
         // default de motor pe ambele laturi, ca repartitorul implicit al
         // header-ului; liniile fără lot rămân pe ce s-a cules.
@@ -148,15 +144,8 @@ public static class MotorOperare {
             decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)>();
         foreach (var d in doc.Detalii) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
-            // Filtrul de semn (LDI): regula se aplică doar liniilor cu semnul
-            // cerut; nepotrivirea scoate regula din joc la TOATE nivelurile de
-            // specificitate (o linie de plus sare peste regula exactă de minus
-            // și cade pe regula generică de plus).
-            var semn = Math.Sign(d.Cantitate);
-            var candidati = reguliContare.Where(r => r.SemnFiltru == null || r.SemnFiltru == semn).ToList();
-            var regula = candidati.FirstOrDefault(r => r.TipMaterialId == d.TipMaterialId)
-                ?? candidati.FirstOrDefault(r => r.TipMaterialId == null && r.NaturaFiltru == info.Natura)
-                ?? candidati.FirstOrDefault(r => r.TipMaterialId == null && r.NaturaFiltru == null);
+            var linie = Fapte.Linie(d, claseTip);
+            var regula = Potrivire.Contare(reguliContare, linie).Castigator;
             // Postarea explicită pe linie (Decont — inventar 06): contul setat
             // pe linie bate rezolvarea declarativă; contract de interfață, nu
             // mecanism generic — doar tipurile care o declară o au.
@@ -176,15 +165,15 @@ public static class MotorOperare {
             // Când regula lipsește, conturile explicite sunt garantat nenule mai
             // sus, deci ramura de rezolvare declarativă nici nu se evaluează.
             var contDebit = explicita?.ContDebitId
-                ?? RezolvaCont(regula.SursaContDebit, regula.ContDebitId,
-                    info.ContImplicitId, repartitorPredator, repartitorPrimitor)
+                ?? Potrivire.Cont(regula.Value.SursaContDebit, regula.Value.ContDebitId,
+                    linie.ContImplicitTipId, laturi).ContId
                 ?? throw new OperareException(
-                    $"Contul debitor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.SursaContDebit}).");
+                    $"Contul debitor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.Value.SursaContDebit}).");
             var contCredit = explicita?.ContCreditId
-                ?? RezolvaCont(regula.SursaContCredit, regula.ContCreditId,
-                    info.ContImplicitId, repartitorPredator, repartitorPrimitor)
+                ?? Potrivire.Cont(regula.Value.SursaContCredit, regula.Value.ContCreditId,
+                    linie.ContImplicitTipId, laturi).ContId
                 ?? throw new OperareException(
-                    $"Contul creditor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.SursaContCredit}).");
+                    $"Contul creditor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.Value.SursaContCredit}).");
             // Repartitorul explicit al liniei (aceeași trăsătură) intră ca
             // nivel maxim; default-ul de capăt e polimorf (00 §5 pe bază,
             // Decont mută creditul pe titular) + Materialul din lot.
@@ -196,11 +185,11 @@ public static class MotorOperare {
             var dimensiuniLinie = d.DimensiuniCulese();
             var dimensiuniDebit = DimensiuniResolver.Rezolva(
                 new Dimensiuni { RepartitorId = explicita?.RepartitorDebitId },
-                dimensiuniLinie, regula?.DimensiuniOverrideDebit(), regula?.DimensiuniComun(),
+                dimensiuniLinie, regula?.OverrideDebit, regula?.Comun,
                 new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit(os), MaterialId = materialImplicit });
             var dimensiuniCredit = DimensiuniResolver.Rezolva(
                 new Dimensiuni { RepartitorId = explicita?.RepartitorCreditId },
-                dimensiuniLinie, regula?.DimensiuniOverrideCredit(), regula?.DimensiuniComun(),
+                dimensiuniLinie, regula?.OverrideCredit, regula?.Comun,
                 new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit(os), MaterialId = materialImplicit });
 
             // Normalizarea cu semnul filtrului: valoarea liniei poartă semnul
@@ -212,7 +201,7 @@ public static class MotorOperare {
             // de STORNO a retururilor (RLF/RDC) postează minus pe corespondența
             // ORIGINALĂ, deci semnul liniei trece nealterat prin normalizare.
             note.Add((d, contDebit, contCredit,
-                regula != null && regula.PastreazaSemn ? d.Valoare : (regula?.SemnFiltru ?? +1) * d.Valoare,
+                regula is { PastreazaSemn: true } ? d.Valoare : (regula?.SemnFiltru ?? +1) * d.Valoare,
                 dimensiuniDebit, dimensiuniCredit));
         }
 
@@ -261,8 +250,8 @@ public static class MotorOperare {
                     contCredit = ContTva(tva.ContTvaColectatId, "colectată");
                 }
                 else {
-                    var contrapartida = RezolvaCont(politicaTva.SursaContrapartida,
-                            politicaTva.ContrapartidaFallbackId, null, repartitorPredator, repartitorPrimitor)
+                    var contrapartida = Potrivire.Cont(politicaTva.SursaContrapartida,
+                            politicaTva.ContrapartidaFallbackId, null, laturi).ContId
                         ?? throw new OperareException(
                             $"Contrapartida rândului de TVA nu se poate rezolva ({tipDoc.Cod}, sursă {politicaTva.SursaContrapartida}).");
                     if (politicaTva.Directie == DirectieTva.Deductibil) {
@@ -397,10 +386,9 @@ public static class MotorOperare {
         //    tranzacție cu operarea sursei; utilizatorul îl completează și îl
         //    operează separat (abia atunci mișcă registre și primește număr).
         Document conex = null;
-        var politicaConex = os.FirstOrDefault<PoliticaConex>(p => p.TipDocumentSursaId == tipDoc.ID);
+        var politicaConex = Fapte.Conex(os, tipDoc.ID);
         if (politicaConex != null)
-            conex = GenereazaConex(os, doc, politicaConex,
-                doc.Detalii.ToDictionary(d => d.ID, d => claseTip.GetValueOrDefault(d.TipMaterialId).Natura));
+            conex = GenereazaConex(os, doc, politicaConex.Value, claseTip);
 
         // 5. Documentul secundar (decizia 31 — plata automată din 00 §7):
         //    construit de derivată din datele culese (hook), tratat ca orice
@@ -441,24 +429,19 @@ public static class MotorOperare {
         }
     }
 
-    // Potrivirea liniilor pe regulile de stoc ale tipului — O SINGURĂ definiție
-    // (42a), folosită de două ori în `CalculeazaSiValideaza`: tolerant înaintea
-    // validării (D18-D2 are nevoie de cheile ieșirilor ca să decidă valoarea) și
-    // strict la calculul mișcărilor (linia care intră în reguli fără lot = refuz).
-    // Per latură, regula specifică pe Clasa liniei bate regula generică
-    // (Clasa=null = orice clasă cu Natura=Stoc) — altfel s-ar aplica amândouă.
-    static List<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)> PotrivesteReguliStoc(
+    // Mișcările de stoc ale liniilor, pe potrivirea din `Potrivire.Stoc`, chemată
+    // de două ori în `CalculeazaSiValideaza`: tolerant înaintea validării (D18-D2
+    // are nevoie de cheile ieșirilor ca să decidă valoarea) și strict la calculul
+    // mișcărilor (linia care intră în reguli fără lot = refuz).
+    static List<(DocumentDetaliu Detaliu, RegulaStocFapt Regula, MiscareStoc Miscare)> PotrivesteReguliStoc(
         Document doc,
         Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
-        List<RegulaStoc> reguliStoc, bool strict) {
-        var miscari = new List<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)>();
+        List<RegulaStocFapt> reguliStoc, bool strict) {
+        var miscari = new List<(DocumentDetaliu Detaliu, RegulaStocFapt Regula, MiscareStoc Miscare)>();
         foreach (var d in doc.Detalii) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
-            foreach (var latura in reguliStoc.GroupBy(r => r.Latura)) {
-                var aplicabile = latura.Where(r => r.ClasaId != null && r.ClasaId == info.ClasaId).ToList();
-                if (aplicabile.Count == 0 && info.Natura == NaturaClasa.Stoc)
-                    aplicabile = latura.Where(r => r.ClasaId == null).ToList();
-                foreach (var regula in aplicabile) {
+            foreach (var potrivit in Potrivire.Stoc(reguliStoc, Fapte.Linie(d, claseTip)))
+                foreach (var regula in potrivit.Reguli) {
                     if (d.LotId == null) {
                         if (!strict)
                             continue;
@@ -469,7 +452,6 @@ public static class MotorOperare {
                     miscari.Add((d, regula, new MiscareStoc(
                         new CheieStoc(d.LotId.Value, repartitorId, regula.TipStoc), doc.Data, regula.Semn * d.Cantitate)));
                 }
-            }
         }
         return miscari;
     }
@@ -527,26 +509,14 @@ public static class MotorOperare {
             lipsuri.Add($"Contul {simbol} ({latura}, linia cu {denumireLinie}) cere: {string.Join(", ", lipsa)}.");
     }
 
-    // Sursa declarativă a contului unei laturi (testul bazei §7.2); contul
-    // explicit al regulii e valoare directă sau fallback când sursa nu rezolvă.
-    // ContImplicit stă pe baza Repartitor (decizia 31): partener 401/404/411,
-    // cont propriu 5xx/770, angajat 542.
-    static Guid? RezolvaCont(SursaCont sursa, Guid? contExplicit, Guid? contTipMaterial,
-        Repartitor repartitorPredator, Repartitor repartitorPrimitor) => sursa switch {
-        SursaCont.TipMaterial => contTipMaterial ?? contExplicit,
-        SursaCont.RepartitorPredator => repartitorPredator?.ContImplicitId ?? contExplicit,
-        SursaCont.RepartitorPrimitor => repartitorPrimitor?.ContImplicitId ?? contExplicit,
-        _ => contExplicit,
-    };
-
     // Clonarea 00 §6: header (cu InverseazaLaturi), DOAR liniile care trec
     // filtrul de natură; liniile clonate poartă aceleași loturi și dimensiuni.
     // Fără linii eligibile nu se generează nimic (o factură doar de servicii
     // nu produce NIR).
-    static Document GenereazaConex(IObjectSpace os, Document sursa, PoliticaConex politica,
-        IReadOnlyDictionary<Guid, NaturaClasa> naturaPerLinie) {
+    static Document GenereazaConex(IObjectSpace os, Document sursa, PoliticaConexFapt politica,
+        Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip) {
         var linii = sursa.Detalii
-            .Where(d => politica.NaturaFiltru == null || naturaPerLinie.GetValueOrDefault(d.ID) == politica.NaturaFiltru)
+            .Where(d => Potrivire.Conex(politica, Fapte.Linie(d, claseTip)))
             .ToList();
         if (linii.Count == 0)
             return null;

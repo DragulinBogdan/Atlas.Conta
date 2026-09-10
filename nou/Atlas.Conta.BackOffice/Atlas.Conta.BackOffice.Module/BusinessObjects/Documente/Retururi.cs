@@ -195,19 +195,13 @@ public class ReturClient : Document {
         if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)
             erori.Add("Primitorul returului de la client este gestiunea în care revine marfa.");
 
-        var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
-        var naturaPerTip = os.GetObjectsQuery<TipMaterial>()
-            .Where(t => idsTip.Contains(t.ID))
-            .Select(t => new { t.ID, t.Clasa.Natura })
-            .ToDictionary(t => t.ID, t => t.Natura);
+        var claseTip = Motor.Fapte.ClaseTip(os, Detalii.Select(d => d.TipMaterialId));
         // Fără regulă de contare de cost per Tip, linia cu lot ar mișca stocul
         // fără să posteze NIMIC (motorul sare linia fără regulă) — refuz explicit,
         // exact defectul închis pe DSC la 38c; un Tip creat între updater-e nu
         // trece neobservat.
         var tipRdc = Motor.MotorOperare.GasesteTipDocument(os, this);
-        var tipuriCuRegula = os.GetObjectsQuery<RegulaContare>()
-            .Where(r => r.TipDocumentId == tipRdc.ID && r.TipMaterialId != null)
-            .Select(r => r.TipMaterialId.Value).ToList();
+        var reguliContare = Motor.Fapte.ReguliContare(os, tipRdc.ID);
         // Regimul TVA al liniilor de venit: Capitalizat n-are sens pe un venit
         // stornat (ar îngloba TVA-ul în valoare) și ar face semnarea
         // ne-idempotentă la re-operare (brutul ar compunda) — refuz.
@@ -219,7 +213,7 @@ public class ReturClient : Document {
             .ToDictionary(l => l.ID, l => (l.TipMaterialId, l.LinieIntrareId));
 
         foreach (var linie in Detalii) {
-            var natura = naturaPerTip.GetValueOrDefault(linie.TipMaterialId);
+            var natura = claseTip.GetValueOrDefault(linie.TipMaterialId).Natura;
             // Rolul liniei = LotId (nu un enum): venitul n-are lot, marfa care
             // revine îl are pe cel ORIGINAL.
             if (linie.LotId == null) {
@@ -235,7 +229,8 @@ public class ReturClient : Document {
                 erori.Add("Cantitatea mărfii returnate nu poate fi zero.");
             if (natura != NaturaClasa.Stoc)
                 erori.Add("Linia cu lot a returului poartă un Tip de stoc (marfa revine pe lotul original).");
-            if (!tipuriCuRegula.Contains(linie.TipMaterialId))
+            if (Motor.Potrivire.Contare(reguliContare, Motor.Fapte.Linie(linie, claseTip)).Nivel
+                    != Motor.NivelContare.TipMaterialExact)
                 erori.Add("Linia cu lot a returului nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc, storno) — adăugați rândul de politică (sau rulați updater-ul).");
             if (!infoLot.TryGetValue(linie.LotId.Value, out var lot))
                 continue;
