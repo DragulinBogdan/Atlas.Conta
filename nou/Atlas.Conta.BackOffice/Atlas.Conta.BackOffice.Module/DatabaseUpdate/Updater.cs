@@ -28,6 +28,10 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
             // The code below creates users and roles for testing purposes only.
             // In production code, you can create users and assign roles to them automatically, as described in the following help topic:
             // https://docs.devexpress.com/eXpressAppFramework/119064/data-security-and-safety/security-system/authentication
+            // Rolul `Configurator` e de PRODUCȚIE (83h — separarea atribuțiilor);
+            // userul lui, ca `Cititor`, e dev-only și stă în blocul de mai jos.
+            var configuratorRole = SeedRolConfigurator(ObjectSpace);
+            ObjectSpace.CommitChanges();
 #if !RELEASE
             // If a role doesn't exist in the database, create this role
             var defaultRole = CreateDefaultRole();
@@ -70,6 +74,18 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
                 string EmptyPassword = "";
                 _ = userManager.CreateUser<ApplicationUser>(ObjectSpace, "Cititor", EmptyPassword, (user) => {
                     user.Roles.Add(cititoriRole);
+                });
+            }
+
+            // Utilizatorul „Configurator" (83h) — al patrulea oracol al matricei
+            // de refuzuri: vede tot ca `Cititor`, dar SCRIE politicile. Fără el,
+            // 422-ul de domeniu al gardianului pe politici se măsura doar pe
+            // `Admin`, adică pe rolul care trece de orice permisiune, iar
+            // „gardianul refuză indiferent de rol" rămânea o afirmație.
+            if (userManager.FindUserByName<ApplicationUser>(ObjectSpace, "Configurator") == null) {
+                string EmptyPassword = "";
+                _ = userManager.CreateUser<ApplicationUser>(ObjectSpace, "Configurator", EmptyPassword, (user) => {
+                    user.Roles.Add(configuratorRole);
                 });
             }
 
@@ -132,6 +148,34 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
                 cititoriRole.PermissionPolicy = SecurityPermissionPolicy.ReadOnlyAllByDefault;
             }
             return cititoriRole;
+        }
+        // Rolul „Configurator" (83h): contabilul care ÎNTREȚINE profilul, separat
+        // de administratorul de useri. Read pe tot (aceeași politică
+        // `ReadOnlyAllByDefault` ca `Cititori`, deci și navigația), plus
+        // Create/Write/Delete pe cele 17 tipuri ale configurației
+        // (`Politici.TipuriConfigurabile`, 83i) și pe nimic altceva: documentele,
+        // registrele, `Societate`, `SetareProfil`, userii și rolurile rămân
+        // read-only fiindcă politica nu acordă decât Read și Navigate. Ancora
+        // `TipDocument` e în listă, dar identitatea ei rămâne refuzată de gardian
+        // (81e) — permisiunea deschide ușa, domeniul o păzește.
+        //
+        // Statică fiindcă o cheamă și ModelCheck, pe un ObjectSpace standalone.
+        // Permisiunile se REAPLICĂ la fiecare rulare, nu doar la creare:
+        // `AddTypePermissionsRecursively` trece prin `EnsureTypePermission`, deci
+        // nu duplică nimic, iar un tip adăugat mâine în listă ajunge și pe o bază
+        // care are deja rândul rolului.
+        public static PermissionPolicyRole SeedRolConfigurator(IObjectSpace objectSpace) {
+            var rol = objectSpace.FirstOrDefault<PermissionPolicyRole>(r => r.Name == "Configurator");
+            if (rol == null) {
+                rol = objectSpace.CreateObject<PermissionPolicyRole>();
+                rol.Name = "Configurator";
+            }
+            rol.PermissionPolicy = SecurityPermissionPolicy.ReadOnlyAllByDefault;
+            const string Scriere = SecurityOperations.Create + ";" + SecurityOperations.Write
+                + ";" + SecurityOperations.Delete;
+            foreach (var tip in Politici.TipuriConfigurabile)
+                rol.AddTypePermissionsRecursively(tip, Scriere, SecurityPermissionState.Allow);
+            return rol;
         }
         PermissionPolicyRole CreateDefaultRole() {
             PermissionPolicyRole defaultRole = ObjectSpace.FirstOrDefault<PermissionPolicyRole>(role => role.Name == "Default");

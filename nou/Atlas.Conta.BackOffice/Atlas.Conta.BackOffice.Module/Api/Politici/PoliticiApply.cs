@@ -14,10 +14,10 @@ namespace Atlas.Conta.BackOffice.Module.Api.Politici;
 public static class PoliticiApply {
     /// <summary>
     /// Tipurile pe care raportul le CITEȘTE, deci exact cele pe care ruta cere
-    /// dreptul de citire (F23-D8, amendat după măsurătoarea pasului 2). Lista se
-    /// deduce prin REFLECȚIE din `ICuProvenienta` — aceeași descoperire ca a
-    /// probelor din ModelCheck —, ca adăugarea unei politici noi să nu poată uita
-    /// gate-ul; `Partener` și `Produs` se adaugă explicit fiindcă raportul le
+    /// dreptul de citire (F23-D8, amendat după măsurătoarea pasului 2). Lista e
+    /// cea a configurației (`Politici.TipuriConfigurabile`, 83i) — aceeași pe
+    /// care o citesc rolul și raportul, ca adăugarea unei politici noi să nu
+    /// poată uita gate-ul; `Partener` și `Produs` se adaugă explicit fiindcă raportul le
     /// citește pentru categoria „tip de TVA inactiv referit ca implicit", dar nu
     /// poartă timbru de proveniență (structura clientului, nu profilul).
     ///
@@ -30,8 +30,7 @@ public static class PoliticiApply {
     /// decât un refuz.
     /// </summary>
     public static IReadOnlyList<Type> TipuriCitite { get; } =
-        typeof(ICuProvenienta).Assembly.GetTypes()
-            .Where(t => t.IsClass && !t.IsAbstract && typeof(ICuProvenienta).IsAssignableFrom(t))
+        BusinessObjects.Politici.TipuriConfigurabile
             .Concat([typeof(Partener), typeof(Produs)])
             .OrderBy(t => t.Name, StringComparer.Ordinal)
             .ToList();

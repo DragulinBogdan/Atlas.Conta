@@ -1,5 +1,6 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
+using DevExpress.Data.Filtering;
 using DevExpress.ExpressApp;
 using DevExpress.Persistent.BaseImpl.EF;
 // `IgnoreQueryFilters` — raportul trebuie să vadă și rândurile ȘTERSE LOGIC,
@@ -84,36 +85,62 @@ public static class VerificareProfilService {
     // la profilul livrat".
     static void RanduriManuale(IObjectSpace os, List<ConstatareProfil> constatari,
             Func<Guid, string> codTip, Func<Guid, string> codTva) {
-        void Tabel<T>(string nume, Func<T, string> eticheta) where T : BaseObject, ICuProvenienta {
-            var manuale = os.GetObjectsQuery<T>().Where(x => !x.DinSeed).ToList();
+        var etichete = Etichete(codTip, codTva);
+        foreach (var tip in Politici.TipuriConfigurabile) {
+            if (!etichete.TryGetValue(tip, out var tabel))
+                throw new InvalidOperationException(
+                    $"Tipul configurabil `{tip.Name}` n-are etichetă în raportul de profil (83i).");
+            var manuale = os.GetObjects(tip, CriteriaOperator.Parse("DinSeed = ?", false))
+                .Cast<ICuProvenienta>().ToList();
             foreach (var rand in manuale.Take(MaximPerTabel))
-                constatari.Add(new ConstatareProfil(nume, eticheta(rand), FelConstatare.RandManual,
+                constatari.Add(new ConstatareProfil(tabel.Nume, tabel.Eticheta(rand),
+                    FelConstatare.RandManual,
                     "Rândul nu poartă timbrul seed-ului: a fost creat sau modificat pe această bază."));
             if (manuale.Count > MaximPerTabel)
-                constatari.Add(new ConstatareProfil(nume, "(rezumat)", FelConstatare.RandManual,
+                constatari.Add(new ConstatareProfil(tabel.Nume, "(rezumat)", FelConstatare.RandManual,
                     $"Încă {manuale.Count - MaximPerTabel} rânduri fără timbrul seed-ului "
                     + $"(din {manuale.Count} în total) — nelistate."));
         }
-
-        Tabel<TipDocument>("Tipuri de document", t => t.Cod ?? t.Denumire ?? "(fără cod)");
-        Tabel<TipTva>("Tipuri de TVA", t => t.Cod ?? t.Denumire ?? "(fără cod)");
-        Tabel<Cont>("Plan de conturi", c => c.Simbol ?? "(fără simbol)");
-        Tabel<ClasaProdus>("Clase de produs", c => c.Cod ?? "(fără cod)");
-        Tabel<TipMaterial>("Tipuri de material", t => t.Cod ?? "(fără cod)");
-        Tabel<RegulaStoc>("Reguli de stoc", r => $"{codTip(r.TipDocumentId)} / {r.Latura}");
-        Tabel<RegulaContare>("Reguli de contare", r => codTip(r.TipDocumentId));
-        Tabel<PoliticaConex>("Politici conex", p => codTip(p.TipDocumentSursaId));
-        Tabel<PoliticaScadenta>("Politici de scadență", p => codTip(p.TipDocumentId));
-        Tabel<PoliticaValidare>("Politici de validare", p => codTip(p.TipDocumentId));
-        Tabel<PoliticaTva>("Politici de TVA", p => codTip(p.TipDocumentId));
-        Tabel<PoliticaInchidereTva>("Politici de închidere TVA", p => codTip(p.TipDocumentId));
-        Tabel<PoliticaNumerotare>("Politici de numerotare", p => codTip(p.TipDocumentId));
-        Tabel<PoliticaMiscareSaft>("Politici de mișcare SAF-T",
-            p => $"{codTip(p.TipDocumentId)} / {p.TipStoc}");
-        Tabel<PoliticaTvaImplicit>("Implicite de TVA", p => Cheia(codTip, p));
-        Tabel<MapareD300>("Mapări D300", m => $"{codTva(m.TipTvaId)} / {m.Sens}");
-        Tabel<MapareD394>("Mapări D394", m => $"{codTva(m.TipTvaId)} / {m.Sens}");
     }
+
+    static (string Nume, Func<object, string> Eticheta) Tabel<T>(string nume, Func<T, string> eticheta) =>
+        (nume, o => eticheta((T)o));
+
+    // Numele de tabel și eticheta LIZIBILĂ a rândului, per tip configurabil
+    // (83i). Un tip din `TipuriConfigurabile` care lipsește de aici oprește
+    // raportul — cheia unui rând nu se inventează dintr-un `ToString()`.
+    static Dictionary<Type, (string Nume, Func<object, string> Eticheta)> Etichete(
+            Func<Guid, string> codTip, Func<Guid, string> codTva) => new() {
+        [typeof(TipDocument)] = Tabel<TipDocument>("Tipuri de document",
+            t => t.Cod ?? t.Denumire ?? "(fără cod)"),
+        [typeof(TipTva)] = Tabel<TipTva>("Tipuri de TVA", t => t.Cod ?? t.Denumire ?? "(fără cod)"),
+        [typeof(Cont)] = Tabel<Cont>("Plan de conturi", c => c.Simbol ?? "(fără simbol)"),
+        [typeof(ClasaProdus)] = Tabel<ClasaProdus>("Clase de produs", c => c.Cod ?? "(fără cod)"),
+        [typeof(TipMaterial)] = Tabel<TipMaterial>("Tipuri de material", t => t.Cod ?? "(fără cod)"),
+        [typeof(RegulaStoc)] = Tabel<RegulaStoc>("Reguli de stoc",
+            r => $"{codTip(r.TipDocumentId)} / {r.Latura}"),
+        [typeof(RegulaContare)] = Tabel<RegulaContare>("Reguli de contare",
+            r => codTip(r.TipDocumentId)),
+        [typeof(PoliticaConex)] = Tabel<PoliticaConex>("Politici conex",
+            p => codTip(p.TipDocumentSursaId)),
+        [typeof(PoliticaScadenta)] = Tabel<PoliticaScadenta>("Politici de scadență",
+            p => codTip(p.TipDocumentId)),
+        [typeof(PoliticaValidare)] = Tabel<PoliticaValidare>("Politici de validare",
+            p => codTip(p.TipDocumentId)),
+        [typeof(PoliticaTva)] = Tabel<PoliticaTva>("Politici de TVA", p => codTip(p.TipDocumentId)),
+        [typeof(PoliticaInchidereTva)] = Tabel<PoliticaInchidereTva>("Politici de închidere TVA",
+            p => codTip(p.TipDocumentId)),
+        [typeof(PoliticaNumerotare)] = Tabel<PoliticaNumerotare>("Politici de numerotare",
+            p => codTip(p.TipDocumentId)),
+        [typeof(PoliticaMiscareSaft)] = Tabel<PoliticaMiscareSaft>("Politici de mișcare SAF-T",
+            p => $"{codTip(p.TipDocumentId)} / {p.TipStoc}"),
+        [typeof(PoliticaTvaImplicit)] = Tabel<PoliticaTvaImplicit>("Implicite de TVA",
+            p => Cheia(codTip, p)),
+        [typeof(MapareD300)] = Tabel<MapareD300>("Mapări D300",
+            m => $"{codTva(m.TipTvaId)} / {m.Sens}"),
+        [typeof(MapareD394)] = Tabel<MapareD394>("Mapări D394",
+            m => $"{codTva(m.TipTvaId)} / {m.Sens}"),
+    };
 
     static string Cheia(Func<Guid, string> codTip, PoliticaTvaImplicit p) =>
         $"{codTip(p.TipDocumentId)} × {p.ClasaFiscala?.ToString() ?? "orice clasă"}"
