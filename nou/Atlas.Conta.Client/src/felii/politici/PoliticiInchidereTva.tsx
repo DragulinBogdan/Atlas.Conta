@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
-import { afisareNav, captionPolitica, codSiDenumire, simbolSiDenumire } from './comune';
+import {
+  afisareNav, captionPolitica, codNav, codSiDenumire, simbolSiDenumire, urlExplica,
+} from './comune';
 
 // Conturile închiderii de TVA (46c) — închide 79-r2.
 //
@@ -22,6 +24,7 @@ export function PoliticiInchidereTva() {
     <GrilaPolitica
       titlu="Închidere TVA (conturi)"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocument'))}
       expand={['TipDocument', 'ContDeductibila', 'ContColectata', 'ContDePlata', 'ContDeRecuperat']}
       indiciu={(
         <>

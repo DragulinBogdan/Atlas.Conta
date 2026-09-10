@@ -1,5 +1,6 @@
 import { campMeta, valoriEnum } from '../../nucleu/campMeta';
 import { CAMP_CAUTARE } from '../../nucleu/odata';
+import { urlCu } from '../../nucleu/urlStare';
 
 // Bucățile pe care le împart ecranele de politică. Nimic „inteligent": compuneri
 // de etichetă și liste de opțiuni. Identitatea coloanelor rămâne cod, în fiecare
@@ -80,3 +81,28 @@ export function optiuniEnum(enumerare: string, etichetaGol?: string): OptiuneLoo
 // a widget-ului. Ajung la SelectBox prin `column.editorOptions`, pe care grila
 // le extinde peste opțiunile pe care le compune ea (`renderFormEditorTemplate`).
 export const editorCautare = { searchEnabled: true, searchExpr: CAMP_CAUTARE, searchTimeout: 400 };
+
+// „Explică pe acest tip" (F24-D7): din rândul unei politici către panoul
+// `/politici/explica`, precompletat. URL-ul E starea panoului (43c), deci
+// puntea dintre cele două ecrane e un link, nu un canal propriu.
+//
+// Rândul dă tipul de document (codul, din navigația adusă cu `$expand` —
+// ruta cere CODUL ancorei, nu id-ul) și, unde le are, tipul de material și
+// filtrul de semn. Ce nu are, nu trimite: panoul se deschide precompletat pe
+// atât cât știe rândul, iar restul îl alege operatorul. `null` = rândul nu
+// duce nicăieri (fără cod de tip), deci nici butonul nu se oferă.
+export function urlExplica(cod: unknown, rand?: { tipMaterial?: unknown; semn?: unknown }): string | null {
+  const tip = cod == null ? '' : String(cod);
+  if (!tip) return null;
+  return urlCu('/politici/explica', {
+    tip,
+    tipMaterial: rand?.tipMaterial == null ? '' : String(rand.tipMaterial),
+    semn: rand?.semn == null ? '' : String(rand.semn),
+  });
+}
+
+// Codul din navigația unui rând (`TipDocument`, `TipDocumentSursa`) — aceeași
+// sursă pe care o afișează coloana, nu un `byKey` în plus.
+export function codNav(rand: Record<string, unknown>, navigatie: string): unknown {
+  return (rand?.[navigatie] as Record<string, unknown> | null | undefined)?.Cod;
+}

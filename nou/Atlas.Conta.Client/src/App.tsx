@@ -64,6 +64,7 @@ import { PoliticiValidare } from './felii/politici/PoliticiValidare';
 import { MapariD300 } from './felii/politici/MapariD300';
 import { MapariD394 } from './felii/politici/MapariD394';
 import { Verificare } from './felii/politici/Verificare';
+import { Explica } from './felii/politici/Explica';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
@@ -186,6 +187,7 @@ export function App() {
         <Route path="/politici/d300" element={<MapariD300 />} />
         <Route path="/politici/d394" element={<MapariD394 />} />
         <Route path="/politici/verificare" element={<Verificare />} />
+        <Route path="/politici/explica" element={<Explica />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
     </Routes>
@@ -250,6 +252,7 @@ function Meniu() {
       <NavLink to="/politici/d300">Mapări D300</NavLink>
       <NavLink to="/politici/d394">Mapări D394</NavLink>
       <NavLink to="/politici/verificare">Verificare profil</NavLink>
+      <NavLink to="/politici/explica">Explică</NavLink>
     </nav>
   );
 }

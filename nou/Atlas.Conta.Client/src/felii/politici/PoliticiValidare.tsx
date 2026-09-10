@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
-import { afisareNav, captionPolitica, codSiDenumire, optiuniEnum } from './comune';
+import {
+  afisareNav, captionPolitica, codNav, codSiDenumire, optiuniEnum, urlExplica,
+} from './comune';
 
 // Profilul de VALIDARE per tip (33c): motorul îl aplică înaintea hook-ului
 // propriu tipului. Regula bugetară („angajament SAU cod economic”) e a
@@ -20,6 +22,7 @@ export function PoliticiValidare() {
     <GrilaPolitica
       titlu="Validări per tip de document"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocument'))}
       expand={['TipDocument']}
       indiciu={(
         <>

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
-import { afisareNav, codSiDenumire, optiuniEnum } from './comune';
+import { afisareNav, codNav, codSiDenumire, optiuniEnum, urlExplica } from './comune';
 
 // Documentul conex (26d): motorul îl generează ÎN tranzacția operării sursei, cu
 // liniile care trec filtrul de natură. Ținta inversează laturile acolo unde
@@ -18,6 +18,7 @@ export function PoliticiConex() {
     <GrilaPolitica
       titlu="Documente conexe"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocumentSursa'))}
       expand={['TipDocumentSursa', 'TipDocumentTinta']}
       indiciu={(
         <>

@@ -3,7 +3,7 @@ import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica, type GrupFormular } from './GrilaPolitica';
 import {
-  afisareNav, captionPolitica, codSiDenumire, editorCautare, optiuniEnum, simbolSiDenumire,
+  afisareNav, captionPolitica, codNav, codSiDenumire, editorCautare, optiuniEnum, simbolSiDenumire, urlExplica,
 } from './comune';
 
 // Maparea contabilă (26b/26c): tip de document × treaptă de potrivire → conturi
@@ -77,6 +77,7 @@ export function ReguliContare() {
     <GrilaPolitica
       titlu="Reguli de contare"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocument'), { tipMaterial: r.TipMaterialId, semn: r.SemnFiltru })}
       expand={EXPAND}
       formular={GRUPURI}
       laRandNou={(rand) => {

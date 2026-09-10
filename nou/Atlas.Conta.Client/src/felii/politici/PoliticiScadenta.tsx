@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
-import { afisareNav, captionPolitica, codSiDenumire } from './comune';
+import { afisareNav, captionPolitica, codNav, codSiDenumire, urlExplica } from './comune';
 
 // Scadența implicită per tip de document (30c): se aplică DOAR dacă scadența nu
 // e culeasă pe document. Un singur rând per tip — unicitatea o dă indexul
@@ -18,6 +18,7 @@ export function PoliticiScadenta() {
     <GrilaPolitica
       titlu="Scadențe implicite"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocument'))}
       expand={['TipDocument']}
       indiciu="Se aplică doar când scadența nu e culeasă pe document. Un singur rând per tip de document."
     >

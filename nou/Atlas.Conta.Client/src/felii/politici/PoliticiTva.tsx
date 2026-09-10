@@ -3,7 +3,7 @@ import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
 import {
-  afisareNav, captionPolitica, codSiDenumire, editorCautare, optiuniEnum, simbolSiDenumire,
+  afisareNav, captionPolitica, codNav, codSiDenumire, editorCautare, optiuniEnum, simbolSiDenumire, urlExplica,
 } from './comune';
 
 // Pasul de TVA al motorului (36b): un tip FĂRĂ rând aici nu postează niciun rând
@@ -29,6 +29,7 @@ export function PoliticiTva() {
     <GrilaPolitica
       titlu="TVA per tip de document"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocument'))}
       expand={['TipDocument', 'ContrapartidaFallback']}
       laRandNou={(rand) => {
         rand.Directie = 'Deductibil';

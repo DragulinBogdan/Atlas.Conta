@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
-import { afisareNav, captionPolitica, codSiDenumire, optiuniEnum } from './comune';
+import {
+  afisareNav, captionPolitica, codNav, codSiDenumire, optiuniEnum, urlExplica,
+} from './comune';
 
 // Regula de alimentare a registrului de stoc (23b/25): tip de document × latură
 // × filtru de clasă → tip de stoc + semn. Spre deosebire de filtrele celorlalte
@@ -27,6 +29,7 @@ export function ReguliStoc() {
     <GrilaPolitica
       titlu="Reguli de stoc"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocument'))}
       expand={['TipDocument', 'Clasa']}
       laRandNou={(rand) => {
         rand.Latura = 'Predator';

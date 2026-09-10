@@ -332,3 +332,35 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .verificare__contor { color: #6b7683; font-weight: 400; }
 /* Mesajul constatării e o frază, nu o cifră: are voie să se rupă pe rânduri. */
 .tabel-mic td.verificare__mesaj { white-space: normal; max-width: 720px; }
+
+/* ── panoul „Explică" (felia 24) ─────────────────────────────────────────
+   Un card per mecanism, în ordinea în care motorul îl atinge. Concluzia e
+   fraza SERVERULUI, deci e ea proeminentă, nu tabelul de sub ea. */
+.explica__card {
+  background: #ffffff;
+  border: 1px solid var(--linie);
+  border-radius: 6px;
+  padding: 10px var(--gol);
+  margin-bottom: var(--gol);
+}
+.explica__cap { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.explica__cap > h3 { margin: 0; font-size: 14px; }
+.explica__cap > .buton { margin-left: auto; }
+.explica__marcaj {
+  border: 1px solid #e0a800;
+  background: #fff8e6;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 12px;
+}
+.explica__concluzie { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.explica__concluzie--atentie { background: #fff8e6; border-left: 4px solid #e0a800; padding: 6px 10px; }
+.explica__nivel { margin: 0 0 6px; color: #46525f; }
+.explica__subtitlu { margin: 10px 0 4px; font-size: 13px; }
+.explica__latura + .explica__latura { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--linie); }
+.explica__conturi { display: flex; gap: 24px; margin-top: 8px; }
+.explica__cont { display: flex; flex-direction: column; }
+.explica__nerezolvat { color: var(--rosu); }
+/* Motivul eliminării e o frază, ca mesajul constatării: are voie să se rupă. */
+.tabel-mic td.explica__motiv { white-space: normal; max-width: 320px; }
+.explica__antet td { white-space: normal; }

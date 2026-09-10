@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid, Editing, Form, Pager, Paging, Popup, Sorting } from 'devextreme-react/data-grid';
 import DataSource from 'devextreme/data/data_source';
@@ -83,16 +84,25 @@ export function GrilaPolitica(props: {
   // OData un câmp neatins pleacă absent, EF scrie 0, iar rândul se întoarce cu
   // un enum care nu e niciun membru — celulă goală, nu greșită.
   laRandNou?: (rand: Record<string, unknown>) => void;
+  // URL-ul panoului „Explică" pentru rândul FOCALIZAT (F24-D7), sau `null` dacă
+  // rândul nu duce nicăieri. Puntea e un LINK, nu un canal: panoul își ia starea
+  // din URL (43c), deci ce compune ecranul aici e o adresă, nu un descriptor.
+  explica?: (rand: Record<string, unknown>) => string | null;
   // Coloanele — `<Column>`-uri scrise de ecran (43a). Coloana `DinSeed` o pune
   // grila, fiindcă e a ȘABLONULUI: orice politică are proveniență (F23-D4).
   children: ReactNode;
 }) {
   const {
-    titlu, entitate, expand, formular, laRandNou,
+    titlu, entitate, expand, formular, laRandNou, explica,
     poateAdauga = true, poateSterge = true, tipClr, indiciu, children,
   } = props;
   const cache = useQueryClient();
-  const [randFocalizat, setRandFocalizat] = useState<string | null>(null);
+  // Rândul focalizat, ÎNTREG: istoricul are nevoie de cheia lui, „Explică" de
+  // câmpurile din care compune adresa (codul tipului vine din navigația
+  // expandată, nu dintr-un al doilea `byKey`).
+  const [randFocalizat, setRandFocalizat] = useState<Record<string, unknown> | null>(null);
+  const idFocalizat = randFocalizat ? String(randFocalizat.ID ?? '') : null;
+  const caleExplica = explica && randFocalizat ? explica(randFocalizat) : null;
 
   // `expand` e un literal scris în JSX: ca dependență directă ar reconstrui sursa
   // la fiecare randare (tiparul din `Lookup`/`ListaNomenclator`).
@@ -152,6 +162,13 @@ export function GrilaPolitica(props: {
     <div className="ecran">
       <div className="ecran__bara">
         <h2>{titlu}</h2>
+        {explica && (caleExplica
+          ? <Link className="buton buton--mic" to={caleExplica}>Explică pe acest tip</Link>
+          : (
+            <button type="button" className="buton buton--mic" disabled>
+              Explică pe acest tip
+            </button>
+          ))}
       </div>
 
       {/* Fără `keyExpr`: cheia o declară store-ul (`key: 'ID'`). Pe o sursă care
@@ -163,7 +180,7 @@ export function GrilaPolitica(props: {
         columnAutoWidth
         focusedRowEnabled
         height="calc(100vh - 430px)"
-        onFocusedRowChanged={(e) => setRandFocalizat(e.row ? String((e.row.data as { ID?: unknown }).ID ?? '') : null)}
+        onFocusedRowChanged={(e) => setRandFocalizat((e.row?.data as Record<string, unknown>) ?? null)}
         // Două invalidări, din două motive diferite:
         //   • etichetele lookup-urilor trăiesc în cache-ul comun (`staleTime:
         //     Infinity`, 77b) — fără asta un tip de TVA redenumit ar rămâne cu
@@ -210,7 +227,7 @@ export function GrilaPolitica(props: {
 
       {indiciu && <p className="indiciu">{indiciu}</p>}
 
-      <PanouIstoric tipClr={tipClr ?? `${NAMESPACE_CLR}${entitate}`} id={randFocalizat} />
+      <PanouIstoric tipClr={tipClr ?? `${NAMESPACE_CLR}${entitate}`} id={idFocalizat} />
     </div>
   );
 }

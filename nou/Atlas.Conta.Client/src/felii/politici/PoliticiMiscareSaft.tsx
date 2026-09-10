@@ -3,7 +3,9 @@ import { Column, Lookup } from 'devextreme-react/data-grid';
 import { nomenclator } from '../../nucleu/campMeta';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
-import { afisareNav, captionPolitica, codSiDenumire, optiuniEnum, type OptiuneLookup } from './comune';
+import {
+  afisareNav, captionPolitica, codNav, codSiDenumire, optiuniEnum, type OptiuneLookup, urlExplica,
+} from './comune';
 
 // Politica de mișcare SAF-T (74a) — ecranul care era DOAR de citit (74-r12) și
 // devine editabil odată cu deschiderea ușii OData (F23-D5). Motivul de atunci
@@ -49,6 +51,7 @@ export function PoliticiMiscareSaft() {
     <GrilaPolitica
       titlu="Mișcări SAF-T (politică)"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocument'))}
       expand={['TipDocument']}
       indiciu={(
         <>
