@@ -330,7 +330,7 @@ public abstract class DocumentTrezorerie : Document {
             var reguli = Motor.Fapte.ReguliContare(os, tipDoc.ID);
             foreach (var d in liniiVirament)
                 if (Motor.Potrivire.Contare(reguli, Motor.Fapte.Linie(d, claseTip)).Nivel
-                        is Motor.NivelContare.Generic or Motor.NivelContare.Niciuna)
+                        is NivelContare.Generic or NivelContare.Niciuna)
                     erori.Add("Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — "
                         + "adăugați rândul de politică (sau rulați updater-ul).");
         }

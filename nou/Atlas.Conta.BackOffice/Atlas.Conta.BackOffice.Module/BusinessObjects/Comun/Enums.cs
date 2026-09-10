@@ -441,3 +441,59 @@ public enum FelConstatare {
     [XafDisplayName("Politică lipsă")] PoliticaLipsa = 4,
     [XafDisplayName("Mapare lipsă")] MapareLipsa = 5,
 }
+
+// ═══ Verdictele POTRIVIRII (felia 24, F24-D5/D6) ═══════════════════════════
+//
+// Stau aici, nu lângă `Motor/Potrivire.cs`, din același motiv ca
+// `MotivNegenerare`: dump-ul de metadata ia doar tipurile din spațiul
+// `BusinessObjects` (`MetadataDump.EsteRelevant`), iar ruta `explica` le trimite
+// pe sârmă ca STRING (numele membrului, convenția 57a/63) — deci eticheta
+// lizibilă are o singură sursă pentru XAF și pentru React.
+
+// Cât de SPECIFIC e rândul de contare care a câștigat (26c). Ordinea valorilor E
+// clasamentul: `Potrivire.Contare` compară nivelurile între ele.
+public enum NivelContare {
+    [XafDisplayName("Nicio regulă potrivită")] Niciuna,
+    [XafDisplayName("Regula generică a tipului")] Generic,
+    [XafDisplayName("Filtru de natură")] Natura,
+    [XafDisplayName("Tip de material exact")] TipMaterialExact,
+}
+
+// Idem, pe regulile de stoc — o valoare per LATURĂ.
+public enum NivelStoc {
+    [XafDisplayName("Nicio regulă potrivită")] Niciuna,
+    [XafDisplayName("Regula generică a laturii")] Generic,
+    [XafDisplayName("Clasă exactă")] ClasaExacta,
+}
+
+// De ce un rând candidat NU a câștigat. `null` (nu o valoare a enum-ului) e
+// câștigătorul — o valoare „a câștigat" ar fi invitat ramuri care confundă
+// motivul cu verdictul.
+public enum MotivEliminare {
+    [XafDisplayName("Semnul liniei nu se potrivește")] SemnNepotrivit,
+    [XafDisplayName("Regula e pe alt tip de material")] TipMaterialDiferit,
+    [XafDisplayName("Regula e pe altă natură")] NaturaDiferita,
+    [XafDisplayName("Există o regulă mai specifică")] NivelMaiSlab,
+    [XafDisplayName("Dublură pe același nivel")] Dublura,
+    [XafDisplayName("Valabil de la o dată viitoare")] DataViitoare,
+    [XafDisplayName("Altă clasă fiscală")] ClasaDiferita,
+    [XafDisplayName("Tipul de TVA e inactiv")] Inactiv,
+}
+
+// De ce o latură nu scrie în niciun registru de stoc: distincția „profilul a
+// hotărât" (natura nu e stoc) de „profilul tace" (latura n-are regulă).
+public enum MotivStoc {
+    [XafDisplayName("Natura clasei nu e stoc")] NaturaNuEsteStoc,
+    [XafDisplayName("Latura n-are regulă de stoc")] FaraRegula,
+}
+
+// Sursa care a dat EFECTIV contul unei laturi — nu cea declarată pe regulă:
+// `FallbackExplicit` e exact cazul în care sursa declarată n-a rezolvat.
+public enum SursaRezolvata {
+    [XafDisplayName("Nerezolvat")] Nerezolvat,
+    [XafDisplayName("Contul explicit al regulii")] Explicit,
+    [XafDisplayName("Contul implicit al tipului de material")] TipMaterial,
+    [XafDisplayName("Contul repartitorului predator")] RepartitorPredator,
+    [XafDisplayName("Contul repartitorului primitor")] RepartitorPrimitor,
+    [XafDisplayName("Contul explicit, ca rezervă")] FallbackExplicit,
+}

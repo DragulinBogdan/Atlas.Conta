@@ -16,6 +16,7 @@ using Atlas.Conta.BackOffice.Module.Api.Itv;
 using Atlas.Conta.BackOffice.Module.Api.Ldi;
 using Atlas.Conta.BackOffice.Module.Api.Nir;
 using Atlas.Conta.BackOffice.Module.Api.Ntc;
+using Atlas.Conta.BackOffice.Module.Api.Politici;
 using Atlas.Conta.BackOffice.Module.Api.Rdc;
 using Atlas.Conta.BackOffice.Module.Api.Rlf;
 using Atlas.Conta.BackOffice.Module.Api.Trz;
@@ -4059,6 +4060,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaF24Rol(privat: true);
     // Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
     VerificaPotrivire();
+    // Felia 24 track B — explicația configurației (F24-E1…E7), doar pe privat.
+    VerificaF24Explica();
 
     Rezumat();
     return;
@@ -21412,4 +21415,200 @@ void VerificaPotrivire() {
         && !Potrivire.Conex(conexStoc, LinieDe(tipUnu, null, null, +1)));
     Regula("F24-P7 `PoliticaConex`: filtrul de natură null trece TOATE liniile, filtrul pe o natură trece "
         + "doar liniile ei (o factură doar de servicii nu produce NIR)");
+}
+
+// F24-E1…E7 — EXPLICAȚIA configurației, pe seed-ul PRIVAT
+// ---------------------------------------------------------------------------
+// `ExplicaApply` n-are algoritm propriu (F24-D6): întreabă `Potrivire` pe fapte
+// fabricate din parametrii cererii, deci probele de aici sunt ale AMBALAJULUI și
+// ale profilului — că o linie de stoc pe FCT „nu contează" și pleacă pe NIR, că
+// semnul schimbă regula pe LDI, că NTC declară postarea explicită. Plus proba de
+// CONSISTENȚĂ (42c): conturile explicației sunt ACELEAȘI cu cele pe care motorul
+// chiar le scrie în `RegistruContabil` pe un document echivalent — o explicație
+// care minte e mai rea decât niciuna.
+//
+// Doar pe privat: bugetarul n-are lanțul FCT→NIR și n-are viramentul, deci
+// aceleași enunțuri ar fi acolo probe ale altui profil, nu ale rutei.
+void VerificaF24Explica() {
+    const string Marcaj = "E2E-F24X";
+    var azi = new DateOnly(2026, 5, 5);
+    using var os = provider.CreateObjectSpace();
+
+    void Curata(IObjectSpace osC) {
+        var pj = new Purja(osC);
+        var repIds = osC.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
+        var docs = osC.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        pj.Adauga(osC.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(osC.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(osC.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(osC.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(Marcaj)));
+        pj.Executa();
+    }
+    Curata(os);
+
+    var fctTip = os.FirstOrDefault<TipDocument>(t => t.Cod == "FCT");
+    var ldiTip = os.FirstOrDefault<TipDocument>(t => t.Cod == "LDI");
+    var pltTip = os.FirstOrDefault<TipDocument>(t => t.Cod == "PLT");
+    var ntcTip = os.FirstOrDefault<TipDocument>(t => t.Cod == "NTC");
+    var tipStoc = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302");
+    var tipServiciu = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+    var tipVir = os.FirstOrDefault<TipMaterial>(t => t.Cod == "VIR");
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
+
+    // Furnizorul poartă ContImplicit 401: fără el, creditul regulii FCT/Serviciu
+    // ar cădea pe contul EXPLICIT al regulii (tot 401, dar din altă sursă) —
+    // proba ar spune adevărul pe simbol și ar rata sursa.
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = Marcaj + "-FURN";
+    furnizor.Denumire = "Furnizor probă F24 (explică)";
+    furnizor.ContImplicit = cont401;
+    os.CommitChanges();
+
+    ExplicatieDto Explica(TipDocument tip, TipMaterial material, int semn) =>
+        ExplicaApply.Explica(os, new ExplicaCerere(tip.ID, material.ID, semn, azi,
+            furnizor.ID, mag1.ID, null, null));
+
+    // ── F24-E1: linia de stoc pe FCT nu contează, dar pleacă pe NIR ───────────
+    var fctStoc = Explica(fctTip, tipStoc, +1);
+    Console.WriteLine($"     MĂSURAT (F24-E1): FCT × {tipStoc.Cod} ⇒ nivel {fctStoc.Contare.Nivel}, "
+        + $"{fctStoc.Contare.Candidati.Length} candidați, conex {fctStoc.Conex.Tinta}/trece="
+        + $"{fctStoc.Conex.Trece} — „{fctStoc.Contare.Concluzie}”");
+    Check("F24-E1 explicația spune ce spune motorul pe linia de STOC a facturii de intrare: nicio regulă de "
+        + "contare (recepția contează pe NIR — 26a), deci `Castigator` null și concluzia „linia nu contează”, "
+        + "iar blocul de conex arată că o linie ca aceasta TRECE filtrul de natură al politicii FCT → NIR",
+        fctStoc.Contare.Castigator == null
+        && fctStoc.Contare.Nivel == nameof(NivelContare.Niciuna)
+        && fctStoc.Contare.ContDebit == null && fctStoc.Contare.ContCredit == null
+        && fctStoc.Contare.Concluzie.Contains("nu contează")
+        && fctStoc.Conex.Tinta == "NIR" && fctStoc.Conex.Trece
+        && fctStoc.Conex.NaturaFiltru == nameof(NaturaClasa.Stoc)
+        && fctStoc.Natura == nameof(NaturaClasa.Stoc)
+        && fctStoc.Stoc.Length == 0);
+
+    // ── F24-E2: linia de serviciu — regula pe natură, cu sursele conturilor ───
+    var fctServiciu = Explica(fctTip, tipServiciu, +1);
+    Console.WriteLine($"     MĂSURAT (F24-E2): FCT × {tipServiciu.Cod} ⇒ nivel {fctServiciu.Contare.Nivel}, "
+        + $"debit {fctServiciu.Contare.ContDebit.Simbol}/{fctServiciu.Contare.ContDebit.Sursa}, credit "
+        + $"{fctServiciu.Contare.ContCredit.Simbol}/{fctServiciu.Contare.ContCredit.Sursa}, conex trece="
+        + $"{fctServiciu.Conex.Trece}; TVA: „{fctServiciu.Tva.Concluzie}”");
+    Check("F24-E2 pe linia de SERVICIU a aceleiași facturi câștigă regula pe `NaturaFiltru`, iar conturile ies "
+        + "cu SURSA fiecăruia: debitul din contul implicit al Tipului (628), creditul din contul implicit al "
+        + "repartitorului PREDATOR (401 de pe furnizor, nu fallback-ul explicit al regulii); aceeași linie NU "
+        + "trece filtrul conexului, deci nu naște NIR",
+        fctServiciu.Contare.Nivel == nameof(NivelContare.Natura)
+        && fctServiciu.Contare.Castigator.NaturaFiltru == nameof(NaturaClasa.Serviciu)
+        && fctServiciu.Contare.ContDebit.Simbol == "628"
+        && fctServiciu.Contare.ContDebit.Sursa == nameof(SursaRezolvata.TipMaterial)
+        && fctServiciu.Contare.ContCredit.Simbol == "401"
+        && fctServiciu.Contare.ContCredit.Sursa == nameof(SursaRezolvata.RepartitorPredator)
+        && fctServiciu.Contare.Concluzie.Contains("628 = 401")
+        && !fctServiciu.Conex.Trece
+        && fctServiciu.Tva.Directie == nameof(DirectieTva.Deductibil));
+
+    // ── F24-E3: pe LDI, SEMNUL schimbă regula ────────────────────────────────
+    var ldiPlus = Explica(ldiTip, tipStoc, +1);
+    var ldiMinus = Explica(ldiTip, tipStoc, -1);
+    var plusInCandidatiiMinusului = ldiMinus.Contare.Candidati
+        .FirstOrDefault(k => k.Regula.Id == ldiPlus.Contare.Castigator.Id);
+    Console.WriteLine($"     MĂSURAT (F24-E3): LDI × {tipStoc.Cod} ⇒ +1: nivel {ldiPlus.Contare.Nivel} "
+        + $"({ldiPlus.Contare.ContDebit.Simbol} = {ldiPlus.Contare.ContCredit.Simbol}); −1: nivel "
+        + $"{ldiMinus.Contare.Nivel} ({ldiMinus.Contare.ContDebit.Simbol} = "
+        + $"{ldiMinus.Contare.ContCredit.Simbol}); regula de plus e eliminată pe −1 cu motivul "
+        + $"{plusInCandidatiiMinusului?.Motiv}; stoc: {ldiPlus.Stoc.Length} latură(i)");
+    Check("F24-E3 `SemnFiltru` e o axă a potrivirii, nu o notă de subsol: pe lista de inventar aceeași pereche "
+        + "(tip document × Tip) dă DOUĂ reguli diferite după semnul liniei — plusul cade pe regula de natură "
+        + "(intrare contra 7588), minusul pe regula EXACTĂ derivată 6xx = 3xx —, iar regula de plus apare în "
+        + "candidații minusului cu motivul `SemnNepotrivit`",
+        ldiPlus.Contare.Castigator != null && ldiMinus.Contare.Castigator != null
+        && ldiPlus.Contare.Castigator.Id != ldiMinus.Contare.Castigator.Id
+        && ldiPlus.Contare.Nivel == nameof(NivelContare.Natura)
+        && ldiPlus.Contare.Castigator.SemnFiltru == +1
+        && ldiMinus.Contare.Nivel == nameof(NivelContare.TipMaterialExact)
+        && ldiMinus.Contare.Castigator.SemnFiltru == -1
+        && plusInCandidatiiMinusului?.Motiv == nameof(MotivEliminare.SemnNepotrivit)
+        && ldiPlus.Stoc.Length == 1
+        && ldiPlus.Stoc[0].Latura == nameof(LaturaDocument.Predator)
+        && ldiPlus.Stoc[0].Reguli.Length > 0);
+
+    // ── F24-E4: viramentul — regula EXACTĂ pe Tipul tehnic ───────────────────
+    var pltVir = Explica(pltTip, tipVir, +1);
+    Console.WriteLine($"     MĂSURAT (F24-E4): PLT × VIR ⇒ nivel {pltVir.Contare.Nivel}, debit "
+        + $"{pltVir.Contare.ContDebit.Simbol}/{pltVir.Contare.ContDebit.Sursa}; natura {pltVir.Natura}");
+    Check("F24-E4 viramentul intern (64) se vede ca REGULĂ EXACTĂ pe Tipul tehnic `VIR`: exact nivelul pe care "
+        + "gardul de trezorerie îl cere (`Generic`/`Niciuna` ⇒ refuz), iar debitul vine din contul de tranzit "
+        + "al Tipului — niciun simbol în motor",
+        pltVir.Contare.Nivel == nameof(NivelContare.TipMaterialExact)
+        && pltVir.Natura == nameof(NaturaClasa.Virament)
+        && pltVir.Contare.ContDebit.Sursa == nameof(SursaRezolvata.TipMaterial)
+        && pltVir.Contare.ContDebit.Simbol == "581");
+
+    // ── F24-E5: NTC declară postarea explicită, FCT nu ───────────────────────
+    var ntc = Explica(ntcTip, tipServiciu, +1);
+    Console.WriteLine($"     MĂSURAT (F24-E5): NTC ⇒ postare explicită {ntc.Contare.PostareExplicita}, "
+        + $"nivel {ntc.Contare.Nivel} — „{ntc.Contare.Concluzie}”; FCT ⇒ "
+        + $"{fctServiciu.Contare.PostareExplicita}");
+    Check("F24-E5 nota contabilă n-are nicio regulă de contare, dar tipul ei declară "
+        + "`IDocumentCuPostareExplicita` (32a extins): explicația NU spune „linia nu contează” — spune că nota "
+        + "o dau conturile culese pe linie. Steagul e al TIPULUI, nu al liniei: pe FCT rămâne stins",
+        ntc.Contare.PostareExplicita && ntc.Contare.Castigator == null
+        && ntc.Contare.Nivel == nameof(NivelContare.Niciuna)
+        && !ntc.Contare.Concluzie.Contains("nu contează")
+        && ntc.Contare.Concluzie.Contains("EXPLICIT")
+        && !fctServiciu.Contare.PostareExplicita);
+
+    // ── F24-E6: consistența cu motorul (42c) ─────────────────────────────────
+    var fct = os.CreateObject<FacturaIntrare>();
+    fct.Numar = "F24X-1";
+    fct.Data = azi;
+    fct.Predator = furnizor;
+    fct.Primitor = mag1;
+    var linie = os.CreateObject<FacturaIntrareDetaliu>();
+    linie.Document = fct;
+    linie.TipMaterial = tipServiciu;
+    linie.Cantitate = 1m;
+    linie.PretUnitar = 100m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fct);
+    var note = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fct.ID && !r.Storno).ToList();
+    string Simbol(Guid id) =>
+        os.GetObjectsQuery<Cont>().Where(c => c.ID == id).Select(c => c.Simbol).FirstOrDefault();
+    var simbolDebit = note.Count == 1 ? Simbol(note[0].ContDebitId) : null;
+    var simbolCredit = note.Count == 1 ? Simbol(note[0].ContCreditId) : null;
+    Console.WriteLine($"     MĂSURAT (F24-E6): motorul a scris {note.Count} rând(uri) — "
+        + $"{simbolDebit} = {simbolCredit}; explicația spunea "
+        + $"{fctServiciu.Contare.ContDebit.Simbol} = {fctServiciu.Contare.ContCredit.Simbol}");
+    Check("F24-E6 CONSISTENȚĂ (42c): pe un document REAL echivalent (FCT cu o linie de serviciu, același "
+        + "furnizor și aceeași gestiune), rândul pe care motorul îl scrie în `RegistruContabil` are EXACT "
+        + "conturile pe care explicația le anunțase — proba că „Explică” nu e o a doua rezolvare, ci aceeași",
+        note.Count == 1
+        && simbolDebit == fctServiciu.Contare.ContDebit.Simbol
+        && simbolCredit == fctServiciu.Contare.ContCredit.Simbol);
+
+    // ── F24-E7: implicitul din explicație == implicitul culegerii ────────────
+    var explicatieCuPartener = ExplicaApply.Explica(os, new ExplicaCerere(fctTip.ID, tipServiciu.ID, +1, azi,
+        furnizor.ID, mag1.ID, furnizor.ID, null));
+    var laCulegere = ImpliciteService.TipTva(os, fctTip.ID, furnizor.ID, null, azi);
+    Console.WriteLine($"     MĂSURAT (F24-E7): explicație ⇒ {explicatieCuPartener.Implicit.TipTva}/"
+        + $"{explicatieCuPartener.Implicit.Sursa} ({explicatieCuPartener.Implicit.Candidati.Length} candidați); "
+        + $"culegere ⇒ {laCulegere.Sursa}");
+    Check("F24-E7 blocul `Implicit` al explicației e ACELAȘI verdict pe care îl primește linia la culegere: "
+        + "`ImpliciteService.TipTva` a devenit wrapper-ul lui `.Rezultat`, deci tipul, sursa și motivul nu pot "
+        + "diverge — iar explicația arată în plus rândurile candidate cu motivul eliminării",
+        explicatieCuPartener.Implicit.TipTvaId == laCulegere.TipTvaId
+        && explicatieCuPartener.Implicit.Sursa == laCulegere.Sursa.ToString()
+        && explicatieCuPartener.Implicit.Motiv == laCulegere.Motiv
+        && explicatieCuPartener.Implicit.Candidati.Length > 0);
+
+    Curata(os);
+    Check("F24-E1…E7: scena nu lasă urme (furnizorul și factura de probă se purjează FIZIC)",
+        !os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Any(r => r.Cod.StartsWith(Marcaj)));
 }

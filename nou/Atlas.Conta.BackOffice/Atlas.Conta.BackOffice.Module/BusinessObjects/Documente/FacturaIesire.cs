@@ -108,7 +108,7 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
                 .ToDictionary(p => p.ID, p => p.TipMaterialId);
             foreach (var d in liniiStoc) {
                 if (Motor.Potrivire.Contare(reguliContare, Motor.Fapte.Linie(d, claseTip)).Nivel
-                        != Motor.NivelContare.TipMaterialExact)
+                        != NivelContare.TipMaterialExact)
                     erori.Add("Linia de stoc nu are regulă de contare de vânzare pentru Tipul ei — adăugați rândul de politică (sau rulați updater-ul).");
                 if (d.ProdusId != null && tipPerProdus.TryGetValue(d.ProdusId.Value, out var tipProdus)
                         && tipProdus != null && tipProdus != d.TipMaterialId)

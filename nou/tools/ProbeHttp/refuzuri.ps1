@@ -592,6 +592,31 @@ try {
     Proba -Cerere 'implicit pe cod necunoscut' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/implicite/tip-tva?tipDocument=XYZ' -Contine 'necunoscut' | Out-Null
     Proba -Cerere 'implicit pe cod necunoscut' -User 'User' -Asteptat 400 -Metoda GET -Cale '/api/implicite/tip-tva?tipDocument=XYZ' -Contine 'necunoscut' -Nota 'același text ca Admin' | Out-Null
 
+
+    # ── „Explică" (F24-D6): un VERDICT, deci gate de citire pe TIPURI ───────
+    # Ruta răspunde ce ar face configurația cu o linie IPOTETICĂ, calculând pe
+    # ușa non-secured — deci cere `CanRead` pe tot ce citește, ca `verificare`
+    # (73g/80e). Ordinea de pe sârmă se măsoară pe toate treptele: 400 pentru
+    # cererea însăși (cod necunoscut, semn în afara lui ±1, GUID malformat),
+    # 403 pentru dreptul de citire, 422 pentru o referință invizibilă (80f).
+    $tip302 = Get-PrimaEntitate 'TipMaterial' "Cod eq '302'"
+    $caleExplica = "/api/politici/explica?tip=FCT&tipMaterial=$($tip302.ID)&semn=1"
+    Proba -Cerere 'explică FCT × tip de stoc' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare', 'Conex', 'Niciuna' -Nota 'recepția contează pe NIR' | Out-Null
+    Proba -Cerere 'explică FCT × tip de stoc' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare' -Nota 'cine configurează vede și efectul' | Out-Null
+    Proba -Cerere 'explică FCT × tip de stoc' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare' | Out-Null
+    Proba -Cerere 'explică FCT × tip de stoc' -User 'User' -Asteptat 403 -Metoda GET -Cale $caleExplica -Contine 'citi' -Nota 'F24-D6: verdict, nu listă' | Out-Null
+    # 400 — cererea, nu dreptul: aceleași texte pentru oricine (maparea cod →
+    # ancoră e non-secured, ca la implicite).
+    Proba -Cerere 'explică pe cod necunoscut' -User 'Admin' -Asteptat 400 -Metoda GET -Cale "/api/politici/explica?tip=XYZ&tipMaterial=$($tip302.ID)" -Contine 'necunoscut' | Out-Null
+    Proba -Cerere 'explică pe cod necunoscut' -User 'User' -Asteptat 400 -Metoda GET -Cale "/api/politici/explica?tip=XYZ&tipMaterial=$($tip302.ID)" -Contine 'necunoscut' -Nota 'același text ca Admin' | Out-Null
+    Proba -Cerere 'explică cu semn în afara lui ±1' -User 'Admin' -Asteptat 400 -Metoda GET -Cale "/api/politici/explica?tip=FCT&tipMaterial=$($tip302.ID)&semn=2" -Contine 'Semnul' -Nota 'un int valid, un semn invalid' | Out-Null
+    # GUID malformat pe query: 400 tot `EroriDto`, prin
+    # `InvalidModelStateResponseFactory` — mesajul de binding rămâne în engleză (70-r5).
+    Proba -Cerere 'explică cu tipMaterial malformat' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/politici/explica?tip=FCT&tipMaterial=abc' | Out-Null
+    Proba -Cerere 'explică fără tipMaterial' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/politici/explica?tip=FCT' -Contine 'obligatoriu' | Out-Null
+    # 422, nu 404: `tipMaterial` e o REFERINȚĂ a cererii, nu subiectul ei (80f).
+    Proba -Cerere 'explică pe tipMaterial inexistent' -User 'Admin' -Asteptat 422 -Metoda GET -Cale "/api/politici/explica?tip=FCT&tipMaterial=$idInexistent" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'explică pe partener inexistent' -User 'Admin' -Asteptat 422 -Metoda GET -Cale "$caleExplica&partener=$idInexistent" -Contine 'nu există sau nu e vizibil' -Nota 'referința opțională, aceeași frază' | Out-Null
     # ── Auditul pe OData (F23-D9) ──────────────────────────────────────────
     # `UserName`/`ObjectType` sunt `[NotMapped]` pe `AuditDataItemPersistent` și
     # NU intră în EDM; utilizatorul se ia prin `$expand=UserObject` ⇒

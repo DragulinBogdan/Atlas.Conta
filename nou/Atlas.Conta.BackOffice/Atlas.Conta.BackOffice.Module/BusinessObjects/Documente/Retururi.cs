@@ -230,7 +230,7 @@ public class ReturClient : Document {
             if (natura != NaturaClasa.Stoc)
                 erori.Add("Linia cu lot a returului poartă un Tip de stoc (marfa revine pe lotul original).");
             if (Motor.Potrivire.Contare(reguliContare, Motor.Fapte.Linie(linie, claseTip)).Nivel
-                    != Motor.NivelContare.TipMaterialExact)
+                    != NivelContare.TipMaterialExact)
                 erori.Add("Linia cu lot a returului nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc, storno) — adăugați rândul de politică (sau rulați updater-ul).");
             if (!infoLot.TryGetValue(linie.LotId.Value, out var lot))
                 continue;

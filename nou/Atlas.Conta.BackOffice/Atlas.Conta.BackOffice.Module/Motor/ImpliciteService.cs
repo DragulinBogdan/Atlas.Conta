@@ -36,6 +36,16 @@ public static class ImpliciteService {
     /// primește implicitul care era în vigoare atunci.
     /// </summary>
     public static RezultatImplicit TipTva(IObjectSpace os, Guid tipDocumentId,
+            Guid? partenerId, Guid? produsId, DateOnly data) =>
+        Explica(os, tipDocumentId, partenerId, produsId, data).Rezultat;
+
+    /// <summary>
+    /// Aceleași citiri, cu verdictul ÎNTREG (rândul câștigător + candidații cu
+    /// motivul lor): ce consumă `GET api/politici/explica`. `TipTva` de mai sus
+    /// e wrapper-ul peste `.Rezultat`, ca explicația și culegerea să nu poată
+    /// diverge (F24-D6).
+    /// </summary>
+    internal static PotrivireTvaImplicit Explica(IObjectSpace os, Guid tipDocumentId,
             Guid? partenerId, Guid? produsId, DateOnly data) {
         // Pasul 4: clasa fiscală, din funcția LEGII. `partenerLipsa` acoperă
         // deopotrivă lipsa, inexistența și invizibilitatea — nedistinse (80a).
@@ -81,7 +91,7 @@ public static class ImpliciteService {
             .Distinct().ToList();
 
         return Potrivire.TvaImplicit(randuriTip, clasa, data, candidatPartener, candidatAncora,
-            candidatProdus, Fapte.TipuriTva(os, ids), partenerLipsa).Rezultat;
+            candidatProdus, Fapte.TipuriTva(os, ids), partenerLipsa);
     }
 
     /// <summary>

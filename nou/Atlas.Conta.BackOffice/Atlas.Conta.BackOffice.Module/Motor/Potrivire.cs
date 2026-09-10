@@ -35,21 +35,6 @@ public readonly record struct PoliticaTvaImplicitFapt(Guid Id, ClasaFiscalaParte
 
 public readonly record struct TipTvaFapt(Guid Id, string Cod, RegimTva Regim, bool Activ);
 
-public enum NivelContare { Niciuna, Generic, Natura, TipMaterialExact }
-
-public enum NivelStoc { Niciuna, Generic, ClasaExacta }
-
-public enum MotivEliminare {
-    SemnNepotrivit, TipMaterialDiferit, NaturaDiferita, NivelMaiSlab, Dublura,
-    DataViitoare, ClasaDiferita, Inactiv,
-}
-
-public enum MotivStoc { NaturaNuEsteStoc, FaraRegula }
-
-public enum SursaRezolvata {
-    Nerezolvat, Explicit, TipMaterial, RepartitorPredator, RepartitorPrimitor, FallbackExplicit,
-}
-
 // `Motiv` null = câștigătorul.
 public readonly record struct CandidatContare(RegulaContareFapt Regula, MotivEliminare? Motiv);
 

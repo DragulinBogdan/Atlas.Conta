@@ -105,6 +105,16 @@
       "Predator": "Predator",
       "Primitor": "Primitor"
     },
+    "MotivEliminare": {
+      "SemnNepotrivit": "Semnul liniei nu se potrivește",
+      "TipMaterialDiferit": "Regula e pe alt tip de material",
+      "NaturaDiferita": "Regula e pe altă natură",
+      "NivelMaiSlab": "Există o regulă mai specifică",
+      "Dublura": "Dublură pe același nivel",
+      "DataViitoare": "Valabil de la o dată viitoare",
+      "ClasaDiferita": "Altă clasă fiscală",
+      "Inactiv": "Tipul de TVA e inactiv"
+    },
     "MotivNegenerare": {
       "ProfilInert": "Profilul nu are conturile închiderii",
       "InchidereVie": "Luna are deja o închidere",
@@ -113,6 +123,10 @@
       "DraftAnterior": "O lună anterioară are un draft de închidere neoperat",
       "PerioadaInchisa": "Perioada fiscală e închisă"
     },
+    "MotivStoc": {
+      "NaturaNuEsteStoc": "Natura clasei nu e stoc",
+      "FaraRegula": "Latura n-are regulă de stoc"
+    },
     "NaturaClasa": {
       "Stoc": "Stoc",
       "Serviciu": "Serviciu",
@@ -120,6 +134,17 @@
       "Imobilizare": "Imobilizare",
       "Tehnica": "Tehnica",
       "Virament": "Virament"
+    },
+    "NivelContare": {
+      "Niciuna": "Nicio regulă potrivită",
+      "Generic": "Regula generică a tipului",
+      "Natura": "Filtru de natură",
+      "TipMaterialExact": "Tip de material exact"
+    },
+    "NivelStoc": {
+      "Niciuna": "Nicio regulă potrivită",
+      "Generic": "Regula generică a laturii",
+      "ClasaExacta": "Clasă exactă"
     },
     "RegimTva": {
       "Normal": "Normal",
@@ -168,6 +193,14 @@
       "Produs": "Cota proprie a produsului",
       "Politica": "Politica tipului × clasa fiscală",
       "Ancora": "Ancora tipului de document"
+    },
+    "SursaRezolvata": {
+      "Nerezolvat": "Nerezolvat",
+      "Explicit": "Contul explicit al regulii",
+      "TipMaterial": "Contul implicit al tipului de material",
+      "RepartitorPredator": "Contul repartitorului predator",
+      "RepartitorPrimitor": "Contul repartitorului primitor",
+      "FallbackExplicit": "Contul explicit, ca rezervă"
     },
     "TipInstrumentPlata": {
       "OrdinPlata": "Ordin de plată",

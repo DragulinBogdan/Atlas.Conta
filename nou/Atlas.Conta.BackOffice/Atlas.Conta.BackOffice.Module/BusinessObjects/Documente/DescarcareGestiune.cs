@@ -56,7 +56,7 @@ public class DescarcareGestiune : Document {
             .ToDictionary(l => l.ID, l => (l.ProdusId, l.TipMaterialId));
         foreach (var d in Detalii) {
             if (Motor.Potrivire.Contare(reguliContare, Motor.Fapte.Linie(d, claseTip)).Nivel
-                    != Motor.NivelContare.TipMaterialExact)
+                    != NivelContare.TipMaterialExact)
                 erori.Add("Linia descărcării nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc) — adăugați rândul de politică (sau rulați updater-ul).");
             if (d.LotId != null && infoLot.TryGetValue(d.LotId.Value, out var lot)
                     && lot.TipMaterialId != null && lot.TipMaterialId != d.TipMaterialId)
