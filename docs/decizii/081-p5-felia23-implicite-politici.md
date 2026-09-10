@@ -1,7 +1,7 @@
 # 81. Pasul 5, felia 23 — implicitele de culegere și întreținerea politicilor: regimul e al partenerului, cota e a produsului; politicile se deschid pe OData cu invarianții în gardian, unicitatea în schemă și proveniența ca timbru
 
 - **Data**: 2026-09-02
-- **Stare**: activă (închide 79-r2, 74-r12 și 77-r3 pe `PoliticaMiscareSaft`; amendează 56 pe politici — ReadOnly-ul pe OData a murit; amendează 38d/P1 §8 — implicitul de TVA nu mai e doar al tipului de document)
+- **Stare**: activă (închide 79-r2, 74-r12 și 77-r3 pe `PoliticaMiscareSaft`; amendează 56 pe politici — ReadOnly-ul pe OData a murit; amendează 38d/P1 §8 — implicitul de TVA nu mai e doar al tipului de document; 81d amendată de 83a — re-seed-ul corectează rândurile `DinSeed`; 81-r1 și 81-r2 închise de 83)
 - **Docs**: `docs/api/p5-felia23-implicite-politici-contract.md` (F23-D1…D12 + §Închidere), `nou/.../Module/Motor/ImpliciteService.cs`, `nou/.../Module/Motor/VerificareProfilService.cs`, `nou/.../Module/BusinessObjects/Comun/ClasaFiscala.cs`, `nou/.../Module/BusinessObjects/Comun/ICuProvenienta.cs`, `nou/.../Module/Motor/GardianEditare.cs` (ramurile D5), `nou/.../Module/Migrations/20260902184753_F23ImpliciteSiPolitici.cs`, `nou/.../WebApi/API/Conta/ImpliciteController.cs`, `nou/.../WebApi/API/Conta/PoliticiController.cs`, `nou/Atlas.Conta.Client/src/felii/politici/`, `nou/tools/ProbeHttp/refuzuri.ps1` (blocul „politici")
 
 ## Context

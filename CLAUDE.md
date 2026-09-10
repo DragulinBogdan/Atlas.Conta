@@ -910,6 +910,25 @@ decizia N.
     verifică rolul sursei și păstrează calculul din liniile curente + restul
     sursei, prin validările existente. (c) Motorul apelează mecanismul după
     materializare și starea Operat, înainte de commit; serviciul nu comite.
+83. **Seed-ul și proveniența** (execuția în felia 24). (a) **Re-seed-ul
+    CORECTEAZĂ rândurile `DinSeed = true`, și numai pe ele**: timbrul e
+    proprietate — rândul editat (stins de gardian) nu se atinge, rândul șters
+    rămâne șters (4). (b) Cheia (indexul unic, 81c) nu se schimbă prin seed:
+    doar câmpurile ne-cheie; schimbarea de cheie = migrație de date. (c)
+    Seed-urile derivate recalculează cheile `DinSeed`, sar cheile manuale.
+    (d) Ieșirea seed-ului = auditul re-seed-ului (`câmp: vechi → nou`,
+    contor). (e) 81-r3 asumată, expunere zero la 2026-09-10. (f) **SFD e
+    natura operațiunii** (override pe Partener/Produs, 81b), **NIM decurge
+    din clasă**: `FCT/RLF × NeinregistratRo → NIM` (D394 `N` rămâne
+    negenerat, 83-r2). (g) **Import = `TipTva` propriu `IMP`** (0%, regim
+    `Neimpozabil`, cod SAF-T din nomenclator), `FCT/RLF × ExtraUe → IMP`,
+    nemapat deliberat pe D300 („din DVI") și D394; **poarta**: DVI = tip de
+    document propriu (36f) cu `IMP21`, legătură n→m cu facturile (83-r4).
+    (h) **Rol `Configurator`** seed-uit: Read pe tot, Create/Write/Delete
+    DOAR pe tipurile `ICuProvenienta`; al patrulea oracol în
+    `refuzuri.ps1`. (i) **O singură listă** `Politici.TipuriConfigurabile`
+    (rol, gardian, raport, seed), cu probă că acoperă orice `ICuProvenienta`.
+    (j) Rândul de seed șters nu se recreează nici la runtime (83-r1).
 
 ## Stare și roadmap
 
@@ -944,7 +963,9 @@ detaliat în jurnal):
   culegere + întreținerea politicilor — regimul e al partenerului, cota e a
   produsului; politicile pe OData cu invarianții în gardian, unicitatea în
   schemă, `DinSeed`, raportul de profil, grila comună (81); stingerea
-  automată prin contract (82).
+  automată prin contract (82); seed-ul și proveniența — re-seed pe `DinSeed`,
+  golurile privat cu poarta spre DVI, rolul `Configurator` (83, decizie
+  scrisă, execuția în felia 24).
 
 **Toate tipurile de document au acum felie prin API și client** — ITV ca
 COMANDĂ (79), nu agregat; singurul rămas e BPR (rezervat, 19). Refuzurile de
@@ -953,10 +974,14 @@ acces sunt uniforme pe REST și OData și MĂSURATE (80).
 **Următorul pas**: izolarea motorului de `IObjectSpace` — contract scris
 (`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, pașii 0–7,
 criteriul de prioritate: felia 24 „Explică" / async cu cifră / al doilea
-host); prioritatea se decide pe contract; felia 24 (81k: „Explică" + ecranele `RegulaContare`/`RegulaStoc`/
-`MapareD300`/`MapareD394`/`PoliticaTva`/`Conex`/`Validare`) la cerere; 80-r1
-dacă expunerea crește; `lista-react.md` mai ține doar itemii structurali și
-77-r1/r6.
+host); prioritatea se decide pe contract. **Felia 24** are contract scris
+(`docs/api/p5-felia24-politici-explica-contract.md`): track A = execuția
+deciziei 83 + ecranele `RegulaContare`/`RegulaStoc`/`MapareD300`/
+`MapareD394`/`PoliticaTva`/`Conex`/`Validare` peste `GrilaPolitica` (81-r8);
+track B = „Explică" (potrivirea motorului ca funcții pure pe fapte,
+`Motor/Potrivire.cs`, consumate de motor, de gardul VIR și de
+`GET api/politici/explica`; avans declarat pe IM-D2). 80-r1 dacă expunerea
+crește; `lista-react.md` mai ține doar itemii structurali și 77-r1/r6.
 Capcane de probare: `genereaza` SCRIE ori de câte ori luna e liberă (79);
 probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe
 host viu (Privat, după re-seed pentru `Cititor`), nu se refac de mână.
@@ -1075,6 +1100,11 @@ schimbare = 204 pentru orice rol (capcană de probă) · 81-r6 `User` pe
 `api/implicite` ⇒ `Niciuna` · 81-r7 XAF: lookup-urile `TipTva` fără filtrul
 `Activ`, baseline lipsă pe 8 politici (44/53) · 81-r8 `SursaCont.Explicit ==
 0` pe rând nou (ecranele feliei 24) · 81-r9 `400 "Incorrect body."` (80-r6)
+· 83-r1 recrearea unui rând de seed șters, la runtime · 83-r2 D394 tip `N`
+(achiziții de la neînregistrați) negenerat, `NIM × Achiziție` nemapat · 83-r3
+codul SAF-T al lui `IMP` din nomenclator · 83-r4 DVI ca tip de document
+(`IMP21`, legătura n→m cu facturile de import, rândurile D300) · 83-r5
+`Configurator` în XAF (permisiuni de navigație) · 83-r6 = 81-r3 asumată
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 
