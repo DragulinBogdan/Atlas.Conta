@@ -992,15 +992,22 @@ internal static class ProfilPrivat {
             new Dictionary<string, string> { ["371"] = "707", ["345"] = "701", ["381"] = "708" }, "708");
 
         // Pas explicit de updater: FCL nu mai interzice natura Stoc (rândul P1
-        // există în bazele seed-uite atunci). CereClasificatieBugetara nu se
-        // setează la privat, deci rândul se șterge întreg; idempotent.
+        // există în bazele seed-uite atunci). Doar rândul SEED-ului se retrage —
+        // același rând e azi creabil din ecranul de validare, iar un rând manual
+        // e al clientului (83a).
         var validareFcl = os.FirstOrDefault<PoliticaValidare>(
             x => x.TipDocument.Cod == "FCL" && x.NaturaInterzisa == NaturaClasa.Stoc);
-        if (validareFcl != null) {
-            if (validareFcl.CereClasificatieBugetara)
+        if (validareFcl is { DinSeed: true }) {
+            if (validareFcl.CereClasificatieBugetara) {
                 validareFcl.NaturaInterzisa = null;
-            else
+                ContaSeeder.Retras(nameof(PoliticaValidare), "FCL",
+                    "natura interzisă Stoc (privatul vinde din gestiune)");
+            }
+            else {
                 os.Delete(validareFcl);
+                ContaSeeder.Retras(nameof(PoliticaValidare), "FCL",
+                    "rândul P1 „FCL nu poartă stoc” nu mai are obiect la privat");
+            }
         }
     }
 

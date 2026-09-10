@@ -7787,6 +7787,7 @@ export interface components {
             ContDebit?: components["schemas"]["ContRezolvatDto"];
             ContCredit?: components["schemas"]["ContRezolvatDto"];
             PostareExplicita?: boolean;
+            Rezerve?: string[] | null;
             Concluzie?: string | null;
         };
         ExplicaImplicitDto: {
@@ -7856,6 +7857,10 @@ export interface components {
             Produs?: string | null;
             Contare?: components["schemas"]["ExplicaContareDto"];
             Stoc?: components["schemas"]["ExplicaStocDto"][] | null;
+            ConcluzieStoc?: string | null;
+            ConcluzieValidare?: string | null;
+            ConcluzieScadenta?: string | null;
+            ConcluzieNumerotare?: string | null;
             Tva?: components["schemas"]["ExplicaTvaDto"];
             Conex?: components["schemas"]["ExplicaConexDto"];
             Implicit?: components["schemas"]["ExplicaImplicitDto"];

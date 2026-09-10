@@ -194,7 +194,11 @@ public static class Potrivire {
         var candidati = randuriTip.Select(r => new CandidatTvaImplicit(r,
             r.ValabilDeLa != null && r.ValabilDeLa > data ? MotivEliminare.DataViitoare
             : r.ClasaFiscala != null && r.ClasaFiscala != clasa ? MotivEliminare.ClasaDiferita
-            : randPolitica?.Id != r.Id ? MotivEliminare.NivelMaiSlab
+            : randPolitica is PoliticaTvaImplicitFapt castigator && castigator.Id != r.Id
+                ? (r.ClasaFiscala != null) == (castigator.ClasaFiscala != null)
+                    && r.ValabilDeLa == castigator.ValabilDeLa
+                    ? MotivEliminare.Dublura : MotivEliminare.NivelMaiSlab
+            : randPolitica == null ? MotivEliminare.NivelMaiSlab
             : politicaInactiva ? MotivEliminare.Inactiv
             : (MotivEliminare?)null)).ToList();
 

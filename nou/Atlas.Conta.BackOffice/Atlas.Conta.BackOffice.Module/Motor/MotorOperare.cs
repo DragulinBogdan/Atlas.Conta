@@ -738,13 +738,22 @@ public static class MotorOperare {
         os.FirstOrDefault<TipDocument>(t => t.ClrType == clrType)
             ?? throw new OperareException($"Lipsește ancora TipDocument pentru clasa {clrType} (seed).");
 
-    // EF Core dă proxy-uri de change-tracking — numele CLR real e pe tipul de bază.
-    internal static TipDocument GasesteTipDocument(IObjectSpace os, Document doc) {
+    internal static TipDocument GasesteTipDocument(IObjectSpace os, Document doc) =>
+        GasesteTipDocument(os, ClasaReala(doc).Name);
+
+    // EF Core dă proxy-uri de change-tracking — clasa reală e pe tipul de bază.
+    internal static Type ClasaReala(Document doc) {
         var tip = doc.GetType();
         while (tip.Assembly.IsDynamic || tip.Name.EndsWith("Proxy"))
             tip = tip.BaseType;
-        return GasesteTipDocument(os, tip.Name);
+        return tip;
     }
+
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, GardContareAttribute>
+        garduriContare = new();
+
+    internal static GardContareAttribute GardContare(Document doc) =>
+        garduriContare.GetOrAdd(ClasaReala(doc), t => t.GetCustomAttribute<GardContareAttribute>(false));
 
     static void AsignaNumar(IObjectSpace os, Document doc, TipDocument tipDoc) {
         if (!string.IsNullOrWhiteSpace(doc.Numar))

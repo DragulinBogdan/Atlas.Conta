@@ -7,15 +7,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Politici;
 // de izolare a motorului) — de aceea nimic de aici nu are `DocumentId` și nimic
 // nu atinge registrele.
 //
-// Trei convenții, aceleași ca pe restul feliilor:
-//   * enum-urile pleacă STRING (numele membrului, 57a/63); eticheta lizibilă e
-//     în `metadata.json`, o singură sursă pentru XAF și React;
-//   * rândurile poartă coduri și simboluri, nu `Guid`-uri de dereferențiat —
-//     explicația se CITEȘTE (`Id` rămâne doar ca ancoră pentru „deschide rândul");
-//   * fiecare rând poartă `DinSeed`, ca în grilele de politică („seed / manual").
-//
-// Zero calcul în TS (42c): `Concluzie` e formată pe server, fiindcă e aceeași
-// frază pe care ar trebui s-o inventeze clientul din patru câmpuri.
+// Convențiile: enum-urile pleacă STRING (57a/63), rândurile poartă coduri și
+// simboluri, iar `Concluzie` se formează pe SERVER (42c).
 
 /// <summary>Contul rezolvat al unei laturi, cu sursa care l-a dat efectiv.</summary>
 public sealed class ContRezolvatDto {
@@ -58,6 +51,10 @@ public sealed class ExplicaContareDto {
     // postare (32a extins). Explicația NU calculează contul — nu e o linie
     // reală, deci n-are ce cont cules să arate.
     public bool PostareExplicita { get; set; }
+    // Ce ar mai putea refuza operarea peste potrivire (gardul declarat al clasei
+    // de document, natura interzisă de profilul de validare): fraza „se postează"
+    // e verdict de motor, iar un verdict care tace despre refuz minte.
+    public string[] Rezerve { get; set; }
     public string Concluzie { get; set; }
 }
 
@@ -168,6 +165,12 @@ public sealed class ExplicatieDto {
 
     public ExplicaContareDto Contare { get; set; }
     public ExplicaStocDto[] Stoc { get; set; }
+    // Concluziile blocurilor care n-au DTO propriu sau pot lipsi cu totul: mereu
+    // setate, ca absența să fie tot o frază a SERVERULUI (42c).
+    public string ConcluzieStoc { get; set; }
+    public string ConcluzieValidare { get; set; }
+    public string ConcluzieScadenta { get; set; }
+    public string ConcluzieNumerotare { get; set; }
     public ExplicaTvaDto Tva { get; set; }
     public ExplicaConexDto Conex { get; set; }
     public ExplicaImplicitDto Implicit { get; set; }

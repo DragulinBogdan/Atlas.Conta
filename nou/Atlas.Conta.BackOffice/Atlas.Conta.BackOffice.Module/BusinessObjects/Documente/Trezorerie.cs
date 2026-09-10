@@ -319,21 +319,6 @@ public abstract class DocumentTrezorerie : Document {
         if (!esteVirament && liniiVirament.Count > 0)
             erori.Add("Liniile de virament intern cer contrapartidă cont propriu (casă/bancă) — corectați latura sau Tipul liniilor.");
 
-        // Oglinda refuzului de pe DSC/FCL (38c): fără regulă de contare potrivită
-        // pe Tip sau pe natura Virament, potrivirea ar cădea la final pe regula
-        // GENERICĂ a tipului (TipMaterial null + NaturaFiltru null) și ar posta
-        // din nou „destinație = sursă" pe ambele picioare, fără niciun zgomot.
-        // 64: gardul întreabă POTRIVIREA motorului, deci oglindește toate axele
-        // ei (inclusiv `SemnFiltru`, pe care semnul 0 al trezoreriei îl decide).
-        if (liniiVirament.Count > 0) {
-            var tipDoc = Motor.MotorOperare.GasesteTipDocument(os, this);
-            var reguli = Motor.Fapte.ReguliContare(os, tipDoc.ID);
-            foreach (var d in liniiVirament)
-                if (Motor.Potrivire.Contare(reguli, Motor.Fapte.Linie(d, claseTip)).Nivel
-                        is NivelContare.Generic or NivelContare.Niciuna)
-                    erori.Add("Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — "
-                        + "adăugați rândul de politică (sau rulați updater-ul).");
-        }
     }
 
     // Legătura de pereche NU e obligatorie (generarea acoperă cazul normal —
@@ -567,6 +552,8 @@ public abstract class DocumentTrezorerie : Document {
 // Predator = ContPropriu (sursa banilor), primitor = beneficiarul.
 // [TipDetaliu] se declară pe fiecare derivată (atributul e Inherited=false).
 [TipDetaliu(typeof(DocumentTrezorerieDetaliu))]
+[GardContare(NaturaClasa.Virament, NivelContare.Natura,
+    "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Plata : DocumentTrezorerie {
     public override Guid GetContrapartidaId() => PrimitorId;
 
@@ -592,6 +579,8 @@ public class Plata : DocumentTrezorerie {
 
 // Predator = plătitorul, primitor = ContPropriu (destinația banilor).
 [TipDetaliu(typeof(DocumentTrezorerieDetaliu))]
+[GardContare(NaturaClasa.Virament, NivelContare.Natura,
+    "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Incasare : DocumentTrezorerie {
     public override Guid GetContrapartidaId() => PredatorId;
 

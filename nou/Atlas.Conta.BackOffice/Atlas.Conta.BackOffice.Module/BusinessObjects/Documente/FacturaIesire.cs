@@ -12,6 +12,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Layout-ul DetailView-ului: declarat în `ContaUiBaseline` cu `.Layout(...)`
 // (GATE XAF D12), grupul propriu nested în containerul `Antet`.
 [TipDetaliu(typeof(FacturaIesireDetaliu))]
+[GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
+    "Linia de stoc nu are regulă de contare de vânzare pentru Tipul ei — adăugați rândul de politică (sau rulați updater-ul).")]
 public class FacturaIesire : Document, IDocumentCuScadenta {
     // Rolul de STINS (F19-D16): factura clientului lasă un sold DEBITOR pe 4111 —
     // se stinge creditând contrapartida (încasarea, jumătatea de credit a notei).
@@ -89,14 +91,6 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
             erori.Add("Factura de ieșire cu linii de stoc cere gestiunea de descărcare.");
 
         if (liniiStoc.Count > 0) {
-            // Fără regulă de contare per Tip pe FCL, linia de stoc ar cădea pe
-            // genericul de servicii și ar posta creditul pe contul de STOC al
-            // Tipului la preț de vânzare — exact bug-ul corectat de derivarea de
-            // vânzare (design §6). Un Tip nou creat între updater-e nu are încă
-            // rândul derivat: refuz explicit, nu postare greșită silențioasă
-            // (filozofia 30b — fără fallback = eroare clară; review P2 defect 1).
-            var tipFcl = Motor.MotorOperare.GasesteTipDocument(os, this);
-            var reguliContare = Motor.Fapte.ReguliContare(os, tipFcl.ID);
             // Identitatea dublă a liniei (Tip + Produs) trebuie să fie coerentă:
             // un produs de alt Tip ar conta pe conturile Tipului greșit deși
             // stocul se mișcă pe lotul produsului (review P2 defect 4).
@@ -106,14 +100,10 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
                 .Where(p => idsProdus.Contains(p.ID))
                 .Select(p => new { p.ID, p.TipMaterialId })
                 .ToDictionary(p => p.ID, p => p.TipMaterialId);
-            foreach (var d in liniiStoc) {
-                if (Motor.Potrivire.Contare(reguliContare, Motor.Fapte.Linie(d, claseTip)).Nivel
-                        != NivelContare.TipMaterialExact)
-                    erori.Add("Linia de stoc nu are regulă de contare de vânzare pentru Tipul ei — adăugați rândul de politică (sau rulați updater-ul).");
+            foreach (var d in liniiStoc)
                 if (d.ProdusId != null && tipPerProdus.TryGetValue(d.ProdusId.Value, out var tipProdus)
                         && tipProdus != null && tipProdus != d.TipMaterialId)
                     erori.Add("Produsul liniei de stoc aparține altui Tip decât Tipul liniei — corectați Tipul sau produsul.");
-            }
         }
 
         // Pin-urile (LotId cules): lotul aparține produsului liniei; iar cu DSC

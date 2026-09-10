@@ -266,6 +266,24 @@ public abstract class Document : BaseObject {
         // scalar, fără navigații lazy în enumerare (25b).
         if (Detalii.Any(d => d.TipMaterialId == Guid.Empty))
             erori.Add("Toate liniile trebuie să aibă Tipul (contul/clasa) completat.");
+        VerificaGardContare(os, erori);
+    }
+
+    // 38c/64 — nivelul minim de contare cerut de tip e CONTRACT pe clasă
+    // (`GardContare`), aplicat o singură dată aici: fără el, o linie fără regulă
+    // destul de specifică ar mișca stocul fără să posteze nimic (sau ar cădea pe
+    // genericul care postează „destinație = sursă").
+    void VerificaGardContare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
+        if (Motor.MotorOperare.GardContare(this) is not GardContareAttribute gard)
+            return;
+        var claseTip = Motor.Fapte.ClaseTip(os, Detalii.Select(d => d.TipMaterialId));
+        var reguli = Motor.Fapte.ReguliContare(os, Motor.MotorOperare.GasesteTipDocument(os, this).ID);
+        foreach (var d in Detalii) {
+            if (gard.Natura != null && claseTip.GetValueOrDefault(d.TipMaterialId).Natura != gard.Natura)
+                continue;
+            if (Motor.Potrivire.Contare(reguli, Motor.Fapte.Linie(d, claseTip)).Nivel < gard.NivelMinim)
+                erori.Add(gard.Mesaj);
+        }
     }
 }
 

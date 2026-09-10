@@ -3,24 +3,11 @@ using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
-// IMPLICITELE DE CULEGERE — o singură sursă (felia 23, F23-D1/D2).
+// IMPLICITELE DE CULEGERE — o singură sursă (felia 23, F23-D1/D2): afordanță pe
+// linia NOUĂ fără valoare, niciodată validare și niciodată în motor.
 //
-// Ce e și ce NU e. Implicitul e o AFORDANȚĂ: propune o valoare pe o linie NOUĂ
-// care n-are una, și atât. Nu validează nimic (un partener invizibil nu produce
-// 422, produce „fără partener"), nu rulează în motor (datoria P1 rămâne la
-// culegere — 38d) și nu atinge liniile EXISTENTE, unde absența unui câmp e
-// golire deliberată (56, round-trip).
-//
-// Trei apelanți, o funcție: controllerul XAF de creare a liniei
-// (`DefaultTipTvaController`), cele cinci Apply-uri (prin wrapper-ul
-// `TvaService.AplicaTipTvaImplicit`, ca semnătura lor să nu se schimbe) și
-// endpoint-ul de citire prin care clientul precompletează perechea (id,
-// etichetă) și afișează SURSA. Serverul și clientul nu pot diverge fiindcă
-// amândoi întreabă funcția asta.
-//
-// REGIMUL E AL PARTENERULUI, COTA E A PRODUSULUI. Aici trăiesc DOAR citirile
-// (25b: FK-uri și proiecții, fără navigații lazy și fără `is` pe frunze);
-// clasamentul, treapta sărită și împăcarea sunt funcția PURĂ
+// Aici trăiesc DOAR citirile (25b); clasamentul, treapta sărită și împăcarea
+// „regimul e al partenerului, cota e a produsului" sunt funcția PURĂ
 // `Potrivire.TvaImplicit` (F24-D5).
 public static class ImpliciteService {
     /// <summary>

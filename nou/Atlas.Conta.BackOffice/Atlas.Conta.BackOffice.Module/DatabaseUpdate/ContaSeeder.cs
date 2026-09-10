@@ -93,13 +93,6 @@ public static class ContaSeeder {
     }
 
     // ── ALINIEREA RÂNDURILOR DE SEED (83a–d) ───────────────────────────────
-    //
-    // Timbrul e PROPRIETATE: rândul `DinSeed` e al seed-ului și se aliniază la
-    // cod la fiecare trecere, rândul editat pe ușa securizată (stins de
-    // gardian) e al clientului și nu se atinge, rândul șters logic rămâne
-    // șters. Cheia (indexul unic filtrat, 81c) e argumentul de CĂUTARE, nu
-    // ținta scrierii: o schimbare de cheie e migrație de date, deci se refuză
-    // zgomotos (83b).
     [ThreadStatic] static RaportSeed raportCurent;
 
     static RaportSeed Raport => raportCurent ??= new RaportSeed();
@@ -164,10 +157,12 @@ public static class ContaSeeder {
         if (proprietatiSeed.TryGetValue(tip, out var gata))
             return gata;
         var entitate = (os as EFCoreObjectSpace)?.DbContext.GetService<IDesignTimeModel>()
-            .Model.FindEntityType(tip);
-        HashSet<string> coloaneCheie = entitate == null ? [] : entitate.GetIndexes().Where(i => i.IsUnique)
+            .Model.FindEntityType(tip)
+            ?? throw new InvalidOperationException(
+                "Seed-ul cere un EFCoreObjectSpace (modelul design-time) — 83b.");
+        var coloaneCheie = entitate.GetIndexes().Where(i => i.IsUnique)
             .SelectMany(i => i.Properties).Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
-        IReadOnlyList<ProprietateSeed> lista = entitate == null ? [] : entitate.GetProperties()
+        IReadOnlyList<ProprietateSeed> lista = entitate.GetProperties()
             .Where(p => p.PropertyInfo != null && !p.IsPrimaryKey()
                 && p.Name != nameof(ICuProvenienta.DinSeed) && p.GetComputedColumnSql() == null)
             .Select(p => new ProprietateSeed(p.Name, p.PropertyInfo, coloaneCheie.Contains(p.Name),
@@ -175,6 +170,12 @@ public static class ContaSeeder {
             .ToList();
         proprietatiSeed[tip] = lista;
         return lista;
+    }
+
+    /// <summary>Rândul de seed pe care o trecere ULTERIOARĂ îl retrage: contor + linie de audit (83d).</summary>
+    internal static void Retras(string tip, string cheie, string motiv) {
+        Raport.Contoare(tip).Sterse++;
+        Console.WriteLine($"  {tip} {cheie}: retras de seed — {motiv}");
     }
 
     static string Text(IObjectSpace os, ProprietateSeed p, object valoare) {

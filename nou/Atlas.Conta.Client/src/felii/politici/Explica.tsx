@@ -152,7 +152,11 @@ export function Explica() {
         <>
           <Antet e={e} />
           <Card titlu="Contare" concluzie={e.Contare?.Concluzie} grila="/politici/reguli-contare"
-            atentie={e.Contare?.PostareExplicita} eticheta={e.Contare?.PostareExplicita ? 'postare explicită' : undefined}>
+            atentie={e.Contare?.PostareExplicita || (e.Contare?.Rezerve ?? []).length > 0}
+            eticheta={e.Contare?.PostareExplicita ? 'postare explicită' : undefined}>
+            {(e.Contare?.Rezerve ?? []).map((r, i) => (
+              <p key={i} className="explica__concluzie explica__concluzie--atentie">{r}</p>
+            ))}
             <p className="explica__nivel">
               Treapta de potrivire: <strong>{labelEnum('NivelContare', e.Contare?.Nivel)}</strong>
             </p>
@@ -175,13 +179,9 @@ export function Explica() {
             />
           </Card>
 
-          {/* Un card per LATURĂ, fiecare cu concluzia lui: `Stoc[]` are câte o
-              intrare per latură cu reguli. Lista GOALĂ (tipul n-are nicio regulă
-              de stoc) e singurul caz fără frază de la server — vezi indiciul. */}
-          <Card titlu="Stoc" grila="/politici/reguli-stoc">
-            {(e.Stoc ?? []).length === 0 && (
-              <p className="explica__concluzie">Tipul n-are nicio regulă de stoc, pe nicio latură.</p>
-            )}
+          {/* O secțiune per LATURĂ, fiecare cu concluzia ei; antetul cardului
+              poartă concluzia blocului, tot a serverului. */}
+          <Card titlu="Stoc" concluzie={e.ConcluzieStoc} grila="/politici/reguli-stoc">
             {(e.Stoc ?? []).map((s) => (
               <section key={s.Latura ?? ''} className="explica__latura">
                 <p className="explica__concluzie">{s.Concluzie}</p>
@@ -259,7 +259,7 @@ export function Explica() {
             />
           </Card>
 
-          <Card titlu="Validare" grila="/politici/validare">
+          <Card titlu="Validare" concluzie={e.ConcluzieValidare} grila="/politici/validare">
             {e.Validare
               ? (
                 <table className="tabel-mic">
@@ -275,10 +275,10 @@ export function Explica() {
                   </tbody>
                 </table>
               )
-              : <p className="explica__concluzie">Tipul n-are profil de validare.</p>}
+              : null}
           </Card>
 
-          <Card titlu="Scadență" grila="/politici/scadente">
+          <Card titlu="Scadență" concluzie={e.ConcluzieScadenta} grila="/politici/scadente">
             {e.Scadenta
               ? (
                 <table className="tabel-mic">
@@ -291,10 +291,10 @@ export function Explica() {
                   </tbody>
                 </table>
               )
-              : <p className="explica__concluzie">Tipul n-are politică de scadență.</p>}
+              : null}
           </Card>
 
-          <Card titlu="Numerotare" grila="/politici/numerotare">
+          <Card titlu="Numerotare" concluzie={e.ConcluzieNumerotare} grila="/politici/numerotare">
             {e.Numerotare
               ? (
                 <table className="tabel-mic">
@@ -309,7 +309,7 @@ export function Explica() {
                   </tbody>
                 </table>
               )
-              : <p className="explica__concluzie">Tipul n-are politică de numerotare.</p>}
+              : null}
           </Card>
 
           <p className="indiciu">

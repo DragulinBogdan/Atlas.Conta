@@ -241859,6 +241859,13 @@
           "PostareExplicita": {
             "type": "boolean"
           },
+          "Rezerve": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
           "Concluzie": {
             "type": "string",
             "nullable": true
@@ -242086,6 +242093,22 @@
             "items": {
               "$ref": "#/components/schemas/ExplicaStocDto"
             },
+            "nullable": true
+          },
+          "ConcluzieStoc": {
+            "type": "string",
+            "nullable": true
+          },
+          "ConcluzieValidare": {
+            "type": "string",
+            "nullable": true
+          },
+          "ConcluzieScadenta": {
+            "type": "string",
+            "nullable": true
+          },
+          "ConcluzieNumerotare": {
+            "type": "string",
             "nullable": true
           },
           "Tva": {

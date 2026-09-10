@@ -4058,6 +4058,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaF23ClasaFiscala();
     // Felia 24 — lista unică a tipurilor configurabile și rolul `Configurator`.
     VerificaF24Rol(privat: true);
+    // Felia 24, review advers — gardianul pe enum-uri și pe ștergerea unui TipTva.
+    VerificaF24Gardian(privat: true);
     // Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
     VerificaPotrivire();
     // Felia 24 track B — explicația configurației (F24-E1…E7), doar pe privat.
@@ -9188,6 +9190,8 @@ VerificaF23Raport(privat: false);
 VerificaF23ClasaFiscala();
 // Felia 24 — lista unică a tipurilor configurabile și rolul `Configurator`.
 VerificaF24Rol(privat: false);
+// Felia 24, review advers — gardianul pe enum-uri și pe ștergerea unui TipTva.
+VerificaF24Gardian(privat: false);
 // Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
 VerificaPotrivire();
 
@@ -20511,6 +20515,39 @@ void VerificaF24Seed(bool privat) {
         + "zecimale, coloane generate, FK-uri)",
         raportV6.TotalCreate == 0 && raportV6.TotalCorectate == 0 && raportV6.Corectii.Count == 0);
 
+    // ---- F24-V9: curățenia FCL din `ProfilPrivat` respectă timbrul (M2) ----
+    if (privat) {
+        Guid idValidare;
+        using (var os = provider.CreateObjectSpace()) {
+            var manuala = os.CreateObject<PoliticaValidare>();
+            manuala.TipDocument = os.GetObjectsQuery<TipDocument>().ToList().First(t => t.Cod == "FCL");
+            manuala.NaturaInterzisa = NaturaClasa.Stoc;
+            os.CommitChanges();
+            idValidare = manuala.ID;
+        }
+        var raportV9 = Reseed();
+        bool traieste, timbruStins;
+        NaturaClasa? naturaDupa;
+        using (var os = provider.CreateObjectSpace()) {
+            var rand = os.GetObjectByKey<PoliticaValidare>(idValidare);
+            traieste = rand != null;
+            timbruStins = rand is { DinSeed: false };
+            naturaDupa = rand?.NaturaInterzisa;
+        }
+        Console.WriteLine($"     MĂSURAT (F24-V9/privat): rândul manual `PoliticaValidare` FCL "
+            + $"(natura interzisă {naturaDupa?.ToString() ?? "<golită>"}) după re-seed: "
+            + $"{(traieste ? "viu" : "ȘTERS")}, `DinSeed` = {!timbruStins}; "
+            + $"{raportV9.Pentru(nameof(PoliticaValidare)).Sterse} retrageri raportate.");
+        Check("F24-V9 (privat) curățenia istorică a lui `ProfilPrivat` (rândul P1 „FCL nu poartă stoc”) se "
+            + "uită la TIMBRU: un rând identic creat de client din ecranul de validare — configurație "
+            + "legitimă („vindem doar servicii”) — supraviețuiește lui `--forceUpdate`. Înainte dispărea "
+            + "tăcut, contra lui 83a, iar ecranul feliei 24 tocmai deschisese ușa care îl face creabil",
+            traieste && timbruStins && naturaDupa == NaturaClasa.Stoc);
+        using (var os = provider.CreateObjectSpace())
+            new Purja(os).Adauga(os.GetObjectsQuery<PoliticaValidare>().IgnoreQueryFilters()
+                .Where(p => p.ID == idValidare)).Executa();
+    }
+
     // ---- F24-V8: listele profilului ----
     using (var os = provider.CreateObjectSpace()) {
         var goluri = ContaSeeder.GoluriMapari(os, profilF24);
@@ -20767,14 +20804,19 @@ void VerificaF23Gardian(bool privat) {
         idTipDoc = osR.GetObjectsQuery<TipDocument>().Select(t => t.ID).First();
         idTipMaterial = osR.GetObjectsQuery<TipMaterial>().Select(t => t.ID).First();
     }
+    // `Directie`/`Latura`/`TipStoc` se culeg EXPLICIT de la felia 24: enum-urile
+    // fără membru 0 sunt refuzate generic (F24-G1), deci un rând „valid" care le
+    // lăsa pe default nu mai măsura regula pe care o probează.
     var ptvaExplicit = RefuzF23(os => {
         var p = os.CreateObject<PoliticaTva>();
         p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        p.Directie = DirectieTva.Deductibil;
         p.SursaContrapartida = SursaCont.Explicit;
     });
     var ptvaBun = RefuzF23(os => {
         var p = os.CreateObject<PoliticaTva>();
         p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        p.Directie = DirectieTva.Deductibil;
         p.SursaContrapartida = SursaCont.Explicit;
         p.ContrapartidaFallback = os.GetObjectByKey<Cont>(idCont);
     });
@@ -20795,16 +20837,15 @@ void VerificaF23Gardian(bool privat) {
     var rcSemn = RefuzF23(os => RcNoua(os).SemnFiltru = 2);
     var rcExplicit = RefuzF23(os => RcNoua(os).SursaContDebit = SursaCont.Explicit);
     var rcBuna = RefuzF23(os => RcNoua(os).SemnFiltru = -1);
-    var rsSemn = RefuzF23(os => {
+    RegulaStoc RsNoua(IObjectSpace os) {
         var r = os.CreateObject<RegulaStoc>();
         r.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
-        r.Semn = 0;
-    });
-    var rsBuna = RefuzF23(os => {
-        var r = os.CreateObject<RegulaStoc>();
-        r.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
-        r.Semn = 1;
-    });
+        r.Latura = LaturaDocument.Predator;
+        r.TipStoc = TipStoc.Magazie;
+        return r;
+    }
+    var rsSemn = RefuzF23(os => RsNoua(os).Semn = 0);
+    var rsBuna = RefuzF23(os => RsNoua(os).Semn = 1);
     Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/reguli): `PoliticaTva` Explicit fără cont → "
         + $"„{ptvaExplicit ?? "<NU A ARUNCAT>"}”, cu cont → „{ptvaBun ?? "acceptat"}”; `RegulaContare` "
         + $"tip+natură → „{rcAmbele ?? "<NU A ARUNCAT>"}”, SemnFiltru=2 → „{rcSemn ?? "<NU A ARUNCAT>"}”, "
@@ -21203,6 +21244,157 @@ void VerificaF24Rol(bool privat) {
 }
 
 // ---------------------------------------------------------------------------
+// F24-G1…G3 — gardianul, după review-ul advers al feliei 24
+// ---------------------------------------------------------------------------
+// Trei găuri măsurate pe cod, toate de felul „un gard care tace devine capcană"
+// (62f): enum-urile fără membru 0, care se scriau tăcut pe ușa OData (`Latura`
+// = 0 e o A TREIA latură pentru potrivirea de stoc, `Directie` = 0 face o
+// achiziție să colecteze TVA); ȘTERGEREA unui `TipTva` referit, care trecea deși
+// dezactivarea aceluiași rând e refuzată; și explicația care anunța o postare pe
+// care profilul de validare o interzice.
+void VerificaF24Gardian(bool privat) {
+    var eticheta = privat ? "privat" : "bugetar";
+    var sarite = new List<string>();
+
+    string Refuza(Action<IObjectSpace> pregateste) {
+        using var osG = provider.CreateObjectSpace();
+        try {
+            pregateste(osG);
+            GardianEditare.Verifica(osG);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+        finally {
+            osG.Rollback();
+        }
+    }
+
+    Guid idTipDoc, idCont, idRandOperatiuni;
+    using (var os = provider.CreateObjectSpace()) {
+        idTipDoc = os.GetObjectsQuery<TipDocument>().Select(t => t.ID).First();
+        idCont = os.GetObjectsQuery<Cont>().Select(c => c.ID).First();
+        idRandOperatiuni = os.GetObjectsQuery<RandD300>()
+            .Where(r => r.Fel == FelRandD300.Operatiuni).Select(r => r.ID).First();
+    }
+
+    // ---- F24-G1: enum fără membru definit, pe orice `ICuProvenienta` ----
+    var stocFaraLatura = Refuza(os => {
+        var r = os.CreateObject<RegulaStoc>();
+        r.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        r.TipStoc = TipStoc.Magazie;
+        r.Semn = 1;
+    });
+    var tvaFaraDirectie = Refuza(os => {
+        var p = os.CreateObject<PoliticaTva>();
+        p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        p.SursaContrapartida = SursaCont.Explicit;
+        p.ContrapartidaFallback = os.GetObjectByKey<Cont>(idCont);
+    });
+    var d300FaraSens = Refuza(os => {
+        var m = os.CreateObject<MapareD300>();
+        m.Rand = os.GetObjectByKey<RandD300>(idRandOperatiuni);
+    });
+    var randValid = Refuza(os => {
+        var r = os.CreateObject<RegulaStoc>();
+        r.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
+        r.Latura = LaturaDocument.Primitor;
+        r.TipStoc = TipStoc.Magazie;
+        r.Semn = 1;
+    });
+    Console.WriteLine($"     MĂSURAT (F24-G1/{eticheta}): `RegulaStoc` fără latură → "
+        + $"„{stocFaraLatura ?? "<NU A ARUNCAT>"}”; `PoliticaTva` fără direcție → "
+        + $"„{tvaFaraDirectie ?? "<NU A ARUNCAT>"}”; `MapareD300` fără sens → "
+        + $"„{d300FaraSens ?? "<NU A ARUNCAT>"}”; rând complet → „{randValid ?? "acceptat"}”.");
+    Check($"F24-G1 ({eticheta}) enum-ul fără membru 0 nu se mai scrie TĂCUT: gardianul refuză generic, prin "
+        + "reflecție pe orice `ICuProvenienta`, orice proprietate de enum a cărei valoare nu e definită — "
+        + "`RegulaStoc.Latura` = 0 ar fi fost o a treia latură în potrivirea de stoc, `PoliticaTva.Directie` "
+        + "= 0 ar fi colectat TVA pe o achiziție, `MapareD300.Sens` = 0 n-ar fi potrivit niciodată. Regula e "
+        + "a FORMEI, nu a unui tip; `[Flags]` rămâne în afara, iar rândul complet trece",
+        stocFaraLatura != null && stocFaraLatura.Contains("valoare validă")
+        && stocFaraLatura.Contains(nameof(RegulaStoc.Latura))
+        && tvaFaraDirectie != null && tvaFaraDirectie.Contains("valoare validă")
+        && tvaFaraDirectie.Contains(nameof(PoliticaTva.Directie))
+        && d300FaraSens != null && d300FaraSens.Contains("valoare validă")
+        && d300FaraSens.Contains(nameof(MapareD300.Sens))
+        && randValid == null);
+
+    // ---- F24-G2: ștergerea unui `TipTva` REFERIT ----
+    string codReferit = null, refuzStergere = null, codLiber = null, stergereLibera = null;
+    using (var os = provider.CreateObjectSpace()) {
+        var referit = os.GetObjectsQuery<TipDocument>().Where(t => t.TipTvaImplicitId != null)
+            .Select(t => t.TipTvaImplicitId.Value).FirstOrDefault();
+        if (referit == Guid.Empty)
+            sarite.Add("ștergerea unui `TipTva` referit (niciun tip de document n-are ancoră de TVA)");
+        else {
+            codReferit = os.GetObjectByKey<TipTva>(referit).Cod;
+            refuzStergere = Refuza(o => o.Delete(o.GetObjectByKey<TipTva>(referit)));
+        }
+        var ancore = os.GetObjectsQuery<TipDocument>().Where(t => t.TipTvaImplicitId != null)
+            .Select(t => t.TipTvaImplicitId.Value).ToList();
+        var implicite = os.GetObjectsQuery<PoliticaTvaImplicit>().Select(p => p.TipTvaId).ToList();
+        var peLinii = os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.TipTvaId != null)
+            .Select(d => d.TipTvaId.Value).Distinct().ToList();
+        var peJurnal = os.GetObjectsQuery<RegistruTva>().Select(r => r.TipTvaId).Distinct().ToList();
+        var peParteneri = os.GetObjectsQuery<Partener>().Where(p => p.TipTvaImplicitId != null)
+            .Select(p => p.TipTvaImplicitId.Value).ToList();
+        var peProduse = os.GetObjectsQuery<Produs>().Where(p => p.TipTvaImplicitId != null)
+            .Select(p => p.TipTvaImplicitId.Value).ToList();
+        var ocupate = ancore.Concat(implicite).Concat(peLinii).Concat(peJurnal)
+            .Concat(peParteneri).Concat(peProduse).ToHashSet();
+        var liber = os.GetObjectsQuery<TipTva>().ToList().FirstOrDefault(t => !ocupate.Contains(t.ID));
+        if (liber == null)
+            sarite.Add("ștergerea unui `TipTva` LIBER (profilul n-are niciun tip nereferit)");
+        else {
+            codLiber = liber.Cod;
+            var idLiber = liber.ID;
+            stergereLibera = Refuza(o => o.Delete(o.GetObjectByKey<TipTva>(idLiber)));
+        }
+    }
+    Console.WriteLine($"     MĂSURAT (F24-G2/{eticheta}): ștergerea lui {codReferit ?? "<sărit>"} (referit) → "
+        + $"„{refuzStergere ?? "<NU A ARUNCAT>"}”; ștergerea lui {codLiber ?? "<sărit>"} (liber) → "
+        + $"„{stergereLibera ?? "acceptată"}”.");
+    Check($"F24-G2 ({eticheta}) ȘTERGEREA unui `TipTva` referit se refuză ca DEZACTIVAREA lui: alternativa "
+        + "corectă era deja păzită, iar cea distructivă trecea — un click ar fi lăsat implicitele fără țintă "
+        + "și ar fi oprit updater-ul următor pe „lipsește din bază tipul de TVA”. Tipul NEREFERIT rămâne "
+        + "ștergibil: gardul e pe referințe, nu pe nomenclator"
+        + (sarite.Count > 0 ? $" — sărite: {string.Join("; ", sarite)}" : ""),
+        (codReferit == null
+            || (refuzStergere != null && refuzStergere.Contains("șterge") && refuzStergere.Contains("referit")))
+        && (codLiber == null || stergereLibera == null));
+
+    // ---- F24-G3: explicația declară ce ar refuza profilul de validare ----
+    using (var os = provider.CreateObjectSpace()) {
+        var interdictie = os.GetObjectsQuery<PoliticaValidare>().Where(p => p.NaturaInterzisa != null)
+            .Select(p => new { p.TipDocumentId, p.NaturaInterzisa, Cod = p.TipDocument.Cod })
+            .FirstOrDefault();
+        if (interdictie == null) {
+            Console.WriteLine($"     MĂSURAT (F24-G3/{eticheta}): profilul n-are nicio `PoliticaValidare` cu "
+                + "natură interzisă — rezerva nu se poate măsura aici (e a celuilalt profil).");
+        }
+        else {
+            var natura = interdictie.NaturaInterzisa.Value;
+            var tipMaterial = os.GetObjectsQuery<TipMaterial>().Where(t => t.Clasa.Natura == natura)
+                .Select(t => new { t.ID, t.Cod }).First();
+            var explicatie = ExplicaApply.Explica(os, new ExplicaCerere(interdictie.TipDocumentId,
+                tipMaterial.ID, +1, new DateOnly(2026, 5, 5), null, null, null, null));
+            var rezerve = explicatie.Contare.Rezerve ?? [];
+            Console.WriteLine($"     MĂSURAT (F24-G3/{eticheta}): {interdictie.Cod} × {tipMaterial.Cod} "
+                + $"(natura {natura} INTERZISĂ) ⇒ {rezerve.Length} rezervă(e) — "
+                + $"„{explicatie.Contare.Concluzie}”");
+            Check($"F24-G3 ({eticheta}) „Explică” nu anunță o postare pe care motorul o REFUZĂ: pe un tip al "
+                + "cărui profil de validare interzice natura liniei, concluzia blocului de contare nu mai "
+                + "spune „se postează”, ci că regula câștigătoare AR posta, dar operarea ar fi refuzată — "
+                + "rezerva vine din același rând `PoliticaValidare` pe care motorul îl citește (33c)",
+                rezerve.Any(r => r.Contains("Profilul de validare interzice"))
+                && !explicatie.Contare.Concluzie.Contains("Se postează")
+                && explicatie.Contare.Concluzie.Contains("refuzată"));
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // F24-P1…P7 — POTRIVIREA politicilor, ca funcții PURE pe fapte fabricate
 // ---------------------------------------------------------------------------
 // `Potrivire` e SINGURA definiție a potrivirii: o consumă motorul și cele cinci
@@ -21385,6 +21577,13 @@ void VerificaPotrivire() {
     Cere("rândul cu dată viitoare iese", peUe.Candidati[2].Motiv == MotivEliminare.DataViitoare);
     Cere("la egalitate de clasă câștigă `ValabilDeLa` cel mai recent",
         peEgalitate.Rezultat.TipTvaId == tvaN11.Id);
+    var randGeamanA = Rt(ClasaFiscalaPartener.Ue, null, tvaN21.Id);
+    var randGeamanB = Rt(ClasaFiscalaPartener.Ue, null, tvaN11.Id);
+    var peDublura = Potrivire.TvaImplicit([randGeamanA, randGeamanB], ClasaFiscalaPartener.Ue,
+        ziDoc, null, null, null, tipuriTva, false);
+    Cere("două rânduri pe aceeași cheie ⇒ `Dublura`, nu `NivelMaiSlab`",
+        peDublura.Candidati.Count(k => k.Motiv == MotivEliminare.Dublura) == 1
+        && peDublura.Candidati.All(k => k.Motiv != MotivEliminare.NivelMaiSlab));
     Cere("tipul INACTIV sare treapta, cu motiv", peInactiv.Rezultat.TipTvaId == tvaN21.Id
         && peInactiv.Rezultat.Sursa == SursaImplicit.Ancora
         && peInactiv.Rezultat.Motiv.Contains("INACTIV")
@@ -21450,6 +21649,8 @@ void VerificaF24Explica() {
         foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
             pj.Adauga(doc);
         pj.Adauga(osC.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Where(r => r.Cod.StartsWith(Marcaj)));
+        pj.Adauga(osC.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters()
+            .Where(t => t.Cod.StartsWith(Marcaj)));
         pj.Executa();
     }
     Curata(os);
@@ -21458,6 +21659,7 @@ void VerificaF24Explica() {
     var ldiTip = os.FirstOrDefault<TipDocument>(t => t.Cod == "LDI");
     var pltTip = os.FirstOrDefault<TipDocument>(t => t.Cod == "PLT");
     var ntcTip = os.FirstOrDefault<TipDocument>(t => t.Cod == "NTC");
+    var decTip = os.FirstOrDefault<TipDocument>(t => t.Cod == "DEC");
     var tipStoc = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302");
     var tipServiciu = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
     var tipVir = os.FirstOrDefault<TipMaterial>(t => t.Cod == "VIR");
@@ -21556,6 +21758,9 @@ void VerificaF24Explica() {
     Console.WriteLine($"     MĂSURAT (F24-E5): NTC ⇒ postare explicită {ntc.Contare.PostareExplicita}, "
         + $"nivel {ntc.Contare.Nivel} — „{ntc.Contare.Concluzie}”; FCT ⇒ "
         + $"{fctServiciu.Contare.PostareExplicita}");
+    var dec = Explica(decTip, tipServiciu, +1);
+    Console.WriteLine($"     MĂSURAT (F24-E5/DEC): postare explicită {dec.Contare.PostareExplicita}, nivel "
+        + $"{dec.Contare.Nivel} — „{dec.Contare.Concluzie}”");
     Check("F24-E5 nota contabilă n-are nicio regulă de contare, dar tipul ei declară "
         + "`IDocumentCuPostareExplicita` (32a extins): explicația NU spune „linia nu contează” — spune că nota "
         + "o dau conturile culese pe linie. Steagul e al TIPULUI, nu al liniei: pe FCT rămâne stins",
@@ -21564,6 +21769,12 @@ void VerificaF24Explica() {
         && !ntc.Contare.Concluzie.Contains("nu contează")
         && ntc.Contare.Concluzie.Contains("EXPLICIT")
         && !fctServiciu.Contare.PostareExplicita);
+    Check("F24-E5 (DEC) postarea explicită are DOUĂ forme, iar explicația le distinge: pe NTC o poartă "
+        + "TIPUL (fără nicio regulă), pe Decont o poartă LINIA (32a) — acolo regula generică se aplică și "
+        + "totuși contul cules pe linie o bate punctual. Steagul se ridică din `[TipDetaliu]`, nu din "
+        + "interfața documentului, deci Decontul nu mai era invizibil",
+        dec.Contare.PostareExplicita && dec.Contare.Castigator != null
+        && dec.Contare.Concluzie.Contains("bate punctual"));
 
     // ── F24-E6: consistența cu motorul (42c) ─────────────────────────────────
     var fct = os.CreateObject<FacturaIntrare>();
@@ -21608,7 +21819,50 @@ void VerificaF24Explica() {
         && explicatieCuPartener.Implicit.Motiv == laCulegere.Motiv
         && explicatieCuPartener.Implicit.Candidati.Length > 0);
 
+    // ── F24-E8: explicația declară ce ar refuza GARDUL clasei de document ────
+    // Tipuri NOI, exact scenariul din review: un Configurator adaugă Tipul, dar
+    // rândul de contare per Tip nu există încă. Motorul refuză operarea (38c/64);
+    // fără rezervă, explicația ar fi anunțat tocmai postarea greșită pe care
+    // gardul o previne (credit = contul de STOC al Tipului, la preț de vânzare).
+    var fclTip = os.FirstOrDefault<TipDocument>(t => t.Cod == "FCL");
+    var tipNouStoc = os.CreateObject<TipMaterial>();
+    tipNouStoc.Cod = Marcaj + "-STOC";
+    tipNouStoc.Denumire = "Tip de stoc fără regulă de vânzare";
+    tipNouStoc.Clasa = os.GetObjectByKey<TipMaterial>(tipStoc.ID).Clasa;
+    var tipNouVir = os.CreateObject<TipMaterial>();
+    tipNouVir.Cod = Marcaj + "-VIR";
+    tipNouVir.Denumire = "Cont de tranzit fără regulă exactă";
+    tipNouVir.Clasa = os.GetObjectByKey<TipMaterial>(tipVir.ID).Clasa;
+    os.CommitChanges();
+
+    var fclFaraRegula = Explica(fclTip, tipNouStoc, +1);
+    var pltFaraRegula = Explica(pltTip, tipNouVir, +1);
+    Console.WriteLine($"     MĂSURAT (F24-E8): FCL × Tip de stoc NOU ⇒ nivel {fclFaraRegula.Contare.Nivel}, "
+        + $"{(fclFaraRegula.Contare.Rezerve ?? []).Length} rezervă(e) — „{fclFaraRegula.Contare.Concluzie}”; "
+        + $"PLT × Tip de virament NOU ⇒ nivel {pltFaraRegula.Contare.Nivel}, "
+        + $"{(pltFaraRegula.Contare.Rezerve ?? []).Length} rezervă(e) — „{pltFaraRegula.Contare.Concluzie}”");
+    Check("F24-E8 „Explică” nu anunță o postare pe care MOTORUL o refuză: nivelul minim de contare cerut de "
+        + "tip e acum contract DECLARAT pe clasa documentului (`GardContare`), citit de gardul din "
+        + "`Document.ValideazaOperare` ȘI de explicație. Pe un Tip de stoc fără rând de vânzare, FCL-ul "
+        + "spune că regula câștigătoare AR posta, dar operarea ar fi refuzată — nu „se postează 4111 = 3xx”",
+        (fclFaraRegula.Contare.Rezerve ?? []).Length == 1
+        && fclFaraRegula.Contare.Rezerve[0].Contains("regulă de contare de vânzare")
+        && !fclFaraRegula.Contare.Concluzie.Contains("Se postează")
+        && fclFaraRegula.Contare.Concluzie.Contains("refuzată"));
+    Check("F24-E8 (VIR) aceeași rezervă pe cealaltă declarație: viramentul cere o regulă cel puțin pe "
+        + "NATURĂ (64), deci un Tip de virament nou, care cade pe genericul trezoreriei, ar posta „destinație "
+        + "= sursă” pe ambele picioare — explicația o spune înainte ca operatorul să încerce",
+        (pltFaraRegula.Contare.Rezerve ?? []).Length == 1
+        && pltFaraRegula.Contare.Rezerve[0].Contains("regulă de contare potrivită")
+        && pltFaraRegula.Contare.Concluzie.Contains("refuzată"));
+    // Tipul care ARE rândul rămâne fără rezervă: gardul nu e un avertisment permanent.
+    Check("F24-E8 (control) pe Tipul care ARE rândul exact, rezerva dispare: `Rezerve` e o listă de refuzuri "
+        + "REALE, nu o notă de subsol pe tot blocul",
+        (Explica(pltTip, tipVir, +1).Contare.Rezerve ?? []).Length == 0
+        && (Explica(fctTip, tipServiciu, +1).Contare.Rezerve ?? []).Length == 0);
+
     Curata(os);
-    Check("F24-E1…E7: scena nu lasă urme (furnizorul și factura de probă se purjează FIZIC)",
-        !os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Any(r => r.Cod.StartsWith(Marcaj)));
+    Check("F24-E1…E8: scena nu lasă urme (furnizorul, factura și Tipurile de probă se purjează FIZIC)",
+        !os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Any(r => r.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters().Any(t => t.Cod.StartsWith(Marcaj)));
 }

@@ -78,10 +78,7 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
             }
 
             // Utilizatorul „Configurator" (83h) — al patrulea oracol al matricei
-            // de refuzuri: vede tot ca `Cititor`, dar SCRIE politicile. Fără el,
-            // 422-ul de domeniu al gardianului pe politici se măsura doar pe
-            // `Admin`, adică pe rolul care trece de orice permisiune, iar
-            // „gardianul refuză indiferent de rol" rămânea o afirmație.
+            // de refuzuri (`refuzuri.ps1`), dev-only ca `Cititor`.
             if (userManager.FindUserByName<ApplicationUser>(ObjectSpace, "Configurator") == null) {
                 string EmptyPassword = "";
                 _ = userManager.CreateUser<ApplicationUser>(ObjectSpace, "Configurator", EmptyPassword, (user) => {
@@ -149,21 +146,9 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
             }
             return cititoriRole;
         }
-        // Rolul „Configurator" (83h): contabilul care ÎNTREȚINE profilul, separat
-        // de administratorul de useri. Read pe tot (aceeași politică
-        // `ReadOnlyAllByDefault` ca `Cititori`, deci și navigația), plus
-        // Create/Write/Delete pe cele 17 tipuri ale configurației
-        // (`Politici.TipuriConfigurabile`, 83i) și pe nimic altceva: documentele,
-        // registrele, `Societate`, `SetareProfil`, userii și rolurile rămân
-        // read-only fiindcă politica nu acordă decât Read și Navigate. Ancora
-        // `TipDocument` e în listă, dar identitatea ei rămâne refuzată de gardian
-        // (81e) — permisiunea deschide ușa, domeniul o păzește.
-        //
-        // Statică fiindcă o cheamă și ModelCheck, pe un ObjectSpace standalone.
-        // Permisiunile se REAPLICĂ la fiecare rulare, nu doar la creare:
-        // `AddTypePermissionsRecursively` trece prin `EnsureTypePermission`, deci
-        // nu duplică nimic, iar un tip adăugat mâine în listă ajunge și pe o bază
-        // care are deja rândul rolului.
+        /// <summary>Rolul de PRODUCȚIE al întreținerii profilului (83h): Read pe tot, scriere doar pe `Politici.TipuriConfigurabile`.</summary>
+        // Permisiunile se REAPLICĂ la fiecare rulare: rolul e al release-ului, nu
+        // al bazei. Statică fiindcă o cheamă și ModelCheck, standalone.
         public static PermissionPolicyRole SeedRolConfigurator(IObjectSpace objectSpace) {
             var rol = objectSpace.FirstOrDefault<PermissionPolicyRole>(r => r.Name == "Configurator");
             if (rol == null) {

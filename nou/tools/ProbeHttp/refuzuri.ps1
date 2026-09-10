@@ -535,6 +535,23 @@ try {
     # referințelor (ancorele + politica de probă de mai sus).
     Proba -Cerere 'dezactivare TipTva referit' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale "/api/odata/TipTva($($tvaN21.ID))" -Corp @{ Activ = $false } -Contine 'ancora' -Nota 'lista referințelor' | Out-Null
     Proba -Cerere 'dezactivare TipTva referit' -User 'Configurator' -Asteptat 422 -Metoda PATCH -Cale "/api/odata/TipTva($($tvaN21.ID))" -Corp @{ Activ = $false } -Contine 'ancora' | Out-Null
+    # ȘTERGEREA aceluiași rând: mai distructivă decât dezactivarea, deci nu poate
+    # fi mai permisivă (review advers F24 / 62f). `Cititor` n-are Delete, deci
+    # pentru el refuzul rămâne de PERMISIUNE (403), nu de domeniu.
+    Proba -Cerere 'ștergere TipTva referit' -User 'Admin' -Asteptat 422 -Metoda DELETE -Cale "/api/odata/TipTva($($tvaN21.ID))" -Contine 'șterge', 'referit' -Nota 'dezactivați-l în loc' | Out-Null
+    Proba -Cerere 'ștergere TipTva referit' -User 'Configurator' -Asteptat 422 -Metoda DELETE -Cale "/api/odata/TipTva($($tvaN21.ID))" -Contine 'șterge', 'referit' | Out-Null
+    Proba -Cerere 'ștergere TipTva referit' -User 'Cititor' -Asteptat 403 -Metoda DELETE -Cale "/api/odata/TipTva($($tvaN21.ID))" -Contine 'șterge' | Out-Null
+
+    # Enum fără membru definit (review advers F24): `PoliticaTva` scrisă FĂRĂ
+    # `Directie` ajungea în bază cu 0 — celulă goală în grilă, iar prima factură
+    # pe tipul acela ar fi colectat TVA pe o achiziție. `BTR` n-are politică de
+    # TVA în seed, deci cheia e liberă și rândul nici nu apucă să se creeze.
+    $tipBtr = Get-PrimaEntitate 'TipDocument' "Cod eq 'BTR'"
+    $contProba = Get-PrimaEntitate 'Cont'
+    $corpTvaFaraDirectie = @{ TipDocumentId = $tipBtr.ID; SursaContrapartida = 'Explicit'; ContrapartidaFallbackId = $contProba.ID }
+    Proba -Cerere 'creare PoliticaTva fără Directie' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/PoliticaTva' -Corp $corpTvaFaraDirectie -Contine 'valoare validă', 'Directie' -Nota 'enum fără membru 0' | Out-Null
+    Proba -Cerere 'creare PoliticaTva fără Directie' -User 'Configurator' -Asteptat 422 -Metoda POST -Cale '/api/odata/PoliticaTva' -Corp $corpTvaFaraDirectie -Contine 'valoare validă', 'Directie' | Out-Null
+    Proba -Cerere 'creare PoliticaTva fără Directie' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaTva' -Corp $corpTvaFaraDirectie -Contine 'crea' -Nota '80c: dreptul înaintea domeniului' | Out-Null
 
     # `TipDocument` = ANCORA (decizia 20): `Cod` e identitate, rândurile nu se
     # creează și nu se șterg — dar ce e refuz de DOMENIU pentru Admin rămâne
@@ -601,7 +618,7 @@ try {
     # 403 pentru dreptul de citire, 422 pentru o referință invizibilă (80f).
     $tip302 = Get-PrimaEntitate 'TipMaterial' "Cod eq '302'"
     $caleExplica = "/api/politici/explica?tip=FCT&tipMaterial=$($tip302.ID)&semn=1"
-    Proba -Cerere 'explică FCT × tip de stoc' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare', 'Conex', 'Niciuna' -Nota 'recepția contează pe NIR' | Out-Null
+    Proba -Cerere 'explică FCT × tip de stoc' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare', 'Conex', '"Castigator":null,"Nivel":"Niciuna"' -Nota 'recepția contează pe NIR' | Out-Null
     Proba -Cerere 'explică FCT × tip de stoc' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare' -Nota 'cine configurează vede și efectul' | Out-Null
     Proba -Cerere 'explică FCT × tip de stoc' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare' | Out-Null
     Proba -Cerere 'explică FCT × tip de stoc' -User 'User' -Asteptat 403 -Metoda GET -Cale $caleExplica -Contine 'citi' -Nota 'F24-D6: verdict, nu listă' | Out-Null

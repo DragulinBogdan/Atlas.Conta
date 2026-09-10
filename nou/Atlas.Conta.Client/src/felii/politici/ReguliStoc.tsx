@@ -11,10 +11,7 @@ import {
 // politici, semnul de aici SCRIE rândul, nu îl caută — de asta n-are „orice
 // semn", iar gardianul refuză orice altceva decât ±1.
 //
-// Rândul nou pornește cu `Semn = +1`, iar latura NU îl mai propune: în seed-ul
-// privat predatorul e −1 pe BTR/BCS/DSC și +1 pe LDI/ASM/RLF, adică exact
-// jumătate-jumătate. O propunere legată de latură ar fi rescris o valoare
-// corectă la fiecare a doua regulă.
+// Semnul nu se propune după latură: seed-ul are ambele semne pe Predator.
 
 const TIP = 'RegulaStoc';
 const cap = (m: string) => captionPolitica(TIP, m);

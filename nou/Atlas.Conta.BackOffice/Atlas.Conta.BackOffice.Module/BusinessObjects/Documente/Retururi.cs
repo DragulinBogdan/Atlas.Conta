@@ -119,6 +119,8 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
 // Generarea automată a liniilor de cost din pin-urile liniilor de venit rămâne
 // AMÂNATĂ (acțiune/serviciu ulterior, precedent DescarcareService); importul 1C
 // aduce ambele feluri de linii direct.
+[GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
+    "Linia cu lot a returului nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc, storno) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class ReturClient : Document {
     // Oglinda RLF-ului: RDC stornează livrarea (creditează 4111 cu −V), deci lasă
     // un sold CREDITOR pe contul clientului — se stinge debitând (plata de
@@ -196,12 +198,6 @@ public class ReturClient : Document {
             erori.Add("Primitorul returului de la client este gestiunea în care revine marfa.");
 
         var claseTip = Motor.Fapte.ClaseTip(os, Detalii.Select(d => d.TipMaterialId));
-        // Fără regulă de contare de cost per Tip, linia cu lot ar mișca stocul
-        // fără să posteze NIMIC (motorul sare linia fără regulă) — refuz explicit,
-        // exact defectul închis pe DSC la 38c; un Tip creat între updater-e nu
-        // trece neobservat.
-        var tipRdc = Motor.MotorOperare.GasesteTipDocument(os, this);
-        var reguliContare = Motor.Fapte.ReguliContare(os, tipRdc.ID);
         // Regimul TVA al liniilor de venit: Capitalizat n-are sens pe un venit
         // stornat (ar îngloba TVA-ul în valoare) și ar face semnarea
         // ne-idempotentă la re-operare (brutul ar compunda) — refuz.
@@ -229,9 +225,6 @@ public class ReturClient : Document {
                 erori.Add("Cantitatea mărfii returnate nu poate fi zero.");
             if (natura != NaturaClasa.Stoc)
                 erori.Add("Linia cu lot a returului poartă un Tip de stoc (marfa revine pe lotul original).");
-            if (Motor.Potrivire.Contare(reguliContare, Motor.Fapte.Linie(linie, claseTip)).Nivel
-                    != NivelContare.TipMaterialExact)
-                erori.Add("Linia cu lot a returului nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc, storno) — adăugați rândul de politică (sau rulați updater-ul).");
             if (!infoLot.TryGetValue(linie.LotId.Value, out var lot))
                 continue;
             if (lot.LinieIntrareId == linie.ID)

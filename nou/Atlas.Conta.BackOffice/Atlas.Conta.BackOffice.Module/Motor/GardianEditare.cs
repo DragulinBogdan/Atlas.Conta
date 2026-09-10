@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Saft;
@@ -187,8 +188,16 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 VerificaCodDenumire(rand, erori);
             // (j) F23-D4 — proveniența, tot al INTERFEȚEI și tot înaintea
             // switch-ului: cele 17 tipuri `ICuProvenienta` n-au toate un `case`.
-            if (obj is ICuProvenienta provenit && !EsteSters(os, obj))
+            if (obj is ICuProvenienta provenit && !EsteSters(os, obj)) {
                 VerificaProvenienta(os, provenit, erori);
+                // (k) Review advers F24 — enum-urile fără membru 0 (convenția din
+                // `Enums.cs`): un rând scris pe OData fără câmpul de enum ajunge
+                // în motor cu o valoare care nu există, iar potrivirea îl tratează
+                // ca pe o a treia latură / o direcție de TVA inversată. Regula e a
+                // FORMEI (reflecție), nu a vreunui tip: un enum adăugat mâine e
+                // păzit fără să se atingă nimic aici.
+                VerificaEnumuri(provenit, erori);
+            }
             switch (obj) {
                 // (b) Registrele sunt append-only și EXCLUSIV ale motorului
                 // (decizia 14): nimeni nu le scrie prin UI/API, nici măcar
@@ -663,6 +672,37 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             rand.DinSeed = false;
     }
 
+    static readonly Dictionary<Type, IReadOnlyList<PropertyInfo>> proprietatiEnum = [];
+
+    // `[Flags]` rămâne în afara: acolo combinația E valoarea (`DimensiuniFlags`).
+    static IReadOnlyList<PropertyInfo> ProprietatiEnum(Type tip) {
+        lock (proprietatiEnum) {
+            if (proprietatiEnum.TryGetValue(tip, out var gata))
+                return gata;
+            IReadOnlyList<PropertyInfo> lista = tip
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
+                .Where(p => (Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType) is { IsEnum: true } e
+                    && !e.IsDefined(typeof(FlagsAttribute), false))
+                .ToList();
+            proprietatiEnum[tip] = lista;
+            return lista;
+        }
+    }
+
+    static void VerificaEnumuri(object rand, ICollection<string> erori) {
+        var tip = TipDomeniu(rand);
+        foreach (var p in ProprietatiEnum(tip)) {
+            var valoare = p.GetValue(rand);
+            if (valoare == null)
+                continue;
+            var enumul = Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType;
+            if (!Enum.IsDefined(enumul, valoare))
+                erori.Add($"Câmpul „{p.Name}” al rândului {tip.Name} nu are o valoare validă "
+                    + $"({valoare}) — alegeți una din listă.");
+        }
+    }
+
     // ═══ F23-D5 — invarianții politicilor deschise pe OData ═══
 
     // `TipDocument` e ANCORA (decizia 20): oglindește clasele 1:1, iar `Cod` și
@@ -702,8 +742,21 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     // spune configurația. Refuzul vine cu LISTA referințelor: „scoate-l de aici,
     // apoi dezactivează-l" e o instrucțiune, „nu se poate" nu e.
     static void VerificaTipTva(IObjectSpace os, TipTva tip, ICollection<string> erori) {
-        if (EsteSters(os, tip))
+        if (EsteSters(os, tip)) {
+            // Ștergerea e mai distructivă decât dezactivarea, deci nu poate fi mai
+            // permisivă (62f): rândurile care îl referă rămân fără țintă, iar
+            // seed-ul următor cade pe „lipsește din bază tipul de TVA".
+            var id = tip.ID;
+            var folosit = ReferinteImplicite(os, id);
+            if (os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.TipTvaId == id))
+                folosit.Add("linii de document");
+            if (os.GetObjectsQuery<RegistruTva>().Any(r => r.TipTvaId == id))
+                folosit.Add("rânduri din jurnalul de TVA");
+            if (folosit.Count > 0)
+                erori.Add($"Tipul de TVA „{tip.Cod ?? tip.Denumire}” nu se poate șterge: e referit de "
+                    + $"{string.Join("; ", folosit)} — dezactivați-l în loc.");
             return;
+        }
         if (tip.Cota is < 0m or > 100m)
             erori.Add($"Cota tipului de TVA {tip.Cod ?? tip.Denumire} e {tip.Cota} — cota e un procent "
                 + "între 0 și 100.");
@@ -915,11 +968,11 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
 
     // Numele CLASEI de domeniu al unui rând, nu al proxy-ului de change tracking
     // (`RegulaContareProxy`) — aceeași dezproxare ca la `VerificaCodDenumire`.
-    static string EtichetaTip(object rand) {
+    static string EtichetaTip(object rand) => TipDomeniu(rand).Name;
+
+    static Type TipDomeniu(object rand) {
         var tip = rand.GetType();
-        if (tip.Assembly.IsDynamic && tip.BaseType != null)
-            tip = tip.BaseType;
-        return tip.Name;
+        return tip.Assembly.IsDynamic && tip.BaseType != null ? tip.BaseType : tip;
     }
 
     static readonly System.Text.RegularExpressions.Regex FormatCodNc =

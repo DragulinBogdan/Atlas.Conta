@@ -1,5 +1,8 @@
+using System.Collections.Concurrent;
+using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.UI;
 using DevExpress.ExpressApp;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -13,12 +16,9 @@ namespace Atlas.Conta.BackOffice.Module.Api.Politici;
 // Explicația nu poate diverge de motor fiindcă e ACEEAȘI funcție — ce se adaugă
 // aici e ambalajul (coduri, simboluri, fraze).
 //
-// ═══ Ușa ═══
-// Calculul cere un ObjectSpace NON-SECURED, ca raportul de profil (73g/80e): pe
-// cel filtrat explicația n-ar fi goală, ar fi FALSĂ — o regulă invizibilă
-// lipsește din candidați și verdictul devine altul. Prețul e gate-ul de citire
-// pe TOATE tipurile citite, luat de controller ÎNAINTE, pe ușa securizată, plus
-// vizibilitatea referințelor cererii (`CereVizibile`).
+// Calculul cere un ObjectSpace NON-SECURED (73g/80e): pe cel filtrat explicația
+// n-ar fi goală, ar fi FALSĂ. Gate-ul de citire pe tipurile citite îl ia
+// controllerul, înainte, pe ușa securizată.
 public static class ExplicaApply {
     /// <summary>
     /// Tipurile pe care explicația le CITEȘTE, deci exact cele pe care ruta cere
@@ -83,6 +83,24 @@ public static class ExplicaApply {
             .FirstOrDefault();
         var implicitTva = ImpliciteService.Explica(os, cerere.TipDocumentId, cerere.PartenerId,
             cerere.ProdusId, cerere.Data);
+        var validare = os.GetObjectsQuery<PoliticaValidare>()
+            .Where(p => p.TipDocumentId == cerere.TipDocumentId)
+            .Select(p => new { p.ID, p.CereClasificatieBugetara, p.NaturaInterzisa, p.DinSeed })
+            .FirstOrDefault();
+        var scadenta = os.GetObjectsQuery<PoliticaScadenta>()
+            .Where(p => p.TipDocumentId == cerere.TipDocumentId)
+            .Select(p => new ExplicaScadentaDto { Id = p.ID, ZileDefault = p.ZileDefault, DinSeed = p.DinSeed })
+            .FirstOrDefault();
+        var numerotare = os.GetObjectsQuery<PoliticaNumerotare>()
+            .Where(p => p.TipDocumentId == cerere.TipDocumentId)
+            .Select(p => new ExplicaNumerotareDto {
+                Id = p.ID,
+                Serie = p.Serie,
+                Format = p.Format,
+                UrmatorulNumar = p.UrmatorulNumar,
+                DinSeed = p.DinSeed,
+            })
+            .FirstOrDefault();
 
         var contDebit = contare.Castigator is RegulaContareFapt cd
             ? Potrivire.Cont(cd.SursaContDebit, cd.ContDebitId, linie.ContImplicitTipId, laturi)
@@ -128,43 +146,44 @@ public static class ExplicaApply {
             Produs = cerere.ProdusId is Guid idPr
                 ? os.GetObjectsQuery<Produs>().Where(p => p.ID == idPr).Select(p => p.Cod).FirstOrDefault()
                 : null,
-            Contare = Contare(contare, contDebit, contCredit, EstePostareExplicita(tip.ClrType),
+            Contare = Contare(contare, contDebit, contCredit, PostareExplicita(tip.ClrType),
+                Rezerve(tip.ClrType, contare.Nivel, linie.Natura, validare?.NaturaInterzisa),
                 conturi, tipuriMaterial),
             Stoc = stoc.Select(s => Stoc(s, clase)).ToArray(),
+            ConcluzieStoc = stoc.Count == 0
+                ? "Tipul n-are nicio regulă de stoc, pe nicio latură."
+                : $"Tipul scrie în registrul de stoc pe {(stoc.Count == 1 ? "o latură" : $"{stoc.Count} laturi")}.",
+            ConcluzieValidare = validare == null
+                ? "Tipul n-are profil de validare."
+                : $"Profilul de validare: clasificația bugetară e "
+                    + $"{(validare.CereClasificatieBugetara ? "obligatorie" : "neobligatorie")}, natura "
+                    + $"interzisă e {validare.NaturaInterzisa?.ToString() ?? "niciuna"}.",
+            ConcluzieScadenta = scadenta == null
+                ? "Tipul n-are politică de scadență."
+                : $"Scadența neculeasă se completează la {scadenta.ZileDefault} zile de la data documentului.",
+            ConcluzieNumerotare = numerotare == null
+                ? "Tipul n-are politică de numerotare."
+                : $"Numărul îl dă seria „{numerotare.Serie}”, de la {numerotare.UrmatorulNumar} — server-owned.",
             Tva = Tva(politicaTva?.ID, politicaTva?.Directie, politicaTva?.SursaContrapartida,
                 politicaTva?.ContrapartidaFallbackId, politicaTva?.DinSeed ?? false, contrapartida, conturi),
             Conex = Conex(os, conex, linie),
             Implicit = Implicit(implicitTva, tipuriTva),
-            Validare = os.GetObjectsQuery<PoliticaValidare>()
-                .Where(p => p.TipDocumentId == cerere.TipDocumentId)
-                .Select(p => new ExplicaValidareDto {
-                    Id = p.ID,
-                    CereClasificatieBugetara = p.CereClasificatieBugetara,
-                    DinSeed = p.DinSeed,
-                    NaturaInterzisa = p.NaturaInterzisa.ToString(),
-                })
-                .FirstOrDefault(),
-            Scadenta = os.GetObjectsQuery<PoliticaScadenta>()
-                .Where(p => p.TipDocumentId == cerere.TipDocumentId)
-                .Select(p => new ExplicaScadentaDto { Id = p.ID, ZileDefault = p.ZileDefault, DinSeed = p.DinSeed })
-                .FirstOrDefault(),
-            Numerotare = os.GetObjectsQuery<PoliticaNumerotare>()
-                .Where(p => p.TipDocumentId == cerere.TipDocumentId)
-                .Select(p => new ExplicaNumerotareDto {
-                    Id = p.ID,
-                    Serie = p.Serie,
-                    Format = p.Format,
-                    UrmatorulNumar = p.UrmatorulNumar,
-                    DinSeed = p.DinSeed,
-                })
-                .FirstOrDefault(),
+            Validare = validare == null ? null : new ExplicaValidareDto {
+                Id = validare.ID,
+                CereClasificatieBugetara = validare.CereClasificatieBugetara,
+                DinSeed = validare.DinSeed,
+                NaturaInterzisa = validare.NaturaInterzisa?.ToString(),
+            },
+            Scadenta = scadenta,
+            Numerotare = numerotare,
         };
     }
 
     // ═══ Blocurile ═══════════════════════════════════════════════════════════
 
     static ExplicaContareDto Contare(PotrivireContare potrivire, RezolvareCont debit, RezolvareCont credit,
-            bool postareExplicita, IReadOnlyDictionary<Guid, (string Simbol, string Denumire)> conturi,
+            FelPostare postare, IReadOnlyList<string> rezerve,
+            IReadOnlyDictionary<Guid, (string Simbol, string Denumire)> conturi,
             IReadOnlyDictionary<Guid, string> tipuriMaterial) {
         var bloc = new ExplicaContareDto {
             Castigator = potrivire.Castigator is RegulaContareFapt r ? Rand(r, conturi, tipuriMaterial) : null,
@@ -177,28 +196,41 @@ public static class ExplicaApply {
                 .ToArray(),
             ContDebit = potrivire.Castigator == null ? null : Rezolvat(debit, conturi),
             ContCredit = potrivire.Castigator == null ? null : Rezolvat(credit, conturi),
-            PostareExplicita = postareExplicita,
+            PostareExplicita = postare != FelPostare.Regula,
+            Rezerve = [.. rezerve],
         };
-        bloc.Concluzie = ConcluzieContare(potrivire.Castigator != null, postareExplicita,
+        bloc.Concluzie = ConcluzieContare(potrivire.Castigator != null, postare, rezerve,
             bloc.ContDebit, bloc.ContCredit);
         return bloc;
     }
 
-    static string ConcluzieContare(bool areRegula, bool postareExplicita, ContRezolvatDto debit,
-            ContRezolvatDto credit) {
+    static string ConcluzieContare(bool areRegula, FelPostare postare, IReadOnlyList<string> rezerve,
+            ContRezolvatDto debit, ContRezolvatDto credit) {
+        var refuz = rezerve.Count == 0 ? "" : " Operarea ar fi refuzată: " + string.Join(" ", rezerve);
         if (!areRegula)
-            return postareExplicita
-                ? "Nicio regulă de contare nu se potrivește, dar tipul poartă postarea EXPLICIT pe linie: "
-                    + "nota o dau conturile culese pe fiecare linie."
-                : "Linia nu contează pe acest tip de document: nicio regulă de contare nu se potrivește.";
-        var explicita = postareExplicita
-            ? " Tipul poartă postarea EXPLICIT pe linie: conturile culese acolo bat rezolvarea de mai sus."
-            : "";
+            return postare switch {
+                FelPostare.Document =>
+                    "Nicio regulă de contare nu se potrivește, dar tipul poartă postarea EXPLICIT pe linie: "
+                        + "nota o dau conturile culese pe fiecare linie.",
+                FelPostare.Linie =>
+                    "Nicio regulă de contare nu se potrivește: postarea o dau conturile culese pe linie.",
+                _ => "Linia nu contează pe acest tip de document: nicio regulă de contare nu se potrivește.",
+            } + refuz;
+        var explicita = postare switch {
+            FelPostare.Document =>
+                " Tipul poartă postarea EXPLICIT pe linie: conturile culese acolo bat rezolvarea de mai sus.",
+            FelPostare.Linie =>
+                " Regula se aplică, dar contul cules pe linie o bate punctual.",
+            _ => "",
+        };
         if (debit.Simbol == null || credit.Simbol == null)
             return $"Regula se potrivește, dar {(debit.Simbol == null ? "contul debitor" : "contul creditor")} "
                 + "nu se rezolvă din sursa declarată și regula n-are cont explicit — pe un document real "
-                + "operarea ar fi refuzată." + explicita;
-        return $"Se postează {debit.Simbol} = {credit.Simbol}." + explicita;
+                + "operarea ar fi refuzată." + explicita + refuz;
+        return (rezerve.Count == 0
+            ? $"Se postează {debit.Simbol} = {credit.Simbol}."
+            : $"Regula câștigătoare ar posta {debit.Simbol} = {credit.Simbol}, dar operarea ar fi refuzată: "
+                + string.Join(" ", rezerve)) + explicita;
     }
 
     static ExplicaStocDto Stoc(PotrivireStoc potrivire, IReadOnlyDictionary<Guid, string> clase) {
@@ -335,13 +367,43 @@ public static class ExplicaApply {
 
     // ═══ Citiri de afișare ═══════════════════════════════════════════════════
 
-    // Tipul de document declară postarea explicită pe linie: aceeași întrebare pe
-    // care o pune motorul (`doc is IDocumentCuPostareExplicita`), pusă aici pe
-    // CLASĂ — explicația n-are instanță, deci n-are ce conturi culese să arate.
-    static bool EstePostareExplicita(string clrType) =>
-        typeof(Document).Assembly.GetTypes()
-            .Any(t => t.Name == clrType && typeof(Document).IsAssignableFrom(t)
-                && typeof(IDocumentCuPostareExplicita).IsAssignableFrom(t));
+    // De unde vin conturile notei: din regulă, din conturile culese pe linie
+    // fiindcă TIPUL declară postarea fără regulă (NTC, 32a extins) sau fiindcă
+    // LINIA lui o poartă punctual (DEC, 32a). Explicația n-are instanță, deci
+    // n-are ce conturi culese să arate — spune doar cine bate pe cine.
+    enum FelPostare { Regula, Document, Linie }
+
+    static FelPostare PostareExplicita(string clrType) {
+        var clasa = ClasaDocumentului(clrType);
+        if (clasa == null)
+            return FelPostare.Regula;
+        if (typeof(IDocumentCuPostareExplicita).IsAssignableFrom(clasa))
+            return FelPostare.Document;
+        var detaliu = clasa.GetCustomAttribute<TipDetaliuAttribute>(false)?.TipDetaliu;
+        return detaliu != null && typeof(ILinieCuPostareExplicita).IsAssignableFrom(detaliu)
+            ? FelPostare.Linie : FelPostare.Regula;
+    }
+
+    // Ce ar mai refuza operarea peste potrivire: gardul DECLARAT al clasei de
+    // document (38c/64) și natura interzisă de profilul de validare (33c).
+    static List<string> Rezerve(string clrType, NivelContare nivel, NaturaClasa? natura,
+            NaturaClasa? naturaInterzisa) {
+        var rezerve = new List<string>();
+        if (ClasaDocumentului(clrType)?.GetCustomAttribute<GardContareAttribute>(false)
+                is GardContareAttribute gard
+                && (gard.Natura == null || gard.Natura == natura) && nivel < gard.NivelMinim)
+            rezerve.Add(gard.Mesaj);
+        if (naturaInterzisa != null && naturaInterzisa == natura)
+            rezerve.Add($"Profilul de validare interzice liniile de natura {naturaInterzisa} pe acest tip "
+                + "— operarea ar fi refuzată.");
+        return rezerve;
+    }
+
+    static readonly ConcurrentDictionary<string, Type> claseDocument = new();
+
+    static Type ClasaDocumentului(string clrType) =>
+        clrType == null ? null : claseDocument.GetOrAdd(clrType, nume => typeof(Document).Assembly
+            .GetTypes().FirstOrDefault(t => t.Name == nume && typeof(Document).IsAssignableFrom(t)));
 
     static Guid? ContImplicit(IObjectSpace os, Guid? repartitorId) =>
         repartitorId is Guid id
