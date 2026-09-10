@@ -1,6 +1,7 @@
 using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
+using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 
@@ -51,11 +52,9 @@ internal static class ProfilBugetar {
         var cap21 = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP21");
         if (cap21 == null)
             return;
-        foreach (var cod in new[] { "FCT", "FCL", "DEC" }) {
-            var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == cod);
-            if (tip != null && tip.TipTvaImplicitId == null)
-                tip.TipTvaImplicitId = cap21.ID;
-        }
+        foreach (var cod in new[] { "FCT", "FCL", "DEC" })
+            ContaSeeder.Aliniaza<TipDocument>(os, cod, t => t.Cod == cod,
+                tip => tip.TipTvaImplicitId = cap21.ID);
     }
 
     // Neplătitor: cota furnizorului se capitalizează în Valoare. Rândurile
@@ -68,15 +67,13 @@ internal static class ProfilBugetar {
             ("CAP11", "TVA capitalizat 11%", 11m),
             ("CAP0", "Fără TVA / scutit", 0m),
         ];
-        foreach (var t in tipuri) {
-            if (os.FirstOrDefault<TipTva>(x => x.Cod == t.Cod) == null) {
-                var tip = ContaSeeder.Seedat(os.CreateObject<TipTva>());
+        foreach (var t in tipuri)
+            ContaSeeder.Aliniaza<TipTva>(os, t.Cod, x => x.Cod == t.Cod, tip => {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.Cota = t.Cota;
                 tip.Regim = RegimTva.Capitalizat;
-            }
-        }
+            });
     }
 
     // Obligativitățile per tip (3d) — parte din PROFILUL de validare bugetar
@@ -85,19 +82,19 @@ internal static class ProfilBugetar {
     // INC nu: veniturile n-au angajamente, iar defalcarea E a conturilor de
     // trezorerie cere oricum codul economic la nivel de cont). FCL: în acest
     // profil facturarea nu descarcă gestiune — natura Stoc e interzisă (30a).
-    // Upsert: valorile definesc politica, se impun și pe rândurile existente.
     static void SeedPoliticiValidare(IObjectSpace os) {
-        PoliticaValidare Politica(string cod) {
-            var p = os.FirstOrDefault<PoliticaValidare>(x => x.TipDocument.Cod == cod);
-            if (p == null) {
-                p = ContaSeeder.Seedat(os.CreateObject<PoliticaValidare>());
-                p.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == cod);
-            }
-            return p;
+        void Politica(string cod, Action<PoliticaValidare> seteaza) {
+            var tipDoc = os.FirstOrDefault<TipDocument>(x => x.Cod == cod);
+            if (tipDoc == null)
+                return;
+            ContaSeeder.Aliniaza<PoliticaValidare>(os, cod, x => x.TipDocumentId == tipDoc.ID, p => {
+                p.TipDocumentId = tipDoc.ID;
+                seteaza(p);
+            });
         }
         foreach (var cod in new[] { "FCT", "DEC", "PLT" })
-            Politica(cod).CereClasificatieBugetara = true;
-        Politica("FCL").NaturaInterzisa = NaturaClasa.Stoc;
+            Politica(cod, p => p.CereClasificatieBugetara = true);
+        Politica("FCL", p => p.NaturaInterzisa = NaturaClasa.Stoc);
     }
 
     // Inventar 10 §2, curățat: clasele tehnice (TVA/Diferențe) separate de stoc
@@ -130,17 +127,7 @@ internal static class ProfilBugetar {
             ("VEN", "Venituri", NaturaClasa.Serviciu),
             ("TRZ", "Trezorerie", NaturaClasa.Tehnica),
         ];
-        var claseMap = new Dictionary<string, ClasaProdus>();
-        foreach (var c in clase) {
-            var clasa = os.FirstOrDefault<ClasaProdus>(x => x.Cod == c.Cod);
-            if (clasa == null) {
-                clasa = ContaSeeder.Seedat(os.CreateObject<ClasaProdus>());
-                clasa.Cod = c.Cod;
-                clasa.Denumire = c.Denumire;
-                clasa.Natura = c.Natura;
-            }
-            claseMap[c.Cod] = clasa;
-        }
+        var claseMap = ContaSeeder.AliniazaClase(os, clase);
 
         // Cod tip = simbolul de cont din denumirea legacy (GEST_TIP_MATERIAL);
         // rândul de zgomot „Stornare Medicamente" (dublură 302.09.00.1) nu se preia.
@@ -199,44 +186,41 @@ internal static class ProfilBugetar {
             // generică). Codul nu e simbol de cont — rămâne fără ContImplicit.
             ("TRZ", "TRZ", "Operațiune de trezorerie"),
         ];
-        foreach (var t in tipuri) {
-            if (os.FirstOrDefault<TipMaterial>(x => x.Cod == t.Cod) == null) {
-                var tip = ContaSeeder.Seedat(os.CreateObject<TipMaterial>());
-                tip.Cod = t.Cod;
-                tip.Denumire = t.Denumire;
-                tip.Clasa = claseMap[t.Clasa];
-            }
-        }
+        ContaSeeder.AliniazaTipuri(os, claseMap, tipuri);
     }
 
     // Planul sintetic complet din CPLAN (decizia 10; nomenclator, nu politică —
     // decizia 18). Defalcarea legacy (CPLAN_DEFALCARE) devine DimensiuniObligatorii.
     static void SeedPlanConturi(IObjectSpace os) {
-        if (os.GetObjectsCount(typeof(Cont), null) > 0)
-            return;
-
         using var stream = Assembly.GetExecutingAssembly()
             .GetManifestResourceStream("Atlas.Conta.BackOffice.Module.DatabaseUpdate.SeedData.plan-conturi.csv")
             ?? throw new InvalidOperationException("Resursa plan-conturi.csv lipsește.");
         using var reader = new StreamReader(stream);
 
-        var conturi = new Dictionary<string, Cont>();
+        var conturi = os.GetObjectsQuery<Cont>().ToList()
+            .GroupBy(c => c.Simbol ?? "", StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         reader.ReadLine(); // header
         string line;
         while ((line = reader.ReadLine()) != null) {
             if (string.IsNullOrWhiteSpace(line))
                 continue;
             var f = line.Split('|');
-            var cont = ContaSeeder.Seedat(os.CreateObject<Cont>());
-            cont.Simbol = f[0];
-            cont.Denumire = f[1];
-            cont.Functie = f[3];
-            cont.Sumator = f[4] == "1";
-            cont.DimensiuniObligatorii = ParseDefalcare(f[5]);
             // CSV-ul e ordonat pe nivel (părinții înaintea copiilor).
-            if (f[2].Length > 0 && conturi.TryGetValue(f[2], out var parinte))
-                cont.Parinte = parinte;
-            conturi[f[0]] = cont;
+            var parinte = f[2].Length > 0 ? conturi.GetValueOrDefault(f[2]) : null;
+            var simbol = f[0];
+            var cont = ContaSeeder.Aliniaza(os, simbol, conturi.GetValueOrDefault(simbol),
+                () => os.GetObjectsQuery<Cont>().IgnoreQueryFilters().FirstOrDefault(c => c.Simbol == simbol),
+                c => {
+                    c.Simbol = simbol;
+                    c.Denumire = f[1];
+                    c.Functie = f[3];
+                    c.Sumator = f[4] == "1";
+                    c.DimensiuniObligatorii = ParseDefalcare(f[5]);
+                    c.ParinteId = parinte?.ID;
+                });
+            if (cont != null)
+                conturi[simbol] = cont;
         }
     }
 
@@ -270,18 +254,20 @@ internal static class ProfilBugetar {
     static void SeedPoliticiNotaTransfer(IObjectSpace os) {
         var btr = os.FirstOrDefault<TipDocument>(x => x.Cod == "BTR");
         ContaSeeder.SeedNumerotare(os, "BTR", "BTR-");
-        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "BTR") != null)
-            return;
-        var iesire = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
-        iesire.TipDocument = btr;
-        iesire.Latura = LaturaDocument.Predator;
-        iesire.TipStoc = TipStoc.Magazie;
-        iesire.Semn = -1;
-        var intrare = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
-        intrare.TipDocument = btr;
-        intrare.Latura = LaturaDocument.Primitor;
-        intrare.TipStoc = TipStoc.Magazie;
-        intrare.Semn = +1;
+        SeedReguliStoc(os, btr, LaturaDocument.Predator, -1, (null, TipStoc.Magazie));
+        SeedReguliStoc(os, btr, LaturaDocument.Primitor, +1, (null, TipStoc.Magazie));
+    }
+
+    // Registrele profilului, ca rânduri de politică: incremental per (latură ×
+    // clasă), pe cheia indexului unic (81c).
+    static void SeedReguliStoc(IObjectSpace os, TipDocument tipDoc, LaturaDocument latura, int semn,
+            params (string Clasa, TipStoc TipStoc)[] reguli) {
+        foreach (var r in reguli) {
+            var clasaId = r.Clasa == null
+                ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa)?.ID;
+            ContaSeeder.AliniazaRegulaStoc(os, tipDoc,
+                $"{tipDoc.Cod}/{latura}/{r.Clasa ?? "orice clasă"}", latura, clasaId, r.TipStoc, semn);
+        }
     }
 
     // Politicile lanțului de cumpărare (inventar 01/02, curățate pe decizia 21).
@@ -304,64 +290,41 @@ internal static class ProfilBugetar {
         // Conexul FCT→NIR (00 §6): fără swap de laturi (TIP_DESCARCARE=0),
         // trec doar liniile purtătoare de stoc. Upsert: valorile definesc
         // politica, deci se impun și pe rândul existent.
-        var conex = os.FirstOrDefault<PoliticaConex>(x => x.TipDocumentSursa.Cod == "FCT");
-        if (conex == null) {
-            conex = ContaSeeder.Seedat(os.CreateObject<PoliticaConex>());
-            conex.TipDocumentSursa = fct;
-            conex.TipDocumentTinta = nir;
-        }
-        conex.InverseazaLaturi = false;
-        conex.NaturaFiltru = NaturaClasa.Stoc;
+        ContaSeeder.Aliniaza<PoliticaConex>(os, "FCT", x => x.TipDocumentSursaId == fct.ID, conex => {
+            conex.TipDocumentSursaId = fct.ID;
+            conex.TipDocumentTintaId = nir.ID;
+            conex.InverseazaLaturi = false;
+            conex.NaturaFiltru = NaturaClasa.Stoc;
+        });
 
         // Reguli stoc NIR (inventar 02): +1 pe primitor; generic → Magazie,
         // clasele cu registru propriu (gratuități/folosință/mărfuri/custodie)
         // au rând specific — regula specifică bate genericul în motor.
-        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "NIR") == null) {
-            (string Clasa, TipStoc TipStoc)[] reguli = [
-                (null, TipStoc.Magazie),
-                ("G", TipStoc.Gratuit),
-                ("OF", TipStoc.Folosinta),
-                ("MF", TipStoc.Marfuri),
-                ("MC", TipStoc.Custodie),
-            ];
-            foreach (var r in reguli) {
-                var regula = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
-                regula.TipDocument = nir;
-                regula.Latura = LaturaDocument.Primitor;
-                regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
-                regula.TipStoc = r.TipStoc;
-                regula.Semn = +1;
-            }
-        }
+        SeedReguliStoc(os, nir, LaturaDocument.Primitor, +1,
+            (null, TipStoc.Magazie), ("G", TipStoc.Gratuit), ("OF", TipStoc.Folosinta),
+            ("MF", TipStoc.Marfuri), ("MC", TipStoc.Custodie));
 
         // Contare NIR: 3xx (contul Tipului) = furnizor (ContImplicit al
         // partenerului predator, fallback 401), valoarea cu TVA capitalizat.
-        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "NIR") == null) {
-            var receptie = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
-            receptie.TipDocument = nir;
-            receptie.NaturaFiltru = NaturaClasa.Stoc;
+        ContaSeeder.AliniazaContare(os, nir, "NIR/Stoc", null, NaturaClasa.Stoc, null, receptie => {
             receptie.SursaContDebit = SursaCont.TipMaterial;
             receptie.SursaContCredit = SursaCont.RepartitorPredator;
-            receptie.ContCredit = cont401;
-        }
+            receptie.ContCreditId = cont401?.ID;
+        });
 
         // Contare FCT: doar naturile care NU trec pe NIR; debit = contul
         // Tipului (6xx/47x/2xx), credit = furnizorul (404 la imobilizări).
-        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "FCT") == null) {
-            (NaturaClasa Natura, Cont Fallback)[] reguli = [
-                (NaturaClasa.Serviciu, cont401),
-                (NaturaClasa.Cheltuiala, cont401),
-                (NaturaClasa.Imobilizare, cont404),
-            ];
-            foreach (var r in reguli) {
-                var regula = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
-                regula.TipDocument = fct;
-                regula.NaturaFiltru = r.Natura;
+        (NaturaClasa Natura, Cont Fallback)[] reguliFct = [
+            (NaturaClasa.Serviciu, cont401),
+            (NaturaClasa.Cheltuiala, cont401),
+            (NaturaClasa.Imobilizare, cont404),
+        ];
+        foreach (var r in reguliFct)
+            ContaSeeder.AliniazaContare(os, fct, $"FCT/{r.Natura}", null, r.Natura, null, regula => {
                 regula.SursaContDebit = SursaCont.TipMaterial;
                 regula.SursaContCredit = SursaCont.RepartitorPredator;
-                regula.ContCredit = r.Fallback;
-            }
-        }
+                regula.ContCreditId = r.Fallback?.ID;
+            });
     }
 
     // Politicile consumului (inventar 03, defa 65). Stoc: consumul nu „dispare" —
@@ -371,18 +334,8 @@ internal static class ProfilBugetar {
     static void SeedPoliticiBonConsum(IObjectSpace os) {
         var bcs = os.FirstOrDefault<TipDocument>(x => x.Cod == "BCS");
         ContaSeeder.SeedNumerotare(os, "BCS", "BCS-");
-        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "BCS") == null) {
-            var iesire = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
-            iesire.TipDocument = bcs;
-            iesire.Latura = LaturaDocument.Predator;
-            iesire.TipStoc = TipStoc.Magazie;
-            iesire.Semn = -1;
-            var consum = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
-            consum.TipDocument = bcs;
-            consum.Latura = LaturaDocument.Primitor;
-            consum.TipStoc = TipStoc.Consum;
-            consum.Semn = +1;
-        }
+        SeedReguliStoc(os, bcs, LaturaDocument.Predator, -1, (null, TipStoc.Magazie));
+        SeedReguliStoc(os, bcs, LaturaDocument.Primitor, +1, (null, TipStoc.Consum));
 
         // Contarea consumului: 6xx = 3xx per Clasă/Tip, derivată din simbol
         // (helper comun cu minusul de inventar); fără filtru de semn — liniile
@@ -401,32 +354,15 @@ internal static class ProfilBugetar {
     static void SeedPoliticiListaDiferente(IObjectSpace os) {
         var ldi = os.FirstOrDefault<TipDocument>(x => x.Cod == "LDI");
         ContaSeeder.SeedNumerotare(os, "LDI", "LDI-");
-        if (os.FirstOrDefault<RegulaStoc>(x => x.TipDocument.Cod == "LDI") == null) {
-            (string Clasa, TipStoc TipStoc)[] reguli = [
-                (null, TipStoc.Magazie),
-                ("OF", TipStoc.Folosinta),
-                ("MC", TipStoc.Custodie),
-            ];
-            foreach (var r in reguli) {
-                var regula = ContaSeeder.Seedat(os.CreateObject<RegulaStoc>());
-                regula.TipDocument = ldi;
-                regula.Latura = LaturaDocument.Predator;
-                regula.Clasa = r.Clasa == null ? null : os.FirstOrDefault<ClasaProdus>(c => c.Cod == r.Clasa);
-                regula.TipStoc = r.TipStoc;
-                regula.Semn = +1;
-            }
-        }
+        SeedReguliStoc(os, ldi, LaturaDocument.Predator, +1,
+            (null, TipStoc.Magazie), ("OF", TipStoc.Folosinta), ("MC", TipStoc.Custodie));
         // Plusul: un singur rând generic — debitul se rezolvă din contul
         // Tipului liniei (3xx), creditul e venitul explicit.
-        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "LDI" && x.TipMaterialId == null) == null) {
-            var plus = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
-            plus.TipDocument = ldi;
-            plus.NaturaFiltru = NaturaClasa.Stoc;
-            plus.SemnFiltru = +1;
+        ContaSeeder.AliniazaContare(os, ldi, "LDI/plus", null, NaturaClasa.Stoc, +1, plus => {
             plus.SursaContDebit = SursaCont.TipMaterial;
             plus.SursaContCredit = SursaCont.Explicit;
-            plus.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "791.00.00");
-        }
+            plus.ContCreditId = os.FirstOrDefault<Cont>(c => c.Simbol == "791.00.00")?.ID;
+        });
         // Minusul: cheltuială per Tip, doar pe liniile negative.
         ContaSeeder.SeedContare6xxDin3xx(os, ldi, -1);
     }
@@ -441,18 +377,15 @@ internal static class ProfilBugetar {
     static void SeedPoliticiFacturaIesire(IObjectSpace os) {
         var fcl = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCL");
         ContaSeeder.SeedNumerotare(os, "FCL", "FCL-");
-        if (os.FirstOrDefault<PoliticaScadenta>(x => x.TipDocument.Cod == "FCL") == null) {
-            var scadenta = ContaSeeder.Seedat(os.CreateObject<PoliticaScadenta>());
-            scadenta.TipDocument = fcl;
+        ContaSeeder.Aliniaza<PoliticaScadenta>(os, "FCL", x => x.TipDocumentId == fcl.ID, scadenta => {
+            scadenta.TipDocumentId = fcl.ID;
             scadenta.ZileDefault = 30;
-        }
-        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "FCL") == null) {
-            var facturare = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
-            facturare.TipDocument = fcl;
+        });
+        ContaSeeder.AliniazaContare(os, fcl, "FCL/generic", null, null, null, facturare => {
             facturare.SursaContDebit = SursaCont.RepartitorPrimitor;
-            facturare.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
+            facturare.ContDebitId = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01")?.ID;
             facturare.SursaContCredit = SursaCont.TipMaterial;
-        }
+        });
     }
 
     // Politicile trezoreriei (inventar 09, decizia 31): plățile/încasările sunt
@@ -487,23 +420,18 @@ internal static class ProfilBugetar {
         var plt = os.FirstOrDefault<TipDocument>(x => x.Cod == "PLT");
         var inc = os.FirstOrDefault<TipDocument>(x => x.Cod == "INC");
 
-        // Rândurile GENERICE (plata/încasarea obișnuită). Garda e PER RÂND, pe
-        // cheia lui (tip document + fără filtre): garda veche „există vreo regulă
-        // pe PLT" ar sări rândul de virament de mai jos pe orice bază existentă.
-        if (ContaSeeder.RegulaContareLipsa(os, plt, null, null)) {
-            var plata = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
-            plata.TipDocument = plt;
+        // Rândurile GENERICE (plata/încasarea obișnuită), pe cheia lor (tip
+        // document + fără filtre): rândul de virament de mai jos are cheia lui.
+        ContaSeeder.AliniazaContare(os, plt, "PLT/generic", null, null, null, plata => {
             plata.SursaContDebit = SursaCont.RepartitorPrimitor;
-            plata.ContDebit = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00");
+            plata.ContDebitId = os.FirstOrDefault<Cont>(c => c.Simbol == "401.01.00")?.ID;
             plata.SursaContCredit = SursaCont.RepartitorPredator;
-        }
-        if (ContaSeeder.RegulaContareLipsa(os, inc, null, null)) {
-            var incasare = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
-            incasare.TipDocument = inc;
+        });
+        ContaSeeder.AliniazaContare(os, inc, "INC/generic", null, null, null, incasare => {
             incasare.SursaContDebit = SursaCont.RepartitorPrimitor;
             incasare.SursaContCredit = SursaCont.RepartitorPredator;
-            incasare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01");
-        }
+            incasare.ContCreditId = os.FirstOrDefault<Cont>(c => c.Simbol == "411.01.01")?.ID;
+        });
 
         // Viramentul intern (F7-D6): transferul între conturile proprii (casă ↔
         // trezorerie) prin contul de tranzit — sinteticul `581` din CPLAN;
@@ -529,12 +457,10 @@ internal static class ProfilBugetar {
     static void SeedPoliticiDecont(IObjectSpace os) {
         var dec = os.FirstOrDefault<TipDocument>(x => x.Cod == "DEC");
         ContaSeeder.SeedNumerotare(os, "DEC", "DEC-");
-        if (os.FirstOrDefault<RegulaContare>(x => x.TipDocument.Cod == "DEC") == null) {
-            var justificare = ContaSeeder.Seedat(os.CreateObject<RegulaContare>());
-            justificare.TipDocument = dec;
+        ContaSeeder.AliniazaContare(os, dec, "DEC/generic", null, null, null, justificare => {
             justificare.SursaContDebit = SursaCont.TipMaterial;
             justificare.SursaContCredit = SursaCont.RepartitorPredator;
-            justificare.ContCredit = os.FirstOrDefault<Cont>(c => c.Simbol == "542.01.00");
-        }
+            justificare.ContCreditId = os.FirstOrDefault<Cont>(c => c.Simbol == "542.01.00")?.ID;
+        });
     }
 }

@@ -1,5 +1,13 @@
+using System.Linq.Expressions;
+using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
+// `IgnoreQueryFilters` (rândul șters logic) + modelul design-time, din care se
+// citesc cheile unice și coloanele generate.
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 
@@ -20,7 +28,8 @@ public static class ContaSeeder {
     // prima seed-uire a bazei: după aceea e înghețată în rândul `SetareProfil`,
     // iar o valoare diferită e refuzată. Null = se păstrează ce are baza (sau
     // AwayFromZero la bază nouă — comportamentul de dinainte de 51c).
-    public static void Seed(IObjectSpace os, ProfilContabil profil, MidpointRounding? conventie = null) {
+    public static RaportSeed Seed(IObjectSpace os, ProfilContabil profil, MidpointRounding? conventie = null) {
+        var raport = raportCurent = new RaportSeed();
         SeedTipuriDocument(os);
         SeedPerioadeFiscale(os);
         VerificaProfil(os, profil);
@@ -55,6 +64,8 @@ public static class ContaSeeder {
             ProfilPrivat.Seed(os);
         VerificaD300(os, profil);
         VerificaD394(os, profil);
+        raport.Tipareste();
+        return raport;
     }
 
     // Rândul de setare al bazei (decizia 51c). Gardian dublu: profilul (completează
@@ -81,30 +92,144 @@ public static class ContaSeeder {
         return setare.RotunjireBani;
     }
 
-    // ── PROVENIENȚA (felia 23, F23-D4, amendat) ────────────────────────────
+    // ── ALINIEREA RÂNDURILOR DE SEED (83a–d) ───────────────────────────────
     //
-    // Seed-ul timbrează DOAR rândurile pe care le CREEAZĂ. Wrap, nu linie
-    // separată — `Seedat(os.CreateObject<T>())` —, ca semantica de re-seed să
-    // rămână NESCHIMBATĂ: nu decide nimic despre ce se creează, doar timbrează.
-    //
-    // DE CE nu și pe rândurile GĂSITE pe cheia lui, cum cerea prima formă a
-    // deciziei: gardianul stinge timbrul la orice scriere securizată, deci un
-    // rând seed-uit și apoi EDITAT de client ajunge `DinSeed = false` — exact
-    // semnalul pe care raportul de profil (F23-D8) există să-l arate. Dacă
-    // seed-ul l-ar re-aprinde pe ce găsește, primul `--forceUpdate` ar șterge
-    // semnalul, iar flag-ul ar deveni decorativ pe orice bază vie.
-    //
-    // Bazele DEJA seed-uite își primesc timbrul o SINGURĂ dată, din migrația
-    // `F23ImpliciteSiPolitici` („tot ce există la migrație e considerat
-    // livrat"), nu de la seed. De acolo încolo, singurul lucru care mai aprinde
-    // timbrul e crearea.
-    //
-    // `null` trece nevătămat: gărzile de idempotență sunt scrise ca
-    // „găsit == null ⇒ creează", iar timbrul n-are voie să le schimbe forma.
-    internal static T Seedat<T>(T rand) where T : class, ICuProvenienta {
-        if (rand != null)
+    // Timbrul e PROPRIETATE: rândul `DinSeed` e al seed-ului și se aliniază la
+    // cod la fiecare trecere, rândul editat pe ușa securizată (stins de
+    // gardian) e al clientului și nu se atinge, rândul șters logic rămâne
+    // șters. Cheia (indexul unic filtrat, 81c) e argumentul de CĂUTARE, nu
+    // ținta scrierii: o schimbare de cheie e migrație de date, deci se refuză
+    // zgomotos (83b).
+    [ThreadStatic] static RaportSeed raportCurent;
+
+    static RaportSeed Raport => raportCurent ??= new RaportSeed();
+
+    public static T Aliniaza<T>(IObjectSpace os, string cheie, Expression<Func<T, bool>> potrivire,
+            Action<T> seteaza) where T : class, ICuProvenienta =>
+        Aliniaza(os, cheie, os.GetObjectsQuery<T>().FirstOrDefault(potrivire),
+            () => os.GetObjectsQuery<T>().IgnoreQueryFilters().FirstOrDefault(potrivire), seteaza);
+
+    /// <summary>Aceeași semantică, pentru cheile căutate într-un dicționar deja încărcat.</summary>
+    public static T Aliniaza<T>(IObjectSpace os, string cheie, T gasitViu, Func<T> gasitSters,
+            Action<T> seteaza) where T : class, ICuProvenienta {
+        var tip = typeof(T).Name;
+        var contor = Raport.Contoare(tip);
+        if (gasitViu == null) {
+            if (gasitSters() != null) {
+                Console.WriteLine($"  {tip} {cheie}: ȘTERS de utilizator, nu se recreează "
+                    + "(politica e date — decizia 4).");
+                contor.Sterse++;
+                return null;
+            }
+            var rand = os.CreateObject<T>();
             rand.DinSeed = true;
-        return rand;
+            seteaza(rand);
+            contor.Create++;
+            return rand;
+        }
+        if (!gasitViu.DinSeed) {
+            contor.Manuale++;
+            return gasitViu;
+        }
+        var proprietati = Aliniabile(os, typeof(T));
+        var inainte = proprietati.ToDictionary(p => p.Nume, p => p.Info.GetValue(gasitViu));
+        seteaza(gasitViu);
+        var corectat = false;
+        foreach (var p in proprietati) {
+            var nou = p.Info.GetValue(gasitViu);
+            if (Equals(inainte[p.Nume], nou))
+                continue;
+            if (p.EsteCheie)
+                throw new InvalidOperationException(
+                    $"Seed-ul schimbă cheia rândului {tip} {cheie}: {p.Nume} "
+                    + $"{Text(os, p, inainte[p.Nume])} → {Text(os, p, nou)} — schimbarea de cheie e "
+                    + "migrație de date (83b).");
+            Raport.Corectat(tip, cheie, p.Nume, Text(os, p, inainte[p.Nume]), Text(os, p, nou));
+            corectat = true;
+        }
+        if (corectat)
+            contor.Corectate++;
+        return gasitViu;
+    }
+
+    sealed record ProprietateSeed(string Nume, PropertyInfo Info, bool EsteCheie, Type Referit);
+
+    static readonly Dictionary<Type, IReadOnlyList<ProprietateSeed>> proprietatiSeed = [];
+
+    // Domeniul diff-ului = proprietățile SCALARE mapate (FK-urile incluse, deci
+    // fiecare navigație e acoperită prin coloana ei), fără cheia primară, fără
+    // timbru și fără coloanele GENERATE de bază (`Cautare`). Cheile unice vin din
+    // modelul DESIGN-TIME — singurul care poartă adnotările relaționale.
+    static IReadOnlyList<ProprietateSeed> Aliniabile(IObjectSpace os, Type tip) {
+        if (proprietatiSeed.TryGetValue(tip, out var gata))
+            return gata;
+        var entitate = (os as EFCoreObjectSpace)?.DbContext.GetService<IDesignTimeModel>()
+            .Model.FindEntityType(tip);
+        HashSet<string> coloaneCheie = entitate == null ? [] : entitate.GetIndexes().Where(i => i.IsUnique)
+            .SelectMany(i => i.Properties).Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
+        IReadOnlyList<ProprietateSeed> lista = entitate == null ? [] : entitate.GetProperties()
+            .Where(p => p.PropertyInfo != null && !p.IsPrimaryKey()
+                && p.Name != nameof(ICuProvenienta.DinSeed) && p.GetComputedColumnSql() == null)
+            .Select(p => new ProprietateSeed(p.Name, p.PropertyInfo, coloaneCheie.Contains(p.Name),
+                p.GetContainingForeignKeys().FirstOrDefault()?.PrincipalEntityType.ClrType))
+            .ToList();
+        proprietatiSeed[tip] = lista;
+        return lista;
+    }
+
+    static string Text(IObjectSpace os, ProprietateSeed p, object valoare) {
+        if (valoare == null)
+            return "<gol>";
+        if (p.Referit != null && valoare is Guid id)
+            return Eticheta(os.GetObjectByKey(p.Referit, id)) ?? valoare.ToString();
+        return valoare.ToString();
+    }
+
+    static string Eticheta(object rand) =>
+        rand == null ? null
+        : rand.GetType().GetProperty("Cod")?.GetValue(rand) as string
+            ?? rand.GetType().GetProperty("Simbol")?.GetValue(rand) as string
+            ?? rand.GetType().GetProperty("Denumire")?.GetValue(rand) as string;
+
+    // Cheile lui `RegulaContare` și `RegulaStoc` au coloane NULLABLE, iar
+    // semantica SQL a lui „coloană = @parametru NULL" e prea subtilă pentru o
+    // gardă de idempotență: potrivirea se face ÎN MEMORIE, pe rândurile tipului
+    // de document (listă mică).
+    internal static RegulaContare AliniazaContare(IObjectSpace os, TipDocument tipDoc, string cheie,
+            Guid? tipMaterialId, NaturaClasa? naturaFiltru, int? semnFiltru, Action<RegulaContare> seteaza) {
+        RegulaContare Cauta(bool cuSterse) {
+            var toate = os.GetObjectsQuery<RegulaContare>();
+            if (cuSterse)
+                toate = toate.IgnoreQueryFilters();
+            return toate.Where(r => r.TipDocumentId == tipDoc.ID).ToList()
+                .FirstOrDefault(r => r.TipMaterialId == tipMaterialId
+                    && r.NaturaFiltru == naturaFiltru && r.SemnFiltru == semnFiltru);
+        }
+        return Aliniaza(os, cheie, Cauta(false), () => Cauta(true), r => {
+            r.TipDocumentId = tipDoc.ID;
+            r.TipMaterialId = tipMaterialId;
+            r.NaturaFiltru = naturaFiltru;
+            r.SemnFiltru = semnFiltru;
+            seteaza(r);
+        });
+    }
+
+    internal static RegulaStoc AliniazaRegulaStoc(IObjectSpace os, TipDocument tipDoc, string cheie,
+            LaturaDocument latura, Guid? clasaId, TipStoc tipStoc, int semn) {
+        RegulaStoc Cauta(bool cuSterse) {
+            var toate = os.GetObjectsQuery<RegulaStoc>();
+            if (cuSterse)
+                toate = toate.IgnoreQueryFilters();
+            return toate.Where(r => r.TipDocumentId == tipDoc.ID).ToList()
+                .FirstOrDefault(r => r.Latura == latura && r.ClasaId == clasaId);
+        }
+        return Aliniaza(os, cheie, Cauta(false), () => Cauta(true), r => {
+            r.TipDocumentId = tipDoc.ID;
+            r.Latura = latura;
+            r.ClasaId = clasaId;
+            r.TipStoc = tipStoc;
+            r.Semn = semn;
+        });
     }
 
     // Tipurile de TVA scoase din CULEGERE (F23-D3): cotele istorice rămân pe
@@ -179,14 +304,12 @@ public static class ContaSeeder {
             ("RLF", "Retur la furnizor", nameof(ReturFurnizor)),
             ("RDC", "Retur de la client", nameof(ReturClient)),
         ];
-        foreach (var t in tipuri) {
-            if (os.FirstOrDefault<TipDocument>(x => x.Cod == t.Cod) == null) {
-                var tip = Seedat(os.CreateObject<TipDocument>());
+        foreach (var t in tipuri)
+            Aliniaza<TipDocument>(os, t.Cod, x => x.Cod == t.Cod, tip => {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
-            }
-        }
+            });
     }
 
     // Pivotul gardienilor din decizia 14; anul curent de lucru, deschis.
@@ -556,6 +679,9 @@ public static class ContaSeeder {
     public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD394Privat =>
         ProfilPrivat.NemapateD394;
 
+    public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD300Privat =>
+        ProfilPrivat.NemapateD300;
+
     // DUBLA NUMĂRARE pe verticala „din care" (fix F4 al review-ului advers) —
     // riscul 1 al designului, rămas cu un singur gard din două.
     //
@@ -648,6 +774,39 @@ public static class ContaSeeder {
         return simbol.Length > 0 ? conturi[simbol] : null;
     }
 
+    // Clasă/Tip: mecanismul e al nucleului, conținutul e al profilului (29c).
+    // Clasa ștearsă de utilizator (`Aliniaza` a spus-o deja) lipsește din
+    // dicționar, iar Tipul care atârnă de ea se sare — nu se creează fără clasă.
+    internal static Dictionary<string, ClasaProdus> AliniazaClase(IObjectSpace os,
+            (string Cod, string Denumire, NaturaClasa Natura)[] clase) {
+        var claseMap = new Dictionary<string, ClasaProdus>(StringComparer.Ordinal);
+        foreach (var c in clase) {
+            var clasa = Aliniaza<ClasaProdus>(os, c.Cod, x => x.Cod == c.Cod, x => {
+                x.Cod = c.Cod;
+                x.Denumire = c.Denumire;
+                x.Natura = c.Natura;
+            });
+            if (clasa != null)
+                claseMap[c.Cod] = clasa;
+        }
+        return claseMap;
+    }
+
+    internal static void AliniazaTipuri(IObjectSpace os, IReadOnlyDictionary<string, ClasaProdus> claseMap,
+            (string Clasa, string Cod, string Denumire)[] tipuri) {
+        foreach (var t in tipuri) {
+            if (!claseMap.TryGetValue(t.Clasa, out var clasa)) {
+                Console.WriteLine($"  TipMaterial {t.Cod}: sărit, clasa {t.Clasa} lipsește din bază.");
+                continue;
+            }
+            Aliniaza<TipMaterial>(os, t.Cod, x => x.Cod == t.Cod, tip => {
+                tip.Cod = t.Cod;
+                tip.Denumire = t.Denumire;
+                tip.ClasaId = clasa.ID;
+            });
+        }
+    }
+
     // Maparea Clasă/Tip → cont e date (decizia 4); Cod-ul Tipului E un simbol de
     // cont (10 §2), deci seed-ul o derivă: potrivire exactă, apoi tăierea
     // segmentelor terminale (detalierea sub sintetic aparține Tipului — decizia 10).
@@ -671,28 +830,50 @@ public static class ContaSeeder {
     internal static void SeedContare6xxDin3xx(IObjectSpace os, TipDocument tipDoc, int? semnFiltru,
         IReadOnlyDictionary<string, string> exceptii = null, bool pastreazaSemn = false) {
         var conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
-        var acoperite = os.GetObjectsQuery<RegulaContare>()
-            .Where(r => r.TipDocumentId == tipDoc.ID && r.TipMaterialId != null)
-            .Select(r => r.TipMaterialId.Value).ToList();
-        var tipuriStoc = os.GetObjectsQuery<TipMaterial>()
-            .Where(t => t.Clasa.Natura == NaturaClasa.Stoc)
-            .Select(t => new { t.ID, t.Cod }).ToList();
-        foreach (var tip in tipuriStoc) {
-            if (acoperite.Contains(tip.ID) || !tip.Cod.StartsWith('3'))
+        foreach (var tip in TipuriDeStoc(os)) {
+            if (!tip.Cod.StartsWith('3'))
                 continue;
             var simbol = exceptii?.GetValueOrDefault(tip.Cod) ?? ('6' + tip.Cod[1..]);
             var contDebit = ContDinSimbol(conturi, simbol);
-            if (contDebit == null)
+            if (contDebit == null || !DerivataDeAliniat(os, tipDoc, tip.ID, tip.Cod, null, semnFiltru))
                 continue;
-            var regula = Seedat(os.CreateObject<RegulaContare>());
-            regula.TipDocument = tipDoc;
-            regula.TipMaterialId = tip.ID;
-            regula.SemnFiltru = semnFiltru;
-            regula.PastreazaSemn = pastreazaSemn;
-            regula.SursaContDebit = SursaCont.Explicit;
-            regula.ContDebitId = contDebit;
-            regula.SursaContCredit = SursaCont.TipMaterial;
+            AliniazaContare(os, tipDoc, $"{tipDoc.Cod}/{tip.Cod}", tip.ID, null, semnFiltru, regula => {
+                regula.PastreazaSemn = pastreazaSemn;
+                regula.SursaContDebit = SursaCont.Explicit;
+                regula.ContDebitId = contDebit;
+                regula.SursaContCredit = SursaCont.TipMaterial;
+            });
         }
+    }
+
+    static List<(Guid ID, string Cod)> TipuriDeStoc(IObjectSpace os) =>
+        os.GetObjectsQuery<TipMaterial>().Where(t => t.Clasa.Natura == NaturaClasa.Stoc)
+            .Select(t => new { t.ID, t.Cod }).ToList()
+            .Select(t => (t.ID, t.Cod)).ToList();
+
+    // Acoperirea derivatelor rămâne pe (tip document × TipMaterial), ca înainte
+    // (83c). Ce se schimbă: rândul de pe acel TipMaterial se recalculează dacă e
+    // `DinSeed` și stă pe cheia calculată; unul MANUAL oprește derivarea, iar
+    // unul `DinSeed` pe ALTĂ cheie n-o lasă să adauge un al doilea rând (ar
+    // dubla potrivirea motorului).
+    static bool DerivataDeAliniat(IObjectSpace os, TipDocument tipDoc, Guid tipMaterialId,
+            string codTip, NaturaClasa? naturaFiltru, int? semnFiltru) {
+        var acoperitoare = os.GetObjectsQuery<RegulaContare>()
+            .Where(r => r.TipDocumentId == tipDoc.ID && r.TipMaterialId == tipMaterialId)
+            .Select(r => new { r.NaturaFiltru, r.SemnFiltru, r.DinSeed }).ToList();
+        if (acoperitoare.Count == 0)
+            return true;
+        var contor = Raport.Contoare(nameof(RegulaContare));
+        if (acoperitoare.Any(r => !r.DinSeed)) {
+            contor.Manuale++;
+            return false;
+        }
+        if (acoperitoare.Any(r => r.NaturaFiltru == naturaFiltru && r.SemnFiltru == semnFiltru))
+            return true;
+        Console.WriteLine($"  RegulaContare {tipDoc.Cod}/{codTip}: rândul de seed stă pe ALTĂ cheie "
+            + "(natură/semn), derivarea nu adaugă un al doilea rând (83c).");
+        contor.CheiDiferite++;
+        return false;
     }
 
     // Derivarea de VÂNZARE pe FacturaIesire (P2, design §6) — mecanism în nucleu
@@ -708,26 +889,17 @@ public static class ContaSeeder {
     internal static void SeedContareVanzare(IObjectSpace os, TipDocument tipDoc, string fallbackDebit,
         IReadOnlyDictionary<string, string> mapaVenit, string fallbackVenit) {
         var conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
-        var acoperite = os.GetObjectsQuery<RegulaContare>()
-            .Where(r => r.TipDocumentId == tipDoc.ID && r.TipMaterialId != null)
-            .Select(r => r.TipMaterialId.Value).ToList();
-        var tipuriStoc = os.GetObjectsQuery<TipMaterial>()
-            .Where(t => t.Clasa.Natura == NaturaClasa.Stoc)
-            .Select(t => new { t.ID, t.Cod }).ToList();
-        foreach (var tip in tipuriStoc) {
-            if (acoperite.Contains(tip.ID))
-                continue;
+        foreach (var tip in TipuriDeStoc(os)) {
             var simbolVenit = mapaVenit.GetValueOrDefault(tip.Cod) ?? fallbackVenit;
             var contVenit = ContDinSimbol(conturi, simbolVenit);
-            if (contVenit == null)
+            if (contVenit == null || !DerivataDeAliniat(os, tipDoc, tip.ID, tip.Cod, null, null))
                 continue;
-            var regula = Seedat(os.CreateObject<RegulaContare>());
-            regula.TipDocument = tipDoc;
-            regula.TipMaterialId = tip.ID;
-            regula.SursaContDebit = SursaCont.RepartitorPrimitor;
-            regula.ContDebitId = ContDinSimbol(conturi, fallbackDebit);
-            regula.SursaContCredit = SursaCont.Explicit;
-            regula.ContCreditId = contVenit;
+            AliniazaContare(os, tipDoc, $"{tipDoc.Cod}/{tip.Cod}", tip.ID, null, null, regula => {
+                regula.SursaContDebit = SursaCont.RepartitorPrimitor;
+                regula.ContDebitId = ContDinSimbol(conturi, fallbackDebit);
+                regula.SursaContCredit = SursaCont.Explicit;
+                regula.ContCreditId = contVenit;
+            });
         }
     }
 
@@ -743,22 +915,6 @@ public static class ContaSeeder {
         }
     }
 
-    // Garda de idempotență PER RÂND al unei reguli de contare: cheia unui rând e
-    // (tip document × TipMaterial × filtru de natură) — exact discriminarea pe
-    // care o folosește motorul la potrivire. Garda „există vreo regulă pe tipul
-    // X" (folosită înainte) sare orice rând ADĂUGAT ulterior pe un tip deja
-    // seed-uit; șablonul incremental e cel de la 6xx=3xx / vânzare.
-    // Potrivirea celor două filtre NULLABLE se face în memorie (lista rândurilor
-    // unui tip e mică): semantica SQL a lui `coloană = @parametru NULL` e prea
-    // subtilă pentru o gardă de idempotență.
-    internal static bool RegulaContareLipsa(IObjectSpace os, TipDocument tipDoc,
-        Guid? tipMaterialId, NaturaClasa? naturaFiltru) =>
-        !os.GetObjectsQuery<RegulaContare>()
-            .Where(r => r.TipDocumentId == tipDoc.ID)
-            .Select(r => new { r.TipMaterialId, r.NaturaFiltru })
-            .ToList()
-            .Any(r => r.TipMaterialId == tipMaterialId && r.NaturaFiltru == naturaFiltru);
-
     // Viramentul intern (F7-D6): Clasa/Tipul „VIR" + cele două reguli ale
     // perechii. `simbolTranzit` = contul de viramente interne al PROFILULUI
     // (581 în ambele planuri) — legat EXPLICIT, nu derivat din Cod (precedentul
@@ -770,45 +926,44 @@ public static class ContaSeeder {
     // ContImplicit trebuie să pice zgomotos la operare (precedentul 31c).
     internal static void SeedContareVirament(IObjectSpace os,
         TipDocument plt, TipDocument inc, string simbolTranzit) {
-        var clasa = os.FirstOrDefault<ClasaProdus>(c => c.Cod == "VIR");
-        if (clasa == null) {
-            clasa = Seedat(os.CreateObject<ClasaProdus>());
-            clasa.Cod = "VIR";
-            clasa.Denumire = "Viramente interne";
-            clasa.Natura = NaturaClasa.Virament;
-        }
-        var tip = os.FirstOrDefault<TipMaterial>(t => t.Cod == "VIR");
-        if (tip == null) {
-            tip = Seedat(os.CreateObject<TipMaterial>());
-            tip.Cod = "VIR";
-            tip.Denumire = "Virament intern";
-            tip.Clasa = clasa;
-        }
+        var clasa = Aliniaza<ClasaProdus>(os, "VIR", c => c.Cod == "VIR", c => {
+            c.Cod = "VIR";
+            c.Denumire = "Viramente interne";
+            c.Natura = NaturaClasa.Virament;
+        });
+        if (clasa == null)
+            return;
+        var tip = Aliniaza<TipMaterial>(os, "VIR", t => t.Cod == "VIR", t => {
+            t.Cod = "VIR";
+            t.Denumire = "Virament intern";
+            t.ClasaId = clasa.ID;
+        });
+        if (tip == null)
+            return;
         if (tip.ContImplicitId == null)
             tip.ContImplicitId = os.FirstOrDefault<Cont>(c => c.Simbol == simbolTranzit)?.ID;
 
-        if (RegulaContareLipsa(os, plt, tip.ID, null)) {
-            var iesire = Seedat(os.CreateObject<RegulaContare>());
-            iesire.TipDocument = plt;
-            iesire.TipMaterial = tip;
+        AliniazaContare(os, plt, $"{plt.Cod}/VIR", tip.ID, null, null, iesire => {
             iesire.SursaContDebit = SursaCont.TipMaterial;
             iesire.SursaContCredit = SursaCont.RepartitorPredator;
-        }
-        if (RegulaContareLipsa(os, inc, tip.ID, null)) {
-            var intrare = Seedat(os.CreateObject<RegulaContare>());
-            intrare.TipDocument = inc;
-            intrare.TipMaterial = tip;
+        });
+        AliniazaContare(os, inc, $"{inc.Cod}/VIR", tip.ID, null, null, intrare => {
             intrare.SursaContDebit = SursaCont.RepartitorPrimitor;
             intrare.SursaContCredit = SursaCont.TipMaterial;
-        }
+        });
     }
 
     internal static void SeedNumerotare(IObjectSpace os, string codTip, string serie) {
-        if (os.FirstOrDefault<PoliticaNumerotare>(x => x.TipDocument.Cod == codTip) == null) {
-            var numerotare = Seedat(os.CreateObject<PoliticaNumerotare>());
-            numerotare.TipDocument = os.FirstOrDefault<TipDocument>(x => x.Cod == codTip);
+        var tipDoc = os.FirstOrDefault<TipDocument>(x => x.Cod == codTip);
+        if (tipDoc == null)
+            return;
+        Aliniaza<PoliticaNumerotare>(os, codTip, x => x.TipDocumentId == tipDoc.ID, numerotare => {
+            numerotare.TipDocumentId = tipDoc.ID;
             numerotare.Serie = serie;
-            numerotare.UrmatorulNumar = 1;
-        }
+            // Contorul e stare de RUNTIME, nu conținut de seed: alinierea lui la
+            // fiecare trecere ar reseta numerotarea documentelor (83a).
+            if (os.IsNewObject(numerotare))
+                numerotare.UrmatorulNumar = 1;
+        });
     }
 }
