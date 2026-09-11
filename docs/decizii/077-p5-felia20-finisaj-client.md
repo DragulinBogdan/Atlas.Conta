@@ -6,44 +6,33 @@
 
 ## Regula durabilă
 
-**Finisajul clientului (F20).** (a) **Căutarea fără diacritice e a BAZEI
-DE DATE, ca o coloană GENERATĂ, nu ca o colație**: `Cautare` =
-`translate(lower(cod || ' ' || denumire), De, La)` STORED (ambele
-IMMUTABLE; `concat` nu e) pe orice nomenclator care declară `ICuCautare`,
-configurată printr-o buclă generică pe model (o coloană pe baza TPT;
-`Simbol` pe `Cont`); colația ICU nedeterministă rupe `LIKE`/`contains`,
-`unaccent` nu poate fi injectat în `$filter`-ul compus de `ODataStore`.
-Tabelul `De`/`La` (`Comun/Cautare.cs`) e UNICA sursă: SQL, C#
-(`Normalizeaza`) și client (prin `metadata.json`), cu oracol SQL == C# pe
-toate rândurile în ModelCheck. (b) **Un singur store OData în client**
-(`nucleu/odata.ts`): `byKey` prin cache-ul TanStack pe `(entitate, id,
-proiecție)` cu `staleTime: Infinity` — proiecția e în cheie, altfel cache-ul
-minte; `cache.clear()` la „Ieșire" (logout-ul e navigare SPA); `Lookup`
-caută default pe `Cautare` și rescrie literalul în `beforeSend` pentru
-`contains`/`startswith`/`endswith`. (c) Precompletarea scrie perechea (id,
-etichetă) printr-un singur verdict „e gol" (`nucleu/etichete.ts`), sursa =
-cache-ul, nu `$expand` imbricat. (d) `ConfirmareInline` + slot în
-`DocumentShell`; **un slot de `ReactNode` nu se compară cu `null`** (`false
-== null` e fals — storno a murit pe 11 ecrane, invizibil pentru `tsc`).
-(e) `Neincluse` pleacă AGREGAT per cauză în sumar (funcție pură pe lista
-plată, care rămâne în fișier); `Suma` = semnată pe S, absolută pe L;
-`ContId` pe S3 ⇒ fișă. (f) Listele legii care sunt COD se PUBLICĂ declarat
-în `metadata.json` (`Nomenclatoare`), nu devin entități. (g) Refuzurile de
-DOMENIU pe `api/odata/*` ies `422 EroriDto` (`RefuzDomeniuOdataFilter`,
-`Order = int.MaxValue`, în WebApi); permisiunea rămâne 404/403 text, tradusă
-doar în client. (h) Șablonul ecranului de nomenclator (`felii/nomenclatoare`):
-scriere prin OData, PATCH = DELTĂ (absența NU e golire, spre deosebire de
-PUT-ul documentelor), lungimile din schemele OData ale `openapi.json`;
-Partener + ANAF, Societate, Produs; `PoliticaMiscareSaft` DOAR citire (56
-nu se redeschide). (i) Licența DevExtreme = `VITE_DEVEXTREME_LICENSE`.
-(k) **Un nomenclator căutabil are cod și denumire**: pe orice `ICuCautare`,
-coloana de cod (`Cod`/`Simbol`, `Cautare.NumeCod`) și `Denumire` sunt NOT
-NULL + CHECK `btrim <> ''` în schemă (ușa de sistem), refuzate cu mesajul
-câmpului de `GardianEditare` (ușa secured, înaintea switch-ului pe tip),
-`[Required]` ⇒ OpenAPI `required[]` ⇒ asterisc/validare în client,
-`[RuleRequiredField]` pentru XAF (Validation nu citește DataAnnotations).
-Migrația nu maschează goluri — o bază cu rânduri goale pică zgomotos.
-(j) Restanțe 77-r1…r8 → jurnal.
+**Finisajul clientului (F20).** (a) Căutarea fără diacritice e a BAZEI DE
+DATE, ca o coloană GENERATĂ, nu ca o colație: `Cautare` = `translate(lower(cod
+|| ' ' || denumire), De, La)` STORED pe orice nomenclator `ICuCautare` (o
+coloană pe baza TPT; `Simbol` pe `Cont`), configurată generic pe model;
+tabelul `De`/`La` (`Comun/Cautare.cs`) e UNICA sursă pentru SQL, C#
+(`Normalizeaza`) și client (`metadata.json`), cu oracol SQL == C# în
+ModelCheck. (b) Un singur store OData în client (`nucleu/odata.ts`): `byKey`
+prin cache-ul TanStack pe `(entitate, id, proiecție)` cu `staleTime:
+Infinity`; `cache.clear()` la „Ieșire"; `Lookup` caută pe `Cautare`, literalul
+rescris în `beforeSend`. (c) Precompletarea scrie perechea (id, etichetă)
+printr-un singur verdict „e gol" (`nucleu/etichete.ts`), sursa = cache-ul, nu
+`$expand` imbricat. (d) `ConfirmareInline` + slot în `DocumentShell`; un slot
+de `ReactNode` nu se compară cu `null`. (e) `Neincluse` pleacă AGREGAT per
+cauză în sumar; `Suma` semnată pe S, absolută pe L; `ContId` pe S3 ⇒ fișă. (f)
+Listele legii care sunt COD se PUBLICĂ în `metadata.json` (`Nomenclatoare`),
+nu devin entități. (g) Refuzurile de DOMENIU pe `api/odata/*` ies `422
+EroriDto` (`RefuzDomeniuOdataFilter`, în WebApi). (h) Șablonul ecranului de
+nomenclator (`felii/nomenclatoare`): scriere prin OData, PATCH = DELTĂ
+(absența NU e golire, spre deosebire de PUT-ul documentelor), lungimile din
+schemele OData ale `openapi.json`; Partener + ANAF, Societate, Produs;
+`PoliticaMiscareSaft` doar citire (56 nu se redeschide). (i) Licența
+DevExtreme = `VITE_DEVEXTREME_LICENSE`. (k) Un nomenclator căutabil are cod și
+denumire: pe orice `ICuCautare`, codul (`Cautare.NumeCod`) și `Denumire` sunt
+NOT NULL + CHECK nevid în schemă, refuzate cu mesajul câmpului de
+`GardianEditare` pe secured, `[Required]` ⇒ OpenAPI ⇒ client,
+`[RuleRequiredField]` pentru XAF; migrația nu maschează goluri. (j) Restanțele
+77-r1…r8 → `restante.md`.
 
 ## Context
 

@@ -7,43 +7,34 @@
 ## Regula durabilă
 
 **ITV prin API și client — COMANDĂ cu cauză, nu agregat** (76a). (a)
-`InchidereTvaService` întoarce `RezultatInchidere` cu `MotivNegenerare`
-(`ProfilInert`/`InchidereVie`/`FaraSold`/`NeCronologica`; enum-ul stă în
-`BusinessObjects/Comun` — dump-ul de metadata ia doar spațiul ăla);
-`CalculeazaLinii` = SINGURA aritmetică a celor trei linii; `Analizeaza` =
-ordinea gardienilor o singură dată; **raportul (`Previzualizeaza`, nu
-scrie) și comanda (`Incearca`, nu comite) diferă printr-un bit: cronologia
-e motiv la raport, refuz zgomotos la comandă** (46c rămâne); **cronologia
-are AMBELE sensuri și AMBELE uși** (review): un draft neoperat pe o lună
-anterioară blochează generarea (`DraftAnterior`), o închidere OPERATĂ
-ulterioară blochează OPERAREA (gard în `ValideazaOperare` — altfel 4423
-se dubla cu ecranul spunând că e în regulă); perioada fiscală închisă =
+`InchidereTvaService` întoarce `RezultatInchidere` cu `MotivNegenerare` (enum
+în `BusinessObjects/Comun`); `CalculeazaLinii` = SINGURA aritmetică a celor
+trei linii; `Analizeaza` = ordinea gardienilor o singură dată; raportul
+(`Previzualizeaza`, nu scrie) și comanda (`Incearca`, nu comite) diferă
+printr-un bit: cronologia e motiv la raport, refuz zgomotos la comandă (46c).
+Cronologia are AMBELE sensuri și AMBELE uși: un draft neoperat anterior
+blochează generarea (`DraftAnterior`), o închidere OPERATĂ ulterioară
+blochează OPERAREA (gard în `ValideazaOperare`); perioada fiscală închisă =
 `PerioadaInchisa` la raport / refuz la comandă; solduri `null` (nu 0) pe
-profil inert; unitatea ne-internă = refuz la GENERARE;
-`LiniiPotrivescSoldurile` = SINGURUL criteriu anti-stale (gardian ȘI
-`Stale` din DTO); `Genereaza` = wrapper, Import1C neatins. (b) **Gate-ul comenzii fără
-subiect e pe TIP** (`PoateCrea` = `CanCreate(tip, os)`; `PoateCiti` pe
-previzualizare; `AutorizeazaCitire<T>` pe instanță: invizibil 404,
-vizibil fără drept 403), luat pe ușa securizată ÎNAINTE; **cifrele
-motorului (solduri, `Stale`, liniile) se calculează pe ușa NON-SECURED**
-— pe cea filtrată ar fi o cifră falsă, nu goală (73g). Listele rămân
-securizate. (c) **ITV iese din felia NTC**: `Lista`/`Citeste`/`Candidati`
-filtrează `!(d is InchidereTva)` (tradus pe TPT), PUT/DELETE refuză 422;
-`is` la graniță, în Apply, nu în motor; comenzile NTC pe id ITV NU mai
-sunt permise — 404 pe toată ușa NTC (amendat de 80b, `peUsaAsta`). (d) `genereaza` răspunde **200 și când
-nu generează** (raport: `Motiv` + `InchidereVieId`), 422 doar pe domeniu;
-`regenereaza` = `Incearca(…, inlocuieste: id)` ÎNAINTE de ștergere, o
-singură tranzacție — un refuz lasă draftul intact (review: forma
-„șterge, comite, apoi încearcă" pierdea draftul); cere și `PoateCrea`
-(produce un document nou); unitatea = parametru
-cules, precompletat doar la exact un rând; lista cu ordine implicită
-DECLARATĂ (`Data` desc). (e) Client: previzualizarea lunii pe listă
-(motivul tradus, link către închiderea blocantă), documentul read-only cu
-`Stale` ⇒ atenție, storno cu data implicită = data închiderii (46f);
-`rutaTip('ITV')`. (f) Restanțe 79-r1…r5 → jurnal (79-r1 închisă:
-acțiunea XAF „Generează închiderea" = dialog pe obiect non-persistent,
-același gate pe TIP și același `Apply` ca ruta `genereaza`, draftul în
-tab nou — `TargetWindow.NewWindow` pe MDI).
+profil inert; unitatea ne-internă = refuz la generare;
+`LiniiPotrivescSoldurile` = SINGURUL criteriu anti-stale (gardian ȘI `Stale`
+din DTO); `Genereaza` = wrapper, Import1C neatins. (b) Gate-ul comenzii fără
+subiect e pe TIP (`PoateCrea`, `PoateCiti`; `AutorizeazaCitire<T>` pe
+instanță), luat pe ușa securizată ÎNAINTE; cifrele motorului se calculează pe
+ușa NON-SECURED (pe cea filtrată ar fi false, nu goale — 73g); listele rămân
+securizate. (c) ITV iese din felia NTC: listele filtrează `!(d is
+InchidereTva)`, PUT/DELETE refuză; `is` la graniță, în Apply, nu în motor;
+comenzile NTC pe id ITV = 404 pe toată ușa NTC (amendat de 80b, `peUsaAsta`).
+(d) `genereaza` răspunde 200 și când nu generează (`Motiv` +
+`InchidereVieId`), 422 doar pe domeniu; `regenereaza` = `Incearca(…,
+inlocuieste: id)` ÎNAINTE de ștergere, o singură tranzacție — un refuz lasă
+draftul intact; cere și `PoateCrea`; unitatea = parametru cules, precompletat
+doar la exact un rând; ordinea listei DECLARATĂ (`Data` desc). (e) Client:
+previzualizarea lunii pe listă (motivul tradus, link către închiderea
+blocantă), documentul read-only cu `Stale` ⇒ atenție, storno cu data implicită
+= data închiderii (46f). (f) Restanțele 79-r1…r7 → `restante.md` (79-r1
+închisă: acțiunea XAF = dialog pe obiect non-persistent, același gate pe TIP
+și același `Apply` ca ruta).
 
 ## Context
 

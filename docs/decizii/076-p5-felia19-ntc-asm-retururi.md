@@ -7,38 +7,31 @@
 
 ## Regula durabilă
 
-**NTC + ASM + retururi prin API și client** (ultimele patru tipuri fără
-felie de scriere). (a) Trei tracks independente, cu regulă de oprire per
-track; ITV rămâne afară (nu e document cules, e serviciu — 46c); zero
-seturi OData noi. (b) **ASM capătă culegerea de produs** (`ProdusId` +
-`ILinieCareNasteLot` cu `NasteLot => Directie == Produs`,
-`GestiuneLoturiCulese` → **PREDATORUL**) — închide 53i pe ASM. (c)
-**Valoarea produsului ASM se derivă din consum** (închide 75-r1):
-`distribuie-valoarea` cere cifra **MOTORULUI** (`MotorOperare.Valideaza` pe
-un OS de unică folosință, al doilea OS obligatoriu fiindcă `Valideaza`
-SCRIE), nu o formulă geamănă; „calculul n-a rulat" se detectează
-STRUCTURAL, nu din textul erorilor; reziduul se plimbă, iar cazul
+**NTC + ASM + retururi prin API și client** (ultimele patru tipuri fără felie
+de scriere). (a) Trei track-uri independente cu regulă de oprire; ITV rămâne
+afară (serviciu, nu document cules — 46c); zero seturi OData noi. (b) ASM
+capătă culegerea de produs (`ProdusId` + `ILinieCareNasteLot` cu `NasteLot =>
+Directie == Produs`; gestiunea = PREDATORUL) — închide 53i pe ASM. (c)
+Valoarea produsului ASM se derivă din consum (închide 75-r1):
+`distribuie-valoarea` cere cifra MOTORULUI (`MotorOperare.Valideaza` pe un OS
+de unică folosință, fiindcă `Valideaza` SCRIE), nu o formulă geamănă;
+„calculul n-a rulat" se detectează STRUCTURAL; reziduul se plimbă; cazul
 nereprezentabil (75-r4) și cel MIXT se REFUZĂ cu cifra. (d) Semnarea storno
-rămâne a OPERĂRII — RLF/RDC se culeg pozitiv, ecranul explică semnul în loc
-să-l inverseze; linia de cost RDC se persistă cu `TipTvaId = null`; rolul
-liniei RDC e o PREZENȚĂ, iar mutarea lui pe o linie salvată se REFUZĂ (o
-conversie ar rescrie tăcut culegerea). (e) Idempotența: pe draft bate
-`MaterializeazaValori`, la operare bate hook-ul — nu se contrazic fiindcă
-amândouă pleacă din `Abs`; motorul NU de-semnează la anulare. (f)
-**Plafonul de stingere capătă LATURĂ și se NETEAZĂ** (amendează 31d/48b):
-`Document.SensDeStins` = al treilea hook polimorf al rolului (default `null`
-= motorul nu ghicește); plafonul = **`|Σ semnat|` per (repartitor × latura
-liniei)**, cheia cu net 0 nu intră deloc — netarea SUBSUMEAZĂ linia
-negativă. `PLT → FCL` și `INC → FCT` se refuză de acum, DECLARAT. Panourile
-clasice urmează sensul din ReadDto (`SensCandidati`), nu din TS. Refuzul de
-ambiguitate primește ieșire prin MODELARE (`NIR` = `Datorie`), niciodată
-printr-un câmp care lasă apelantul să aleagă jumătatea. (g) `PanouStingeri`
-capătă un al doilea mod (grupat per contrapartidă × sens); pe notă **„Rest"
-dispare** (Σ liniilor nu e o creanță); NTC nu intră în `DocumenteCuRest`,
-retururile nu devin stingători — compensarea trece prin notă (46f rămâne,
-cu cale practică). (h) Bara ASM: cifra e NEUTRĂ, culoarea stă pe verdictul
-dry-run-ului — `Diferenta` minte în ambele sensuri, deci orice culoare pe ea
-reproduce o minciună. (i) Restanțe 76-r1…r6 → jurnal.
+rămâne a OPERĂRII — RLF/RDC se culeg pozitiv, ecranul explică semnul; linia de
+cost RDC se persistă cu `TipTvaId = null`; rolul liniei RDC e o PREZENȚĂ,
+mutarea lui pe o linie salvată se REFUZĂ. (e) Idempotența: pe draft bate
+`MaterializeazaValori`, la operare hook-ul, amândouă din `Abs`; motorul NU
+de-semnează la anulare. (f) Plafonul de stingere capătă LATURĂ și se NETEAZĂ
+(amendează 31d/48b): `Document.SensDeStins` = al treilea hook polimorf al
+rolului (default `null` = motorul nu ghicește); plafonul = `|Σ semnat|` per
+(repartitor × latura liniei), cheia cu net 0 nu intră; `PLT → FCL` și `INC →
+FCT` se refuză DECLARAT; panourile urmează `SensCandidati` din ReadDto;
+refuzul de ambiguitate iese prin MODELARE (`NIR` = `Datorie`), niciodată
+printr-un câmp al apelantului. (g) `PanouStingeri` capătă modul grupat per
+contrapartidă × sens; pe notă „Rest" dispare; NTC nu intră în
+`DocumenteCuRest`, retururile nu devin stingători — compensarea trece prin
+notă (46f). (h) Bara ASM: cifra e NEUTRĂ, culoarea stă pe verdictul
+dry-run-ului. (i) Restanțele 76-r1…r6 → `restante.md`.
 
 ## Context
 

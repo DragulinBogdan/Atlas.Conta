@@ -12,34 +12,29 @@
 
 ## Regula durabilă
 
-**SAF-T (D406 L) = proiecție peste registre + FIȘIER.** (a) `Societate` =
-un rând, nucleu, EDITABIL (nu `SetareProfil`): antetul + identitatea
-raportorului (`CustomerID` ȘI `SupplierID` sunt obligatorii AMBELE pe
-orice linie, latura liberă = raportorul); adresa cu aceleași câmpuri/
-lungimi ca `Partener` (`AdresaSaft.Lungimi`); unicitatea în gardian;
-seed-ul creează gol, nu rescrie. (b) `UnitateMasura` nucleu, `ForbidCRUD`,
-seed UN/ECE; `Produs.CodNc` (8 cifre) + `UnitateMasuraId`; `UM` string
-rămâne; grafia RO → cod fără ghicit (`mc` = metru cub, `ml` nerezolvat).
-(c) `Cont.RolTert` și `Cont.Functie` = DATE per profil; bugetar =
-**neaplicabil** (422). (d) Funcțiile legii = COD (`SaftReguli`): identitatea
-partenerului `00`–`06` (`00` cere CUI VALID), `IdSocietate` ≠
+**SAF-T (D406 L) = proiecție peste registre + FIȘIER.** (a) `Societate` = un
+rând, nucleu, EDITABIL (nu `SetareProfil`): antetul + identitatea raportorului
+(`CustomerID` ȘI `SupplierID` obligatorii pe orice linie, latura liberă =
+raportorul); adresa cu câmpurile/lungimile lui `Partener`
+(`AdresaSaft.Lungimi`); unicitatea în gardian; seed-ul creează gol, nu
+rescrie. (b) `UnitateMasura` nucleu, `ForbidCRUD`, seed UN/ECE; `Produs.CodNc`
+(8 cifre) + `UnitateMasuraId`; `UM` string rămâne; grafia RO → cod fără
+ghicit. (c) `Cont.RolTert` și `Cont.Functie` = DATE per profil; bugetar =
+neaplicabil (422). (d) Funcțiile legii = COD (`SaftReguli`): identitatea
+partenerului `00`–`06` (`00` cere CUI valid), `IdSocietate` ≠
 `RegistrationNumber`, 380/381, tuplele metodei de plată; `NormalizeazaCui`
-taie `RO` repetat. (e) Proiecția: jurnal = `TipDocument`, rând contabil ⇒
-două linii, **partenerul de pe RÂND, rolul al CONTULUI** (64h confirmată);
-`TaxInformation` din `RegistruTva` pe `Detaliu × Storno`; storno = factură
-proprie `381` negativă; liniile de stoc FCT își iau contrapartida din
-NIR-ul conex MATERIALIZAT, niciodată un cont inventat; **nimic nu se
-pierde**: `Neincluse` + avertismente agregate + cusăturile în DTO (partidă
-dublă, TVA cu trei termeni, facturi per sens, solduri, master files).
-(f) `SaftXml` streaming pe XSD-ul oficial; **DUK = oracolul** din
-ModelCheck (`-d` inutilizabil în CLI); măsurat: 7 cifre de cont,
-`ExchangeRate` absent, `0` pe NC, diacritice TREC. (g) JSON = **SUMAR**
-(38,6 MiB/lună a contrazis „nu se paginează"); XML streaming cu
-`AllowSynchronousIO`; **`User` ⇒ 403 pe fișier** (un fișier gol semnat e o
-declarație falsă), 200 gol pe sumar. (h) Client: descărcare prin `fetch` +
-`blob`. (i) Import1C: `Societate` din 1C pe câmp gol, UM/NC, `--saft`;
-V5: DUK `ok` pe lunile reale, reconcilierea neatinsă. (k) Restanțe
-73-r1…r18 → jurnal (73-r1 închisă de 74).
+taie `RO` repetat. (e) Proiecția: jurnal = `TipDocument`, rând contabil ⇒ două
+linii, partenerul de pe RÂND, rolul al CONTULUI (64h); `TaxInformation` din
+`RegistruTva` pe `Detaliu × Storno`; storno = factură proprie `381` negativă;
+liniile de stoc FCT își iau contrapartida din NIR-ul conex MATERIALIZAT,
+niciodată un cont inventat; nimic nu se pierde: `Neincluse` + avertismente
+agregate + cusăturile în DTO. (f) `SaftXml` streaming pe XSD-ul oficial; DUK =
+oracolul, din ModelCheck. (g) JSON = SUMAR (fișierul întreg e prea mare ca
+răspuns JSON); XML streaming (`AllowSynchronousIO`); `User` ⇒ 403 pe fișier
+(un fișier gol semnat e o declarație falsă), 200 gol pe sumar. (h) Client:
+descărcare prin `fetch` + `blob`. (i) Import1C: `Societate` din 1C pe câmp
+gol, UM/NC, `--saft`. (k) Restanțele 73-r1…r19 → `restante.md` (73-r1 închisă
+de 74).
 
 ---
 

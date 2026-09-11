@@ -12,34 +12,29 @@
 **SAF-T S (stocuri) = proiecție peste `RegistruStoc` + FIȘIER `C`.** (a)
 `PoliticaMiscareSaft` = `(TipDocument × TipStoc × Semn?) → CodMiscare? +
 RolTertSaft + Motiv`: codul de mișcare e al TIPULUI × registrului, deci
-politică (4) pe cheia lui `RegulaStoc`; `Semn null` = orice semn; două
-indexuri unice filtrate (`NULL <> NULL`); **cod NULL = excludere
-DELIBERATĂ cu motiv** (`Excluse`) ≠ rând fără politică (`Neincluse`);
-gardian pe ușa comună + seed-ul își validează tabelul; bugetar zero,
-OData ReadOnly (56). (b) Legea = cod (`SaftReguli`): 19 coduri; terții pe
-linia de stoc — Client `(p,"0")`, Furnizor `("0",p)`, intern
-`(soc,soc)` (ALTĂ convenție decât L); `OwnerID` = raportorul,
-`ProductType` = simbolul contului de stoc, `MovementReference` ≤ 35 cu
-discriminant `#n` când `Numar` se repetă (nu e unic per tip). (c)
-Proiecția: politica potrivită pe **semnul REGULII** (`(Storno ? −1 : 1) ×
-sign(Cantitate)` — stornoul păstrează codul original); `PhysicalStock`
-per `(Repartitor × Lot)` pe `TipStoc`-urile cu cod, două agregate
-grupate; `MovementOfGoods` per `(Document × Storno × Cod)` (`/cod` la
-spargere, `/S` pe storno); partenerul de pe laturi sau ale
-`DocumentSursa`; contul liniei = `TipMaterial.ContImplicit`, niciodată
-inventat; `Quantity`/`BookValue` SEMNATE ca în registru;
-`MovementPostingDate` omis în afara perioadei; `AnalysisTypeTable` gol.
-(d) Cusături: S1 (registru) **și S5 (liniile EMISE)** per intrare, S2
-nimic nu se pierde, S3 vs balanță per cont RAPORTATĂ (spartă pe tip de
-document), S4 referințe + unicitatea `MovementReference`. (e) Profilul
-`C` măsurat cu DUK: secțiunile L COMPLET goale (fără totaluri),
-`PhysicalStock` OBLIGATORIU prezent ⇒ lună fără stoc = refuz înainte de
-primul octet / 422, `MovementOfGoods` gol trece. (f) REST
-`saft/stocuri` + `stocuri/xml` cu gărzile o singură dată (proiecția ca
-funcție); `/saft?fel=S`; `--saft-s`; seed pe Flax cere
-`EFCoreProvider=Postgres;`. (g) Deriva per lot a importului (45e) se
-DECLARĂ ca atare (`ReziduValoricFaraCantitate`, `SoldNegativ`), nu se
-ascunde. (h) Restanțe 74-r1…r15 → jurnal (74-r4/r6/r9 închise de 75).
+politică (4) pe cheia lui `RegulaStoc`; `Semn null` = orice semn (două
+indexuri unice filtrate, `NULL <> NULL`); cod NULL = excludere DELIBERATĂ cu
+motiv (`Excluse`) ≠ rând fără politică (`Neincluse`); gardian pe ușa comună +
+seed-ul își validează tabelul; bugetar zero, OData ReadOnly (56). (b) Legea =
+cod (`SaftReguli`): 19 coduri; terții pe linia de stoc — Client `(p,"0")`,
+Furnizor `("0",p)`, intern `(soc,soc)` (altă convenție decât L); `OwnerID` =
+raportorul, `ProductType` = simbolul contului de stoc, `MovementReference` ≤
+35 cu discriminant `#n` când `Numar` se repetă. (c) Proiecția: politica
+potrivită pe semnul REGULII (stornoul păstrează codul original);
+`PhysicalStock` per `(Repartitor × Lot)` pe `TipStoc`-urile cu cod;
+`MovementOfGoods` per `(Document × Storno × Cod)` (`/cod` la spargere, `/S` pe
+storno); partenerul de pe laturi sau ale `DocumentSursa`; contul liniei =
+`TipMaterial.ContImplicit`, niciodată inventat; cantitate/valoare SEMNATE ca
+în registru; `MovementPostingDate` omis în afara perioadei;
+`AnalysisTypeTable` gol. (d) Cusături: S1 (registru) ȘI S5 (liniile EMISE) per
+intrare, S2 nimic nu se pierde, S3 vs balanță per cont RAPORTATĂ, S4 referințe
++ unicitatea `MovementReference`. (e) Profilul `C` măsurat cu DUK: secțiunile
+L complet goale; `PhysicalStock` obligatoriu ⇒ lună fără stoc = refuz / 422;
+`MovementOfGoods` gol trece. (f) REST `saft/stocuri` + `stocuri/xml` cu
+gărzile o singură dată (proiecția ca funcție); `/saft?fel=S`; `--saft-s`; seed
+pe Flax cere `EFCoreProvider=Postgres;`. (g) Deriva per lot a importului (45e)
+se DECLARĂ (`ReziduValoricFaraCantitate`, `SoldNegativ`), nu se ascunde. (h)
+Restanțele 74-r1…r15 → `restante.md` (74-r4/r6/r9 închise de 75).
 
 ---
 
