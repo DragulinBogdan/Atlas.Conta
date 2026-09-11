@@ -2,8 +2,20 @@
 
 - **Data**: 2026-07-24 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §43
 - **Docs**: docs/api/p5-react-design.md
+
+## Regula durabilă
+
+**Design React.** Vocabular de componente compuse ÎN COD, niciodată
+descriptori interpretați. (a) Felii verticale + `Camp*`: metadata leagă
+atributele, codul decide editorul și prezența. (b) Validare structurală din
+OpenAPI + autoritar = motorul (dry-run `valideaza`); zero motor de reguli
+în TS. (c) State: server-read (TanStack Query), formular per felie (agregat
+local, PUT întreg), efemeride; **URL = starea globală**; liniile de draft =
+editor propriu + grid readonly, fără CRUD per linie în grilă. (d) Codegen =
+tipuri, nu clienți (openapi→TS + dump ModelCheck, artefacte comise, drift
+verificat). (e) Same-host, servit de WebApi. (f) Lookup-uri pe OData
+nomenclatoare, mod local/remote explicit.
 
 ---
 

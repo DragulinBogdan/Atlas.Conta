@@ -2,7 +2,12 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §9
+
+## Regula durabilă
+
+**Scope faza 1: contabilitate + gestiune**, plățile/încasările ca documente.
+Salarizare, imobilizări, execuție = module separate, intră prin note
+contabile (NTC, 46b).
 
 ---
 

@@ -2,8 +2,15 @@
 
 - **Data**: 2026-08-13 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §63
 - **Docs**: docs/api/p5-felia-ldi-bcs-contract.md
+
+## Regula durabilă
+
+**LDI + BCS prin API.** `NasteLot` pe contract (LDI: doar Plus), gard
+înaintea celui de lot străin; gestiunea = PREDATORUL. `Directie` string,
+parse pe nume; `LotId` doar pe Minus; valoare SEMNATĂ. Minus pe lot al
+aceluiași document = refuz; coerența Tip↔Produs. Migrațiile se aplică și pe
+bazele de dev suplimentare (altfel TPT dă 500). Rămase → jurnal.
 
 ---
 

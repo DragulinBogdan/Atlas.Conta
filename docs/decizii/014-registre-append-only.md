@@ -2,7 +2,14 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §14
+
+## Regula durabilă
+
+**Registre persistate, append-only.** `Draft → Operat → (Stornat)`; la
+operare motorul scrie tranzacțional stoc + note. Corecție directă/anulare
+DOAR fără dependenți în perioadă deschisă (dependență exactă pe loturi +
+sold intermediar ≥ 0); altfel storno. Perioada închisă = graniță absolută.
+Schema registrelor = COD; regulile de alimentare = DATE.
 
 ---
 

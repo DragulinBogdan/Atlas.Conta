@@ -2,8 +2,28 @@
 
 - **Data**: 2026-08-25
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §70
 - **Docs**: docs/api/p5-felia-motor-structura-contract.md (F13-D1…D6 + §Închidere)
+
+## Regula durabilă
+
+**Motor/structură post-D300.** (a) **Taxarea inversă are SENS**: sursa =
+`PoliticaTva.Directie` (nu câmp pe `TipTva`, nu hook pe frunză);
+`TvaService.CalculeazaValori` cere direcția EXPLICIT; TI × Colectat ⇒
+`ValoareTva = 0`, niciun rând; TI × Deductibil = autolichidare; ramura TI
+din motor are gard explicit pe `Deductibil`. (b) TVA nenul pe TI × Colectat
+= refuz în motor (`Opereaza` + dry-run) ȘI la PUT; gardul capturează
+înainte de `PregatesteOperare`, citește `TipTvaId` după. (c)
+`RegistruTvaService` neschimbat; excepția din D300 a murit; Import1C
+păstrează `tipTva = null` „ca în sursă". (d) Datele pre-F13 se RAPORTEAZĂ
+(inventar în ModelCheck), nu se migrează. (e) **ModelCheck șterge ca
+host-ul**: interceptorul `UseDeferredDeletion` (suprasarcina pe options) pe
+ambele builder-e; **curățenia de scenă = purjă FIZICĂ (`Purja`)**,
+`os.Delete` doar unde ștergerea logică e obiectul probei; SQL brut care
+citește pune `GCRecord = 0`. (f) **Un singur 400 = `EroriDto`**
+(`InvalidModelStateResponseFactory`, global pe `[ApiController]`; OData
+neatins); GUID malformat pe rută = 404. (g) Gardian de ciclu pe
+`Cont.Parinte` în `GardianEditare` (navigație → FK, limită 64); `Cont` e
+`ReadOnly` pe OData. (i) Rămase → jurnal.
 
 ---
 

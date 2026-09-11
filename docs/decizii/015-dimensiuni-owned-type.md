@@ -2,7 +2,16 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă; forma de stocare amendată de 54c (owned → plat pe frunze/registru)
-- **Rezumat durabil**: `CLAUDE.md` §15
+
+## Regula durabilă
+
+**Dimensiunile** = setul R/M/CF/CE/F/U/P/CC (FK nullable fiecare); regula
+de notă poartă `Comun`/`OverrideDebit`/`OverrideCredit`, rezolvarea
+(coalesce) e generică în motor; linia de document poartă un set parțial,
+rândul de registru unul complet, PER LATURĂ (25a). `DimensiuniObligatorii`
+per cont = validare (33a). Forma de stocare: PLATĂ, pe frunze și registru
+(54c — forma owned a murit). Override-urile pe linie din legacy
+(ContD/ContC, RepD/RepC) NU se preiau.
 
 ---
 

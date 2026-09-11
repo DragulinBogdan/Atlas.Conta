@@ -2,8 +2,19 @@
 
 - **Data**: 2026-07-25 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §47
 - **Docs**: docs/import/faza-1c-design.md
+
+## Regula durabilă
+
+**Import1C — nomenclatoare + deschiderea.** (a) Bază dedicată
+`Atlas.Conta.Import1C.Flax`; `--sabotaj` = auto-testul PERMANENT al
+contractului (proba trăiește lângă contract și cere ambele sonde detectate
+— 52f). (b) Nomenclatoarele mari LA
+CERERE; legătura DUPĂ commit; recuperare pe cod. (c) Deschiderea fără
+dimensiuni (fapt al sursei); orice gaură = FAIL. (d) Lot per (document ×
+produs × simbol cont); netarea retururilor-ca-lot conservă EXACT sumele
+grupei. (e) Reconcilierea recitește INTEGRAL din Postgres. (f) Maparea
+conturilor = LISTĂ (48c). Unealta e single-operator pe bază.
 
 ---
 

@@ -2,8 +2,18 @@
 
 - **Data**: 2026-08-17 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §66
 - **Docs**: docs/api/p5-felia-raportare-contract.md
+
+## Regula durabilă
+
+**Raportarea pe registre.** Atomul = unpivot pe laturi, o singură definiție;
+perioada și dimensiunile sunt PARAMETRI de proiecție, nu filtre de grilă;
+balanța = o agregare cu sume condiționate; **netarea nu e aditivă ⇒ modul se
+CERE**, sumarele de grup doar pe rulaje. Fișa = SQL brut cu fereastră
+(`GCRecord = 0` explicit; două tipuri: query ≠ sârmă); ordinea în forma
+consumată de DataSourceLoader. SQL-ul brut trece printr-un gate fail-closed
+care MĂSOARĂ echivalența cu calea securizată; LEFT JOIN pe nomenclatoare.
+**Check-ul stă pe CALEA REALĂ** (proba securității = HTTP).
 
 ---
 

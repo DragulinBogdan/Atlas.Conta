@@ -2,7 +2,11 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §3
+
+## Regula durabilă
+
+**EF Core TPT** pentru header și pentru detaliile derivate (frunzele există
+unde schema diferă; declarația per document = `[TipDetaliu]`, 40a).
 
 ---
 

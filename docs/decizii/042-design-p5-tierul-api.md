@@ -2,8 +2,27 @@
 
 - **Data**: 2026-07-24 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §42
 - **Docs**: docs/api/p5-api-design.md
+
+## Regula durabilă
+
+**Design API.** (a) **O singură sursă de reguli**: gardian de Committing
+activ DOAR pe ObjectSpace-uri SECURED; non-secured = ușa de sistem; nimeni
+n-are Write pe registre. (b) **Motorul în OS non-secured PROPRIU, secvență
+nu cuib**: culegerea comisă secured, apoi comanda prin ID; retur/erori ca
+date (`{documentId, stareNoua, conexId?, mesaje[]}` / 422). (c) **Citirea
+= registre + proiecții** (`Module/Proiectii`, IQueryable + DataSourceLoader,
+atomi partajați; orice proiecție care dublează un calcul al motorului are
+check de consistență în ModelCheck); **TS nu calculează niciodată
+sold/rest/total**. (d)
+**Scrierea = agregat per document** (PUT header + linii, reconciliere
+server-side, WriteDto ≠ ReadDto), felii verticale per tip în Module;
+importul = alt apelant al aceluiași Apply, un document per tranzacție. (e)
+Metadata: build-time
+OpenAPI→TS + captions, runtime doar politici, affordances în ReadDto,
+layout = React. (f) Host separat `Atlas.Conta.WebApi`, același Module,
+OData opt-in DOAR nomenclatoare, un singur updater, release pereche per
+client. Concurența multi-operator rămâne parcată (25f).
 
 ---
 

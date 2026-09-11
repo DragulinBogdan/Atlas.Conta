@@ -2,7 +2,17 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §34
+
+## Regula durabilă
+
+**Migrarea legacy** (`nou/tools/Migrare`; azi prototip de conector, 35a).
+(a) Sursa = deschiderea materializată de trecerea de an legacy (întâi
+trecerea de an, apoi unealta), nu recalcularea. (b) Idempotență prin `MigrareLegatura`; deschiderea se rescrie integral.
+(d) Solduri contra 891 la 31.12; clasa 8 nu; **terții pornesc pe sold, fără
+facturi istorice**. (e) Lot per codmat, cu data reală (FIFO istoric). (f)
+Contractul: soldurile citite ÎNAPOI = sursa; **diferențele sursei se
+RAPORTEAZĂ, nu se ascund**. Clasificarea repartitorilor: semnalul datelor
+bate eticheta legacy. (g) Amânate → jurnal.
 
 ---
 

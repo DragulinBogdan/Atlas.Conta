@@ -2,8 +2,16 @@
 
 - **Data**: 2026-08-09 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §58
 - **Docs**: docs/api/p5-felia-fcl-contract.md
+
+## Regula durabilă
+
+**FCL + DSC prin API.** FCL nu naște loturi (pinul REFERĂ). DSC = citire +
+comenzi. (c) **ORICE cale UI care apelează un serviciu ce scrie câmpuri
+server-owned rulează pe ușa non-secured.** (d) Plafon de acoperire per
+linie-sursă contra realității MATERIALIZATE. (e) `Lookup.filtru` (format
+DevExtreme → `$filter`, Guid deduse din forma valorii); pinul se stinge la
+schimbarea produsului.
 
 ---
 

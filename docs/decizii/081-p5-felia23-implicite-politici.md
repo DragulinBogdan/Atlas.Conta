@@ -4,6 +4,48 @@
 - **Stare**: activă (închide 79-r2, 74-r12 și 77-r3 pe `PoliticaMiscareSaft`; amendează 56 pe politici — ReadOnly-ul pe OData a murit; amendează 38d/P1 §8 — implicitul de TVA nu mai e doar al tipului de document; 81d amendată de 83a — re-seed-ul corectează rândurile `DinSeed`; 81-r1 și 81-r2 închise de 83; 81-r8 și ecranele din 81k închise de 84)
 - **Docs**: `docs/api/p5-felia23-implicite-politici-contract.md` (F23-D1…D12 + §Închidere), `nou/.../Module/Motor/ImpliciteService.cs`, `nou/.../Module/Motor/VerificareProfilService.cs`, `nou/.../Module/BusinessObjects/Comun/ClasaFiscala.cs`, `nou/.../Module/BusinessObjects/Comun/ICuProvenienta.cs`, `nou/.../Module/Motor/GardianEditare.cs` (ramurile D5), `nou/.../Module/Migrations/20260902184753_F23ImpliciteSiPolitici.cs`, `nou/.../WebApi/API/Conta/ImpliciteController.cs`, `nou/.../WebApi/API/Conta/PoliticiController.cs`, `nou/Atlas.Conta.Client/src/felii/politici/`, `nou/tools/ProbeHttp/refuzuri.ps1` (blocul „politici")
 
+## Regula durabilă
+
+**Felia 23 — implicitele de culegere + întreținerea politicilor.** (a)
+Trei feluri de implicite, aplicate la CULEGERE, o singură sursă
+(`ImpliciteService`): de SUBIECT (`Partener/Produs.TipTvaImplicit`, ca
+`ContImplicit`), de POLITICĂ (`PoliticaTvaImplicit`, tabel tipizat cu
+prioritate declarată), de SESIUNE (al clientului); doar pe linia NOUĂ fără
+valoare, absența pe linia existentă = golire (56). Produsul liniei prin
+`DocumentDetaliu.ProdusCules()` polimorf; partenerul prin `Any` pe
+nomenclator (`GetObjectByKey<Partener>` sub TPT aruncă pe proxy-ul altei
+frunze). (b) **Regimul e al partenerului, cota e a produsului**:
+`ClasaFiscala.APartenerului` (funcția legii din D394, mutată în `Comun`);
+R = override-ul partenerului → rândul cel mai SPECIFIC → ancora tipului;
+P = implicitul produsului; rezultat = P dacă același regim, altfel R ?? P;
+tipul INACTIV sare treapta cu motiv; partener lipsă/inexistent/invizibil =
+UN text (80a). Seed privat doar ce e sigur în lege (FCL/RDC × UE/extra-UE
+→ SDD, FCT/RLF × UE → TI21); bugetar zero. (c) Unicitatea în SCHEMĂ: 15
+indexuri unice filtrate `GCRecord = 0` (politicile per tip, `RegulaStoc`/
+`RegulaContare`/`PoliticaTvaImplicit` cu `NULLS NOT DISTINCT`, codurile
+nomenclatoarelor, `Cont.Simbol`); `TipTva.Activ` (lookup-urile filtrează;
+N19/TI19/CAP19 inactive din seed). (d) **Proveniența = `DinSeed`**
+(`ICuProvenienta`, 17 tipuri): seed-ul timbrează DOAR ce creează, backfill
+o singură dată în migrație, gardianul stinge la EDITARE și refuză
+`DinSeed = true` pe nou; timbrul stins supraviețuiește re-seed-ului. (e)
+Ușa OData se DESCHIDE pe politici (12 + `PoliticaTvaImplicit` + `TipTva`;
+amendează 56), cu invarianții în `GardianEditare` (`TipDocument` = ancoră
+read-only; cotă ∈ [0,100]; dezactivare refuzată cât e implicit; `Explicit
+⇒ cont`; `Format` cules compunabil; `MapareD300/D394` prin aceleași funcții
+ca atributele). (f) `GET api/implicite/tip-tva` pe ușa SECURIZATĂ: `User`
+⇒ `Niciuna` (ce nu vezi nu-ți poate fi propus); clientul arată SURSA sub
+câmp, zero calcul în TS. (g) `GET api/politici/verificare` = raportul de
+profil (manuale, FK spre șterse, inactiv referit, tip fără ancoră, goluri
+D300/D394): gate `CanRead` pe toate tipurile citite + calcul pe ușa
+NON-SECURED (pe cea filtrată raportul era FALS, nu gol; 73g/80e). (h)
+Auditul MĂSURAT pe OData, istoric per rând (`AuditedObject/TypeName+Key`,
+`$expand=UserObject`). (i) `GrilaPolitica`: citire prin `storeOData`,
+scriere prin `http.ts` (mesajul `EroriDto` în rând; 80-r1), coloane COD
+per politică; 7 ecrane + lookup `TipTvaImplicit` pe Partener/Produs
+(închide 79-r2, 74-r12, 77-r3 pe `PoliticaMiscareSaft`). (j) Blocul
+„politici" în `refuzuri.ps1` (80 de probe). (k) Felia 24 = „Explică" +
+restul ecranelor de politici. Restanțe 81-r1…r9 → jurnal.
+
 ## Context
 
 Discuția de arhitectură din 2026-09-02 („extindere în cod vs. în date; cum

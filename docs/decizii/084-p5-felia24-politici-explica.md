@@ -4,6 +4,59 @@
 - **Stare**: activă (execută decizia 83 a–j; închide 81-r8, 81k pe ecranele de politică și „Explică"; amendează 38c/64 — gardurile de nivel minim al contării devin contract declarat pe clasa documentului; amendează 83j — ștergerea unui `TipTva` referit se refuză ca dezactivarea; avans declarat pe IM-D2/IM-D4)
 - **Docs**: `docs/api/p5-felia24-politici-explica-contract.md` (F24-D1…D7 + §Închidere), `docs/decizii/083-seed-provenienta-goluri-configurator.md`, `nou/.../Module/DatabaseUpdate/ContaSeeder.cs` (`Aliniaza`, `RaportSeed.cs`), `nou/.../Module/BusinessObjects/Politici/TipuriConfigurabile.cs`, `nou/.../Module/DatabaseUpdate/Updater.cs` (`SeedRolConfigurator`), `nou/.../Module/Motor/Potrivire.cs`, `Fapte.cs`, `nou/.../Module/Api/Politici/ExplicaApply.cs`, `ExplicaDtos.cs`, `nou/.../WebApi/API/Conta/PoliticiController.cs` (`explica`), `nou/Atlas.Conta.Client/src/felii/politici/` (șapte ecrane noi, `Explica.tsx`, `GrilaPolitica.tsx`), `nou/tools/ProbeHttp/refuzuri.ps1`, `nou/tools/ModelCheck/Program.cs` (F24-V/R/P/E)
 
+## Regula durabilă
+
+**Felia 24 — politicile: seed-ul aliniază, `Configurator`, cele șapte
+ecrane, `Potrivire`, „Explică"** (execută 83; închide 81-r8, 81k). (a)
+`ContaSeeder.Aliniaza<T>` = SINGURA formă a seed-ului pe cele 17 tipuri
+`ICuProvenienta`: căutare pe cheia indexului unic (viu, apoi șters —
+rămâne șters și se spune), creare cu timbru, aliniere DOAR pe `DinSeed`
+cu diff pe scalarele mapate (`tip / cheie / câmp: vechi → nou`), rândul
+manual neatins; cheia din modelul design-time — `seteaza` care o atinge
+ARUNCĂ; `Seed` întoarce `RaportSeed`. Site-urile pe cheia COMPLETĂ
+(`RegulaContareLipsa` a murit); derivatele nu creează al doilea rând pe
+cheie diferită. În afara alinierii: `TipTva.Activ`,
+`PoliticaNumerotare.UrmatorulNumar` (stare de runtime), `ContImplicitId`
+derivat. `Cont.Functie/RolTert/Denumire/Parinte`, ancora
+`TipTvaImplicit`, `PoliticaConex/Validare` = doar pe timbru aprins. (b)
+`IMP` FĂRĂ cod SAF-T (nomenclatorul n-are cod pentru factura externă;
+301204/300604 sunt ale DVI), `NIM.CodSafTAchizitie = 308302` (rd. 29,
+rândul deja mapat); implicitele 6 → 10; `IMP` nemapat cu motiv pe D300
+și D394. (c) `Politici.TipuriConfigurabile` = listă EXPLICITĂ (reflecția
+e a probei); rolul `Configurator` = `ReadOnlyAllByDefault` +
+Create/Write/Delete pe listă, permisiunile REAPLICATE la fiecare seed
+(rolul e al release-ului), seed-uit și pe RELEASE; userul dev-only. (d)
+`GrilaPolitica.formular` (popup cu grupurile ecranului; coloanele
+ascunse intră doar listate) + `laRandNou` (propune VIZIBIL `Explicit` —
+81-r8 — și membri pentru enum-urile fără 0); `Unitate*` read-only (fără
+controller OData). (e) **`Motor/Potrivire.cs` = potrivirea ca funcții
+PURE pe fapte plate** (`Contare`/`Stoc`/`Cont`/`Conex`/`TvaImplicit`),
+`Fapte` = singura mapare entitate → fapt; motorul le consumă
+(`RezolvaCont` mort, `ImpliciteService` = doar citirile); oglinzile au
+murit (`GetObjectsQuery<RegulaContare>` = 0 în frunze,
+`TipStocPentruClasa` mort — divergența fără expunere, fixată pur).
+Câștigătorul = primul de la nivelul cel mai înalt, în ordinea bazei.
+(f) **Gardul de nivel minim al contării = `[GardContare(natura?,
+nivelMinim, mesaj)]` pe clasa documentului** (FCL/DSC/RDC: Stoc ⇒ exact;
+trezorerie: Virament ⇒ natură), aplicat o singură dată în
+`Document.ValideazaOperare` prin `Potrivire` — cu TOATE axele (64) — și
+citit de explicație (amendează forma 38c). (g) `GET api/politici/explica`
+= CONFIGURAȚIA pe o linie ipotetică: blocuri cu câștigător, nivel,
+candidați cu motiv, conturile cu SURSA, `PostareExplicita` (NTC și DEC),
+`Rezerve[]` (ce ar refuza motorul: gardul (f), `NaturaInterzisa`),
+`Concluzie` pe server (și de absență); enum-urile verdictului în
+`Comun/Enums.cs`; 400 → 403 (gate pe `TipuriConfigurabile` ∪ nomenclatoare)
+→ 422 (referință invizibilă, `Any` pe nomenclator) → 200 non-secured;
+consistența 42c probată contra `RegistruContabil`. (h) Panoul
+`/politici/explica`: URL = starea, zero calcul și zero frază în TS;
+`GrilaPolitica.explica` (11 ecrane). (i) **Enum fără membru definit =
+refuz generic în gardian** pe orice `ICuProvenienta` (OData scria tăcut
+0: `Directie = 0` ⇒ colectat, `Latura = 0` ⇒ stoc pe primitor). (j)
+**Ștergerea unui `TipTva` referit se refuză ca dezactivarea** (amendează
+83j; altfel seed-ul următor pica). (k) Rândul de probă al lui Admin din
+`refuzuri.ps1` pe dată proprie (ocupa cheia de seed FCT×ExtraUe).
+Restanțe 84-r1…r12 → jurnal.
+
 ## Context
 
 Decizia 83 a tranșat trei întrebări (re-seed-ul pe `DinSeed`, golurile privat

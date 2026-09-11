@@ -2,8 +2,20 @@
 
 - **Data**: 2026-07-31 (primul commit în jurnal)
 - **Stare**: activă; (d) CORECTATĂ 2026-08-24 — layout-ul e `.Layout(...)` în ContaUiBaseline (vezi corecția din text); (e) AuditTrail reactivat la DIM-3
-- **Rezumat durabil**: `CLAUDE.md` §53
 - **Docs**: docs/gate-xaf-contract.md, docs/api/lista-react.md
+
+## Regula durabilă
+
+**GATE XAF trecut** („un contabil tolerant le operează zilnic", NU
+product-grade). (a) `ProdusId` pe FCT + seam de culegere a loturilor
+(`LoturiCulegereService`, 56a); `Lot` read-only pe FCT. Număr/scadență la
+MATERIALIZARE. (c) Calculul la culegere refolosește același helper; regula
+36a rămâne a OPERĂRII; `Valoare` read-only în UI. Layout-ul = `.Layout(...)`
+în `ContaUiBaseline` (bază-întâi, grupurile derivatei nested în `Antet`).
+(e) AuditTrail reactivat (DIM-3). (f) **Lotul FINALIZAT nu se șterge
+niciodată de curățenia culegerii**; ViewController-ele se REFOLOSESC
+(niciun cache per view). `lista-react.md` = ce rămâne pentru React. (i)
+Rămase → jurnal.
 
 ---
 
@@ -49,7 +61,7 @@ proprietăți + updater propriu DOAR pentru etichetele grupurilor
 `UiLayoutUpdater`); `[DetailViewLayout]` + `LayoutDocumenteUpdater` au
 murit. Compunerea e bază-întâi (grupurile derivatei nested în containerul
 `Antet` al bazei); `.Section()/.Group()/.Tabs()` rămân aditive; membrii
-nedeclarați ajung în `Unplaced`. Forma curentă e în CLAUDE.md 53d.
+nedeclarați ajung în `Unplaced`. Forma curentă e în „Regula durabilă" (d).
 (e) **AuditTrail EF Core e incompatibil cu owned types** — descoperit la
 smoke: `AuditTrailService.GetKeyAsObject` citește PK-ul prin reflecție CLR,
 owned au PK SHADOW ⇒ NRE la ORICE SaveChanges care atinge o linie de

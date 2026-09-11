@@ -2,8 +2,20 @@
 
 - **Data**: 2026-07-25 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §46
 - **Docs**: docs/import/faza-1c-design.md
+
+## Regula durabilă
+
+**Tipurile noi.** (a) **Storno = valori NEGATIVE pe corespondența
+ORIGINALĂ**; `RegulaContare.PastreazaSemn`; flag-ul `Storno` = al
+meta-operației. (b) NTC: postare explicită FĂRĂ regulă doar pe tipurile cu
+`IDocumentCuPostareExplicita`. (c) ITV: `InchidereTvaService`, conturi din
+`PoliticaInchidereTva`; idempotent pe închiderea vie, refuz ne-cronologic,
+anti-stale la operare; NU închide perioada, NU atinge 121. (d) ASM: n→m cu
+`DirectieAsamblare`, invariant |Σproduse − Σconsumuri| ≤ 0,005, ZERO
+contare; dezasamblarea = același tip; consumul unui lot produs de același document = refuz. (e) RLF/RDC
+pe lotul ORIGINAL; RDC = UN document (venit + cost pe LotId); `Total`
+VIRTUAL = doar liniile de venit; Capitalizat REFUZAT. (f) → jurnal.
 
 ---
 

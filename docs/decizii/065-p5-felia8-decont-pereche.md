@@ -2,8 +2,18 @@
 
 - **Data**: 2026-08-16 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §65
 - **Docs**: docs/api/p5-felia-dec-pereche-contract.md
+
+## Regula durabilă
+
+**Decont + pereche.** DEC: `ILinieCuPretUnitar`, `Cont/Angajament/Repartitor`
+ReadOnly în OData; filtrele lookup-urilor = afordanță, nu validare.
+`LaturaPerecheId`: o singură parte scrisă, suprimarea generării în AMBELE
+sensuri; gardian simetric + **avertisment consultativ, nu refuz** (două
+viramente identice sunt legitime); reciprocitatea refuzată; **o legătură
+contează doar cu capătul Draft/Operat** (stornatul nu e pereche);
+`PerecheActiva` server-computed; latura generată a altui virament nu e
+pereche pentru un al treilea.
 
 ---
 

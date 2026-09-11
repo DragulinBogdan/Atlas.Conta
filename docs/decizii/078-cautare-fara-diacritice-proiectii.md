@@ -4,6 +4,29 @@
 - **Stare**: activă (perechea lui 77a: coloana generată rămâne a nomenclatoarelor pe OData; aici e ușa `DataSourceLoader` a proiecțiilor)
 - **Docs**: `nou/.../Module/Api/CautareFiltru.cs`, `nou/.../Module/BusinessObjects/Comun/Cautare.cs`, `BackOfficeDbContext.AplicaFunctiaFaraDiacritice`; probele în `nou/tools/ModelCheck/Program.cs` (blocul „78")
 
+## Regula durabilă
+
+**Căutarea fără diacritice pe PROIECȚII** (perechea lui 77a — acolo
+coloana generată pe OData, aici ușa `DataSourceLoader`). (a)
+`Cautare.FaraDiacritice` = funcție de query (corp C# null-propagant),
+tradusă de EF pe EXACT fragmentul coloanei generate —
+`Cautare.FragmentSql` e UNICA ortografie a lui `translate(lower(…))`,
+consumată și de `ExpresieSql`, și de `HasTranslation` (cusătura verificată
+în ModelCheck pe `ToQueryString`). (b) `CautareFiltru` = compilator custom
+global (`RegisterBinaryExpressionCompiler`, idempotent per proces,
+înregistrat în Startup-ul WebApi și în ModelCheck): DOAR
+`contains`/`notcontains`/`startswith`/`endswith` pe accessor `string` ⇒
+`FaraDiacritice(coalesce(camp,'')) op literalNormalizat` (literalul în
+C#); orice nerezolvare = compilarea standard; **`=`/`<>` rămân exacte**
+(lista `HeaderFilter` trimite valoarea exactă; egalitatea normalizată ar
+topi valori distincte). Zero schimbări per proiecție sau în client. (c)
+`coalesce` apără sursele în memorie (fișa); pe `notcontains` nulul
+CONTEAZĂ ca „nu conține" — asumat. (e) Perf: nimic preventiv (59) —
+`contains` e ne-btree oricum; la cifră: GIN `pg_trgm` pe `Cautare`
+(77-r7) sau pe expresie (IMMUTABLE, indexabilă fără persistare).
+Măsurat pe HTTP (Privat, 19k FCT): trei grafii ⇒ același total, 56–121 ms.
+Restanța 78-r1 → jurnal (grilele XAF rămân sensibile — asumat, 44/53).
+
 ## Context
 
 77a a rezolvat căutarea fără diacritice pe **ușa OData a nomenclatoarelor**

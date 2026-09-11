@@ -2,8 +2,36 @@
 
 - **Data**: 2026-08-26
 - **Stare**: activă (amendează 71b — adresa e câmp plat pe `Partener`, nu satelit; 34g rămâne deschis doar pentru IBAN/delegați/contact/valute)
-- **Rezumat durabil**: `CLAUDE.md` §72
 - **Docs**: docs/api/p5-felia-partener-anaf-contract.md (D15-D1…D6, riscurile pin-uite, §Închidere — V4 măsurat), docs/import/faza-1c-design.md §13 (cifrele V5)
+
+## Regula durabilă
+
+**Partener + ANAF.** (a) **Adresa = câmpuri PLATE pe frunza `Partener`**
+(Strada/Numar/DetaliiAdresa/Localitate/CodPostal/JudetId), `MaxLength` =
+SAF-T și e SINGURA sursă a lungimilor (reflecție, `Lungimi`, în serviciu
+și în Import1C); amendează 71b — satelitul 34g rămâne doar pentru
+IBAN/delegați/contact/adrese multiple. `DataSincronizareAnaf` și
+`InactivFiscal` = server-owned (gardianul le refuză pe secured). (b)
+`Judet` = nomenclator de nucleu, `ForbidCRUD`, seed autoritar din
+`JudeteRo` (ISO 3166-2 + auto + CNP); **județ doar pe `Tara == RO`**, pe
+toate cele trei uși (gardian, serviciu, Import1C); grafiile 1C se
+normalizează în conector. (c) `PlatitorTvaClient` v9 = o clasă în Module,
+fără DI (host-ul dă `HttpClient`): loturi ≤100, 1 apel/s intra-interogare,
+deserializare tolerantă, erori per lot tranzitorie/fatală; `CuiInterogabil`
+= doar cifrele, 2–10, CNP și străinii = necandidați. (d) **Merge: „gol se
+umple, diferit se raportează, canonicul bate"** — axa TVA
+(`InregistratTva`/`TvaLaIncasare`/`InactivFiscal`) e a ANAF-ului
+întotdeauna; adresa/denumirea PER CÂMP; `suprascrie` explicit doar pe
+REST, cu `Modificare(vechi, nou)`; `notFound` = fără timbru. (e) REST =
+comandă pe partener (single + lot ≤500 cu `Sarite`), `ComandaAutorizata<T>`
+generalizează gate-ul documentelor FĂRĂ a-l schimba pe `Document`; domeniu
+⇒ 422, ANAF tranzitoriu ⇒ 503; V4 măsurat pe HTTP (§Închidere al
+contractului). (f) XAF: acțiunea pe ușa non-secured, fără `suprascrie`. (g)
+Import1C: adresa din 1C DOAR pe bloc gol, județ CNP → denumire → brut în
+`DetaliiAdresa`; `--anaf` peste același serviciu, commit per partener;
+**canonicul ANAF nu e răsturnat de `--reclasifica`** (timbrații sar axa
+TVA). V5: reconciliere IDENTICĂ cu baseline-ul, 8.230/2/0 erori, +190 tip
+1, D394 înainte/după explicat per cauză. (i) Restanțe 72-r1…r10 → jurnal.
 
 ---
 
@@ -120,7 +148,7 @@ F3 (V4 nescris) — fixate + R6/R8 luate ieftin, într-un singur commit;
 riscurile pin-uite 1–8 din contract acoperite cu probă (V1/V2/V3 în
 ModelCheck, V4 HTTP, V5 Import1C).
 
-(i) **Restanțe cu nume** (textul aici, numele în CLAUDE.md):
+(i) **Restanțe cu nume** (textul aici, numele în `restante.md`):
 - **72-r1** rate-limit cross-request: 1 apel/s e garantat doar în interiorul
   unei interogări; N cereri REST/XAF în rafală = N apeluri/s (riscul 5,
   acceptat single-operator 25f); fix ieftin viitor = gate static process-wide

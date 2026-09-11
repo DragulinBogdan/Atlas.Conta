@@ -2,7 +2,11 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §5
+
+## Regula durabilă
+
+**Backend XAF** (logică, securitate, validare, audit) expus prin Web API;
+**frontend React + DevExtreme** pentru ecranele operaționale.
 
 ---
 

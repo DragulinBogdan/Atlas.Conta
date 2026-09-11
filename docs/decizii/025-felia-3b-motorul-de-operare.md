@@ -2,7 +2,23 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §25
+
+## Regula durabilă
+
+**Motorul de operare** (`Module/Motor/`). (b) Hooks polimorfe pe bază,
+consumate doar de motor: `PregatesteOperare(os)` (derivata materializează
+`Valoare`) și `ValideazaOperare(os, erori)`; lucrează pe FK-uri +
+IObjectSpace, NU pe navigații lazy. (c) Loturile nu se nasc în motor —
+linia le creează la culegere, motorul le FINALIZEAZĂ la operare. (d)
+Gardieni: perioadă lipsă = închisă; sold intermediar = prefix-sum per
+(Lot × Repartitor × TipStoc) ≥ 0 la orice dată; anulare doar fără
+dependenți; storno = rânduri inverse (flag `Storno`) la data stornării;
+copiii operați blochează sursa. (e) `Registru*.DocumentId` null = rând de
+deschidere, fără document. (f) Numărul din `PoliticaNumerotare`, asignat
+abia la MATERIALIZARE (53b). Coalesce-ul dimensiunilor, per latură: linie →
+override(latură) → comun → default polimorf al header-ului (32c) → Material
+din lot (33b). Limitare asumată: fără serializare între operatori
+concurenți (advisory lock per cheie de stoc = aditiv).
 
 ---
 

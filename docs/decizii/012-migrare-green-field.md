@@ -2,7 +2,12 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §12
+
+## Regula durabilă
+
+**Migrare green-field la graniță de ciclu**: fără paritate
+document-cu-document; se preiau nomenclatoare, politici (seed),
+solduri/stocuri de deschidere.
 
 ---
 

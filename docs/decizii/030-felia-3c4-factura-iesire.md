@@ -2,7 +2,15 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §30
+
+## Regula durabilă
+
+**FacturaIesire.** (a) La bugetar: pur creanță, fără stoc
+(`PoliticaValidare`); la privat descarcă gestiune prin DSC (37). (b)
+Contare generică: debit `RepartitorPrimitor` (fallback 411), credit
+`TipMaterial` FĂRĂ fallback; venitul = alegerea Tipului (clasa VEN). (c)
+`PoliticaScadenta` se aplică DOAR dacă scadența nu e culeasă. Serie `FCL-`
+server-owned. (e) Seed-ul comite nomenclatoarele înainte de derivări.
 
 ---
 

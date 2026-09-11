@@ -2,8 +2,19 @@
 
 - **Data**: 2026-08-08 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §55
 - **Docs**: docs/api/p5-spike1-contract.md
+
+## Regula durabilă
+
+**Spike BTR — regulile tuturor feliilor.** (a) `GardianEditare` pe familia
+secured (înregistrat în AMBELE host-uri): read-only post-Draft pe starea
+ORIGINALĂ, câmpurile server-owned păzite, registrele doar ale motorului.
+(b) Comenzile = `OperareApi` prin ID în OS non-secured, cu **gate de
+autorizare ÎNAINTE**; `Valideaza` = dry-run. Validarea XAF NU rulează pe
+API (Apply rezolvă FK-urile cu mesaje de domeniu; `422 {Erori[]}`).
+Șablonul feliei: DTO + Apply + proiecții în Module (testabile în ModelCheck),
+controllere subțiri; `Lot` read-only în OData. Client: formular
+hand-rolled pe context (RHF respins). (g) Datorii → jurnal.
 
 ---
 

@@ -2,8 +2,22 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §22
 - **Docs**: db/inventar/11-testul-bazei.md
+
+## Regula durabilă
+
+**Testul bazei — închis** (`db/inventar/11-testul-bazei.md`). Baza
+`Document`: Numar, Data, PredatorId, PrimitorId, Stare(+DataOperare),
+DocumentSursaId + Autogenerat, Total. Baza `DocumentDetaliu`: TipMaterialId
+(Clasa se derivă din Tip), LotId?, Cantitate SEMNATĂ, Valoare (valoarea de
+postare), AngajamentId? (+ TipTvaId?/ValoareTva din 36a). Tranșări:
+(a) doar `Valoare` pe bază, intermediarele (preț/cotă/net) per derivată;
+(b) granița dimensiunilor nu e în schema bazei ci în validare + metadata
+(azi: frunze, 54c); (c) AngajamentId FK nullable, modulul angajamente
+separat; (d) contul pe linia Factura* = politică (SursaCont), nu câmp;
+(e) DECONT_* = câmpuri pe FacturaIntrare; scadența/PV = interfețe
+(`IDocumentCuScadenta`, `IDocumentCuPV`); NR_NOTA moare (numărul notei
+aparține registrului).
 
 ---
 

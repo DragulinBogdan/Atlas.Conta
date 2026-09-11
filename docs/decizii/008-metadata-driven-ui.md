@@ -2,7 +2,12 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §8
+
+## Regula durabilă
+
+**Metadata-driven UI** doar pe criteriul deciziei 4: build-time = OpenAPI→TS
++ captions; runtime = doar politici-date; layout-ul per tip e cod React
+(rafinat de 42e — serializarea layout-ului a MURIT).
 
 ---
 

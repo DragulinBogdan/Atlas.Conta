@@ -2,7 +2,16 @@
 
 - **Data**: 2026-07-23 (primul commit în jurnal)
 - **Stare**: activă; (a) amendată 2026-09-09 — pachetele Atlas.DXF nu mai sunt pinnate, ci flotante pe `26.1.*` ca DevExpress (`Directory.Packages.props`); autorul ține biblioteca la zi, compatibilitatea între versiunile mici e a ei
-- **Rezumat durabil**: `CLAUDE.md` §39
+
+## Regula durabilă
+
+**Atlas.DXF în Conta.** (a) Violările de constraint DB → mesaje de domeniu
+prin `ConstraintViolationTranslator` (bibliotecă); template-urile RO
+(`MesajeConstraintRo`) sunt comune ambelor host-uri. Pachetele Atlas.DXF
+și DevExpress FLOTANTE pe linia `26.1.*` (amendat 2026-09-09: pinul exact
+a murit; compatibilitatea între versiunile mici e a bibliotecii, care se
+ține la zi de autor; upgrade = `restore`). (c) Baseline UI = EntityFluent în
+`ContaUiBaseline`, discovery MANUAL.
 
 ---
 

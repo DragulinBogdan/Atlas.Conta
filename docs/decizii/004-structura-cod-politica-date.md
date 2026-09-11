@@ -2,7 +2,14 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §4
+
+## Regula durabilă
+
+**Structura devine cod, politica rămâne date**: câmpurile per tip = clase +
+validare declarativă; maparea Clasă/Tip → conturi, definițiile de stoc,
+numerotarea, conexul, scadența, TVA-ul, validările per tip = tabele de
+politică editabile fără release. Politica nu inventează comportament
+(invariant IV).
 
 ---
 

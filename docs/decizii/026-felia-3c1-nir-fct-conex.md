@@ -2,7 +2,23 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §26
+
+## Regula durabilă
+
+**NIR + FacturaIntrare + conex.** (a) Recepția CONTEAZĂ pe NIR; FCT
+postează DOAR liniile care nu trec pe NIR + TVA-ul; granița = Natura
+clasei; fără dublă postare. (b) Conturile se rezolvă declarativ: `SursaCont`
+per latură (Explicit/TipMaterial/RepartitorPredator/RepartitorPrimitor);
+`ContImplicit` pe TipMaterial (Cod-ul Tipului E simbol de cont, cu tăierea
+segmentelor terminale) și pe Repartitor = mapările ca DATE. (c) Prioritate:
+TipMaterial exact → `NaturaFiltru` → generică; fără regulă = linia nu
+contează; RegulaStoc pe Clasă bate genericul. (d) Conexul se generează ÎN
+motor, în tranzacția operării sursei (`PoliticaConex.NaturaFiltru`);
+copiii Operați blochează anularea sursei, drafturile autogenerate se șterg
+cu ea. (e) Lotul se naște la culegere pe linia FACTURII; `Lot.LinieIntrareId`
+e coloană FĂRĂ FK (intenționat — ciclu de inserție). (f) Validările
+proprii tipului trăiesc în `ValideazaOperare`; nicio navigație lazy în
+timpul enumerării.
 
 ---
 

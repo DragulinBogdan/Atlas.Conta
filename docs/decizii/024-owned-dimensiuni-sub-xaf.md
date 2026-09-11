@@ -2,7 +2,12 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: DEPĂȘITĂ de 54c (owned-ul a murit din Conta); rămân valabile: EF Core nu XPO, maparea NuGet Atlas.DXF, versiunile flotante EF
-- **Rezumat durabil**: `CLAUDE.md` §24
+
+## Regula durabilă
+
+**EF Core, nu XPO.** Restul (owned `Dimensiuni` sub XAF, `OwnedObjectBase`,
+`CreateProxy`) e DEPĂȘIT de 54c. NuGet: `nou/nuget.config` mapează
+`Atlas.DXF.*` → feed Atlas.
 
 ---
 

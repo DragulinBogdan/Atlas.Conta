@@ -2,7 +2,14 @@
 
 - **Data**: 2026-08-09 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §61
+
+## Regula durabilă
+
+**Restanțe.** (a) `DocumentSursaTip` în ReadDto; toate link-urile prin
+`rutaTip` — tip fără felie = text, nu link mort. (b) Etichetele liniilor
+nesalvate: culese la selecție, per POZIȚIE, mor la orice re-seed; valorile
+rămân ale serverului. (c) `existaInSet` decide felul laturii; `undefined`
+≠ „nu"; în afara setului ⇒ afișare statică (default-ul care nu minte).
 
 ---
 

@@ -2,7 +2,16 @@
 
 - **Data**: 2026-07-24 (primul commit în jurnal)
 - **Stare**: activă; (e) Atlas.DXF e PINNAT, nu flotant (53h)
-- **Rezumat durabil**: `CLAUDE.md` §41
+
+## Regula durabilă
+
+**Genericul în Atlas.DXF.** (a) `ForbidCRUD` = enforcement de fond. (b)
+`HideForeignKeys()`; `Lot.LinieIntrareId` vizibil intenționat. (c)
+`AutoInclude` DOAR pe navigațiile registrului contabil; liniile și regulile
+rămân lazy. (d) Imperechere: New PERMIS, validat la commit (azi 55a); Edit
+blocat; refuz Plata↔Plata; două link-uri în același commit nu se văd. (e)
+Pachete prin `pack-and-push.ps1` (push-ul = utilizatorul); consum =
+`restore` pe `26.1.*` (39a amendat).
 
 ---
 

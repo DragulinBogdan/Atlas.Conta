@@ -2,8 +2,16 @@
 
 - **Data**: 2026-07-27 (primul commit în jurnal)
 - **Stare**: activă; (e)/(f) lotul de defecte închis de 52
-- **Rezumat durabil**: `CLAUDE.md` §50
 - **Docs**: docs/import/faza-1c-design.md
+
+## Regula durabilă
+
+**Gate-ul 1C-d.** (a) Ordine CRONOLOGICĂ pe timestamp-ul sursei;
+**identitatea produsului de import = nomenclator 1C × simbol de cont**;
+Draft la reluare = reimport; contract MĂSURAT prin registrul divergențelor.
+(b) **„Acoperit" cere acoperitor**; skip cu motiv OBLIGATORIU.
+Justificările contractului = egalitate cu registrul și categorii mărginite
+de cifra sursei, nu toleranțe. (e)/(f) → 52.
 
 ---
 

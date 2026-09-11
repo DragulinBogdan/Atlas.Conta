@@ -2,8 +2,22 @@
 
 - **Data**: 2026-08-08 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §56
 - **Docs**: docs/api/p5-felia-fct-contract.md
+
+## Regula durabilă
+
+**FCT + NIR prin API.** `LoturiCulegereService` = seam-ul UNIC al loturilor
+(XAF și Apply). `Numar` e cules DOAR pe FCT (numărul furnizorului); pe toate
+celelalte tipuri e server-owned. Pe linii existente, absența unui câmp
+opțional în PUT = golire deliberată (round-trip). TipTva implicit doar pe
+linii NOI; recalcul DOAR pe
+declanșatori; override de ValoareTva doar pe regimuri cu TVA separat,
+nenegativ (fix de fond viitor: `TvaSuprascris`). OData: nomenclatoarele vii
+= CRUD, politicile = ReadOnly. openapi.json OFFLINE, cu drift verificat.
+(e) Nucleu client: cheile OData sunt `Guid` (compară cu `String()`);
+`laSelectie` = notificare, update FUNCȚIONAL; **widget-ul raportează DOAR
+`e.event`** — formularul e sursa de adevăr. (f) Semantica TVA e în
+ModelCheck pe ambele profiluri.
 
 ---
 

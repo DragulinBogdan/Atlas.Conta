@@ -2,16 +2,18 @@
 
 > **Cum se folosește.** O trimitere „decizia 42c" = deschide `042-*.md` și caută
 > sub-punctul `(c)`. NU se citește tot directorul — antetul fiecărui fișier
-> spune dacă decizia e activă, amendată sau depășită. Rezumatul durabil al
-> fiecărei decizii, sub aceeași numerotare, e în `CLAUDE.md`; constituția e
-> `docs/invarianti.md`; istoricul planului de lucru (feliile executate) e în
-> [`istoric-plan-de-lucru.md`](istoric-plan-de-lucru.md).
+> spune dacă decizia e activă, amendată sau depășită, iar secțiunea „Regula
+> durabilă" de sub antet ține regula (cu sub-punctele (a)–(k)), înaintea
+> textului integral. Constituția e `docs/invarianti.md`; restanțele cu nume
+> sunt în [`restante.md`](restante.md); istoricul planului de lucru (feliile
+> executate) e în [`istoric-plan-de-lucru.md`](istoric-plan-de-lucru.md).
 >
-> **Decizie nouă** = fișier nou `NNN-slug.md` (numărul următor, antet + text
-> integral: context, tranșări, review, ce rămâne deschis) + o linie aici +
-> rezumatul în `CLAUDE.md`. **Decizie depășită/amendată** = se actualizează
-> `Stare:` în antetul ei (și rezumatul din CLAUDE.md) — textul nu se șterge și
-> nu se renumerotează niciodată; sub-punctele (a)–(k) sunt referite din cod.
+> **Decizie nouă** = fișier nou `NNN-slug.md` (numărul următor: antet,
+> „Regula durabilă", apoi textul integral: context, tranșări, review, ce
+> rămâne deschis) + o linie aici + un rând per restanță în `restante.md`.
+> **Decizie depășită/amendată** = se actualizează `Stare:` în antetul ei și
+> aici — textul nu se șterge și nu se renumerotează niciodată; sub-punctele
+> (a)–(k) sunt referite din cod.
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|

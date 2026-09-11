@@ -2,7 +2,14 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §16
+
+## Regula durabilă
+
+**Repartitori: TPT bază + derivate** doar unde schema diferă și identitatea
+e exclusivă (Partener, Gestiune, Angajat, UnitateInterna, ContPropriu);
+calitățile transversale (Gestionar, Comisie, LocConsum, CentruCost…) =
+flags `Calitati`, nu clase. Furnizor/client = rol dat de poziția pe
+document, o singură clasă `Partener`.
 
 ---
 

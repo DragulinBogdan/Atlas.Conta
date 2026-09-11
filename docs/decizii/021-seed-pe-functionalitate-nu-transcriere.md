@@ -2,7 +2,14 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §21
+
+## Regula durabilă
+
+**Seed-ul politicilor se face PE FUNCȚIONALITATE, nu prin transcrierea
+config-ului legacy** (nici a lui 1C — 35b). Sursele externe sunt
+evidență/direcție, niciodată canonic; fiecare gaură de profil = decizie
+explicită, nu transcriere. Amânare cu nume: defalcarea multi-sursă pe linie
+(cofinanțarea) se proiectează odată cu SursaFinantare (jurnal 29d/34d).
 
 ---
 

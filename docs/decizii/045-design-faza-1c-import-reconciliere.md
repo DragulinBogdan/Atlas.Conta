@@ -2,8 +2,18 @@
 
 - **Data**: 2026-07-25 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §45
 - **Docs**: docs/import/faza-1c-design.md
+
+## Regula durabilă
+
+**Design 1C.** (a) Sursa = view-urile SkyConta (contract de coloane). Anul
+se importă OPERAT PRIN MOTOR, idempotent prin `MigrareLegatura`, pe bază
+dedicată; harness, nu go-live. Regula: stocul nu se mișcă fără registru de
+stoc; rândurile TVA ale închiderii 1C se SAR (le generează ITV). (e)
+Contractul de reconciliere trăiește în conector (sold per cont / 4423-4424 /
+stoc per produs×gestiune, lunar; toleranță 0,005); rulajele și per-lot NU
+sunt ținte (nereconciliabile structural); diferențele sursei se raportează. (f) `nou/tools/Import1C` (consolă, fără bibliotecă comună cu
+Migrare — deliberat); profilul se completează PE PARCURS, fiecare gaură = decizie explicită.
 
 ---
 

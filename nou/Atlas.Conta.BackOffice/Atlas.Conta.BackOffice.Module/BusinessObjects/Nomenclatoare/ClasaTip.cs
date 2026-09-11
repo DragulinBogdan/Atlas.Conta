@@ -6,7 +6,7 @@ using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// Clasă/Tip = echivalentul operațional al planului de conturi (CLAUDE.md):
+// Clasă/Tip = echivalentul operațional al planului de conturi (legacy; 23b):
 // Clasa dă natura liniei (și registrul de stoc), Tipul dă maparea contabilă.
 
 [NavigationItem("Nomenclatoare")]

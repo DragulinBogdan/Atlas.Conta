@@ -4,6 +4,16 @@
 - **Stare**: activă
 - **Docs**: `docs/invarianti.md` (II), `Module/BusinessObjects/Documente/Document.cs`, `Module/BusinessObjects/Documente/Trezorerie.cs`, `Module/Motor/ImperechereService.cs`, `Module/Motor/MotorOperare.cs`, `nou/tools/ModelCheck/Program.cs`
 
+## Regula durabilă
+
+**Stingerea automată prin contract** (invariantul II). (a) Hook-ul
+`Document.SursaStingeriiAutomate(os)` întoarce implicit null; trezoreria declară sursa
+doar când e autogenerată și are capacitate de stingere. Capacitatea manuală
+a NTC nu o înscrie automat. (b) `ImperechereService.CreeazaAutomataLaOperare`
+verifică rolul sursei și păstrează calculul din liniile curente + restul
+sursei, prin validările existente. (c) Motorul apelează mecanismul după
+materializare și starea Operat, înainte de commit; serviciul nu comite.
+
 ## Context
 
 `MotorOperare.Opereaza` condiționa împerecherea automată prin

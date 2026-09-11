@@ -1,7 +1,8 @@
 ﻿# Istoricul de execuție al planului de lucru (snapshot 2026-08-24)
 
-> Extras verbatim din `CLAUDE.md` la 2026-08-24 (commit `f18c24c`). Starea
-> curentă compactă e în `CLAUDE.md` §„Stare și roadmap"; deciziile referite
+> Extras verbatim din `CLAUDE.md` la 2026-08-24 (commit `f18c24c`); secțiunea
+> finală (cronologia compactă) e mutată din `CLAUDE.md` la 2026-09-11. Starea
+> curentă și „următorul pas" stau în `CLAUDE.md` §„Stare"; deciziile referite
 > („decizia N") sunt în fișierele `NNN-*.md` din acest director.
 
 ## Plan de lucru (ordine obligatorie)
@@ -491,3 +492,43 @@ per felie):
   concluzia contra gardurilor frunzelor ⇒ `[GardContare]` + `Rezerve`; trei
   medii: DEC postare explicită, curățenia `PoliticaValidare`, ștergerea
   `TipTva` referit) + docs + Import1C integral identic cu baseline-ul F18.
+
+## Cronologia compactă a feliilor (la 2026-09-11)
+
+Executate, în ordine (contractele/design-urile per felie în `docs/`; istoricul
+detaliat în jurnal):
+
+- **Pasul 1–2** — inventar legacy + testul bazei (`db/inventar/`).
+- **Pasul 3** — modelul: 3a persistență/seed (23), 3b motorul (25), 3c tipurile
+  (26–32), 3d validarea transversală (33). BPR rămâne rezervat.
+- **Pasul 4** — migrarea legacy (34); azi prototip de conector (35a).
+- **Faza privat** — P1 TVA structural (36), P2 descărcarea de gestiune (37/38);
+  Atlas.DXF + polish XAF (39–41).
+- **Design pasul 5** — API (42), React (43); amânat după 1C (44).
+- **Faza 1C** — tipurile noi (46), Import1C (47–50), 1C-d-final (52): anul 2025
+  prin motor cu contract îndeplinit 4 × 12 luni. ÎNCHISĂ.
+- **GATE XAF** (53) — trecut. **DIM-1…4** (54) — owned-ul a murit; raport de
+  reconciliere identic byte-cu-byte.
+- **Pasul 5** — spike BTR (55), FCT+NIR (56), trezorerie (57), FCL+DSC (58),
+  perf (59), mărunțișuri (60–61), NIR scriere (62), LDI+BCS (63), virament (64),
+  DEC + pereche (65), raportare (66), balanța pliată (67), jurnale TVA (68),
+  D300 (69), motor/structură post-D300 (70), D394 (71), partener + ANAF (72),
+  SAF-T D406 L (73), SAF-T S stocuri (74), restanțele grele ale lui S —
+  golirea valorică în motor + reclasificarea ca mișcare (75), NTC + ASM +
+  retururi prin API și client + plafonul de stingere cu latură și netat (76),
+  finisajul clientului — căutarea fără diacritice, cache-ul de nomenclator,
+  confirmările, `Neincluse` agregat, primele ecrane de nomenclator (77),
+  căutarea fără diacritice pe proiecții — filtrele grilelor prin
+  `DataSourceLoader`, prin același normalizator (78), ITV prin API și client
+  — comandă cu cauză + ecran de rezultat (79), refuzurile de acces pe toate
+  ușile — 404/403/422 cu o singură ordine și un singur corp, gate pe scriere,
+  pasul zero al gardianului, probele HTTP cu script (80), implicitele de
+  culegere + întreținerea politicilor — regimul e al partenerului, cota e a
+  produsului; politicile pe OData cu invarianții în gardian, unicitatea în
+  schemă, `DinSeed`, raportul de profil, grila comună (81); stingerea
+  automată prin contract (82); seed-ul și proveniența — re-seed pe `DinSeed`,
+  golurile privat cu poarta spre DVI, rolul `Configurator` (83); felia 24 —
+  seed-ul aliniază, `Configurator` seed-uit, cele șapte ecrane de politică,
+  `Motor/Potrivire.cs` consumat de motor și de explicație, gardul de nivel
+  minim ca atribut pe clasă, `GET api/politici/explica` + panoul „Explică",
+  enum-urile fără membru și ștergerea `TipTva` referit refuzate (84).

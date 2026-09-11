@@ -2,7 +2,15 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §19
+
+## Regula durabilă
+
+**Tipurile de document = ierarhia de clase**: FacturaIntrare, FacturaIesire,
+NIR, BonConsum, NotaTransfer, ListaDiferenteInventar, Decont, Plata,
+Incasare (+ DescarcareGestiune 37; NotaContabila, InchidereTva, Asamblare,
+ReturFurnizor, ReturClient 46). **RaportProductie rămâne REZERVAT**
+(designul BPR se amână până la modulul de rețetar). Proforma exclusă; BF
+(bon fiscal/avans) = variantă de FacturaIntrare, nu tip separat.
 
 ---
 

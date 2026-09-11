@@ -2,8 +2,19 @@
 
 - **Data**: 2026-07-23 (primul commit în jurnal)
 - **Stare**: activă; amendată de 71 la (d) — `CategorieD394` a murit (coloana scoasă din `TipTva` de migrația `AddD394`; categoria D394 e politica `MapareD394 (TipTva × Sens) → Tip`, 71c)
-- **Rezumat durabil**: `CLAUDE.md` §36
 - **Docs**: docs/privat/p1-tva-design.md
+
+## Regula durabilă
+
+**TVA structural.** (a) `TipTva` (cotă × regim + conturi ca date + coduri
+SAF-T/D394); `TipTvaId?`/`ValoareTva` pe bază; **`ValoareTva` culeasă nu se
+suprascrie la operare** (FCT/FCL/DEC); `Total` = BRUT, imperecherea stinge
+brutul. (b) Pasul TVA în motor, condiționat de `PoliticaTva` a tipului; TI =
+4426=4427; dimensiunile rândului TVA fără override de regulă; conexul
+clonează `TipTvaId`, NU ValoareTva (lotul la net). (c) `ContaSeeder` =
+nucleu + pachete de profil; `VerificaProfil`: profilul nu se amestecă pe o
+bază. Codurile SAF-T sunt direcționale; `CategorieD394` a murit (71c).
+(f) Amânate → jurnal (închiderea lunară = 46c; jurnalele = 68).
 
 ---
 

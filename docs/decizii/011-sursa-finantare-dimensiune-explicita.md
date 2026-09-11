@@ -2,7 +2,11 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §11
+
+## Regula durabilă
+
+**Sursa de finanțare = dimensiune explicită** (mecanismul COMPUSA din
+legacy se elimină; denumirile dimensiunilor normalizate).
 
 ---
 

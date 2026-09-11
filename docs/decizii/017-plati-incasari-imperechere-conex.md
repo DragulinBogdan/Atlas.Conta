@@ -2,7 +2,13 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §17
+
+## Regula durabilă
+
+**Plăți/încasări = tipuri de document; Imperecherea** (stingerea) = link
+many-to-many plată↔factură cu sume parțiale, NU document (31d).
+**Document conex** = generare automată de document legat, cu link persistat
+(`DocumentSursaId` + `Autogenerat`), mecanism generic (26d).
 
 ---
 
