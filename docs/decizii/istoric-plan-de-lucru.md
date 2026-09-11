@@ -532,3 +532,8 @@ detaliat în jurnal):
   `Motor/Potrivire.cs` consumat de motor și de explicație, gardul de nivel
   minim ca atribut pe clasă, `GET api/politici/explica` + panoul „Explică",
   enum-urile fără membru și ștergerea `TipTva` referit refuzate (84).
+- **Decizia 85** (2026-09-11) — modul de acces al ListView-urilor XAF Blazor:
+  `Server` cu paginare ca implicit, `ServerView` opt-in pe registre,
+  `Client` explicit pe grilele nested de culegere, IF/IFV cu prag măsurat,
+  selecția prin `GetObject`, `Lot.Eticheta` `[Calculated]` (tranșează D4 din
+  gate-ul XAF).

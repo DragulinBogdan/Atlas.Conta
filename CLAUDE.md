@@ -99,6 +99,8 @@ Toate tipurile de document au felie prin API și client (ITV ca COMANDĂ, 79);
 singurul rămas e BPR (rezervat, 19). Refuzurile de acces sunt uniforme pe REST
 și OData și MĂSURATE (80). Ultima felie închisă: 24 — politicile, seed-ul
 care aliniază, `Configurator`, `Potrivire`, „Explică" (84, 2026-09-11).
+Listele XAF Blazor: `Server` implicit cu paginare, `ServerView` pe registre,
+`Client` explicit pe grilele de culegere, IF/IFV doar cu prag (85, 2026-09-12).
 Cronologia integrală: `docs/decizii/istoric-plan-de-lucru.md`.
 
 **Următorul pas**: izolarea motorului de `IObjectSpace` — contract scris
@@ -112,7 +114,9 @@ mai ține doar itemii structurali și 77-r1/r6.
 probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe
 host viu (Privat, după re-seed pentru `Cititor`/`Configurator`), nu se refac
 de mână; două ModelCheck-uri în paralel cer worktree + `MODELCHECK_BAZA_SUFIX`
-(bazele fără sufix sunt ale unei singure rulări).
+(bazele fără sufix sunt ale unei singure rulări). ModelCheck compilează și
+proiectul Blazor.Server (modelul real al hostului, 85h): build-ul lui pică pe
+DLL-uri blocate cât timp hostul Blazor rulează din același `bin`.
 
 ## Reguli de lucru pentru Claude Code
 

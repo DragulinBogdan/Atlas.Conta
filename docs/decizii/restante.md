@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-11.** [Index](README.md)
+**Actualizat: 2026-09-12.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -156,4 +156,13 @@ văzută de utilizator, sunt în
 | 84-r10 | = F24-r1 `Import1C/Catalog.IncarcaContare` pe `Potrivire` | deschisă |
 | 84-r11 | deep insert OData pentru `Configurator` și smoke XAF pe gardurile rescrise neprobate | deschisă |
 | 84-r12 | stocul pe LDI nu depinde de semn (28a; observație) | deschisă |
-| C1a | fluxul comenzilor (`docs/architecture-notes-2026-07-28.md`) | deschisă |
+| 85-r1 | `RegistruContabil`/`RegistruTva` pe `ServerView` după cifra de pagină pe `Server` | închisă de 85 (pe cifre, `p5-perf-masuratori.md`) |
+| 85-r2 | `InstantFeedback`/`InstantFeedbackView` doar pe view-ul care trece pragul (p95 pagină > ~300 ms), cu proba în browser | deschisă |
+| 85-r3 | alte proprietăți nemapate care ajung în liste (`Total` pe DetailView rămâne; regula 85g le refuză din ModelCheck) | deschisă |
+| 85-r4 | `PageSize` implicit pe grile (cifra pe probă) | deschisă |
+| 85-r5 | `RegulaStoc_ListView` cu override `Server` redundant cu `Options` (se curăță la atingere) | deschisă |
+| 85-r6 | modul `Server` include navigațiile coloanelor ascunse (`Index = -1`); curatoria = scoase din modelul view-ului (`HideMembers`/`VisibleInListView(false)`), de măsurat pe listele grele | deschisă |
+| 85-r7 | gruparea pe `Server`/`ServerView` încarcă primele rânduri ale fiecărui grup (chei + entități per grup) | deschisă |
+| 85-r8 | `Refresh` execută pagina de două ori pe `Server` | deschisă |
+| 85-r9 | layout-ul salvat al utilizatorului poate ascunde toate coloanele; pe `ServerView` celulele rămân goale până la Refresh (curatoria grilelor, DIM-4) | deschisă |
+| 85-r10 | coloana `Produs` goală în grila Detalii a FCT `WIS26511` (date sau afișare) | deschisă || C1a | fluxul comenzilor (`docs/architecture-notes-2026-07-28.md`) | deschisă |

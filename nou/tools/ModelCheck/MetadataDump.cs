@@ -38,7 +38,7 @@ static class MetadataDump {
     public static string CaleImplicita() =>
         Path.GetFullPath(Path.Combine(DirectorProiect(), CaleRelativaImplicita));
 
-    static string DirectorProiect([CallerFilePath] string sursa = null) {
+    public static string DirectorProiect([CallerFilePath] string sursa = null) {
         DirectoryInfo dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null) {
             if (File.Exists(Path.Combine(dir.FullName, "ModelCheck.csproj")))

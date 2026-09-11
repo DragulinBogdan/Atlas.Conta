@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-09.** [Index](README.md)
+**Actualizat: 2026-09-12.** [Index](README.md)
 
 ## Organizarea sursei
 
@@ -89,6 +89,7 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | DTO, atribute, expunere API | Build WebApi, regenerare și verificarea contractelor; probe HTTP pentru comportamentul afectat (56, 80i) |
 | Autorizare | Probe HTTP cu rolurile reale; o probă pe context nesecurizat nu demonstrează securitatea (80i, 81j) |
 | Formular sau interacțiune | Build client și verificarea fluxului în browser (66) |
+| Mod de acces al unui ListView XAF, proprietate nouă afișată în liste | ModelCheck (`D85-M1`, `D85-M2`, `D85-R1…R3`) și deschiderea listei în browser pe baza de import: sort, filtru, grupare, detaliu din listă, culegere pe document nou (85h) |
 | Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
@@ -96,6 +97,22 @@ ModelCheck verifică modelul și execută scenarii de integrare, inclusiv probe
 pure pe funcțiile de potrivire și de seed. Nu are strategie de securitate
 XAF; autorizarea se probează prin `nou/tools/ProbeHttp/refuzuri.ps1`, cu
 rolurile Admin, Cititor, User și Configurator. (80i, 81j, 84c)
+
+Modurile de acces ale listelor XAF sunt probate pe modelul REAL al
+aplicației Blazor: ModelCheck construiește hostul cu `Startup` din
+Blazor.Server pe calea `--updateDatabase`, fără circuit
+(`ModelAplicatie.cs`, `D85-M0`) și numără comenzile SQL printr-un
+interceptor (`NumaratorSql.cs`). Probele: modul fiecărui view (`D85-M1`),
+precondițiile oricărui `ServerView`/`InstantFeedbackView` — coloane și
+`DefaultProperty` mapate sau calculate, fără cast pe selecție, fără regulă
+Appearance pe membru nevizibil (`D85-M2`) — o pagină `ServerView` cu
+`Lot.Eticheta` calculată identică cu C#, inclusiv rotunjirea (`D85-R1`), o
+pagină `Server` = un query plus COUNT (`D85-R2`) și grila nested `Client`
+care vede liniile nesalvate (`D85-R3`). (85h)
+
+ModelCheck referă proiectul Blazor.Server: build-ul lui pică pe DLL-uri
+blocate cât timp hostul Blazor rulează din același `bin` (același tipar ca
+`verifica:drift` cu WebApi pornit). Se oprește hostul înainte de build. (85h)
 
 **ModelCheck scrie în baze de date.** Profilul bugetar implicit folosește
 baza configurată de aplicație (`Atlas.Conta.BackOffice` în configurația

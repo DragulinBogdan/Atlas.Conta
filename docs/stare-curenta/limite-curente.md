@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-09.** [Index](README.md)
+**Actualizat: 2026-09-12.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -107,6 +107,22 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   în afara formei comune `Erori`. (80-r3)
 - Metadata OData descrie modelul expus și nu este filtrată ca o listă de
   înregistrări după permisiunile utilizatorului. (55g)
+- În XAF Blazor niciun view nu folosește `InstantFeedback`/
+  `InstantFeedbackView`; activarea cere o măsurătoare peste prag și probe în
+  browser. (85-r2)
+- Proprietățile nemapate ale documentelor (`Total`, valorile de
+  livrare/recepție) sunt disponibile în DetailView, nu în liste; o altă
+  proprietate nemapată care ar ajunge într-o listă este refuzată de ModelCheck.
+  Mărimea paginii grilelor nu este calibrată; `RegulaStoc_ListView` poartă un
+  override `Server` redundant cu opțiunea aplicației. (85-r3, 85-r4, 85-r5)
+- În modul `Server`, referințele coloanelor ascunse rămân în interogarea
+  paginii (FCT: 33 de join-uri); scoaterea lor din modelul view-ului nu e
+  făcută. Gruparea încarcă primele rânduri ale fiecărui grup, iar `Refresh`
+  execută pagina de două ori. (85-r6, 85-r7, 85-r8)
+- Un layout salvat de utilizator poate ascunde toate coloanele unui view; pe
+  `ServerView` celulele rămân goale până la Refresh după re-bifarea
+  coloanelor. Grila Detalii a unei facturi importate poate arăta coloana
+  `Produs` goală (neverificat dacă e de date sau de afișare). (85-r9, 85-r10)
 - Găzduirea clientului și API-ului pe aceeași origine este contractul de
   livrare. Hostul are `UseStaticFiles`, dar proiectul WebApi nu include
   copierea automată a build-ului React și fallback-ul rutelor SPA.

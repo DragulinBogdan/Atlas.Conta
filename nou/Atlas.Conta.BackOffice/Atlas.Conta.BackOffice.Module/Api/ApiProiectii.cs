@@ -13,21 +13,9 @@ namespace Atlas.Conta.BackOffice.Module.Api;
 //     același motiv pentru care `DocumentCopilDto` a urcat în `ApiDtos`: al
 //     doilea exemplar ar diverge tăcut de primul.
 internal static class ApiProiectii {
-    // Oglinda lui `Lot.Eticheta` (care e [NotMapped], deci inaccesibil în SQL):
-    // aceleași reguli, compuse după materializarea câmpurilor plate. Orice
-    // schimbare acolo se reflectă aici — cusătura e documentată în ambele.
-    // O SINGURĂ copie pentru toate feliile (BTR/FCT/NIR): eticheta lotului apare
-    // pe orice linie care referă un lot, iar un al doilea adevăr de afișare ar
-    // diverge tăcut de model.
-    public static string EtichetaLot(string produs, DateOnly? data, decimal? pretUnitar) {
-        if (data == null)
-            return null;
-        var denumire = produs ?? "(produs nedefinit)";
-        var pret = pretUnitar ?? 0m;
-        return data == default(DateOnly) && pret == 0m
-            ? $"{denumire} (în culegere)"
-            : $"{denumire} · {data:dd.MM.yyyy} · {pret:0.####}";
-    }
+    // 85g — aceeași compunere ca `Lot.Eticheta`, pe câmpuri proiectate plat.
+    public static string EtichetaLot(string produs, DateOnly? data, decimal? pretUnitar)
+        => data == null ? null : Lot.EtichetaLot(produs, data.Value, pretUnitar ?? 0m);
 
     // Grupul conex al unui document. Coloanele plate vin dintr-o proiecție;
     // CODUL TIPULUI nu poate veni din SQL — sub TPT nu există discriminator, iar

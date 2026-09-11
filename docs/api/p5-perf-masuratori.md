@@ -525,3 +525,32 @@ r.\"TipStoc\", SUM(CASE WHEN r.\"Data\" < DATE '2025-09-01' THEN
 r.\"Cantitate\" ELSE 0.0 END), … FROM \"RegistruStoc\" r WHERE r.\"GCRecord\" =
 0 AND r.\"Data\" <= DATE '2025-09-30' GROUP BY 1, 2, 3"`. Identitatea:
 copiile XML de la 74 diff-uite cu două `StreamReader`-e linie cu linie.
+
+## Decizia 85 — paginile listelor XAF Blazor
+
+**Executată 2026-09-12.** Baza Privat (clona bazei de import); Postgres cu
+`log_min_duration_statement = 0` (exec + plan per comandă), browser cu
+`performance.now()`. O pagină = 20 de rânduri; „cmd/pag" = comenzi SQL pe
+pagină (COUNT + chei + SELECT). Verdictul: cele trei registre pe `ServerView`
+(85-r1 închisă); documentele rămân pe `Server`.
+
+| View × mod | pagina 1 (ms) | salt de pagină | sort `Data` | grupare | cmd/pag | SELECT |
+|---|---|---|---|---|---|---|
+| `RegistruTva` Server (90.740) | COUNT 5 + 966 | chei 15 + 221 | 604 | 6 + 2 × (5–12 + 230–250) | 2–3 | 156 col, 35 JOIN |
+| `RegistruTva` ServerView | COUNT 4 + 0,1 | chei 16 + 0,05 | 20 | 5 + 2 × (4–10 + 0,1) | 2–3 | 8 col, 0 JOIN |
+| `RegistruContabil` Server (305.039) | COUNT 37–54 + 12–48 exec / 21–42 plan | chei 41 + 51 | 69 | ≈ 500 (14 grupuri) | 2–3 | 342 col, 66 JOIN |
+| `RegistruContabil` ServerView | COUNT 19–29 + 0,6–2 exec / 4–22 plan | chei 5 + 26 | 38 | ≈ 170 | 2–3 | 25 col, 20 JOIN |
+| `RegistruStoc` ServerView (282 k) | COUNT 32 + 15 | chei 52 + 34 | 88 | — | 2–3 | 11 col, 6 JOIN |
+| FCT Server (19.042; FCL are 40.555) | COUNT 15–135 + 16 | chei 16 + 21 | 44 | 59 + 2 cmd/grup | 2–3 | 129 col, 33 JOIN |
+
+Browser (refresh / sort / grupare, Server → ServerView): `RegistruTva`
+1,4 s → 0,3 s / 823 → 125 ms / 691 → 148 ms; `RegistruContabil` 367 → 337 /
+295 → 218 / 1237 → 501 ms.
+
+**Cauza pe `RegistruTva` Server** (EXPLAIN ANALYZE 805 ms): INNER JOIN pe
+derived-table-ul TPT `DocumentDetalii` (9 LEFT JOIN) → Hash Join cu Seq Scan
+pe 337 k linii pentru 20 de rânduri, pentru că în modul `Server` `.Include`
+se aplică și coloanelor cu `Index = -1` (coloana rămâne în modelul
+view-ului) — restanța 85-r6. Gruparea încarcă primele rânduri ale fiecărui
+grup (85-r7); `Refresh` execută pagina de două ori pe `Server` (85-r8).
+Lookup-ul de lot cu `Eticheta` calculată: COUNT + pagină ≈ 30 ms per tastă.
