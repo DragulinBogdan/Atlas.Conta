@@ -16,8 +16,11 @@ unu-la-unu. Crearea și ștergerea sunt refuzate, iar `Cod` și `ClrType` sunt
 controlate de server. Implicitul TVA al ancorei este editabil. (20, 81e)
 
 Politicile sunt editabile prin OData în limita permisiunilor și a gărzilor
-de domeniu. Disponibilitatea unui endpoint nu implică existența unui editor
-React pentru toate tabelele. (81e, 81k)
+de domeniu. Rolul `Configurator` (seed-uit, și pe RELEASE) citește tot și
+scrie doar tipurile din `Politici.TipuriConfigurabile` — lista explicită a
+celor 17 tipuri cu proveniență, consumată și de raportul de profil și de
+gate-urile de citire; permisiunile rolului se reaplică la fiecare seed. Toate
+tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e, 81k, 84c, 84d)
 
 | Configurare | Condiții impuse |
 |---|---|
@@ -25,6 +28,8 @@ React pentru toate tabelele. (81e, 81k)
 | Regulă de contare / politică TVA | Sursa de cont explicită cere cont explicit (81e) |
 | Regulă de contare | Filtrul de semn este `-1`, `1` sau absent; un filtru de tip material exclude completarea filtrului de natură (81e) |
 | Regulă de stoc | Semnul este `-1` sau `1` (81e) |
+| Orice politică sau nomenclator cu proveniență | Fiecare câmp enum poartă un membru definit; enum-urile fără membru 0 nu acceptă valoarea implicită scrisă prin omisiune (84i) |
+| Tip TVA | Ștergerea unui tip referit (implicite, ancoră, parteneri, produse, linii de document, registrul TVA) se refuză, ca dezactivarea (84j) |
 | Numerotare | Serie nevidă, următorul număr cel puțin 1; formatul opțional folosește argumentele număr și serie (81e) |
 | Scadență | Număr de zile nenegativ (81e) |
 | Închidere TVA | Cele patru conturi sunt toate completate sau toate absente (81e) |
@@ -42,6 +47,12 @@ existentă. Implicitele de sesiune aparțin clientului; cele de domeniu sunt
 rezolvate pe server. (56, 81a)
 
 `ImpliciteService` primește tipul documentului, partenerul, produsul și data.
+Seed-ul privat acoperă și achiziția de la un partener neînregistrat din
+România (`FCT`/`RLF` → `NIM`, fără fapt de TVA pe linie) și achiziția din
+afara UE (`FCT`/`RLF` → `IMP`, tip propriu cu cotă 0 sub regimul neimpozabil,
+fără cod SAF-T — codurile de import sunt ale DVI-ului — și nemapat deliberat
+pe D300 și D394). (83f–g, 84b)
+
 Rezolvarea are doi pași:
 
 1. Candidatul de regim `R` se caută în ordinea: implicitul partenerului,
@@ -78,9 +89,11 @@ echivalentă a selectoarelor XAF este o limită curentă. (81c, 81e, 81-r7)
 ## Proveniență și verificarea configurației
 
 `DinSeed` marchează proveniența pe entitățile care implementează
-`ICuProvenienta`. Seed-ul îl setează la creare. O modificare efectivă prin
-ObjectSpace securizat îl șterge; utilizatorul nu îl poate activa la creare,
-iar reseed-ul nu îl reactivează pe un rând existent. (81d)
+`ICuProvenienta`. Seed-ul îl setează la creare și ALINIAZĂ la fiecare trecere
+rândurile care îl poartă (timbrul e proprietate); o modificare efectivă prin
+ObjectSpace securizat îl stinge, după care rândul e al clientului și nu se
+mai atinge; utilizatorul nu îl poate activa la creare; rândul șters logic
+rămâne șters și se raportează; reseed-ul nu reactivează timbrul. (81d, 83a, 84a)
 
 Marcajul nu este permisiune, jurnal de audit sau criteriu pentru corecții
 automate. Rândurile istorice marcate prin backfill nu permit reconstituirea
@@ -93,6 +106,23 @@ produs. Lipsa unui drept produce 403, nu un raport aparent complet din date
 filtrate. Raportul semnalează referințe șterse, implicite inactive, ancore
 lipsă, goluri de mapare și rânduri manuale. Listele de rânduri manuale sunt
 limitate la 200 per tabel. Verificarea nu repară datele. (81g)
+
+## Explicarea configurației
+
+`GET api/politici/explica` explică CONFIGURAȚIA pe o linie ipotetică (tip de
+document, tip de material, semn, dată, laturi, partener, produs), fără
+document: pentru fiecare mecanism — contare, stoc per latură, TVA, conex,
+implicitul de TVA, validare, scadență, numerotare — rândul câștigător,
+nivelul potrivirii, candidații eliminați cu motivul lor, proveniența
+fiecărui rând și o concluzie formată pe server. Potrivirea e aceeași funcție
+pură pe care o consumă motorul (`Motor/Potrivire.cs`). Blocul de contare
+declară postarea explicită (NTC, DEC) și rezervele — ce ar refuza operarea
+deși regula s-a potrivit (gardul de nivel minim al tipului, natura interzisă
+de profilul de validare). Dreptul de citire se cere pe toate tipurile
+configurabile și pe nomenclatoarele citite, înaintea calculului pe contextul
+nesecurizat; o referință inexistentă sau invizibilă e refuzată înaintea
+calculului. Panoul `/politici/explica` afișează răspunsul fără niciun calcul
+în client și se deschide precompletat din grilele de politici. (84e–h)
 
 ## TVA la operare
 

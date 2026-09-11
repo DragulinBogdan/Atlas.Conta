@@ -477,3 +477,17 @@ per felie):
   „rândul șters logic nu e dublu"), 6 docs. Între ele, decizia 82 (stingerea
   automată prin contract) și guvernanța documentației (`docs/stare-curenta`,
   regula codului slim).
+- **2026-09-10 → 2026-09-11 — Pasul 5, felia 24: politicile — seed-ul aliniază,
+  `Configurator`, cele șapte ecrane, `Potrivire` și „Explică"** (contract
+  `docs/api/p5-felia24-politici-explica-contract.md`, decizia 84; două
+  track-uri în paralel pe worktree-uri și baze ModelCheck cu sufix, un agent
+  per pas, verificare independentă, commit per pas): 1 seed (`Aliniaza`,
+  `RaportSeed`, `IMP`/`NIM`, F24-V1…V8), 2 rol (`TipuriConfigurabile`,
+  `SeedRolConfigurator`, al patrulea oracol — 100/100), 4 `Motor/Potrivire.cs`
+  + `Fapte` (oglinzile moarte, F24-P1…P8, smoke Import1C 3 luni), 5
+  `GET api/politici/explica` (F24-E1…E7, 111/111), 3 cele șapte ecrane
+  (`GrilaPolitica.formular`, 81-r8, smoke în browser), 6 panoul „Explică"
+  (19 cazuri), 7 review advers (două defecte de fond fixate: enum 0 pe OData,
+  concluzia contra gardurilor frunzelor ⇒ `[GardContare]` + `Rezerve`; trei
+  medii: DEC postare explicită, curățenia `PoliticaValidare`, ștergerea
+  `TipTva` referit) + docs + Import1C integral identic cu baseline-ul F18.

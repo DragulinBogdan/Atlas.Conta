@@ -1,6 +1,6 @@
 # Pasul 5, felia 24 — politicile: execuția deciziei 83, ecranele rămase și „Explică" (contract)
 
-Data: 2026-09-10. Stare: deschisă. Pleacă din decizia 83 (seed-ul și
+Data: 2026-09-10. Stare: ÎNCHISĂ 2026-09-11 (decizia 84; §Închidere). Pleacă din decizia 83 (seed-ul și
 proveniența: re-seed pe `DinSeed`, golurile privat cu poarta spre DVI, rolul
 `Configurator`), din 81k („Explică" + ecranele `RegulaContare`/`RegulaStoc`/
 `MapareD300`/`MapareD394`/`PoliticaTva`/`Conex`/`Validare`) și din 81-r8.
@@ -321,3 +321,41 @@ Import1C.
 - **F24-r1** `Import1C/Catalog.IncarcaContare` pe `Potrivire.Contare` +
   `Potrivire.Cont` (predicția ar acoperi orice tipar de regulă, nu doar
   `Explicit`/`TipMaterial`) — cu baseline-ul ca probă, când se atinge unealta.
+
+## Închidere (2026-09-11, decizia 84)
+
+Livrată pe `multiagent-delivery` pe branch-ul `p5-f24-politici-explica`, cu
+track-urile A și B în paralel (worktree + `MODELCHECK_BAZA_SUFIX`, clonă a
+bazei bugetare), un agent per pas, verificare independentă și commit per pas,
+review advers cu fix-uri înaintea probei finale.
+
+| Pas | Commit | Proba |
+|---|---|---|
+| 1 seed (D1, D2) | `5da99e7` | ModelCheck privat 988 / bugetar 933; seed Flax ×2 (a doua `0 / 0`); **Import1C integral identic cu baseline-ul F18** (`run-f24a`, 467 linii, 932 avertismente) |
+| 2 rol (D3) | `1129df2` | 991 / 936; `refuzuri.ps1` 100/100 (4 oracole) |
+| 4 `Potrivire` (D5) | `5d15cb0` → merge `48fc5ef` | 986 (`.B`, fără DUK) / 934; smoke Import1C 3 luni pe clonă; merge 1001 / 943 |
+| 5 `explica` (D6) | `1519447` | 1009 / 943; `refuzuri.ps1` 111/111; codegen idempotent |
+| 3 ecrane (D4) | merge `5cc3ea8` | smoke în browser pe 7 ecrane, 81-r8 în popup, roluri |
+| 6 panou (D7) | `7139918` | 19 cazuri în browser |
+| 7a review advers | `cf607e8` | 1016 / 946; `refuzuri.ps1` 117/117 |
+| 7b docs + proba finală | — | Import1C integral pe codul închis (`run-f24`, 1h51): CONTRACT ÎNDEPLINIT, 932 avertismente, raport IDENTIC cu baseline-ul F18 |
+
+Devierile față de contract, declarate: `Aliniaza` primește predicatul și
+cheia afișată (nu obiectul găsit) ca să centralizeze raportarea rândului
+șters; `IMP` rămâne fără cod SAF-T (83-r3 tranșată), `NIM` capătă 308302;
+`Cont.Functie/RolTert/Denumire/Parinte`, ancora `TipTvaImplicit`,
+`PoliticaConex/Validare` se aliniază doar pe timbru; `SeedRolConfigurator`
+rulează și pe RELEASE (83h), fără Deny suplimentar; enum-urile verdictului
+stau în `BusinessObjects/Comun` (etichete în `metadata.json`), nu în `Motor`;
+`GardContareAttribute` are două constructoare (C# nu acceptă `Nullable<enum>`
+ca parametru de atribut); `Unitate*` read-only în formularul regulii de
+contare; semnul regulii de stoc nu se propune după latură; D300/D394 fără
+buton „Explică"; probele `VerificaF24Explica` doar pe privat, `F24-G3` pe
+bugetar.
+
+Review-ul advers (raport în sesiune) a găsit două defecte de fond (enum fără
+membru scris tăcut prin OData și interpretat de motor; concluzia „Se
+postează" pe linii pe care gardurile frunzelor le refuză) și trei medii (DEC
+fără `PostareExplicita`, curățenia `PoliticaValidare` ștergea rânduri manuale,
+ștergerea unui `TipTva` referit trecea) — toate fixate în `cf607e8`, cu
+probe. Restanțele 84-r1…r12 sunt în decizia 84.

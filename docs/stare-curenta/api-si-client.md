@@ -147,12 +147,14 @@ aceleași mesaje detaliate la citire. (81i, 80-r1)
 | Contabilitate | Stoc, balanță, balanță pe plan, fișă de cont, registru-jurnal (66, 67) |
 | Fiscalitate | Jurnale de cumpărări/vânzări, decont TVA, D300, D394, SAF-T L/S (68, 69g, 71g) |
 | Nomenclatoare | Parteneri, produse, societate; sincronizare individuală ANAF (77h) |
-| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA (81i) |
+| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, reguli de stoc, reguli de contare (formular popup cu grupuri), politici TVA, conex, validare, mapări D300/D394; „Explică pe acest tip" din fiecare grilă cu tip de document (81i, 84d) |
+| Explicarea configurației | `/politici/explica`: starea în URL, un card per mecanism cu câștigătorul, candidații eliminați, proveniența și concluzia serverului (84h) |
 | Controlul configurației | Verificarea profilului, proveniență și istoric de audit (81g, 81h, 81i) |
 
 DSC și ITV nu au flux generic de creare prin `/nou`; provin din comenzile
-specifice. Acoperirea editorilor de politici este mai restrânsă decât
-suprafața OData. (58, 79a, 81k)
+specifice. Grilele de politici pot deschide un formular popup cu grupuri
+definite de ecran; rândul nou primește propuneri vizibile pentru câmpurile al
+căror gol ar fi refuzat de gardian. (58, 79a, 84d)
 
 ## Contracte generate
 

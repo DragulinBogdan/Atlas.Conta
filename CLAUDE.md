@@ -929,6 +929,56 @@ decizia N.
     `refuzuri.ps1`. (i) **O singură listă** `Politici.TipuriConfigurabile`
     (rol, gardian, raport, seed), cu probă că acoperă orice `ICuProvenienta`.
     (j) Rândul de seed șters nu se recreează nici la runtime (83-r1).
+84. **Felia 24 — politicile: seed-ul aliniază, `Configurator`, cele șapte
+    ecrane, `Potrivire`, „Explică"** (execută 83; închide 81-r8, 81k). (a)
+    `ContaSeeder.Aliniaza<T>` = SINGURA formă a seed-ului pe cele 17 tipuri
+    `ICuProvenienta`: căutare pe cheia indexului unic (viu, apoi șters —
+    rămâne șters și se spune), creare cu timbru, aliniere DOAR pe `DinSeed`
+    cu diff pe scalarele mapate (`tip / cheie / câmp: vechi → nou`), rândul
+    manual neatins; cheia din modelul design-time — `seteaza` care o atinge
+    ARUNCĂ; `Seed` întoarce `RaportSeed`. Site-urile pe cheia COMPLETĂ
+    (`RegulaContareLipsa` a murit); derivatele nu creează al doilea rând pe
+    cheie diferită. În afara alinierii: `TipTva.Activ`,
+    `PoliticaNumerotare.UrmatorulNumar` (stare de runtime), `ContImplicitId`
+    derivat. `Cont.Functie/RolTert/Denumire/Parinte`, ancora
+    `TipTvaImplicit`, `PoliticaConex/Validare` = doar pe timbru aprins. (b)
+    `IMP` FĂRĂ cod SAF-T (nomenclatorul n-are cod pentru factura externă;
+    301204/300604 sunt ale DVI), `NIM.CodSafTAchizitie = 308302` (rd. 29,
+    rândul deja mapat); implicitele 6 → 10; `IMP` nemapat cu motiv pe D300
+    și D394. (c) `Politici.TipuriConfigurabile` = listă EXPLICITĂ (reflecția
+    e a probei); rolul `Configurator` = `ReadOnlyAllByDefault` +
+    Create/Write/Delete pe listă, permisiunile REAPLICATE la fiecare seed
+    (rolul e al release-ului), seed-uit și pe RELEASE; userul dev-only. (d)
+    `GrilaPolitica.formular` (popup cu grupurile ecranului; coloanele
+    ascunse intră doar listate) + `laRandNou` (propune VIZIBIL `Explicit` —
+    81-r8 — și membri pentru enum-urile fără 0); `Unitate*` read-only (fără
+    controller OData). (e) **`Motor/Potrivire.cs` = potrivirea ca funcții
+    PURE pe fapte plate** (`Contare`/`Stoc`/`Cont`/`Conex`/`TvaImplicit`),
+    `Fapte` = singura mapare entitate → fapt; motorul le consumă
+    (`RezolvaCont` mort, `ImpliciteService` = doar citirile); oglinzile au
+    murit (`GetObjectsQuery<RegulaContare>` = 0 în frunze,
+    `TipStocPentruClasa` mort — divergența fără expunere, fixată pur).
+    Câștigătorul = primul de la nivelul cel mai înalt, în ordinea bazei.
+    (f) **Gardul de nivel minim al contării = `[GardContare(natura?,
+    nivelMinim, mesaj)]` pe clasa documentului** (FCL/DSC/RDC: Stoc ⇒ exact;
+    trezorerie: Virament ⇒ natură), aplicat o singură dată în
+    `Document.ValideazaOperare` prin `Potrivire` — cu TOATE axele (64) — și
+    citit de explicație (amendează forma 38c). (g) `GET api/politici/explica`
+    = CONFIGURAȚIA pe o linie ipotetică: blocuri cu câștigător, nivel,
+    candidați cu motiv, conturile cu SURSA, `PostareExplicita` (NTC și DEC),
+    `Rezerve[]` (ce ar refuza motorul: gardul (f), `NaturaInterzisa`),
+    `Concluzie` pe server (și de absență); enum-urile verdictului în
+    `Comun/Enums.cs`; 400 → 403 (gate pe `TipuriConfigurabile` ∪ nomenclatoare)
+    → 422 (referință invizibilă, `Any` pe nomenclator) → 200 non-secured;
+    consistența 42c probată contra `RegistruContabil`. (h) Panoul
+    `/politici/explica`: URL = starea, zero calcul și zero frază în TS;
+    `GrilaPolitica.explica` (11 ecrane). (i) **Enum fără membru definit =
+    refuz generic în gardian** pe orice `ICuProvenienta` (OData scria tăcut
+    0: `Directie = 0` ⇒ colectat, `Latura = 0` ⇒ stoc pe primitor). (j)
+    **Ștergerea unui `TipTva` referit se refuză ca dezactivarea** (amendează
+    83j; altfel seed-ul următor pica). (k) Rândul de probă al lui Admin din
+    `refuzuri.ps1` pe dată proprie (ocupa cheia de seed FCT×ExtraUe).
+    Restanțe 84-r1…r12 → jurnal.
 
 ## Stare și roadmap
 
@@ -964,27 +1014,28 @@ detaliat în jurnal):
   produsului; politicile pe OData cu invarianții în gardian, unicitatea în
   schemă, `DinSeed`, raportul de profil, grila comună (81); stingerea
   automată prin contract (82); seed-ul și proveniența — re-seed pe `DinSeed`,
-  golurile privat cu poarta spre DVI, rolul `Configurator` (83, decizie
-  scrisă, execuția în felia 24).
+  golurile privat cu poarta spre DVI, rolul `Configurator` (83); felia 24 —
+  seed-ul aliniază, `Configurator` seed-uit, cele șapte ecrane de politică,
+  `Motor/Potrivire.cs` consumat de motor și de explicație, gardul de nivel
+  minim ca atribut pe clasă, `GET api/politici/explica` + panoul „Explică",
+  enum-urile fără membru și ștergerea `TipTva` referit refuzate (84).
 
 **Toate tipurile de document au acum felie prin API și client** — ITV ca
 COMANDĂ (79), nu agregat; singurul rămas e BPR (rezervat, 19). Refuzurile de
 acces sunt uniforme pe REST și OData și MĂSURATE (80).
 
 **Următorul pas**: izolarea motorului de `IObjectSpace` — contract scris
-(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, pașii 0–7,
-criteriul de prioritate: felia 24 „Explică" / async cu cifră / al doilea
-host); prioritatea se decide pe contract. **Felia 24** are contract scris
-(`docs/api/p5-felia24-politici-explica-contract.md`): track A = execuția
-deciziei 83 + ecranele `RegulaContare`/`RegulaStoc`/`MapareD300`/
-`MapareD394`/`PoliticaTva`/`Conex`/`Validare` peste `GrilaPolitica` (81-r8);
-track B = „Explică" (potrivirea motorului ca funcții pure pe fapte,
-`Motor/Potrivire.cs`, consumate de motor, de gardul VIR și de
-`GET api/politici/explica`; avans declarat pe IM-D2). 80-r1 dacă expunerea
-crește; `lista-react.md` mai ține doar itemii structurali și 77-r1/r6.
-Capcane de probare: `genereaza` SCRIE ori de câte ori luna e liberă (79);
-probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe
-host viu (Privat, după re-seed pentru `Cititor`), nu se refac de mână.
+(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, pașii 0–7); felia
+24 a livrat avansul declarat pe IM-D2/IM-D4 (`Motor/Potrivire.cs` + `Fapte`:
+forma faptelor pe care o va consuma pasul 2 al lui IM), deci prioritatea se
+decide pe contract între IM, 83-r4 (DVI ca tip de document) și 84-r5
+(captions). 80-r1 dacă expunerea crește; `lista-react.md` mai ține doar
+itemii structurali și 77-r1/r6. Capcane de probare: `genereaza` SCRIE ori de
+câte ori luna e liberă (79); probele de securitate se rulează prin
+`nou/tools/ProbeHttp/refuzuri.ps1` pe host viu (Privat, după re-seed pentru
+`Cititor`/`Configurator`), nu se refac de mână; două ModelCheck-uri în paralel
+cer worktree + `MODELCHECK_BAZA_SUFIX` (bazele fără sufix sunt ale unei
+singure rulări).
 
 **Amânări și restanțe cu nume** (textul în fișierul deciziei; numele aici ca
 să nu se piardă): 21 defalcarea multi-sursă (F) · 31f importul extraselor,
@@ -1105,6 +1156,20 @@ schimbare = 204 pentru orice rol (capcană de probă) · 81-r6 `User` pe
 codul SAF-T al lui `IMP` din nomenclator · 83-r4 DVI ca tip de document
 (`IMP21`, legătura n→m cu facturile de import, rândurile D300) · 83-r5
 `Configurator` în XAF (permisiuni de navigație) · 83-r6 = 81-r3 asumată
+· 84-r1 `SDD`/`SFD` fără cod SAF-T de achiziție · 84-r2 `N9.CodSafTLivrare`
+310310 (rd. 10.1) vs maparea pe rd. 11 (310357/310358) · 84-r3 raportul de
+profil fără categoria „rând de seed lipsă" (lipsa unui `TipTva` referit de
+mapări aruncă din seed) · 84-r4 întoarcerea din panou nu focalizează rândul;
+`Unitate` fără controller OData · 84-r5 captions (`SursaCont`, membrii
+politicilor) fără `[XafDisplayName]` · 84-r6 gate-ul `explica` pe TIP, nu pe
+obiect; `tip` rezolvat înaintea gate-ului (oracol pe ancore, ca
+`api/implicite`) · 84-r7 rolul `Configurator` e al release-ului (permisiunile
+se reaplică; pe RELEASE fără user) · 84-r8 `Cont.DimensiuniObligatorii`
+bugetar intră în aliniere pe `DinSeed` (expunerea lui 81-r3) · 84-r9 ordinea
+candidaților la egalitate = ordinea bazei; dublul pe cheie pică pe index, nu
+pe seed · 84-r10 = F24-r1 `Import1C/Catalog.IncarcaContare` pe `Potrivire` ·
+84-r11 deep insert OData pentru `Configurator` și smoke XAF pe gardurile
+rescrise neprobate · 84-r12 stocul pe LDI nu depinde de semn (28a; observație)
 · C1a fluxul comenzilor
 (`docs/architecture-notes-2026-07-28.md`).
 

@@ -95,12 +95,20 @@ raportare, fără conturi analitice generate și persistate. (10)
 contul implicit al repartitorului de pe una dintre laturi. Motorul nu
 conține simboluri de cont specifice profilului. (26b, 29)
 
-La potrivirea regulilor de contare, tipul material exact are prioritate față
-de filtrul de natură, iar acesta față de regula generică. `SemnFiltru`
-elimină regulile incompatibile înaintea alegerii. Lipsa unei reguli nu
-produce o notă; tipurile pentru care tăcerea ar pierde postarea au gardieni
-expliciți. Postarea explicită este permisă numai prin contractele declarate
-de tip și de linie. (26c, 28a, 32a)
+Potrivirea politicilor pe o linie este un set de funcții pure pe fapte plate
+(`Motor/Potrivire.cs`), consumat de motor, de gardurile documentelor și de
+explicație; entitățile se mapează la fapte o singură dată (`Fapte`). La
+contare, tipul material exact are prioritate față de filtrul de natură, iar
+acesta față de regula generică; `SemnFiltru` elimină regulile incompatibile
+înaintea alegerii; câștigătorul e primul de la nivelul cel mai înalt, în
+ordinea în care baza întoarce regulile. La stoc, per latură, regulile
+specifice pe clasă bat regula generică, iar generica se aplică doar liniilor
+cu natura de stoc. Lipsa unei reguli nu produce o notă; tipurile pentru care
+tăcerea ar pierde postarea declară pe clasă `[GardContare(natură, nivel
+minim, mesaj)]` — aplicat o singură dată în validarea de bază a documentului,
+pe toate axele potrivirii (FCL, DSC, RDC cer regulă exactă pe liniile de
+stoc; trezoreria cere cel puțin natura pe liniile de virament). Postarea
+explicită este permisă numai prin contractele declarate de tip și de linie. (26c, 28a, 32a, 64, 84e–f)
 
 Dimensiunile disponibile sunt repartitor, material, cod funcțional, cod
 economic, sursă de finanțare, unitate, proiect și centru de cost. FK-urile

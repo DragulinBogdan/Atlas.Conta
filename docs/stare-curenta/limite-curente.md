@@ -31,6 +31,9 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Fiscalitate și nomenclatoare
 
+- `SDD`/`SFD` nu au cod SAF-T de achiziție; `N9` poartă codul de livrare al
+  rândului 10.1 în timp ce maparea D300 îl pune pe rândul 11. (84-r1, 84-r2)
+
 - D300 și D394 sunt proiecții pentru cazurile implementate, nu acoperirea
   integrală a formularelor. Nu există export XML D300/D394. (69-r6, D4-r13)
 - Prorata, ajustările, cazurile fiscale speciale și toate secțiunile
@@ -65,14 +68,24 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   erori ulterioare; mesajul transportului nu este dovada unui rollback global. (72-r3, 72-r4)
 - Sincronizarea ANAF în lot este disponibilă prin API, fără ecran React
   dedicat pentru întregul flux. (77-r3)
-- Editorii React pentru RegulaContare, RegulaStoc, MapareD300, MapareD394,
-  PoliticaTva, PoliticaConex și PoliticaValidare nu sunt disponibili, deși
-  configurația este expusă cu scriere controlată prin API. (81k, 81-r8)
+- În formularul regulii de contare, dimensiunile `Unitate*` sunt doar de
+  citit: setul OData `Unitate` nu are controller. Întoarcerea din panoul
+  „Explică" în grilă nu focalizează rândul. (84-r4)
+- Captions: `SursaCont` și mai mulți membri ai politicilor nu au
+  `[XafDisplayName]`; ecranele poartă caption-ul în cod. (84-r5)
 - Selectoarele XAF de tip TVA nu filtrează încă `Activ`; unele grile de
   politici afișează FK-uri brute și nu au configurarea vizuală completă. (81k, 81-r7)
-- Nu există explicație completă a rezolvării tuturor politicilor, import/
-  export general al configurației sau corecție automată pe baza `DinSeed`.
-  Marcajul istoric nu distinge toate intervențiile manuale anterioare. (81k, 81-r2, 81-r3)
+- Explicația e a configurației pe o linie ipotetică, nu planul unui
+  document; gate-ul ei de citire e pe tip, nu pe obiect, iar codul de tip se
+  rezolvă înaintea gate-ului (400 pe cod inexistent pentru orice rol). Nu
+  există import/export general al configurației. Raportul de profil nu are
+  categoria „rând de seed lipsă"; recrearea unui rând de seed șters rămâne
+  manuală. Marcajul istoric nu distinge toate intervențiile manuale
+  anterioare, iar alinierea atinge acum și `Cont.DimensiuniObligatorii` pe
+  rândurile marcate. (81k, 81-r3, 83-r1, 84-r3, 84-r6, 84-r8)
+- Rolul `Configurator` e al release-ului: permisiunile lui se reaplică la
+  fiecare seed, iar pe RELEASE nu există un utilizator cu acest rol până nu îl
+  atribuie administratorul; navigația XAF nu e configurată. (83-r5, 84-r7)
 - Administrarea perioadelor fiscale nu are un flux React complet. Conturile
   sunt expuse prin OData pentru citire, nu prin editor contabil general. (53i, 79-r3, 70g)
 

@@ -31,10 +31,19 @@ Actualizarea bazei se execută explicit prin hostul Blazor, cu opțiunile
 și nu devine al doilea updater automat. Baza țintă se verifică înainte de
 orice comandă care aplică migrări sau seed. (23a, 42f)
 
-Seed-ul este specific profilului și idempotent conform regulii fiecărui
-tabel. Nu este o resetare generală a configurației editate. Rândurile
-existente, proveniența și ștergerea logică se tratează conform serviciului
-responsabil; reseed-ul nu autorizează suprascrierea datelor societății. (69b, 73a, 81d)
+Seed-ul este specific profilului și idempotent. Pe tipurile cu proveniență
+trece printr-un singur helper (`ContaSeeder.Aliniaza`): caută rândul pe cheia
+indexului unic, îl creează cu timbru dacă lipsește, îl aliniază la cod dacă
+poartă timbrul seed-ului (câmpurile scalare ne-cheie, fiecare corecție
+tipărită `tip / cheie / câmp: vechi → nou`), îl lasă neatins dacă e manual și
+îl raportează dacă e șters logic. Un seed care ar schimba o cheie aruncă.
+`Seed` întoarce `RaportSeed` cu contoare per tabel (create / corectate /
+manuale / șterse); a doua trecere pe o bază aliniată nu creează și nu
+corectează nimic. Câmpurile de stare de runtime (`PoliticaNumerotare.
+UrmatorulNumar`) și cele deținute de alt pas al seed-ului (`TipTva.Activ`,
+`ContImplicitId` derivat) nu intră în aliniere. Rândurile nomenclatoarelor de
+nucleu fără proveniență (`RandD300`, `Judet`, `UnitateMasura`) se rescriu
+autoritar; reseed-ul nu suprascrie datele societății. (69b, 73a, 83a–d, 84a)
 
 Profilurile nu se amestecă în aceeași bază. `SetareProfil` și rotunjirea sunt
 stabile după inițializare. (36c, 52a)
@@ -83,16 +92,20 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
-ModelCheck verifică modelul și execută scenarii de integrare. Nu are
-strategie de securitate XAF; autorizarea se probează prin
-`nou/tools/ProbeHttp/refuzuri.ps1`, cu rolurile Admin, Cititor și User. (80i, 81j)
+ModelCheck verifică modelul și execută scenarii de integrare, inclusiv probe
+pure pe funcțiile de potrivire și de seed. Nu are strategie de securitate
+XAF; autorizarea se probează prin `nou/tools/ProbeHttp/refuzuri.ps1`, cu
+rolurile Admin, Cititor, User și Configurator. (80i, 81j, 84c)
 
 **ModelCheck scrie în baze de date.** Profilul bugetar implicit folosește
 baza configurată de aplicație (`Atlas.Conta.BackOffice` în configurația
 curentă); profilul privat folosește baza dedicată
 `Atlas.Conta.ModelCheck.Privat`. Nu se tratează ca suită izolată, sigură de
 rulat pe orice configurație. Conexiunea și compatibilitatea schemei se
-verifică înainte de execuție.
+verifică înainte de execuție. Două rulări concurente pe aceleași baze se
+strică reciproc; variabila de mediu `MODELCHECK_BAZA_SUFIX` mută ambele baze
+pe un sufix (privatul se creează singur, bugetarul cere o clonă a bazei
+aplicației). (84)
 
 Lipsa bazei sau migrările neaplicate pot lăsa doar verificarea modelului
 executată. Codul de ieșire singur nu dovedește rularea scenariilor; jurnalul
