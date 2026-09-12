@@ -80,6 +80,10 @@ export function rutaTip(tip: string | null | undefined, id: string): string | nu
     // `DocumenteCuRest`, dar apare în fișa contului 4426/4427/4423/4424 și în
     // registrul-jurnal — acolo trebuie să fie link către ecranul ei, nu text.
     case 'ITV': return `/itv/${id}`;
+    // Declarația vamală (felia 25): nu e stingător — taxa în vamă se plătește ca
+    // orice taxă, prin soldul lui 446 pe biroul vamal (DVI-D4) — dar apare în
+    // fișa contului, în jurnalul de cumpărări și în registrul-jurnal.
+    case 'DVI': return `/dvi/${id}`;
     default: return null;
   }
 }

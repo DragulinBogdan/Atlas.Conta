@@ -44,6 +44,9 @@ export function TipuriTva() {
         <Lookup dataSource={regimuri} valueExpr="valoare" displayExpr="label" />
       </Column>
       <Column dataField="Activ" caption={cap('Activ')} dataType="boolean" width={90} />
+      {/* Felia 25: singura cale prin care motorul și ecranul declarației vamale
+          spun „tip de import" fără să cunoască vreun cod (29). */}
+      <Column dataField="DeImport" caption={cap('DeImport')} dataType="boolean" width={100} />
       <Column
         dataField="ContTvaDeductibilId"
         caption={cap('ContTvaDeductibilId')}

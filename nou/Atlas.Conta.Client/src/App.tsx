@@ -44,6 +44,8 @@ import { D394 } from './felii/tva/D394';
 import { Saft } from './felii/tva/Saft';
 import { ItvLista } from './felii/itv/ItvLista';
 import { ItvDetaliu } from './felii/itv/ItvDetaliu';
+import { DviLista } from './felii/dvi/DviLista';
+import { DviDetaliu } from './felii/dvi/DviDetaliu';
 import { Parteneri } from './felii/nomenclatoare/Parteneri';
 import { PartenerDetaliu } from './felii/nomenclatoare/PartenerDetaliu';
 import { Produse } from './felii/nomenclatoare/Produse';
@@ -76,6 +78,13 @@ export function App() {
         <Route path="/fct" element={<FctLista />} />
         <Route path="/fct/nou" element={<FctDetaliu />} />
         <Route path="/fct/:id" element={<FctDetaliu />} />
+        {/* Declarația vamală de import (felia 25): TVA-ul datorat în vamă,
+            deductibil pe 4426 — factura furnizorului extern nu-l poate purta.
+            Stă lângă facturile de intrare: e documentul care completează
+            achiziția din import. */}
+        <Route path="/dvi" element={<DviLista />} />
+        <Route path="/dvi/nou" element={<DviDetaliu />} />
+        <Route path="/dvi/:id" element={<DviDetaliu />} />
         <Route path="/nir" element={<NirLista />} />
         {/* Recepția fără factură se culege manual (F5): NIR-ul are rută `/nou`
             de la felia 5, pe lângă clona conexă născută de operarea facturii. */}
@@ -205,6 +214,7 @@ function Meniu() {
     <nav className="meniu">
       <span className="meniu__grup">Documente</span>
       <NavLink to="/fct">Facturi intrare</NavLink>
+      <NavLink to="/dvi">Declarații vamale</NavLink>
       <NavLink to="/nir">NIR-uri</NavLink>
       <NavLink to="/fcl">Facturi ieșire</NavLink>
       <NavLink to="/dsc">Descărcări</NavLink>
