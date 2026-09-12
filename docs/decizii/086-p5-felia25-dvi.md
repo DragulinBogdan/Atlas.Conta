@@ -184,8 +184,9 @@ ascunsă. `FacturaIntrare_LookupListView` n-avea `Numar`/`Data`/`Predator`/
 `Stare` (începea cu `Scadență`; o factură fără scadență/PV/plată era un rând
 gol, imposibil de ales): `ListaRoot<T>` țintește doar `_ListView`, deci
 simptomul tratat acolo era netratat pe lookup — defect PREEXISTENT, DVI e
-primul ecran care alege o factură dintr-un lookup; cele patru coloane sunt
-acum în față (86-r18 pentru ordinea curată și pentru familia lookup-urilor).
+primul ecran care alege o factură dintr-un lookup; lookup-ul arată acum
+EXACT Număr, Dată, Predator, Stare (coloanele proprii FCT ascunse DOAR în
+lookup; `_ListView` neatins) — 86-r18 pentru restul familiei de lookup-uri.
 Navigația XAF n-are intrare per tip (doar `Document` + `Imperechere`; tipurile
 vin din dropdown-ul `New` și din URL) — DVI respectă convenția și e singurul
 cu denumire în română în dropdown (84-r5). Pe DVI operat/stornat XAF ascunde
@@ -203,11 +204,15 @@ crash. Curățenia e la începutul și la sfârșitul blocului.
 Agent separat, read-only, pe `git diff main..HEAD` + ciorna deciziei
 (2026-09-13). Zero blocante. Verdictele și ce s-a făcut:
 
-- **R1 (de reparat, reparat)** — unicitatea perechii `DviFactura` era prin
-  INTEROGARE, care nu vede rândurile noi ale aceluiași commit: în grila XAF
-  nested, două legături pe aceeași factură cu un singur Save ar fi dat 23505
-  din bază, nu mesajul de gardian. `Verifica` vede acum și `ModifiedObjects`
-  (noi, neșterse, aceeași pereche); proba `DVI-V10b` o măsoară pe calea reală.
+- **R1 (reparat, defensiv)** — unicitatea perechii `DviFactura` era prin
+  INTEROGARE, care nu vede rândurile noi ale aceluiași commit. `Verifica` vede
+  acum și `ModifiedObjects` (noi, neșterse, aceeași pereche); proba `DVI-V10b`
+  o măsoară pe calea reală. Smoke-ul XAF a arătat că din grila nested cazul NU
+  e accesibil (fiecare `New` deschide un DetailView cu ObjectSpace propriu și
+  comite singur; dublura din ecran e refuzată pe ramura veche, prin
+  interogare), iar pe API cererea cu id repetat e refuzată înainte — ramura e
+  plasa pentru orice cale securizată viitoare cu mai multe legături într-un
+  commit.
 - **R2 (docs, reparat)** — „stornoul nu clonează (`DocumentSursa`)" descria un
   mecanism inexistent (stornoul e in-place); „plată → rest 0" din regula de
   oprire contrazicea D4 amendat. Ambele rescrise.

@@ -345,7 +345,8 @@ pwsh nou/tools/ProbeHttp/refuzuri.ps1                 # host viu, Privat
 ### Review advers (agent separat, read-only)
 
 0 blocante. Reparate înainte de închidere: R1 (unicitatea perechii în același
-commit — `ModifiedObjects`, proba `DVI-V10b`), R2 (două fraze din docs), R3
+commit — `ModifiedObjects`, proba `DVI-V10b`; din grila XAF cazul nu e
+accesibil, fiecare `New` nested comite singur — ramura e defensivă), R2 (două fraze din docs), R3
 (`Valoare` negativă acceptată pe draft), R4 (ordinea pre-check-ului de stare
 față de rezolvarea laturilor), R5 (purja încrucișată a celor două blocuri din
 februarie + precondiția lunii libere), N2 (cast pe id-ul unui obiect deja
