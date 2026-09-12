@@ -51,6 +51,12 @@ public class TipTva : BaseObject, ICuCautare, ICuProvenienta {
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Cont ContTvaNeexigibil { get; set; }
 
+    // DVI-D1 — tipul care poartă TVA-ul datorat în VAMĂ: singura cale de a spune
+    // „de import" fără a hardcoda coduri (29). Clientul filtrează pe el
+    // lookup-ul liniei de declarație vamală, iar `Dvi.ValideazaOperare` îl cere.
+    [XafDisplayName("De import")]
+    public virtual bool DeImport { get; set; }
+
     // Maparea D406 (nomenclatorul ANAF de coduri de taxă, direcțional).
     public virtual string CodSafTLivrare { get; set; }
     public virtual string CodSafTAchizitie { get; set; }

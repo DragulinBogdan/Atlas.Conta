@@ -110,6 +110,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // de storno; ambele folosesc detaliul de BAZĂ (fără tabele de detaliu).
         public DbSet<ReturFurnizor> RetururiFurnizor { get; set; }
         public DbSet<ReturClient> RetururiClient { get; set; }
+        // Al 17-lea derivat (felia 25): declarația vamală de import, cu detaliul
+        // de BAZĂ (fără tabelă de detaliu) și cu legătura n→m spre facturi.
+        public DbSet<Dvi> Dvi { get; set; }
+        public DbSet<DviFactura> DviFacturi { get; set; }
         public DbSet<Imperechere> Imperecheri { get; set; }
 
         // Registre + politici
@@ -217,6 +221,22 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // comentariul din Lot (ciclu de inserție altfel).
             modelBuilder.Entity<DocumentDetaliu>()
                 .HasOne(d => d.Lot).WithMany().HasForeignKey(d => d.LotId);
+
+            // DVI-D3: legătura n→m declarație ↔ facturi de import. Perechea e
+            // identitatea rândului (o factură o dată pe aceeași declarație),
+            // filtrată pe `GCRecord = 0` ca toate unicitățile pe tipuri cu
+            // ștergere amânată (60a) — dezlegarea și relegarea aceleiași facturi
+            // pe un draft e flux normal. FK-uri `Restrict`: legătura nu dispare
+            // tăcut nici pe capătul declarației, nici pe cel al facturii.
+            modelBuilder.Entity<DviFactura>()
+                .HasIndex(f => new { f.DviId, f.FacturaId }).IsUnique()
+                .HasFilter("\"GCRecord\" = 0");
+            modelBuilder.Entity<DviFactura>()
+                .HasOne(f => f.Dvi).WithMany(d => d.Facturi).HasForeignKey(f => f.DviId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<DviFactura>()
+                .HasOne(f => f.Factura).WithMany().HasForeignKey(f => f.FacturaId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Trasabilitatea acoperirii per linie FCL (design P2 §3): linia DSC
             // referă linia FCL sursă printr-un FK real cross-document. Restrict —

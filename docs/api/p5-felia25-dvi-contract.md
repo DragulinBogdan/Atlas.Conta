@@ -121,12 +121,17 @@ contrapartida (contul implicit al Predatorului, altfel fallback-ul politicii);
 `Numar` (MRN) nevid; cel puțin o linie; Predator = `Partener` (nu repartitor
 intern), Primitor = unitate internă (ca FCT); fiecare linie: `TipTva` cu
 `DeImport` și cotă > 0 (refuz explicit pentru `IMP`: „TVA-ul în vamă are
-cotă"), `Valoare` > 0; facturile legate `Operat`. Stingere: `SensDeStins =
-Datorie` pe Predator; DVI se stinge prin plată ca FCT (plata TVA-ului către
-vamă/comisionar). Linia cu taxare inversă NU creează datorie (4426 = 4427);
-implementatorul urmează mecanismul FCT și RAPORTEAZĂ dacă acel mecanism
-presupune datorie = Σ(`Valoare` + `ValoareTva`) — la DVI datoria e doar Σ
-`ValoareTva` a liniilor `Normal`.
+cotă"), `Valoare` > 0; facturile legate `Operat`.
+
+**DVI NU e document stins** (amendat 2026-09-12, la pasul 1, pe cifre:
+`ImperechereService.Total` = Σ(`Valoare` + `ValoareTva`) pe toate liniile ar
+da rest 1605 la o datorie reală de 210, iar `DocumenteCuRest` e o uniune per
+tip concret). TVA-ul în vamă e o TAXĂ și se plătește ca orice taxă
+(precedentul ITV/4423): o plată către biroul vamal (partener cu cont implicit
+446), fără imperechere — nota 446 = 5121 pe dimensiunea partenerului închide
+soldul lui 446 pe vamă. `SensDeStins` rămâne null; `Total (brut)` e ascuns pe
+view-urile DVI, iar `Baza` („Valoare în vamă") și `Taxa` („TVA în vamă") sunt
+`[NotMapped]` pe DetailView. Restul polimorf pe DVI = DVI-r11.
 
 ### DVI-D5 — Ușa API: `api/dvi`, agregat cules ca NTC, plus candidații
 
@@ -177,7 +182,9 @@ noi; `RegistruContabil` EXACT două note (4426 = 446: 210; 4426 = 4427: 105);
 `RegistruTva` două rânduri `Achizitie`, partener = vama, baze 1000/500, tva
 210/105; D300 pe lună: rd. 24 conține 1000/210, rd. 7 conține 500/105 și rd.
 22 oglindește; jurnalul de cumpărări le arată; D394 nu conține DVI; plata de
-210 către vamă stinge DVI (rest 0), linia TI nu creează rest; storno → registre
+210 către vamă (PLT pe partenerul cu cont implicit 446, fără imperechere)
+închide soldul lui 446 pe vamă, DVI nu apare în `DocumenteCuRest`, iar o
+imperechere cu DVI ca document stins e refuzată de domeniu; storno → registre
 inverse. Gardian: legătură pe DVI operat = refuz; legătură la FCT Draft = refuz;
 aceeași factură de două ori = refuz (unicitate, mesaj de gardian nu `23505`);
 linie cu `IMP` (0%) = refuz la operare; DVI fără MRN = refuz; PUT pe DVI operat
@@ -199,7 +206,12 @@ există, zero politici, `TipTva` fără rânduri `DeImport` (ITV-ul e precedentu
 - Smoke în browser (React, Privat): FCT extra-UE → DVI cu factura legată →
   operare → jurnal de cumpărări → D300 rd. 24 → plată → rest 0; smoke XAF pe
   hostul Blazor: DetailView DVI cu linii și facturi, operare.
-- `Motor/*` NEATINS (diff gol). Dacă un pas îl atinge, felia se oprește, se
+- `Motor/*` NEATINS, cu o singură excepție decisă la pasul 1: dispecerul
+  generic `IVerificabilLaCommit` în `GardianEditare.Verifica` (trei linii,
+  lângă verificările de interfață existente) — gardianul rulează DOAR pe ușile
+  securizate, Import1C intră pe ușa non-secured, deci proba supremă nu e cerută
+  de el. Dacă un pas atinge motorul de OPERARE (`MotorOperare`, `StocService`,
+  `ImperechereService`, `RegistruTvaService`…), felia se oprește, se
   raportează motivul, iar închiderea cere Import1C integral cu raport IDENTIC
   cu baseline-ul F18 (`reconciliere-20260829-134555.txt`).
 - Niciun simbol de cont în cod în afara `DatabaseUpdate/` (grep pe `446`,
@@ -220,6 +232,12 @@ există, zero politici, `TipTva` fără rânduri `DeImport` (ITV-ul e precedentu
   verifică în `E2E-DVI`; dacă filtrează, se raportează și devine restanță.
 - **DVI-r8** `DviFactura` în „Explică"/OData; **DVI-r9** curățenia datelor Flax
   (reMarkable NO marcat `TI19`) — a datelor, nu a feliei.
+- **DVI-r10** comisionarul vamal care plătește TVA-ul și îl refacturează:
+  factura lui ar purta taxa (4426 = 401) și DVI n-ar mai avea voie s-o
+  posteze a doua oară — flux propriu, nedecis (azi Predator = biroul vamal).
+- **DVI-r11** DVI ca document stins (rest = Σ `ValoareTva` a liniilor
+  `Normal`): cere formula restului polimorfă în `ImperechereService.Total` +
+  ramura DVI în uniunea `DocumenteCuRest` (același blocaj ca RDC).
 
 ## Testul contra invarianților
 
@@ -239,6 +257,10 @@ există, zero politici, `TipTva` fără rânduri `DeImport` (ITV-ul e precedentu
    `--no-build`), seed-ul D2 (nucleu + privat), gardianul D3, `ValideazaOperare`
    D4, XAF D7 (atribute + `ContaUiBaseline`), blocul `E2E-DVI` + proba bugetar,
    `--dump-metadata`. Verificare: ModelCheck 0 FAIL pe AMBELE profiluri.
+   *Executat 2026-09-12 cu două opriri raportate și tranșate*: gardianul fără
+   punct de extensie în afara `Motor/` → interfața `IVerificabilLaCommit` pe
+   entitate + dispecerul generic (D9); restul de stins greșit (1605 la 210) →
+   DVI nu e document stins (D4, DVI-r11). Migrația `20260912193852_F25Dvi`.
 2. **API** — `Api/Dvi/` (`DviDtos.cs`, `DviApply.cs`), `DviController`,
    `facturi-candidate`, blocul `E2E-API-DVI`, oracolele în `refuzuri.ps1`,
    `pnpm verifica:drift` (WebApi OPRIT), probele HTTP pe host viu (Privat,

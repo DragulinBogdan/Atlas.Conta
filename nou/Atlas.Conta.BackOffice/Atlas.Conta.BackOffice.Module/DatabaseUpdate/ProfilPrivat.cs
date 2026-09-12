@@ -367,31 +367,42 @@ internal static class ProfilPrivat {
         var tva4428 = conturi["4428"];
 
         (string Cod, string Denumire, decimal Cota, RegimTva Regim,
-            bool Conturi, string SafTLivrare, string SafTAchizitie)[] tipuri = [
-            ("N21", "TVA 21% (standard)", 21m, RegimTva.Normal, true, "310344", "301104"),
-            ("N11", "TVA 11% (redusă)", 11m, RegimTva.Normal, true, "310351", "301105"),
-            ("N9", "TVA 9% (tranzitoriu locuințe, până la 31.07.2026)", 9m, RegimTva.Normal, true, "310310", "301102"),
-            ("TI21", "Taxare inversă 21%", 21m, RegimTva.TaxareInversa, true, "310312", "300906"),
+            bool Conturi, string SafTLivrare, string SafTAchizitie, bool DeImport)[] tipuri = [
+            ("N21", "TVA 21% (standard)", 21m, RegimTva.Normal, true, "310344", "301104", false),
+            ("N11", "TVA 11% (redusă)", 11m, RegimTva.Normal, true, "310351", "301105", false),
+            ("N9", "TVA 9% (tranzitoriu locuințe, până la 31.07.2026)", 9m, RegimTva.Normal, true, "310310", "301102", false),
+            ("TI21", "Taxare inversă 21%", 21m, RegimTva.TaxareInversa, true, "310312", "300906", false),
             // Cotele ISTORICE (standard 19% până la 31.07.2025) — necesare
             // importului 1C, care aduce un an fiscal complet dinaintea Legii
             // 141/2025 (FAZA 1C §1). Codurile SAF-T rămân NULL: nomenclatorul
             // ANAF e cel în vigoare, iar D406-ul pe perioade vechi nu e o
             // proiecție a acestui sistem; se completează dacă apare vreodată.
-            ("N19", "TVA 19% (standard, istoric — până la 31.07.2025)", 19m, RegimTva.Normal, true, null, null),
-            ("TI19", "Taxare inversă 19% (istoric — până la 31.07.2025)", 19m, RegimTva.TaxareInversa, true, null, null),
-            ("NED21", "Achiziție fără drept de deducere 21% (TVA capitalizat)", 21m, RegimTva.Capitalizat, false, null, "351104"),
-            ("SDD", "Scutit cu drept de deducere", 0m, RegimTva.Scutit, false, "310314", null),
-            ("SFD", "Scutit fără drept de deducere", 0m, RegimTva.Scutit, false, "310326", null),
+            ("N19", "TVA 19% (standard, istoric — până la 31.07.2025)", 19m, RegimTva.Normal, true, null, null, false),
+            ("TI19", "Taxare inversă 19% (istoric — până la 31.07.2025)", 19m, RegimTva.TaxareInversa, true, null, null, false),
+            ("NED21", "Achiziție fără drept de deducere 21% (TVA capitalizat)", 21m, RegimTva.Capitalizat, false, null, "351104", false),
+            ("SDD", "Scutit cu drept de deducere", 0m, RegimTva.Scutit, false, "310314", null, false),
+            ("SFD", "Scutit fără drept de deducere", 0m, RegimTva.Scutit, false, "310326", null, false),
             // 308302 = „Achiziţii de bunuri şi servicii scutite de taxă sau
             // neimpozabile" (rd. 29) — exact rândul pe care seed-ul mapează deja
             // `NIM × Achizitie`; 83f pune NIM pe achiziție (neînregistratul RO).
-            ("NIM", "Neimpozabil (în afara sferei TVA)", 0m, RegimTva.Neimpozabil, false, "310324", "308302"),
+            ("NIM", "Neimpozabil (în afara sferei TVA)", 0m, RegimTva.Neimpozabil, false, "310324", "308302", false),
             // 83g — factura furnizorului extern: TVA-ul se datorează în vamă, pe
             // DVI (83-r4), deci linia nu poartă taxă. Codul SAF-T de achiziție
             // rămâne NULL cu motiv (83-r3): nomenclatorul ANAF n-are cod pentru
             // factura de import fără TVA, iar codurile 301204/300604 sunt ale
             // DVI-ului, nu ale ei.
-            ("IMP", "Achiziție din import — TVA prin DVI", 0m, RegimTva.Neimpozabil, false, null, null),
+            ("IMP", "Achiziție din import — TVA prin DVI", 0m, RegimTva.Neimpozabil, false, null, null, true),
+            // DVI-D2 — cele patru tipuri care poartă TVA-ul DATORAT ÎN VAMĂ,
+            // deductibil pe 4426. Nomenclatorul SAF-T (RO_SAFT_SchemaDefCod
+            // 16.02.2026, „Achizitii ded 100%") are două familii per cotă:
+            // 301204/301205 = taxă plătită efectiv în vamă (D300 rd. 24/25),
+            // 300604/300605 = amânarea plății / taxare inversă, art. 326 alin.
+            // (4)–(5) (rd. 7, cu oglinda 22). Codurile de LIVRARE rămân null:
+            // importul e exclusiv de achiziție.
+            ("IMP21", "Import de bunuri 21% — TVA plătită în vamă", 21m, RegimTva.Normal, true, null, "301204", true),
+            ("IMP11", "Import de bunuri 11% — TVA plătită în vamă", 11m, RegimTva.Normal, true, null, "301205", true),
+            ("IMPTI21", "Import de bunuri 21% — taxare inversă (art. 326)", 21m, RegimTva.TaxareInversa, true, null, "300604", true),
+            ("IMPTI11", "Import de bunuri 11% — taxare inversă (art. 326)", 11m, RegimTva.TaxareInversa, true, null, "300605", true),
         ];
         foreach (var t in tipuri)
             ContaSeeder.Aliniaza<TipTva>(os, t.Cod, x => x.Cod == t.Cod, tip => {
@@ -401,6 +412,7 @@ internal static class ProfilPrivat {
                 tip.Regim = t.Regim;
                 tip.CodSafTLivrare = t.SafTLivrare;
                 tip.CodSafTAchizitie = t.SafTAchizitie;
+                tip.DeImport = t.DeImport;
                 if (t.Conturi) {
                     tip.ContTvaDeductibilId = tva4426.ID;
                     tip.ContTvaColectatId = tva4427.ID;
@@ -437,6 +449,13 @@ internal static class ProfilPrivat {
         // respectiv 4111 = 4427 cu −TVA — exact rândurile 1C.
         Politica("RLF", DirectieTva.Deductibil, SursaCont.RepartitorPrimitor, "401");
         Politica("RDC", DirectieTva.Colectat, SursaCont.RepartitorPredator, "4111");
+        // DVI-D2 — declarația vamală: 4426 contra contului implicit al
+        // PREDATORULUI (biroul vamal cu 446, sau comisionarul vamal cu 401).
+        // Fallback-ul e 446 „Alte impozite, taxe și vărsăminte asimilate" —
+        // planul OMFP al seed-ului n-are analitic dedicat TVA-ului în vamă
+        // (`plan-conturi-omfp.csv`: un singur rând `446`), iar analiticul, dacă
+        // îl vrea clientul, e cont al bazei, nu al seed-ului.
+        Politica("DVI", DirectieTva.Deductibil, SursaCont.RepartitorPredator, "446");
     }
 
     // Profilul de validare privat: la P2 nu mai are NICIUN rând — clasificația
@@ -456,6 +475,14 @@ internal static class ProfilPrivat {
         foreach (var cod in new[] { "FCT", "FCL", "DEC", "RLF", "RDC" })
             ContaSeeder.Aliniaza<TipDocument>(os, cod, t => t.Cod == cod,
                 tip => tip.TipTvaImplicitId = n21.ID);
+        // DVI-D2 — ancora declarației vamale e tipul de import cu cota standard;
+        // N21 (achiziția internă) n-ar trece nici de `ValideazaOperare`. Ancora e
+        // și cerința gardianului de profil: un tip cu `PoliticaTva` fără ancoră
+        // iese ca `PoliticaLipsa` în raportul de verificare.
+        var imp21 = os.FirstOrDefault<TipTva>(t => t.Cod == "IMP21");
+        if (imp21 != null)
+            ContaSeeder.Aliniaza<TipDocument>(os, "DVI", t => t.Cod == "DVI",
+                tip => tip.TipTvaImplicitId = imp21.ID);
     }
 
     // ── Implicitele de TVA ca POLITICĂ (felia 23, F23-D2; golurile închise de 83f/g) ──
@@ -475,7 +502,7 @@ internal static class ProfilPrivat {
     // corespondență (46e), și trebuie să poarte același regim. Taxarea inversă
     // intracomunitară e a ACHIZIȚIEI, deci apare pe FCT și pe RLF, simetric —
     // la fel NIM și IMP, care sunt tot ale achiziției.
-    internal static readonly (string TipDocument, ClasaFiscalaPartener Clasa, string TipTva)[] ImpliciteTva = [
+    internal static readonly (string TipDocument, ClasaFiscalaPartener? Clasa, string TipTva)[] ImpliciteTva = [
         ("FCL", ClasaFiscalaPartener.Ue, "SDD"),
         ("FCL", ClasaFiscalaPartener.ExtraUe, "SDD"),
         ("RDC", ClasaFiscalaPartener.Ue, "SDD"),
@@ -486,6 +513,10 @@ internal static class ProfilPrivat {
         ("RLF", ClasaFiscalaPartener.NeinregistratRo, "NIM"),
         ("FCT", ClasaFiscalaPartener.ExtraUe, "IMP"),
         ("RLF", ClasaFiscalaPartener.ExtraUe, "IMP"),
+        // DVI-D2 — rândul GENERIC al declarației vamale (clasă `null` = orice
+        // partener): biroul vamal e repartitor RO, iar clasa lui n-are nicio
+        // treabă cu regimul liniei; regimul îl dă declarația.
+        ("DVI", null, "IMP21"),
     ];
 
     // Idempotent pe cheia INDEXULUI (tip × clasă × valabilitate), cu aceeași
@@ -502,8 +533,19 @@ internal static class ProfilPrivat {
                     $"Implicitul de TVA {i.TipDocument}/{i.Clasa} → {i.TipTva} nu se poate seed-ui: "
                     + $"lipsește din bază tipul de TVA {i.TipTva}.");
             var clasa = i.Clasa;
-            ContaSeeder.Aliniaza<PoliticaTvaImplicit>(os, $"{i.TipDocument}/{i.Clasa}",
-                x => x.TipDocumentId == tipDoc.ID && x.ClasaFiscala == clasa && x.ValabilDeLa == null,
+            // Cheia are o coloană NULLABLE de când rândul generic al tipului
+            // (clasă `null`) e seed-uit, iar semantica SQL a lui „coloană =
+            // @parametru NULL" e prea subtilă pentru o gardă de idempotență:
+            // potrivirea se face ÎN MEMORIE, ca la `AliniazaContare`.
+            PoliticaTvaImplicit Cauta(bool cuSterse) {
+                var toate = os.GetObjectsQuery<PoliticaTvaImplicit>();
+                if (cuSterse)
+                    toate = toate.IgnoreQueryFilters();
+                return toate.Where(x => x.TipDocumentId == tipDoc.ID).ToList()
+                    .FirstOrDefault(x => x.ClasaFiscala == clasa && x.ValabilDeLa == null);
+            }
+            ContaSeeder.Aliniaza(os, $"{i.TipDocument}/{i.Clasa?.ToString() ?? "orice"}",
+                Cauta(false), () => Cauta(true),
                 rand => {
                     rand.TipDocumentId = tipDoc.ID;
                     rand.ClasaFiscala = clasa;
@@ -545,6 +587,15 @@ internal static class ProfilPrivat {
         ("SFD", SensTva.Livrare, "15"),
         ("SFD", SensTva.Achizitie, "29"),
         ("NIM", SensTva.Achizitie, "29"),
+        // DVI-D2 — importul. Taxa PLĂTITĂ ÎN VAMĂ intră pe rândurile de achiziții
+        // taxabile (rd. 24/25, unde legea pune „baza și taxa aferentă importurilor
+        // care nu se încadrează la art. 326 alin. (4)–(5)"); amânarea plății intră
+        // pe rd. 7, iar rd. 22 e OGLINDA lui (o pune proiecția din `OglindaA`, ca
+        // rd. 26.1 pentru 12.1 — a doua mapare ar dubla cifra).
+        ("IMP21", SensTva.Achizitie, "24"),
+        ("IMP11", SensTva.Achizitie, "25"),
+        ("IMPTI21", SensTva.Achizitie, "7"),
+        ("IMPTI11", SensTva.Achizitie, "7"),
     ];
 
     // Perechile lăsate DELIBERAT nemapate (D3-D2), cu motivul lângă ele — o
@@ -562,6 +613,11 @@ internal static class ProfilPrivat {
         // 24), nu din factura furnizorului extern, care n-are TVA.
         ("IMP", SensTva.Achizitie, "baza și taxa se declară din DVI"),
         ("IMP", SensTva.Livrare, "tip de achiziție"),
+        // DVI-D2 — importul nu are latură de livrare.
+        ("IMP21", SensTva.Livrare, "importul e exclusiv de achiziție"),
+        ("IMP11", SensTva.Livrare, "importul e exclusiv de achiziție"),
+        ("IMPTI21", SensTva.Livrare, "importul e exclusiv de achiziție"),
+        ("IMPTI11", SensTva.Livrare, "importul e exclusiv de achiziție"),
     ];
 
     // Lista e parte din CONTRACT, ca geamăna ei de la D394: probele o citesc
@@ -686,6 +742,16 @@ internal static class ProfilPrivat {
         ("NIM", SensTva.Achizitie, "operațiunea e în afara sferei TVA — nu se declară în 394"),
         ("IMP", SensTva.Achizitie, "partener extra-UE nu se declară în 394"),
         ("IMP", SensTva.Livrare, "partener extra-UE nu se declară în 394"),
+        // DVI-D2 — declarația vamală nu e operațiune cu un partener de declarat:
+        // 394 e pe facturi, iar furnizorul extern nu intră în formular.
+        ("IMP21", SensTva.Achizitie, "declarația vamală nu se declară în 394"),
+        ("IMP21", SensTva.Livrare, "declarația vamală nu se declară în 394"),
+        ("IMP11", SensTva.Achizitie, "declarația vamală nu se declară în 394"),
+        ("IMP11", SensTva.Livrare, "declarația vamală nu se declară în 394"),
+        ("IMPTI21", SensTva.Achizitie, "declarația vamală nu se declară în 394"),
+        ("IMPTI21", SensTva.Livrare, "declarația vamală nu se declară în 394"),
+        ("IMPTI11", SensTva.Achizitie, "declarația vamală nu se declară în 394"),
+        ("IMPTI11", SensTva.Livrare, "declarația vamală nu se declară în 394"),
     ];
 
     // Lista nemapatelor e parte din CONTRACT (69e/D4-D2): proiecția o citește ca

@@ -198,6 +198,11 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 // păzit fără să se atingă nimic aici.
                 VerificaEnumuri(provenit, erori);
             }
+            // (l) DVI-D3 — invarianții pe care entitatea îi poartă singură. FĂRĂ
+            // gardul de ștergere: regula vede și `Delete` (o legătură dezlegată
+            // de pe un document operat e tot o scriere care se refuză).
+            if (obj is IVerificabilLaCommit verificabil)
+                verificabil.Verifica(os, erori);
             switch (obj) {
                 // (b) Registrele sunt append-only și EXCLUSIV ale motorului
                 // (decizia 14): nimeni nu le scrie prin UI/API, nici măcar

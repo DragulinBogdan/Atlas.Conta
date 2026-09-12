@@ -37,6 +37,16 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     // 85c — grila de culegere nested nu se face peste o colecție server.
     static readonly Action<IModelListView> Culegere = lv => lv.DataAccessMode = CollectionSourceDataAccessMode.Client;
 
+    // Coloană pe o CALE (`Factura.Numar`) — selectorul tipizat al fluent-ului
+    // Atlas.DXF exprimă doar membri direcți.
+    static void ColoanaPeCale(IModelListView lv, string cale, int index, string caption) {
+        var col = lv.Columns.FirstOrDefault(c => c.PropertyName == cale)
+            ?? lv.Columns.AddNode<IModelColumn>(cale);
+        col.PropertyName = cale;
+        col.Index = index;
+        col.Caption = caption;
+    }
+
     public void Register(UiBaselineRegistry registry) {
         AscundeFkuriBrute(registry);
         LayoutDocumente(registry);
@@ -49,6 +59,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         DescarcareGestiune(registry);
         NotaContabila(registry);
         Asamblare(registry);
+        Dvi(registry);
     }
 
     // Ascunderea generică a scalarilor `{Nav}Id` care au navigație pereche
@@ -570,5 +581,55 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             // ASM nu poartă TVA — ascunde coloanele moștenite din bază.
             .Column(d => d.TipTva, c => c.Index = -1)
             .Column(d => d.ValoareTva, c => c.Index = -1);
+    }
+
+    // Declarația vamală de import (DVI-D7). Liniile folosesc detaliul de BAZĂ,
+    // dar NU grila generică: `[TipDetaliu(typeof(DocumentDetaliu))]` de pe `Dvi`
+    // comută colecția pe ListView-ul propriu al clasei (`DocumentDetaliu_ListView`),
+    // ca ascunderea cantității și a lotului să nu atingă NIR/BTR/BCS/PLT/INC/
+    // RLF/RDC, care stau toate pe `Document_Detalii_ListView`.
+    static void Dvi(UiBaselineRegistry registry) {
+        registry.For<DocumentDetaliu>()
+            .ListView(nameof(DocumentDetaliu) + ListView, Culegere)
+            .Column(d => d.TipMaterial, c => c.Index = 0)
+            .Column(d => d.TipTva, c => c.Index = 1)
+            .Column(d => d.Valoare, c => { c.Index = 2; c.Caption = "Valoare în vamă"; })
+            .Column(d => d.ValoareTva, c => c.Index = 3)
+            // Declarația n-are stoc: cantitatea și lotul n-au semantică pe ea.
+            .Column(d => d.Cantitate, c => c.Index = -1)
+            .Column(d => d.Lot, c => c.Index = -1);
+
+        registry.For<DviFactura>().HideForeignKeys();               // DviId/FacturaId
+        registry.For<DviFactura>()
+            .ListView(nameof(BusinessObjects.Dvi) + "_" + nameof(BusinessObjects.Dvi.Facturi) + ListView, lv => {
+                Culegere(lv);
+                // Coloanele facturii se declară pe CĂI IMBRICATE: `Document`
+                // n-are DefaultProperty (85b), deci `Factura` singură ar fi un
+                // GUID. Selectorul tipizat al fluent-ului nu exprimă o cale, deci
+                // coloanele se adaugă pe view (updater-ul le-ar crea oricum).
+                ColoanaPeCale(lv, "Factura.Numar", 0, "Număr factură");
+                ColoanaPeCale(lv, "Factura.Data", 1, "Dată factură");
+                ColoanaPeCale(lv, "Factura.Predator", 2, "Furnizor");
+                ColoanaPeCale(lv, "Factura.Stare", 3, "Stare factură");
+            })
+            .Column(f => f.Factura, c => c.Index = -1)
+            // Gazda e chiar DetailView-ul pe care stă grila.
+            .Column(f => f.Dvi, c => c.Index = -1);
+
+        // `Total (brut)` ar aduna baza cu taxa (1815 pe scena DVI-D8) — pe
+        // declarație cifrele sunt `Baza` și `Taxa`, ambele pe DetailView.
+        registry.For<BusinessObjects.Dvi>().HideMembers(nameof(Document.Total));
+
+        // Panoul facturilor de import stă NESTED în grupul liniilor (același id ⇒
+        // concatenare ÎNĂUNTRU), adică imediat sub grila declarației, nu după
+        // „Stare & totaluri" — unde l-ar fi dus compunerea bază-întâi.
+        registry.For<BusinessObjects.Dvi>()
+            .Layout(l => l
+                .Group("GrupDetalii", "Detalii", g => g
+                    .Group("GrupFacturi", "Facturi de import", f => f
+                        .Item(nameof(BusinessObjects.Dvi.Facturi))))
+                .Group("GrupStare", "Stare & totaluri", g => g
+                    .Item(x => x.Baza)
+                    .Item(x => x.Taxa)));
     }
 }

@@ -304,6 +304,10 @@ public static class ContaSeeder {
             // tipuri inerte (fără politici), ca DSC/ITV/ASM/BPR.
             ("RLF", "Retur la furnizor", nameof(ReturFurnizor)),
             ("RDC", "Retur de la client", nameof(ReturClient)),
+            // Al 17-lea derivat (felia 25, DVI-D2): declarația vamală de import.
+            // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
+            // inert (fără politici), ca DSC/ITV/ASM/BPR.
+            ("DVI", "Declarație vamală de import", nameof(Dvi)),
         ];
         foreach (var t in tipuri)
             Aliniaza<TipDocument>(os, t.Cod, x => x.Cod == t.Cod, tip => {
@@ -659,7 +663,7 @@ public static class ContaSeeder {
     public static void SeedPoliticiTvaImplicitPrivat(IObjectSpace os) =>
         ProfilPrivat.SeedPoliticiTvaImplicit(os);
 
-    public static IReadOnlyCollection<(string TipDocument, ClasaFiscalaPartener Clasa, string TipTva)>
+    public static IReadOnlyCollection<(string TipDocument, ClasaFiscalaPartener? Clasa, string TipTva)>
         ImpliciteTvaPrivat => ProfilPrivat.ImpliciteTva;
 
     // F23-D8 — golurile de mapare, ca LISTĂ. Seed-ul le aruncă (prima), raportul

@@ -4069,6 +4069,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaPotrivire();
     // Felia 24 track B — explicația configurației (F24-E1…E7), doar pe privat.
     VerificaF24Explica();
+    // Felia 25 — declarația vamală de import, pe scenă (DVI-V1…V17, DVI-r7).
+    VerificaDvi(privat: true);
     // Decizia 85 — modul de acces al ListView-urilor (D85-M1/M2/R1/R2/R3).
     VerificaD85(privat: true);
 
@@ -9199,6 +9201,8 @@ VerificaF23ClasaFiscala();
 VerificaF24Rol(privat: false);
 // Felia 24, review advers — gardianul pe enum-uri și pe ștergerea unui TipTva.
 VerificaF24Gardian(privat: false);
+// Felia 25 — declarația vamală de import (DVI-V0 pe bugetar: ancoră inertă).
+VerificaDvi(privat: false);
 // Decizia 85 — modul de acces al ListView-urilor (D85-M1/M2/R1/R2/R3).
 VerificaD85(privat: false);
 // Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
@@ -10969,8 +10973,8 @@ void VerificaD300Seed(bool privat) {
         .Where(m => m.TipTva.Cod == codTip && m.Sens == sens)
         .Select(m => m.Rand.Cod).OrderBy(c => c, StringComparer.Ordinal).ToArray();
 
-    Check("D3-V1 (privat) tabelul D3-D2 e seed-uit integral: 18 mapări, toate către rânduri de operațiuni",
-        mapari.Count == 18 && mapari.All(m => m.Rand.Fel == FelRandD300.Operatiuni));
+    Check("D3-V1 (privat) tabelul D3-D2 e seed-uit integral: 22 mapări, toate către rânduri de operațiuni",
+        mapari.Count == 22 && mapari.All(m => m.Rand.Fel == FelRandD300.Operatiuni));
     Check("D3-V1 (privat) cotele în vigoare: N21 → 9/24, N11 → 10/25, N9 doar pe livrare → 11",
         Randuri("N21", SensTva.Livrare).SequenceEqual(["9"])
         && Randuri("N21", SensTva.Achizitie).SequenceEqual(["24"])
@@ -11005,9 +11009,10 @@ void VerificaD300Seed(bool privat) {
         && Randuri("NED21", SensTva.Achizitie).SequenceEqual(["24"]));
     // Ce NU e mapat e mapat DELIBERAT: cele trei perechi din D3-D2 sunt singurele
     // găuri admise printre tipurile seed-uite (gardianul din seeder aruncă altfel).
-    Check("D3-V1 (privat) perechile (TipTva × Sens) nemapate sunt EXACT cele declarate deliberat — azi cinci: "
-        + "N9/Achiziție, NED21/Livrare, NIM/Livrare și IMP pe ambele sensuri (83g: baza și taxa importului se "
-        + "declară din DVI). Cifra se citește din LISTA seed-ului, nu se scrie în probă",
+    Check("D3-V1 (privat) perechile (TipTva × Sens) nemapate sunt EXACT cele declarate deliberat în seed, "
+        + "fiecare cu motivul ei (N9/Achiziție, NED21/Livrare, NIM/Livrare, IMP pe ambele sensuri — 83g: baza "
+        + "și taxa importului se declară din DVI — și tipurile de import pe livrare). Mulțimea se citește din "
+        + "LISTA seed-ului, nu se scrie în probă",
         os.GetObjectsQuery<TipTva>().ToList()
             .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, Sens: s)))
             .Count(p => Randuri(p.Cod, p.Sens).Length == 0)
@@ -11085,7 +11090,7 @@ void VerificaD300Seed(bool privat) {
             && mesajGard.Contains("ascendent")
             // …iar gardul TACE de îndată ce proba dispare: nu e un refuz permanent
             // al mapării legitime pe rd. 12.1.
-            && mesajDupa == null && MapariVii() == 18);
+            && mesajDupa == null && MapariVii() == 22);
     }
 
     // ══════ F5: ștergerea LOGICĂ a unei mapări e o decizie, nu o gaură ══════
@@ -11141,18 +11146,18 @@ void VerificaD300Seed(bool privat) {
         SqlBrut($"UPDATE \"MapariD300\" SET \"GCRecord\" = 0 WHERE \"ID\" = {idSters}");
         var dupaRestaurare = MapariVii();
         var mesajFinal = RuleazaGardianul();
-        Console.WriteLine($"     MĂSURAT (D3-V1/F5): mapări vii 18 → {dupaStergere} după `os.Delete` pe "
+        Console.WriteLine($"     MĂSURAT (D3-V1/F5): mapări vii 22 → {dupaStergere} după `os.Delete` pe "
             + $"SFD/Achiziție → rd. 29 (rândul rămâne în tabelă cu GCRecord = {marcajDupaDelete?.ToString() ?? "<DISPĂRUT>"}) → "
             + $"{dupaReseed} după re-seed → {dupaRestaurare} după restaurare; "
             + $"gardian după re-seed: „{mesajVerificare ?? "tace"}”.");
         Check("D3-V1 (F5) ștergerea unei mapări din XAF e AMÂNATĂ — `os.Delete` + `CommitChanges` lasă rândul "
             + "în tabelă cu `GCRecord = 1` (verificat prin SQL, pe lângă filtrul global) — și rămâne ștearsă: "
-            + "re-seed-ul NU o recreează (17 mapări vii, nu 18 — decizia utilizatorului bate tabelul de "
+            + "re-seed-ul NU o recreează (21 mapări vii, nu 22 — decizia utilizatorului bate tabelul de "
             + "profil), iar gardianul o citește ca „nemapată de utilizator”, nu ca gaură de profil (nu "
-            + "aruncă). După restaurarea marcajului, ambele revin la 18",
+            + "aruncă). După restaurarea marcajului, ambele revin la 22",
             marcajDupaDelete == 1
-            && dupaStergere == 17 && dupaReseed == 17 && mesajVerificare == null
-            && dupaRestaurare == 18 && mesajFinal == null);
+            && dupaStergere == 21 && dupaReseed == 21 && mesajVerificare == null
+            && dupaRestaurare == 22 && mesajFinal == null);
     }
 
 }
@@ -11245,7 +11250,7 @@ void VerificaD394Seed(bool privat) {
         Tip("NED21", SensTva.Achizitie) == TipOperatiuneD394.A && Tip("NED21", SensTva.Livrare) == null
         && new[] { "SDD", "SFD", "NIM" }.All(c =>
             Tip(c, SensTva.Livrare) == null && Tip(c, SensTva.Achizitie) == null));
-    Check("D4-V1 (privat) exact 7 perechi (TipTva × Sens) nemapate, toate declarate cu motiv în `ContaSeeder.NemapateD394Privat`",
+    Check("D4-V1 (privat) perechile (TipTva × Sens) nemapate sunt EXACT cele din `ContaSeeder.NemapateD394Privat`, toate cu motiv",
         os.GetObjectsQuery<TipTva>().ToList()
             .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, Sens: s)))
             .Where(p => Tip(p.Cod, p.Sens) == null)
@@ -16209,11 +16214,11 @@ void VerificaD300(bool cuTva) {
     // …și după ambele probe formularul revine EXACT la cifrele dinainte.
     var dupaProbeNed = D300Proiectii.D300(os, pStart, pEnd, null);
     Check("D3-V5 (F3) după ștergerea celor două mapări de probă, formularul revine bit cu bit la cifrele "
-        + "profilului — politica de seed a rămas neatinsă (18 mapări vii)",
+        + "profilului — politica de seed a rămas neatinsă (22 mapări vii)",
         dupaProbeNed.Randuri.Select(r => (r.Cod, r.Baza, r.Tva))
             .SequenceEqual(d3.Randuri.Select(r => (r.Cod, r.Baza, r.Tva)))
         && dupaProbeNed.Avertismente.Count == 0
-        && os.GetObjectsQuery<MapareD300>().Count() == 18);
+        && os.GetObjectsQuery<MapareD300>().Count() == 22);
 
     // ══════════ D3-V6: storno în aceeași perioadă ══════════
     var iunie = D300Proiectii.D300(os, iunieStart, iunieEnd, null);
@@ -16291,7 +16296,7 @@ void VerificaD300(bool cuTva) {
         // Perioada de curățat merge până la 31.07: scena are trei luni de când
         // stornarea de la F1 și-a pus rândurile în iulie (data stornării, 25d).
         && !os.GetObjectsQuery<RegistruTva>().Any(r => r.Data >= pStart && r.Data <= new DateOnly(2026, 7, 31))
-        && os.GetObjectsQuery<MapareD300>().Count() == 18);
+        && os.GetObjectsQuery<MapareD300>().Count() == 22);
 }
 
 // ============ Felia 14 (D394): proiecția declarației informative — D4-V2…V7 ============
@@ -20184,7 +20189,7 @@ void VerificaF23Rezolvare(bool privat) {
         !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(Marcaj))
         && !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(Marcaj))
         && !os.GetObjectsQuery<PoliticaTvaImplicit>().Any(p => p.ValabilDeLa != null)
-        && os.GetObjectsQuery<PoliticaTvaImplicit>().Count() == 10);
+        && os.GetObjectsQuery<PoliticaTvaImplicit>().Count() == 11);
 }
 
 // ---------------------------------------------------------------------------
@@ -20224,13 +20229,13 @@ void VerificaF23Seed(bool privat) {
             .Select(r => $"{r.Tip}×{r.Clasa?.ToString() ?? "orice"}"
                 + $"{(r.DeLa == null ? "" : "@" + r.DeLa.Value.ToString("dd.MM.yyyy"))}→{r.Tva}"
                 + $"{(r.DinSeed ? "" : " (MANUAL)")}")) + ".");
-    Check("F23-V3 (privat) seed-ul scrie EXACT tabelul F23-D2 — 10 rânduri, câte unul pentru fiecare pereche "
+    Check("F23-V3 (privat) seed-ul scrie EXACT tabelul F23-D2 — 11 rânduri, câte unul pentru fiecare pereche "
         + "(tip × clasă fiscală) SIGURĂ în lege: livrarea scutită pe FCL/RDC × UE/extra-UE, taxarea inversă "
         + "intracomunitară pe FCT/RLF × UE, iar de la 83f/g achiziția de la neînregistratul RO (NIM) și cea "
         + "extra-UE (IMP) pe FCT/RLF; toate „dintotdeauna” (niciunul nu depinde de cotă) și toate cu timbrul "
         + "seed-ului",
-        randuriBd.Count == asteptate.Count && randuriBd.Count == 10
-        && randuriBd.Select(r => (r.Tip, r.Clasa, r.DeLa)).Distinct().Count() == 10
+        randuriBd.Count == asteptate.Count && randuriBd.Count == 11
+        && randuriBd.Select(r => (r.Tip, r.Clasa, r.DeLa)).Distinct().Count() == 11
         && asteptate.All(a => randuriBd.Count(r => r.Tip == a.TipDocument && r.Clasa == a.Clasa
             && r.DeLa == null && r.Tva == a.TipTva) == 1)
         && randuriBd.All(r => r.DinSeed));
@@ -20262,7 +20267,7 @@ void VerificaF23Seed(bool privat) {
     Check("F23-V3 (privat) `SeedPoliticiTvaImplicit` e IDEMPOTENT pe cheia indexului (tip × clasă × "
         + "valabilitate): `--forceUpdate` pe o bază deja seed-uită nu adaugă un al doilea rând, care ar fi "
         + "făcut rezolvarea nedeterministă",
-        dupaReseed == 10);
+        dupaReseed == 11);
 
     // „Șters de utilizator” — SINGURUL loc din grup unde ștergerea e LOGICĂ,
     // fiindcă ea e chiar obiectul probei (70e): politica e date (decizia 4), iar
@@ -20285,11 +20290,11 @@ void VerificaF23Seed(bool privat) {
     using (var os = provider.CreateObjectSpace())
         dupaStergere = os.GetObjectsQuery<PoliticaTvaImplicit>().Count();
     Console.WriteLine($"     MĂSURAT (F23-V3/șters de utilizator): FCL×Ue șters logic, apoi seed re-rulat ⇒ "
-        + $"{dupaStergere} rânduri vii (așteptat 9, adică NU s-a recreat).");
+        + $"{dupaStergere} rânduri vii (așteptat 10, adică NU s-a recreat).");
     Check("F23-V3 (privat) rândul ȘTERS de utilizator NU se recreează la re-seed (aceeași disciplină ca "
         + "mapările D300/D394): politica e DATE, iar ștergerea e o decizie a clientului — seed-ul o respectă "
         + "și o SPUNE în consolă, nu o anulează tăcut",
-        dupaStergere == 9);
+        dupaStergere == 10);
 
     // Restaurarea: purjă FIZICĂ a rândului marcat șters (o ștergere logică lăsată
     // în urmă ar face rularea următoare să spună „șters de utilizator” despre un
@@ -20307,9 +20312,9 @@ void VerificaF23Seed(bool privat) {
         cuTimbru = os.GetObjectsQuery<PoliticaTvaImplicit>().Count(p => p.DinSeed);
     }
     Console.WriteLine($"     MĂSURAT (F23-V3/restaurare): {dupaRestaurare} rânduri, {cuTimbru} cu timbru.");
-    Check("F23-V3 (privat) restaurare: după purja fizică a rândului șters, seed-ul îl recreează — 10 rânduri, "
+    Check("F23-V3 (privat) restaurare: după purja fizică a rândului șters, seed-ul îl recreează — 11 rânduri, "
         + "toate cu `DinSeed`; baza rămâne exact cum a găsit-o proba",
-        dupaRestaurare == 10 && cuTimbru == 10);
+        dupaRestaurare == 11 && cuTimbru == 11);
 }
 
 // ═══════════ Felia 24, pasul 1 — seed-ul care ALINIAZĂ (decizia 83) ═══════════
@@ -20589,11 +20594,11 @@ void VerificaF24Seed(bool privat) {
             imp != null && imp.Cota == 0m && imp.Regim == RegimTva.Neimpozabil && imp.Activ
             && imp.CodSafTAchizitie == null && imp.CodSafTLivrare == null
             && nim != null && nim.CodSafTAchizitie == "308302"
-            && deSeed == 11);
-        Check("F24-V8 (privat) golul se închide cu RÂND și cu MOTIV: zece implicite de politică, iar `IMP` e "
+            && deSeed == 15);
+        Check("F24-V8 (privat) golul se închide cu RÂND și cu MOTIV: unsprezece implicite de politică, iar `IMP` e "
             + "declarat nemapat deliberat pe AMBELE sensuri și în D300 („din DVI”), și în D394 („partener "
             + "extra-UE nu se declară”) — gardienii de profil rămân verzi prin liste, nu prin excepție în cod",
-            ContaSeeder.ImpliciteTvaPrivat.Count == 10 && implicite == 10
+            ContaSeeder.ImpliciteTvaPrivat.Count == 11 && implicite == 11
             && nemapateImp == 2 && nemapateImp394 == 2 && goluri.Count == 0);
     }
 }
@@ -22208,4 +22213,544 @@ void VerificaD85(bool privat) {
             !os.GetObjectsQuery<Produs>().IgnoreQueryFilters().Any(p => p.Cod == Marcaj)
             && !os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Any(r => r.Cod.StartsWith(Marcaj + "-"))
             && !os.GetObjectsQuery<Document>().IgnoreQueryFilters().Any(d => d.Numar.StartsWith(Marcaj + "-")));
+}
+
+// ---------------------------------------------------------------------------
+// Felia 25 (DVI-D8) — declarația vamală de import
+// ---------------------------------------------------------------------------
+// Cusătura probată: tipul `Dvi` (cu `Motor/*` NEATINS) → politica de TVA a
+// profilului → `RegistruContabil` + `RegistruTva` → D300 (rd. 24 direct, rd. 7
+// cu oglinda 22), jurnalul de cumpărări, D394 (nedeclarat deliberat) și codul
+// SAF-T al importului (DVI-r7).
+//
+// Luna de lucru e FEBRUARIE 2026: niciun alt bloc privat nu scrie acolo. Cifrele
+// formularului se citesc ca DELTĂ (înainte/după operare), ca proba să nu depindă
+// de ce a mai lăsat baza — oglinda rd. 22 = rd. 7 rămâne absolută, fiind o
+// egalitate a formularului.
+void VerificaDvi(bool privat) {
+    const string Marcaj = "E2E-DVI";
+
+    // ── Bugetar: ancora în nucleu, tipul INERT, nomenclatorul fără import ────
+    if (!privat) {
+        using var osB = provider.CreateObjectSpace();
+        var tipB = osB.FirstOrDefault<TipDocument>(t => t.Cod == "DVI");
+        var deImportB = osB.GetObjectsQuery<TipTva>().Count(t => t.DeImport);
+        Console.WriteLine($"     MĂSURAT (DVI-V0/bugetar): ancoră DVI = "
+            + $"{(tipB == null ? "<lipsă>" : tipB.ClrType)}; {deImportB} tipuri de TVA `DeImport`.");
+        Check("DVI-V0 (bugetar) ancora TipDocument DVI există în NUCLEU cu ClrType-ul clasei, dar tipul e "
+            + "INERT — nicio politică (TVA/implicit/numerotare/scadență/validare/conex), nicio regulă de "
+            + "stoc sau contare — și niciun `TipTva` de import: codurile 301204/300604 sunt ale profilului "
+            + "privat (DVI-D2), ca DSC/ITV/ASM/BPR",
+            tipB != null && tipB.ClrType == nameof(Dvi)
+            && osB.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipB.ID) == null
+            && osB.FirstOrDefault<PoliticaTvaImplicit>(p => p.TipDocumentId == tipB.ID) == null
+            && osB.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipB.ID) == null
+            && osB.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tipB.ID) == null
+            && osB.FirstOrDefault<PoliticaValidare>(p => p.TipDocumentId == tipB.ID) == null
+            && osB.FirstOrDefault<PoliticaConex>(p => p.TipDocumentSursaId == tipB.ID) == null
+            && !osB.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocumentId == tipB.ID)
+            && !osB.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipB.ID)
+            && deImportB == 0);
+        return;
+    }
+
+    // ── Curățenia scenei (purjă FIZICĂ — F13-D2) ─────────────────────────────
+    void CurataDvi(IObjectSpace os) {
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
+        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<DviFactura>().IgnoreQueryFilters()
+            .Where(f => docIds.Contains(f.DviId) || docIds.Contains(f.FacturaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    // CALEA REALĂ: dispecerul generic `IVerificabilLaCommit` din
+    // `GardianEditare.Verifica` (DVI-D3). Nu se cheamă `DviFactura.Verifica`
+    // direct — proba trebuie să ateste că regula e ARMATĂ pe ușa securizată,
+    // nu doar că există corpul ei.
+    static string RefuzGardian(IObjectSpace os) {
+        try {
+            GardianEditare.Verifica(os);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+    }
+    var febStart = new DateOnly(2026, 2, 1);
+    var febEnd = new DateOnly(2026, 2, 28);
+    var dataDvi = new DateOnly(2026, 2, 16);
+    Guid idFct, idDvi, idVama, idUnitate, idContPropriu, idTipTrz, idDviDraft, idFctDraft;
+
+    using (var os = provider.CreateObjectSpace())
+        CurataDvi(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        // ---- Seed-ul profilului (DVI-D2) ----
+        var tipDvi = os.FirstOrDefault<TipDocument>(t => t.Cod == "DVI");
+        var politicaTva = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipDvi.ID);
+        var cont446 = os.FirstOrDefault<Cont>(c => c.Simbol == "446");
+        var cont4426 = os.FirstOrDefault<Cont>(c => c.Simbol == "4426");
+        var cont4427 = os.FirstOrDefault<Cont>(c => c.Simbol == "4427");
+        TipTva Tva(string cod) => os.FirstOrDefault<TipTva>(t => t.Cod == cod);
+        var imp21 = Tva("IMP21");
+        var imp11 = Tva("IMP11");
+        var impTi21 = Tva("IMPTI21");
+        var impTi11 = Tva("IMPTI11");
+        var imp = Tva("IMP");
+        Console.WriteLine($"     MĂSURAT (DVI-V1/privat): PoliticaTva DVI = "
+            + $"{politicaTva?.Directie.ToString() ?? "<lipsă>"}/{politicaTva?.SursaContrapartida.ToString() ?? "-"}, "
+            + $"fallback {os.GetObjectByKey<Cont>(politicaTva?.ContrapartidaFallbackId ?? Guid.Empty)?.Simbol ?? "<null>"}; "
+            + $"IMP21 {imp21?.Cota}/{imp21?.Regim}/SAF-T {imp21?.CodSafTAchizitie}; "
+            + $"IMP11 SAF-T {imp11?.CodSafTAchizitie}; IMPTI21 {impTi21?.Regim}/SAF-T {impTi21?.CodSafTAchizitie}; "
+            + $"IMPTI11 SAF-T {impTi11?.CodSafTAchizitie}; ancora tipului = "
+            + $"{os.GetObjectByKey<TipTva>(tipDvi.TipTvaImplicitId ?? Guid.Empty)?.Cod ?? "<null>"}.");
+        Check("DVI-V1 (privat) seed-ul DVI: ancoră cu ClrType-ul clasei, politică de TVA deductibilă contra "
+            + "contului implicit al PREDATORULUI cu fallback 446, ancoră de tip IMP21 și implicit generic "
+            + "(orice clasă fiscală) tot IMP21 — și NICIO regulă de contare/stoc, nicio numerotare, scadență "
+            + "sau politică de conex: declarația nu postează valoarea liniei, doar taxa",
+            tipDvi != null && tipDvi.ClrType == nameof(Dvi)
+            && politicaTva != null && politicaTva.Directie == DirectieTva.Deductibil
+            && politicaTva.SursaContrapartida == SursaCont.RepartitorPredator
+            && politicaTva.ContrapartidaFallbackId == cont446.ID
+            && tipDvi.TipTvaImplicitId == imp21.ID
+            && os.GetObjectsQuery<PoliticaTvaImplicit>().Count(p => p.TipDocumentId == tipDvi.ID
+                && p.ClasaFiscala == null && p.TipTvaId == imp21.ID) == 1
+            && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipDvi.ID)
+            && !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocumentId == tipDvi.ID)
+            && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipDvi.ID) == null
+            && os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tipDvi.ID) == null
+            && os.FirstOrDefault<PoliticaConex>(p => p.TipDocumentSursaId == tipDvi.ID) == null);
+
+        Check("DVI-V2 (privat) cele patru tipuri de import ale nomenclatorului SAF-T: 21%/11% cu taxa PLĂTITĂ "
+            + "în vamă (301204/301205, regim Normal) și 21%/11% cu amânarea plății (300604/300605, taxare "
+            + "inversă); toate deductibile pe 4426, toate `DeImport`, niciunul cu cod de livrare — importul e "
+            + "exclusiv de achiziție. `IMP` (factura furnizorului extern) rămâne cotă 0 și capătă doar "
+            + "`DeImport`, ca lookup-ul de culegere să-l vadă, iar `ValideazaOperare` să-l refuze pe cotă",
+            imp21 != null && imp21.Cota == 21m && imp21.Regim == RegimTva.Normal
+            && imp21.CodSafTAchizitie == "301204" && imp21.CodSafTLivrare == null
+            && imp11 != null && imp11.Cota == 11m && imp11.Regim == RegimTva.Normal
+            && imp11.CodSafTAchizitie == "301205"
+            && impTi21 != null && impTi21.Cota == 21m && impTi21.Regim == RegimTva.TaxareInversa
+            && impTi21.CodSafTAchizitie == "300604"
+            && impTi11 != null && impTi11.Cota == 11m && impTi11.Regim == RegimTva.TaxareInversa
+            && impTi11.CodSafTAchizitie == "300605"
+            && new[] { imp21, imp11, impTi21, impTi11 }.All(t => t.DeImport
+                && t.ContTvaDeductibilId == cont4426.ID && t.ContTvaColectatId == cont4427.ID)
+            && imp != null && imp.DeImport && imp.Cota == 0m);
+
+        // ---- Scena ----
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = Marcaj + "-EXT";
+        furnizor.Denumire = "Furnizor extra-UE probă DVI";
+        furnizor.Tara = "MA";
+        var vama = os.CreateObject<Partener>();
+        vama.Cod = Marcaj + "-VAMA";
+        vama.Denumire = "Biroul vamal probă DVI";
+        vama.Tara = "RO";
+        vama.ContImplicit = cont446;
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-MAG";
+        gestiune.Denumire = "Gestiune probă DVI";
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-UI";
+        unitate.Denumire = "Unitate probă DVI";
+        os.CommitChanges();
+        idVama = vama.ID;
+        idUnitate = unitate.ID;
+        idContPropriu = os.FirstOrDefault<ContPropriu>(c => c.Cod == "BANCA").ID;
+        idTipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ").ID;
+        var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+
+        // Factura furnizorului extern: `IMP`, deci fără taxă pe linie (83g).
+        var fct = os.CreateObject<FacturaIntrare>();
+        fct.Numar = Marcaj + "-FF1";
+        fct.Data = new DateOnly(2026, 2, 10);
+        fct.Predator = furnizor;
+        fct.Primitor = gestiune;
+        var linieFct = os.CreateObject<FacturaIntrareDetaliu>();
+        linieFct.Document = fct;
+        linieFct.TipMaterial = tip628;
+        linieFct.Cantitate = 1m;
+        linieFct.PretUnitar = 1400m;
+        linieFct.TipTva = imp;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fct);
+        idFct = fct.ID;
+        Check("DVI-V3 (privat) PREMISA: factura furnizorului extern e operată cu `IMP` — cotă 0, deci linia "
+            + "nu poartă taxă și rândul ei fiscal are TVA zero; TVA-ul datorat în vamă n-are de unde intra "
+            + "în evidență decât prin declarație (83g)",
+            fct.Stare == StareDocument.Operat
+            && os.GetObjectsQuery<RegistruTva>().Count(r => r.DocumentId == fct.ID && r.Tva == 0m) == 1);
+
+        // ---- Cifrele formularului ÎNAINTE de declarație (delta) ----
+        var d300Inainte = D300Proiectii.D300(os, febStart, febEnd, null);
+        decimal Baza0(string cod) => d300Inainte.Randuri.Single(r => r.Cod == cod).Baza ?? 0m;
+        decimal Tva0(string cod) => d300Inainte.Randuri.Single(r => r.Cod == cod).Tva ?? 0m;
+        var (baza24, tva24) = (Baza0("24"), Tva0("24"));
+        var (baza7, tva7) = (Baza0("7"), Tva0("7"));
+
+        // ---- Declarația vamală ----
+        var dvi = os.CreateObject<Dvi>();
+        dvi.Numar = "26ROBV" + Marcaj;
+        dvi.Data = dataDvi;
+        dvi.Predator = vama;
+        dvi.Primitor = unitate;
+        var linieNormal = os.CreateObject<DocumentDetaliu>();
+        linieNormal.Document = dvi;
+        linieNormal.TipMaterial = tip628;
+        linieNormal.TipTva = imp21;
+        linieNormal.Valoare = 1000m;
+        linieNormal.ValoareTva = 210m;
+        var linieTi = os.CreateObject<DocumentDetaliu>();
+        linieTi.Document = dvi;
+        linieTi.TipMaterial = tip628;
+        linieTi.TipTva = impTi21;
+        linieTi.Valoare = 500m;
+        // TVA-ul lăsat la 0: îl calculează `TvaService` la operare (48b).
+        var legatura = os.CreateObject<DviFactura>();
+        legatura.Dvi = dvi;
+        legatura.Factura = fct;
+        os.CommitChanges();
+        idDvi = dvi.ID;
+
+        var stocInainte = os.GetObjectsQuery<RegistruStoc>().Count();
+        MotorOperare.Opereaza(os, dvi);
+        var note = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idDvi).ToList();
+        var randuriTva = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == idDvi).ToList();
+        Console.WriteLine($"     MĂSURAT (DVI-V4/privat): {note.Count} note contabile ("
+            + string.Join("; ", note.Select(n => $"{n.ContDebit?.Simbol} = {n.ContCredit?.Simbol}: {n.Valoare}"))
+            + $"); {randuriTva.Count} rânduri fiscale ("
+            + string.Join("; ", randuriTva.Select(r => $"{r.Sens}/{r.Regim} {r.Baza}/{r.Tva}")) + "); "
+            + $"{os.GetObjectsQuery<RegistruStoc>().Count() - stocInainte} rânduri de stoc noi.");
+        Check("DVI-V4 (privat) planul declarației, cu `Motor/*` NEATINS: ZERO mișcări de stoc, ZERO note pe "
+            + "`Valoare` (liniile n-au regulă de contare și nici conturi explicite, deci motorul le sare) și "
+            + "EXACT două note de TVA — 4426 = 446 de 210 pe linia cu taxa plătită în vamă (contrapartida e "
+            + "contul implicit al biroului vamal), 4426 = 4427 de 105 pe cea cu amânarea plății (autolichidare, "
+            + "sold zero). Taxa liniei TI a fost CALCULATĂ din cotă la operare, nu culeasă",
+            dvi.Stare == StareDocument.Operat
+            && os.GetObjectsQuery<RegistruStoc>().Count() == stocInainte
+            && note.Count == 2
+            && note.Any(n => n.ContDebitId == cont4426.ID && n.ContCreditId == cont446.ID && n.Valoare == 210m)
+            && note.Any(n => n.ContDebitId == cont4426.ID && n.ContCreditId == cont4427.ID && n.Valoare == 105m)
+            && linieTi.ValoareTva == 105m);
+        Check("DVI-V5 (privat) jurnalul fiscal: două rânduri de ACHIZIȚIE (direcția vine din `PoliticaTva`), "
+            + "amândouă pe contrapartida declarată de politică — biroul vamal, nu furnizorul extern —, cu "
+            + "bazele și taxele declarației (1000/210 și 500/105) și cu regimul ca SNAPSHOT pe rând",
+            randuriTva.Count == 2
+            && randuriTva.All(r => r.Sens == SensTva.Achizitie && r.PartenerId == idVama && !r.Storno)
+            && randuriTva.Any(r => r.Regim == RegimTva.Normal && r.Baza == 1000m && r.Tva == 210m)
+            && randuriTva.Any(r => r.Regim == RegimTva.TaxareInversa && r.Baza == 500m && r.Tva == 105m));
+
+        // ---- D300: rd. 24 direct, rd. 7 cu oglinda 22 ----
+        var d300 = D300Proiectii.D300(os, febStart, febEnd, null);
+        D300Rand R(string cod) => d300.Randuri.Single(r => r.Cod == cod);
+        Console.WriteLine($"     MĂSURAT (DVI-V6/privat): rd. 24 {Baza0("24")}/{Tva0("24")} → "
+            + $"{R("24").Baza}/{R("24").Tva}; rd. 7 {baza7}/{tva7} → {R("7").Baza}/{R("7").Tva}; "
+            + $"rd. 22 {R("22").Baza}/{R("22").Tva}; surse rd. 24 „{R("24").Surse}”, rd. 7 „{R("7").Surse}”; "
+            + $"{d300.Nemapate.Count} operațiuni nemapate, {d300.Avertismente.Count} avertismente.");
+        Check("DVI-V6 (privat) decontul: taxa PLĂTITĂ în vamă intră pe rd. 24 (achiziții taxabile 21%, unde "
+            + "legea pune și importurile care nu se încadrează la art. 326 alin. (4)–(5)) cu 1000/210, "
+            + "amânarea plății pe rd. 7 cu 500/105, iar rd. 22 OGLINDEȘTE rd. 7 — deducerea taxării inverse "
+            + "e copia colectării, pusă de proiecție din `RandD300.OglindaA`, nu de o a doua mapare",
+            R("24").Baza - baza24 == 1000m && R("24").Tva - tva24 == 210m
+            && R("7").Baza - baza7 == 500m && R("7").Tva - tva7 == 105m
+            && R("22").Baza == R("7").Baza && R("22").Tva == R("7").Tva
+            && R("24").Surse.Contains("IMP21") && R("7").Surse.Contains("IMPTI21")
+            && d300.Avertismente.Count == 0);
+
+        // ---- Jurnalul de cumpărări ----
+        var jurnal = TvaProiectii.JurnalTva(os, SensTva.Achizitie, febStart, febEnd).ToList()
+            .Where(j => j.DocumentId == idDvi).ToList();
+        Check("DVI-V7 (privat) jurnalul de cumpărări arată declarația cu un rând per tip de TVA, pe "
+            + "contrapartida ei, cu codurile SAF-T direcționale ale importului (301204 / 300604)",
+            jurnal.Count == 2
+            && jurnal.All(j => j.PartenerId == idVama && j.DocumentNumar == dvi.Numar)
+            && jurnal.Any(j => j.TipTvaCod == "IMP21" && j.CodSafT == "301204" && j.Baza == 1000m && j.Tva == 210m)
+            && jurnal.Any(j => j.TipTvaCod == "IMPTI21" && j.CodSafT == "300604" && j.Baza == 500m && j.Tva == 105m));
+
+        // ---- D394: declarația vamală NU se declară ----
+        var d394 = D394Proiectii.D394(os, febStart, febEnd);
+        var neincluseDvi = d394.Neincluse
+            .Where(n => n.TipTvaCod == "IMP21" || n.TipTvaCod == "IMPTI21").ToList();
+        Console.WriteLine($"     MĂSURAT (DVI-V8/privat): {d394.Operatiuni.Count} rânduri op1, din care "
+            + $"{d394.Operatiuni.Count(o => o.Denumire == vama.Denumire)} pe biroul vamal; neincluse pe tipuri "
+            + $"de import: {string.Join(", ", neincluseDvi.Select(n => $"{n.TipTvaCod}/{n.Cauza} {n.Baza}/{n.Tva}"))}.");
+        Check("DVI-V8 (privat) declarația vamală NU intră în 394: partenerul extern nu se declară, iar biroul "
+            + "vamal nu e o operațiune de raportat — cifrele nu DISPAR însă, ci apar în panoul `Neincluse` cu "
+            + "cauza `TipTvaNemapat`, exact disciplina golurilor de profil (decizia 21)",
+            !d394.Operatiuni.Any(o => o.Denumire == vama.Denumire)
+            && neincluseDvi.Count == 2
+            && neincluseDvi.All(n => n.Cauza == "TipTvaNemapat")
+            && neincluseDvi.Sum(n => n.Baza) == 1500m && neincluseDvi.Sum(n => n.Tva) == 315m);
+
+        // ---- DVI-r7: codul SAF-T al importului ----
+        var saft = SaftProiectii.Saft(os, 2026, 2);
+        if (saft.Neaplicabil != null)
+            Console.WriteLine($"     SKIP (DVI-r7): D406 nu se aplică bazei — {saft.Neaplicabil}.");
+        else {
+            var liniiDvi = saft.Jurnale.SelectMany(j => j.Tranzactii)
+                .Where(t => t.DocumentId == idDvi).SelectMany(t => t.Linii).ToList();
+            var coduri = liniiDvi.Where(l => l.TaxInformation != null)
+                .Select(l => l.TaxInformation.TaxCode).Distinct().OrderBy(c => c, StringComparer.Ordinal).ToList();
+            Console.WriteLine($"     MĂSURAT (DVI-r7/privat): {liniiDvi.Count} linii de GL ale declarației, "
+                + $"coduri de taxă {string.Join(", ", coduri)}; tabela de taxe conține "
+                + $"{string.Join(", ", saft.Taxe.Select(t => t.TaxCode).Where(c => c.StartsWith("3012") || c.StartsWith("3006")))}.");
+            Check("DVI-r7 (privat) proiecția D406 iterează `RegistruTva` fără filtru de tip de document, deci "
+                + "rândul declarației iese cu codul ei de taxă (301204 pe linia plătită în vamă, 300604 pe cea "
+                + "cu amânarea plății) și amândouă intră în `TaxTable` — restanța se închide în felie, nu se "
+                + "amână",
+                coduri.Contains("301204") && coduri.Contains("300604")
+                && saft.Taxe.Any(t => t.TaxCode == "301204") && saft.Taxe.Any(t => t.TaxCode == "300604"));
+        }
+    }
+
+    // ---- Gardianul legăturii, PE CALEA REALĂ (DVI-D3) ----
+    // Fiecare refuz se măsoară pe un ObjectSpace al lui, ca `ModifiedObjects` să
+    // conțină EXACT obiectul sub test — altfel mesajele s-ar cumula.
+    string RefuzLegaturaNoua(Guid dviId, Guid facturaId) {
+        using var os = provider.CreateObjectSpace();
+        var leg = os.CreateObject<DviFactura>();
+        leg.Dvi = os.GetObjectByKey<Dvi>(dviId);
+        leg.Factura = os.GetObjectByKey<FacturaIntrare>(facturaId);
+        var refuz = RefuzGardian(os);
+        os.Rollback();
+        return refuz;
+    }
+
+    string refuzOperat, refuzStergere;
+    refuzOperat = RefuzLegaturaNoua(idDvi, idFct);
+    using (var os = provider.CreateObjectSpace()) {
+        os.Delete(os.GetObjectsQuery<DviFactura>().ToList().First(f => f.DviId == idDvi));
+        refuzStergere = RefuzGardian(os);
+        os.Rollback();
+    }
+    Console.WriteLine($"     MĂSURAT (DVI-V9/privat): legătură NOUĂ pe declarație operată → "
+        + $"„{refuzOperat?.Split('\n')[0] ?? "<acceptată>"}”; ȘTERGERE pe declarație operată → "
+        + $"„{refuzStergere?.Split('\n')[0] ?? "<acceptată>"}”.");
+    Check("DVI-V9 (privat) legăturile sunt înghețate cu documentul, iar regula e ARMATĂ pe ușa securizată: "
+        + "`GardianEditare.Verifica` cheamă `IVerificabilLaCommit` înaintea switch-ului, deci nici crearea, "
+        + "nici ȘTERGEREA unei legături nu mai trec cât declarația e Operat — gardul vede și `Delete` "
+        + "(fără `EsteSters`), altfel o factură s-ar putea dezlega de pe un document cu registre scrise",
+        refuzOperat != null && refuzOperat.Contains("Draft")
+        && refuzStergere != null && refuzStergere.Contains("Draft"));
+
+    using (var os = provider.CreateObjectSpace()) {
+        var unitate = os.GetObjectByKey<UnitateInterna>(idUnitate);
+        var vama = os.GetObjectByKey<Partener>(idVama);
+        var imp21 = os.FirstOrDefault<TipTva>(t => t.Cod == "IMP21");
+        var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+
+        var draft = os.CreateObject<Dvi>();
+        draft.Numar = "26ROBV" + Marcaj + "-B";
+        draft.Data = dataDvi;
+        draft.Predator = vama;
+        draft.Primitor = unitate;
+        var linie = os.CreateObject<DocumentDetaliu>();
+        linie.Document = draft;
+        linie.TipMaterial = tip628;
+        linie.TipTva = imp21;
+        linie.Valoare = 200m;
+        linie.ValoareTva = 42m;
+        os.CommitChanges();
+        idDviDraft = draft.ID;
+
+        // Factură DRAFT — nu se leagă.
+        var fctDraft = os.CreateObject<FacturaIntrare>();
+        fctDraft.Numar = Marcaj + "-FF2";
+        fctDraft.Data = new DateOnly(2026, 2, 11);
+        fctDraft.Predator = os.GetObjectsQuery<Partener>().ToList().First(p => p.Cod == Marcaj + "-EXT");
+        fctDraft.Primitor = os.GetObjectsQuery<Gestiune>().ToList().First(g => g.Cod == Marcaj + "-MAG");
+        var linieDraft = os.CreateObject<FacturaIntrareDetaliu>();
+        linieDraft.Document = fctDraft;
+        linieDraft.TipMaterial = tip628;
+        linieDraft.Cantitate = 1m;
+        linieDraft.PretUnitar = 50m;
+        os.CommitChanges();
+        idFctDraft = fctDraft.ID;
+    }
+
+    var refuzFacturaDraft = RefuzLegaturaNoua(idDviDraft, idFctDraft);
+    string acceptata, refuzDubla, refuzEditare;
+    using (var os = provider.CreateObjectSpace()) {
+        var leg = os.CreateObject<DviFactura>();
+        leg.Dvi = os.GetObjectByKey<Dvi>(idDviDraft);
+        leg.Factura = os.GetObjectByKey<FacturaIntrare>(idFct);
+        acceptata = RefuzGardian(os);
+        os.CommitChanges();
+    }
+    refuzDubla = RefuzLegaturaNoua(idDviDraft, idFct);
+    using (var os = provider.CreateObjectSpace()) {
+        var editata = os.GetObjectsQuery<DviFactura>().ToList().First(f => f.DviId == idDviDraft);
+        editata.FacturaId = idFctDraft;
+        refuzEditare = RefuzGardian(os);
+        os.Rollback();
+    }
+    Console.WriteLine($"     MĂSURAT (DVI-V10/privat): factură Draft → „{refuzFacturaDraft?.Split('\n')[0]}”; "
+        + $"aceeași factură de două ori → „{refuzDubla?.Split('\n')[0]}”; editare → "
+        + $"„{refuzEditare?.Split('\n')[0]}”; legătura validă → {acceptata ?? "acceptată"}.");
+    Check("DVI-V10 (privat) regulile legăturii pe un draft, tot prin `GardianEditare.Verifica`: factura "
+        + "trebuie să fie OPERATĂ, aceeași factură nu se leagă de două ori la aceeași declarație (refuzul e "
+        + "de DOMENIU, cu numărul facturii în mesaj, nu un `23505` din index) și legătura nu se editează — "
+        + "se șterge și se recreează, ca `Imperechere`",
+        refuzFacturaDraft != null && refuzFacturaDraft.Contains("facturi operate")
+        && acceptata == null
+        && refuzDubla != null && refuzDubla.Contains("deja legată")
+        && refuzEditare != null && refuzEditare.Contains("nu se editează"));
+
+    // ---- Refuzurile de OPERARE (DVI-D4) ----
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = os.GetObjectsQuery<Dvi>().ToList().First(d => d.Numar.EndsWith("-B"));
+        var imp = os.FirstOrDefault<TipTva>(t => t.Cod == "IMP");
+        var numar = draft.Numar;
+        draft.Numar = null;
+        CheckRefuza("DVI-V11 (privat) declarația fără MRN nu se operează — numărul e al declarației vamale, "
+            + "se culege (fără politică de numerotare, ca la FCT)",
+            () => MotorOperare.Opereaza(os, draft));
+        draft.Numar = numar;
+        draft.Detalii.First().TipTva = imp;
+        CheckRefuza("DVI-V12 (privat) o linie cu `IMP` (cotă 0) nu se operează: TVA-ul în vamă are cotă, iar "
+            + "tipul facturii de import n-o poartă — refuzul e pe COTĂ și pe `DeImport`, nu pe un cod "
+            + "hardcodat",
+            () => MotorOperare.Opereaza(os, draft));
+        draft.Detalii.First().TipTva = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        CheckRefuza("DVI-V13 (privat) o linie cu un tip de TVA intern (N21) nu se operează: declarația poartă "
+            + "doar tipuri `DeImport`",
+            () => MotorOperare.Opereaza(os, draft));
+        draft.Detalii.First().TipTva = os.FirstOrDefault<TipTva>(t => t.Cod == "IMP21");
+        draft.Predator = os.GetObjectByKey<UnitateInterna>(idUnitate);
+        CheckRefuza("DVI-V14 (privat) predatorul declarației e un PARTENER (biroul vamal sau comisionarul "
+            + "care a plătit taxa), nu un repartitor intern — altfel n-ar exista cui se datorează taxa",
+            () => MotorOperare.Opereaza(os, draft));
+        os.Rollback();
+    }
+
+    // ---- Plata TAXEI (DVI-D4 amendat) și stornoul ----
+    // DVI nu e document stins: TVA-ul în vamă se plătește ca orice taxă
+    // (precedentul ITV/4423), iar ce rămâne de plătit e SOLDUL lui 446 pe biroul
+    // vamal, nu un „rest" al documentului.
+    using (var os = provider.CreateObjectSpace()) {
+        var dvi = os.GetObjectByKey<Dvi>(idDvi);
+        var cont446 = os.FirstOrDefault<Cont>(c => c.Simbol == "446");
+        var contPropriu = os.GetObjectByKey<ContPropriu>(idContPropriu);
+
+        decimal Net446(params Guid[] docIds) =>
+            (os.GetObjectsQuery<RegistruContabil>()
+                .Where(r => docIds.Contains(r.DocumentId.Value) && r.ContDebitId == cont446.ID)
+                .Sum(r => (decimal?)r.Valoare) ?? 0m)
+            - (os.GetObjectsQuery<RegistruContabil>()
+                .Where(r => docIds.Contains(r.DocumentId.Value) && r.ContCreditId == cont446.ID)
+                .Sum(r => (decimal?)r.Valoare) ?? 0m);
+
+        var plata = os.CreateObject<Plata>();
+        plata.Numar = Marcaj + "-PLT";
+        plata.Data = new DateOnly(2026, 2, 20);
+        plata.PredatorId = idContPropriu;
+        plata.PrimitorId = idVama;
+        plata.TipInstrument = TipInstrumentPlata.OrdinPlata;
+        var linieP = os.CreateObject<DocumentTrezorerieDetaliu>();
+        linieP.Document = plata;
+        linieP.TipMaterialId = idTipTrz;
+        linieP.Valoare = 210m;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, plata);
+        var notaPlata = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == plata.ID).ToList();
+        var imperecheriPlata = os.GetObjectsQuery<Imperechere>()
+            .Count(i => i.DocumentStingatorId == plata.ID || i.DocumentId == plata.ID);
+        var notaDvi446 = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId == idDvi && r.ContCreditId == cont446.ID).ToList();
+        var fisaVama = ContabilProiectii
+            .FisaCont(os, cont446.ID, febStart, febEnd, repartitorId: idVama).ToList();
+        Console.WriteLine($"     MĂSURAT (DVI-V15/privat): plata taxei — "
+            + string.Join("; ", notaPlata.Select(n => $"{n.ContDebit?.Simbol} = {n.ContCredit?.Simbol}: {n.Valoare}"))
+            + $"; {imperecheriPlata} imperecheri; 446 pe declarație + plată: net {Net446(idDvi, plata.ID)}; "
+            + $"dimensiunea Repartitor a creditului 446 al declarației = "
+            + $"„{notaDvi446.FirstOrDefault()?.CreditRepartitor?.Denumire ?? "<gol>"}”; fișa lui 446 filtrată pe "
+            + $"biroul vamal: {fisaVama.Count} rând(uri), ultim sold {(fisaVama.Count == 0 ? "-" : fisaVama[^1].SoldCurent.ToString())} "
+            + $"(debitul plății poartă CONTUL PROPRIU ca dimensiune — default-ul trezoreriei, 00 §5).");
+        Check("DVI-V15 (privat) TVA-ul în vamă se plătește ca orice TAXĂ, nu prin imperechere (DVI-D4 "
+            + "amendat): plata către biroul vamal postează 446 = contul propriu, motorul NU creează nicio "
+            + "imperechere, iar contul 446 se închide la ZERO peste declarație + plată. Creditul de 446 al "
+            + "declarației poartă biroul vamal ca dimensiune Repartitor — `Dvi.RepartitorImplicitCredit` "
+            + "urmărește PREDATORUL, ca la Decont, altfel contul de taxă al terțului ar fi purtat unitatea. "
+            + "Fișa lui 446 FILTRATĂ pe biroul vamal rămâne la −210: debitul plății poartă contul propriu ca "
+            + "dimensiune (default-ul trezoreriei, 00 §5) — soldul per partener se citește deci pe cont, nu "
+            + "pe dimensiune",
+            notaPlata.Count == 1
+            && notaPlata[0].ContDebitId == cont446.ID
+            && notaPlata[0].ContCreditId == contPropriu.ContImplicitId
+            && notaPlata[0].Valoare == 210m
+            && imperecheriPlata == 0
+            && Net446(idDvi, plata.ID) == 0m
+            && notaDvi446.Count == 1 && notaDvi446[0].CreditRepartitorId == idVama
+            && fisaVama.Count == 1 && fisaVama[0].SoldCurent == -210m);
+
+        // DVI nu apare printre documentele cu rest — `DocumenteCuRest` e o uniune
+        // per tip concret (FCT/FCL/PLT/INC/DEC), iar ramura DVI ar cere o regulă
+        // de rest polimorfă (DVI-r11).
+        var cuRest = ImperecheriProiectii.DocumenteCuRest(os).ToList();
+        var cuRestVama = ImperecheriProiectii.DocumenteCuRest(os, idVama).ToList();
+        Console.WriteLine($"     MĂSURAT (DVI-V15b/privat): `DocumenteCuRest` — {cuRest.Count(r => r.DocumentId == idDvi)} "
+            + $"rânduri ale declarației în lista generală, {cuRestVama.Count(r => r.DocumentId == idDvi)} "
+            + $"filtrat pe biroul vamal ({cuRestVama.Count} rânduri în total pe contrapartida asta).");
+        Check("DVI-V15b (privat) declarația NU apare în `DocumenteCuRest`, nici filtrat pe biroul vamal: "
+            + "panoul de stingeri n-o propune, deci nu promite o operațiune pe care serverul ar refuza-o",
+            !cuRest.Any(r => r.DocumentId == idDvi) && !cuRestVama.Any(r => r.DocumentId == idDvi));
+
+        var refuzImperechere = Refuz(() => ImperechereService.Imperecheaza(os, plata, dvi, 210m));
+        Console.WriteLine($"     MĂSURAT (DVI-V15c/privat): imperechere plată → declarație: "
+            + $"„{refuzImperechere ?? "<ACCEPTATĂ>"}”.");
+        Check("DVI-V15c (privat) `ImperechereService` REFUZĂ declarația pe rolul de document STINS, cu refuz "
+            + "de DOMENIU (nu excepție brută): `Dvi.PoateFiStins` e false — hook-ul polimorf prin care tipul "
+            + "își declară că nu închide nicio datorie —, deci o stingere greșită se oprește la validare, "
+            + "nu la cifra restului",
+            refuzImperechere != null
+            && os.GetObjectsQuery<Imperechere>().Count(i => i.DocumentId == idDvi) == 0);
+
+        MotorOperare.Storneaza(os, dvi, new DateOnly(2026, 2, 25));
+        var storno = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idDvi && r.Storno).ToList();
+        var tvaStorno = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == idDvi && r.Storno).ToList();
+        Check("DVI-V16 (privat) stornoul declarației inversează AMBELE registre la data stornării — două note "
+            + "cu valoare negativă și două rânduri fiscale de storno; registrele rămân append-only",
+            dvi.Stare == StareDocument.Stornat
+            && storno.Count == 2 && storno.All(r => r.Valoare < 0m && r.Data == new DateOnly(2026, 2, 25))
+            && tvaStorno.Count == 2
+            && tvaStorno.Sum(r => r.Baza) == -1500m && tvaStorno.Sum(r => r.Tva) == -315m);
+
+        // DVI-r2: anularea facturii legate NU se refuză — cifrele declarației nu
+        // derivă din factură.
+        var fct = os.GetObjectByKey<FacturaIntrare>(idFct);
+        MotorOperare.AnuleazaOperarea(os, fct);
+        Check("DVI-V17 (privat, DVI-r2) anularea unei facturi legate la o declarație NU se refuză: legătura e "
+            + "EVIDENȚĂ, nu sursa cifrelor — baza și taxa sunt cele declarate în vamă. Ecranul arată starea "
+            + "facturii; o regulă de dependență ar cere un hook nou pe `Document` (restanță)",
+            fct.Stare == StareDocument.Draft
+            && os.GetObjectsQuery<DviFactura>().Count(f => f.DviId == idDvi) == 1);
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataDvi(os);
+    using (var os = provider.CreateObjectSpace())
+        Check("DVI (privat) scena nu lasă urme: partenerii, documentele, legăturile și registrele lor sunt "
+            + "purjate FIZIC",
+            !os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Any(r => r.Cod.StartsWith(Marcaj))
+            && !os.GetObjectsQuery<Dvi>().IgnoreQueryFilters().Any()
+            && !os.GetObjectsQuery<DviFactura>().IgnoreQueryFilters().Any()
+            && !os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+                .Any(r => r.Data >= febStart && r.Data <= febEnd));
 }

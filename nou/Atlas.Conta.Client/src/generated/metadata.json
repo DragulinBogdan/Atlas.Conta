@@ -714,6 +714,36 @@
         "ValoareTva": "Valoare TVA"
       }
     },
+    "Dvi": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "Baza": "Valoare în vamă",
+        "Data": "Dată",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Taxa": "TVA în vamă",
+        "Total": "Total (brut)"
+      }
+    },
+    "DviFactura": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Dvi": "Declarație vamală",
+        "DviId": "Declarație vamală",
+        "Factura": "Factură de import",
+        "FacturaId": "Factură de import",
+        "ID": "ID"
+      }
+    },
     "FacturaIesire": {
       "DefaultProperty": null,
       "Membri": {
@@ -1654,6 +1684,7 @@
         "ContTvaNeexigibil": "ContTvaNeexigibil",
         "ContTvaNeexigibilId": "ContTvaNeexigibil",
         "Cota": "Cota",
+        "DeImport": "De import",
         "Denumire": "Denumire",
         "DinSeed": "Din seed",
         "ID": "ID",

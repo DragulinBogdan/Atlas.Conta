@@ -244062,6 +244062,11 @@
             "type": "string",
             "format": "uuid"
           },
+          "Eticheta": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
           "ProdusId": {
             "type": "string",
             "format": "uuid"
@@ -248989,6 +248994,9 @@
           "ContTvaNeexigibil": {
             "$ref": "#/components/schemas/Cont"
           },
+          "DeImport": {
+            "type": "boolean"
+          },
           "CodSafTLivrare": {
             "type": "string",
             "nullable": true
@@ -249046,6 +249054,9 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "DeImport": {
+            "type": "boolean"
           },
           "CodSafTLivrare": {
             "type": "string",

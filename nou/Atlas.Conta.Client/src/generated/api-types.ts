@@ -8546,6 +8546,7 @@ export interface components {
         Lot: {
             /** Format: uuid */
             ID?: string;
+            readonly Eticheta?: string | null;
             /** Format: uuid */
             ProdusId?: string;
             Produs?: components["schemas"]["Produs"];
@@ -10305,6 +10306,7 @@ export interface components {
             /** Format: uuid */
             ContTvaNeexigibilId?: string | null;
             ContTvaNeexigibil?: components["schemas"]["Cont"];
+            DeImport?: boolean;
             CodSafTLivrare?: string | null;
             CodSafTAchizitie?: string | null;
             Cautare?: string | null;
@@ -10325,6 +10327,7 @@ export interface components {
             ContTvaColectatId?: string | null;
             /** Format: uuid */
             ContTvaNeexigibilId?: string | null;
+            DeImport?: boolean;
             CodSafTLivrare?: string | null;
             CodSafTAchizitie?: string | null;
             Cautare?: string | null;

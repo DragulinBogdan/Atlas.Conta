@@ -116,3 +116,12 @@ public sealed class GardContareAttribute : Attribute {
 // de evaluare al stocului. Marker pe DOCUMENT (nu pe linie): RLF folosește
 // detaliul de bază, iar semantica e a tipului întreg. Declarat de `ReturFurnizor`.
 public interface IDocumentCuIesireFiscala { }
+
+// Invarianții pe care o entitate și-i verifică singură la commit-ul unui
+// ObjectSpace SECURIZAT (DVI-D3). Punct de extensie GENERIC al gardianului:
+// regula stă pe entitate, gardianul o cheamă fără să cunoască tipul — ca
+// `ICuCautare`/`ICuProvenienta`, verificate tot înaintea switch-ului. Erorile se
+// CUMULEAZĂ în colecția primită; nu se aruncă din implementare.
+public interface IVerificabilLaCommit {
+    void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori);
+}
