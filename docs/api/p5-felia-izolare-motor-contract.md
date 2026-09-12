@@ -212,7 +212,8 @@ Felia e închisă când, pe codul final:
    pasul 4 pe cifra de efort rămasă.
 7. **Review advers + docs**: scenariile din D5 (efect nesalvat văzut de a
    doua alocare; plan stale între previzualizare și comandă; refuz după
-   materializare fără urme; storno pe plan), decizia NNN, CLAUDE.md,
+   materializare fără urme; storno pe plan), decizia NNN (cu „Regula
+   durabilă"), README-ul jurnalului, `restante.md`, CLAUDE.md §Stare,
    stare-curenta (domeniu-si-operare: fazele, contractele), istoricul.
 
 ## Ce NU intră (amânări cu nume, textul aici)

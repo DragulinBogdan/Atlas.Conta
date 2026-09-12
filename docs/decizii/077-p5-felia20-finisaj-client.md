@@ -4,6 +4,36 @@
 - **Stare**: activă (închide 70-r1, 72-r9, 73-r6, 73-r10, 74-r7, 74-r12 ca citire, 76-r6 integral, restanța F6 „placeholder pe linia existentă", datoria F12 „smoke vizual al jurnalelor"; amendează 56 doar prin excepția deja existentă a lui `Societate`; **(k) adăugat 2026-08-30** — închide propria restanță 77-r2)
 - **Docs**: `docs/api/p5-felia-finisaj-client-contract.md` (F20-D1…D10 + §Închidere), `docs/api/lista-react.md` (curățată de itemii închiși)
 
+## Regula durabilă
+
+**Finisajul clientului (F20).** (a) Căutarea fără diacritice e a BAZEI DE
+DATE, ca o coloană GENERATĂ, nu ca o colație: `Cautare` = `translate(lower(cod
+|| ' ' || denumire), De, La)` STORED pe orice nomenclator `ICuCautare` (o
+coloană pe baza TPT; `Simbol` pe `Cont`), configurată generic pe model;
+tabelul `De`/`La` (`Comun/Cautare.cs`) e UNICA sursă pentru SQL, C#
+(`Normalizeaza`) și client (`metadata.json`), cu oracol SQL == C# în
+ModelCheck. (b) Un singur store OData în client (`nucleu/odata.ts`): `byKey`
+prin cache-ul TanStack pe `(entitate, id, proiecție)` cu `staleTime:
+Infinity`; `cache.clear()` la „Ieșire"; `Lookup` caută pe `Cautare`, literalul
+rescris în `beforeSend`. (c) Precompletarea scrie perechea (id, etichetă)
+printr-un singur verdict „e gol" (`nucleu/etichete.ts`), sursa = cache-ul, nu
+`$expand` imbricat. (d) `ConfirmareInline` + slot în `DocumentShell`; un slot
+de `ReactNode` nu se compară cu `null`. (e) `Neincluse` pleacă AGREGAT per
+cauză în sumar; `Suma` semnată pe S, absolută pe L; `ContId` pe S3 ⇒ fișă. (f)
+Listele legii care sunt COD se PUBLICĂ în `metadata.json` (`Nomenclatoare`),
+nu devin entități. (g) Refuzurile de DOMENIU pe `api/odata/*` ies `422
+EroriDto` (`RefuzDomeniuOdataFilter`, în WebApi). (h) Șablonul ecranului de
+nomenclator (`felii/nomenclatoare`): scriere prin OData, PATCH = DELTĂ
+(absența NU e golire, spre deosebire de PUT-ul documentelor), lungimile din
+schemele OData ale `openapi.json`; Partener + ANAF, Societate, Produs;
+`PoliticaMiscareSaft` doar citire (56 nu se redeschide). (i) Licența
+DevExtreme = `VITE_DEVEXTREME_LICENSE`. (k) Un nomenclator căutabil are cod și
+denumire: pe orice `ICuCautare`, codul (`Cautare.NumeCod`) și `Denumire` sunt
+NOT NULL + CHECK nevid în schemă, refuzate cu mesajul câmpului de
+`GardianEditare` pe secured, `[Required]` ⇒ OpenAPI ⇒ client,
+`[RuleRequiredField]` pentru XAF; migrația nu maschează goluri. (j) Restanțele
+77-r1…r8 → `restante.md`.
+
 ## Context
 
 După 76 toate tipurile de document aveau felie de scriere; ce rămăsese în

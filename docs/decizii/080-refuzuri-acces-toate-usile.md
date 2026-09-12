@@ -4,6 +4,41 @@
 - **Stare**: activă (închide 77-r8 și familia ei: 70-r1, 72-r10, 76-r4, 76-r5, 77k, 79-r6; amendează 79b)
 - **Docs**: `docs/api/p5-felia-refuzuri-acces-contract.md` (F22-D1…D11 + §Închidere cu matricea HTTP), `nou/.../Module/Api/Refuzuri.cs`, `nou/.../Module/Api/Rezolva.cs`, `nou/.../Module/Motor/GardianEditare.cs` (pasul zero), `nou/.../WebApi/API/Conta/ContaApiController.cs` (gate-urile), `nou/.../WebApi/API/Odata/RefuzOdataFilter.cs`, `nou/Atlas.Conta.Client/src/nucleu/http.ts`, `nou/tools/ProbeHttp/refuzuri.ps1`
 
+## Regula durabilă
+
+**Refuzurile de acces pe toate ușile: 404 / 403 / 422, o singură ordine, un
+singur corp** (închide 77-r8 și familia 70-r1/72-r10/76-r4/76-r5/77k/79-r6;
+amendează 79b). (a) 404 = subiectul inexistent SAU invizibil, DELIBERAT
+nedistinse, doar pe rutele cu subiect; 403 = vizibil (sau întrebarea e pe
+TIP), dar operația refuzată; 422 = domeniu, doar pe cereri permise — un 422 nu
+poate ascunde un refuz de permisiune; listele/sumarele rămân 200 filtrat.
+Ordinea pe TOATE ușile: 401 → 400 → 404 → 403 → 422. (b) Ușa de scriere REST
+are gate explicit pe tipul FELIEI: `CreareAutorizata<T>` (înaintea Apply-ului
+și a oricărei rezolvări de FK), `ScriereAutorizata<T>(id,
+Modificare|Stergere)` — Write și Delete sunt permisiuni DISTINCTE, operația e
+PARAMETRU; `ComandaAutorizata<T>` cu `T` = tipul feliei (id de alt tip ⇒ 404);
+`peUsaAsta` exclude ce TPT găsește dar felia nu servește (NTC ⇒ ITV e 404 pe
+toate verbele; amendează 79c). Pe obiecte NOI: Create ȘI Write. `GET {id}`
+fără gate (ușa securizată filtrează). (c) Gardianul întreabă securitatea
+ÎNAINTEA domeniului: pasul zero din `GardianEditare.OnCommitting`
+(`CanCreate`/`CanDelete`/`CanWrite` per obiect modificat) aruncă `RefuzAcces :
+IUserFriendlySecurityException` (nu `OperareException`), apoi `Verifica`;
+strategia injectată NULLABLE — fără ea (ModelCheck, ușa de sistem) pasul tace;
+plasa DevExpress din `SaveChanges` rămâne. (d) Un singur corp: `EroriDto` pe
+403/404 pe REST și OData, mesajele cu o singură sursă (`Api/Refuzuri.cs`:
+`Invizibil`, `FaraDrept`), niciun `Forbid()`/`NotFound()` gol;
+`RefuzOdataFilter` traduce pe TIP, înaintea interfeței (security ⇒ 403,
+friendly ⇒ 422, `HttpUserFriendlyException` 404 ⇒ `Invizibil`). (e) Cifrele
+motorului cer dreptul de citire pe REGISTRUL din care se însumează (ITV cere
+`CanRead(RegistruContabil)`); regula generală pentru orice rută cu sumă pe ușa
+non-secured (73g). (f) FK invizibil pe ușa securizată = 422 cu mesaj onest, un
+singur helper (`Rezolva.Cere`/`Optional`). (g) Rolul `Cititori` + userul
+`Cititor`, dev-only — 403-ul pur e măsurabil. (h) Clientul: o singură ramură
+pe `Erori[]` ⇒ `EroareDomeniu`, fără ramificare pe status;
+`dxStore.onAjaxError` rescrie `e.error`. (i) Securitatea se măsoară pe HTTP,
+cu script repetabil (`nou/tools/ProbeHttp/refuzuri.ps1`); ModelCheck nu capătă
+strategie de securitate. (j) Restanțele 80-r1…r7 → `restante.md`.
+
 ## Context
 
 Aceeași întrebare — „n-ai voie" — primea alt răspuns pe fiecare ușă, iar

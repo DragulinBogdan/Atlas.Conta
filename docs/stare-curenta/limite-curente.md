@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-09.** [Index](README.md)
+**Actualizat: 2026-09-12.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -30,6 +30,9 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   operațional general. (9, 21, 31f)
 
 ## Fiscalitate și nomenclatoare
+
+- `SDD`/`SFD` nu au cod SAF-T de achiziție; `N9` poartă codul de livrare al
+  rândului 10.1 în timp ce maparea D300 îl pune pe rândul 11. (84-r1, 84-r2)
 
 - D300 și D394 sunt proiecții pentru cazurile implementate, nu acoperirea
   integrală a formularelor. Nu există export XML D300/D394. (69-r6, D4-r13)
@@ -65,14 +68,24 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   erori ulterioare; mesajul transportului nu este dovada unui rollback global. (72-r3, 72-r4)
 - Sincronizarea ANAF în lot este disponibilă prin API, fără ecran React
   dedicat pentru întregul flux. (77-r3)
-- Editorii React pentru RegulaContare, RegulaStoc, MapareD300, MapareD394,
-  PoliticaTva, PoliticaConex și PoliticaValidare nu sunt disponibili, deși
-  configurația este expusă cu scriere controlată prin API. (81k, 81-r8)
+- În formularul regulii de contare, dimensiunile `Unitate*` sunt doar de
+  citit: setul OData `Unitate` nu are controller. Întoarcerea din panoul
+  „Explică" în grilă nu focalizează rândul. (84-r4)
+- Captions: `SursaCont` și mai mulți membri ai politicilor nu au
+  `[XafDisplayName]`; ecranele poartă caption-ul în cod. (84-r5)
 - Selectoarele XAF de tip TVA nu filtrează încă `Activ`; unele grile de
   politici afișează FK-uri brute și nu au configurarea vizuală completă. (81k, 81-r7)
-- Nu există explicație completă a rezolvării tuturor politicilor, import/
-  export general al configurației sau corecție automată pe baza `DinSeed`.
-  Marcajul istoric nu distinge toate intervențiile manuale anterioare. (81k, 81-r2, 81-r3)
+- Explicația e a configurației pe o linie ipotetică, nu planul unui
+  document; gate-ul ei de citire e pe tip, nu pe obiect, iar codul de tip se
+  rezolvă înaintea gate-ului (400 pe cod inexistent pentru orice rol). Nu
+  există import/export general al configurației. Raportul de profil nu are
+  categoria „rând de seed lipsă"; recrearea unui rând de seed șters rămâne
+  manuală. Marcajul istoric nu distinge toate intervențiile manuale
+  anterioare, iar alinierea atinge acum și `Cont.DimensiuniObligatorii` pe
+  rândurile marcate. (81k, 81-r3, 83-r1, 84-r3, 84-r6, 84-r8)
+- Rolul `Configurator` e al release-ului: permisiunile lui se reaplică la
+  fiecare seed, iar pe RELEASE nu există un utilizator cu acest rol până nu îl
+  atribuie administratorul; navigația XAF nu e configurată. (83-r5, 84-r7)
 - Administrarea perioadelor fiscale nu are un flux React complet. Conturile
   sunt expuse prin OData pentru citire, nu prin editor contabil general. (53i, 79-r3, 70g)
 
@@ -94,6 +107,22 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   în afara formei comune `Erori`. (80-r3)
 - Metadata OData descrie modelul expus și nu este filtrată ca o listă de
   înregistrări după permisiunile utilizatorului. (55g)
+- În XAF Blazor niciun view nu folosește `InstantFeedback`/
+  `InstantFeedbackView`; activarea cere o măsurătoare peste prag și probe în
+  browser. (85-r2)
+- Proprietățile nemapate ale documentelor (`Total`, valorile de
+  livrare/recepție) sunt disponibile în DetailView, nu în liste; o altă
+  proprietate nemapată care ar ajunge într-o listă este refuzată de ModelCheck.
+  Mărimea paginii grilelor nu este calibrată; `RegulaStoc_ListView` poartă un
+  override `Server` redundant cu opțiunea aplicației. (85-r3, 85-r4, 85-r5)
+- În modul `Server`, referințele coloanelor ascunse rămân în interogarea
+  paginii (FCT: 33 de join-uri); scoaterea lor din modelul view-ului nu e
+  făcută. Gruparea încarcă primele rânduri ale fiecărui grup, iar `Refresh`
+  execută pagina de două ori. (85-r6, 85-r7, 85-r8)
+- Un layout salvat de utilizator poate ascunde toate coloanele unui view; pe
+  `ServerView` celulele rămân goale până la Refresh după re-bifarea
+  coloanelor. Grila Detalii a unei facturi importate poate arăta coloana
+  `Produs` goală (neverificat dacă e de date sau de afișare). (85-r9, 85-r10)
 - Găzduirea clientului și API-ului pe aceeași origine este contractul de
   livrare. Hostul are `UseStaticFiles`, dar proiectul WebApi nu include
   copierea automată a build-ului React și fallback-ul rutelor SPA.

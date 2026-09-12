@@ -5,11 +5,36 @@
   societății, D4-r14; deschide prima infrastructură de fișier XML din repo —
   69-r6/D4-r13 rămân, dar au acum un precedent; **73-r1 închisă de decizia 74**,
   care amendează 73f/g cu faptele profilului `C`)
-- **Rezumat durabil**: `CLAUDE.md` §73
 - **Docs**: docs/api/p5-felia-saft-contract.md (D16-D1…D6 + amendamentele
   pașilor 2 și 4, riscurile 1–12, V1–V5), docs/api/d406-structura-2026.md
   (structura oficială, ancora 16.02.2026, regulile reale ale validatorului),
   docs/import/faza-1c-design.md §14 (cifrele V5)
+
+## Regula durabilă
+
+**SAF-T (D406 L) = proiecție peste registre + FIȘIER.** (a) `Societate` = un
+rând, nucleu, EDITABIL (nu `SetareProfil`): antetul + identitatea raportorului
+(`CustomerID` ȘI `SupplierID` obligatorii pe orice linie, latura liberă =
+raportorul); adresa cu câmpurile/lungimile lui `Partener`
+(`AdresaSaft.Lungimi`); unicitatea în gardian; seed-ul creează gol, nu
+rescrie. (b) `UnitateMasura` nucleu, `ForbidCRUD`, seed UN/ECE; `Produs.CodNc`
+(8 cifre) + `UnitateMasuraId`; `UM` string rămâne; grafia RO → cod fără
+ghicit. (c) `Cont.RolTert` și `Cont.Functie` = DATE per profil; bugetar =
+neaplicabil (422). (d) Funcțiile legii = COD (`SaftReguli`): identitatea
+partenerului `00`–`06` (`00` cere CUI valid), `IdSocietate` ≠
+`RegistrationNumber`, 380/381, tuplele metodei de plată; `NormalizeazaCui`
+taie `RO` repetat. (e) Proiecția: jurnal = `TipDocument`, rând contabil ⇒ două
+linii, partenerul de pe RÂND, rolul al CONTULUI (64h); `TaxInformation` din
+`RegistruTva` pe `Detaliu × Storno`; storno = factură proprie `381` negativă;
+liniile de stoc FCT își iau contrapartida din NIR-ul conex MATERIALIZAT,
+niciodată un cont inventat; nimic nu se pierde: `Neincluse` + avertismente
+agregate + cusăturile în DTO. (f) `SaftXml` streaming pe XSD-ul oficial; DUK =
+oracolul, din ModelCheck. (g) JSON = SUMAR (fișierul întreg e prea mare ca
+răspuns JSON); XML streaming (`AllowSynchronousIO`); `User` ⇒ 403 pe fișier
+(un fișier gol semnat e o declarație falsă), 200 gol pe sumar. (h) Client:
+descărcare prin `fetch` + `blob`. (i) Import1C: `Societate` din 1C pe câmp
+gol, UM/NC, `--saft`. (k) Restanțele 73-r1…r19 → `restante.md` (73-r1 închisă
+de 74).
 
 ---
 
@@ -213,7 +238,7 @@ pin ISO `GR` (`SaftReguli.CodTaraSaft`, identificator + adresă). Pe Flax
 09/2025 după fix-uri: `Neincluse` 100 ⇒ 16, facturi primite 1.688 ⇒ 1.772,
 cusăturile noi (per cont 99/0, terți) la cent, DUK `ok`. ModelCheck 752/530.
 
-(k) **Restanțe cu nume** (textul aici, numele în CLAUDE.md):
+(k) **Restanțe cu nume** (textul aici, numele în `restante.md`):
 - **73-r1** declarația S (MovementOfGoods / PhysicalStock / Owners /
   MovementTypeTable) peste `RegistruStoc` — cere `MovementType` per
   tip × `TipStoc` ca politică și `OwnerID`; A (Assets) = modul separat (9).

@@ -2,7 +2,11 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §10
+
+## Regula durabilă
+
+**Plan de conturi doar sintetic**; analiticele se derivă din dimensiuni la
+raportare, nu se persistă.
 
 ---
 

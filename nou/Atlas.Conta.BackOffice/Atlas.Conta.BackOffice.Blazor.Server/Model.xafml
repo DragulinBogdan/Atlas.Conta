@@ -1,15 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Application>
   <NavigationItems NavigationStyle="Accordion" />
-  <Options UIType="TabbedMDI" FormStyle="Ribbon" RestoreTabbedMdiLayout="True" ShowTabImage="True" VirtualScrollingEnabled="True" />
+  <Options UIType="TabbedMDI" FormStyle="Ribbon" RestoreTabbedMdiLayout="True" ShowTabImage="True" VirtualScrollingEnabled="False" DataAccessMode="Server" />
   <SchemaModules>
-    <SchemaModule Name="CloneObjectModule" Version="26.1.3.0" IsNewNode="True" />
-    <SchemaModule Name="SchedulerBlazorModule" Version="26.1.3.0" IsNewNode="True" />
-    <SchemaModule Name="SchedulerModuleBase" Version="26.1.3.0" IsNewNode="True" />
-    <SchemaModule Name="SystemModule" Version="26.1.3.0" IsNewNode="True" />
+    <SchemaModule Name="CloneObjectModule" Version="26.1.4.0" IsNewNode="True" />
+    <SchemaModule Name="SchedulerBlazorModule" Version="26.1.4.0" IsNewNode="True" />
+    <SchemaModule Name="SchedulerModuleBase" Version="26.1.4.0" IsNewNode="True" />
+    <SchemaModule Name="SystemModule" Version="26.1.4.0" IsNewNode="True" />
   </SchemaModules>
   <Views>
+    <ListView Id="RegistruContabil_ListView" DataAccessMode="ServerView" />
     <ListView Id="RegistruStoc_ListView" DataAccessMode="ServerView" />
+    <ListView Id="RegistruTva_ListView" DataAccessMode="ServerView" />
     <ListView Id="RegulaStoc_ListView" DataAccessMode="Server" />
   </Views>
 </Application>

@@ -12,17 +12,6 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // (design §5): refuzul „lot fără sold în gestiune" trăiește în
 // FacturaIesire.ValideazaOperare, gardianul de sold rămâne autoritatea la operare.
 public static class DescarcareService {
-    // TipStoc-ul căutării de stoc pentru clasa unei linii (design §5): regula DSC
-    // specifică pe ClasaId bate generica (ClasaId null = orice Natura=Stoc), ca în
-    // motor. Null = nicio regulă pentru clasa asta (bugetar → tip inert).
-    internal static TipStoc? TipStocPentruClasa(IReadOnlyList<RegulaStoc> reguli, Guid? clasaId) {
-        var specifica = reguli.FirstOrDefault(r => r.ClasaId != null && r.ClasaId == clasaId);
-        if (specifica != null)
-            return specifica.TipStoc;
-        var generica = reguli.FirstOrDefault(r => r.ClasaId == null);
-        return generica?.TipStoc;
-    }
-
     // Restul nedescărcat per linie FCL de STOC (cusătura §2.2: interogabilă per
     // linie). Acoperit = Σ cantități pe liniile DSC cu LinieSursaId == linia, din
     // documente Draft SAU Operat (Stornat nu acoperă; draftul contează — altfel a
@@ -76,20 +65,16 @@ public static class DescarcareService {
         // Regulile de stoc ale DSC-ului: −1 pe Predator. Fără ele (bugetar) → tip
         // inert, nu se descarcă nimic (design §7).
         var tipDsc = MotorOperare.GasesteTipDocument(os, nameof(DescarcareGestiune));
-        var reguliDsc = os.GetObjectsQuery<RegulaStoc>()
-            .Where(r => r.TipDocumentId == tipDsc.ID && r.Latura == LaturaDocument.Predator && r.Semn < 0)
+        var reguliDsc = Fapte.ReguliStoc(os, tipDsc.ID)
+            .Where(r => r.Latura == LaturaDocument.Predator && r.Semn < 0)
             .ToList();
         if (reguliDsc.Count == 0)
             return null;
 
         // Liniile sursă materializate (TipMaterialId + Dimensiuni de clonat) și
-        // clasa per Tip (pentru TipStoc — proiecție, fără a atinge navigații).
+        // clasa/natura per Tip (pentru TipStoc — proiecție, fără navigații).
         var liniiSursa = fcl.Detalii.OfType<FacturaIesireDetaliu>().ToDictionary(d => d.ID);
-        var idsTip = resturi.Select(x => liniiSursa[x.LinieId].TipMaterialId).Distinct().ToList();
-        var clasaPerTip = os.GetObjectsQuery<TipMaterial>()
-            .Where(t => idsTip.Contains(t.ID))
-            .Select(t => new { t.ID, t.ClasaId })
-            .ToDictionary(t => t.ID, t => t.ClasaId);
+        var claseTip = Fapte.ClaseTip(os, resturi.Select(x => liniiSursa[x.LinieId].TipMaterialId));
 
         // Alocarea: mapa `dejaAlocat` (per lot, necomisă) se scade din solduri pe
         // parcurs. Contenția intra-draft (pin 2): PIN-urile întâi (identificarea
@@ -103,14 +88,16 @@ public static class DescarcareService {
 
         foreach (var r in resturi.OrderByDescending(x => x.LotId != null)) {
             var linie = liniiSursa[r.LinieId];
-            var tipStoc = TipStocPentruClasa(reguliDsc, clasaPerTip.GetValueOrDefault(linie.TipMaterialId));
-            if (tipStoc == null)
+            var potrivit = Potrivire.Stoc(reguliDsc, Fapte.Linie(linie, claseTip))
+                .FirstOrDefault(p => p.Latura == LaturaDocument.Predator);
+            if (potrivit is not { Reguli.Count: > 0 })
                 continue;
+            var tipStoc = potrivit.Reguli[0].TipStoc;
             if (r.LotId != null) {
                 // Pin: alocă DOAR din acel lot, fără fallback FIFO pe restul lui
                 // (pinul e intenția magazinului — deblocarea = scoaterea pinului).
                 var lotId = r.LotId.Value;
-                var disponibil = StocService.Sold(os, new CheieStoc(lotId, gestiuneId, tipStoc.Value), data)
+                var disponibil = StocService.Sold(os, new CheieStoc(lotId, gestiuneId, tipStoc), data)
                     - dejaAlocat.GetValueOrDefault(lotId);
                 var alocat = Math.Min(r.RestNeacoperit, disponibil);
                 if (alocat > 0)
@@ -118,7 +105,7 @@ public static class DescarcareService {
             }
             else {
                 var (parti, _) = StocService.AlocaFifoTolerant(
-                    os, r.ProdusId.Value, gestiuneId, tipStoc.Value, data, r.RestNeacoperit, dejaAlocat);
+                    os, r.ProdusId.Value, gestiuneId, tipStoc, data, r.RestNeacoperit, dejaAlocat);
                 foreach (var p in parti)
                     Adauga(r.LinieId, linie.TipMaterialId, p.LotId, p.Cantitate);
             }

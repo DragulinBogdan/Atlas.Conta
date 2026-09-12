@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
-using DevExpress.ExpressApp.Filtering;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.Validation;
@@ -78,36 +77,25 @@ public class Produs : BaseObject, ICuCautare {
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Eticheta))]
 public class Lot : BaseObject {
-    // GATE XAF (D4): identitatea lizibilă a lotului — singurul tip țintă de lookup
-    // care nu avea DefaultProperty, deci apărea „Castle.Proxies.LotProxy" pe
-    // FCT/FCL/DSC/LDI/ASM (restanța 40d). Cele trei atribute care distING loturile
-    // aceluiași produs: proveniența (data) și prețul de intrare (identificarea
-    // specifică — decizia 13). NotMapped: nu e stare, e o proiecție de afișare.
-    // Navigația Produs se citește lazy, cu guard — pe lookup-uri și grile de
-    // nomenclator; DELIBERAT fără AutoInclude (loturile trec prin hot-path-ul
-    // pickingului, unde eticheta nu se afișează niciodată).
-    //
-    // Lotul NĂSCUT LA CULEGERE (25c/26e) n-are încă nici dată, nici preț — le pune
-    // motorul la operarea documentului-mamă. Până atunci eticheta ar arăta
-    // „01.01.0001 · 0": pe draft se spune explicit că e în curs de culegere.
-    //
-    // EXCLUS din căutarea full-text (review advers D4): `FilterController` include
-    // membrii NEpersistenți în criteriu (`IncludeNonPersistentMembers = true`, mod
-    // implicit AllSearchableMembers), iar criteriul ajunge pe colecția EF Core, care
-    // nu poate traduce un membru nemapat — orice literă tastată în caseta de
-    // căutare a Loturilor sau în lookup-ul de lot (care pe colecții mari PORNEȘTE
-    // gol, deci căutarea e singura cale) ar arunca. Numericele nemapate
-    // preexistente (Total/ValoareReceptie) cad doar pe text convertibil la număr;
-    // Eticheta e primul string nemapat, de aceea lovește la orice text.
+    // 85g — aceeași etichetă în SQL (liste server, lookup, căutare) și în C#.
     [NotMapped]
-    [SearchMemberOptions(SearchMemberMode.Exclude)]
-    public string Eticheta {
-        get {
-            var produs = Produs?.Denumire ?? "(produs nedefinit)";
-            return Data == default && PretUnitar == 0
-                ? $"{produs} (în culegere)"
-                : $"{produs} · {Data:dd.MM.yyyy} · {PretUnitar:0.####}";
-        }
+    [Calculated(ExpresieEticheta)]
+    public string Eticheta => EtichetaLot(Produs?.Denumire, Data, PretUnitar);
+
+    public const string ExpresieEticheta =
+        "Iif(Data = #0001-01-01# And PretUnitar = 0,"
+        + " Concat(IsNull(Produs.Denumire, '(produs nedefinit)'), ' (în culegere)'),"
+        + " Concat(IsNull(Produs.Denumire, '(produs nedefinit)'), ' · ',"
+        + " Iif(GetDay(Data) < 10, '0', ''), ToStr(GetDay(Data)), '.',"
+        + " Iif(GetMonth(Data) < 10, '0', ''), ToStr(GetMonth(Data)), '.', ToStr(GetYear(Data)),"
+        + " ' · ', ToStr(Round(PretUnitar, 4))))";
+
+    public static string EtichetaLot(string produs, DateOnly data, decimal pretUnitar) {
+        var denumire = produs ?? "(produs nedefinit)";
+        return data == default && pretUnitar == 0m
+            ? $"{denumire} (în culegere)"
+            : $"{denumire} · {data:dd.MM.yyyy} · "
+              + Math.Round(pretUnitar, 4, MidpointRounding.AwayFromZero).ToString("0.0000", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     public virtual Guid ProdusId { get; set; }

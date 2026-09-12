@@ -306,15 +306,11 @@ public abstract class DocumentTrezorerie : Document {
         //
         // Naturile se preîncarcă pe FK-uri (25b — apelantul nu garantează lazy
         // loading), exact ca în motor.
-        var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
-        var naturi = os.GetObjectsQuery<TipMaterial>()
-            .Where(t => idsTip.Contains(t.ID))
-            .Select(t => new { t.ID, t.Clasa.Natura })
-            .ToDictionary(t => t.ID, t => t.Natura);
+        var claseTip = Motor.Fapte.ClaseTip(os, Detalii.Select(d => d.TipMaterialId));
         // Tipul lipsă (linie neculeasă) e refuzat deja de baza `Document` — aici
         // nu e virament, deci cade natural pe ramura „linie care nu e virament".
         bool EsteLinieVirament(DocumentDetaliu d) =>
-            naturi.TryGetValue(d.TipMaterialId, out var n) && n == NaturaClasa.Virament;
+            claseTip.TryGetValue(d.TipMaterialId, out var info) && info.Natura == NaturaClasa.Virament;
 
         var esteVirament = EsteVirament(os);
         var liniiVirament = Detalii.Where(EsteLinieVirament).ToList();
@@ -323,34 +319,6 @@ public abstract class DocumentTrezorerie : Document {
         if (!esteVirament && liniiVirament.Count > 0)
             erori.Add("Liniile de virament intern cer contrapartidă cont propriu (casă/bancă) — corectați latura sau Tipul liniilor.");
 
-        // Oglinda refuzului de pe DSC/FCL (38c): fără regulă de contare potrivită
-        // pe Tip sau pe natura Virament, potrivirea ar cădea la final pe regula
-        // GENERICĂ a tipului (TipMaterial null + NaturaFiltru null) și ar posta
-        // din nou „destinație = sursă" pe ambele picioare, fără niciun zgomot.
-        if (liniiVirament.Count > 0) {
-            var tipDoc = Motor.MotorOperare.GasesteTipDocument(os, this);
-            var reguli = os.GetObjectsQuery<RegulaContare>()
-                .Where(r => r.TipDocumentId == tipDoc.ID)
-                .Select(r => new { r.TipMaterialId, r.NaturaFiltru, r.SemnFiltru }).ToList();
-            foreach (var d in liniiVirament) {
-                // OGLINDA trebuie să rămână FIDELĂ potrivirii din motor, altfel
-                // gardul devine decor: motorul filtrează ÎNTÂI pe `SemnFiltru`
-                // (`MotorOperare`: `r.SemnFiltru == null || r.SemnFiltru == semn`),
-                // și abia din supraviețuitori alege Tip exact → NaturaFiltru →
-                // generic. Pe trezorerie `Cantitate` e 0, deci semnul e 0 și
-                // ORICE rând cu SemnFiltru ±1 iese din joc. `RegulaContare` e dată
-                // editabilă în XAF: un semn pus din greșeală pe rândul VIR ar
-                // trece de un gard care ignoră semnul, iar motorul ar cădea pe
-                // regula generică a tipului — exact dubla postare tăcută pe care
-                // gardul există s-o prevină.
-                var semn = Math.Sign(d.Cantitate);
-                var candidati = reguli.Where(r => r.SemnFiltru == null || r.SemnFiltru == semn);
-                if (!candidati.Any(r => r.TipMaterialId == d.TipMaterialId
-                        || (r.TipMaterialId == null && r.NaturaFiltru == NaturaClasa.Virament)))
-                    erori.Add("Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — "
-                        + "adăugați rândul de politică (sau rulați updater-ul).");
-            }
-        }
     }
 
     // Legătura de pereche NU e obligatorie (generarea acoperă cazul normal —
@@ -584,6 +552,8 @@ public abstract class DocumentTrezorerie : Document {
 // Predator = ContPropriu (sursa banilor), primitor = beneficiarul.
 // [TipDetaliu] se declară pe fiecare derivată (atributul e Inherited=false).
 [TipDetaliu(typeof(DocumentTrezorerieDetaliu))]
+[GardContare(NaturaClasa.Virament, NivelContare.Natura,
+    "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Plata : DocumentTrezorerie {
     public override Guid GetContrapartidaId() => PrimitorId;
 
@@ -609,6 +579,8 @@ public class Plata : DocumentTrezorerie {
 
 // Predator = plătitorul, primitor = ContPropriu (destinația banilor).
 [TipDetaliu(typeof(DocumentTrezorerieDetaliu))]
+[GardContare(NaturaClasa.Virament, NivelContare.Natura,
+    "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Incasare : DocumentTrezorerie {
     public override Guid GetContrapartidaId() => PredatorId;
 

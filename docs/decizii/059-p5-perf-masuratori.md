@@ -2,8 +2,13 @@
 
 - **Data**: 2026-08-09 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §59
 - **Docs**: docs/api/p5-perf-masuratori.md
+
+## Regula durabilă
+
+**Perf**: totul sub ~150 ms în afară de `DocumenteCuRest` (~410 ms,
+structural); optimizarea documentată se aplică CÂND cifra o cere; niciun
+index preventiv.
 
 ---
 

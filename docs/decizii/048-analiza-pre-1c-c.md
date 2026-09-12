@@ -2,8 +2,15 @@
 
 - **Data**: 2026-07-25 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §48
 - **Docs**: docs/import/faza-1c-design.md
+
+## Regula durabilă
+
+**Pre-1C-c.** (a) Pin vs solduri netate = supapă de IMPORT, motorul
+neatins. (b) Extras per rând; imperecherile = trecerea 2 (invariant picat
+pe date reale = raport, nu stop); **NotaContabila operată poate stinge**;
+avizele/retail = surogate. (c) **Maparea conturilor: LISTĂ (CSV comentat),
+NU regulă mecanică** + pre-flight. Idempotență per DOCUMENT.
 
 ---
 

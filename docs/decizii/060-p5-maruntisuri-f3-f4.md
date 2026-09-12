@@ -2,7 +2,13 @@
 
 - **Data**: 2026-08-09 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §60
+
+## Regula durabilă
+
+**Mărunțișuri.** (a) Constraint-urile DB → 422 și pe WebApi; DELETE = ștergere
+AMÂNATĂ. (b) Tipul documentelor se rezolvă POLIMORF într-un singur query
+(`CoduriTip`; per rând = secunde). (d) Check-uri pe Id repetat / linie de
+BAZĂ prin Id.
 
 ---
 

@@ -2,7 +2,13 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §20
+
+## Regula durabilă
+
+**Un singur nomenclator de tipuri, și e codul**: nivelul intermediar
+tip × predator × primitor din legacy dispare — derivata își fixează
+direcția; `TipDocument` seed oglindește clasele 1:1 doar ca ancoră FK + UI
+pentru rândurile de politică.
 
 ---
 

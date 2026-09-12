@@ -43,7 +43,7 @@ public class PartenerSincronizareAnafController : ObjectViewController<ObjectVie
     }
 
     void Sincronizeaza_Execute(object sender, SimpleActionExecuteEventArgs e) {
-        var selectati = e.SelectedObjects?.OfType<Partener>().ToList() ?? [];
+        var selectati = ViewSelectedObjects; // 85f
         if (selectati.Count == 0)
             throw new UserFriendlyException("Selectați cel puțin un partener.");
         if (selectati.Count > MaximSelectie)

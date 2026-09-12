@@ -2,7 +2,14 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §35
+
+## Regula durabilă
+
+**Pivot privat-first.** (a) Importul din legacy = proiect viitor. (b) 1C =
+evidență, niciodată canonic. (c) SAF-T/e-Factura/D394 = checklist de
+completitudine, NU modele de date. (d) **Bază-per-client**, profil per bază;
+nicio interogare polimorfă pe `Document` în fluxuri calde. (e) Ordinea: P1
+→ P2 → polish → pasul 5.
 
 ---
 

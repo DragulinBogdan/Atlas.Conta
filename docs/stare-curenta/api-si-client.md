@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-09.** [Index](README.md)
+**Actualizat: 2026-09-12.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -137,6 +137,39 @@ pentru a afișa mesajele `Erori`, proveniența și accesul la istoric.
 Transportul OData standard al DevExtreme nu păstrează în toate cazurile
 aceleași mesaje detaliate la citire. (81i, 80-r1)
 
+## Listele XAF Blazor
+
+Modul de acces implicit al ListView-urilor root este `Server`, cu paginare
+(fără scroll virtual): o pagină este un query cu join-urile coloanelor de
+referință din modelul view-ului plus un COUNT; rândul este entitatea, deci selecția,
+detaliul din listă, acțiunile și editarea inline funcționează neschimbate.
+`Client` nu este implicit pe niciun ListView root. (85a)
+
+`ServerView` este opt-in per view, doar pe registre append-only citite:
+`RegistruStoc`, `RegistruContabil`, `RegistruTva`. Pagina proiectează doar
+coloanele vizibile; detaliul rândului se deschide normal. Precondițiile sunt
+verificate de ModelCheck: toate coloanele vizibile sunt mapate sau
+`[Calculated]`, orice coloană de referință are `DefaultProperty` pe clasa
+țintă, mapat sau calculat, niciun controller nu face cast pe selecție și
+nicio regulă Appearance nu atinge un membru nevizibil. `InstantFeedback` și
+`InstantFeedbackView` nu sunt implicite; se activează pe un singur view,
+după o măsurătoare de pagină peste prag și probe în browser. `DataView` nu
+se folosește pe EF Core. (85b, 85d, 85e)
+
+Grilele nested de culegere a liniilor (ListView-urile tipizate puse pe
+`Detalii`) sunt declarate `Client` explicit în `ContaUiBaseline`: o colecție
+server nu vede liniile nesalvate ale documentului și nu acceptă adăugare
+sub grupare. Lookup-urile rămân pe modul forțat de editor. (85c, 85i)
+
+Controllerele rezolvă selecția prin `ObjectSpace.GetObject`, nu prin cast
+pe obiectele selectate. O proprietate afișată într-o listă sau folosită ca
+`DefaultProperty` este mapată sau `[Calculated]` cu o expresie de criterii
+tradusă în SQL. `Lot.Eticheta` este calculată (produs · zz.ll.aaaa · preț
+cu 4 zecimale, „(în culegere)" pe lotul fără dată și preț), deci
+proiectabilă, sortabilă și căutabilă în lookup-ul de lot; eticheta afișată
+de clientul React pe OData este o compunere separată, cu aceeași semantică.
+(85f, 85g)
+
 ## Ecranele disponibile
 
 | Arie | Conținut |
@@ -147,12 +180,14 @@ aceleași mesaje detaliate la citire. (81i, 80-r1)
 | Contabilitate | Stoc, balanță, balanță pe plan, fișă de cont, registru-jurnal (66, 67) |
 | Fiscalitate | Jurnale de cumpărări/vânzări, decont TVA, D300, D394, SAF-T L/S (68, 69g, 71g) |
 | Nomenclatoare | Parteneri, produse, societate; sincronizare individuală ANAF (77h) |
-| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA (81i) |
+| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, reguli de stoc, reguli de contare (formular popup cu grupuri), politici TVA, conex, validare, mapări D300/D394; „Explică pe acest tip" din fiecare grilă cu tip de document (81i, 84d) |
+| Explicarea configurației | `/politici/explica`: starea în URL, un card per mecanism cu câștigătorul, candidații eliminați, proveniența și concluzia serverului (84h) |
 | Controlul configurației | Verificarea profilului, proveniență și istoric de audit (81g, 81h, 81i) |
 
 DSC și ITV nu au flux generic de creare prin `/nou`; provin din comenzile
-specifice. Acoperirea editorilor de politici este mai restrânsă decât
-suprafața OData. (58, 79a, 81k)
+specifice. Grilele de politici pot deschide un formular popup cu grupuri
+definite de ecran; rândul nou primește propuneri vizibile pentru câmpurile al
+căror gol ar fi refuzat de gardian. (58, 79a, 84d)
 
 ## Contracte generate
 

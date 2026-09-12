@@ -70,6 +70,7 @@ Trei goluri de flux + defecte reale găsite pe drum:
   override + coloane explicite, iar constatarea merge pe lista React.
   Opțional (attempt, nu promisiune): lookup-ul pinului FCL filtrat pe produsul
   liniei (`DataSourceCriteria`); dacă se bate cu nested/EF → doar lista React.
+  Tranșat de 85g: `Eticheta` devine `[Calculated]` (expresie tradusă în SQL).
 - **D5. Recalcul la culegere prin ACELAȘI helper `TvaService`** (o singură
   sursă a formulei): controller pe `ObjectChanged` (FCT+FCL linii) la
   schimbarea `Cantitate`/`PretUnitar`/`TipTva` → `Valoare`+`ValoareTva`;

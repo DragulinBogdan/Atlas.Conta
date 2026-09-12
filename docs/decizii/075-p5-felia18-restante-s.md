@@ -3,10 +3,30 @@
 - **Data**: 2026-08-29
 - **Stare**: activă (închide 74-r4, 74-r6, 74-r9; amendează 45e cu limitele
   declarate ale derivei rămase)
-- **Rezumat durabil**: `CLAUDE.md` §75
 - **Docs**: docs/api/p5-felia-restante-s-contract.md (D18-D1…D4, riscurile
   1–10, D18-V1…V4, review-ul advers F1–F10, §Închidere pașii 1–4),
   docs/import/faza-1c-design.md §15
+
+## Regula durabilă
+
+**Restanțele grele ale lui S (F18).** (a) Golirea valorică e a MOTORULUI:
+ieșirea care golește cheia (Lot × Repartitor × TipStoc) preia tot soldul
+valoric rămas — `StocService.ValoareGolire` (pură) + `AplicaValoareIesire` în
+`MotorOperare`, după `PregatesteOperare`, înainte de `ValideazaOperare` (33d);
+frunzele rămân previzualizarea `preț × cantitate`; Import1C prezice prin
+ACELAȘI helper. Limitele se DECLARĂ, nu se corectează tăcut: retro (un
+document retro nu re-decide linii operate) și fiscal — RLF NU absoarbe restul
+(`IDocumentCuIesireFiscala`, marker pe clasa de document; reziduul rămâne pe
+lot). (b) Reclasificarea de cont la transfer = MIȘCARE: ASM `#reclas` → BTR →
+NTC-punte, în ordinea asta; fără ASM operat nu se scrie nimic, rândurile
+sursei se declară nepostate; cheia fără ASM produs se leagă „fără document";
+codul S al reclasificării = al ASM-ului (74a). (c) Oracolul golirii = linia de
+contract `1'` a reconcilierii: `StocService.VerificaGoliri` (pură; verdicte
+Exacta/CuValoare/Fiscala/ReDeschisaRetro/Negolita) pe cifra REGISTRULUI;
+stornatele se sar; D4 = defalcare, luna + cumulat. (d) Perf S: `AgregatStoc` o
+trecere, `CoduriTipPeTipuri` partajat; ținta < 1 s neatinsă fără vinovat
+dominant — optimizarea următoare doar cu cifră (59). Proba: Import1C integral,
+contract 12 luni / 0 FAIL, DUK ok. (e) Restanțele 75-r1…r5 → `restante.md`.
 
 ---
 

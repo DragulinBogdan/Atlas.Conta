@@ -97,7 +97,7 @@ public static class StocService {
     // SĂRITE: suma lor e a hârtiei furnizorului, `preț × cantitate`, nu a
     // lotului (review F5); reziduul rămâne pe lot, declarat.
     public static void AplicaValoareIesire(IObjectSpace os, Document doc,
-        IReadOnlyList<(DocumentDetaliu Detaliu, RegulaStoc Regula, MiscareStoc Miscare)> miscari) {
+        IReadOnlyList<(DocumentDetaliu Detaliu, RegulaStocFapt Regula, MiscareStoc Miscare)> miscari) {
         if (doc is IDocumentCuIesireFiscala)
             return;
         var loturiIesire = miscari.Where(m => m.Miscare.Cantitate < 0m)

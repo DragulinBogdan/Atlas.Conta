@@ -2,7 +2,14 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §27
+
+## Regula durabilă
+
+**BonConsum.** (a) Două registre simultan: −Magazie pe predator, +Consum pe
+primitor (consumul rămâne pe responsabil). (b) Locul de consum = calitatea
+`LocConsum`; locația lotului = soldul din registru, nu o validare. (d)
+Valoare = preț lot × cantitate. Contarea 6xx = 3xx se DERIVĂ la seed din
+simbol (`SeedContare6xxDin3xx`, excepții per profil).
 
 ---
 

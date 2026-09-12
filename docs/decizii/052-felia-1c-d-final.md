@@ -2,8 +2,14 @@
 
 - **Data**: 2026-07-28 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §52
 - **Docs**: docs/import/faza-1c-design.md
+
+## Regula durabilă
+
+**1C-d-final — FAZA 1C ÎNCHISĂ.** (a) `SetareProfil` (profil + rotunjire)
+scris de seed, ÎNGHEȚAT; `RotunjestePret` rămâne AwayFromZero FIX. (b)
+Tipurile importului sunt în seed-ul explicit (clasa `TER`); zero gaură
+ad-hoc. Deriva de rotunjire = contractul 4, blocant. Rest → jurnal.
 
 ---
 

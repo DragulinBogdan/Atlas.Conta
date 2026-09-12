@@ -2,11 +2,39 @@
 
 - **Data**: 2026-08-27
 - **Stare**: activă (închide 73-r1; amendează 73f/g cu faptele profilului `C`)
-- **Rezumat durabil**: `CLAUDE.md` §74
 - **Docs**: docs/api/p5-felia-saft-s-contract.md (explorarea XSD/nomenclator/
   ghid/validator, D17-D1…D4 + amendamentele pașilor 1 și 3, riscurile 1–10,
   V1–V5, §Închidere), docs/import/faza-1c-design.md (`--saft-s`),
   anaf/SAF_T_Ghidul_D406_v2.0_dec2021.pdf (gitignored, referință)
+
+## Regula durabilă
+
+**SAF-T S (stocuri) = proiecție peste `RegistruStoc` + FIȘIER `C`.** (a)
+`PoliticaMiscareSaft` = `(TipDocument × TipStoc × Semn?) → CodMiscare? +
+RolTertSaft + Motiv`: codul de mișcare e al TIPULUI × registrului, deci
+politică (4) pe cheia lui `RegulaStoc`; `Semn null` = orice semn (două
+indexuri unice filtrate, `NULL <> NULL`); cod NULL = excludere DELIBERATĂ cu
+motiv (`Excluse`) ≠ rând fără politică (`Neincluse`); gardian pe ușa comună +
+seed-ul își validează tabelul; bugetar zero, OData ReadOnly (56). (b) Legea =
+cod (`SaftReguli`): 19 coduri; terții pe linia de stoc — Client `(p,"0")`,
+Furnizor `("0",p)`, intern `(soc,soc)` (altă convenție decât L); `OwnerID` =
+raportorul, `ProductType` = simbolul contului de stoc, `MovementReference` ≤
+35 cu discriminant `#n` când `Numar` se repetă. (c) Proiecția: politica
+potrivită pe semnul REGULII (stornoul păstrează codul original);
+`PhysicalStock` per `(Repartitor × Lot)` pe `TipStoc`-urile cu cod;
+`MovementOfGoods` per `(Document × Storno × Cod)` (`/cod` la spargere, `/S` pe
+storno); partenerul de pe laturi sau ale `DocumentSursa`; contul liniei =
+`TipMaterial.ContImplicit`, niciodată inventat; cantitate/valoare SEMNATE ca
+în registru; `MovementPostingDate` omis în afara perioadei;
+`AnalysisTypeTable` gol. (d) Cusături: S1 (registru) ȘI S5 (liniile EMISE) per
+intrare, S2 nimic nu se pierde, S3 vs balanță per cont RAPORTATĂ, S4 referințe
++ unicitatea `MovementReference`. (e) Profilul `C` măsurat cu DUK: secțiunile
+L complet goale; `PhysicalStock` obligatoriu ⇒ lună fără stoc = refuz / 422;
+`MovementOfGoods` gol trece. (f) REST `saft/stocuri` + `stocuri/xml` cu
+gărzile o singură dată (proiecția ca funcție); `/saft?fel=S`; `--saft-s`; seed
+pe Flax cere `EFCoreProvider=Postgres;`. (g) Deriva per lot a importului (45e)
+se DECLARĂ (`ReziduValoricFaraCantitate`, `SoldNegativ`), nu se ascunde. (h)
+Restanțele 74-r1…r15 → `restante.md` (74-r4/r6/r9 închise de 75).
 
 ---
 

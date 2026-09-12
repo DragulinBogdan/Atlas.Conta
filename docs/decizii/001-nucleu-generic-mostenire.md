@@ -2,7 +2,12 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §1
+
+## Regula durabilă
+
+**Nucleu generic + moștenire, nu tabele separate.** `Document` +
+`DocumentDetaliu` de bază, derivate per tip; motoarele de stoc și contabile
+consumă DOAR baza.
 
 ---
 

@@ -2,8 +2,18 @@
 
 - **Data**: 2026-08-09 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §57
 - **Docs**: docs/api/p5-felia-trz-contract.md
+
+## Regula durabilă
+
+**Trezoreria prin API.** (a) `TrezorerieApply<T>` unic; `Numar`
+server-owned; enum-uri pe sârmă ca string, parse pe NUME înainte de
+CreateObject. (c) `DocumenteCuRest` = UNION pe ramuri CONCRETE, `ReturClient`
+EXCLUS deliberat; `Rest == Ramas` verificat. (d) Affordances țin cont de
+imperecheri. `GenereazaPlata` în DTO-urile FCT. (f) `if (e.event)` pe TOATE
+widget-urile; confirmare inline, nu `window.confirm`. Ștergerea amânată e
+invizibilă la Committing (`EsteSters` în gardian). Enum labels prin
+`[XafDisplayName]`, o sursă pentru XAF + React.
 
 ---
 

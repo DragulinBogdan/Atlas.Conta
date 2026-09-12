@@ -2,8 +2,17 @@
 
 - **Data**: 2026-08-06 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §54
 - **Docs**: docs/invarianti.md, docs/dim/dim-2-inventar.md
+
+## Regula durabilă
+
+**Owned vs relational.** Stocarea dimensiunilor rămâne INLINE. (c) **Owned
+MOARE; dimensiunile = caracteristică de frunză**: FK-uri pe detaliile
+derivatelor (reuniunea per TIP), `DimensiuniCulese()` → value object
+ne-persistat pentru motor; registru și regulă PLATE. (d) **Clasele per
+profil RESPINSE definitiv.** (e) Frunze proprii NIR și trezorerie; clonările
+prin `[TipDetaliu]`. Executat (DIM-1…4): raport Import1C IDENTIC cu
+baseline-ul. Rămase (DIM-4) → istoric.
 
 ---
 

@@ -5,6 +5,34 @@
 - **Docs**: `docs/api/p5-felia-ntc-asm-retururi-contract.md` (contractul,
   F19-D1…F19-D16 + §Anexa + §Închidere), `docs/api/lista-react.md`
 
+## Regula durabilă
+
+**NTC + ASM + retururi prin API și client** (ultimele patru tipuri fără felie
+de scriere). (a) Trei track-uri independente cu regulă de oprire; ITV rămâne
+afară (serviciu, nu document cules — 46c); zero seturi OData noi. (b) ASM
+capătă culegerea de produs (`ProdusId` + `ILinieCareNasteLot` cu `NasteLot =>
+Directie == Produs`; gestiunea = PREDATORUL) — închide 53i pe ASM. (c)
+Valoarea produsului ASM se derivă din consum (închide 75-r1):
+`distribuie-valoarea` cere cifra MOTORULUI (`MotorOperare.Valideaza` pe un OS
+de unică folosință, fiindcă `Valideaza` SCRIE), nu o formulă geamănă;
+„calculul n-a rulat" se detectează STRUCTURAL; reziduul se plimbă; cazul
+nereprezentabil (75-r4) și cel MIXT se REFUZĂ cu cifra. (d) Semnarea storno
+rămâne a OPERĂRII — RLF/RDC se culeg pozitiv, ecranul explică semnul; linia de
+cost RDC se persistă cu `TipTvaId = null`; rolul liniei RDC e o PREZENȚĂ,
+mutarea lui pe o linie salvată se REFUZĂ. (e) Idempotența: pe draft bate
+`MaterializeazaValori`, la operare hook-ul, amândouă din `Abs`; motorul NU
+de-semnează la anulare. (f) Plafonul de stingere capătă LATURĂ și se NETEAZĂ
+(amendează 31d/48b): `Document.SensDeStins` = al treilea hook polimorf al
+rolului (default `null` = motorul nu ghicește); plafonul = `|Σ semnat|` per
+(repartitor × latura liniei), cheia cu net 0 nu intră; `PLT → FCL` și `INC →
+FCT` se refuză DECLARAT; panourile urmează `SensCandidati` din ReadDto;
+refuzul de ambiguitate iese prin MODELARE (`NIR` = `Datorie`), niciodată
+printr-un câmp al apelantului. (g) `PanouStingeri` capătă modul grupat per
+contrapartidă × sens; pe notă „Rest" dispare; NTC nu intră în
+`DocumenteCuRest`, retururile nu devin stingători — compensarea trece prin
+notă (46f). (h) Bara ASM: cifra e NEUTRĂ, culoarea stă pe verdictul
+dry-run-ului. (i) Restanțele 76-r1…r6 → `restante.md`.
+
 ## Context
 
 Ultimele patru tipuri de document fără felie de scriere. Motorul le avea deja

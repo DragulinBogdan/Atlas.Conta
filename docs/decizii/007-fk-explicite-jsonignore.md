@@ -2,7 +2,10 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §7
+
+## Regula durabilă
+
+**Nav properties în API**: FK-urile explicite, `JsonIgnore` pe navigații.
 
 ---
 

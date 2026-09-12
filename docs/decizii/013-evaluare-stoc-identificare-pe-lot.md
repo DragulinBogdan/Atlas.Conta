@@ -2,7 +2,14 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §13
+
+## Regula durabilă
+
+**Evaluare stoc: identificare specifică pe lot.** `Produs` (catalog) + `Lot`
+(creat de linia de intrare, preț unitar fix, gestiune, dată); ieșirile
+referă lotul; picking auto-FIFO în produs × gestiune, cu override manual.
+O singură metodă de evaluare în motor (CMP parcat ca `PoliticaEvaluare`,
+51d/e).
 
 ---
 

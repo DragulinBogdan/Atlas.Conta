@@ -28,6 +28,10 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
             // The code below creates users and roles for testing purposes only.
             // In production code, you can create users and assign roles to them automatically, as described in the following help topic:
             // https://docs.devexpress.com/eXpressAppFramework/119064/data-security-and-safety/security-system/authentication
+            // Rolul `Configurator` e de PRODUCȚIE (83h — separarea atribuțiilor);
+            // userul lui, ca `Cititor`, e dev-only și stă în blocul de mai jos.
+            var configuratorRole = SeedRolConfigurator(ObjectSpace);
+            ObjectSpace.CommitChanges();
 #if !RELEASE
             // If a role doesn't exist in the database, create this role
             var defaultRole = CreateDefaultRole();
@@ -70,6 +74,15 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
                 string EmptyPassword = "";
                 _ = userManager.CreateUser<ApplicationUser>(ObjectSpace, "Cititor", EmptyPassword, (user) => {
                     user.Roles.Add(cititoriRole);
+                });
+            }
+
+            // Utilizatorul „Configurator" (83h) — al patrulea oracol al matricei
+            // de refuzuri (`refuzuri.ps1`), dev-only ca `Cititor`.
+            if (userManager.FindUserByName<ApplicationUser>(ObjectSpace, "Configurator") == null) {
+                string EmptyPassword = "";
+                _ = userManager.CreateUser<ApplicationUser>(ObjectSpace, "Configurator", EmptyPassword, (user) => {
+                    user.Roles.Add(configuratorRole);
                 });
             }
 
@@ -132,6 +145,22 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
                 cititoriRole.PermissionPolicy = SecurityPermissionPolicy.ReadOnlyAllByDefault;
             }
             return cititoriRole;
+        }
+        /// <summary>Rolul de PRODUCȚIE al întreținerii profilului (83h): Read pe tot, scriere doar pe `Politici.TipuriConfigurabile`.</summary>
+        // Permisiunile se REAPLICĂ la fiecare rulare: rolul e al release-ului, nu
+        // al bazei. Statică fiindcă o cheamă și ModelCheck, standalone.
+        public static PermissionPolicyRole SeedRolConfigurator(IObjectSpace objectSpace) {
+            var rol = objectSpace.FirstOrDefault<PermissionPolicyRole>(r => r.Name == "Configurator");
+            if (rol == null) {
+                rol = objectSpace.CreateObject<PermissionPolicyRole>();
+                rol.Name = "Configurator";
+            }
+            rol.PermissionPolicy = SecurityPermissionPolicy.ReadOnlyAllByDefault;
+            const string Scriere = SecurityOperations.Create + ";" + SecurityOperations.Write
+                + ";" + SecurityOperations.Delete;
+            foreach (var tip in Politici.TipuriConfigurabile)
+                rol.AddTypePermissionsRecursively(tip, Scriere, SecurityPermissionState.Allow);
+            return rol;
         }
         PermissionPolicyRole CreateDefaultRole() {
             PermissionPolicyRole defaultRole = ObjectSpace.FirstOrDefault<PermissionPolicyRole>(role => role.Name == "Default");

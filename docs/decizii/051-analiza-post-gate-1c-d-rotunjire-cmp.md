@@ -2,8 +2,15 @@
 
 - **Data**: 2026-07-27 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §51
 - **Docs**: docs/architecture-notes-2026-07-28.md
+
+## Regula durabilă
+
+**Post-gate.** (a) Structura de documente NU se redeschide. (c)
+**Convenția de rotunjire = dată de profil, ÎNGHEȚATĂ per bază.** (d) CMP
+parcat cu nume `PoliticaEvaluare`; a forța valorile sursei ca „potrivire"
+rămâne interzis. (e) Schița + întrebările → jurnal; modelul actual e apărat
+ca FIFO (OMFP 96(3)).
 
 ---
 

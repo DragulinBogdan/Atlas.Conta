@@ -2,8 +2,21 @@
 
 - **Data**: 2026-07-23 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §37
 - **Docs**: docs/privat/p2-descarcare-design.md
+
+## Regula durabilă
+
+**Descărcarea de gestiune (design).** (a) Tip `DescarcareGestiune` cu
+`LinieSursaId`; laturi gestiune → client, AMBELE dimensiuni pe gestiune;
+Valoare = cost; fără TVA; bugetar inert; reutilizarea BonConsum respinsă
+(+Consum ≠ ieșire din patrimoniu). (b) Spargerea pe loturi la
+GENERARE; gardianul de sold rămâne autoritatea. Generator =
+`DescarcareService` (nu PoliticaConex) prin `GenereazaSecundar` + acțiune
+manuală pe REST; restul rămâne interogabil; acoperirea = Draft+Operat. (d)
+**General! + Specific?**: `ProdusId` obligatoriu pe liniile de stoc; `LotId`
+= pin OPȚIONAL, prioritar, FĂRĂ fallback FIFO pe restul lui; o gestiune per
+factură. (e) Derivarea de vânzare (371→707, 345→701, 381→708) ca date. (f)
+`TipTvaImplicit` = default de CULEGERE, nu de motor. (g) Amânate → jurnal.
 
 ---
 

@@ -10,6 +10,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // De regulă autogenerat din FacturaIesire (conex, DescarcareService), dar DSC-ul
 // cules MANUAL rămâne legal (document normal de ieșire din gestiune).
 [TipDetaliu(typeof(DescarcareGestiuneDetaliu))]
+[GardContare(NivelContare.TipMaterialExact,
+    "Linia descărcării nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class DescarcareGestiune : Document {
     // Ambele dimensiuni rămân pe gestiune (predatorul) — precedentul Decont 32c:
     // soldul 371/345 se ține per gestiune; clientul trăiește pe rândurile FCL și
@@ -42,26 +44,17 @@ public class DescarcareGestiune : Document {
                 erori.Add("Cantitatea descărcată trebuie să fie pozitivă.");
         }
 
-        // Fără regulă de contare de cost per Tip, linia ar mișca stocul fără să
-        // posteze NIMIC în contabilitate (motorul sare linia fără regulă) —
-        // refuz explicit (review P2 defect 1). Coerența Tip ↔ produsul lotului:
-        // altfel costul contează pe conturile Tipului greșit (defect 4).
-        var tipDsc = Motor.MotorOperare.GasesteTipDocument(os, this);
-        var tipuriCuRegula = os.GetObjectsQuery<RegulaContare>()
-            .Where(r => r.TipDocumentId == tipDsc.ID && r.TipMaterialId != null)
-            .Select(r => r.TipMaterialId.Value).ToList();
+        // Coerența Tip ↔ produsul lotului: altfel costul contează pe conturile
+        // Tipului greșit (review P2 defect 4).
         var idsLot = Detalii.Where(d => d.LotId != null).Select(d => d.LotId.Value).Distinct().ToList();
         var infoLot = os.GetObjectsQuery<Lot>()
             .Where(l => idsLot.Contains(l.ID))
             .Select(l => new { l.ID, l.ProdusId, l.Produs.TipMaterialId })
             .ToDictionary(l => l.ID, l => (l.ProdusId, l.TipMaterialId));
-        foreach (var d in Detalii) {
-            if (!tipuriCuRegula.Contains(d.TipMaterialId))
-                erori.Add("Linia descărcării nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc) — adăugați rândul de politică (sau rulați updater-ul).");
+        foreach (var d in Detalii)
             if (d.LotId != null && infoLot.TryGetValue(d.LotId.Value, out var lot)
                     && lot.TipMaterialId != null && lot.TipMaterialId != d.TipMaterialId)
                 erori.Add("Lotul liniei aparține unui produs cu alt Tip decât Tipul liniei.");
-        }
 
         // Integritatea trasabilității (review P2 defect 2): LinieSursa e liberă
         // ca FK — validăm la operare că referă o linie a facturii-sursă a

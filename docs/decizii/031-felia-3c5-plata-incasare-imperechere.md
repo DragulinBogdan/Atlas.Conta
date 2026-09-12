@@ -2,7 +2,19 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §31
+
+## Regula durabilă
+
+**Plata / Incasare + Imperechere.** (a) Laturi tipizate (ContPropriu ↔
+Partener/Angajat), liniile = defalcarea sumei cu `Valoare` culeasă; Tipul
+tehnic `TRZ`. `ContImplicit` pe baza `Repartitor`. (c) Contare generică din
+laturi; cont propriu fără cont = eroare clară. (d) **Imperecherea NU e
+document** — link între două documente OPERATE; invarianții în
+`ImperechereService` (Σ ≤ totalul fiecărei părți, contrapartida
+stingătorului pe documentul stins, ambele roluri permise); anulare/storno
+refuzate cât există imperecheri; link-ul se șterge liber. (e) Plata automată
+= `Document.GenereazaSecundar` (din date CULESE), copil al grupului conex,
+cu imperechere automată la operarea ei. (f) Amânate → jurnal; 581 = 64.
 
 ---
 

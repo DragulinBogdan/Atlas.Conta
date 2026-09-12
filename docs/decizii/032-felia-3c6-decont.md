@@ -2,7 +2,14 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §32
+
+## Regula durabilă
+
+**Decont.** (a) `ILinieCuPostareExplicita` bate rezolvarea declarativă și e
+nivelul maxim al coalesce-ului; DOAR tipurile care o declară. (b) Predator
+Angajat, primitor intern; fără stoc. (c) Default-ul de dimensiune e
+POLIMORF: `Document.RepartitorImplicitDebit/Credit(os)`. (d) Cantitatea
+pro-formă 0→1.
 
 ---
 

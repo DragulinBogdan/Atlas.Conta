@@ -2,7 +2,16 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §23
+
+## Regula durabilă
+
+**Persistență + seed.** (a) Schema = migrații EF Core, CANONIC; update-ul de
+schemă XAF e dezactivat; seed-ul prin `--updateDatabase --forceUpdate
+--silent`. (b) `ClasaProdus.Natura` (Stoc/Serviciu/Cheltuiala/Imobilizare/
+Tehnica/Virament): doar Natura=Stoc intră în regulile de stoc. (c)
+NotaTransfer n-are RegulaContare — la plan sintetic transferul nu mișcă
+conturi. `nou/tools/ModelCheck` = suita e2e care rămâne VERDE pe ambele
+profiluri după orice schimbare.
 
 ---
 

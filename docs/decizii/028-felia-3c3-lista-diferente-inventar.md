@@ -2,7 +2,17 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §28
+
+## Regula durabilă
+
+**ListaDiferenteInventar.** (a) `Directie` explicită, materializată în semn
+la operare (UI-ul culege pozitiv); un singur set de reguli de stoc, +1 pe
+predator. `RegulaContare.SemnFiltru` (±1): nepotrivirea scoate regula din
+joc, valoarea se normalizează cu semnul. (d) Plusul creează lot propriu
+(gestiunea = predatorul) și NU poate referi un lot străin; minusul descarcă
+un lot EXISTENT, nu unul născut de același document (63c). Primitorul =
+calitatea `Comisie`. (e) Direcție setată explicit, cantitate ≠ 0, lot per
+linie, plus cu preț de evaluare pozitiv.
 
 ---
 

@@ -2,8 +2,17 @@
 
 - **Data**: 2026-07-25 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §49
 - **Docs**: docs/import/faza-1c-design.md
+
+## Regula durabilă
+
+**Documentele prin motor.** (a) **Rolul de stingător e POLIMORF**
+(`Document.CapacitateStingere(os)`, plafon per contrapartidă). Rețeta
+**NTC-punte cu WHITELIST** (fără rost declarat = eșec zgomotos, NU
+catch-all). (d) FCL-ul de import poartă DOAR venit, stocul pe DSC pin-uit.
+(e) **Scara
+numerică** (`Comun/Scara.cs`: bani 18,2 / prețuri 18,6 / cantități 18,3) cu
+GARDIAN (decimal nemapat = throw). (f) Review → 50a.
 
 ---
 

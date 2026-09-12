@@ -2,7 +2,7 @@
 
 Document viu, agreat 2026-08-02 (sesiune de arhitectură). Nu descrie codul —
 îl **judecă**. Jurnalul de decizii (`docs/decizii/`, un fișier per decizie;
-rezumatul durabil în CLAUDE.md) răspunde la „de ce e așa"; pagina asta
+regula durabilă în secțiunea de sub antet) răspunde la „de ce e așa"; pagina asta
 răspunde la „ce trebuie să rămână adevărat".
 
 **Modul de folosire**: la orice mâncărime arhitecturală, întrebarea e „ce

@@ -2,7 +2,16 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §33
+
+## Regula durabilă
+
+**Validarea transversală.** (a) `Cont.DimensiuniObligatorii` = gardian
+generic pe seturile REZOLVATE, per latură; puntea E: `AngajamentId`
+satisface CodEconomic până la modulul de angajamente. (b) Material din lot.
+(c) `PoliticaValidare` per tip = profilul de validare, aplicat înaintea
+hook-ului tipului. (d) **`Opereaza` = calculează → validează →
+materializează**: niciun rând de registru înainte de trecerea tuturor
+gardienilor.
 
 ---
 

@@ -83,6 +83,28 @@ public interface ILinieCuPostareExplicita {
 // injecta note arbitrare — motorul o sare, ca înainte de extensie.
 public interface IDocumentCuPostareExplicita { }
 
+// Nivelul MINIM de potrivire a contării pe care tipul îl cere liniilor lui: sub
+// el, operarea se refuză cu `mesaj`. Contract pe CLASA documentului (38c/64),
+// citit o singură dată de `Document.ValideazaOperare` și de explicație — gardul
+// întreabă POTRIVIREA motorului, nu o rescrie, iar „Explică" nu poate anunța o
+// postare pe care motorul o refuză. `Inherited = false`: frunzele îl declară
+// fiecare. Două constructoare, fiindcă `NaturaClasa?` nu e argument legal de
+// atribut: fără natură = toate liniile.
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+public sealed class GardContareAttribute : Attribute {
+    public GardContareAttribute(NivelContare nivelMinim, string mesaj) {
+        NivelMinim = nivelMinim;
+        Mesaj = mesaj;
+    }
+
+    public GardContareAttribute(NaturaClasa natura, NivelContare nivelMinim, string mesaj)
+        : this(nivelMinim, mesaj) => Natura = natura;
+
+    public NaturaClasa? Natura { get; }
+    public NivelContare NivelMinim { get; }
+    public string Mesaj { get; }
+}
+
 // Documentul ale cărui IEȘIRI de stoc au valoare FISCALĂ, nu de evaluare
 // (F18, review advers F5): suma returului la furnizor e a facturii / notei de
 // credit a furnizorului — `cantitate × prețul lotului`, cifra de pe hârtie —

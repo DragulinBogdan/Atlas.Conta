@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
-import { afisareNav, captionPolitica, etichetaTipTva } from './comune';
+import { afisareNav, captionPolitica, etichetaTipTva, urlExplica } from './comune';
 
 // Ancora tipurilor de document (decizia 20): oglindește clasele 1:1. Nu e un
 // nomenclator — e o listă de chei străine pentru rândurile de politică.
@@ -25,6 +25,7 @@ export function TipuriDocument() {
     <GrilaPolitica
       titlu="Tipuri de document (ancoră)"
       entitate={TIP}
+      explica={(r) => urlExplica(r.Cod)}
       expand={['TipTvaImplicit']}
       poateAdauga={false}
       poateSterge={false}

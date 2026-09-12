@@ -2,8 +2,15 @@
 
 - **Data**: 2026-07-23 (primul commit în jurnal)
 - **Stare**: activă; (e) backlog-ul UI închis de 39–40
-- **Rezumat durabil**: `CLAUDE.md` §38
 - **Docs**: docs/privat/p2-descarcare-design.md
+
+## Regula durabilă
+
+**DSC executat.** (b) Pin-urile ÎNTÂI, apoi FIFO; generatorul nu aruncă la
+lipsă (backorder); pin fără sold = refuz la operarea FCL. (c) Linie de stoc
+FCL / DSC fără regulă per Tip = refuz; coerența Tip↔Produs/Lot; `LinieSursa`
+= linia facturii-sursă; liniile de tipul derivat. (d) Acțiunea manuală doar
+pe FCL Operat, pe ușa non-secured (58c). (e) Închis de 39–40.
 
 ---
 

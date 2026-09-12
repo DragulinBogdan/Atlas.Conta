@@ -2,7 +2,12 @@
 
 - **Data**: 2026-07-25 (primul commit în jurnal)
 - **Stare**: executată (reordonarea s-a consumat: 1C, GATE XAF, DIM, apoi pasul 5); rămâne regula „XAF Blazor = vehicul de iterație, luptele structurale → lista React"
-- **Rezumat durabil**: `CLAUDE.md` §44
+
+## Regula durabilă
+
+**XAF Blazor = vehiculul de iterație al modelului**; luptele structurale cu
+Blazor NU se hack-uiesc — merg în `lista-react.md`. Conectoarele de import
+nu au nevoie de tierul API (consolă + OS non-secured + motor direct).
 
 ---
 

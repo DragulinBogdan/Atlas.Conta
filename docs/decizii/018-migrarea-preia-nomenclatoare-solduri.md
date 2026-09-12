@@ -2,7 +2,11 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §18
+
+## Regula durabilă
+
+**Migrarea preia nomenclatoare + solduri de deschidere; politicile se
+SEED-uiesc** (definite curat), nu se migrează.
 
 ---
 

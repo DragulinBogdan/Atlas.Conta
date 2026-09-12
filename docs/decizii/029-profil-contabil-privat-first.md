@@ -2,7 +2,14 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §29
+
+## Regula durabilă
+
+**Profil contabil = pachet de seed** per bază; motorul e AGNOSTIC la plan
+(niciun simbol hardcodat). (b) Orice cerință de profil = politică, nu clasa
+de document. (c) Profilul privat diferă de CONȚINUT (derivările de seed per
+profil), mecanismele se transferă. Dimensiunile bugetare rămân în model,
+nullable.
 
 ---
 

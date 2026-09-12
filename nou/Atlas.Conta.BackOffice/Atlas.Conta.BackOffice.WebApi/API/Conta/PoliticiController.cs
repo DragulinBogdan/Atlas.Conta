@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.Api;
+using Atlas.Conta.BackOffice.Module.Api.Implicite;
 using Atlas.Conta.BackOffice.Module.Api.Politici;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
@@ -72,6 +73,70 @@ public class PoliticiController : ContaApiController {
         return Domeniu(() => {
             using var os = NonSecured(typeof(TipDocument));
             return Ok(PoliticiApply.Verificare(os));
+        });
+    }
+
+    /// <summary>
+    /// Ce ar face configurația cu o linie ca aceasta: regula de contare care
+    /// câștigă și conturile ei, registrele de stoc atinse, TVA-ul, conexul,
+    /// implicitul de culegere și rândurile simple ale tipului.
+    /// </summary>
+    /// <param name="tip">Codul ancorei (`TipDocument.Cod`): FCT, FCL, NTC…</param>
+    /// <param name="tipMaterial">Tipul (contul/clasa) liniei ipotetice.</param>
+    /// <param name="semn">Semnul cantității: −1 sau +1 (implicit +1).</param>
+    /// <param name="data">Data documentului ipotetic (implicit azi) — rândurile de politică au valabilitate.</param>
+    /// <param name="predator">Repartitorul de pe latura predator (contul lui implicit e o sursă de cont).</param>
+    /// <param name="primitor">Repartitorul de pe latura primitor.</param>
+    /// <param name="partener">Partenerul documentului — el poartă REGIMUL de TVA.</param>
+    /// <param name="produs">Produsul liniei — el poartă COTA.</param>
+    [HttpGet("explica")]
+    [ProducesResponseType(typeof(ExplicatieDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult Explica([FromQuery] string tip, [FromQuery] Guid? tipMaterial,
+            [FromQuery] int semn = 1, [FromQuery] DateOnly? data = null,
+            [FromQuery] Guid? predator = null, [FromQuery] Guid? primitor = null,
+            [FromQuery] Guid? partener = null, [FromQuery] Guid? produs = null) {
+        return Domeniu(() => {
+            // ── 400: cererea însăși ────────────────────────────────────────
+            // Guid-ul malformat pe query e prins de pipeline
+            // (`InvalidModelStateResponseFactory`, tot `EroriDto`); ce rămâne
+            // aici e vocabularul și valorile pe care binding-ul le acceptă dar
+            // domeniul rutei nu le are (`semn = 2` e un `int` valid).
+            if (semn is not (1 or -1))
+                return BadRequest(EroriDto.DinMesaj(
+                    $"Semnul liniei trebuie să fie −1 sau +1 (primit: {semn})."));
+            if (tipMaterial is not Guid idTipMaterial || idTipMaterial == Guid.Empty)
+                return BadRequest(EroriDto.DinMesaj(
+                    "Parametrul „tipMaterial” (id-ul Tipului contului/clasei) e obligatoriu."));
+            // Maparea cod → ancoră pe ușa NON-SECURED, din același motiv ca la
+            // `api/implicite` (F23-D6): pe cea securizată, 400 ar fi însemnat
+            // deopotrivă „codul nu există" și „ancora nu-ți e vizibilă".
+            Guid? idTip;
+            using (var vocabular = NonSecured(typeof(TipDocument)))
+                idTip = ImpliciteApply.IdTipDocument(vocabular, tip);
+            if (idTip == null)
+                return BadRequest(EroriDto.DinMesaj(
+                    $"Tip de document necunoscut: „{tip}”. Se așteaptă codul ancorei "
+                    + "(FCT, FCL, NIR, NTC…)."));
+
+            var cerere = new ExplicaCerere(idTip.Value, idTipMaterial, semn,
+                data ?? DateOnly.FromDateTime(DateTime.Today), predator, primitor, partener, produs);
+            // ── 403, apoi 422, apoi calculul ───────────────────────────────
+            // Gate-ul de citire pe TIPURI (ca `verificare`): explicația se
+            // calculează non-secured, deci cere dreptul de citire pe tot ce
+            // citește. Vizibilitatea REFERINȚELOR cererii se cere imediat după,
+            // pe aceeași ușă securizată — un `TipMaterial` invizibil n-are voie
+            // să-și vadă conturile printr-un calcul de sistem (80f).
+            using (var securizat = Secured(typeof(TipDocument))) {
+                foreach (var citit in ExplicaApply.TipuriCitite)
+                    if (!PoateCiti(citit, securizat))
+                        return RefuzCitire(citit);
+                ExplicaApply.CereVizibile(securizat, cerere);
+            }
+
+            using var os = NonSecured(typeof(TipDocument));
+            return Ok(ExplicaApply.Explica(os, cerere));
         });
     }
 }

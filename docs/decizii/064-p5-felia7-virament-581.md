@@ -2,8 +2,22 @@
 
 - **Data**: 2026-08-15 (primul commit în jurnal)
 - **Stare**: activă; (k) gaura „al doilea picior cules manual" închisă de 65b
-- **Rezumat durabil**: `CLAUDE.md` §64
 - **Docs**: docs/api/p5-felia-vir-contract.md
+
+## Regula durabilă
+
+**Viramentul 581.** Niciun tip nou: pereche PLT+INC pe ACELEAȘI laturi
+(direcția o poartă tipul); `NaturaClasa.Virament` + Tipul `VIR` și regulile
+lui = DATE per profil. Cuplajul laturi ↔ natură validat în AMBELE sensuri;
+linie VIR fără regulă potrivită = refuz. Perechea prin `GenereazaSecundar`
+(nu PoliticaConex — fără gard de recursie). Motor: imperecherea automată
+doar dacă `CapacitateStingere != null`; `PoateFiStins` = cealaltă jumătate a
+rolului; viramentul suprascrie `RepartitorImplicit*` (ambele laturi = contul
+piciorului). **Un gard care oglindește o potrivire din motor oglindește
+TOATE axele ei** (și `SemnFiltru`). Ștergerea perechii autogenerate rămâne
+PERMISĂ (pierderea e vizibilă pe 581). Constatare deschisă: dimensiunea
+Repartitor pune contrapartida, nu repartitorul contului — decizie proprie.
+(k) Gaura „al doilea picior manual" — închisă de 65b; rămase → jurnal.
 
 ---
 

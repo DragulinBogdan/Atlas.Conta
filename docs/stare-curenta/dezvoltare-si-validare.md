@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-09.** [Index](README.md)
+**Actualizat: 2026-09-12.** [Index](README.md)
 
 ## Organizarea sursei
 
@@ -31,10 +31,19 @@ Actualizarea bazei se execută explicit prin hostul Blazor, cu opțiunile
 și nu devine al doilea updater automat. Baza țintă se verifică înainte de
 orice comandă care aplică migrări sau seed. (23a, 42f)
 
-Seed-ul este specific profilului și idempotent conform regulii fiecărui
-tabel. Nu este o resetare generală a configurației editate. Rândurile
-existente, proveniența și ștergerea logică se tratează conform serviciului
-responsabil; reseed-ul nu autorizează suprascrierea datelor societății. (69b, 73a, 81d)
+Seed-ul este specific profilului și idempotent. Pe tipurile cu proveniență
+trece printr-un singur helper (`ContaSeeder.Aliniaza`): caută rândul pe cheia
+indexului unic, îl creează cu timbru dacă lipsește, îl aliniază la cod dacă
+poartă timbrul seed-ului (câmpurile scalare ne-cheie, fiecare corecție
+tipărită `tip / cheie / câmp: vechi → nou`), îl lasă neatins dacă e manual și
+îl raportează dacă e șters logic. Un seed care ar schimba o cheie aruncă.
+`Seed` întoarce `RaportSeed` cu contoare per tabel (create / corectate /
+manuale / șterse); a doua trecere pe o bază aliniată nu creează și nu
+corectează nimic. Câmpurile de stare de runtime (`PoliticaNumerotare.
+UrmatorulNumar`) și cele deținute de alt pas al seed-ului (`TipTva.Activ`,
+`ContImplicitId` derivat) nu intră în aliniere. Rândurile nomenclatoarelor de
+nucleu fără proveniență (`RandD300`, `Judet`, `UnitateMasura`) se rescriu
+autoritar; reseed-ul nu suprascrie datele societății. (69b, 73a, 83a–d, 84a)
 
 Profilurile nu se amestecă în aceeași bază. `SetareProfil` și rotunjirea sunt
 stabile după inițializare. (36c, 52a)
@@ -80,19 +89,40 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | DTO, atribute, expunere API | Build WebApi, regenerare și verificarea contractelor; probe HTTP pentru comportamentul afectat (56, 80i) |
 | Autorizare | Probe HTTP cu rolurile reale; o probă pe context nesecurizat nu demonstrează securitatea (80i, 81j) |
 | Formular sau interacțiune | Build client și verificarea fluxului în browser (66) |
+| Mod de acces al unui ListView XAF, proprietate nouă afișată în liste | ModelCheck (`D85-M1`, `D85-M2`, `D85-R1…R3`) și deschiderea listei în browser pe baza de import: sort, filtru, grupare, detaliu din listă, culegere pe document nou (85h) |
 | Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
-ModelCheck verifică modelul și execută scenarii de integrare. Nu are
-strategie de securitate XAF; autorizarea se probează prin
-`nou/tools/ProbeHttp/refuzuri.ps1`, cu rolurile Admin, Cititor și User. (80i, 81j)
+ModelCheck verifică modelul și execută scenarii de integrare, inclusiv probe
+pure pe funcțiile de potrivire și de seed. Nu are strategie de securitate
+XAF; autorizarea se probează prin `nou/tools/ProbeHttp/refuzuri.ps1`, cu
+rolurile Admin, Cititor, User și Configurator. (80i, 81j, 84c)
+
+Modurile de acces ale listelor XAF sunt probate pe modelul REAL al
+aplicației Blazor: ModelCheck construiește hostul cu `Startup` din
+Blazor.Server pe calea `--updateDatabase`, fără circuit
+(`ModelAplicatie.cs`, `D85-M0`) și numără comenzile SQL printr-un
+interceptor (`NumaratorSql.cs`). Probele: modul fiecărui view (`D85-M1`),
+precondițiile oricărui `ServerView`/`InstantFeedbackView` — coloane și
+`DefaultProperty` mapate sau calculate, fără cast pe selecție, fără regulă
+Appearance pe membru nevizibil (`D85-M2`) — o pagină `ServerView` cu
+`Lot.Eticheta` calculată identică cu C#, inclusiv rotunjirea (`D85-R1`), o
+pagină `Server` = un query plus COUNT (`D85-R2`) și grila nested `Client`
+care vede liniile nesalvate (`D85-R3`). (85h)
+
+ModelCheck referă proiectul Blazor.Server: build-ul lui pică pe DLL-uri
+blocate cât timp hostul Blazor rulează din același `bin` (același tipar ca
+`verifica:drift` cu WebApi pornit). Se oprește hostul înainte de build. (85h)
 
 **ModelCheck scrie în baze de date.** Profilul bugetar implicit folosește
 baza configurată de aplicație (`Atlas.Conta.BackOffice` în configurația
 curentă); profilul privat folosește baza dedicată
 `Atlas.Conta.ModelCheck.Privat`. Nu se tratează ca suită izolată, sigură de
 rulat pe orice configurație. Conexiunea și compatibilitatea schemei se
-verifică înainte de execuție.
+verifică înainte de execuție. Două rulări concurente pe aceleași baze se
+strică reciproc; variabila de mediu `MODELCHECK_BAZA_SUFIX` mută ambele baze
+pe un sufix (privatul se creează singur, bugetarul cere o clonă a bazei
+aplicației). (84)
 
 Lipsa bazei sau migrările neaplicate pot lăsa doar verificarea modelului
 executată. Codul de ieșire singur nu dovedește rularea scenariilor; jurnalul

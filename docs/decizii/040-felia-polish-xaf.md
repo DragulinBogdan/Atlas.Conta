@@ -2,7 +2,15 @@
 
 - **Data**: 2026-07-23 (primul commit în jurnal)
 - **Stare**: activă; (d) SmartLookup REVERTAT la lookup standard (53h); (e) închise de 41
-- **Rezumat durabil**: `CLAUDE.md` §40
+
+## Regula durabilă
+
+**Polish XAF.** (a) `[TipDetaliu]` per document: New creează derivata,
+coloanele ei; baseline-ul ascunde FK-urile brute. (b) `RuleRequiredField`
+pe NAVIGAȚII (Guid-urile nu pot purta regula); controllerul comite
+culegerea ÎNAINTE de motor. (c) Read-only post-Draft pe toate căile
+liniilor; multi-tab staleness asumat. (d) Registrele `[ForbidCRUD]`;
+**SmartLookup REVERTAT** la lookup standard (53h). (e) Închise de 41.
 
 ---
 

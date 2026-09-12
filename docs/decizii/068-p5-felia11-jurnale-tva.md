@@ -2,8 +2,17 @@
 
 - **Data**: 2026-08-19 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §68
 - **Docs**: docs/api/p5-felia-jurnale-tva-design.md
+
+## Regula durabilă
+
+**Jurnalele de TVA — `RegistruTva`, al treilea registru**, un rând per
+LINIE (liniile fără TVA postat apar legal în jurnal); generarea cere
+`PoliticaTva` pe tip ȘI `TipTva` pe linie; fără rânduri de deschidere;
+reconciliere PER DOCUMENT; snapshot pentru ce intră în calcul, join pentru
+afișare; backfill = unealtă proprie prin ACEEAȘI funcție a motorului;
+decontul se grupează pe `(Sens × TipTva)`; `Storno` în cheie; linia de cost
+a returului nu poartă `TipTva`. Rămase → jurnal.
 
 ---
 

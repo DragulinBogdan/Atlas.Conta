@@ -2,7 +2,11 @@
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §6
+
+## Regula durabilă
+
+**API-ul NU expune ierarhia polimorfic**: endpoint per tip de document,
+DTO-uri plate prin codegen OpenAPI→TS; moștenirea e detaliu de persistență.
 
 ---
 

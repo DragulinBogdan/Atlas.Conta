@@ -2,8 +2,15 @@
 
 - **Data**: 2026-08-17 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §67
 - **Docs**: docs/api/p5-felia-balanta-plan-contract.md
+
+## Regula durabilă
+
+**Balanța pliată.** **Brutele se cumulează în sus, netarea se face LA
+NOD**; fără `Summary`; Σ rădăcini == Σ balanța plată. Frunzele = `Balanta`;
+pliul în memorie, fără DataSourceLoader; marginile devin rădăcini. Modul
+analitic nu se pliază; `nivelMaxim` taie rânduri, nu sume; ciclul din
+`Cont.Parinte` oprit prin gardă.
 
 ---
 

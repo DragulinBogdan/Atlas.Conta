@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
-import { afisareNav, captionPolitica, codSiDenumire, etichetaTipTva, optiuniEnum } from './comune';
+import {
+  afisareNav, captionPolitica, codNav, codSiDenumire, etichetaTipTva, optiuniEnum, urlExplica,
+} from './comune';
 
 // Implicitele de TVA (F23-D2): tip de document × clasa fiscală a partenerului ×
 // „valabil de la" → tipul de TVA propus la culegere.
@@ -30,6 +32,7 @@ export function PoliticiTvaImplicit() {
     <GrilaPolitica
       titlu="Implicite de TVA"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocument'))}
       expand={['TipDocument', 'TipTva']}
       indiciu={(
         <>

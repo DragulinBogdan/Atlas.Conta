@@ -2,16 +2,18 @@
 
 > **Cum se folosește.** O trimitere „decizia 42c" = deschide `042-*.md` și caută
 > sub-punctul `(c)`. NU se citește tot directorul — antetul fiecărui fișier
-> spune dacă decizia e activă, amendată sau depășită. Rezumatul durabil al
-> fiecărei decizii, sub aceeași numerotare, e în `CLAUDE.md`; constituția e
-> `docs/invarianti.md`; istoricul planului de lucru (feliile executate) e în
-> [`istoric-plan-de-lucru.md`](istoric-plan-de-lucru.md).
+> spune dacă decizia e activă, amendată sau depășită, iar secțiunea „Regula
+> durabilă" de sub antet ține regula (cu sub-punctele (a)–(k)), înaintea
+> textului integral. Constituția e `docs/invarianti.md`; restanțele cu nume
+> sunt în [`restante.md`](restante.md); istoricul planului de lucru (feliile
+> executate) e în [`istoric-plan-de-lucru.md`](istoric-plan-de-lucru.md).
 >
-> **Decizie nouă** = fișier nou `NNN-slug.md` (numărul următor, antet + text
-> integral: context, tranșări, review, ce rămâne deschis) + o linie aici +
-> rezumatul în `CLAUDE.md`. **Decizie depășită/amendată** = se actualizează
-> `Stare:` în antetul ei (și rezumatul din CLAUDE.md) — textul nu se șterge și
-> nu se renumerotează niciodată; sub-punctele (a)–(k) sunt referite din cod.
+> **Decizie nouă** = fișier nou `NNN-slug.md` (numărul următor: antet,
+> „Regula durabilă", apoi textul integral: context, tranșări, review, ce
+> rămâne deschis) + o linie aici + un rând per restanță în `restante.md`.
+> **Decizie depășită/amendată** = se actualizează `Stare:` în antetul ei și
+> aici — textul nu se șterge și nu se renumerotează niciodată; sub-punctele
+> (a)–(k) sunt referite din cod.
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -97,3 +99,6 @@
 | 80 | [Refuzurile de acces pe toate ușile: 404 / 403 / 422 — o singură ordine (401→400→404→403→422), un singur corp (`EroriDto`), gate pe ușa de scriere pe tipul feliei, pasul zero al gardianului, rolul `Cititori`, probele HTTP cu script](080-refuzuri-acces-toate-usile.md) | 2026-09-02 | activă |
 | 81 | [Pasul 5, felia 23 — implicitele de culegere și întreținerea politicilor: regimul e al partenerului, cota e a produsului; politicile pe OData cu invarianții în gardian, unicitatea în schemă, proveniența ca timbru (`DinSeed`), raportul de profil, grila comună de politică](081-p5-felia23-implicite-politici.md) | 2026-09-02 | activă |
 | 82 | [Stingerea automată prin contract de document — participare explicită, mecanism în ImperechereService, același commit](082-stingere-automata-prin-contract.md) | 2026-09-08 | activă |
+| 83 | [Seed-ul și proveniența: re-seed-ul corectează doar rândurile `DinSeed`, golurile privat (NIM pentru neînregistrați RO, `IMP` pentru import cu poarta spre DVI), rolul `Configurator` din lista unică a tipurilor configurabile](083-seed-provenienta-goluri-configurator.md) | 2026-09-10 | activă (execuția în felia 24) |
+| 84 | [Pasul 5, felia 24 — politicile: seed-ul aliniază rândurile `DinSeed` (`Aliniaza` + `RaportSeed`), `IMP`/`NIM` în seed, `TipuriConfigurabile` + rolul `Configurator`, cele șapte ecrane peste `GrilaPolitica` (formular popup, 81-r8), `Motor/Potrivire.cs` = potrivirea ca funcții pure consumate de motor și de explicație (oglinzile au murit), gardul de nivel minim ca `[GardContare]` pe clasă, `GET api/politici/explica` + panoul „Explică", enum-urile fără membru și ștergerea `TipTva` referit refuzate](084-p5-felia24-politici-explica.md) | 2026-09-11 | activă |
+| 85 | [Modul de acces al ListView-urilor XAF Blazor (EF Core): `Server` cu paginare ca implicit al aplicației, `ServerView` opt-in pe registrele citite cu precondiții probate, `Client` explicit pe grilele nested de culegere, IF/IFV doar cu prag măsurat, `DataView` exclus, selecția prin `GetObject`, `Lot.Eticheta` `[Calculated]` (tranșează D4 din gate-ul XAF)](085-mod-acces-listview-xaf.md) | 2026-09-11 | activă |

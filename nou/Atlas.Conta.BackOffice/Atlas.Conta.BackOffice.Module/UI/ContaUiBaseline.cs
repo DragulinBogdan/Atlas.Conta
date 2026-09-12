@@ -2,6 +2,7 @@ using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.DXF.Core.Views;
 using Atlas.DXF.Core.Views.Discovery;
 using Atlas.DXF.Core.Views.Fluent;
+using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Model;
 
 namespace Atlas.Conta.BackOffice.Module.UI;
@@ -33,6 +34,8 @@ namespace Atlas.Conta.BackOffice.Module.UI;
 public sealed class ContaUiBaseline : IUiBaselineProvider {
     // Sufixul id-ului ListView-ului implicit generat de XAF per clasă.
     const string ListView = "_ListView";
+    // 85c — grila de culegere nested nu se face peste o colecție server.
+    static readonly Action<IModelListView> Culegere = lv => lv.DataAccessMode = CollectionSourceDataAccessMode.Client;
 
     public void Register(UiBaselineRegistry registry) {
         AscundeFkuriBrute(registry);
@@ -90,11 +93,19 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         // seturile sunt mărginite de căutare.
         registry.For<RegistruStoc>()
             .ListView(nameof(RegistruStoc) + ListView, _ => { })
-            .Column(r => r.Lot, c => c.Index = -1);
+            .Column(r => r.Lot, c => c.Index = -1)
+            // 85b — `Document`/`DocumentDetaliu` n-au DefaultProperty: ar apărea ca GUID.
+            .Column(r => r.Document, c => c.Index = -1)
+            .Column(r => r.Detaliu, c => c.Index = -1);
         // DIM-3: dimensiunile registrului și ale regulii de contare sunt FK-uri
         // PLATE cu navigație pereche — convenția HideForeignKeys le acoperă pe
         // toate (fostul bloc de path-uri nested ale owned-ului a murit).
         registry.For<RegistruContabil>().HideForeignKeys();         // ContDebitId/ContCreditId/DocumentId/DetaliuId + Debit*/Credit*
+        registry.For<RegistruContabil>()
+            .ListView(nameof(RegistruContabil) + ListView, _ => { })
+            // 85b — `Document`/`DocumentDetaliu` n-au DefaultProperty: ar apărea ca GUID.
+            .Column(r => r.Document, c => c.Index = -1)
+            .Column(r => r.Detaliu, c => c.Index = -1);
         registry.For<RegulaContare>().HideForeignKeys();            // TipDocumentId/TipMaterialId/Cont* + Comun*/Override*
         registry.For<RegistruTva>().HideForeignKeys();              // DocumentId/DetaliuId/PartenerId/TipTvaId
         // Navigațiile registrului de TVA ies din ListView, din același motiv ca
@@ -302,7 +313,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
 
         var entitate = registry.For<FacturaIntrareDetaliu>();
         entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(FacturaIntrareDetaliu) + ListView, _ => { })
+        entitate.ListView(nameof(FacturaIntrareDetaliu) + ListView, Culegere)
             // Produsul e PRIMUL: el dă Tipul (D3) și naște lotul (D2) — ordinea
             // coloanelor e ordinea de culegere.
             .Column(d => d.Produs, c => c.Index = 0)
@@ -357,7 +368,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     static void Nir(UiBaselineRegistry registry) {
         var entitate = registry.For<NirDetaliu>();
         entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(NirDetaliu) + ListView, _ => { })
+        entitate.ListView(nameof(NirDetaliu) + ListView, Culegere)
             // Ordinea coloanelor = ordinea de culegere: produsul dă Tipul și naște
             // lotul recepției manuale.
             .Column(d => d.Produs, c => c.Index = 0)
@@ -396,7 +407,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
 
         var entitate = registry.For<FacturaIesireDetaliu>();
         entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(FacturaIesireDetaliu) + ListView, _ => { })
+        entitate.ListView(nameof(FacturaIesireDetaliu) + ListView, Culegere)
             .Column(d => d.Produs, c => c.Index = 0)
             // Pe FCL lotul e PIN-ul opțional (P2, 37d) — se culege, deci editabil.
             .Column(d => d.Lot, c => c.Index = 1)
@@ -451,7 +462,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     static void ListaDiferenteInventar(UiBaselineRegistry registry) {
         var entitate = registry.For<ListaDiferenteInventarDetaliu>();
         entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(ListaDiferenteInventarDetaliu) + ListView, _ => { })
+        entitate.ListView(nameof(ListaDiferenteInventarDetaliu) + ListView, Culegere)
             .Column(d => d.Directie, c => c.Index = 0)
             .Column(d => d.TipMaterial, c => c.Index = 1)
             .Column(d => d.Produs, c => c.Index = 2)
@@ -480,7 +491,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         entitate.HideMembers(
             d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
             d => d.ContDebitId, d => d.ContCreditId, d => d.RepartitorDebitId, d => d.RepartitorCreditId);
-        entitate.ListView(nameof(DecontDetaliu) + ListView, _ => { })
+        entitate.ListView(nameof(DecontDetaliu) + ListView, Culegere)
             .Column(d => d.TipMaterial, c => c.Index = 0)
             .Column(d => d.Descriere, c => c.Index = 1)
             .Column(d => d.Cantitate, c => c.Index = 2)
@@ -498,7 +509,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     static void DescarcareGestiune(UiBaselineRegistry registry) {
         var entitate = registry.For<DescarcareGestiuneDetaliu>();
         entitate.HideMembers(d => d.LinieSursaId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(DescarcareGestiuneDetaliu) + ListView, _ => { })
+        entitate.ListView(nameof(DescarcareGestiuneDetaliu) + ListView, Culegere)
             .Column(d => d.LinieSursa, c => { c.Index = 0; c.Caption = "Linie sursă"; })
             .Column(d => d.TipMaterial, c => c.Index = 1)
             .Column(d => d.Lot, c => c.Index = 2)
@@ -517,7 +528,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         entitate.HideMembers(
             d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
             d => d.ContDebitId, d => d.ContCreditId, d => d.RepartitorDebitId, d => d.RepartitorCreditId);
-        entitate.ListView(nameof(NotaContabilaDetaliu) + ListView, _ => { })
+        entitate.ListView(nameof(NotaContabilaDetaliu) + ListView, Culegere)
             .Column(d => d.Descriere, c => c.Index = 0)
             .Column(d => d.ContDebit, c => c.Index = 1)
             .Column(d => d.ContCredit, c => c.Index = 2)
@@ -546,7 +557,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     static void Asamblare(UiBaselineRegistry registry) {
         var entitate = registry.For<AsamblareDetaliu>();
         entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(AsamblareDetaliu) + ListView, _ => { })
+        entitate.ListView(nameof(AsamblareDetaliu) + ListView, Culegere)
             .Column(d => d.Directie, c => c.Index = 0)
             .Column(d => d.TipMaterial, c => c.Index = 1)
             .Column(d => d.Produs, c => c.Index = 2)

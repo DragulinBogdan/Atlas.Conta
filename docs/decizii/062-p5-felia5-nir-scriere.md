@@ -2,8 +2,18 @@
 
 - **Data**: 2026-08-12 (primul commit în jurnal)
 - **Stare**: activă
-- **Rezumat durabil**: `CLAUDE.md` §62
 - **Docs**: docs/api/p5-felia-nir-contract.md
+
+## Regula durabilă
+
+**NIR scriere.** `ILinieCareNasteLot` (FCT, NIR, LDI+) — **FCL/DSC NU o
+declară** (`ProdusId` acolo = pin, semantică opusă); `GestiuneLoturiCulese`
+polimorf. Gard: linia cu lot STRĂIN rămâne NEATINSĂ. Valoarea: lot propriu
+= preț cules × cantitate, lot străin = prețul lotului. NIR nu culege TVA;
+`Numar`/`LotId` server-owned; preț POZITIV la naștere; `PoateEdita` =
+funcție de stare. (f) **Un gard care tace devine capcană unde există și
+alternativa corectă** (`Lot` read-only lângă produs); **conexul autogenerat
+NU se șterge**. (g) → jurnal.
 
 ---
 

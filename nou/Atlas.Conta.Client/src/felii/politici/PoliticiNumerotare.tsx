@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
-import { afisareNav, captionPolitica, codSiDenumire } from './comune';
+import { afisareNav, captionPolitica, codNav, codSiDenumire, urlExplica } from './comune';
 
 // Numerotarea server-owned (25f): numărul se asignează abia la MATERIALIZARE, din
 // rândul de aici. `Format` e opțional în motor (seed-ul nu-l scrie), deci
@@ -22,6 +22,7 @@ export function PoliticiNumerotare() {
     <GrilaPolitica
       titlu="Numerotare"
       entitate={TIP}
+      explica={(r) => urlExplica(codNav(r, 'TipDocument'))}
       expand={['TipDocument']}
       indiciu={(
         <>
