@@ -48,8 +48,9 @@ explicite pe fiecare linie, DVI nu postează valoarea). Fără coloane proprii p
 antet: `Numar` = MRN-ul declarației (cules, fără `PoliticaNumerotare` — ca la
 FCT), `Data` = data vămuirii, `Predator` = repartitorul CĂRUIA i se datorează
 TVA-ul (biroul vamal, cu cont implicit 446, sau comisionarul vamal care a
-plătit în vamă, cu 401), `Primitor` = unitatea internă, `Observatii`.
-Furnizorul extern NU e latură: vine din facturile legate (D3).
+plătit în vamă, cu 401), `Primitor` = unitatea internă. (`Observatii` din
+textul inițial nu există pe `Document` și a ieșit la pasul 2 — schema nu se
+redeschide.) Furnizorul extern NU e latură: vine din facturile legate (D3).
 
 Liniile folosesc `DocumentDetaliu` de bază (precedentul NIR/BCS): `TipMaterial`
 = tipul bunurilor vămuite (cheia rămâne NOT NULL pe bază; API-ul îl SUGEREAZĂ
@@ -139,14 +140,17 @@ view-urile DVI, iar `Baza` („Valoare în vamă") și `Taxa` („TVA în vamă"
 |---|---|---|
 | GET | `` | `PaginaDto<DviListDto>` (DataSourceLoader) |
 | GET | `{id:guid}` | `DviReadDto` 200 / 404 / 403 |
-| GET | `facturi-candidate?dataStart=&dataEnd=&partenerId=&toate=` | `FacturaCandidataDto[]`: FCT `Operat`, implicit doar clasa fiscală `ExtraUe` (`toate=true` = orice FCT operată), cu `TipMaterialSugeratId` (tipul dominant pe liniile facturii) și `Valoare` |
+| GET | `facturi-candidate?dataStart=&dataEnd=&partenerId=&toate=&dviId=` | `FacturiCandidateDto { Candidati[], MaiSunt }`: FCT `Operat` în perioadă (obligatorie, 400 fără ea), implicit doar clasa fiscală `ExtraUe` (`toate=true` = orice FCT operată), `dviId` exclude facturile deja legate; `Candidati[]` = `FacturaCandidataDto` cu `TipMaterialSugeratId` (tipul dominant pe liniile facturii) și `Valoare`; plafon 500 la interogare, `MaiSunt` spune că perioada trebuie îngustată (filtrul de clasă fiscală e al legii, în memorie, deci se aplică DUPĂ plafon) |
 | POST | `` | `DviWriteDto` → `DviReadDto` 201 / 400 / 403 / 422 |
 | PUT | `{id:guid}` | `DviWriteDto` → 200 / 404 / 403 / 422 (doar Draft) |
 | DELETE | `{id:guid}` | 204 / 422 (doar Draft) |
 | POST | `{id:guid}/opereaza` · `anuleaza` · `storneaza` · `valideaza` | ca la NTC (`OperareRezultatDto` / `EroriDto`) |
 
-`DviWriteDto { Data, Numar, PredatorId, PrimitorId, Observatii, Linii[{ Id?,
-TipMaterialId, TipTvaId, Valoare, ValoareTva }], FacturiIds[] }`.
+`DviWriteDto { Data, Numar, PredatorId, PrimitorId, Linii[{ Id?, TipMaterialId,
+TipTvaId?, Valoare, ValoareTva }], FacturiIds[] }` — `FacturiIds` e agregatul
+ÎNTREG (serverul creează lipsa, șterge plusul); `ValoareTva` 0 = se naște din
+cotă la operare. `Apply` = `DviApply.Aplica(os, id?, dto)` (numele comun al
+feliilor).
 `DviReadDto` = antet + `Linii[]` + `Facturi[{ FacturaId, Numar, Data,
 PartenerDenumire, Stare, Valoare }]` + `Baza`, `Tva` (totalurile vin de pe
 server, 42c). `DviListDto { Id, Numar, Data, Stare, PredatorDenumire, Baza, Tva,
@@ -235,6 +239,11 @@ există, zero politici, `TipTva` fără rânduri `DeImport` (ITV-ul e precedentu
 - **DVI-r10** comisionarul vamal care plătește TVA-ul și îl refacturează:
   factura lui ar purta taxa (4426 = 401) și DVI n-ar mai avea voie s-o
   posteze a doua oară — flux propriu, nedecis (azi Predator = biroul vamal).
+- **DVI-r12** mesajul refuzului `PoateFiStins` din `ImperechereService` e scris
+  pentru viramente; **DVI-r13** dimensiunea Repartitor a plăților e inversată
+  față de conturi (latura de terț poartă contul propriu) — preexistentă,
+  măsurată la DVI-V15; **DVI-r14** `CreateObject` înaintea lui `Rezolva.Cere`
+  în `NotaContabilaApply`/`FacturaIntrareApply` (orfan mascat de navigație).
 - **DVI-r11** DVI ca document stins (rest = Σ `ValoareTva` a liniilor
   `Normal`): cere formula restului polimorfă în `ImperechereService.Total` +
   ramura DVI în uniunea `DocumenteCuRest` (același blocaj ca RDC).
@@ -262,6 +271,10 @@ există, zero politici, `TipTva` fără rânduri `DeImport` (ITV-ul e precedentu
    entitate + dispecerul generic (D9); restul de stins greșit (1605 la 210) →
    DVI nu e document stins (D4, DVI-r11). Migrația `20260912193852_F25Dvi`.
 2. **API** — `Api/Dvi/` (`DviDtos.cs`, `DviApply.cs`), `DviController`,
+   *Executat 2026-09-13*: `Observatii` scos (nu e pe model), `Aplica` comun,
+   plicul `MaiSunt` pe candidați; defect propriu găsit și reparat (referință
+   rezolvată după `CreateObject` lasă un orfan în OS-uri cu viață lungă) — aceeași
+   formă, MASCATĂ, în `NotaContabilaApply`/`FacturaIntrareApply` (DVI-r14).
    `facturi-candidate`, blocul `E2E-API-DVI`, oracolele în `refuzuri.ps1`,
    `pnpm verifica:drift` (WebApi OPRIT), probele HTTP pe host viu (Privat,
    re-seed pentru `Cititor`/`Configurator`), cifrele în §Închidere.

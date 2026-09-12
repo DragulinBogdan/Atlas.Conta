@@ -398,6 +398,96 @@ try {
     Proba -Cerere 'modificare ITV pe ușa NTC' -User 'Cititor' -Asteptat 404 -Metoda PUT -Cale "/api/ntc/$idItv" -Corp @{ Data = '2026-10-31'; Linii = @() } -Contine 'nu există sau nu e vizibil' -Nota 'M1: NU 403' | Out-Null
     Proba -Cerere 'validare ITV pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/ntc/$idItv/valideaza" -Contine 'nu există sau nu e vizibil' -Nota 'M1: NU 200' | Out-Null
 
+    # ── DVI: declarația vamală de import (felia 25, DVI-D5) ────────────────
+    # Subiectul se CREEAZĂ aici, nu se caută unul existent: declarația e un
+    # document CULES, deci crearea ei nu e capcana lui `POST api/itv/genereaza`
+    # (care scrie ori de câte ori luna e liberă) — depinde doar de script și se
+    # șterge la final. Draftul pleacă FĂRĂ MRN și fără linii, ca `opereaza` pe
+    # `Admin` să ajungă la DOMENIU (422) fără să poată scrie vreun registru.
+    $corpDvi = @{
+        Numar      = ''
+        Data       = (Get-Date -Format 'yyyy-MM-dd')
+        PredatorId = $partener.ID
+        PrimitorId = $unitate.ID
+        Linii      = @()
+        FacturiIds = @()
+    }
+    $creareDvi = Proba -Cerere 'creare DVI' -User 'Admin' -Asteptat 201 -Metoda POST -Cale '/api/dvi' -Corp $corpDvi -Nota 'draftul de lucru'
+    if ($creareDvi.Verdict -ne 'PASS') { throw "Nu s-a putut crea declarația de lucru: $($creareDvi.CorpIntreg)" }
+    $idDvi = ($creareDvi.CorpIntreg | ConvertFrom-Json).Id
+    $curatenie.Add({
+            $sters = Invoke-Cerere -Metoda DELETE -Cale "/api/dvi/$idDvi" -Token $tokenAdmin
+            Write-Host "curățenie: DELETE /api/dvi/$idDvi → $($sters.Status)" -ForegroundColor DarkGray
+        }.GetNewClosure())
+    Write-Host "  dvi draft: $idDvi" -ForegroundColor DarkGray
+
+    Proba -Cerere 'creare DVI' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/dvi' -Corp $corpDvi -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare DVI' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/dvi' -Corp $corpDvi -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare DVI' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/dvi' -Corp $corpDvi -Contine 'crea' -Nota 'documentele nu-s configurabile' | Out-Null
+
+    Proba -Cerere 'citire DVI' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/dvi/$idDvi" | Out-Null
+    Proba -Cerere 'citire DVI' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/dvi/$idDvi" | Out-Null
+    Proba -Cerere 'citire DVI' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale "/api/dvi/$idDvi" -Nota 'Read pe tot' | Out-Null
+    Proba -Cerere 'citire DVI' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/dvi/$idDvi" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'listă DVI' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/dvi?take=5' -Contine '"data":[]' -Nota '200 filtrat' | Out-Null
+
+    Proba -Cerere 'modificare DVI' -User 'Cititor' -Asteptat 403 -Metoda PUT -Cale "/api/dvi/$idDvi" -Corp $corpDvi -Contine 'modifica' | Out-Null
+    Proba -Cerere 'modificare DVI' -User 'User' -Asteptat 404 -Metoda PUT -Cale "/api/dvi/$idDvi" -Corp $corpDvi -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'modificare DVI' -User 'Configurator' -Asteptat 403 -Metoda PUT -Cale "/api/dvi/$idDvi" -Corp $corpDvi -Contine 'modifica' | Out-Null
+    Proba -Cerere 'ștergere DVI' -User 'Cititor' -Asteptat 403 -Metoda DELETE -Cale "/api/dvi/$idDvi" -Contine 'șterge' | Out-Null
+    Proba -Cerere 'ștergere DVI' -User 'User' -Asteptat 404 -Metoda DELETE -Cale "/api/dvi/$idDvi" -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    Proba -Cerere 'validare DVI' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/dvi/$idDvi/valideaza" -Contine 'modifica' | Out-Null
+    Proba -Cerere 'validare DVI' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/dvi/$idDvi/valideaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'operare DVI' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/dvi/$idDvi/opereaza" -Contine 'modifica' | Out-Null
+    Proba -Cerere 'operare DVI' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/dvi/$idDvi/opereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Admin trece de permisiune, deci ajunge la DOMENIU: refuzul e al TIPULUI
+    # (MRN-ul declarației), nu al dreptului. Fără perechea asta, cele două 403-uri
+    # de mai sus ar putea ascunde o ușă care nu ajunge niciodată la regulă.
+    Proba -Cerere 'operare DVI fără MRN' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "/api/dvi/$idDvi/opereaza" -Contine 'MRN' -Nota 'domeniul rămâne' | Out-Null
+
+    # `facturi-candidate` cere DOUĂ drepturi (DVI-D5): declarația din rută, dacă
+    # vine, și CITIREA pe facturi — panoul arată facturi, nu declarații, iar o
+    # listă filtrată tăcut ar propune legături pe care operatorul nu le poate face.
+    $perioadaDvi = 'dataStart=2026-01-01&dataEnd=2026-12-31'
+    # Perioada LARGĂ, pentru proba de plafon: pe baza Privat 2026 are doar
+    # patru facturi operate, 2025 are peste 19.000.
+    $perioadaLargaDvi = 'dataStart=2025-01-01&dataEnd=2026-12-31'
+    Proba -Cerere 'candidați DVI' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Contine '"Candidati":[]', '"MaiSunt":false' -Nota 'plic, nu tablou' | Out-Null
+    Proba -Cerere 'candidați DVI' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Nota 'Read pe tot' | Out-Null
+    Proba -Cerere 'candidați DVI' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" | Out-Null
+    Proba -Cerere 'candidați DVI' -User 'User' -Asteptat 403 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Contine 'citi' -Nota 'DVI-D5: dreptul pe FACTURI' | Out-Null
+    # Pe baza asta TOȚI furnizorii sunt RO, deci lista implicită e GOALĂ pe bună
+    # dreptate — iar `toate=true` o umple: perechea arată că filtrul de clasă fiscală
+    # e REAL, nu că ruta n-ar citi nimic (un 200 gol singur ar fi o probă vacuă).
+    Proba -Cerere 'candidați DVI (toate)' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaLargaDvi&toate=true" -Contine '"Candidati":[{', '"ClasaFiscala":"NeinregistratRo"', '"TipMaterialSugeratId"', '"MaiSunt":true' -Nota 'plic PLIN, plafonul 500 atins pe 19k facturi' | Out-Null
+    Proba -Cerere 'candidați DVI (toate)' -User 'User' -Asteptat 403 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaLargaDvi&toate=true" -Contine 'citi' | Out-Null
+    # Cu `dviId`, subiectul rutei e declarația: 404-ul instanței vine ÎNAINTEA
+    # 403-ului de tip (ordinea 80a), deci `User` nici nu află că facturile există.
+    Proba -Cerere 'candidați DVI pe o declarație' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi&dviId=$idDvi" | Out-Null
+    Proba -Cerere 'candidați DVI pe o declarație' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi&dviId=$idDvi" -Contine 'nu există sau nu e vizibil' -Nota '404 înaintea lui 403' | Out-Null
+    Proba -Cerere 'candidați DVI pe o declarație inexistentă' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi&dviId=$idInexistent" -Contine 'nu există sau nu e vizibil' | Out-Null
+    # 400 — cererea, nu dreptul: perioada e obligatorie, același text pentru toți.
+    Proba -Cerere 'candidați DVI fără perioadă' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/dvi/facturi-candidate' -Contine 'obligatoriu' | Out-Null
+    Proba -Cerere 'candidați DVI fără perioadă' -User 'User' -Asteptat 400 -Metoda GET -Cale '/api/dvi/facturi-candidate' -Contine 'obligatoriu' -Nota 'cererea, înaintea dreptului' | Out-Null
+
+    # Ușile celorlalte felii pe un id de DVI (perechea lui M1): `Dvi` derivă
+    # DIRECT din `Document`, deci `GetObjectByKey<NotaContabila>` /
+    # `<FacturaIntrare>` nu-l văd — 404 pe toate verbele, pentru toți, fără
+    # niciun predicat de felie de scris.
+    Proba -Cerere 'citire id DVI pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/ntc/$idDvi" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'modificare id DVI pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda PUT -Cale "/api/ntc/$idDvi" -Corp @{ Data = '2026-10-31'; Linii = @() } -Contine 'nu există sau nu e vizibil' -Nota 'NU 422' | Out-Null
+    Proba -Cerere 'ștergere id DVI pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda DELETE -Cale "/api/ntc/$idDvi" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'operare id DVI pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/ntc/$idDvi/opereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'validare id DVI pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/ntc/$idDvi/valideaza" -Contine 'nu există sau nu e vizibil' -Nota 'NU 200' | Out-Null
+    Proba -Cerere 'operare id DVI pe ușa FCT' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/fct/$idDvi/opereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Simetricul: un id de NIR pe ușa DVI e tot 404, nu 422 din Apply.
+    Proba -Cerere 'citire id NIR pe ușa DVI' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/dvi/$idNir" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'operare id NIR pe ușa DVI' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/dvi/$idNir/opereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    $stergereDvi = Proba -Cerere 'ștergere DVI' -User 'Admin' -Asteptat 204 -Metoda DELETE -Cale "/api/dvi/$idDvi" -FaraJson -Nota 'curățenie'
+    if ($stergereDvi.Verdict -eq 'PASS') { $curatenie.RemoveAt($curatenie.Count - 1) }
+
     # ── Imperecheri: aceeași formă ca feliile de document ───────────────────
     # Corpul e deliberat MINIM: gate-ul de creare e pe TIP și vine ÎNAINTEA
     # Apply-ului, deci un corp care n-ar trece domeniul tot 403 trebuie să dea.
