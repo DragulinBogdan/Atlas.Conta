@@ -322,6 +322,32 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.PlataData, c => c.Index = 19)
             .Column(d => d.PlataTipInstrument, c => c.Index = 20);
 
+        // Grila de lookup (DVI alege factura de import din ea, D7) suferă de
+        // simptomul descris la `ListaRoot`, netratat: coloanele generate încep cu
+        // `Scadență`, iar identificarea documentului lipsește — o factură fără
+        // scadență/PV/plată n-are NICIO celulă nenulă, deci nu se poate alege.
+        // Indicii 0–3 nu ajung singuri (aceeași cauză ca la `ListaRoot`): coloanele
+        // proprii păstrează indicii generați și s-ar intercala, deci lookup-ul le
+        // ascunde — el cere identificarea facturii, nu detaliile plății.
+        registry.For<FacturaIntrare>()
+            .ListView(nameof(FacturaIntrare) + "_LookupListView")
+            .Column(d => d.Numar, c => c.Index = 0)
+            .Column(d => d.Data, c => c.Index = 1)
+            .Column(d => d.Predator, c => c.Index = 2)
+            .Column(d => d.Stare, c => c.Index = 3)
+            .Column(d => d.Total, c => c.Index = -1)
+            .Column(d => d.DataScadenta, c => c.Index = -1)
+            .Column(d => d.NumarPV, c => c.Index = -1)
+            .Column(d => d.DataPV, c => c.Index = -1)
+            .Column(d => d.CodCpv, c => c.Index = -1)
+            .Column(d => d.Valuta, c => c.Index = -1)
+            .Column(d => d.Curs, c => c.Index = -1)
+            .Column(d => d.GenereazaPlata, c => c.Index = -1)
+            .Column(d => d.PlataContPropriu, c => c.Index = -1)
+            .Column(d => d.PlataNumar, c => c.Index = -1)
+            .Column(d => d.PlataData, c => c.Index = -1)
+            .Column(d => d.PlataTipInstrument, c => c.Index = -1);
+
         var entitate = registry.For<FacturaIntrareDetaliu>();
         entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
         entitate.ListView(nameof(FacturaIntrareDetaliu) + ListView, Culegere)
@@ -597,7 +623,11 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.ValoareTva, c => c.Index = 3)
             // Declarația n-are stoc: cantitatea și lotul n-au semantică pe ea.
             .Column(d => d.Cantitate, c => c.Index = -1)
-            .Column(d => d.Lot, c => c.Index = -1);
+            .Column(d => d.Lot, c => c.Index = -1)
+            // Gazda e chiar DetailView-ul pe care stă grila; ListView-ul de CLASĂ
+            // (spre deosebire de cel nested) păstrează navigația spre părinte, iar
+            // `Document` n-are DefaultProperty (85b) ⇒ coloana ar afișa un GUID.
+            .Column(d => d.Document, c => c.Index = -1);
 
         registry.For<DviFactura>().HideForeignKeys();               // DviId/FacturaId
         registry.For<DviFactura>()
@@ -616,7 +646,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             // Gazda e chiar DetailView-ul pe care stă grila.
             .Column(f => f.Dvi, c => c.Index = -1);
 
-        // `Total (brut)` ar aduna baza cu taxa (1815 pe scena DVI-D8) — pe
+        // `Total (brut)` ar aduna baza cu taxa — pe
         // declarație cifrele sunt `Baza` și `Taxa`, ambele pe DetailView.
         registry.For<BusinessObjects.Dvi>().HideMembers(nameof(Document.Total));
 

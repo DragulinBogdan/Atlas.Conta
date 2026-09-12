@@ -22258,10 +22258,12 @@ void VerificaDvi(bool privat) {
     }
 
     // ── Curățenia scenei (purjă FIZICĂ — F13-D2) ─────────────────────────────
+    // Purjă și scena blocului `E2E-API-DVI` (aceeași lună): un crash acolo nu
+    // are voie să otrăvească rularea următoare a blocului ăsta.
     void CurataDvi(IObjectSpace os) {
         var pj = new Purja(os);
         var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
-            .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
+            .Where(r => r.Cod.StartsWith(Marcaj) || r.Cod.StartsWith("E2E-API-DVI")).Select(r => r.ID).ToList();
         var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
             .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
         var docIds = docs.Select(d => d.ID).ToList();
@@ -22278,7 +22280,7 @@ void VerificaDvi(bool privat) {
         foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
             pj.Adauga(doc);
         pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
-            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+            .Where(r => r.Cod.StartsWith(Marcaj) || r.Cod.StartsWith("E2E-API-DVI")).ToList());
         pj.Executa();
     }
 
@@ -22302,6 +22304,11 @@ void VerificaDvi(bool privat) {
 
     using (var os = provider.CreateObjectSpace())
         CurataDvi(os);
+    using (var os = provider.CreateObjectSpace())
+        Check("DVI — precondiție: FEBRUARIE 2026 e liberă după purjă (nicio declarație, niciun document în lună); "
+            + "dacă pică, un alt bloc a lăsat scena în luna asta și cifrele de mai jos ar fi peste conținut străin",
+            !os.GetObjectsQuery<Dvi>().Any()
+            && !os.GetObjectsQuery<Document>().Any(d => d.Data >= febStart && d.Data <= febEnd));
 
     using (var os = provider.CreateObjectSpace()) {
         // ---- Seed-ul profilului (DVI-D2) ----
@@ -22598,6 +22605,29 @@ void VerificaDvi(bool privat) {
         os.CommitChanges();
     }
     refuzDubla = RefuzLegaturaNoua(idDviDraft, idFct);
+    // Aceeași pereche de DOUĂ ori în ACELAȘI commit (grila XAF nested, un singur
+    // Save): interogarea nu vede rândurile noi — regula trebuie să vadă
+    // `ModifiedObjects`.
+    string refuzDublaAcelasiCommit;
+    using (var os = provider.CreateObjectSpace()) {
+        var draft2 = os.CreateObject<Dvi>();
+        draft2.Numar = Marcaj + "-MRN-D2";
+        draft2.Data = dataDvi;
+        draft2.Predator = os.GetObjectByKey<Repartitor>(idVama);
+        draft2.Primitor = os.GetObjectByKey<Repartitor>(idUnitate);
+        var fct = os.GetObjectByKey<FacturaIntrare>(idFct);
+        var l1 = os.CreateObject<DviFactura>();
+        l1.Dvi = draft2;
+        l1.Factura = fct;
+        var l2 = os.CreateObject<DviFactura>();
+        l2.Dvi = draft2;
+        l2.Factura = fct;
+        refuzDublaAcelasiCommit = RefuzGardian(os);
+    }
+    Console.WriteLine($"     MĂSURAT (DVI-V10b/privat): aceeași factură de două ori în același commit → „{refuzDublaAcelasiCommit?.Split('\n')[0]}”");
+    Check("DVI-V10b (privat) unicitatea perechii vede și rândurile NOI ale aceluiași commit (grila XAF cu un singur Save): "
+        + "refuz de gardian cu numele facturii, nu 23505 din bază",
+        refuzDublaAcelasiCommit != null && refuzDublaAcelasiCommit.Contains("e deja legată"));
     using (var os = provider.CreateObjectSpace()) {
         var editata = os.GetObjectsQuery<DviFactura>().ToList().First(f => f.DviId == idDviDraft);
         editata.FacturaId = idFctDraft;

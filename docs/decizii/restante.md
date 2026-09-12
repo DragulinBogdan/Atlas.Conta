@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-12.** [Index](README.md)
+**Actualizat: 2026-09-13.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -141,7 +141,7 @@ văzută de utilizator, sunt în
 | 83-r1 | recrearea unui rând de seed șters, la runtime | deschisă |
 | 83-r2 | D394 tip `N` (achiziții de la neînregistrați) negenerat, `NIM × Achiziție` nemapat | deschisă |
 | 83-r3 | codul SAF-T al lui `IMP` din nomenclator | deschisă |
-| 83-r4 | DVI ca tip de document (`IMP21`, legătura n→m cu facturile de import, rândurile D300) | deschisă |
+| 83-r4 | DVI ca tip de document (`IMP21`, legătura n→m cu facturile de import, rândurile D300) | închisă de 86 |
 | 83-r5 | `Configurator` în XAF (permisiuni de navigație) | deschisă |
 | 83-r6 | = 81-r3 asumată | deschisă |
 | 84-r1 | `SDD`/`SFD` fără cod SAF-T de achiziție | deschisă |
@@ -166,3 +166,21 @@ văzută de utilizator, sunt în
 | 85-r8 | `Refresh` execută pagina de două ori pe `Server` | deschisă |
 | 85-r9 | layout-ul salvat al utilizatorului poate ascunde toate coloanele; pe `ServerView` celulele rămân goale până la Refresh (curatoria grilelor, DIM-4) | deschisă |
 | 85-r10 | coloana `Produs` goală în grila Detalii a FCT `WIS26511` (date sau afișare) | deschisă || C1a | fluxul comenzilor (`docs/architecture-notes-2026-07-28.md`) | deschisă |
+| 86-r1 | taxele vamale și accizele în costul de achiziție (ajustare de cost pe lot) | deschisă |
+| 86-r2 | anularea/stornarea unei FCT legate la o DVI operată nu se refuză | deschisă |
+| 86-r3 | RLF pe DVI (retur de import / re-export) | deschisă |
+| 86-r4 | amânarea plății în vamă ca politică de partener | deschisă |
+| 86-r5 | scadență pe DVI | deschisă |
+| 86-r6 | unicitatea MRN-ului | deschisă |
+| 86-r7 | SAF-T D406 emite rândul DVI cu codul de import | închisă de 86 (probată în `E2E-DVI`) |
+| 86-r8 | `DviFactura` în „Explică"/OData | deschisă |
+| 86-r9 | curățenia datelor Flax (reMarkable NO marcat `TI19`) | deschisă |
+| 86-r10 | comisionarul vamal care plătește taxa și o refacturează (dublă postare) | deschisă |
+| 86-r11 | DVI ca document stins: restul polimorf în `ImperechereService.Total` + ramura în `DocumenteCuRest` | deschisă |
+| 86-r12 | mesajul refuzului `PoateFiStins` din `ImperechereService` e scris pentru viramente | deschisă |
+| 86-r13 | dimensiunea Repartitor a plăților e inversată față de conturi (latura de terț poartă contul propriu) — preexistentă | deschisă |
+| 86-r14 | `CreateObject` înaintea lui `Rezolva.Cere` în `NotaContabilaApply`/`FacturaIntrareApply` (orfan mascat de navigație) | deschisă |
+| 86-r15 | `IMP` (0%) rămâne `DeImport`: lookup-ul liniei DVI îl propune, operarea îl refuză | deschisă |
+| 86-r16 | `DocumentDetaliu_ListView` e per clasă de detaliu: al doilea tip cu `[TipDetaliu(typeof(DocumentDetaliu))]` ar împărți grila cu DVI | deschisă |
+| 86-r17 | `Document` fără `DefaultProperty` (85b): lookup-urile și grilele de legătură afișează GUID-ul după selecție | deschisă |
+| 86-r18 | lookup-urile de documente (`_LookupListView`) rămân cu coloanele generate, fără identificarea în față; `ListaRoot<T>` țintește doar `_ListView` | deschisă |

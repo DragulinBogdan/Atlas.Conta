@@ -304,7 +304,7 @@ public static class ContaSeeder {
             // tipuri inerte (fără politici), ca DSC/ITV/ASM/BPR.
             ("RLF", "Retur la furnizor", nameof(ReturFurnizor)),
             ("RDC", "Retur de la client", nameof(ReturClient)),
-            // Al 17-lea derivat (felia 25, DVI-D2): declarația vamală de import.
+            // Declarația vamală de import (86c).
             // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
             // inert (fără politici), ca DSC/ITV/ASM/BPR.
             ("DVI", "Declarație vamală de import", nameof(Dvi)),

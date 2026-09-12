@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-12.** [Index](README.md)
+**Actualizat: 2026-09-13.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -24,6 +24,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Fluxurile de rezervare, comenzi de vânzare și distribuire a aceleiași
   facturi din mai multe gestiuni nu sunt acoperite complet. (37g, C1a)
 - Retururile nu au un flux general propriu de compensare; se folosește NTC. (46f, 76g)
+- Declarația vamală nu este document stins: taxa în vamă se plătește printr-o
+  plată către biroul vamal, fără împerechere și fără rest pe document; soldul
+  pe partener al contului de taxă nu se citește pe dimensiune (latura de terț
+  a plăților poartă contul propriu). Taxele vamale și accizele nu intră în
+  costul de achiziție; comisionarul care refacturează taxa nu are flux propriu.
+  Anularea unei facturi legate la o declarație operată nu se refuză; starea
+  facturii se arată. (86-r1, 86-r2, 86-r10, 86-r11, 86-r13)
 - Salariile, imobilizările, execuția bugetară completă, producția pe rețete,
   împărțirea pe cofinanțări și contabilitatea multivalutară nu sunt module
   complete în produsul curent. Importul 1C nu echivalează cu un import bancar

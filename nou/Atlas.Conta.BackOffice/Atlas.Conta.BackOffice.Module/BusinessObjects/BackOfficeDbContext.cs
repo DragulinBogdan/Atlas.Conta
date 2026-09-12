@@ -110,7 +110,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // de storno; ambele folosesc detaliul de BAZĂ (fără tabele de detaliu).
         public DbSet<ReturFurnizor> RetururiFurnizor { get; set; }
         public DbSet<ReturClient> RetururiClient { get; set; }
-        // Al 17-lea derivat (felia 25): declarația vamală de import, cu detaliul
+        // Declarația vamală de import (86a), cu detaliul
         // de BAZĂ (fără tabelă de detaliu) și cu legătura n→m spre facturi.
         public DbSet<Dvi> Dvi { get; set; }
         public DbSet<DviFactura> DviFacturi { get; set; }

@@ -97,6 +97,7 @@ public class Dvi : Document {
 
 // DVI-D3: legătura n→m declarație ↔ facturi de import, pe forma `Imperechere`.
 // E EVIDENȚĂ, nu sursa cifrelor: baza și taxa sunt cele declarate în vamă.
+[XafDisplayName("Factură de import legată")]
 public class DviFactura : BaseObject, IVerificabilLaCommit {
     public virtual Guid DviId { get; set; }
     [XafDisplayName("Declarație vamală")]
@@ -137,7 +138,12 @@ public class DviFactura : BaseObject, IVerificabilLaCommit {
         var id = ID;
         var dviId = dvi.ID;
         var facturaId = factura.ID;
-        if (os.GetObjectsQuery<DviFactura>().Any(f => f.ID != id && f.DviId == dviId && f.FacturaId == facturaId))
+        // Interogarea nu vede rândurile NOI ale aceluiași commit (grila XAF).
+        var dublura = os.GetObjectsQuery<DviFactura>().Any(f => f.ID != id && f.DviId == dviId && f.FacturaId == facturaId)
+            || os.ModifiedObjects.OfType<DviFactura>().Any(f => !ReferenceEquals(f, this)
+                && os.IsNewObject(f) && !os.IsObjectToDelete(f)
+                && (f.Dvi?.ID ?? f.DviId) == dviId && (f.Factura?.ID ?? f.FacturaId) == facturaId);
+        if (dublura)
             erori.Add($"Factura de import {factura.Numar} e deja legată la această declarație vamală.");
     }
 }

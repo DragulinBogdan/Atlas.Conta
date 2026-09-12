@@ -537,3 +537,9 @@ detaliat în jurnal):
   `Client` explicit pe grilele nested de culegere, IF/IFV cu prag măsurat,
   selecția prin `GetObject`, `Lot.Eticheta` `[Calculated]` (tranșează D4 din
   gate-ul XAF).
+- **Felia 25** (2026-09-12/13, decizia 86) — DVI ca tip de document: TVA-ul în
+  vamă prin `PoliticaTva` fără schimbare în motorul de operare, tipurile de
+  import ca date (`DeImport`), D300 rd. 24/25 și 7/22, codurile SAF-T de
+  import, legătura n→m cu facturile (`DviFactura` + `IVerificabilLaCommit`),
+  DVI nu e document stins, `api/dvi` + `felii/dvi`, smoke React și XAF.
+  Închide 83-r4.

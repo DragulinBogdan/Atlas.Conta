@@ -57,8 +57,9 @@ Liniile folosesc `DocumentDetaliu` de bază (precedentul NIR/BCS): `TipMaterial`
 din facturile legate), `TipTva` = tipul de import (D2), `Valoare` = valoarea în
 vamă (baza), `ValoareTva` = taxa din declarație (culeasă; dacă e 0 o calculează
 `TvaService` la operare, ca la FCT — 48b: un TVA cules nu se suprascrie),
-`Cantitate` 0, `Lot` null. `[TipDetaliu(typeof(DocumentDetaliu))]` — dacă
-atributul nu acceptă baza, se raportează (nu se inventează o derivată goală).
+`Cantitate` 0, `Lot` null. `[TipDetaliu(typeof(DocumentDetaliu))]` (acceptat la
+pasul 1: comută `Detalii` pe `DocumentDetaliu_ListView`, care e per CLASĂ de
+detaliu, nu per tip — DVI-r16).
 
 `TipTva` primește coloana `DeImport` (bool, `[XafDisplayName("De import")]`,
 seed `true` pe `IMP` și pe tipurile din D2): singura cale de a spune „tip de
@@ -104,8 +105,8 @@ facturilor). Gardianul (`GardianEditare`, pe OS securizate): creare/ștergere
 DOAR cât DVI e `Draft`; fără editare (ca `Imperechere`); factura trebuie să fie
 `FacturaIntrare` în stare `Operat` la creare. `Dvi.ValideazaOperare` re-verifică
 starea facturilor legate la operare (o factură anulată între timp = refuz 422).
-După operare legăturile sunt înghețate cu documentul; stornoul NU le clonează
-(are `DocumentSursa`). Anularea/stornarea unei FCT legate la o DVI operată NU
+După operare legăturile sunt înghețate cu documentul; stornoul e in-place
+(rânduri inverse pe același document), deci le păstrează. Anularea/stornarea unei FCT legate la o DVI operată NU
 se refuză (DVI-r2): cifrele DVI nu derivă din factură; ecranul arată starea
 facturii. `DviFactura` NU intră pe OData; se scrie prin `FacturiIds` din
 agregatul DVI (PUT), niciodată direct.
@@ -208,7 +209,7 @@ există, zero politici, `TipTva` fără rânduri `DeImport` (ITV-ul e precedentu
 - `openapi.json`/`api-types.ts` fără drift; `tsc` + `vite build` verzi.
 - `refuzuri.ps1` toate verzi (cele 80 existente + cele noi) pe host viu.
 - Smoke în browser (React, Privat): FCT extra-UE → DVI cu factura legată →
-  operare → jurnal de cumpărări → D300 rd. 24 → plată → rest 0; smoke XAF pe
+  operare → jurnal de cumpărări → D300 rd. 24 → storno; smoke XAF pe
   hostul Blazor: DetailView DVI cu linii și facturi, operare.
 - `Motor/*` NEATINS, cu o singură excepție decisă la pasul 1: dispecerul
   generic `IVerificabilLaCommit` în `GardianEditare.Verifica` (trei linii,
@@ -247,6 +248,9 @@ există, zero politici, `TipTva` fără rânduri `DeImport` (ITV-ul e precedentu
 - **DVI-r11** DVI ca document stins (rest = Σ `ValoareTva` a liniilor
   `Normal`): cere formula restului polimorfă în `ImperechereService.Total` +
   ramura DVI în uniunea `DocumenteCuRest` (același blocaj ca RDC).
+- **DVI-r16** `DocumentDetaliu_ListView` e per CLASĂ de detaliu: al doilea tip
+  cu `[TipDetaliu(typeof(DocumentDetaliu))]` ar împărți grila și caption-urile
+  cu DVI.
 
 ## Testul contra invarianților
 
@@ -303,6 +307,59 @@ cd nou/Atlas.Conta.Client && pnpm build
 pwsh nou/tools/ProbeHttp/refuzuri.ps1                 # host viu, Privat
 ```
 
-## Închidere
+## Închidere (2026-09-13, decizia 86)
 
-(se completează la pasul 5)
+| pas | commit | probe |
+|---|---|---|
+| 0 contract | `6ccc907` | două explorări read-only (legacy, Flax/1C/SAF-T; codul) |
+| 1 model + seed + gardian + ModelCheck | `e4dcbff` | ModelCheck bugetar 955/0, privat 1045/0 (re-rulat independent); migrația `20260912193852_F25Dvi` |
+| 2 API + probe HTTP | `9ec487a` | ModelCheck privat 1068/0; `refuzuri.ps1` 156/156 pe host viu (39 oracole DVI); codegen idempotent, pur aditiv |
+| 3 client React | `d32701d` | `pnpm build` + `verifica:drift` verzi (re-rulate independent); smoke în browser cap-coadă, 16 capturi |
+| 4 smoke XAF + 5 review advers, fix-uri, docs | commit-ul de închidere | 7 probe XAF văzute, 14 capturi; ModelCheck final bugetar 955/0, privat 1070/0; `metadata.json` la zi; `Motor/*` = cele 5 linii ale dispecerului |
+
+### Devieri de la contract (toate raportate, nu normalizate)
+
+- **D4 amendat la pasul 1**: DVI NU e document stins (`ImperechereService.Total`
+  ar fi dat rest 1605 la datorie 210; `DocumenteCuRest` e uniune per tip);
+  taxa se plătește ca orice taxă. `PoateFiStins = false` e obligatoriu (fără
+  el `ValideazaCreare` accepta tăcut). Probele V15/V15b/V15c rescrise.
+- **D9 amendat la pasul 1**: gardianul n-are punct de extensie în afara
+  `Motor/` → `IVerificabilLaCommit` + dispecer generic (5 linii); Import1C nu
+  trece prin gardian, proba supremă necerută.
+- **D1/D5**: `Observatii` nu există pe model — scos; `Aplica` comun; plicul
+  `{ Candidati, MaiSunt }` cu plafon 500 (D5 rescris).
+- **D3**: „stornoul nu clonează (`DocumentSursa`)" descria un mecanism
+  inexistent — stornoul e in-place (review R2).
+- **D7**: `[NavigationItem]` e moștenit de la `Document`, nu declarat pe
+  `Dvi`; navigația XAF n-are intrare per tip. Grila liniilor DVI = ListView-ul
+  de CLASĂ al bazei (`DocumentDetaliu_ListView`, DVI-r16); coloana `Document`
+  ascunsă; `FacturaIntrare_LookupListView` reparat (preexistent, DVI-r18).
+- **D8**: probele existente au primit DOAR numere noi (seed-ul mută cifre);
+  două texte cu cifre stale au devenit formulări fără cifră. Proba XAF pe
+  „legătură pe DVI operat" nu se poate provoca din ecran (XAF ascunde
+  `New`/`Delete`); rămâne pe calea reală în ModelCheck.
+- **Defect propriu găsit și reparat la pasul 2** (referință rezolvată după
+  `CreateObject`), cu regresie în `E2E-API-DVI`; aceeași formă mascată în
+  NTC/FCT (DVI-r14).
+
+### Review advers (agent separat, read-only)
+
+0 blocante. Reparate înainte de închidere: R1 (unicitatea perechii în același
+commit — `ModifiedObjects`, proba `DVI-V10b`), R2 (două fraze din docs), R3
+(`Valoare` negativă acceptată pe draft), R4 (ordinea pre-check-ului de stare
+față de rezolvarea laturilor), R5 (purja încrucișată a celor două blocuri din
+februarie + precondiția lunii libere), N2 (cast pe id-ul unui obiect deja
+urmărit → interogare pe id-uri). Neprobate cu risc mic: N1 (închis de smoke-ul
+XAF — navigația `Dvi` e setată la commit), N3 (DELETE pe draft cu legături pe
+ușa securizată; ștergerea e amânată).
+
+### Ce a rămas în baza Privat
+
+Stornate, cu registre nete zero: DVI `MRN-PROBA-F25` și `MRN-PROBA-F25-XAF`,
+FCT `PROBA-F25-FCT`; partenerii „PROBĂ F25 — furnizor extra-UE" (GB) și „PROBĂ
+F25 — biroul vamal" (RO, cont implicit 446). Nu se pot șterge: legătura se
+desface doar cât DVI e Draft, FK-ul e `Restrict`.
+
+### Restanțe cu nume, deschise de felie
+
+86-r1…r18 în `docs/decizii/restante.md` (DVI-r7 închisă: probată).

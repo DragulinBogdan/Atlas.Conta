@@ -95,20 +95,24 @@ contrazise din neatenție.
 
 ## Stare
 
-Toate tipurile de document au felie prin API și client (ITV ca COMANDĂ, 79);
-singurul rămas e BPR (rezervat, 19). Refuzurile de acces sunt uniforme pe REST
-și OData și MĂSURATE (80). Ultima felie închisă: 24 — politicile, seed-ul
-care aliniază, `Configurator`, `Potrivire`, „Explică" (84, 2026-09-11).
-Listele XAF Blazor: `Server` implicit cu paginare, `ServerView` pe registre,
-`Client` explicit pe grilele de culegere, IF/IFV doar cu prag (85, 2026-09-12).
+Toate tipurile de document au felie prin API și client (ITV ca COMANDĂ, 79;
+DVI ca agregat cu legătură n→m la facturi, 86); singurul rămas e BPR
+(rezervat, 19). Refuzurile de acces sunt uniforme pe REST și OData și
+MĂSURATE (80). Listele XAF Blazor: `Server` implicit cu paginare, `ServerView`
+pe registre, `Client` explicit pe grilele de culegere, IF/IFV doar cu prag
+(85). Ultima felie închisă: 25 — DVI ca tip de document: TVA-ul în vamă prin
+`PoliticaTva` fără schimbare în motorul de operare, tipurile de import ca
+date (`TipTva.DeImport`), D300 rd. 24/25 și 7/22, `IVerificabilLaCommit` ca
+punct de extensie al gardianului, DVI nu e document stins (86, 2026-09-13).
 Cronologia integrală: `docs/decizii/istoric-plan-de-lucru.md`.
 
 **Următorul pas**: izolarea motorului de `IObjectSpace` — contract scris
-(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, pașii 0–7); felia
-24 a livrat avansul declarat pe IM-D2/IM-D4 (`Motor/Potrivire.cs` + `Fapte`),
-deci prioritatea se decide pe contract între IM, 83-r4 (DVI ca tip de
-document) și 84-r5 (captions). 80-r1 dacă expunerea crește; `lista-react.md`
-mai ține doar itemii structurali și 77-r1/r6.
+(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, pașii 0–7), cu
+avansul din felia 24 pe IM-D2/IM-D4; pornește doar la un semnal real din
+criteriul lui de prioritate. Până atunci candidații sunt 84-r5 (captions, la
+atingere), 86-r11 (DVI ca document stins, dacă produsul o cere), 86-r13
+(dimensiunea Repartitor a plăților, preexistentă) și 80-r1 dacă expunerea
+crește; `lista-react.md` mai ține doar itemii structurali și 77-r1/r6.
 
 **Capcane de probare**: `genereaza` SCRIE ori de câte ori luna e liberă (79);
 probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe

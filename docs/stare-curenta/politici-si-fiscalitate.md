@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-09.** [Index](README.md)
+**Actualizat: 2026-09-13.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -52,6 +52,14 @@ România (`FCT`/`RLF` → `NIM`, fără fapt de TVA pe linie) și achiziția din
 afara UE (`FCT`/`RLF` → `IMP`, tip propriu cu cotă 0 sub regimul neimpozabil,
 fără cod SAF-T — codurile de import sunt ale DVI-ului — și nemapat deliberat
 pe D300 și D394). (83f–g, 84b)
+
+Tipurile de import sunt marcate prin `TipTva.DeImport`, nu prin coduri în cod.
+Seed-ul privat are `IMP21`/`IMP11` (regim normal, coduri SAF-T de achiziție
+301204/301205, D300 rd. 24/25) și `IMPTI21`/`IMPTI11` (taxare inversă la
+import, 300604/300605, rd. 7 cu oglinda 22 pusă de proiecție); declarația
+vamală are politica TVA deductibilă cu contrapartida pe predator (fallback
+446), implicitul generic `IMP21` și nicio mapare D394. Bugetar are doar
+ancora tipului. (86c)
 
 Rezolvarea are doi pași:
 
@@ -135,6 +143,10 @@ Taxarea inversă pe sens deductibil generează autolichidarea. Pe sens
 colectat, TVA trebuie să fie zero și nu se generează notă TVA; o valoare
 nenulă este refuzată înainte de materializare, inclusiv la salvarea REST. (70a, 70b)
 
+Linia declarației vamale poartă doar tipuri `DeImport` cu cotă (`IMP` cu cotă
+0 este refuzat la operare); taxa culeasă se păstrează, iar zero se completează
+din cotă la operare. (86d)
+
 Registrul TVA se materializează pe linii când există politica și tipul TVA
 necesare, inclusiv pentru linii fiscale fără sumă TVA contabilizată. Cota,
 regimul și valorile fiscale sunt fixate în registru. Etichetele care sunt
@@ -188,6 +200,10 @@ rând. Rândul 31 scade nedeductibilul din rândul 30 folosind operanzii
 înregistrați. Limitarea la zero se aplică numai rândurilor care o cer.
 Valorile nemapate sunt raportate cu motiv, iar avertismentele nu trunchiază
 sumele. Coloanele neaplicabile sunt absente, nu zerouri fabricate. (69c, 69d, 69e)
+Importurile intră în decont din declarația vamală, nu din factura furnizorului
+extern: rd. 24/25 pentru taxa plătită în vamă, rd. 7 (și oglinda 22) pentru
+amânarea plății; SAF-T D406 emite codurile de import din același registru,
+fără filtru de tip. (86c, 86k)
 
 D394 grupează document × storno × partener × sens × tip TVA × cotă.
 Clasificarea partenerului folosește aceeași funcție fiscală ca implicitele.

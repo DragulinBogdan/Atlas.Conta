@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-12.** [Index](README.md)
+**Actualizat: 2026-09-13.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -174,7 +174,8 @@ de clientul React pe OData este o compunere separată, cu aceeași semantică.
 
 | Arie | Conținut |
 |---|---|
-| Documente | Liste și detalii pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF și RDC |
+| Documente | Liste și detalii pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC și DVI |
+| Declarații vamale | `api/dvi`: agregat cules (antet, linii, `FacturiIds` ca agregat întreg), `facturi-candidate` cu perioadă obligatorie, filtru implicit pe clasa fiscală extra-UE, plicul `{ Candidati, MaiSunt }` cu plafon 500 decis pe interogare și `TipMaterialSugeratId`; cere și citirea pe FCT. Ecranul: lookup TVA filtrat pe `DeImport`, popup de candidați pe luna declarației, totaluri de pe server (86h, 86i) |
 | Trezorerie și relații | Stingere manuală în limitele contractelor, vizualizarea relațiilor și comenzile documentului (57d, 76g) |
 | TVA lunar | Previzualizare și generare ITV, detaliu și comenzile rezultatului (79e) |
 | Contabilitate | Stoc, balanță, balanță pe plan, fișă de cont, registru-jurnal (66, 67) |

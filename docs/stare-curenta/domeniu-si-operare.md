@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-09.** [Index](README.md)
+**Actualizat: 2026-09-13.** [Index](README.md)
 
 ## Modelul comun
 
@@ -167,6 +167,7 @@ clientul nu introduce o rotunjire contabilă independentă. (42c, 51c, 52a)
 | DEC — decont | Angajat → repartitor intern, fără stoc. Contractul permite cont și repartitor explicite pe linie. Cantitatea pro-formă zero se normalizează la unu. (32a, 32b, 32d) |
 | NTC — notă contabilă | Postare explicită. Poate stinge manual pe contrapartidă și sens; nu se înscrie implicit în stingerea automată a sursei. ITV nu este editabil prin această felie. (46b, 79c, 82a) |
 | ITV — închidere TVA | Rezultatul serviciului lunar, cu conturi din politică. Nu se culege ca agregat liber și nu închide perioada fiscală. (46c, 79a) |
+| DVI — declarație vamală de import | Linii pe detaliul de bază: valoarea în vamă ca bază, taxa declarată (0 = din cotă la operare). Nu postează valoarea și nu mișcă stocul; postează doar taxa din politica TVA (4426 contra contului implicit al predatorului — biroul vamal/comisionarul — sau 4426 = 4427 la amânarea plății). MRN cules, fără numerotare. Legătura n→m cu facturile de import este evidență, doar în Draft, prin agregat. Nu este document stins: taxa se plătește ca orice taxă, fără împerechere. (86a, 86b, 86e, 86g) |
 | ASM — asamblare/dezasamblare | Transformare n→m cu linii de produs și consum; fără contare. Diferența valorică absolută trebuie să fie ≤ 0,005. Nu consumă un lot produs de același document. (46d) |
 | RLF — retur la furnizor | Folosește lotul original; culegere pozitivă, postare cu semn negativ pe corespondența originală. (46e, 76d) |
 | RDC — retur de la client | Un document cu linii de venit și cost pe lotul original. Totalul include doar venitul; linia de cost nu are tip TVA. Rolul unei linii salvate nu se convertește prin editare. (46e, 76d) |
@@ -219,6 +220,17 @@ Contractele documentului sunt:
 | `SensDeStins(os)` | Natura soldului de stins; lipsa declarației nu autorizează ghicirea sensului (76f) |
 | `LiniiCreanta(query)` | Liniile care contribuie la totalul creanței/datoriei (46e, 57c) |
 | `SursaStingeriiAutomate(os)` | Sursa solicitată pentru stingere automată; implicit `null`, fără efecte secundare (82a) |
+
+Un tip care nu închide nicio datorie o declară prin `PoateFiStins = false`
+(DVI): fără declarație, validarea ar accepta tăcut o împerechere când
+plafonul stingătorului oferă un singur sens. Totalul folosit la stingere este
+Σ(valoare + TVA) pe liniile creanței; un tip cu altă formulă a restului nu
+intră pe rolul de document stins. (86g)
+
+Entitățile care își poartă singure invarianții de commit implementează
+`IVerificabilLaCommit`; gardianul le cheamă prin interfață înaintea
+verificărilor pe tip, inclusiv la ștergere (`DviFactura`: creare/ștergere doar
+cât declarația este Draft, factura operată, perechea unică, fără editare). (86f)
 
 Plata stinge datorii, iar încasarea creanțe. PLT→FCL, INC→FCT, PLT→PLT și
 INC→INC sunt refuzate. NTC poate avea ambele sensuri; plafonul este netat

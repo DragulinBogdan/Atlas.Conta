@@ -20,10 +20,7 @@ public static class DviApply {
         // Rezolvările ÎNAINTE de orice `CreateObject` (F3-D5): un refuz de după
         // ar lăsa un obiect orfan în ObjectSpace-ul VIU al apelantului, pe care
         // un commit ulterior l-ar persista.
-        var predator = Rezolva.Cere<Repartitor>(os, dto.PredatorId, "Predatorul (biroul vamal)");
-        var primitor = Rezolva.Cere<Repartitor>(os, dto.PrimitorId, "Primitorul (unitatea internă)");
-
-        BusinessObjects.Dvi doc;
+        BusinessObjects.Dvi doc = null;
         if (id is Guid existentId) {
             doc = Rezolva.Cere<BusinessObjects.Dvi>(os, existentId, "Declarația vamală");
             if (doc.Stare != StareDocument.Draft)
@@ -31,9 +28,9 @@ public static class DviApply {
                     $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se mai modifică. "
                     + "Anulați operarea sau stornați-l.");
         }
-        else {
-            doc = os.CreateObject<BusinessObjects.Dvi>();
-        }
+        var predator = Rezolva.Cere<Repartitor>(os, dto.PredatorId, "Predatorul (biroul vamal)");
+        var primitor = Rezolva.Cere<Repartitor>(os, dto.PrimitorId, "Primitorul (unitatea internă)");
+        doc ??= os.CreateObject<BusinessObjects.Dvi>();
 
         doc.Numar = dto.Numar;
         doc.Data = dto.Data;
@@ -73,6 +70,8 @@ public static class DviApply {
             VerificaScara(l.ValoareTva, Scara.Bani, "Valoarea TVA");
             if (l.ValoareTva < 0)
                 throw new OperareException("Valoarea TVA nu poate fi negativă.");
+            if (l.Valoare < 0)
+                throw new OperareException("Valoarea în vamă nu poate fi negativă — stornarea e o comandă, nu un semn.");
 
             DocumentDetaliu detaliu;
             if (l.Id is Guid linieId) {
@@ -115,9 +114,15 @@ public static class DviApply {
         var existente = Legaturi(os, doc.ID);
         // Aceeași disciplină ca la linii (F3-D5): facturile se rezolvă toate
         // înainte, ca un refuz să nu lase o legătură fără factură în ObjectSpace.
-        var deLegat = cerute
-            .Where(i => !existente.Any(l => l.FacturaId == i))
-            .Select(i => Rezolva.Cere<FacturaIntrare>(os, i, "Factura de import"))
+        // Prin interogare pe id-uri, nu `GetObjectByKey` per id: un id al unui
+        // obiect deja urmărit cu alt tip ar arunca cast, nu refuz de domeniu.
+        var idsNoi = cerute.Where(i => !existente.Any(l => l.FacturaId == i)).ToList();
+        var facturi = idsNoi.Count == 0
+            ? new List<FacturaIntrare>()
+            : os.GetObjectsQuery<FacturaIntrare>().Where(f => idsNoi.Contains(f.ID)).ToList();
+        var deLegat = idsNoi
+            .Select(i => facturi.FirstOrDefault(f => f.ID == i)
+                ?? throw new OperareException(Refuzuri.ReferintaInvizibila("Factura de import", i)))
             .ToList();
 
         var deSters = existente.Where(l => !cerute.Contains(l.FacturaId)).ToList();
