@@ -91,6 +91,13 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
 Planul de conturi este sintetic. Analiticele se obțin din dimensiuni în
 raportare, fără conturi analitice generate și persistate. (10)
 
+Nomenclatoarele-dimensiune (cod funcțional, cod economic, sursă de
+finanțare, proiect, angajament) derivă din baza abstractă `Dimensiune`:
+cod, denumire și căutare fără diacritice. Baza e contractul pentru codul
+generic (`T : Dimensiune`) și rămâne în afara modelului EF: fiecare
+derivată are tabelul și coloana de căutare proprie. `Unitate` nu derivă
+încă. (2026-09-13)
+
 `SursaCont` alege cont explicit, contul implicit al tipului material sau
 contul implicit al repartitorului de pe una dintre laturi. Motorul nu
 conține simboluri de cont specifice profilului. (26b, 29)

@@ -117,7 +117,10 @@ respectă disponibilitatea întoarsă de server. (42e, 57f, 77d)
 
 Căutarea uzuală folosește o coloană calculată și stocată în PostgreSQL,
 formată din cod/simbol și denumire normalizate la litere mici, fără
-diacriticele acoperite de maparea comună C#/SQL/metadata. (77a)
+diacriticele acoperite de maparea comună C#/SQL/metadata. Coloana și
+regulile „ne-gol" stau în tabelul entității EF care declară proprietatea:
+o dată pe rădăcina TPT, pe fiecare derivată a unei baze CLR nemapate.
+(77a, 77-r2, 2026-09-13)
 
 Filtrele text `contains`, `notcontains`, `startswith` și `endswith` sunt
 normalizate pe calea DataSourceLoader. Egalitatea și inegalitatea rămân

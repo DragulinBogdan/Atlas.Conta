@@ -4,60 +4,34 @@ using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// Nomenclatoarele-țintă ale componentelor din `Dimensiuni` (decizia 11/15).
-
-[NavigationItem("Nomenclatoare")]
+/// <summary>
+/// Contractul nomenclatoarelor-dimensiune (țintele componentelor din `Dimensiuni`):
+/// cod + denumire, căutabile fără diacritice. Bază CLR, în afara modelului EF —
+/// fiecare derivată își are tabelul și coloana `Cautare` proprie.
+/// </summary>
 [XafDefaultProperty(nameof(Denumire))]
-public class CodFunctional : BaseObject, ICuCautare {
+public abstract class Dimensiune : BaseObject, ICuCautare {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
 
-    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
-    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
+    // F20-D1 — coloană GENERATĂ de bază; EF n-o scrie niciodată.
     [XafDisplayName("Căutare")]
     [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
     public virtual string Cautare { get; set; }
 }
 
 [NavigationItem("Nomenclatoare")]
-[XafDefaultProperty(nameof(Denumire))]
-public class CodEconomic : BaseObject, ICuCautare {
-    public virtual string Cod { get; set; }
-    public virtual string Denumire { get; set; }
+public class CodFunctional : Dimensiune { }
 
-    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
-    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
-    [XafDisplayName("Căutare")]
-    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
-    public virtual string Cautare { get; set; }
-}
+[NavigationItem("Nomenclatoare")]
+public class CodEconomic : Dimensiune { }
 
 // Decizia 11: sursa de finanțare devine dimensiune explicită.
 [NavigationItem("Nomenclatoare")]
-[XafDefaultProperty(nameof(Denumire))]
-public class SursaFinantare : BaseObject, ICuCautare {
-    public virtual string Cod { get; set; }
-    public virtual string Denumire { get; set; }
-
-    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
-    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
-    [XafDisplayName("Căutare")]
-    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
-    public virtual string Cautare { get; set; }
-}
+public class SursaFinantare : Dimensiune { }
 
 [NavigationItem("Nomenclatoare")]
-[XafDefaultProperty(nameof(Denumire))]
-public class Proiect : BaseObject, ICuCautare {
-    public virtual string Cod { get; set; }
-    public virtual string Denumire { get; set; }
-
-    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
-    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
-    [XafDisplayName("Căutare")]
-    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
-    public virtual string Cautare { get; set; }
-}
+public class Proiect : Dimensiune { }
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
@@ -70,17 +44,7 @@ public class Unitate : BaseObject {
 // tipuri legal/buget anual/multianual) se proiectează separat; până atunci ancora
 // FK de pe linia de document rămâne stabilă.
 [NavigationItem("Nomenclatoare")]
-[XafDefaultProperty(nameof(Denumire))]
-public class Angajament : BaseObject, ICuCautare {
-    public virtual string Cod { get; set; }
-    public virtual string Denumire { get; set; }
-
-    // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
-    // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
-    [XafDisplayName("Căutare")]
-    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
-    public virtual string Cautare { get; set; }
-}
+public class Angajament : Dimensiune { }
 
 [NavigationItem("Nomenclatoare")]
 public class PerioadaFiscala : BaseObject {

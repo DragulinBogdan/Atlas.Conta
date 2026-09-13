@@ -496,10 +496,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // ModelCheck.
         //
         // Trei reguli, toate deduse din model (nicio listă de tipuri aici):
-        //   * TPT — proprietatea bazei apare pe FIECARE derivată, dar coloana
-        //     aparține tabelului care o DECLARĂ. Filtrul `DeclaringType == clr`
-        //     pune o singură coloană pe `Repartitor`, care acoperă Partener/
-        //     Gestiune/Angajat/UnitateInterna/ContPropriu.
+        //   * coloana aparține ENTITĂȚII EF care declară proprietatea, nu clasei
+        //     CLR: sub TPT o singură coloană pe `Repartitor` acoperă Partener/
+        //     Gestiune/Angajat/UnitateInterna/ContPropriu; o bază CLR nemapată
+        //     (`Dimensiune`) lasă coloana pe fiecare derivată.
         //   * numele coloanei de cod se citește din entitate: `Cod`, altfel
         //     `Simbol` (planul de conturi), altfel doar denumirea.
         //   * `Denumire` e obligatorie — un nomenclator care ar declara
@@ -520,8 +520,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 var clr = entityType.ClrType;
                 if (clr == null || !typeof(ICuCautare).IsAssignableFrom(clr))
                     continue;
-                var proprietate = clr.GetProperty(Cautare.NumeColoana);
-                if (proprietate == null || proprietate.DeclaringType != clr)
+                if (entityType.FindProperty(Cautare.NumeColoana)?.DeclaringType != entityType)
                     continue;
                 if (clr.GetProperty(Cautare.NumeDenumire) == null)
                     throw new InvalidOperationException(

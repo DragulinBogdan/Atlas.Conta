@@ -627,6 +627,15 @@
         "ValoareTva": "Valoare TVA"
       }
     },
+    "Dimensiune": {
+      "DefaultProperty": "Denumire",
+      "Membri": {
+        "Cautare": "Căutare",
+        "Cod": "Cod",
+        "Denumire": "Denumire",
+        "ID": "ID"
+      }
+    },
     "Document": {
       "DefaultProperty": null,
       "Membri": {

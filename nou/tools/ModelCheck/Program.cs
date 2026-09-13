@@ -226,8 +226,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
             var clr = et.ClrType;
             if (clr == null || !typeof(ICuCautare).IsAssignableFrom(clr))
                 continue;
-            var propCautare = clr.GetProperty(Cautare.NumeColoana);
-            if (propCautare == null || propCautare.DeclaringType != clr)
+            if (et.FindProperty(Cautare.NumeColoana)?.DeclaringType != et)
                 continue;
             var tabel = et.GetTableName();
             if (tabel == null)
@@ -287,8 +286,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
             var clr = et.ClrType;
             if (clr == null || !typeof(ICuCautare).IsAssignableFrom(clr))
                 continue;
-            var propCautare = clr.GetProperty(Cautare.NumeColoana);
-            if (propCautare == null || propCautare.DeclaringType != clr)
+            if (et.FindProperty(Cautare.NumeColoana)?.DeclaringType != et)
                 continue;
             entitati++;
             var tabel = et.GetTableName();
