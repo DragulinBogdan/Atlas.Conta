@@ -49,6 +49,8 @@ public static class ContaSeeder {
         // Nomenclatorul unităților de măsură (felia 16, D16-D2) — tot al
         // nucleului și tot înaintea pachetelor de profil: e FK pe `Produs`.
         SeedUnitatiMasura(os);
+        // Catalogul HG 2139/2004: durata normală e a legii, nu a profilului (F26-D4).
+        SeedClasificariImobilizari(os);
         // Rândul societății raportoare (felia 16, D16-D1): se CREEAZĂ gol dacă
         // lipsește, nu se rescrie niciodată. Referă `Judet` și `ContPropriu`,
         // dar numai dacă cineva le-a cules — rândul gol n-are FK-uri.
@@ -308,6 +310,10 @@ public static class ContaSeeder {
             // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
             // inert (fără politici), ca DSC/ITV/ASM/BPR.
             ("DVI", "Declarație vamală de import", nameof(Dvi)),
+            // Imobilizările: ancore ACTIVE pe ambele profiluri (F26-D4).
+            ("PIF", "Punere în funcțiune", nameof(PunereInFunctiune)),
+            ("CAS", "Ieșire de imobilizări", nameof(IesireImobilizare)),
+            ("AMO", "Amortizare lunară", nameof(AmortizareLunara)),
         ];
         foreach (var t in tipuri)
             Aliniaza<TipDocument>(os, t.Cod, x => x.Cod == t.Cod, tip => {
@@ -494,6 +500,60 @@ public static class ContaSeeder {
     // NU se folosește: rândurile șterse logic rămân șterse, iar indexul unic e
     // filtrat pe `GCRecord = 0` tocmai ca re-crearea să fie posibilă.
     // Public: ModelCheck (alt assembly) probează rescrierea pe calea reală.
+    // Nomenclator de LEGE, ca `RandD300`: fără timbru de proveniență, aliniat pe `Cod` (F26-D4).
+    internal static void SeedClasificariImobilizari(IObjectSpace os) {
+        using var stream = Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream("Atlas.Conta.BackOffice.Module.DatabaseUpdate.SeedData.catalog-mf.csv")
+            ?? throw new InvalidOperationException("Resursa catalog-mf.csv lipsește.");
+        using var reader = new StreamReader(stream);
+        var existente = os.GetObjectsQuery<ClasificareImobilizari>().ToList()
+            .GroupBy(c => c.Cod ?? "", StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        reader.ReadLine(); // header
+        string linie;
+        while ((linie = reader.ReadLine()) != null) {
+            if (string.IsNullOrWhiteSpace(linie))
+                continue;
+            var f = linie.Split('|');
+            var cod = f[0].Trim();
+            // 8 rânduri ANAF n-au cod propriu (sub-variante ale poziției de deasupra); un cod inventat ar deveni cheie de nomenclator (21).
+            if (cod.Length == 0)
+                continue;
+            if (!existente.TryGetValue(cod, out var rand)) {
+                rand = os.CreateObject<ClasificareImobilizari>();
+                rand.Cod = cod;
+                existente[cod] = rand;
+            }
+            rand.Denumire = f[1].Trim();
+            var (min, max) = Banda(f.Length > 2 ? f[2] : "");
+            rand.DurataMinAni = min;
+            rand.DurataMaxAni = max;
+            rand.Grupa = cod.Split('.')[0];
+        }
+    }
+
+    // Gol sau nerecunoscut → fără bandă, deci fără verificare, nu cu una inventată (21).
+    static (int? Min, int? Max) Banda(string text) {
+        var parti = text.Trim().Split('-');
+        return parti.Length == 2 && int.TryParse(parti[0], out var min) && int.TryParse(parti[1], out var max)
+            ? (min, max) : (null, null);
+    }
+
+    /// <summary>Conturile amortizării pentru un tip material de clasă F (F26-D4), pe simboluri de plan.</summary>
+    internal static void SeedPoliticaAmortizare(IObjectSpace os, string codTipMaterial,
+            string simbolAmortizare, string simbolCheltuiala, string simbolCedare) {
+        var tip = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipMaterial);
+        if (tip == null)
+            return;
+        Guid? Cont(string simbol) => os.FirstOrDefault<Cont>(c => c.Simbol == simbol)?.ID;
+        Aliniaza<PoliticaAmortizare>(os, codTipMaterial, p => p.TipMaterialId == tip.ID, politica => {
+            politica.TipMaterialId = tip.ID;
+            politica.ContAmortizareId = Cont(simbolAmortizare);
+            politica.ContCheltuialaAmortizareId = Cont(simbolCheltuiala);
+            politica.ContCheltuialaCedareId = Cont(simbolCedare);
+        });
+    }
+
     public static void SeedUnitatiMasura(IObjectSpace os) {
         var existente = os.GetObjectsQuery<UnitateMasura>()
             .ToDictionary(u => u.Cod, StringComparer.Ordinal);

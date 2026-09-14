@@ -401,6 +401,11 @@ public enum MotivNegenerare {
     [XafDisplayName("Există o închidere pentru o lună ulterioară")] NeCronologica = 4,
     [XafDisplayName("O lună anterioară are un draft de închidere neoperat")] DraftAnterior = 5,
     [XafDisplayName("Perioada fiscală e închisă")] PerioadaInchisa = 6,
+    // Cauzele proprii amortizării lunare; restul se citesc de ambele generatoare (F26-D7).
+    [XafDisplayName("O fișă eligibilă n-are politică de amortizare")] FisaFaraPolitica = 7,
+    [XafDisplayName("Luna are deja o amortizare")] AmortizareVie = 8,
+    [XafDisplayName("Luna precedentă n-are amortizare operată")] LunaLipsa = 9,
+    [XafDisplayName("Nicio fișă eligibilă în lună")] FaraFise = 10,
 }
 
 // Clasa fiscală a partenerului (felia 23, F23-D2) — aceleași patru valori cu
@@ -496,4 +501,57 @@ public enum SursaRezolvata {
     [XafDisplayName("Contul repartitorului predator")] RepartitorPredator,
     [XafDisplayName("Contul repartitorului primitor")] RepartitorPrimitor,
     [XafDisplayName("Contul explicit, ca rezervă")] FallbackExplicit,
+}
+
+// ═══ Felia 26 — imobilizări și amortizare (F26-D1…D7) ══════════════════════
+
+public enum FelMiscareImobilizare {
+    [XafDisplayName("Intrare")] Intrare = 1,
+    [XafDisplayName("Modernizare")] Modernizare = 2,
+    [XafDisplayName("Revizuire a parametrilor")] Revizuire = 3,
+    [XafDisplayName("Amortizare")] Amortizare = 4,
+    [XafDisplayName("Ieșire")] Iesire = 5,
+    // Rezervat: coloanele există, aritmetica nu (F26-D9 / F26-r6).
+    [XafDisplayName("Reevaluare")] Reevaluare = 6,
+}
+
+public enum MetodaAmortizare {
+    [XafDisplayName("Liniară")] Liniara = 1,
+    [XafDisplayName("Accelerată")] Accelerata = 2,
+    [XafDisplayName("Degresivă")] Degresiva = 3,
+}
+
+public enum StareImobilizare {
+    [XafDisplayName("Nouă")] Noua = 1,
+    [XafDisplayName("În funcțiune")] InFunctiune = 2,
+    [XafDisplayName("Ieșită")] Iesita = 3,
+}
+
+// Cheia pe care `RegulaDeductibilitate` leagă plafoanele legii (F26-D4).
+public enum CategorieFiscala {
+    [XafDisplayName("Standard")] Standard = 1,
+    [XafDisplayName("Vehicul de persoane, maximum 9 locuri")] VehiculPersoaneMax9Locuri = 2,
+    [XafDisplayName("Sediu social în locuință")] SediuSocialInLocuinta = 3,
+}
+
+public enum FelDeductibilitate {
+    [XafDisplayName("Plafon lunar")] PlafonLunar = 1,
+    [XafDisplayName("Procent")] Procent = 2,
+}
+
+public enum FelLiniePif {
+    [XafDisplayName("Intrare")] Intrare = 1,
+    [XafDisplayName("Modernizare")] Modernizare = 2,
+    [XafDisplayName("Revizuire a parametrilor")] Revizuire = 3,
+}
+
+public enum FelLinieIesire {
+    [XafDisplayName("Amortizare cumulată")] AmortizareCumulata = 1,
+    [XafDisplayName("Valoare rămasă")] ValoareRamasa = 2,
+}
+
+public enum CauzaIesire {
+    [XafDisplayName("Casare")] Casare = 1,
+    [XafDisplayName("Vânzare")] Vanzare = 2,
+    [XafDisplayName("Lipsă")] Lipsa = 3,
 }

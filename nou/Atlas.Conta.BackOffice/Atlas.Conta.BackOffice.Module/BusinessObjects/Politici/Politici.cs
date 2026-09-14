@@ -697,3 +697,58 @@ public class PoliticaTvaImplicit : BaseObject, ICuProvenienta {
         CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
     public virtual TipTva TipTva { get; set; }
 }
+
+// Conturile amortizării per tip material de clasă F (F26-D4).
+[NavigationItem("Politici")]
+[XafDisplayName("Politică de amortizare")]
+public class PoliticaAmortizare : BaseObject, ICuProvenienta {
+    // F23-D4
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
+    public virtual Guid TipMaterialId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip (cont/clasă)")]
+    [RuleRequiredField("PoliticaAmortizare_TipMaterial_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Tipul de material este obligatoriu.")]
+    public virtual TipMaterial TipMaterial { get; set; }
+
+    public virtual Guid? ContAmortizareId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cont de amortizare")]
+    public virtual Cont ContAmortizare { get; set; }
+    public virtual Guid? ContCheltuialaAmortizareId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cont de cheltuială cu amortizarea")]
+    public virtual Cont ContCheltuialaAmortizare { get; set; }
+    public virtual Guid? ContCheltuialaCedareId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cont de cheltuială cu cedarea")]
+    public virtual Cont ContCheltuialaCedare { get; set; }
+}
+
+// Limitarea fiscală a amortizării, ca date cu valabilitate în timp (F26-D4/D16).
+[NavigationItem("Politici")]
+[XafDisplayName("Regulă de deductibilitate")]
+public class RegulaDeductibilitate : BaseObject, ICuProvenienta {
+    // F23-D4
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
+    [XafDisplayName("Categorie fiscală")]
+    public virtual CategorieFiscala Categorie { get; set; }
+    [XafDisplayName("Doar la utilizare neexclusivă")]
+    public virtual bool DoarNeexclusiv { get; set; }
+    [XafDisplayName("Fel")]
+    public virtual FelDeductibilitate Fel { get; set; }
+    // Lei/lună la `PlafonLunar`, procent la `Procent` (0 = nedeductibil).
+    public virtual decimal Valoare { get; set; }
+    [XafDisplayName("De la")]
+    public virtual DateOnly DeLa { get; set; }
+    [XafDisplayName("Până la")]
+    public virtual DateOnly? PanaLa { get; set; }
+    [XafDisplayName("Temei")]
+    public virtual string Temei { get; set; }
+}

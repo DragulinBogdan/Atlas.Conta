@@ -114,6 +114,13 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // de BAZĂ (fără tabelă de detaliu) și cu legătura n→m spre facturi.
         public DbSet<Dvi> Dvi { get; set; }
         public DbSet<DviFactura> DviFacturi { get; set; }
+        // Cele trei derivate ale imobilizărilor (F26-D5/D6/D7).
+        public DbSet<PunereInFunctiune> PuneriInFunctiune { get; set; }
+        public DbSet<PunereInFunctiuneDetaliu> PuneriInFunctiuneDetalii { get; set; }
+        public DbSet<IesireImobilizare> IesiriImobilizari { get; set; }
+        public DbSet<IesireImobilizareDetaliu> IesiriImobilizariDetalii { get; set; }
+        public DbSet<AmortizareLunara> AmortizariLunare { get; set; }
+        public DbSet<AmortizareLunaraDetaliu> AmortizariLunareDetalii { get; set; }
         public DbSet<Imperechere> Imperecheri { get; set; }
 
         // Registre + politici
@@ -129,6 +136,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Bonus: numele DbSet-ului poate coincide cu al clasei fără să ceară
         // alias-ul `using ...Entitate =` de care are nevoie `RegistruContabil`.
         public DbSet<RegistruTva> RegistruTva { get; set; }
+        public DbSet<RegistruImobilizari> RegistruImobilizari { get; set; }
+        public DbSet<Imobilizare> Imobilizari { get; set; }
+        public DbSet<ClasificareImobilizari> ClasificariImobilizari { get; set; }
+        public DbSet<PoliticaAmortizare> PoliticiAmortizare { get; set; }
+        public DbSet<RegulaDeductibilitate> ReguliDeductibilitate { get; set; }
         public DbSet<TipDocument> TipuriDocument { get; set; }
         public DbSet<RegulaStoc> ReguliStoc { get; set; }
         public DbSet<RegulaContare> ReguliContare { get; set; }
@@ -237,6 +249,52 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<DviFactura>()
                 .HasOne(f => f.Factura).WithMany().HasForeignKey(f => f.FacturaId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // FK-uri `Restrict`: convenția globală `SetNull`/`Cascade` ar goli tăcut fișa sau linia-sursă (F26-D1/D2/D5).
+            modelBuilder.Entity<Imobilizare>(b => {
+                b.HasOne(f => f.TipMaterial).WithMany().HasForeignKey(f => f.TipMaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.Clasificare).WithMany().HasForeignKey(f => f.ClasificareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.Loc).WithMany().HasForeignKey(f => f.LocId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.CentruCost).WithMany().HasForeignKey(f => f.CentruCostId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.Responsabil).WithMany().HasForeignKey(f => f.ResponsabilId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<RegistruImobilizari>(b => {
+                b.HasOne(r => r.Imobilizare).WithMany().HasForeignKey(r => r.ImobilizareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(r => r.Repartitor).WithMany().HasForeignKey(r => r.RepartitorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(r => r.Document).WithMany().HasForeignKey(r => r.DocumentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(r => r.Detaliu).WithMany().HasForeignKey(r => r.DetaliuId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<PunereInFunctiuneDetaliu>(b => {
+                b.HasOne(d => d.Imobilizare).WithMany().HasForeignKey(d => d.ImobilizareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(d => d.LinieSursa).WithMany().HasForeignKey(d => d.LinieSursaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<IesireImobilizareDetaliu>()
+                .HasOne(d => d.Imobilizare).WithMany().HasForeignKey(d => d.ImobilizareId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<AmortizareLunaraDetaliu>()
+                .HasOne(d => d.Imobilizare).WithMany().HasForeignKey(d => d.ImobilizareId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<PoliticaAmortizare>(b => {
+                b.HasOne(p => p.TipMaterial).WithMany().HasForeignKey(p => p.TipMaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(p => p.ContAmortizare).WithMany().HasForeignKey(p => p.ContAmortizareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(p => p.ContCheltuialaAmortizare).WithMany()
+                    .HasForeignKey(p => p.ContCheltuialaAmortizareId).OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(p => p.ContCheltuialaCedare).WithMany()
+                    .HasForeignKey(p => p.ContCheltuialaCedareId).OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Trasabilitatea acoperirii per linie FCL (design P2 §3): linia DSC
             // referă linia FCL sursă printr-un FK real cross-document. Restrict —
@@ -458,6 +516,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasIndex(c => c.Cod).IsUnique().HasFilter(viu);
             modelBuilder.Entity<TipMaterial>()
                 .HasIndex(t => t.Cod).IsUnique().HasFilter(viu);
+
+            // (5) Identitatea fișei, cheia de seed a catalogului, un rând de politică per tip (F26-D4).
+            modelBuilder.Entity<Imobilizare>()
+                .HasIndex(f => f.NumarInventar).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<ClasificareImobilizari>()
+                .HasIndex(c => c.Cod).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<PoliticaAmortizare>()
+                .HasIndex(p => p.TipMaterialId).IsUnique().HasFilter(viu);
         }
 
         // Căutarea fără diacritice pe PROIECȚII (decizia 78): `Cautare.

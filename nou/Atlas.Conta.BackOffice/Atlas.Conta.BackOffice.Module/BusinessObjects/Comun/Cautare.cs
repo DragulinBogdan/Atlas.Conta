@@ -126,12 +126,14 @@ public static class Cautare {
 
     /// <summary>
     /// Numele proprietății de cod a unui nomenclator căutabil: <c>Cod</c>,
-    /// altfel <c>Simbol</c> (planul de conturi), altfel <c>null</c>. O singură
-    /// deducere, consumată de configurarea EF, de gardian și de ModelCheck.
+    /// altfel <c>Simbol</c> (planul de conturi), altfel <c>NumarInventar</c>
+    /// (fișa de imobilizare), altfel <c>null</c>. O singură deducere, consumată
+    /// de configurarea EF, de gardian și de ModelCheck.
     /// </summary>
     public static string NumeCod(Type entitate) =>
         entitate.GetProperty("Cod") != null ? "Cod" :
-        entitate.GetProperty("Simbol") != null ? "Simbol" : null;
+        entitate.GetProperty("Simbol") != null ? "Simbol" :
+        entitate.GetProperty("NumarInventar") != null ? "NumarInventar" : null;
 
     /// <summary>
     /// Numele constraint-ului CHECK „coloana nu e goală” (77-r2) — apare în

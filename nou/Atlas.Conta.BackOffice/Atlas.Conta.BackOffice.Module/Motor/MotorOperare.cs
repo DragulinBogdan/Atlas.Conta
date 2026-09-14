@@ -382,6 +382,10 @@ public static class MotorOperare {
             rand.Tva = t.Tva;
         }
 
+        // 3b. Registrul PROPRIU al tipului, prin interfață (F26-D3).
+        if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
+            cuRegistruPropriu.MaterializeazaRegistrul(os);
+
         // 4. Documentul conex (decizia 17, 00 §6): draft autogenerat în aceeași
         //    tranzacție cu operarea sursei; utilizatorul îl completează și îl
         //    operează separat (abia atunci mișcă registre și primește număr).
@@ -594,6 +598,8 @@ public static class MotorOperare {
         os.Delete(randuriStoc);
         os.Delete(randuriContabile);
         os.Delete(randuriTva);
+        if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
+            cuRegistruPropriu.EliminaRegistrul(os);
         doc.Stare = StareDocument.Draft;
         doc.DataOperare = null;
         os.CommitChanges();
@@ -669,6 +675,8 @@ public static class MotorOperare {
             invers.Tva = -r.Tva;
             invers.Storno = true;
         }
+        if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
+            cuRegistruPropriu.StorneazaRegistrul(os, dataStorno);
 
         doc.Stare = StareDocument.Stornat;
         os.CommitChanges();

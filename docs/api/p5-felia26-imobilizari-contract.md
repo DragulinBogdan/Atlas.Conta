@@ -181,8 +181,10 @@ public class RegulaDeductibilitate : BaseObject, ICuProvenienta {
 
 Mecanismul (`AmortizareService.Deductibil`): din regulile valabile la data
 rândului lunar, potrivite pe `(Categorie, DoarNeexclusiv ⇒ !UtilizareExclusiva)`,
-se aplică în ordine fixă `PlafonLunar` apoi `Procent`; fără regulă →
-deductibil = fiscal; `DurataFiscalaLuni = 0` → fiscal 0. Seed privat (rândurile
+se aplică în ordine fixă `PlafonLunar` apoi `Procent`; per `(Categorie, Fel)`
+câștigă rândul cu `DeLa` maxim ≤ data rândului lunar (`PanaLa` doar când legea
+are capăt explicit); fără regulă → deductibil = fiscal; `DurataFiscalaLuni = 0`
+→ fiscal 0. Seed privat (rândurile
 de pornire; textul legii pe 2026 îl confirmă owner-ul la pasul 1 —):
 
 | Categorie | DoarNeexclusiv | Fel | Valoare | DeLa | Temei |
@@ -480,6 +482,7 @@ nou/tools/Import1C — rulare integrală, proces detașat + monitor (50d), rapor
 - **F26-r12** `RegistruImobilizari` pe `ServerView` (85).
 - **F26-r13** migrarea fișelor din 1C (`IntroducereSolduriInitialeMF` → PIF de deschidere cu inițialele): conectorul, nu mecanismul.
 - **F26-r14** reguli de eligibilitate a metodei fiscale pe categorie (accelerata doar pe echipamente/calculatoare, art. 28 (12)) — mecanism nou dacă se cere refuz, azi doar documentat.
+- **F26-r15** cele 4 poziții-părinte din catalog ale căror benzi stau pe sub-variante fără cod (`2.1.6.1.1.`, `2.1.6.1.2.`, `2.1.17.4.`, `2.1.17.5.`): fără verificare a duratei fiscale până la o decizie (cod derivat sau banda unită pe părinte).
 
 ### F26-D16 — Cadrul pentru evoluția legii (rezumat, ca regulă durabilă)
 
@@ -521,6 +524,25 @@ nou cu `DeLa`?" — dacă da, e seed; dacă nu, e felie.
    `ContaUiBaseline`, `[XafDisplayName]`, `--dump-metadata`; hook-urile de
    registru ale PIF/CAS scrise, AMO schelet. Verificare: ModelCheck 0 FAIL × 2,
    `has-pending-model-changes` curat. Regula de oprire: D14.
+   *Executat 2026-09-14, fără opriri; devierile raportate și acceptate*:
+   catalogul seed-uiește 590 de poziții din 598 (8 sub-variante „a)/b)" fără
+   cod propriu sunt sărite, părinții lor rămân fără bandă — F26-r15);
+   `ClasificareImobilizari` nu e `ICuProvenienta` (ar fi intrat forțat în
+   `TipuriConfigurabile`), seed prin upsert pe cod ca `RandD300`; pe bugetar
+   perechile de amortizare sunt FRUNZELE `280.08.01`/`280.08.09`/`281.03.01`/
+   `281.03.03` (nodurile `.00` din D4 nu există); `VerificareProfilService`
+   primește etichetele celor două politici (vocabularul raportului de profil,
+   obligatoriu pentru `TipuriConfigurabile`, nu motor); `Cautare.NumeCod` cade și
+   pe `NumarInventar`; inițialele sunt REFUZATE pe intrarea cu linie sursă;
+   `ValoareReziduala` opțională; deductibilul inițial = fiscalul inițial;
+   scena probelor e în 2027 (lunile 2026 sunt ocupate de suită), cu perioade
+   create și purjate de bloc; `RegulaDeductibilitate` fără `PanaLa` ⇒ D7 alege
+   per `(Categorie, Fel)` rândul cu `DeLa` maxim ≤ data rândului lunar.
+   `PoateFiStins = false` declarat și pe PIF/CAS (86g, proba `IMO-V29`);
+   `GardianEditare.Originale` devine `internal` pentru gardianul fișei (fără
+   duplicare). Migrația `20260914113154_F26Imobilizari` (11 tabele noi, zero
+   atingeri pe cele existente); ModelCheck bugetar 991/0, privat 1106/0
+   (re-rulate independent după curățenia de cod slim).
 2. **`AmortizareService` + hook-urile de operare + `E2E-IMO` + probele pure + `RECONCILIERE-MF`** —
    `CotaLunara`, `Deductibil`, `Situatie`, `Analizeaza`/`Incearca`/
    `Previzualizeaza`/`Genereaza`, `LiniiIesire`, `ValideazaOperare` pe cele trei

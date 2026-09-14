@@ -187,7 +187,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (obj is ICuCautare rand && !EsteSters(os, obj))
                 VerificaCodDenumire(rand, erori);
             // (j) F23-D4 — proveniența, tot al INTERFEȚEI și tot înaintea
-            // switch-ului: cele 17 tipuri `ICuProvenienta` n-au toate un `case`.
+            // switch-ului: cele 19 tipuri `ICuProvenienta` n-au toate un `case`.
             if (obj is ICuProvenienta provenit && !EsteSters(os, obj)) {
                 VerificaProvenienta(os, provenit, erori);
                 // (k) Review advers F24 — enum-urile fără membru 0 (convenția din
@@ -214,9 +214,11 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 // de TVA sunt declarații — o editare directă ar fi exact genul de
                 // „corecție" pe care append-only-ul o interzice.
                 case RegistruTva:
+                // Al patrulea registru, scris prin `IDocumentCuRegistruPropriu` (F26-D2/D3).
+                case RegistruImobilizari:
                     if (!registruRaportat) {
                         registruRaportat = true;
-                        erori.Add("Registrele (stoc/contabil/TVA) se scriu doar de motor, la operare — "
+                        erori.Add("Registrele (stoc/contabil/TVA/imobilizări) se scriu doar de motor, la operare — "
                             + "nu se creează, modifică sau șterg direct.");
                     }
                     break;
@@ -1035,7 +1037,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     // Security\SecuredEFCoreObjectSpace.cs:57), deci `DbContext` e disponibil pe
     // ambele. Null = nu se poate determina (alt provider / Detached / Added) —
     // apelantul cade pe valorile curente.
-    static Microsoft.EntityFrameworkCore.ChangeTracking.PropertyValues Originale(
+    internal static Microsoft.EntityFrameworkCore.ChangeTracking.PropertyValues Originale(
             IObjectSpace os, object obj) {
         if (os is not EFCoreObjectSpace efCore)
             return null;

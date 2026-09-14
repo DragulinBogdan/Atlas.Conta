@@ -15,6 +15,7 @@
     <EmbeddedResource Include="Model.DesignedDiffs.xafml" />
     <EmbeddedResource Include="DatabaseUpdate\SeedData\plan-conturi.csv" />
     <EmbeddedResource Include="DatabaseUpdate\SeedData\plan-conturi-omfp.csv" />
+    <EmbeddedResource Include="DatabaseUpdate\SeedData\catalog-mf.csv" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Atlas.DXF.Core" />

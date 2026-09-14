@@ -36,6 +36,13 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     const string ListView = "_ListView";
     // 85c — grila de culegere nested nu se face peste o colecție server.
     static readonly Action<IModelListView> Culegere = lv => lv.DataAccessMode = CollectionSourceDataAccessMode.Client;
+    // F26-D12 — grila nested pe care operatorul nu o culege.
+    static readonly Action<IModelListView> ReadOnly = lv => {
+        Culegere(lv);
+        lv.AllowEdit = false;
+        lv.AllowNew = false;
+        lv.AllowDelete = false;
+    };
 
     // Coloană pe o CALE (`Factura.Numar`) — selectorul tipizat al fluent-ului
     // Atlas.DXF exprimă doar membri direcți.
@@ -60,6 +67,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         NotaContabila(registry);
         Asamblare(registry);
         Dvi(registry);
+        Imobilizari(registry);
     }
 
     // Ascunderea generică a scalarilor `{Nav}Id` care au navigație pereche
@@ -661,5 +669,124 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
                 .Group("GrupStare", "Stare & totaluri", g => g
                     .Item(x => x.Baza)
                     .Item(x => x.Taxa)));
+    }
+
+    // Imobilizările (F26-D12); registrul rămâne `Server` implicit, ca celelalte trei (85).
+    static void Imobilizari(UiBaselineRegistry registry) {
+        registry.For<Imobilizare>().HideForeignKeys();
+        registry.For<Imobilizare>()
+            .Layout(l => l
+                .Group("Antet", null, g => g
+                    .Group("GrupIdentificare", "Identificare", d => d
+                        .Item(x => x.NumarInventar)
+                        .Item(x => x.Denumire))
+                    .Group("GrupClasificare", "Clasificare", d => d
+                        .Item(x => x.TipMaterial)
+                        .Item(x => x.Clasificare))
+                    .Group("GrupLoc", "Loc & responsabilitate", d => d
+                        .Item(x => x.Loc)
+                        .Item(x => x.CentruCost)
+                        .Item(x => x.Responsabil))
+                    .Group("GrupStareFisa", "Stare", d => d
+                        .Item(x => x.Stare)
+                        .Item(x => x.DataPunereInFunctiune)
+                        .Item(x => x.DataIesire))));
+
+        registry.For<ClasificareImobilizari>()
+            .ListView(nameof(ClasificareImobilizari) + ListView)
+            .Column(c => c.Cod, c => c.Index = 0)
+            .Column(c => c.Denumire, c => c.Index = 1)
+            .Column(c => c.DurataMinAni, c => c.Index = 2)
+            .Column(c => c.DurataMaxAni, c => c.Index = 3)
+            .Column(c => c.Grupa, c => c.Index = 4);
+
+        var pif = registry.For<PunereInFunctiuneDetaliu>();
+        pif.HideForeignKeys();
+        pif.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
+            d => d.ImobilizareId, d => d.LinieSursaId);
+        pif.ListView(nameof(PunereInFunctiuneDetaliu) + ListView, Culegere)
+            .Column(d => d.Imobilizare, c => c.Index = 0)
+            .Column(d => d.Fel, c => c.Index = 1)
+            .Column(d => d.TipMaterial, c => c.Index = 2)
+            .Column(d => d.LinieSursa, c => { c.Index = 3; c.Caption = "Linie sursă"; })
+            .Column(d => d.Valoare, c => c.Index = 4)
+            .Column(d => d.ValoareFiscala, c => c.Index = 5)
+            .Column(d => d.Metoda, c => c.Index = 6)
+            .Column(d => d.DurataLuni, c => c.Index = 7)
+            .Column(d => d.ValoareReziduala, c => c.Index = 8)
+            .Column(d => d.MetodaFiscala, c => c.Index = 9)
+            .Column(d => d.DurataFiscalaLuni, c => c.Index = 10)
+            .Column(d => d.CategorieFiscala, c => c.Index = 11)
+            .Column(d => d.UtilizareExclusiva, c => c.Index = 12)
+            .Column(d => d.AmortizareInitiala, c => c.Index = 13)
+            .Column(d => d.AmortizareFiscalaInitiala, c => c.Index = 14)
+            .Column(d => d.LuniAmortizateInitial, c => c.Index = 15)
+            .Column(d => d.Cantitate, c => c.Index = -1)
+            .Column(d => d.Lot, c => c.Index = -1)
+            .Column(d => d.TipTva, c => c.Index = -1)
+            .Column(d => d.ValoareTva, c => c.Index = -1);
+
+        var cas = registry.For<IesireImobilizareDetaliu>();
+        cas.HideForeignKeys();
+        cas.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
+            d => d.ImobilizareId, d => d.ContDebitId, d => d.ContCreditId,
+            d => d.RepartitorDebitId, d => d.RepartitorCreditId);
+        cas.ListView(nameof(IesireImobilizareDetaliu) + ListView, ReadOnly)
+            .Column(d => d.Imobilizare, c => c.Index = 0)
+            .Column(d => d.Fel, c => c.Index = 1)
+            .Column(d => d.ContDebit, c => c.Index = 2)
+            .Column(d => d.ContCredit, c => c.Index = 3)
+            .Column(d => d.Valoare, c => c.Index = 4)
+            .Column(d => d.RepartitorDebit, c => c.Index = 5)
+            .Column(d => d.RepartitorCredit, c => c.Index = 6)
+            .Column(d => d.TipMaterial, c => c.Index = -1)
+            .Column(d => d.Cantitate, c => c.Index = -1)
+            .Column(d => d.Lot, c => c.Index = -1)
+            .Column(d => d.TipTva, c => c.Index = -1)
+            .Column(d => d.ValoareTva, c => c.Index = -1);
+        registry.For<IesireImobilizare>()
+            .Layout(l => l
+                .Group("Antet", null, g => g
+                    .Group("GrupIesire", "Ieșire", d => d
+                        .Item(x => x.Cauza))));
+
+        var amo = registry.For<AmortizareLunaraDetaliu>();
+        amo.HideForeignKeys();
+        amo.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
+            d => d.ImobilizareId, d => d.ContDebitId, d => d.ContCreditId,
+            d => d.RepartitorDebitId, d => d.RepartitorCreditId, d => d.CentruCostId);
+        amo.ListView(nameof(AmortizareLunaraDetaliu) + ListView, ReadOnly)
+            .Column(d => d.Imobilizare, c => c.Index = 0)
+            .Column(d => d.Valoare, c => { c.Index = 1; c.Caption = "Amortizare contabilă"; })
+            .Column(d => d.ValoareFiscala, c => c.Index = 2)
+            .Column(d => d.ValoareDeductibila, c => c.Index = 3)
+            .Column(d => d.ContDebit, c => c.Index = 4)
+            .Column(d => d.ContCredit, c => c.Index = 5)
+            .Column(d => d.RepartitorDebit, c => c.Index = 6)
+            .Column(d => d.CentruCost, c => c.Index = 7)
+            .Column(d => d.TipMaterial, c => c.Index = -1)
+            .Column(d => d.Cantitate, c => c.Index = -1)
+            .Column(d => d.Lot, c => c.Index = -1)
+            .Column(d => d.TipTva, c => c.Index = -1)
+            .Column(d => d.ValoareTva, c => c.Index = -1)
+            .Column(d => d.RepartitorCredit, c => c.Index = -1);
+
+        registry.For<RegistruImobilizari>().HideForeignKeys();
+        registry.For<RegistruImobilizari>()
+            .ListView(nameof(RegistruImobilizari) + ListView)
+            .Column(r => r.Data, c => c.Index = 0)
+            .Column(r => r.Imobilizare, c => c.Index = 1)
+            .Column(r => r.Fel, c => c.Index = 2)
+            .Column(r => r.Valoare, c => c.Index = 3)
+            .Column(r => r.ValoareFiscala, c => c.Index = 4)
+            .Column(r => r.Amortizare, c => c.Index = 5)
+            .Column(r => r.AmortizareFiscala, c => c.Index = 6)
+            .Column(r => r.AmortizareDeductibila, c => c.Index = 7)
+            .Column(r => r.Luni, c => c.Index = 8)
+            .Column(r => r.Repartitor, c => c.Index = 9)
+            .Column(r => r.Storno, c => c.Index = 10)
+            // 85b — `Document`/`DocumentDetaliu` n-au DefaultProperty: ar apărea ca GUID.
+            .Column(r => r.Document, c => c.Index = -1)
+            .Column(r => r.Detaliu, c => c.Index = -1);
     }
 }
