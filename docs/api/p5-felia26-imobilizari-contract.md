@@ -483,6 +483,7 @@ nou/tools/Import1C — rulare integrală, proces detașat + monitor (50d), rapor
 - **F26-r13** migrarea fișelor din 1C (`IntroducereSolduriInitialeMF` → PIF de deschidere cu inițialele): conectorul, nu mecanismul.
 - **F26-r14** reguli de eligibilitate a metodei fiscale pe categorie (accelerata doar pe echipamente/calculatoare, art. 28 (12)) — mecanism nou dacă se cere refuz, azi doar documentat.
 - **F26-r15** cele 4 poziții-părinte din catalog ale căror benzi stau pe sub-variante fără cod (`2.1.6.1.1.`, `2.1.6.1.2.`, `2.1.17.4.`, `2.1.17.5.`): fără verificare a duratei fiscale până la o decizie (cod derivat sau banda unită pe părinte).
+- **F26-r16** clasificația bugetară a cheltuielii cu amortizarea pe profilul bugetar: contul de cheltuială are defalcarea `E` în planul instituției, iar linia AMO n-are de unde lua Codul economic (nici fișa, nici politica, nici linia) — decizia owner-ului între dimensiune pe fișă/politică/linie și defalcare `S` în seed; până atunci AMO se generează pe bugetar, dar nu se operează (proba `IMO-V31c`, pasul 2).
 
 ### F26-D16 — Cadrul pentru evoluția legii (rezumat, ca regulă durabilă)
 
@@ -550,6 +551,40 @@ nou cu `DeLa`?" — dacă da, e seed; dacă nu, e felie.
    SELECT only) în `1C/mf/`; blocul integral pe ambele profiluri. Apoi
    **Import1C integral** (detașat + monitor) cu diff sortat contra
    baseline-ului — după pasul 2 `Motor/*` nu se mai atinge.
+   *Executat 2026-09-14, două opriri raportate (nu blocante), devierile
+   acceptate de main*: (1) **baza „la ultimul eveniment" = situația la SFÂRȘITUL
+   lunii evenimentului**, iar restul curent și lunile se citesc la sfârșitul
+   lunii precedente — luna evenimentului postează încă cota veche, parametrii
+   noi curg din luna următoare indiferent de zi; e formula OBSERVATĂ în Flax
+   (invertor modernizat pe 21.09.2023 → 1 314,55 din 10.2023; CENTRU IT
+   reevaluat pe 01.07.2024 → 1 255,50 din 08.2024), raportul `1C/07` §5.4
+   spunea imprecis „în 2023-09"; cifrele D13 rămân identice (150,00; 4 800/44).
+   (2) Eligibilitatea fișei e după DATE (`DataPunereInFunctiune` < prima zi,
+   `DataIesire` > ultima zi), nu după `Stare`: o fișă ieșită într-o lună
+   ulterioară e legitimă pe AMO-ul lunii curente; verificarea `InFunctiune` din
+   `AmortizareLunara.ValideazaOperare` a fost înlocuită de compararea mulțimii
+   de linii. (3) Linia cu contabil 0 și fiscal > 0 rămâne FĂRĂ conturi (motorul
+   sare linia explicită fără conturi; cu conturi ar posta o notă de 0), locul
+   rămâne obligatoriu; conturile se cer doar la `Valoare ≠ 0`. (4) `Degresiva`
+   cere durata multiplu de 12 (graficul e pe ani), refuz la PIF pe ambele
+   metode. (5) `Previzualizeaza` are un al patrulea parametru opțional
+   `inlocuieste` — gardianul de operare se exclude pe sine. (6) Linia AMO n-are
+   `Descriere` (ar fi coloană nouă): FK-ul `Imobilizare` identifică fișa.
+   (7) **Oprire consemnată, deschisă pentru owner (F26-r16)**: pe bugetar nota de
+   amortizare NU se poate posta — planul instituției dă contului de cheltuială
+   cu amortizarea defalcarea `E` (`plan-conturi.csv`), deci motorul cere Cod
+   economic, iar nici fișa, nici politica, nici linia nu-l poartă (conturile
+   CAS au `S`, de aceea pasul 1 n-a lovit-o); sursa lui e decizie de model
+   (coloană pe fișă/politică/linie sau defalcare `S` în seed), nu cârpeală de
+   generator — proba `IMO-V31c` o ține la vedere, lanțul lunar (AMO operate,
+   storno, CAS după AMO) rulează pe privat, generarea/cele trei cifre/probele
+   pure rulează pe ambele profiluri. Probele: `IMO-V30…V57` (+13 bugetar, +33
+   privat); `RECONCILIERE-MF` pe 118 active / 2 559 rânduri lunare din Flax:
+   2 502 potriviri exacte + 44 rânduri „ultima lună" (99,49 %), diferențele
+   rămase sunt 13 rânduri din 05.2023 postate printr-un document MANUAL de recuperare care
+   cumulează mai multe luni (raportate cu activ/lună/așteptat/postat; tabelul
+   intră în decizia 087). ModelCheck: bugetar 1004/0, privat 1139/0;
+   `has-pending-model-changes`: niciuna.
 3. **API** — `Api/Imobilizari/`, `Api/Pif/`, `Api/Cas/`, `Api/Amo/`,
    controllerele, `api/clasificari`, `linii-sursa`, `E2E-API-IMO`, oracolele,
    `verifica:drift` (WebApi OPRIT), probele HTTP pe host viu.

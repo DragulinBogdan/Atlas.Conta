@@ -234,7 +234,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
             var obiectStocare = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier
                 .Table(tabel, et.GetSchema());
             string Coloana(string membru) => et.FindProperty(membru)?.GetColumnName(obiectStocare);
-            var colCod = Coloana("Cod") ?? Coloana("Simbol");
+            var colCod = Cautare.NumeCod(clr) is { } numeCod ? Coloana(numeCod) : null;
             var colDenumire = Coloana("Denumire");
             var colCautare = Coloana(Cautare.NumeColoana);
 
@@ -4074,6 +4074,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaApiDvi();
     // Felia 26, pasul 1 — imobilizările pe scenă (IMO-V0…V28).
     VerificaImobilizari(privat: true);
+    // Felia 26, pasul 2 — formula contra cifrelor postate în Flax (RECONCILIERE-MF).
+    VerificaReconciliereMf();
     // Decizia 85 — modul de acces al ListView-urilor (D85-M1/M2/R1/R2/R3).
     VerificaD85(privat: true);
 
@@ -22791,6 +22793,153 @@ void VerificaDvi(bool privat) {
 }
 
 // ============= Felia API DVI (F25) — E2E-API-DVI (privat) =============
+// RECONCILIERE-MF (F26-D13): formula noastră (`AmortizareService.CotaLunara`)
+// contra cifrelor POSTATE în Flax, lună cu lună. Fixture-ul e gitignored
+// (`1C/mf/`), deci blocul se SARE unde nu există — nu pică. Diferențele se
+// RAPORTEAZĂ (21, 35b): sursa externă e evidență, niciodată canonic.
+void VerificaReconciliereMf() {
+    var proiect = new DirectoryInfo(MetadataDump.DirectorProiect());
+    var radacina = proiect.Parent?.Parent?.Parent;
+    var caleParametri = radacina == null ? null : Path.Combine(radacina.FullName, "1C", "mf", "esantion-parametri.csv");
+    var caleAmortizare = radacina == null ? null : Path.Combine(radacina.FullName, "1C", "mf", "esantion-amortizare.csv");
+    if (caleParametri == null || !File.Exists(caleParametri) || !File.Exists(caleAmortizare)) {
+        Console.WriteLine("     SĂRIT (RECONCILIERE-MF): fixture-ul `1C/mf/` lipsește (folder gitignored) — "
+            + "reconcilierea cu Flax rulează doar unde există extrasul.");
+        return;
+    }
+
+    var cultura = System.Globalization.CultureInfo.InvariantCulture;
+    var stricate = new List<string>();
+    List<string[]> Citeste(string cale, int coloane) {
+        var iesire = new List<string[]>();
+        var numar = 1;
+        foreach (var linie in File.ReadAllLines(cale).Skip(1)) {
+            numar++;
+            if (linie.Trim().Length == 0)
+                continue;
+            var parti = linie.Split(';');
+            if (parti.Length < coloane)
+                stricate.Add($"{Path.GetFileName(cale)}:{numar}");
+            else
+                iesire.Add(parti);
+        }
+        return iesire;
+    }
+
+    var evenimente = new Dictionary<string, List<(DateOnly Data, decimal Valoare, int Luni)>>();
+    var coduri = new Dictionary<string, string>();
+    foreach (var r in Citeste(caleParametri, 6)) {
+        if (!DateOnly.TryParseExact(r[3], "yyyy-MM-dd", cultura,
+                System.Globalization.DateTimeStyles.None, out var data)
+                || !decimal.TryParse(r[4], System.Globalization.NumberStyles.Number, cultura, out var valoare)
+                || !int.TryParse(r[5], out var luni)) {
+            stricate.Add($"esantion-parametri.csv: „{r[3]}/{r[4]}/{r[5]}”");
+            continue;
+        }
+        coduri[r[0]] = r[1];
+        if (!evenimente.TryGetValue(r[0], out var lista))
+            evenimente[r[0]] = lista = [];
+        lista.Add((data, valoare, luni));
+    }
+
+    var lunare = new Dictionary<string, List<(DateOnly Ultima, string Luna, decimal Suma, string Recorder)>>();
+    foreach (var r in Citeste(caleAmortizare, 4)) {
+        if (!DateOnly.TryParseExact(r[2] + "-01", "yyyy-MM-dd", cultura,
+                System.Globalization.DateTimeStyles.None, out var prima)
+                || !decimal.TryParse(r[3], System.Globalization.NumberStyles.Number, cultura, out var suma)) {
+            stricate.Add($"esantion-amortizare.csv: „{r[2]}/{r[3]}”");
+            continue;
+        }
+        coduri.TryAdd(r[0], r[1]);
+        if (!lunare.TryGetValue(r[0], out var lista))
+            lunare[r[0]] = lista = [];
+        lista.Add((new DateOnly(prima.Year, prima.Month, DateTime.DaysInMonth(prima.Year, prima.Month)),
+            r[2], suma, r.Length > 6 ? r[6] : ""));
+    }
+
+    Check("RECONCILIERE-MF fixture-ul din Flax („1C/mf/esantion-parametri.csv” + „esantion-amortizare.csv”) "
+        + "se parsează integral: blocul pică pe fixture MALFORMAT, niciodată pe diferențe de cifre — o sursă "
+        + "externă e evidență, iar diferențele ei se raportează",
+        stricate.Count == 0 && evenimente.Count > 0 && lunare.Count > 0);
+    if (stricate.Count > 0)
+        Console.WriteLine($"     MĂSURAT (RECONCILIERE-MF): {stricate.Count} rânduri nelizibile — "
+            + string.Join(", ", stricate.Take(5)));
+
+    var primaLunaFixture = lunare.Values.SelectMany(l => l).Min(l => l.Ultima);
+    var potriviri = 0;
+    var ultimeLuni = 0;
+    var nedeterminabile = 0;
+    var totalRanduri = 0;
+    var diferente = new List<(string Cod, string Luna, decimal Asteptat, decimal Postat, string Cauza)>();
+    var dinDocumentManual = 0;
+    var activeCuDiferente = new Dictionary<string, (int Randuri, decimal Abatere)>();
+
+    foreach (var (id, randuriLunare) in lunare.OrderBy(x => coduri.GetValueOrDefault(x.Key, x.Key))) {
+        if (!evenimente.TryGetValue(id, out var ale))
+            continue;
+        var cod = coduri.GetValueOrDefault(id, id);
+        var sortate = ale.OrderBy(e => e.Data).ToList();
+        var luni = randuriLunare.OrderBy(l => l.Ultima).ToList();
+        (DateOnly Data, decimal Valoare, int Luni)? curent = null;
+        var rest = 0m;
+        for (var i = 0; i < luni.Count; i++) {
+            var rand = luni[i];
+            var aplicabil = sortate.LastOrDefault(e => e.Data < new DateOnly(rand.Ultima.Year, rand.Ultima.Month, 1));
+            if (aplicabil.Luni == 0 && aplicabil.Valoare == 0m)
+                continue;
+            totalRanduri++;
+            if (curent == null || curent.Value.Data != aplicabil.Data) {
+                curent = aplicabil;
+                rest = aplicabil.Valoare;
+            }
+            var determinabil = aplicabil.Data >= primaLunaFixture;
+            if (!determinabil)
+                nedeterminabile++;
+            var cota = aplicabil.Luni <= 0 ? 0m : Scara.RotunjesteBani(aplicabil.Valoare / aplicabil.Luni);
+            var asteptat = determinabil ? Math.Min(cota, rest) : cota;
+            var ultimul = i == luni.Count - 1;
+            if (rand.Suma == asteptat)
+                potriviri++;
+            else if (ultimul && rand.Suma < cota)
+                ultimeLuni++;
+            else {
+                var cauza = rand.Recorder.StartsWith("Închidere lună") ? "necunoscută" : "document manual";
+                if (cauza == "document manual")
+                    dinDocumentManual++;
+                diferente.Add((cod, rand.Luna, asteptat, rand.Suma, cauza));
+                var acum = activeCuDiferente.GetValueOrDefault(cod);
+                activeCuDiferente[cod] = (acum.Randuri + 1, acum.Abatere + rand.Suma - asteptat);
+            }
+            rest -= rand.Suma;
+        }
+    }
+
+    var active = lunare.Count(x => evenimente.ContainsKey(x.Key));
+    var procent = totalRanduri == 0 ? 0m
+        : Scara.RotunjesteBani(100m * (potriviri + ultimeLuni) / totalRanduri);
+    Console.WriteLine($"     MĂSURAT (RECONCILIERE-MF): {active} active, {totalRanduri} rânduri lunare; "
+        + $"{potriviri} potriviri exacte, {ultimeLuni} rânduri „ultima lună” (sub cotă), "
+        + $"{diferente.Count} diferențe — {procent}% explicat. "
+        + $"{nedeterminabile} rânduri au evenimentul înaintea primei luni din fixture "
+        + $"({primaLunaFixture:MM.yyyy}), deci restul lor nu e determinabil și se compară doar cu cota.");
+    Console.WriteLine($"     MĂSURAT (RECONCILIERE-MF, cauzele diferențelor): {dinDocumentManual} rânduri "
+        + "vin dintr-un document MANUAL de recuperare (nu din închiderea lunii), care cumulează mai multe "
+        + $"luni într-un singur rând; {diferente.Count - dinDocumentManual} rămân neexplicate. Parametrii unui "
+        + "eveniment se aplică din luna URMĂTOARE lui, indiferent de zi (formula 1C, aceeași în felie).");
+    foreach (var d in diferente.Take(30))
+        Console.WriteLine($"       DIFERENȚĂ {d.Cod} {d.Luna}: așteptat {d.Asteptat}, postat {d.Postat} "
+            + $"(Δ {d.Postat - d.Asteptat}) — {d.Cauza}.");
+    if (diferente.Count > 30)
+        Console.WriteLine($"       … și încă {diferente.Count - 30} diferențe.");
+    foreach (var (cod, sumar) in activeCuDiferente.OrderByDescending(a => Math.Abs(a.Value.Abatere)))
+        Console.WriteLine($"       ACTIV {cod}: {sumar.Randuri} rânduri diferite, abatere cumulată "
+            + $"{sumar.Abatere}.");
+    Check("RECONCILIERE-MF formula feliei („cota fixată la ultimul eveniment, plafonată la restul rămas”) "
+        + "reproduce cifrele postate în Flax pe eșantionul extras; rândurile rămase sunt RAPORTATE mai sus, "
+        + "cu activ, lună, așteptat și postat — blocul nu pică pe ele (21, 35b)",
+        stricate.Count == 0);
+}
+
 // Felia 26 (E2E-IMO): scena stă în 2027/5–12, în afara perioadelor seed-uite (precedentul `D17-V2`); conturile se CITESC din politică.
 void VerificaImobilizari(bool privat) {
     const string Marcaj = "E2E-IMO";
@@ -22835,6 +22984,15 @@ void VerificaImobilizari(bool privat) {
             .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
         pj.Adauga(os.GetObjectsQuery<Proiect>().IgnoreQueryFilters()
             .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        // Tipul de material de scenă (fișa fără politică) și regulile de scenă.
+        var tipuriScena = os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters()
+            .Where(t => t.Cod.StartsWith(Marcaj)).Select(t => t.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<PoliticaAmortizare>().IgnoreQueryFilters()
+            .Where(p => tipuriScena.Contains(p.TipMaterialId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters()
+            .Where(t => t.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegulaDeductibilitate>().IgnoreQueryFilters()
+            .Where(r => r.Temei.StartsWith(Marcaj)).ToList());
         // Perioadele 2027/5–12 sunt artefact de scenă (seed-ul acoperă doar 2026).
         pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
             .Where(p => p.An == An && p.Luna >= 5).ToList());
@@ -23501,6 +23659,706 @@ void VerificaImobilizari(bool privat) {
             fisaDupaAnulare.Stare == StareImobilizare.InFunctiune && fisaDupaAnulare.DataIesire == null
             && !os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.DocumentId == cas.ID)
             && AmortizareService.Situatie(os, idFisa4, Zi(12, 31)).Valoare == 2400m);
+    }
+
+    // ── IMO-V30…V51: amortizarea lunară ───────────────────────────────────────
+    // Scenă PROPRIE: fișele V8–V28 poartă evenimente stornate sau anulate în
+    // mijlocul lunilor 5–8, iar baza lunară le-ar citi ca parametri vii.
+    using (var os = provider.CreateObjectSpace())
+        CurataImo(os);
+
+    Guid idAmoUnitate, idAmoGestiune, idAmoLoc2, idAmoTip, idAmoPolitica;
+    Guid idFa, idFb, idFc, idFd, idFe, idFf, idFg;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 5, 6, 7, 8, 9, 10, 11, 12 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+            p.Inchisa = false;
+        }
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-AMO-UI";
+        unitate.Denumire = "Unitate AMO probă F26";
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-AMO-MAG";
+        gestiune.Denumire = "Gestiune AMO probă F26";
+        var loc2 = os.CreateObject<Gestiune>();
+        loc2.Cod = Marcaj + "-AMO-MAG2";
+        loc2.Denumire = "A doua gestiune AMO probă F26";
+        os.CommitChanges();
+        idAmoUnitate = unitate.ID;
+        idAmoGestiune = gestiune.ID;
+        idAmoLoc2 = loc2.ID;
+
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        idAmoTip = tipF.ID;
+        idAmoPolitica = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == tipF.ID).ID;
+
+        Imobilizare Fisa(string sufix, string denumire) {
+            var f = os.CreateObject<Imobilizare>();
+            f.NumarInventar = Marcaj + "-AMO-" + sufix;
+            f.Denumire = denumire;
+            f.TipMaterialId = tipF.ID;
+            f.LocId = gestiune.ID;
+            return f;
+        }
+        var fa = Fisa("A", "Fișă liniară 3.600 / 36");
+        var fb = Fisa("B", "Autoturism 90.000 / 60, neexclusiv");
+        var fc = Fisa("C", "Autoturism 120.000 / 60, neexclusiv");
+        var fd = Fisa("D", "Autoturism 120.000 / 60, exclusiv");
+        var fe = Fisa("E", "Fișă cu valoare reziduală 600");
+        var ff = Fisa("F", "Fișă cu durata fiscală 24 și contabilă 36");
+        var fg = Fisa("G", "Fișă cu durata contabilă 24 și fiscală 36");
+        os.CommitChanges();
+        idFa = fa.ID; idFb = fb.ID; idFc = fc.ID; idFd = fd.ID;
+        idFe = fe.ID; idFf = ff.ID; idFg = fg.ID;
+
+        var pif = os.CreateObject<PunereInFunctiune>();
+        pif.Data = Zi(5, 5);
+        pif.Predator = unitate;
+        pif.Primitor = gestiune;
+        void Intrare(Guid fisaId, decimal valoare, int durata, int durataFiscala,
+                CategorieFiscala categorie, bool exclusiv, decimal? reziduala,
+                decimal amoInitiala, decimal amoFiscalaInitiala, int luniInitiale) {
+            var l = os.CreateObject<PunereInFunctiuneDetaliu>();
+            l.Document = pif;
+            l.ImobilizareId = fisaId;
+            l.TipMaterialId = tipF.ID;
+            l.Fel = FelLiniePif.Intrare;
+            l.Valoare = valoare;
+            l.Cantitate = 1m;
+            l.Metoda = MetodaAmortizare.Liniara;
+            l.DurataLuni = durata;
+            l.ValoareReziduala = reziduala;
+            l.MetodaFiscala = MetodaAmortizare.Liniara;
+            l.DurataFiscalaLuni = durataFiscala;
+            l.CategorieFiscala = categorie;
+            l.UtilizareExclusiva = exclusiv;
+            l.AmortizareInitiala = amoInitiala;
+            l.AmortizareFiscalaInitiala = amoFiscalaInitiala;
+            l.LuniAmortizateInitial = luniInitiale;
+        }
+        Intrare(idFa, 3600m, 36, 36, CategorieFiscala.Standard, true, null, 0m, 0m, 0);
+        Intrare(idFb, 90000m, 60, 60, CategorieFiscala.VehiculPersoaneMax9Locuri, false, null, 0m, 0m, 0);
+        Intrare(idFc, 120000m, 60, 60, CategorieFiscala.VehiculPersoaneMax9Locuri, false, null, 0m, 0m, 0);
+        Intrare(idFd, 120000m, 60, 60, CategorieFiscala.VehiculPersoaneMax9Locuri, true, null, 0m, 0m, 0);
+        Intrare(idFe, 3600m, 36, 36, CategorieFiscala.Standard, true, 600m, 0m, 0m, 0);
+        Intrare(idFf, 3600m, 36, 24, CategorieFiscala.Standard, true, null, 2400m, 3600m, 24);
+        Intrare(idFg, 3600m, 24, 36, CategorieFiscala.Standard, true, null, 3600m, 2400m, 24);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+
+        var raportMai = AmortizareService.Previzualizeaza(os, An, 5);
+        Console.WriteLine($"     MĂSURAT (IMO-V30/{eticheta}): previzualizarea lunii punerii în funcțiune = "
+            + $"{raportMai.Motiv?.ToString() ?? "<se generează>"}, {raportMai.Linii.Count} linii.");
+        Check($"IMO-V30 ({eticheta}) luna PUNERII în funcțiune nu se amortizează: previzualizarea ei dă "
+            + "`FaraFise`, fiindcă eligibilitatea cere data punerii STRICT înaintea primei zile a lunii "
+            + "(prima amortizare e luna de după — regula citită la ban din 1C, 51 din 51 de active)",
+            raportMai.Motiv == MotivNegenerare.FaraFise && raportMai.Linii.Count == 0);
+    }
+
+    AmortizareLunara AmoOperata(IObjectSpace os, int luna) {
+        var rezultat = AmortizareService.Incearca(os, An, luna, idAmoUnitate);
+        if (rezultat.Document == null)
+            throw new OperareException($"Scena AMO: luna {luna:00}/{An} n-a fost generată ({rezultat.Motiv}).");
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, rezultat.Document);
+        return rezultat.Document;
+    }
+
+    // Cele trei cifre ale lunii, pe fiecare formă de fișă (IMO-V31).
+    decimal deductibilVehiculNeexclusiv = privat ? 1500m : 2000m;
+    using (var os = provider.CreateObjectSpace()) {
+        var amo = AmortizareService.Genereaza(os, An, 6, idAmoUnitate);
+        os.CommitChanges();
+
+        var linii = amo.Detalii.OfType<AmortizareLunaraDetaliu>()
+            .ToDictionary(l => l.ImobilizareId);
+        var politica = os.GetObjectByKey<PoliticaAmortizare>(idAmoPolitica);
+        string Cifre(Guid fisa) => linii.TryGetValue(fisa, out var l)
+            ? $"{l.Valoare}/{l.ValoareFiscala}/{l.ValoareDeductibila}" : "<lipsă>";
+        Console.WriteLine($"     MĂSURAT (IMO-V31/{eticheta}): {linii.Count} linii generate; "
+            + $"A {Cifre(idFa)}, B {Cifre(idFb)}, C {Cifre(idFc)}, D {Cifre(idFd)}, E {Cifre(idFe)}, "
+            + $"F {Cifre(idFf)}, G {Cifre(idFg)}; conturile liniei A = "
+            + $"{os.GetObjectByKey<Cont>(linii[idFa].ContDebitId ?? Guid.Empty)?.Simbol} = "
+            + $"{os.GetObjectByKey<Cont>(linii[idFa].ContCreditId ?? Guid.Empty)?.Simbol}; "
+            + $"conturile liniei G = {linii[idFg].ContDebitId?.ToString() ?? "<null>"}.");
+        Check($"IMO-V31 ({eticheta}) generatorul scrie o linie per fișă eligibilă, cu DEBIT cheltuiala cu "
+            + "amortizarea și CREDIT contul de amortizare, ambele din `PoliticaAmortizare`, și cu locul fișei "
+            + "pe ambii repartitori — nicio aritmetică nu trăiește în altă parte",
+            linii.Count == 7
+            && linii[idFa].Valoare == 100m && linii[idFa].ValoareFiscala == 100m
+            && linii[idFa].ValoareDeductibila == 100m
+            && linii[idFa].ContDebitId == politica.ContCheltuialaAmortizareId
+            && linii[idFa].ContCreditId == politica.ContAmortizareId
+            && linii[idFa].RepartitorDebitId == idAmoGestiune
+            && linii[idFa].RepartitorCreditId == idAmoGestiune);
+        Check($"IMO-V32 ({eticheta}) deductibilul e o a TREIA cifră, nu o a doua postare: autoturismul de "
+            + "90.000 / 60 (1.500 lunar) intră integral, cel de 120.000 / 60 (2.000 lunar) se taie la plafonul "
+            + $"lunar al vehiculelor ({deductibilVehiculNeexclusiv} pe {eticheta}), iar aceeași fișă cu "
+            + "UTILIZARE EXCLUSIVĂ trece plafonul neatinsă — regula se alege pe (categorie, utilizare), din date",
+            linii[idFb].Valoare == 1500m && linii[idFb].ValoareFiscala == 1500m
+            && linii[idFb].ValoareDeductibila == 1500m
+            && linii[idFc].Valoare == 2000m && linii[idFc].ValoareFiscala == 2000m
+            && linii[idFc].ValoareDeductibila == deductibilVehiculNeexclusiv
+            && linii[idFd].Valoare == 2000m && linii[idFd].ValoareDeductibila == 2000m);
+        Check($"IMO-V33 ({eticheta}) valoarea reziduală scade DOAR baza contabilă: 3.600 cu reziduală 600 pe "
+            + "36 de luni dă 83,33 contabil și 100,00 fiscal — fiscul nu recunoaște reziduala",
+            linii[idFe].Valoare == 83.33m && linii[idFe].ValoareFiscala == 100m);
+        Check($"IMO-V34 ({eticheta}) cele două durate curg independent: fișa cu fiscalul deja consumat "
+            + "postează contabil 100,00 și fiscal 0, iar fișa cu contabilul consumat rămâne pe document cu "
+            + "contabil 0, fiscal 100,00 și conturile NULE — o notă de zero în registru ar fi zgomot, dar "
+            + "faptul fiscal al lunii trebuie să existe",
+            linii[idFf].Valoare == 100m && linii[idFf].ValoareFiscala == 0m
+            && linii[idFf].ContDebitId != null
+            && linii[idFg].Valoare == 0m && linii[idFg].ValoareFiscala == 100m
+            && linii[idFg].ContDebitId == null && linii[idFg].ContCreditId == null
+            && linii[idFg].RepartitorDebitId == idAmoGestiune);
+
+        if (!privat) {
+            var refuzBugetar = Refuz(() => MotorOperare.Opereaza(os, amo));
+            Console.WriteLine($"     MĂSURAT (IMO-V31c/{eticheta}): operarea pe bugetar = "
+                + $"„{refuzBugetar?.Split(Environment.NewLine[^1])[0] ?? "<ACCEPTATĂ>"}”.");
+            CheckRefuza($"IMO-V31c ({eticheta}) LIMITĂ consemnată: pe profilul bugetar nota de amortizare NU "
+                + "se poate posta — planul instituției cere Cod economic pe contul de cheltuială cu "
+                + "amortizarea (defalcarea `E` din `CPLAN_DEFALCARE`, decizia 15), iar linia de amortizare "
+                + "n-are unde să-l poarte: nici fișa, nici politica, nici linia nu au clasificație bugetară. "
+                + "Sursa lui e o decizie de model (coloană pe linie, rând de politică sau angajament), nu o "
+                + "cârpeală de generator — restul scenei lunare rulează pe privat",
+                () => MotorOperare.Opereaza(os, amo));
+        }
+        else {
+            MotorOperare.Opereaza(os, amo);
+            var note = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == amo.ID).ToList();
+            var randuri = os.GetObjectsQuery<RegistruImobilizari>()
+                .Where(r => r.DocumentId == amo.ID).ToList();
+            var randA = randuri.Single(r => r.ImobilizareId == idFa);
+            Console.WriteLine($"     MĂSURAT (IMO-V31b/{eticheta}): {note.Count} note pentru "
+                + $"{linii.Count} linii, {randuri.Count} rânduri de registru; prima notă = "
+                + $"{os.GetObjectByKey<Cont>(note[0].ContDebitId)?.Simbol} = "
+                + $"{os.GetObjectByKey<Cont>(note[0].ContCreditId)?.Simbol} de {note[0].Valoare}; "
+                + $"numărul = {amo.Numar}.");
+            Check($"IMO-V31b ({eticheta}) operarea postează o notă per linie cu contabil NENUL (6 note "
+                + "pentru 7 linii — linia fără cifră contabilă e sărită de motor pe conturile nule) și "
+                + "scrie un rând de registru per fișă, cu cele TREI cifre, `Luni` 1 și locul la data faptului",
+                note.Count == 6 && randuri.Count == 7
+                && note.All(n => n.ContDebitId == politica.ContCheltuialaAmortizareId
+                    && n.ContCreditId == politica.ContAmortizareId)
+                && randA.Fel == FelMiscareImobilizare.Amortizare && randA.Amortizare == 100m
+                && randA.AmortizareFiscala == 100m && randA.AmortizareDeductibila == 100m
+                && randA.Luni == 1 && randA.Valoare == 0m && randA.RepartitorId == idAmoGestiune
+                && randuri.Single(r => r.ImobilizareId == idFg).AmortizareFiscala == 100m
+                && amo.Numar != null && amo.Numar.StartsWith("AMO-"));
+        }
+    }
+
+    // Cronologia, storno-ul și ieșirea cer AMO OPERATE, deci rulează doar pe PRIVAT: pe bugetar
+    // nota de amortizare nu se poate posta (limita din IMO-V31c).
+    if (privat) {
+        // Cota e FIXĂ la ultimul eveniment; modernizarea o mută (IMO-V35…V36).
+        using (var os = provider.CreateObjectSpace()) {
+            foreach (var luna in new[] { 7, 8 })
+                AmoOperata(os, luna);
+            var situatie = AmortizareService.Situatie(os, idFa, Zi(8, 31));
+            Console.WriteLine($"     MĂSURAT (IMO-V35/{eticheta}): după august — cumulat {situatie.Amortizare}, "
+                + $"luni {situatie.Luni}, net {situatie.NetContabil}.");
+            Check($"IMO-V35 ({eticheta}) cota rămâne FIXĂ de la ultimul eveniment: trei luni × 100,00 fac 300,00 "
+                + "cumulat și 3 luni — o recalculare „rest / rest” ar fi produs derivă (665,17 → 665,18 în 1C)",
+                situatie.Amortizare == 300m && situatie.Luni == 3 && situatie.NetContabil == 3300m);
+
+            var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+            var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+            var pifModernizare = os.CreateObject<PunereInFunctiune>();
+            pifModernizare.Data = Zi(8, 15);
+            pifModernizare.Predator = unitate;
+            pifModernizare.Primitor = gestiune;
+            var linieModernizare = os.CreateObject<PunereInFunctiuneDetaliu>();
+            linieModernizare.Document = pifModernizare;
+            linieModernizare.ImobilizareId = idFa;
+            linieModernizare.TipMaterialId = idAmoTip;
+            linieModernizare.Fel = FelLiniePif.Modernizare;
+            linieModernizare.Valoare = 1650m;
+            linieModernizare.Cantitate = 1m;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, pifModernizare);
+
+            var septembrie = AmoOperata(os, 9);
+            var linieA = septembrie.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa);
+            Console.WriteLine($"     MĂSURAT (IMO-V36/{eticheta}): septembrie, fișa A = {linieA.Valoare} "
+                + $"(brut {AmortizareService.Situatie(os, idFa, Zi(9, 30)).Valoare}).");
+            Check($"IMO-V36 ({eticheta}) modernizarea din mijlocul lunii (15.08) rebazează calculul lunii "
+                + "URMĂTOARE: (3.600 + 1.650 − 300) / (36 − 3) = 150,00 — baza se citește la SFÂRȘITUL lunii "
+                + "evenimentului (formula 1C: luna evenimentului postează încă cota veche), indiferent de zi",
+                linieA.Valoare == 150m && linieA.ValoareFiscala == 150m && linieA.ValoareDeductibila == 150m);
+        }
+
+        // Regula de deductibilitate cu `DeLa` în mijlocul vieții activului (probată la IMO-V40).
+        using (var os = provider.CreateObjectSpace()) {
+            var regula = os.CreateObject<RegulaDeductibilitate>();
+            regula.Categorie = CategorieFiscala.VehiculPersoaneMax9Locuri;
+            regula.DoarNeexclusiv = true;
+            regula.Fel = FelDeductibilitate.PlafonLunar;
+            regula.Valoare = 1000m;
+            regula.DeLa = Zi(10, 1);
+            regula.Temei = Marcaj + " — plafon de scenă, valabil din 10/2027";
+            os.CommitChanges();
+        }
+
+        // Anti-stale-ul operării și regenerarea (IMO-V38…V40).
+        Guid idAmoOctombrie;
+        using (var os = provider.CreateObjectSpace()) {
+            var draft = AmortizareService.Genereaza(os, An, 10, idAmoUnitate);
+            os.CommitChanges();
+            var linieVeche = draft.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa);
+            var valoareLaGenerare = linieVeche.Valoare;
+
+            var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+            var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+            var pifRevizuire = os.CreateObject<PunereInFunctiune>();
+            pifRevizuire.Data = Zi(9, 30);
+            pifRevizuire.Predator = unitate;
+            pifRevizuire.Primitor = gestiune;
+            var linieRevizuire = os.CreateObject<PunereInFunctiuneDetaliu>();
+            linieRevizuire.Document = pifRevizuire;
+            linieRevizuire.ImobilizareId = idFa;
+            linieRevizuire.TipMaterialId = idAmoTip;
+            linieRevizuire.Fel = FelLiniePif.Revizuire;
+            linieRevizuire.Valoare = 0m;
+            linieRevizuire.Cantitate = 1m;
+            linieRevizuire.Metoda = MetodaAmortizare.Liniara;
+            linieRevizuire.DurataLuni = 48;
+            linieRevizuire.MetodaFiscala = MetodaAmortizare.Liniara;
+            linieRevizuire.DurataFiscalaLuni = 48;
+            linieRevizuire.CategorieFiscala = CategorieFiscala.Standard;
+            linieRevizuire.UtilizareExclusiva = true;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, pifRevizuire);
+
+            Console.WriteLine($"     MĂSURAT (IMO-V38/{eticheta}): draftul lui octombrie poartă {valoareLaGenerare} "
+                + "pe fișa A, iar revizuirea a mutat durata pe 48.");
+            CheckRefuza($"IMO-V38 ({eticheta}) un draft de amortizare generat ÎNAINTE de o revizuire operată nu se "
+                + "mai poate opera: gardianul recalculează mulțimea liniilor din registru și refuză — altfel luna "
+                + "ar posta cifre care nu mai descriu nicio bază",
+                () => MotorOperare.Opereaza(os, draft));
+
+            var regenerat = AmortizareService.Incearca(os, An, 10, idAmoUnitate, draft.ID);
+            os.Delete(draft.Detalii.ToList());
+            os.Delete(draft);
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, regenerat.Document);
+            idAmoOctombrie = regenerat.Document.ID;
+            var linieNoua = regenerat.Document.Detalii.OfType<AmortizareLunaraDetaliu>()
+                .Single(l => l.ImobilizareId == idFa);
+            var linieC = regenerat.Document.Detalii.OfType<AmortizareLunaraDetaliu>()
+                .Single(l => l.ImobilizareId == idFc);
+            Console.WriteLine($"     MĂSURAT (IMO-V39/{eticheta}): octombrie regenerat — fișa A "
+                + $"{linieNoua.Valoare}, fișa C deductibil {linieC.ValoareDeductibila} "
+                + $"(septembrie: {deductibilVehiculNeexclusiv}).");
+            Check($"IMO-V39 ({eticheta}) regenerarea cu `inlocuieste` trece pe lângă gardianul „luna are deja o "
+                + "amortizare” și produce cifra nouă: (5.250 − 450) / (48 − 4) = 109,09 — durata revizuită e fapt "
+                + "datat, iar recalculul rămâne reproductibil",
+                linieNoua.Valoare == 109.09m && linieNoua.ValoareFiscala == 109.09m
+                && linieNoua.ValoareDeductibila == 109.09m);
+            Check($"IMO-V40 ({eticheta}) o regulă de deductibilitate cu `DeLa` în mijlocul vieții activului "
+                + "schimbă DOAR lunile de după: plafonul de scenă (1.000 din 10/2027) taie deductibilul "
+                + "autoturismului de 120.000 în octombrie, iar septembrie rămâne cum a fost postat — legea se "
+                + "exprimă în date, iar cifrele deja postate sunt fapte",
+                linieC.ValoareDeductibila == 1000m && deductibilVehiculNeexclusiv != 1000m);
+        }
+
+        // Storno-ul amortizării și cronologia strictă (IMO-V41…V42).
+        using (var os = provider.CreateObjectSpace()) {
+            var octombrie = os.GetObjectByKey<AmortizareLunara>(idAmoOctombrie);
+            MotorOperare.Storneaza(os, octombrie, Zi(10, 31));
+            var contabile = os.GetObjectsQuery<RegistruContabil>()
+                .Where(r => r.DocumentId == idAmoOctombrie).ToList();
+            var imobilizari = os.GetObjectsQuery<RegistruImobilizari>()
+                .Where(r => r.DocumentId == idAmoOctombrie).ToList();
+            var situatieA = AmortizareService.Situatie(os, idFa, Zi(10, 31));
+            Console.WriteLine($"     MĂSURAT (IMO-V41/{eticheta}): după storno — {contabile.Count} rânduri "
+                + $"contabile ({contabile.Count(r => r.Storno)} inverse), {imobilizari.Count} rânduri de "
+                + $"imobilizări ({imobilizari.Count(r => r.Storno)} inverse); cumulat A {situatieA.Amortizare}.");
+            Check($"IMO-V41 ({eticheta}) storno-ul amortizării adaugă rânduri INVERSE în AMBELE registre "
+                + "(contabil și imobilizări), append-only, iar situația fișei revine la cea de dinaintea lunii — "
+                + "al patrulea registru urmează exact ciclul de viață al celorlalte trei",
+                contabile.Count(r => r.Storno) == contabile.Count / 2
+                && imobilizari.Count(r => r.Storno) == imobilizari.Count / 2
+                && situatieA.Amortizare == 450m && situatieA.Luni == 4);
+
+            var refacut = AmoOperata(os, 10);
+            idAmoOctombrie = refacut.ID;
+            Check($"IMO-V42 ({eticheta}) după storno luna redevine LIBERĂ: „amortizare vie” nu vede documentul "
+                + "stornat, deci octombrie se regenerează și se operează din nou, cu aceleași cifre",
+                refacut.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa)
+                    .Valoare == 109.09m);
+        }
+        using (var os = provider.CreateObjectSpace()) {
+            var dataAugust = Zi(8, 31);
+            var august = os.GetObjectsQuery<AmortizareLunara>()
+                .Single(a => a.Data == dataAugust && a.Stare == StareDocument.Operat);
+            CheckRefuza($"IMO-V43 ({eticheta}) anularea amortizării lui august, cu lunile următoare operate, e "
+                + "refuzată de FRUNZĂ: cronologia amortizării e strictă, fiindcă fiecare lună se calculează pe "
+                + "cumulatul celei dinainte",
+                () => MotorOperare.AnuleazaOperarea(os, august));
+        }
+        using (var os = provider.CreateObjectSpace()) {
+            var dataSeptembrie = Zi(9, 30);
+            var septembrie = os.GetObjectsQuery<AmortizareLunara>()
+                .Single(a => a.Data == dataSeptembrie && a.Stare == StareDocument.Operat);
+            CheckRefuza($"IMO-V44 ({eticheta}) stornarea amortizării lui septembrie, cu octombrie operată, e "
+                + "refuzată pe același gardian — corecția se face de la capătul cronologiei spre trecut",
+                () => MotorOperare.Storneaza(os, septembrie, Zi(10, 31)));
+        }
+
+        // Cronologia la GENERARE: luna lipsă și perioada închisă (IMO-V45…V46).
+        using (var os = provider.CreateObjectSpace()) {
+            var raportDecembrie = AmortizareService.Previzualizeaza(os, An, 12);
+            Console.WriteLine($"     MĂSURAT (IMO-V45/{eticheta}): decembrie cu noiembrie negenerată = "
+                + $"{raportDecembrie.Motiv}, {raportDecembrie.Linii.Count} linii însoțitoare.");
+            Check($"IMO-V45 ({eticheta}) decembrie, cu noiembrie negenerată deși avea fișe eligibile, iese ca "
+                + "`LunaLipsa` la RAPORT — un ecran trebuie să poată spune „nu se poate, fiindcă…”, nu să "
+                + "primească o excepție",
+                raportDecembrie.Motiv == MotivNegenerare.LunaLipsa && raportDecembrie.Linii.Count > 0);
+            CheckRefuza($"IMO-V45b ({eticheta}) aceeași stare, la COMANDĂ, e refuz zgomotos — raportul și comanda "
+                + "pun aceleași întrebări, în aceeași ordine, și diferă printr-un singur bit",
+                () => AmortizareService.Incearca(os, An, 12, idAmoUnitate));
+
+            var noiembrie = os.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == 11);
+            noiembrie.Inchisa = true;
+            os.CommitChanges();
+            var raportInchis = AmortizareService.Previzualizeaza(os, An, 11);
+            Console.WriteLine($"     MĂSURAT (IMO-V46/{eticheta}): noiembrie închisă = {raportInchis.Motiv}.");
+            Check($"IMO-V46 ({eticheta}) perioada închisă e graniță și la GENERARE, nu doar la operare: un draft "
+                + "într-o lună închisă n-ar putea fi operat niciodată, dar ar sta ca „amortizare vie” și ar bloca "
+                + "cronologia lunilor dinaintea lui",
+                raportInchis.Motiv == MotivNegenerare.PerioadaInchisa);
+            CheckRefuza($"IMO-V46b ({eticheta}) comanda pe luna închisă aruncă, ca la închiderea de TVA",
+                () => AmortizareService.Incearca(os, An, 11, idAmoUnitate));
+            noiembrie.Inchisa = false;
+            os.CommitChanges();
+        }
+
+        // Transferul, ieșirea și lunile de după (IMO-V47…V49).
+        using (var os = provider.CreateObjectSpace()) {
+            var fisaE = os.GetObjectByKey<Imobilizare>(idFe);
+            fisaE.LocId = idAmoLoc2;
+            os.CommitChanges();
+
+            var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+            var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+            var politica = os.GetObjectByKey<PoliticaAmortizare>(idAmoPolitica);
+            var tipF = os.GetObjectByKey<TipMaterial>(idAmoTip);
+            var situatieA = AmortizareService.Situatie(os, idFa, Zi(11, 15));
+
+            var cas = os.CreateObject<IesireImobilizare>();
+            cas.Data = Zi(11, 15);
+            cas.Cauza = CauzaIesire.Casare;
+            cas.Predator = gestiune;
+            cas.Primitor = unitate;
+            IesireImobilizareDetaliu LinieCas(FelLinieIesire fel, Guid? contDebit, decimal valoare) {
+                var l = os.CreateObject<IesireImobilizareDetaliu>();
+                l.Document = cas;
+                l.ImobilizareId = idFa;
+                l.TipMaterialId = tipF.ID;
+                l.Fel = fel;
+                l.Valoare = valoare;
+                l.Cantitate = 1m;
+                l.ContDebitId = contDebit;
+                l.ContCreditId = tipF.ContImplicitId;
+                l.RepartitorDebitId = gestiune.ID;
+                l.RepartitorCreditId = gestiune.ID;
+                return l;
+            }
+            LinieCas(FelLinieIesire.AmortizareCumulata, politica.ContAmortizareId, situatieA.Amortizare);
+            var linieRest = LinieCas(FelLinieIesire.ValoareRamasa, politica.ContCheltuialaCedareId,
+                situatieA.NetContabil - 10m);
+            os.CommitChanges();
+            Console.WriteLine($"     MĂSURAT (IMO-V47/{eticheta}): cumulat {situatieA.Amortizare}, net "
+                + $"{situatieA.NetContabil}; linia de rest culeasă cu {linieRest.Valoare}.");
+            CheckRefuza($"IMO-V47 ({eticheta}) ieșirea cu linia de valoare rămasă greșită e refuzată: serviciul "
+                + "recalculează cele două linii din registru la data documentului și cere potrivirea exactă — "
+                + "același anti-stale ca la închiderea de TVA",
+                () => MotorOperare.Opereaza(os, cas));
+            linieRest.Valoare = situatieA.NetContabil;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, cas);
+
+            var noteCas = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == cas.ID).ToList();
+            var randIesire = os.GetObjectsQuery<RegistruImobilizari>().Single(r => r.DocumentId == cas.ID);
+            var fisaA = os.GetObjectByKey<Imobilizare>(idFa);
+            Console.WriteLine($"     MĂSURAT (IMO-V48/{eticheta}): {noteCas.Count} note — "
+                + string.Join("; ", noteCas.Select(n => $"{os.GetObjectByKey<Cont>(n.ContDebitId)?.Simbol} = "
+                    + $"{os.GetObjectByKey<Cont>(n.ContCreditId)?.Simbol} de {n.Valoare}"))
+                + $"; rândul de ieșire {randIesire.Valoare}/{randIesire.Amortizare}; fișa {fisaA.Stare}.");
+            Check($"IMO-V48 ({eticheta}) casarea unei fișe amortizate parțial descarcă exact cumulatul lunilor "
+                + "postate (5 luni: 100 + 100 + 100 + 150 + 109,09 = 559,09) și trece restul pe cheltuiala cu "
+                + "cedarea; rândul de registru e negativ pe toate coloanele, iar fișa devine `Iesita`",
+                situatieA.Amortizare == 559.09m && situatieA.NetContabil == 4690.91m
+                && noteCas.Count == 2
+                && noteCas.Any(n => n.ContDebitId == politica.ContAmortizareId && n.Valoare == 559.09m)
+                && noteCas.Any(n => n.ContDebitId == politica.ContCheltuialaCedareId && n.Valoare == 4690.91m)
+                && randIesire.Valoare == -5250m && randIesire.Amortizare == -559.09m
+                && fisaA.Stare == StareImobilizare.Iesita && fisaA.DataIesire == Zi(11, 15));
+
+            var amoNoiembrie = AmoOperata(os, 11);
+            var liniiNoiembrie = amoNoiembrie.Detalii.OfType<AmortizareLunaraDetaliu>().ToList();
+            var linieE = liniiNoiembrie.Single(l => l.ImobilizareId == idFe);
+            var randE = os.GetObjectsQuery<RegistruImobilizari>()
+                .Single(r => r.DocumentId == amoNoiembrie.ID && r.ImobilizareId == idFe);
+            Console.WriteLine($"     MĂSURAT (IMO-V49/{eticheta}): noiembrie are {liniiNoiembrie.Count} linii; "
+                + $"fișa A prezentă: {liniiNoiembrie.Any(l => l.ImobilizareId == idFa)}; "
+                + $"locul fișei E pe linie/rând = "
+                + $"{os.GetObjectByKey<Repartitor>(linieE.RepartitorDebitId ?? Guid.Empty)?.Cod}/"
+                + $"{os.GetObjectByKey<Repartitor>(randE.RepartitorId)?.Cod}.");
+            Check($"IMO-V49 ({eticheta}) luna IEȘIRII nu se amortizează (fișa casată pe 15.11 lipsește din "
+                + "amortizarea lui noiembrie), iar transferul administrativ al unei alte fișe mută postarea și "
+                + "rândul de registru pe NOUL loc — istoricul locului sunt rândurile lunare (F26-D8)",
+                liniiNoiembrie.Count == 6 && !liniiNoiembrie.Any(l => l.ImobilizareId == idFa)
+                && linieE.RepartitorDebitId == idAmoLoc2 && randE.RepartitorId == idAmoLoc2);
+
+            var casTarziu = os.CreateObject<IesireImobilizare>();
+            casTarziu.Data = Zi(11, 20);
+            casTarziu.Cauza = CauzaIesire.Vanzare;
+            casTarziu.Predator = gestiune;
+            casTarziu.Primitor = unitate;
+            var situatieB = AmortizareService.Situatie(os, idFb, Zi(11, 20));
+            var lTarziu = os.CreateObject<IesireImobilizareDetaliu>();
+            lTarziu.Document = casTarziu;
+            lTarziu.ImobilizareId = idFb;
+            lTarziu.TipMaterialId = tipF.ID;
+            lTarziu.Fel = FelLinieIesire.AmortizareCumulata;
+            lTarziu.Valoare = situatieB.Amortizare;
+            lTarziu.Cantitate = 1m;
+            lTarziu.ContDebitId = politica.ContAmortizareId;
+            lTarziu.ContCreditId = tipF.ContImplicitId;
+            lTarziu.RepartitorDebitId = gestiune.ID;
+            lTarziu.RepartitorCreditId = gestiune.ID;
+            var lTarziuRest = os.CreateObject<IesireImobilizareDetaliu>();
+            lTarziuRest.Document = casTarziu;
+            lTarziuRest.ImobilizareId = idFb;
+            lTarziuRest.TipMaterialId = tipF.ID;
+            lTarziuRest.Fel = FelLinieIesire.ValoareRamasa;
+            lTarziuRest.Valoare = situatieB.NetContabil;
+            lTarziuRest.Cantitate = 1m;
+            lTarziuRest.ContDebitId = politica.ContCheltuialaCedareId;
+            lTarziuRest.ContCreditId = tipF.ContImplicitId;
+            lTarziuRest.RepartitorDebitId = gestiune.ID;
+            lTarziuRest.RepartitorCreditId = gestiune.ID;
+            os.CommitChanges();
+            CheckRefuza($"IMO-V50 ({eticheta}) o ieșire într-o lună cu amortizarea deja OPERATĂ e refuzată: luna "
+                + "ieșirii nu se amortizează, deci amortizarea aceea ar rămâne pe o fișă care nu mai există în "
+                + "patrimoniu",
+                () => MotorOperare.Opereaza(os, casTarziu));
+            os.Delete(casTarziu.Detalii.ToList());
+            os.Delete(casTarziu);
+            os.CommitChanges();
+
+            var amoDecembrie = AmoOperata(os, 12);
+            var liniiDecembrie = amoDecembrie.Detalii.OfType<AmortizareLunaraDetaliu>().ToList();
+            Console.WriteLine($"     MĂSURAT (IMO-V51/{eticheta}): decembrie are {liniiDecembrie.Count} linii; "
+                + $"fișa A prezentă: {liniiDecembrie.Any(l => l.ImobilizareId == idFa)}.");
+            Check($"IMO-V51 ({eticheta}) fișa ieșită nu mai apare în NICIO lună ulterioară, iar cronologia "
+                + "completată (noiembrie operată) deblochează decembrie — eligibilitatea se citește din DATE, nu "
+                + "din starea materializată a fișei",
+                liniiDecembrie.Count == 6 && !liniiDecembrie.Any(l => l.ImobilizareId == idFa));
+        }
+    }
+
+    // ── IMO-V52: fișa eligibilă fără politică de amortizare ───────────────────
+    using (var os = provider.CreateObjectSpace())
+        CurataImo(os);
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 5, 6 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+            p.Inchisa = false;
+        }
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-FP-UI";
+        unitate.Denumire = "Unitate probă fără politică";
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-FP-MAG";
+        gestiune.Denumire = "Gestiune probă fără politică";
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        var tipNou = os.CreateObject<TipMaterial>();
+        tipNou.Cod = Marcaj + "-TIPF";
+        tipNou.Denumire = "Tip de imobilizări fără politică de amortizare";
+        tipNou.ClasaId = tipF.ClasaId;
+        tipNou.ContImplicitId = tipF.ContImplicitId;
+        os.CommitChanges();
+
+        var fisa = os.CreateObject<Imobilizare>();
+        fisa.NumarInventar = Marcaj + "-FP-1";
+        fisa.Denumire = "Fișă pe un tip fără politică";
+        fisa.TipMaterialId = tipNou.ID;
+        fisa.LocId = gestiune.ID;
+        os.CommitChanges();
+
+        var pif = os.CreateObject<PunereInFunctiune>();
+        pif.Data = Zi(5, 5);
+        pif.Predator = unitate;
+        pif.Primitor = gestiune;
+        var l = os.CreateObject<PunereInFunctiuneDetaliu>();
+        l.Document = pif;
+        l.ImobilizareId = fisa.ID;
+        l.TipMaterialId = tipNou.ID;
+        l.Fel = FelLiniePif.Intrare;
+        l.Valoare = 1200m;
+        l.Cantitate = 1m;
+        l.Metoda = MetodaAmortizare.Liniara;
+        l.DurataLuni = 12;
+        l.MetodaFiscala = MetodaAmortizare.Liniara;
+        l.DurataFiscalaLuni = 12;
+        l.CategorieFiscala = CategorieFiscala.Standard;
+        l.UtilizareExclusiva = true;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+
+        var faraPolitica = AmortizareService.Previzualizeaza(os, An, 6);
+        Console.WriteLine($"     MĂSURAT (IMO-V52/{eticheta}): {faraPolitica.Motiv} pe „{faraPolitica.Detaliu}”.");
+        Check($"IMO-V52 ({eticheta}) o fișă ELIGIBILĂ al cărei tip n-are rând de `PoliticaAmortizare` "
+            + "oprește luna INTEGRAL, cu numărul de inventar în verdict: conturile vin exclusiv din politică, "
+            + "iar o lună generată fără fișa aceea ar fi tăcut despre o cheltuială nepostată",
+            faraPolitica.Motiv == MotivNegenerare.FisaFaraPolitica
+            && faraPolitica.Detaliu == Marcaj + "-FP-1");
+
+        var politicaNoua = os.CreateObject<PoliticaAmortizare>();
+        politicaNoua.TipMaterialId = tipNou.ID;
+        var politicaF = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == tipF.ID);
+        politicaNoua.ContAmortizareId = politicaF.ContAmortizareId;
+        politicaNoua.ContCheltuialaAmortizareId = politicaF.ContCheltuialaAmortizareId;
+        politicaNoua.ContCheltuialaCedareId = politicaF.ContCheltuialaCedareId;
+        os.CommitChanges();
+        var cuPolitica = AmortizareService.Previzualizeaza(os, An, 6);
+        Console.WriteLine($"     MĂSURAT (IMO-V52b/{eticheta}): după rândul de politică — "
+            + $"{cuPolitica.Motiv?.ToString() ?? "<se generează>"}, {cuPolitica.Linii.Count} linii, "
+            + $"{cuPolitica.Linii.FirstOrDefault()?.Contabil}.");
+        Check($"IMO-V52b ({eticheta}) un rând nou de politică deblochează luna fără release: politica e DATE, "
+            + "iar generatorul o citește la fiecare rulare",
+            cuPolitica.Motiv == null && cuPolitica.Linii.Count == 1
+            && cuPolitica.Linii[0].Contabil == 100m);
+    }
+
+    // ── IMO-V53…V55: aritmetica PURĂ ──────────────────────────────────────────
+    {
+        decimal Cota(MetodaAmortizare metoda, decimal valoare, int luniRamase, int luniDeLaEveniment,
+                decimal rest, decimal brut, int luniDeLaPunere) =>
+            AmortizareService.CotaLunara(new BazaAmortizare(metoda, valoare, luniRamase, luniDeLaEveniment,
+                rest, brut, luniDeLaPunere));
+
+        List<decimal> Grafic(MetodaAmortizare metoda, decimal valoare, int luni, decimal brut) {
+            var rest = valoare;
+            var sume = new List<decimal>();
+            for (var i = 0; i < luni + 2 && rest > 0m; i++) {
+                var suma = Cota(metoda, valoare, luni, i, rest, brut, i);
+                sume.Add(suma);
+                rest -= suma;
+            }
+            return sume;
+        }
+
+        var citan = Grafic(MetodaAmortizare.Liniara, 21950.68m, 33, 21950.68m);
+        var zebra = Grafic(MetodaAmortizare.Liniara, 3455.11m, 36, 3455.11m);
+        var centruIt = Cota(MetodaAmortizare.Liniara, 636538.78m, 507, 0, 636538.78m, 636538.78m, 0);
+        var invertor = Cota(MetodaAmortizare.Liniara, 47323.77m, 36, 0, 47323.77m, 47323.77m, 0);
+        Console.WriteLine($"     MĂSURAT (IMO-V53/{eticheta}): Citan {citan.Count} luni "
+            + $"({citan[0]} × {citan.Count - 1} + {citan[^1]}, total {citan.Sum()}); "
+            + $"Zebra {zebra.Count} luni ({zebra[0]} × {zebra.Count - 1} + {zebra[^1]}, total {zebra.Sum()}); "
+            + $"CENTRU IT {centruIt}; invertor {invertor}.");
+        Check($"IMO-V53 ({eticheta}) funcția PURĂ reproduce la ban cifrele reale din 1C: cota rotunjită în "
+            + "JOS lasă o lună SUPLIMENTARĂ cu restul (Citan: 33 × 665,17 + 0,07), cota rotunjită în SUS "
+            + "scurtează ultima lună (Zebra: 35 × 95,98 + 95,81), iar totalul postat egalează exact valoarea "
+            + "de amortizat",
+            citan.Count == 34 && citan.Take(33).All(s => s == 665.17m) && citan[^1] == 0.07m
+            && citan.Sum() == 21950.68m
+            && zebra.Count == 36 && zebra.Take(35).All(s => s == 95.98m) && zebra[^1] == 95.81m
+            && zebra.Sum() == 3455.11m
+            && centruIt == 1255.50m && invertor == 1314.55m);
+
+        var accelerataInceput = Cota(MetodaAmortizare.Accelerata, 3600m, 36, 0, 3600m, 3600m, 0);
+        var accelerataLuna12 = Cota(MetodaAmortizare.Accelerata, 3600m, 36, 11, 1950m, 3600m, 11);
+        var accelerataDupa = Cota(MetodaAmortizare.Accelerata, 1800m, 24, 0, 1800m, 3600m, 12);
+        Console.WriteLine($"     MĂSURAT (IMO-V54/{eticheta}): accelerata 3.600 / 36 = "
+            + $"{accelerataInceput} (luna 1), {accelerataLuna12} (luna 12), {accelerataDupa} (luna 13).");
+        Check($"IMO-V54 ({eticheta}) accelerata pune 50 % din brut în primele 12 luni (150,00 pe lună pentru "
+            + "3.600) și trece apoi la liniar pe restul / lunile rămase (1.800 / 24 = 75,00) — pragul e "
+            + "lunile de la PUNEREA în funcțiune, nu de la ultimul eveniment",
+            accelerataInceput == 150m && accelerataLuna12 == 150m && accelerataDupa == 75m);
+
+        var degresiva = Grafic(MetodaAmortizare.Degresiva, 60000m, 60, 60000m);
+        var peAni = Enumerable.Range(0, 5).Select(a => degresiva.Skip(a * 12).Take(12).Sum()).ToList();
+        Console.WriteLine($"     MĂSURAT (IMO-V55/{eticheta}): degresiva AD1 60.000 / 60 pe ani = "
+            + string.Join(" / ", peAni) + $"; total {degresiva.Sum()} în {degresiva.Count} luni.");
+        Check($"IMO-V55 ({eticheta}) degresiva AD1 pe 5 ani (k = 1,5) dă 18.000 / 12.600 / 9.800 / 9.800 / "
+            + "9.800: din anul în care rata degresivă nu mai bate media rămasă graficul trece la liniar și "
+            + "rămâne acolo, a douăsprezecea lună a fiecărui an absoarbe restul anului, iar totalul e exact "
+            + "valoarea de amortizat",
+            degresiva.Count == 60 && degresiva.Sum() == 60000m
+            && peAni[0] == 18000m && peAni[1] == 12600m && peAni[2] == 9800m
+            && peAni[3] == 9800m && peAni[4] == 9800m);
+    }
+
+    // ── IMO-V56…V57: `Deductibil` pur ─────────────────────────────────────────
+    {
+        var vehicul = CategorieFiscala.VehiculPersoaneMax9Locuri;
+        var sediu = CategorieFiscala.SediuSocialInLocuinta;
+        var data = new DateOnly(2027, 6, 30);
+        var plafon = new List<RegulaSnapshot> {
+            new(vehicul, true, FelDeductibilitate.PlafonLunar, 1500m, new DateOnly(2012, 2, 1), null),
+        };
+        var doua = new List<RegulaSnapshot> {
+            new(sediu, true, FelDeductibilitate.Procent, 0m, new DateOnly(2024, 1, 1), null),
+            new(sediu, true, FelDeductibilitate.Procent, 50m, new DateOnly(2026, 1, 1), null),
+        };
+        var expirat = new List<RegulaSnapshot> {
+            new(vehicul, true, FelDeductibilitate.PlafonLunar, 1500m, new DateOnly(2012, 2, 1),
+                new DateOnly(2020, 12, 31)),
+        };
+        var ambele = new List<RegulaSnapshot> {
+            new(vehicul, true, FelDeductibilitate.PlafonLunar, 1500m, new DateOnly(2012, 2, 1), null),
+            new(vehicul, true, FelDeductibilitate.Procent, 50m, new DateOnly(2012, 2, 1), null),
+        };
+        decimal D(decimal fiscal, CategorieFiscala categorie, bool exclusiv, List<RegulaSnapshot> reguli,
+                DateOnly cand) => AmortizareService.Deductibil(fiscal, categorie, exclusiv, reguli, cand);
+
+        var faraRegula = D(2000m, vehicul, false, [], data);
+        var cuPlafon = D(2000m, vehicul, false, plafon, data);
+        var laExclusiv = D(2000m, vehicul, true, plafon, data);
+        var altaCategorie = D(2000m, CategorieFiscala.Standard, false, plafon, data);
+        var inainteDeLa = D(2000m, vehicul, false, plafon, new DateOnly(2011, 12, 31));
+        var deLa2025 = D(1000m, sediu, false, doua, new DateOnly(2025, 6, 30));
+        var deLa2027 = D(1000m, sediu, false, doua, data);
+        var dupaPanaLa = D(2000m, vehicul, false, expirat, data);
+        var plafonApoiProcent = D(2000m, vehicul, false, ambele, data);
+        Console.WriteLine($"     MĂSURAT (IMO-V56/{eticheta}): fără regulă {faraRegula}, plafon {cuPlafon}, "
+            + $"exclusiv {laExclusiv}, altă categorie {altaCategorie}, înainte de `DeLa` {inainteDeLa}, "
+            + $"2025 {deLa2025}, 2027 {deLa2027}, după `PanaLa` {dupaPanaLa}, plafon+procent "
+            + $"{plafonApoiProcent}.");
+        Check($"IMO-V56 ({eticheta}) mecanismul deductibilității e complet declarativ: fără regulă "
+            + "deductibilul E fiscalul; plafonul taie, procentul scade; `DoarNeexclusiv` se sare la utilizare "
+            + "exclusivă; o regulă a altei categorii nu se aplică; `DeLa` maxim ≤ dată câștigă per "
+            + "(categorie, fel); `PanaLa` expirat nu se mai aplică; plafonul se aplică ÎNAINTEA procentului",
+            faraRegula == 2000m && cuPlafon == 1500m && laExclusiv == 2000m && altaCategorie == 2000m
+            && inainteDeLa == 2000m && deLa2025 == 0m && deLa2027 == 500m && dupaPanaLa == 2000m
+            && plafonApoiProcent == 750m);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var reguli = os.GetObjectsQuery<RegulaDeductibilitate>()
+            .Select(r => new { r.Categorie, r.DoarNeexclusiv, r.Fel, r.Valoare, r.DeLa, r.PanaLa })
+            .ToList()
+            .Select(r => new RegulaSnapshot(r.Categorie, r.DoarNeexclusiv, r.Fel, r.Valoare, r.DeLa, r.PanaLa))
+            .ToList();
+        var sediu = CategorieFiscala.SediuSocialInLocuinta;
+        var in2025 = AmortizareService.Deductibil(1000m, sediu, false, reguli, new DateOnly(2025, 6, 30));
+        var in2027 = AmortizareService.Deductibil(1000m, sediu, false, reguli, new DateOnly(2027, 6, 30));
+        Console.WriteLine($"     MĂSURAT (IMO-V57/{eticheta}): {reguli.Count} reguli reale; sediu social în "
+            + $"locuință, neexclusiv — 2025: {in2025}, 2027: {in2027} (din 1.000 fiscal).");
+        Check($"IMO-V57 ({eticheta}) regulile REALE ale profilului, citite din bază, se aplică pe dată: pe "
+            + "privat amortizarea sediului social în locuință e nedeductibilă în 2025 (Legea 296/2023) și "
+            + "deductibilă 50 % din 2026; pe bugetar, unde nu există impozit pe profit și deci nicio regulă, "
+            + "deductibilul E fiscalul — aceeași funcție, două profiluri",
+            privat ? in2025 == 0m && in2027 == 500m : in2025 == 1000m && in2027 == 1000m);
     }
 
     // ── Curățenia finală ──────────────────────────────────────────────────────

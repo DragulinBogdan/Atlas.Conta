@@ -83,6 +83,11 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
         }
         if (l.DurataLuni < 0 || l.DurataFiscalaLuni < 0)
             erori.Add($"Duratele fișei {eticheta} nu pot fi negative.");
+        // Graficul degresiv e pe ANI întregi (F26-D7).
+        if ((l.Metoda == MetodaAmortizare.Degresiva && l.DurataLuni % 12 != 0)
+                || (l.MetodaFiscala == MetodaAmortizare.Degresiva && l.DurataFiscalaLuni % 12 != 0))
+            erori.Add($"Metoda degresivă a fișei {eticheta} cere o durată multiplu de 12 luni — "
+                + "graficul ei se construiește pe ani întregi.");
         if (l.LuniAmortizateInitial < 0)
             erori.Add($"Lunile amortizate inițial ale fișei {eticheta} nu pot fi negative.");
         if ((l.Fel != FelLiniePif.Intrare || l.LinieSursaId != null)
@@ -362,7 +367,26 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
             erori.Add($"Amortizarea {amo.Numar} ({amo.Data:dd.MM.yyyy}) e operată pentru luna ieșirii sau "
                 + "pentru una ulterioară — luna ieșirii nu se amortizează. Stornați-o înainte.");
 
-        // pas 2: anti-stale (F26-D6)
+        foreach (var grup in linii.GroupBy(l => l.ImobilizareId)) {
+            if (!fise.TryGetValue(grup.Key, out var fisa))
+                continue;
+            var politica = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == fisa.TipMaterialId);
+            if (politica == null) {
+                erori.Add($"Tipul fișei {fisa.NumarInventar} n-are rând de politică de amortizare — "
+                    + "conturile ieșirii vin exclusiv din ea.");
+                continue;
+            }
+            var asteptate = AmortizareService.LiniiIesire(os, grup.Key, Data, politica)
+                .OrderBy(l => l.Fel).ToList();
+            var culese = grup
+                .Select(l => new LinieIesire(l.Fel, l.Valoare, l.ContDebitId, l.ContCreditId))
+                .OrderBy(l => l.Fel).ToList();
+            if (!culese.SequenceEqual(asteptate))
+                erori.Add($"Liniile fișei {fisa.NumarInventar} nu mai corespund situației din registru la "
+                    + $"{Data:dd.MM.yyyy} — așteptat "
+                    + string.Join(", ", asteptate.Select(l => $"{l.Fel} {l.Valoare}"))
+                    + ". Regenerați liniile ieșirii.");
+        }
     }
 
     public void MaterializeazaRegistrul(IObjectSpace os) {
@@ -461,16 +485,41 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
                 erori.Add("Fiecare linie a amortizării poartă fișa de imobilizare.");
                 continue;
             }
-            if (fisa.Stare != StareImobilizare.InFunctiune)
-                erori.Add($"Fișa {fisa.NumarInventar} e în starea „{fisa.Stare}” — se amortizează doar "
-                    + "fișele în funcțiune.");
-            if (l.ContDebitId == null || l.ContCreditId == null || l.RepartitorDebitId == null)
-                erori.Add($"Linia fișei {fisa.NumarInventar} poartă conturile și locul explicit "
+            if (l.RepartitorDebitId == null)
+                erori.Add($"Linia fișei {fisa.NumarInventar} poartă locul explicit — el e dimensiunea "
+                    + "rândului de registru, indiferent dacă linia postează.");
+            // Linia care nu postează (contabil 0, fiscal > 0) rămâne fără conturi (F26-D7).
+            if (l.Valoare != 0m && (l.ContDebitId == null || l.ContCreditId == null))
+                erori.Add($"Linia fișei {fisa.NumarInventar} poartă conturile explicite "
                     + "(amortizarea nu are reguli de contare).");
         }
 
-        // pas 2: anti-stale și cronologia completă (F26-D7)
+        var analiza = AmortizareService.Previzualizeaza(os, Data.Year, Data.Month, ID);
+        if (analiza.Motiv != null) {
+            erori.Add($"Amortizarea lunii {Data.Month:00}/{Data.Year} nu se poate opera: "
+                + AmortizareService.Eticheta(analiza.Motiv.Value)
+                + (analiza.Detaliu == null ? "." : $" ({analiza.Detaliu})."));
+            return;
+        }
+        var asteptate = analiza.Linii.Select(Cheie).OrderBy(c => c.Fisa).ToList();
+        var culese = Detalii.OfType<AmortizareLunaraDetaliu>().Select(Cheie).OrderBy(c => c.Fisa).ToList();
+        if (!asteptate.SequenceEqual(culese)) {
+            var diferite = asteptate.Except(culese).Concat(culese.Except(asteptate))
+                .Select(c => fise.TryGetValue(c.Fisa, out var f) ? f.NumarInventar : c.Fisa.ToString())
+                .Distinct().Take(5).ToList();
+            erori.Add($"Liniile amortizării {Data.Month:00}/{Data.Year} nu mai corespund situației fișelor "
+                + $"({string.Join(", ", diferite)}) — regenerați amortizarea lunii.");
+        }
     }
+
+    static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil,
+        Guid? Debit, Guid? Credit, Guid? Loc) Cheie(LinieAmortizare l) =>
+        (l.ImobilizareId, l.Contabil, l.Fiscal, l.Deductibil, l.ContCheltuialaId, l.ContAmortizareId, l.LocId);
+
+    static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil,
+        Guid? Debit, Guid? Credit, Guid? Loc) Cheie(AmortizareLunaraDetaliu d) =>
+        (d.ImobilizareId, d.Valoare, d.ValoareFiscala, d.ValoareDeductibila,
+            d.ContDebitId, d.ContCreditId, d.RepartitorDebitId);
 
     public void MaterializeazaRegistrul(IObjectSpace os) {
         foreach (var l in Detalii.OfType<AmortizareLunaraDetaliu>()) {
