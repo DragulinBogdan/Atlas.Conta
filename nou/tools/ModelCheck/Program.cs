@@ -23667,7 +23667,7 @@ void VerificaImobilizari(bool privat) {
     using (var os = provider.CreateObjectSpace())
         CurataImo(os);
 
-    Guid idAmoUnitate, idAmoGestiune, idAmoLoc2, idAmoTip, idAmoPolitica;
+    Guid idAmoUnitate, idAmoGestiune, idAmoLoc2, idAmoTip, idAmoPolitica, idAmoCodEc;
     Guid idFa, idFb, idFc, idFd, idFe, idFf, idFg;
     using (var os = provider.CreateObjectSpace()) {
         foreach (var luna in new[] { 5, 6, 7, 8, 9, 10, 11, 12 }) {
@@ -23685,10 +23685,14 @@ void VerificaImobilizari(bool privat) {
         var loc2 = os.CreateObject<Gestiune>();
         loc2.Cod = Marcaj + "-AMO-MAG2";
         loc2.Denumire = "A doua gestiune AMO probă F26";
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-AMO-CE";
+        codEc.Denumire = "Cod economic al amortizării, probă F26";
         os.CommitChanges();
         idAmoUnitate = unitate.ID;
         idAmoGestiune = gestiune.ID;
         idAmoLoc2 = loc2.ID;
+        idAmoCodEc = codEc.ID;
 
         var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
         idAmoTip = tipF.ID;
@@ -23757,6 +23761,30 @@ void VerificaImobilizari(bool privat) {
             raportMai.Motiv == MotivNegenerare.FaraFise && raportMai.Linii.Count == 0);
     }
 
+    // Codul economic al cheltuielii cu amortizarea stă pe FIȘĂ (F26-r16): pe planul
+    // bugetar contul de cheltuială îl cere prin defalcare, pe cel privat nimeni nu-l cere.
+    var prefixAmo = Marcaj + "-AMO-";
+    if (!privat)
+        using (var os = provider.CreateObjectSpace()) {
+            var faraCod = AmortizareService.Genereaza(os, An, 6, idAmoUnitate);
+            os.CommitChanges();
+            var refuzFaraCod = Refuz(() => MotorOperare.Opereaza(os, faraCod));
+            Console.WriteLine($"     MĂSURAT (IMO-V31c/{eticheta}): fișe fără cod economic, operare → "
+                + $"„{refuzFaraCod?.Split(Environment.NewLine[^1])[0] ?? "<ACCEPTATĂ>"}”.");
+            Check($"IMO-V31c ({eticheta}) fișa FĂRĂ cod economic oprește operarea pe planul bugetar: contul "
+                + "de cheltuială cu amortizarea are defalcarea `E` (decizia 15), iar dimensiunea obligatorie "
+                + "a notei nu se poate inventa în generator — capcana rămâne probă, nu comentariu",
+                refuzFaraCod != null && refuzFaraCod.Contains("Cod economic"));
+            os.Delete(faraCod.Detalii.ToList());
+            os.Delete(faraCod);
+            os.CommitChanges();
+
+            foreach (var fisa in os.GetObjectsQuery<Imobilizare>()
+                    .Where(f => f.NumarInventar.StartsWith(prefixAmo)).ToList())
+                fisa.CodEconomicId = idAmoCodEc;
+            os.CommitChanges();
+        }
+
     AmortizareLunara AmoOperata(IObjectSpace os, int luna) {
         var rezultat = AmortizareService.Incearca(os, An, luna, idAmoUnitate);
         if (rezultat.Document == null)
@@ -23815,19 +23843,7 @@ void VerificaImobilizari(bool privat) {
             && linii[idFg].ContDebitId == null && linii[idFg].ContCreditId == null
             && linii[idFg].RepartitorDebitId == idAmoGestiune);
 
-        if (!privat) {
-            var refuzBugetar = Refuz(() => MotorOperare.Opereaza(os, amo));
-            Console.WriteLine($"     MĂSURAT (IMO-V31c/{eticheta}): operarea pe bugetar = "
-                + $"„{refuzBugetar?.Split(Environment.NewLine[^1])[0] ?? "<ACCEPTATĂ>"}”.");
-            CheckRefuza($"IMO-V31c ({eticheta}) LIMITĂ consemnată: pe profilul bugetar nota de amortizare NU "
-                + "se poate posta — planul instituției cere Cod economic pe contul de cheltuială cu "
-                + "amortizarea (defalcarea `E` din `CPLAN_DEFALCARE`, decizia 15), iar linia de amortizare "
-                + "n-are unde să-l poarte: nici fișa, nici politica, nici linia nu au clasificație bugetară. "
-                + "Sursa lui e o decizie de model (coloană pe linie, rând de politică sau angajament), nu o "
-                + "cârpeală de generator — restul scenei lunare rulează pe privat",
-                () => MotorOperare.Opereaza(os, amo));
-        }
-        else {
+        {
             MotorOperare.Opereaza(os, amo);
             var note = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == amo.ID).ToList();
             var randuri = os.GetObjectsQuery<RegistruImobilizari>()
@@ -23849,319 +23865,330 @@ void VerificaImobilizari(bool privat) {
                 && randA.Luni == 1 && randA.Valoare == 0m && randA.RepartitorId == idAmoGestiune
                 && randuri.Single(r => r.ImobilizareId == idFg).AmortizareFiscala == 100m
                 && amo.Numar != null && amo.Numar.StartsWith("AMO-"));
+
+            var codPeLinie = linii[idFa].CodEconomicId;
+            var codPeNota = note.Select(n => n.DebitCodEconomicId).Distinct().ToList();
+            Console.WriteLine($"     MĂSURAT (IMO-V31d/{eticheta}): cod economic pe fișă "
+                + $"{(privat ? "<null>" : os.GetObjectByKey<CodEconomic>(idAmoCodEc)?.Cod)}, pe linie "
+                + $"{(codPeLinie == null ? "<null>" : "prezent")}, pe latura de debit a notelor "
+                + $"{string.Join("/", codPeNota.Select(c => c == null ? "<null>" : "prezent"))}.");
+            Check($"IMO-V31d ({eticheta}) codul economic al fișei ajunge pe linia amortizării și de acolo, "
+                + "prin `DimensiuniCulese`, pe latura de DEBIT a rândului de registru — pe bugetar e "
+                + "dimensiunea pe care o cere contul, pe privat rămâne null fiindcă nimeni nu o cere",
+                privat
+                    ? codPeLinie == null && codPeNota.All(c => c == null)
+                    : codPeLinie == idAmoCodEc && codPeNota.Count == 1 && codPeNota[0] == idAmoCodEc);
         }
     }
 
-    // Cronologia, storno-ul și ieșirea cer AMO OPERATE, deci rulează doar pe PRIVAT: pe bugetar
-    // nota de amortizare nu se poate posta (limita din IMO-V31c).
-    if (privat) {
-        // Cota e FIXĂ la ultimul eveniment; modernizarea o mută (IMO-V35…V36).
-        using (var os = provider.CreateObjectSpace()) {
-            foreach (var luna in new[] { 7, 8 })
-                AmoOperata(os, luna);
-            var situatie = AmortizareService.Situatie(os, idFa, Zi(8, 31));
-            Console.WriteLine($"     MĂSURAT (IMO-V35/{eticheta}): după august — cumulat {situatie.Amortizare}, "
-                + $"luni {situatie.Luni}, net {situatie.NetContabil}.");
-            Check($"IMO-V35 ({eticheta}) cota rămâne FIXĂ de la ultimul eveniment: trei luni × 100,00 fac 300,00 "
-                + "cumulat și 3 luni — o recalculare „rest / rest” ar fi produs derivă (665,17 → 665,18 în 1C)",
-                situatie.Amortizare == 300m && situatie.Luni == 3 && situatie.NetContabil == 3300m);
+    // Lanțul lunar complet: cronologie, storno, ieșire — pe AMBELE profiluri, de când
+    // codul economic al fișei alimentează nota bugetară (IMO-V31c/V31d).
+    // Cota e FIXĂ la ultimul eveniment; modernizarea o mută (IMO-V35…V36).
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 7, 8 })
+            AmoOperata(os, luna);
+        var situatie = AmortizareService.Situatie(os, idFa, Zi(8, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-V35/{eticheta}): după august — cumulat {situatie.Amortizare}, "
+            + $"luni {situatie.Luni}, net {situatie.NetContabil}.");
+        Check($"IMO-V35 ({eticheta}) cota rămâne FIXĂ de la ultimul eveniment: trei luni × 100,00 fac 300,00 "
+            + "cumulat și 3 luni — o recalculare „rest / rest” ar fi produs derivă (665,17 → 665,18 în 1C)",
+            situatie.Amortizare == 300m && situatie.Luni == 3 && situatie.NetContabil == 3300m);
 
-            var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
-            var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
-            var pifModernizare = os.CreateObject<PunereInFunctiune>();
-            pifModernizare.Data = Zi(8, 15);
-            pifModernizare.Predator = unitate;
-            pifModernizare.Primitor = gestiune;
-            var linieModernizare = os.CreateObject<PunereInFunctiuneDetaliu>();
-            linieModernizare.Document = pifModernizare;
-            linieModernizare.ImobilizareId = idFa;
-            linieModernizare.TipMaterialId = idAmoTip;
-            linieModernizare.Fel = FelLiniePif.Modernizare;
-            linieModernizare.Valoare = 1650m;
-            linieModernizare.Cantitate = 1m;
-            os.CommitChanges();
-            MotorOperare.Opereaza(os, pifModernizare);
+        var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+        var pifModernizare = os.CreateObject<PunereInFunctiune>();
+        pifModernizare.Data = Zi(8, 15);
+        pifModernizare.Predator = unitate;
+        pifModernizare.Primitor = gestiune;
+        var linieModernizare = os.CreateObject<PunereInFunctiuneDetaliu>();
+        linieModernizare.Document = pifModernizare;
+        linieModernizare.ImobilizareId = idFa;
+        linieModernizare.TipMaterialId = idAmoTip;
+        linieModernizare.Fel = FelLiniePif.Modernizare;
+        linieModernizare.Valoare = 1650m;
+        linieModernizare.Cantitate = 1m;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pifModernizare);
 
-            var septembrie = AmoOperata(os, 9);
-            var linieA = septembrie.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa);
-            Console.WriteLine($"     MĂSURAT (IMO-V36/{eticheta}): septembrie, fișa A = {linieA.Valoare} "
-                + $"(brut {AmortizareService.Situatie(os, idFa, Zi(9, 30)).Valoare}).");
-            Check($"IMO-V36 ({eticheta}) modernizarea din mijlocul lunii (15.08) rebazează calculul lunii "
-                + "URMĂTOARE: (3.600 + 1.650 − 300) / (36 − 3) = 150,00 — baza se citește la SFÂRȘITUL lunii "
-                + "evenimentului (formula 1C: luna evenimentului postează încă cota veche), indiferent de zi",
-                linieA.Valoare == 150m && linieA.ValoareFiscala == 150m && linieA.ValoareDeductibila == 150m);
+        var septembrie = AmoOperata(os, 9);
+        var linieA = septembrie.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa);
+        Console.WriteLine($"     MĂSURAT (IMO-V36/{eticheta}): septembrie, fișa A = {linieA.Valoare} "
+            + $"(brut {AmortizareService.Situatie(os, idFa, Zi(9, 30)).Valoare}).");
+        Check($"IMO-V36 ({eticheta}) modernizarea din mijlocul lunii (15.08) rebazează calculul lunii "
+            + "URMĂTOARE: (3.600 + 1.650 − 300) / (36 − 3) = 150,00 — baza se citește la SFÂRȘITUL lunii "
+            + "evenimentului (formula 1C: luna evenimentului postează încă cota veche), indiferent de zi",
+            linieA.Valoare == 150m && linieA.ValoareFiscala == 150m && linieA.ValoareDeductibila == 150m);
+    }
+
+    // Regula de deductibilitate cu `DeLa` în mijlocul vieții activului (probată la IMO-V40).
+    using (var os = provider.CreateObjectSpace()) {
+        var regula = os.CreateObject<RegulaDeductibilitate>();
+        regula.Categorie = CategorieFiscala.VehiculPersoaneMax9Locuri;
+        regula.DoarNeexclusiv = true;
+        regula.Fel = FelDeductibilitate.PlafonLunar;
+        regula.Valoare = 1000m;
+        regula.DeLa = Zi(10, 1);
+        regula.Temei = Marcaj + " — plafon de scenă, valabil din 10/2027";
+        os.CommitChanges();
+    }
+
+    // Anti-stale-ul operării și regenerarea (IMO-V38…V40).
+    Guid idAmoOctombrie;
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = AmortizareService.Genereaza(os, An, 10, idAmoUnitate);
+        os.CommitChanges();
+        var linieVeche = draft.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa);
+        var valoareLaGenerare = linieVeche.Valoare;
+
+        var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+        var pifRevizuire = os.CreateObject<PunereInFunctiune>();
+        pifRevizuire.Data = Zi(9, 30);
+        pifRevizuire.Predator = unitate;
+        pifRevizuire.Primitor = gestiune;
+        var linieRevizuire = os.CreateObject<PunereInFunctiuneDetaliu>();
+        linieRevizuire.Document = pifRevizuire;
+        linieRevizuire.ImobilizareId = idFa;
+        linieRevizuire.TipMaterialId = idAmoTip;
+        linieRevizuire.Fel = FelLiniePif.Revizuire;
+        linieRevizuire.Valoare = 0m;
+        linieRevizuire.Cantitate = 1m;
+        linieRevizuire.Metoda = MetodaAmortizare.Liniara;
+        linieRevizuire.DurataLuni = 48;
+        linieRevizuire.MetodaFiscala = MetodaAmortizare.Liniara;
+        linieRevizuire.DurataFiscalaLuni = 48;
+        linieRevizuire.CategorieFiscala = CategorieFiscala.Standard;
+        linieRevizuire.UtilizareExclusiva = true;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pifRevizuire);
+
+        Console.WriteLine($"     MĂSURAT (IMO-V38/{eticheta}): draftul lui octombrie poartă {valoareLaGenerare} "
+            + "pe fișa A, iar revizuirea a mutat durata pe 48.");
+        CheckRefuza($"IMO-V38 ({eticheta}) un draft de amortizare generat ÎNAINTE de o revizuire operată nu se "
+            + "mai poate opera: gardianul recalculează mulțimea liniilor din registru și refuză — altfel luna "
+            + "ar posta cifre care nu mai descriu nicio bază",
+            () => MotorOperare.Opereaza(os, draft));
+
+        var regenerat = AmortizareService.Incearca(os, An, 10, idAmoUnitate, draft.ID);
+        os.Delete(draft.Detalii.ToList());
+        os.Delete(draft);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, regenerat.Document);
+        idAmoOctombrie = regenerat.Document.ID;
+        var linieNoua = regenerat.Document.Detalii.OfType<AmortizareLunaraDetaliu>()
+            .Single(l => l.ImobilizareId == idFa);
+        var linieC = regenerat.Document.Detalii.OfType<AmortizareLunaraDetaliu>()
+            .Single(l => l.ImobilizareId == idFc);
+        Console.WriteLine($"     MĂSURAT (IMO-V39/{eticheta}): octombrie regenerat — fișa A "
+            + $"{linieNoua.Valoare}, fișa C deductibil {linieC.ValoareDeductibila} "
+            + $"(septembrie: {deductibilVehiculNeexclusiv}).");
+        Check($"IMO-V39 ({eticheta}) regenerarea cu `inlocuieste` trece pe lângă gardianul „luna are deja o "
+            + "amortizare” și produce cifra nouă: (5.250 − 450) / (48 − 4) = 109,09 — durata revizuită e fapt "
+            + "datat, iar recalculul rămâne reproductibil",
+            linieNoua.Valoare == 109.09m && linieNoua.ValoareFiscala == 109.09m
+            && linieNoua.ValoareDeductibila == 109.09m);
+        Check($"IMO-V40 ({eticheta}) o regulă de deductibilitate cu `DeLa` în mijlocul vieții activului "
+            + "schimbă DOAR lunile de după: plafonul de scenă (1.000 din 10/2027) taie deductibilul "
+            + "autoturismului de 120.000 în octombrie, iar septembrie rămâne cum a fost postat — legea se "
+            + "exprimă în date, iar cifrele deja postate sunt fapte",
+            linieC.ValoareDeductibila == 1000m && deductibilVehiculNeexclusiv != 1000m);
+    }
+
+    // Storno-ul amortizării și cronologia strictă (IMO-V41…V42).
+    using (var os = provider.CreateObjectSpace()) {
+        var octombrie = os.GetObjectByKey<AmortizareLunara>(idAmoOctombrie);
+        MotorOperare.Storneaza(os, octombrie, Zi(10, 31));
+        var contabile = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId == idAmoOctombrie).ToList();
+        var imobilizari = os.GetObjectsQuery<RegistruImobilizari>()
+            .Where(r => r.DocumentId == idAmoOctombrie).ToList();
+        var situatieA = AmortizareService.Situatie(os, idFa, Zi(10, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-V41/{eticheta}): după storno — {contabile.Count} rânduri "
+            + $"contabile ({contabile.Count(r => r.Storno)} inverse), {imobilizari.Count} rânduri de "
+            + $"imobilizări ({imobilizari.Count(r => r.Storno)} inverse); cumulat A {situatieA.Amortizare}.");
+        Check($"IMO-V41 ({eticheta}) storno-ul amortizării adaugă rânduri INVERSE în AMBELE registre "
+            + "(contabil și imobilizări), append-only, iar situația fișei revine la cea de dinaintea lunii — "
+            + "al patrulea registru urmează exact ciclul de viață al celorlalte trei",
+            contabile.Count(r => r.Storno) == contabile.Count / 2
+            && imobilizari.Count(r => r.Storno) == imobilizari.Count / 2
+            && situatieA.Amortizare == 450m && situatieA.Luni == 4);
+
+        var refacut = AmoOperata(os, 10);
+        idAmoOctombrie = refacut.ID;
+        Check($"IMO-V42 ({eticheta}) după storno luna redevine LIBERĂ: „amortizare vie” nu vede documentul "
+            + "stornat, deci octombrie se regenerează și se operează din nou, cu aceleași cifre",
+            refacut.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa)
+                .Valoare == 109.09m);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var dataAugust = Zi(8, 31);
+        var august = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataAugust && a.Stare == StareDocument.Operat);
+        CheckRefuza($"IMO-V43 ({eticheta}) anularea amortizării lui august, cu lunile următoare operate, e "
+            + "refuzată de FRUNZĂ: cronologia amortizării e strictă, fiindcă fiecare lună se calculează pe "
+            + "cumulatul celei dinainte",
+            () => MotorOperare.AnuleazaOperarea(os, august));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var dataSeptembrie = Zi(9, 30);
+        var septembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataSeptembrie && a.Stare == StareDocument.Operat);
+        CheckRefuza($"IMO-V44 ({eticheta}) stornarea amortizării lui septembrie, cu octombrie operată, e "
+            + "refuzată pe același gardian — corecția se face de la capătul cronologiei spre trecut",
+            () => MotorOperare.Storneaza(os, septembrie, Zi(10, 31)));
+    }
+
+    // Cronologia la GENERARE: luna lipsă și perioada închisă (IMO-V45…V46).
+    using (var os = provider.CreateObjectSpace()) {
+        var raportDecembrie = AmortizareService.Previzualizeaza(os, An, 12);
+        Console.WriteLine($"     MĂSURAT (IMO-V45/{eticheta}): decembrie cu noiembrie negenerată = "
+            + $"{raportDecembrie.Motiv}, {raportDecembrie.Linii.Count} linii însoțitoare.");
+        Check($"IMO-V45 ({eticheta}) decembrie, cu noiembrie negenerată deși avea fișe eligibile, iese ca "
+            + "`LunaLipsa` la RAPORT — un ecran trebuie să poată spune „nu se poate, fiindcă…”, nu să "
+            + "primească o excepție",
+            raportDecembrie.Motiv == MotivNegenerare.LunaLipsa && raportDecembrie.Linii.Count > 0);
+        CheckRefuza($"IMO-V45b ({eticheta}) aceeași stare, la COMANDĂ, e refuz zgomotos — raportul și comanda "
+            + "pun aceleași întrebări, în aceeași ordine, și diferă printr-un singur bit",
+            () => AmortizareService.Incearca(os, An, 12, idAmoUnitate));
+
+        var noiembrie = os.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == 11);
+        noiembrie.Inchisa = true;
+        os.CommitChanges();
+        var raportInchis = AmortizareService.Previzualizeaza(os, An, 11);
+        Console.WriteLine($"     MĂSURAT (IMO-V46/{eticheta}): noiembrie închisă = {raportInchis.Motiv}.");
+        Check($"IMO-V46 ({eticheta}) perioada închisă e graniță și la GENERARE, nu doar la operare: un draft "
+            + "într-o lună închisă n-ar putea fi operat niciodată, dar ar sta ca „amortizare vie” și ar bloca "
+            + "cronologia lunilor dinaintea lui",
+            raportInchis.Motiv == MotivNegenerare.PerioadaInchisa);
+        CheckRefuza($"IMO-V46b ({eticheta}) comanda pe luna închisă aruncă, ca la închiderea de TVA",
+            () => AmortizareService.Incearca(os, An, 11, idAmoUnitate));
+        noiembrie.Inchisa = false;
+        os.CommitChanges();
+    }
+
+    // Transferul, ieșirea și lunile de după (IMO-V47…V49).
+    using (var os = provider.CreateObjectSpace()) {
+        var fisaE = os.GetObjectByKey<Imobilizare>(idFe);
+        fisaE.LocId = idAmoLoc2;
+        os.CommitChanges();
+
+        var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+        var politica = os.GetObjectByKey<PoliticaAmortizare>(idAmoPolitica);
+        var tipF = os.GetObjectByKey<TipMaterial>(idAmoTip);
+        var situatieA = AmortizareService.Situatie(os, idFa, Zi(11, 15));
+
+        var cas = os.CreateObject<IesireImobilizare>();
+        cas.Data = Zi(11, 15);
+        cas.Cauza = CauzaIesire.Casare;
+        cas.Predator = gestiune;
+        cas.Primitor = unitate;
+        IesireImobilizareDetaliu LinieCas(FelLinieIesire fel, Guid? contDebit, decimal valoare) {
+            var l = os.CreateObject<IesireImobilizareDetaliu>();
+            l.Document = cas;
+            l.ImobilizareId = idFa;
+            l.TipMaterialId = tipF.ID;
+            l.Fel = fel;
+            l.Valoare = valoare;
+            l.Cantitate = 1m;
+            l.ContDebitId = contDebit;
+            l.ContCreditId = tipF.ContImplicitId;
+            l.RepartitorDebitId = gestiune.ID;
+            l.RepartitorCreditId = gestiune.ID;
+            return l;
         }
+        LinieCas(FelLinieIesire.AmortizareCumulata, politica.ContAmortizareId, situatieA.Amortizare);
+        var linieRest = LinieCas(FelLinieIesire.ValoareRamasa, politica.ContCheltuialaCedareId,
+            situatieA.NetContabil - 10m);
+        os.CommitChanges();
+        Console.WriteLine($"     MĂSURAT (IMO-V47/{eticheta}): cumulat {situatieA.Amortizare}, net "
+            + $"{situatieA.NetContabil}; linia de rest culeasă cu {linieRest.Valoare}.");
+        CheckRefuza($"IMO-V47 ({eticheta}) ieșirea cu linia de valoare rămasă greșită e refuzată: serviciul "
+            + "recalculează cele două linii din registru la data documentului și cere potrivirea exactă — "
+            + "același anti-stale ca la închiderea de TVA",
+            () => MotorOperare.Opereaza(os, cas));
+        linieRest.Valoare = situatieA.NetContabil;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, cas);
 
-        // Regula de deductibilitate cu `DeLa` în mijlocul vieții activului (probată la IMO-V40).
-        using (var os = provider.CreateObjectSpace()) {
-            var regula = os.CreateObject<RegulaDeductibilitate>();
-            regula.Categorie = CategorieFiscala.VehiculPersoaneMax9Locuri;
-            regula.DoarNeexclusiv = true;
-            regula.Fel = FelDeductibilitate.PlafonLunar;
-            regula.Valoare = 1000m;
-            regula.DeLa = Zi(10, 1);
-            regula.Temei = Marcaj + " — plafon de scenă, valabil din 10/2027";
-            os.CommitChanges();
-        }
+        var noteCas = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == cas.ID).ToList();
+        var randIesire = os.GetObjectsQuery<RegistruImobilizari>().Single(r => r.DocumentId == cas.ID);
+        var fisaA = os.GetObjectByKey<Imobilizare>(idFa);
+        Console.WriteLine($"     MĂSURAT (IMO-V48/{eticheta}): {noteCas.Count} note — "
+            + string.Join("; ", noteCas.Select(n => $"{os.GetObjectByKey<Cont>(n.ContDebitId)?.Simbol} = "
+                + $"{os.GetObjectByKey<Cont>(n.ContCreditId)?.Simbol} de {n.Valoare}"))
+            + $"; rândul de ieșire {randIesire.Valoare}/{randIesire.Amortizare}; fișa {fisaA.Stare}.");
+        Check($"IMO-V48 ({eticheta}) casarea unei fișe amortizate parțial descarcă exact cumulatul lunilor "
+            + "postate (5 luni: 100 + 100 + 100 + 150 + 109,09 = 559,09) și trece restul pe cheltuiala cu "
+            + "cedarea; rândul de registru e negativ pe toate coloanele, iar fișa devine `Iesita`",
+            situatieA.Amortizare == 559.09m && situatieA.NetContabil == 4690.91m
+            && noteCas.Count == 2
+            && noteCas.Any(n => n.ContDebitId == politica.ContAmortizareId && n.Valoare == 559.09m)
+            && noteCas.Any(n => n.ContDebitId == politica.ContCheltuialaCedareId && n.Valoare == 4690.91m)
+            && randIesire.Valoare == -5250m && randIesire.Amortizare == -559.09m
+            && fisaA.Stare == StareImobilizare.Iesita && fisaA.DataIesire == Zi(11, 15));
 
-        // Anti-stale-ul operării și regenerarea (IMO-V38…V40).
-        Guid idAmoOctombrie;
-        using (var os = provider.CreateObjectSpace()) {
-            var draft = AmortizareService.Genereaza(os, An, 10, idAmoUnitate);
-            os.CommitChanges();
-            var linieVeche = draft.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa);
-            var valoareLaGenerare = linieVeche.Valoare;
+        var amoNoiembrie = AmoOperata(os, 11);
+        var liniiNoiembrie = amoNoiembrie.Detalii.OfType<AmortizareLunaraDetaliu>().ToList();
+        var linieE = liniiNoiembrie.Single(l => l.ImobilizareId == idFe);
+        var randE = os.GetObjectsQuery<RegistruImobilizari>()
+            .Single(r => r.DocumentId == amoNoiembrie.ID && r.ImobilizareId == idFe);
+        Console.WriteLine($"     MĂSURAT (IMO-V49/{eticheta}): noiembrie are {liniiNoiembrie.Count} linii; "
+            + $"fișa A prezentă: {liniiNoiembrie.Any(l => l.ImobilizareId == idFa)}; "
+            + $"locul fișei E pe linie/rând = "
+            + $"{os.GetObjectByKey<Repartitor>(linieE.RepartitorDebitId ?? Guid.Empty)?.Cod}/"
+            + $"{os.GetObjectByKey<Repartitor>(randE.RepartitorId)?.Cod}.");
+        Check($"IMO-V49 ({eticheta}) luna IEȘIRII nu se amortizează (fișa casată pe 15.11 lipsește din "
+            + "amortizarea lui noiembrie), iar transferul administrativ al unei alte fișe mută postarea și "
+            + "rândul de registru pe NOUL loc — istoricul locului sunt rândurile lunare (F26-D8)",
+            liniiNoiembrie.Count == 6 && !liniiNoiembrie.Any(l => l.ImobilizareId == idFa)
+            && linieE.RepartitorDebitId == idAmoLoc2 && randE.RepartitorId == idAmoLoc2);
 
-            var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
-            var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
-            var pifRevizuire = os.CreateObject<PunereInFunctiune>();
-            pifRevizuire.Data = Zi(9, 30);
-            pifRevizuire.Predator = unitate;
-            pifRevizuire.Primitor = gestiune;
-            var linieRevizuire = os.CreateObject<PunereInFunctiuneDetaliu>();
-            linieRevizuire.Document = pifRevizuire;
-            linieRevizuire.ImobilizareId = idFa;
-            linieRevizuire.TipMaterialId = idAmoTip;
-            linieRevizuire.Fel = FelLiniePif.Revizuire;
-            linieRevizuire.Valoare = 0m;
-            linieRevizuire.Cantitate = 1m;
-            linieRevizuire.Metoda = MetodaAmortizare.Liniara;
-            linieRevizuire.DurataLuni = 48;
-            linieRevizuire.MetodaFiscala = MetodaAmortizare.Liniara;
-            linieRevizuire.DurataFiscalaLuni = 48;
-            linieRevizuire.CategorieFiscala = CategorieFiscala.Standard;
-            linieRevizuire.UtilizareExclusiva = true;
-            os.CommitChanges();
-            MotorOperare.Opereaza(os, pifRevizuire);
+        var casTarziu = os.CreateObject<IesireImobilizare>();
+        casTarziu.Data = Zi(11, 20);
+        casTarziu.Cauza = CauzaIesire.Vanzare;
+        casTarziu.Predator = gestiune;
+        casTarziu.Primitor = unitate;
+        var situatieB = AmortizareService.Situatie(os, idFb, Zi(11, 20));
+        var lTarziu = os.CreateObject<IesireImobilizareDetaliu>();
+        lTarziu.Document = casTarziu;
+        lTarziu.ImobilizareId = idFb;
+        lTarziu.TipMaterialId = tipF.ID;
+        lTarziu.Fel = FelLinieIesire.AmortizareCumulata;
+        lTarziu.Valoare = situatieB.Amortizare;
+        lTarziu.Cantitate = 1m;
+        lTarziu.ContDebitId = politica.ContAmortizareId;
+        lTarziu.ContCreditId = tipF.ContImplicitId;
+        lTarziu.RepartitorDebitId = gestiune.ID;
+        lTarziu.RepartitorCreditId = gestiune.ID;
+        var lTarziuRest = os.CreateObject<IesireImobilizareDetaliu>();
+        lTarziuRest.Document = casTarziu;
+        lTarziuRest.ImobilizareId = idFb;
+        lTarziuRest.TipMaterialId = tipF.ID;
+        lTarziuRest.Fel = FelLinieIesire.ValoareRamasa;
+        lTarziuRest.Valoare = situatieB.NetContabil;
+        lTarziuRest.Cantitate = 1m;
+        lTarziuRest.ContDebitId = politica.ContCheltuialaCedareId;
+        lTarziuRest.ContCreditId = tipF.ContImplicitId;
+        lTarziuRest.RepartitorDebitId = gestiune.ID;
+        lTarziuRest.RepartitorCreditId = gestiune.ID;
+        os.CommitChanges();
+        CheckRefuza($"IMO-V50 ({eticheta}) o ieșire într-o lună cu amortizarea deja OPERATĂ e refuzată: luna "
+            + "ieșirii nu se amortizează, deci amortizarea aceea ar rămâne pe o fișă care nu mai există în "
+            + "patrimoniu",
+            () => MotorOperare.Opereaza(os, casTarziu));
+        os.Delete(casTarziu.Detalii.ToList());
+        os.Delete(casTarziu);
+        os.CommitChanges();
 
-            Console.WriteLine($"     MĂSURAT (IMO-V38/{eticheta}): draftul lui octombrie poartă {valoareLaGenerare} "
-                + "pe fișa A, iar revizuirea a mutat durata pe 48.");
-            CheckRefuza($"IMO-V38 ({eticheta}) un draft de amortizare generat ÎNAINTE de o revizuire operată nu se "
-                + "mai poate opera: gardianul recalculează mulțimea liniilor din registru și refuză — altfel luna "
-                + "ar posta cifre care nu mai descriu nicio bază",
-                () => MotorOperare.Opereaza(os, draft));
-
-            var regenerat = AmortizareService.Incearca(os, An, 10, idAmoUnitate, draft.ID);
-            os.Delete(draft.Detalii.ToList());
-            os.Delete(draft);
-            os.CommitChanges();
-            MotorOperare.Opereaza(os, regenerat.Document);
-            idAmoOctombrie = regenerat.Document.ID;
-            var linieNoua = regenerat.Document.Detalii.OfType<AmortizareLunaraDetaliu>()
-                .Single(l => l.ImobilizareId == idFa);
-            var linieC = regenerat.Document.Detalii.OfType<AmortizareLunaraDetaliu>()
-                .Single(l => l.ImobilizareId == idFc);
-            Console.WriteLine($"     MĂSURAT (IMO-V39/{eticheta}): octombrie regenerat — fișa A "
-                + $"{linieNoua.Valoare}, fișa C deductibil {linieC.ValoareDeductibila} "
-                + $"(septembrie: {deductibilVehiculNeexclusiv}).");
-            Check($"IMO-V39 ({eticheta}) regenerarea cu `inlocuieste` trece pe lângă gardianul „luna are deja o "
-                + "amortizare” și produce cifra nouă: (5.250 − 450) / (48 − 4) = 109,09 — durata revizuită e fapt "
-                + "datat, iar recalculul rămâne reproductibil",
-                linieNoua.Valoare == 109.09m && linieNoua.ValoareFiscala == 109.09m
-                && linieNoua.ValoareDeductibila == 109.09m);
-            Check($"IMO-V40 ({eticheta}) o regulă de deductibilitate cu `DeLa` în mijlocul vieții activului "
-                + "schimbă DOAR lunile de după: plafonul de scenă (1.000 din 10/2027) taie deductibilul "
-                + "autoturismului de 120.000 în octombrie, iar septembrie rămâne cum a fost postat — legea se "
-                + "exprimă în date, iar cifrele deja postate sunt fapte",
-                linieC.ValoareDeductibila == 1000m && deductibilVehiculNeexclusiv != 1000m);
-        }
-
-        // Storno-ul amortizării și cronologia strictă (IMO-V41…V42).
-        using (var os = provider.CreateObjectSpace()) {
-            var octombrie = os.GetObjectByKey<AmortizareLunara>(idAmoOctombrie);
-            MotorOperare.Storneaza(os, octombrie, Zi(10, 31));
-            var contabile = os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId == idAmoOctombrie).ToList();
-            var imobilizari = os.GetObjectsQuery<RegistruImobilizari>()
-                .Where(r => r.DocumentId == idAmoOctombrie).ToList();
-            var situatieA = AmortizareService.Situatie(os, idFa, Zi(10, 31));
-            Console.WriteLine($"     MĂSURAT (IMO-V41/{eticheta}): după storno — {contabile.Count} rânduri "
-                + $"contabile ({contabile.Count(r => r.Storno)} inverse), {imobilizari.Count} rânduri de "
-                + $"imobilizări ({imobilizari.Count(r => r.Storno)} inverse); cumulat A {situatieA.Amortizare}.");
-            Check($"IMO-V41 ({eticheta}) storno-ul amortizării adaugă rânduri INVERSE în AMBELE registre "
-                + "(contabil și imobilizări), append-only, iar situația fișei revine la cea de dinaintea lunii — "
-                + "al patrulea registru urmează exact ciclul de viață al celorlalte trei",
-                contabile.Count(r => r.Storno) == contabile.Count / 2
-                && imobilizari.Count(r => r.Storno) == imobilizari.Count / 2
-                && situatieA.Amortizare == 450m && situatieA.Luni == 4);
-
-            var refacut = AmoOperata(os, 10);
-            idAmoOctombrie = refacut.ID;
-            Check($"IMO-V42 ({eticheta}) după storno luna redevine LIBERĂ: „amortizare vie” nu vede documentul "
-                + "stornat, deci octombrie se regenerează și se operează din nou, cu aceleași cifre",
-                refacut.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa)
-                    .Valoare == 109.09m);
-        }
-        using (var os = provider.CreateObjectSpace()) {
-            var dataAugust = Zi(8, 31);
-            var august = os.GetObjectsQuery<AmortizareLunara>()
-                .Single(a => a.Data == dataAugust && a.Stare == StareDocument.Operat);
-            CheckRefuza($"IMO-V43 ({eticheta}) anularea amortizării lui august, cu lunile următoare operate, e "
-                + "refuzată de FRUNZĂ: cronologia amortizării e strictă, fiindcă fiecare lună se calculează pe "
-                + "cumulatul celei dinainte",
-                () => MotorOperare.AnuleazaOperarea(os, august));
-        }
-        using (var os = provider.CreateObjectSpace()) {
-            var dataSeptembrie = Zi(9, 30);
-            var septembrie = os.GetObjectsQuery<AmortizareLunara>()
-                .Single(a => a.Data == dataSeptembrie && a.Stare == StareDocument.Operat);
-            CheckRefuza($"IMO-V44 ({eticheta}) stornarea amortizării lui septembrie, cu octombrie operată, e "
-                + "refuzată pe același gardian — corecția se face de la capătul cronologiei spre trecut",
-                () => MotorOperare.Storneaza(os, septembrie, Zi(10, 31)));
-        }
-
-        // Cronologia la GENERARE: luna lipsă și perioada închisă (IMO-V45…V46).
-        using (var os = provider.CreateObjectSpace()) {
-            var raportDecembrie = AmortizareService.Previzualizeaza(os, An, 12);
-            Console.WriteLine($"     MĂSURAT (IMO-V45/{eticheta}): decembrie cu noiembrie negenerată = "
-                + $"{raportDecembrie.Motiv}, {raportDecembrie.Linii.Count} linii însoțitoare.");
-            Check($"IMO-V45 ({eticheta}) decembrie, cu noiembrie negenerată deși avea fișe eligibile, iese ca "
-                + "`LunaLipsa` la RAPORT — un ecran trebuie să poată spune „nu se poate, fiindcă…”, nu să "
-                + "primească o excepție",
-                raportDecembrie.Motiv == MotivNegenerare.LunaLipsa && raportDecembrie.Linii.Count > 0);
-            CheckRefuza($"IMO-V45b ({eticheta}) aceeași stare, la COMANDĂ, e refuz zgomotos — raportul și comanda "
-                + "pun aceleași întrebări, în aceeași ordine, și diferă printr-un singur bit",
-                () => AmortizareService.Incearca(os, An, 12, idAmoUnitate));
-
-            var noiembrie = os.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == 11);
-            noiembrie.Inchisa = true;
-            os.CommitChanges();
-            var raportInchis = AmortizareService.Previzualizeaza(os, An, 11);
-            Console.WriteLine($"     MĂSURAT (IMO-V46/{eticheta}): noiembrie închisă = {raportInchis.Motiv}.");
-            Check($"IMO-V46 ({eticheta}) perioada închisă e graniță și la GENERARE, nu doar la operare: un draft "
-                + "într-o lună închisă n-ar putea fi operat niciodată, dar ar sta ca „amortizare vie” și ar bloca "
-                + "cronologia lunilor dinaintea lui",
-                raportInchis.Motiv == MotivNegenerare.PerioadaInchisa);
-            CheckRefuza($"IMO-V46b ({eticheta}) comanda pe luna închisă aruncă, ca la închiderea de TVA",
-                () => AmortizareService.Incearca(os, An, 11, idAmoUnitate));
-            noiembrie.Inchisa = false;
-            os.CommitChanges();
-        }
-
-        // Transferul, ieșirea și lunile de după (IMO-V47…V49).
-        using (var os = provider.CreateObjectSpace()) {
-            var fisaE = os.GetObjectByKey<Imobilizare>(idFe);
-            fisaE.LocId = idAmoLoc2;
-            os.CommitChanges();
-
-            var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
-            var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
-            var politica = os.GetObjectByKey<PoliticaAmortizare>(idAmoPolitica);
-            var tipF = os.GetObjectByKey<TipMaterial>(idAmoTip);
-            var situatieA = AmortizareService.Situatie(os, idFa, Zi(11, 15));
-
-            var cas = os.CreateObject<IesireImobilizare>();
-            cas.Data = Zi(11, 15);
-            cas.Cauza = CauzaIesire.Casare;
-            cas.Predator = gestiune;
-            cas.Primitor = unitate;
-            IesireImobilizareDetaliu LinieCas(FelLinieIesire fel, Guid? contDebit, decimal valoare) {
-                var l = os.CreateObject<IesireImobilizareDetaliu>();
-                l.Document = cas;
-                l.ImobilizareId = idFa;
-                l.TipMaterialId = tipF.ID;
-                l.Fel = fel;
-                l.Valoare = valoare;
-                l.Cantitate = 1m;
-                l.ContDebitId = contDebit;
-                l.ContCreditId = tipF.ContImplicitId;
-                l.RepartitorDebitId = gestiune.ID;
-                l.RepartitorCreditId = gestiune.ID;
-                return l;
-            }
-            LinieCas(FelLinieIesire.AmortizareCumulata, politica.ContAmortizareId, situatieA.Amortizare);
-            var linieRest = LinieCas(FelLinieIesire.ValoareRamasa, politica.ContCheltuialaCedareId,
-                situatieA.NetContabil - 10m);
-            os.CommitChanges();
-            Console.WriteLine($"     MĂSURAT (IMO-V47/{eticheta}): cumulat {situatieA.Amortizare}, net "
-                + $"{situatieA.NetContabil}; linia de rest culeasă cu {linieRest.Valoare}.");
-            CheckRefuza($"IMO-V47 ({eticheta}) ieșirea cu linia de valoare rămasă greșită e refuzată: serviciul "
-                + "recalculează cele două linii din registru la data documentului și cere potrivirea exactă — "
-                + "același anti-stale ca la închiderea de TVA",
-                () => MotorOperare.Opereaza(os, cas));
-            linieRest.Valoare = situatieA.NetContabil;
-            os.CommitChanges();
-            MotorOperare.Opereaza(os, cas);
-
-            var noteCas = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == cas.ID).ToList();
-            var randIesire = os.GetObjectsQuery<RegistruImobilizari>().Single(r => r.DocumentId == cas.ID);
-            var fisaA = os.GetObjectByKey<Imobilizare>(idFa);
-            Console.WriteLine($"     MĂSURAT (IMO-V48/{eticheta}): {noteCas.Count} note — "
-                + string.Join("; ", noteCas.Select(n => $"{os.GetObjectByKey<Cont>(n.ContDebitId)?.Simbol} = "
-                    + $"{os.GetObjectByKey<Cont>(n.ContCreditId)?.Simbol} de {n.Valoare}"))
-                + $"; rândul de ieșire {randIesire.Valoare}/{randIesire.Amortizare}; fișa {fisaA.Stare}.");
-            Check($"IMO-V48 ({eticheta}) casarea unei fișe amortizate parțial descarcă exact cumulatul lunilor "
-                + "postate (5 luni: 100 + 100 + 100 + 150 + 109,09 = 559,09) și trece restul pe cheltuiala cu "
-                + "cedarea; rândul de registru e negativ pe toate coloanele, iar fișa devine `Iesita`",
-                situatieA.Amortizare == 559.09m && situatieA.NetContabil == 4690.91m
-                && noteCas.Count == 2
-                && noteCas.Any(n => n.ContDebitId == politica.ContAmortizareId && n.Valoare == 559.09m)
-                && noteCas.Any(n => n.ContDebitId == politica.ContCheltuialaCedareId && n.Valoare == 4690.91m)
-                && randIesire.Valoare == -5250m && randIesire.Amortizare == -559.09m
-                && fisaA.Stare == StareImobilizare.Iesita && fisaA.DataIesire == Zi(11, 15));
-
-            var amoNoiembrie = AmoOperata(os, 11);
-            var liniiNoiembrie = amoNoiembrie.Detalii.OfType<AmortizareLunaraDetaliu>().ToList();
-            var linieE = liniiNoiembrie.Single(l => l.ImobilizareId == idFe);
-            var randE = os.GetObjectsQuery<RegistruImobilizari>()
-                .Single(r => r.DocumentId == amoNoiembrie.ID && r.ImobilizareId == idFe);
-            Console.WriteLine($"     MĂSURAT (IMO-V49/{eticheta}): noiembrie are {liniiNoiembrie.Count} linii; "
-                + $"fișa A prezentă: {liniiNoiembrie.Any(l => l.ImobilizareId == idFa)}; "
-                + $"locul fișei E pe linie/rând = "
-                + $"{os.GetObjectByKey<Repartitor>(linieE.RepartitorDebitId ?? Guid.Empty)?.Cod}/"
-                + $"{os.GetObjectByKey<Repartitor>(randE.RepartitorId)?.Cod}.");
-            Check($"IMO-V49 ({eticheta}) luna IEȘIRII nu se amortizează (fișa casată pe 15.11 lipsește din "
-                + "amortizarea lui noiembrie), iar transferul administrativ al unei alte fișe mută postarea și "
-                + "rândul de registru pe NOUL loc — istoricul locului sunt rândurile lunare (F26-D8)",
-                liniiNoiembrie.Count == 6 && !liniiNoiembrie.Any(l => l.ImobilizareId == idFa)
-                && linieE.RepartitorDebitId == idAmoLoc2 && randE.RepartitorId == idAmoLoc2);
-
-            var casTarziu = os.CreateObject<IesireImobilizare>();
-            casTarziu.Data = Zi(11, 20);
-            casTarziu.Cauza = CauzaIesire.Vanzare;
-            casTarziu.Predator = gestiune;
-            casTarziu.Primitor = unitate;
-            var situatieB = AmortizareService.Situatie(os, idFb, Zi(11, 20));
-            var lTarziu = os.CreateObject<IesireImobilizareDetaliu>();
-            lTarziu.Document = casTarziu;
-            lTarziu.ImobilizareId = idFb;
-            lTarziu.TipMaterialId = tipF.ID;
-            lTarziu.Fel = FelLinieIesire.AmortizareCumulata;
-            lTarziu.Valoare = situatieB.Amortizare;
-            lTarziu.Cantitate = 1m;
-            lTarziu.ContDebitId = politica.ContAmortizareId;
-            lTarziu.ContCreditId = tipF.ContImplicitId;
-            lTarziu.RepartitorDebitId = gestiune.ID;
-            lTarziu.RepartitorCreditId = gestiune.ID;
-            var lTarziuRest = os.CreateObject<IesireImobilizareDetaliu>();
-            lTarziuRest.Document = casTarziu;
-            lTarziuRest.ImobilizareId = idFb;
-            lTarziuRest.TipMaterialId = tipF.ID;
-            lTarziuRest.Fel = FelLinieIesire.ValoareRamasa;
-            lTarziuRest.Valoare = situatieB.NetContabil;
-            lTarziuRest.Cantitate = 1m;
-            lTarziuRest.ContDebitId = politica.ContCheltuialaCedareId;
-            lTarziuRest.ContCreditId = tipF.ContImplicitId;
-            lTarziuRest.RepartitorDebitId = gestiune.ID;
-            lTarziuRest.RepartitorCreditId = gestiune.ID;
-            os.CommitChanges();
-            CheckRefuza($"IMO-V50 ({eticheta}) o ieșire într-o lună cu amortizarea deja OPERATĂ e refuzată: luna "
-                + "ieșirii nu se amortizează, deci amortizarea aceea ar rămâne pe o fișă care nu mai există în "
-                + "patrimoniu",
-                () => MotorOperare.Opereaza(os, casTarziu));
-            os.Delete(casTarziu.Detalii.ToList());
-            os.Delete(casTarziu);
-            os.CommitChanges();
-
-            var amoDecembrie = AmoOperata(os, 12);
-            var liniiDecembrie = amoDecembrie.Detalii.OfType<AmortizareLunaraDetaliu>().ToList();
-            Console.WriteLine($"     MĂSURAT (IMO-V51/{eticheta}): decembrie are {liniiDecembrie.Count} linii; "
-                + $"fișa A prezentă: {liniiDecembrie.Any(l => l.ImobilizareId == idFa)}.");
-            Check($"IMO-V51 ({eticheta}) fișa ieșită nu mai apare în NICIO lună ulterioară, iar cronologia "
-                + "completată (noiembrie operată) deblochează decembrie — eligibilitatea se citește din DATE, nu "
-                + "din starea materializată a fișei",
-                liniiDecembrie.Count == 6 && !liniiDecembrie.Any(l => l.ImobilizareId == idFa));
-        }
+        var amoDecembrie = AmoOperata(os, 12);
+        var liniiDecembrie = amoDecembrie.Detalii.OfType<AmortizareLunaraDetaliu>().ToList();
+        Console.WriteLine($"     MĂSURAT (IMO-V51/{eticheta}): decembrie are {liniiDecembrie.Count} linii; "
+            + $"fișa A prezentă: {liniiDecembrie.Any(l => l.ImobilizareId == idFa)}.");
+        Check($"IMO-V51 ({eticheta}) fișa ieșită nu mai apare în NICIO lună ulterioară, iar cronologia "
+            + "completată (noiembrie operată) deblochează decembrie — eligibilitatea se citește din DATE, nu "
+            + "din starea materializată a fișei",
+            liniiDecembrie.Count == 6 && !liniiDecembrie.Any(l => l.ImobilizareId == idFa));
     }
 
     // ── IMO-V52: fișa eligibilă fără politică de amortizare ───────────────────

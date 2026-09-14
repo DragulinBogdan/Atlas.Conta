@@ -51,7 +51,7 @@ public sealed record LinieAmortizare(
     Guid ImobilizareId, string NumarInventar, string Denumire, Guid TipMaterialId,
     decimal Contabil, decimal Fiscal, decimal Deductibil,
     Guid? ContCheltuialaId, Guid? ContAmortizareId,
-    Guid LocId, Guid? CentruCostId);
+    Guid LocId, Guid? CentruCostId, Guid? CodEconomicId);
 
 /// <summary>Verdictul unei încercări de amortizare. `Document != null` ⇔ `Motiv == null`.</summary>
 public sealed record RezultatAmortizare(
@@ -238,6 +238,7 @@ public static class AmortizareService {
             linie.RepartitorDebitId = l.LocId;
             linie.RepartitorCreditId = l.LocId;
             linie.CentruCostId = l.CentruCostId;
+            linie.CodEconomicId = l.CodEconomicId;
         }
         return analiza.Rezultat with { Document = amo };
     }
@@ -339,7 +340,7 @@ public static class AmortizareService {
                 && (f.DataIesire == null || f.DataIesire > ultimaZi))
             .Select(f => new {
                 f.ID, f.NumarInventar, f.Denumire, f.TipMaterialId, f.LocId, f.CentruCostId,
-                f.DataPunereInFunctiune,
+                f.CodEconomicId, f.DataPunereInFunctiune,
             })
             .ToList();
         if (fise.Count == 0)
@@ -385,7 +386,7 @@ public static class AmortizareService {
                 contabil, fiscal, deductibil,
                 contabil == 0m ? null : conturi.ContCheltuialaAmortizareId,
                 contabil == 0m ? null : conturi.ContAmortizareId,
-                f.LocId, f.CentruCostId));
+                f.LocId, f.CentruCostId, f.CodEconomicId));
         }
         return new CalculLuna(linii, faraPolitica);
     }

@@ -483,7 +483,7 @@ nou/tools/Import1C — rulare integrală, proces detașat + monitor (50d), rapor
 - **F26-r13** migrarea fișelor din 1C (`IntroducereSolduriInitialeMF` → PIF de deschidere cu inițialele): conectorul, nu mecanismul.
 - **F26-r14** reguli de eligibilitate a metodei fiscale pe categorie (accelerata doar pe echipamente/calculatoare, art. 28 (12)) — mecanism nou dacă se cere refuz, azi doar documentat.
 - **F26-r15** cele 4 poziții-părinte din catalog ale căror benzi stau pe sub-variante fără cod (`2.1.6.1.1.`, `2.1.6.1.2.`, `2.1.17.4.`, `2.1.17.5.`): fără verificare a duratei fiscale până la o decizie (cod derivat sau banda unită pe părinte).
-- **F26-r16** clasificația bugetară a cheltuielii cu amortizarea pe profilul bugetar: contul de cheltuială are defalcarea `E` în planul instituției, iar linia AMO n-are de unde lua Codul economic (nici fișa, nici politica, nici linia) — decizia owner-ului între dimensiune pe fișă/politică/linie și defalcare `S` în seed; până atunci AMO se generează pe bugetar, dar nu se operează (proba `IMO-V31c`, pasul 2).
+- **F26-r16** (ÎNCHISĂ la pasul 2b: dimensiune pe fișă, `Imobilizare.CodEconomicId`) clasificația bugetară a cheltuielii cu amortizarea pe profilul bugetar: contul de cheltuială are defalcarea `E` în planul instituției, iar linia AMO n-are de unde lua Codul economic (nici fișa, nici politica, nici linia) — decizia owner-ului între dimensiune pe fișă/politică/linie și defalcare `S` în seed; până atunci AMO se generează pe bugetar, dar nu se operează (proba `IMO-V31c`, pasul 2).
 
 ### F26-D16 — Cadrul pentru evoluția legii (rezumat, ca regulă durabilă)
 
@@ -584,7 +584,22 @@ nou cu `DeLa`?" — dacă da, e seed; dacă nu, e felie.
    rămase sunt 13 rânduri din 05.2023 postate printr-un document MANUAL de recuperare care
    cumulează mai multe luni (raportate cu activ/lună/așteptat/postat; tabelul
    intră în decizia 087). ModelCheck: bugetar 1004/0, privat 1139/0;
-   `has-pending-model-changes`: niciuna.
+   `has-pending-model-changes`: niciuna. **Import1C integral** (run-f26, 2026-09-14
+   16:39–19:19, `--recreeaza --cititori` + `--reclasifica`, exit 0/0): raportul
+   `reconciliere-20260914-164035.txt` e IDENTIC cu baseline-ul F18 pe conținut
+   sortat (467/467 linii, singura diferență = antetul cu data).
+   *Sub-pasul 2b, executat 2026-09-14 după decizia owner-ului pe F26-r16
+   („dimensiune pe fișă")*: `Imobilizare.CodEconomicId` (FK `Restrict`, editabil
+   administrativ ca `Loc`), copiat pe linia AMO la generare și verificat
+   anti-stale (a opta componentă a cheii), purtat și de linia CAS
+   (`DimensiuniCulese`/`PreiaDimensiuni` pe tiparul `DecontDetaliu`); migrația
+   `20260914162054_F26CodEconomicImobilizare` (trei coloane nule, niciun tabel
+   nou); `metadata.json` regenerat; `ContaUiBaseline` (grupul „Loc &
+   responsabilitate" al fișei, coloană pe grilele CAS/AMO). Lanțul lunar
+   `E2E-IMO` rulează de acum pe AMBELE profiluri; fișa fără cod economic pe
+   bugetar rămâne probă de refuz („Cod economic"), cu codul pe fișă nota
+   postează cu dimensiunea pe rândul contabil. Celelalte dimensiuni bugetare
+   (funcțional, sursă, proiect) intră pe aceeași ușă dacă un plan le cere.
 3. **API** — `Api/Imobilizari/`, `Api/Pif/`, `Api/Cas/`, `Api/Amo/`,
    controllerele, `api/clasificari`, `linii-sursa`, `E2E-API-IMO`, oracolele,
    `verifica:drift` (WebApi OPRIT), probele HTTP pe host viu.

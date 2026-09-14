@@ -35,6 +35,12 @@ public class Imobilizare : BaseObject, ICuCautare, IVerificabilLaCommit {
     [XafDisplayName("Centru de cost")]
     public virtual Repartitor CentruCost { get; set; }
 
+    // Dimensiunea cerută de defalcarea contului de cheltuială pe planul bugetar (F26-r16).
+    public virtual Guid? CodEconomicId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
     public virtual Guid? ResponsabilId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Responsabil")]

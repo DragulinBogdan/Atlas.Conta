@@ -686,6 +686,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
                     .Group("GrupLoc", "Loc & responsabilitate", d => d
                         .Item(x => x.Loc)
                         .Item(x => x.CentruCost)
+                        .Item(x => x.CodEconomic)
                         .Item(x => x.Responsabil))
                     .Group("GrupStareFisa", "Stare", d => d
                         .Item(x => x.Stare)
@@ -730,7 +731,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         cas.HideForeignKeys();
         cas.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
             d => d.ImobilizareId, d => d.ContDebitId, d => d.ContCreditId,
-            d => d.RepartitorDebitId, d => d.RepartitorCreditId);
+            d => d.RepartitorDebitId, d => d.RepartitorCreditId, d => d.CodEconomicId);
         cas.ListView(nameof(IesireImobilizareDetaliu) + ListView, ReadOnly)
             .Column(d => d.Imobilizare, c => c.Index = 0)
             .Column(d => d.Fel, c => c.Index = 1)
@@ -739,6 +740,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.Valoare, c => c.Index = 4)
             .Column(d => d.RepartitorDebit, c => c.Index = 5)
             .Column(d => d.RepartitorCredit, c => c.Index = 6)
+            .Column(d => d.CodEconomic, c => c.Index = 7)
             .Column(d => d.TipMaterial, c => c.Index = -1)
             .Column(d => d.Cantitate, c => c.Index = -1)
             .Column(d => d.Lot, c => c.Index = -1)
@@ -754,7 +756,8 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         amo.HideForeignKeys();
         amo.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
             d => d.ImobilizareId, d => d.ContDebitId, d => d.ContCreditId,
-            d => d.RepartitorDebitId, d => d.RepartitorCreditId, d => d.CentruCostId);
+            d => d.RepartitorDebitId, d => d.RepartitorCreditId, d => d.CentruCostId,
+            d => d.CodEconomicId);
         amo.ListView(nameof(AmortizareLunaraDetaliu) + ListView, ReadOnly)
             .Column(d => d.Imobilizare, c => c.Index = 0)
             .Column(d => d.Valoare, c => { c.Index = 1; c.Caption = "Amortizare contabilă"; })
@@ -764,6 +767,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.ContCredit, c => c.Index = 5)
             .Column(d => d.RepartitorDebit, c => c.Index = 6)
             .Column(d => d.CentruCost, c => c.Index = 7)
+            .Column(d => d.CodEconomic, c => c.Index = 8)
             .Column(d => d.TipMaterial, c => c.Index = -1)
             .Column(d => d.Cantitate, c => c.Index = -1)
             .Column(d => d.Lot, c => c.Index = -1)

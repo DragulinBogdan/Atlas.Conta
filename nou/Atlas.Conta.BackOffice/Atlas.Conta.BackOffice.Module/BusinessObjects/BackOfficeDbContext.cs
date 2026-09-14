@@ -260,6 +260,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     .OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(f => f.CentruCost).WithMany().HasForeignKey(f => f.CentruCostId)
                     .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.CodEconomic).WithMany().HasForeignKey(f => f.CodEconomicId)
+                    .OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(f => f.Responsabil).WithMany().HasForeignKey(f => f.ResponsabilId)
                     .OnDelete(DeleteBehavior.Restrict);
             });

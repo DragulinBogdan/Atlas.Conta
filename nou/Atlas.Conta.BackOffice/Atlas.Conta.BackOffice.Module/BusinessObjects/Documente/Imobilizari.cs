@@ -460,7 +460,14 @@ public class IesireImobilizareDetaliu : DocumentDetaliu, ILinieCuPostareExplicit
     [XafDisplayName("Repartitor credit")]
     public virtual Repartitor RepartitorCredit { get; set; }
 
-    public override Dimensiuni DimensiuniCulese() => new() { RepartitorId = RepartitorDebitId };
+    public virtual Guid? CodEconomicId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
+    public override Dimensiuni DimensiuniCulese() =>
+        new() { RepartitorId = RepartitorDebitId, CodEconomicId = CodEconomicId };
+    public override void PreiaDimensiuni(Dimensiuni s) => CodEconomicId = s.CodEconomicId;
 }
 
 // AMO: amortizarea lunii, GENERATĂ pe tiparul ITV; derivă din `Document`, nu din NTC (F26-D7).
@@ -513,13 +520,14 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
     }
 
     static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil,
-        Guid? Debit, Guid? Credit, Guid? Loc) Cheie(LinieAmortizare l) =>
-        (l.ImobilizareId, l.Contabil, l.Fiscal, l.Deductibil, l.ContCheltuialaId, l.ContAmortizareId, l.LocId);
+        Guid? Debit, Guid? Credit, Guid? Loc, Guid? CodEconomic) Cheie(LinieAmortizare l) =>
+        (l.ImobilizareId, l.Contabil, l.Fiscal, l.Deductibil, l.ContCheltuialaId, l.ContAmortizareId,
+            l.LocId, l.CodEconomicId);
 
     static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil,
-        Guid? Debit, Guid? Credit, Guid? Loc) Cheie(AmortizareLunaraDetaliu d) =>
+        Guid? Debit, Guid? Credit, Guid? Loc, Guid? CodEconomic) Cheie(AmortizareLunaraDetaliu d) =>
         (d.ImobilizareId, d.Valoare, d.ValoareFiscala, d.ValoareDeductibila,
-            d.ContDebitId, d.ContCreditId, d.RepartitorDebitId);
+            d.ContDebitId, d.ContCreditId, d.RepartitorDebitId, d.CodEconomicId);
 
     public void MaterializeazaRegistrul(IObjectSpace os) {
         foreach (var l in Detalii.OfType<AmortizareLunaraDetaliu>()) {
@@ -597,6 +605,14 @@ public class AmortizareLunaraDetaliu : DocumentDetaliu, ILinieCuPostareExplicita
     [XafDisplayName("Centru de cost")]
     public virtual Repartitor CentruCost { get; set; }
 
-    public override Dimensiuni DimensiuniCulese() =>
-        new() { RepartitorId = RepartitorDebitId, CentruCostId = CentruCostId };
+    // Copiat de pe fișă la generare și verificat anti-stale, ca locul (F26-r16).
+    public virtual Guid? CodEconomicId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cod economic")]
+    public virtual CodEconomic CodEconomic { get; set; }
+
+    public override Dimensiuni DimensiuniCulese() => new() {
+        RepartitorId = RepartitorDebitId, CentruCostId = CentruCostId, CodEconomicId = CodEconomicId
+    };
+    public override void PreiaDimensiuni(Dimensiuni s) => CodEconomicId = s.CodEconomicId;
 }
