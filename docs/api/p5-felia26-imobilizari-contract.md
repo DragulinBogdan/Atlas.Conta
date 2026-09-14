@@ -633,6 +633,41 @@ nou cu `DeLa`?" — dacă da, e seed; dacă nu, e felie.
    privat 1165/0; `has-pending-model-changes`: niciuna; `Motor/*` neatins.
 4. **Client** — feliile + rute + meniu + `rutaTip` + politicile în grilă; `tsc`
    + `vite build`; smoke în browser pe Privat.
+   *Executat 2026-09-14, fără opriri; devierile decise de main*: (1) fișa
+   `Imobilizare` e ecran de nomenclator pe OData (`ListaNomenclator` +
+   `ShellNomenclator`, câmpurile motorului doar afișate), cu panoul „Fișa”
+   (`PanouFisa.tsx`, `laData` în URL) sub formular și registrul la
+   `/imobilizari/registru` (declarat înaintea rutei parametrice); totalurile
+   în tabel sub grilă, din DTO (42c). (2) Meniul „Imobilizări” stă după
+   „Trezorerie” (fișe, PIF, CAS, AMO, registru); politicile la
+   `/politici/amortizare` și `/politici/deductibilitate`. (3) `PifEditorLinie`
+   citește fișa (`fisa?laData=data documentului`) pentru banda catalogului,
+   situația curentă și PRE-COMPLETAREA parametrilor pe `Revizuire` (citire, nu
+   calcul); lookup-ul de fișă se filtrează pe `LocId = PrimitorId` și pe
+   `Stare` (`Noua` la intrare, `InFunctiune` altfel) — filtrul OData pe enum
+   ca literal de string e acceptat de host (probat). (4) Bifa `Utilizare
+   exclusivă` nebifată pleacă explicit `false` la confirmarea liniei (o bifă
+   nu poate spune „necules”); implicitul e neexclusiv, adică plafonul fiscal
+   se aplică — alegere conservatoare, consemnată. (5) CAS: selectorul de fișe
+   e `SelectBox` pe OData filtrat pe locul predatorului și `InFunctiune`;
+   grila liniilor e de citire, din ReadDto. (6) `AmoLista`/`AmoDetaliu` =
+   oglinda ITV; `MotivEticheta` vine de pe server, blocantul e link. (7)
+   `bani()` extras în `src/nucleu/format.ts` (a patra copie); `rutaTip`
+   + PIF/CAS/AMO. Probe: `pnpm build` verde; `refuzuri.ps1` pe host viu
+   Privat (după migrare + re-seed): **229/229 PASS**; smoke în browser pe
+   scenariul `E2E-API-IMO` (agent, prin `javascript_tool`): 11/11 pași PASS,
+   cifrele 3 600 → 100,00 → 75,00 → 150,00 / 3 450,00, 4/4 refuzuri văzute
+   în UI cu fraza motorului; un defect de client găsit și fixat (prefill-ul
+   pe revizuire era cod mort din cauza normalizării bifei la montare;
+   re-verificat) și unul de TIPAR al întregului client, fixat generic: la
+   tranziția directă `/:id` → `/nou` (Back) detaliul nu se remonta și starea
+   locală supraviețuia — rutele `/nou` primesc `key="nou"` în `App.tsx` (toate
+   feliile, nu doar F26; re-verificat pe PIF/CAS). Observații pentru review-ul advers (pasul 6): revizuirea
+   retroactivă cu AMO M+1 OPERATĂ e refuzată de cronologie (corect; proba
+   API o face cu M+1 Draft); mesajele gardianului scriu enum-ul CLR
+   („Iesita”), convenția întregului server; `Luni` din situație nu se stinge
+   la ieșire (rândul `Iesire` poartă `Luni = 0`); filtrele `FilterRow` pe
+   coloanele cu `Lookup` de enum (`Cauza`) neverificate în browser.
 5. **Smoke XAF** + `--dump-metadata` final.
 6. **Review advers** (agent separat: PIF pe fișă `Iesita`; două `Intrare` pe
    aceeași fișă în același commit; plafonul liniei sursă cu PIF stornat;

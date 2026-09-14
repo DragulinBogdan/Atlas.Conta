@@ -369,3 +369,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 /* Motivul eliminării e o frază, ca mesajul constatării: are voie să se rupă. */
 .tabel-mic td.explica__motiv { white-space: normal; max-width: 320px; }
 .explica__antet td { white-space: normal; }
+
+.imo__sectiune { margin-top: 18px; }
+.imo__sectiune > h3 { margin-bottom: 6px; }
+.imo__sectiune > .indiciu { max-width: 900px; }

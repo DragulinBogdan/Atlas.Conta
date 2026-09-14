@@ -46,6 +46,15 @@ import { ItvLista } from './felii/itv/ItvLista';
 import { ItvDetaliu } from './felii/itv/ItvDetaliu';
 import { DviLista } from './felii/dvi/DviLista';
 import { DviDetaliu } from './felii/dvi/DviDetaliu';
+import { PifLista } from './felii/pif/PifLista';
+import { PifDetaliu } from './felii/pif/PifDetaliu';
+import { CasLista } from './felii/cas/CasLista';
+import { CasDetaliu } from './felii/cas/CasDetaliu';
+import { AmoLista } from './felii/amo/AmoLista';
+import { AmoDetaliu } from './felii/amo/AmoDetaliu';
+import { Imobilizari } from './felii/imobilizari/Imobilizari';
+import { ImobilizareDetaliu } from './felii/imobilizari/ImobilizareDetaliu';
+import { RegistruImobilizari } from './felii/imobilizari/RegistruImobilizari';
 import { Parteneri } from './felii/nomenclatoare/Parteneri';
 import { PartenerDetaliu } from './felii/nomenclatoare/PartenerDetaliu';
 import { Produse } from './felii/nomenclatoare/Produse';
@@ -67,72 +76,75 @@ import { MapariD300 } from './felii/politici/MapariD300';
 import { MapariD394 } from './felii/politici/MapariD394';
 import { Verificare } from './felii/politici/Verificare';
 import { Explica } from './felii/politici/Explica';
+import { PoliticiAmortizare } from './felii/politici/PoliticiAmortizare';
+import { ReguliDeductibilitate } from './felii/politici/ReguliDeductibilitate';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
+// `key="nou"` remontează detaliul la trecerea DIRECTĂ `/:id` → `/nou` (Back), altfel starea locală supraviețuiește.
 export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route element={<Cadru />}>
         <Route path="/fct" element={<FctLista />} />
-        <Route path="/fct/nou" element={<FctDetaliu />} />
+        <Route path="/fct/nou" element={<FctDetaliu key="nou" />} />
         <Route path="/fct/:id" element={<FctDetaliu />} />
         {/* Declarația vamală de import (felia 25): TVA-ul datorat în vamă,
             deductibil pe 4426 — factura furnizorului extern nu-l poate purta.
             Stă lângă facturile de intrare: e documentul care completează
             achiziția din import. */}
         <Route path="/dvi" element={<DviLista />} />
-        <Route path="/dvi/nou" element={<DviDetaliu />} />
+        <Route path="/dvi/nou" element={<DviDetaliu key="nou" />} />
         <Route path="/dvi/:id" element={<DviDetaliu />} />
         <Route path="/nir" element={<NirLista />} />
         {/* Recepția fără factură se culege manual (F5): NIR-ul are rută `/nou`
             de la felia 5, pe lângă clona conexă născută de operarea facturii. */}
-        <Route path="/nir/nou" element={<NirDetaliu />} />
+        <Route path="/nir/nou" element={<NirDetaliu key="nou" />} />
         <Route path="/nir/:id" element={<NirDetaliu />} />
         <Route path="/fcl" element={<FclLista />} />
-        <Route path="/fcl/nou" element={<FclDetaliu />} />
+        <Route path="/fcl/nou" element={<FclDetaliu key="nou" />} />
         <Route path="/fcl/:id" element={<FclDetaliu />} />
         {/* DSC n-are rută `/nou`: descărcarea se naște din operarea facturii sau
             din comanda de backorder, niciodată din culegere (F4-D2). */}
         <Route path="/dsc" element={<DscLista />} />
         <Route path="/dsc/:id" element={<DscDetaliu />} />
         <Route path="/plt" element={<PltLista />} />
-        <Route path="/plt/nou" element={<PltDetaliu />} />
+        <Route path="/plt/nou" element={<PltDetaliu key="nou" />} />
         <Route path="/plt/:id" element={<PltDetaliu />} />
         <Route path="/inc" element={<IncLista />} />
-        <Route path="/inc/nou" element={<IncDetaliu />} />
+        <Route path="/inc/nou" element={<IncDetaliu key="nou" />} />
         <Route path="/inc/:id" element={<IncDetaliu />} />
         <Route path="/dec" element={<DecLista />} />
-        <Route path="/dec/nou" element={<DecDetaliu />} />
+        <Route path="/dec/nou" element={<DecDetaliu key="nou" />} />
         <Route path="/dec/:id" element={<DecDetaliu />} />
         <Route path="/btr" element={<BtrLista />} />
-        <Route path="/btr/nou" element={<BtrDetaliu />} />
+        <Route path="/btr/nou" element={<BtrDetaliu key="nou" />} />
         <Route path="/btr/:id" element={<BtrDetaliu />} />
         <Route path="/bcs" element={<BcsLista />} />
-        <Route path="/bcs/nou" element={<BcsDetaliu />} />
+        <Route path="/bcs/nou" element={<BcsDetaliu key="nou" />} />
         <Route path="/bcs/:id" element={<BcsDetaliu />} />
         <Route path="/ldi" element={<LdiLista />} />
-        <Route path="/ldi/nou" element={<LdiDetaliu />} />
+        <Route path="/ldi/nou" element={<LdiDetaliu key="nou" />} />
         <Route path="/ldi/:id" element={<LdiDetaliu />} />
         {/* Nota contabilă (felia 19): postare EXPLICITĂ, fără regulă de contare
             — și calea de lucru a compensării (48b), cu panoul de stingeri
             grupat pe (contrapartidă × sens). */}
         <Route path="/ntc" element={<NtcLista />} />
-        <Route path="/ntc/nou" element={<NtcDetaliu />} />
+        <Route path="/ntc/nou" element={<NtcDetaliu key="nou" />} />
         <Route path="/ntc/:id" element={<NtcDetaliu />} />
         <Route path="/asm" element={<AsmLista />} />
-        <Route path="/asm/nou" element={<AsmDetaliu />} />
+        <Route path="/asm/nou" element={<AsmDetaliu key="nou" />} />
         <Route path="/asm/:id" element={<AsmDetaliu />} />
         {/* Retururile (felia 19): storno cu valori NEGATIVE pe corespondența
             originală, culese POZITIV. Nu sunt stingători și nu au panou de
             stingeri (F19-D11) — compensarea cu factura originală se face prin
             nota contabilă. */}
         <Route path="/rlf" element={<RlfLista />} />
-        <Route path="/rlf/nou" element={<RlfDetaliu />} />
+        <Route path="/rlf/nou" element={<RlfDetaliu key="nou" />} />
         <Route path="/rlf/:id" element={<RlfDetaliu />} />
         <Route path="/rdc" element={<RdcLista />} />
-        <Route path="/rdc/nou" element={<RdcDetaliu />} />
+        <Route path="/rdc/nou" element={<RdcDetaliu key="nou" />} />
         <Route path="/rdc/:id" element={<RdcDetaliu />} />
         <Route path="/stoc" element={<SoldStoc />} />
         {/* Raportarea pe registre (felia 9). Parametrii (perioadă, mod, cont)
@@ -157,6 +169,22 @@ export function App() {
             închiderea o produce un serviciu, nu un formular gol. */}
         <Route path="/itv" element={<ItvLista />} />
         <Route path="/itv/:id" element={<ItvDetaliu />} />
+        {/* Imobilizările (felia 26): PIF și CAS se culeg (liniile CAS le produce
+            serverul din fișe), AMO se generează lunar pe tiparul ITV — fără `/nou`.
+            Fișa `Imobilizare` e nomenclator pe OData; `/imobilizari/registru` stă
+            ÎNAINTEA rutei parametrice. */}
+        <Route path="/pif" element={<PifLista />} />
+        <Route path="/pif/nou" element={<PifDetaliu key="nou" />} />
+        <Route path="/pif/:id" element={<PifDetaliu />} />
+        <Route path="/cas" element={<CasLista />} />
+        <Route path="/cas/nou" element={<CasDetaliu key="nou" />} />
+        <Route path="/cas/:id" element={<CasDetaliu />} />
+        <Route path="/amo" element={<AmoLista />} />
+        <Route path="/amo/:id" element={<AmoDetaliu />} />
+        <Route path="/imobilizari" element={<Imobilizari />} />
+        <Route path="/imobilizari/nou" element={<ImobilizareDetaliu key="nou" />} />
+        <Route path="/imobilizari/registru" element={<RegistruImobilizari />} />
+        <Route path="/imobilizari/:id" element={<ImobilizareDetaliu />} />
         <Route path="/jurnal-cumparari" element={<JurnalCumparari />} />
         <Route path="/jurnal-vanzari" element={<JurnalVanzari />} />
         <Route path="/decont-tva" element={<DecontTva />} />
@@ -171,10 +199,10 @@ export function App() {
             reconcilia un controller de felie. `Societate` n-are listă și n-are
             `/nou`: e un singur rând prin definiție (gardianul refuză al doilea). */}
         <Route path="/parteneri" element={<Parteneri />} />
-        <Route path="/parteneri/nou" element={<PartenerDetaliu />} />
+        <Route path="/parteneri/nou" element={<PartenerDetaliu key="nou" />} />
         <Route path="/parteneri/:id" element={<PartenerDetaliu />} />
         <Route path="/produse" element={<Produse />} />
-        <Route path="/produse/nou" element={<ProdusDetaliu />} />
+        <Route path="/produse/nou" element={<ProdusDetaliu key="nou" />} />
         <Route path="/produse/:id" element={<ProdusDetaliu />} />
         <Route path="/societate" element={<SocietateEcran />} />
         {/* Politicile (felia 23, F23-D7): aceeași grilă comună peste ușa OData
@@ -196,6 +224,8 @@ export function App() {
         <Route path="/politici/d300" element={<MapariD300 />} />
         <Route path="/politici/d394" element={<MapariD394 />} />
         <Route path="/politici/verificare" element={<Verificare />} />
+        <Route path="/politici/amortizare" element={<PoliticiAmortizare />} />
+        <Route path="/politici/deductibilitate" element={<ReguliDeductibilitate />} />
         <Route path="/politici/explica" element={<Explica />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
@@ -229,6 +259,12 @@ function Meniu() {
       <NavLink to="/plt">Plăți</NavLink>
       <NavLink to="/inc">Încasări</NavLink>
       <NavLink to="/dec">Deconturi</NavLink>
+      <span className="meniu__grup">Imobilizări</span>
+      <NavLink to="/imobilizari" end>Fișe de imobilizări</NavLink>
+      <NavLink to="/pif">Puneri în funcțiune</NavLink>
+      <NavLink to="/cas">Ieșiri de imobilizări</NavLink>
+      <NavLink to="/amo">Amortizare lunară</NavLink>
+      <NavLink to="/imobilizari/registru">Registrul imobilizărilor</NavLink>
       <span className="meniu__grup">Rapoarte</span>
       <NavLink to="/stoc">Sold stoc</NavLink>
       <NavLink to="/balanta">Balanță</NavLink>
@@ -261,6 +297,8 @@ function Meniu() {
       <NavLink to="/politici/validare">Validări</NavLink>
       <NavLink to="/politici/d300">Mapări D300</NavLink>
       <NavLink to="/politici/d394">Mapări D394</NavLink>
+      <NavLink to="/politici/amortizare">Amortizare (conturi)</NavLink>
+      <NavLink to="/politici/deductibilitate">Deductibilitate fiscală</NavLink>
       <NavLink to="/politici/verificare">Verificare profil</NavLink>
       <NavLink to="/politici/explica">Explică</NavLink>
     </nav>

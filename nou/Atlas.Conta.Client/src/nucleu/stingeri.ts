@@ -84,6 +84,11 @@ export function rutaTip(tip: string | null | undefined, id: string): string | nu
     // orice taxă, prin soldul lui 446 pe biroul vamal (DVI-D4) — dar apare în
     // fișa contului, în jurnalul de cumpărări și în registrul-jurnal.
     case 'DVI': return `/dvi/${id}`;
+    // Imobilizările (felia 26): apar ca `DocumentTip` pe rândurile fișei de
+    // imobilizare, în fișa de cont și în registrul-jurnal.
+    case 'PIF': return `/pif/${id}`;
+    case 'CAS': return `/cas/${id}`;
+    case 'AMO': return `/amo/${id}`;
     default: return null;
   }
 }
