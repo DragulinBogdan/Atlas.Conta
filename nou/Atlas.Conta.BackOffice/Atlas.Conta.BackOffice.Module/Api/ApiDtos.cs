@@ -124,4 +124,22 @@ internal static class ApiEnum {
             $"Rolul liniei de asamblare „{valoare}” nu există — valorile acceptate: "
             + string.Join(", ", Enum.GetNames<DirectieAsamblare>()) + ".");
     }
+
+    // Aceeași regulă (parse pe NUME, la graniță), cu rolul ca PARAMETRU.
+    public static T Membru<T>(string valoare, string rol) where T : struct, Enum =>
+        MembruOptional<T>(valoare, rol)
+            ?? throw new OperareException($"{rol} nu e cules — valorile acceptate: "
+                + string.Join(", ", Enum.GetNames<T>()) + ".");
+
+    // Absența e o valoare cu înțeles propriu: parametru neschimbat, filtru lipsă.
+    public static T? MembruOptional<T>(string valoare, string rol) where T : struct, Enum {
+        if (string.IsNullOrWhiteSpace(valoare))
+            return null;
+        var cerut = valoare.Trim();
+        foreach (var nume in Enum.GetNames<T>())
+            if (string.Equals(nume, cerut, StringComparison.OrdinalIgnoreCase))
+                return Enum.Parse<T>(nume);
+        throw new OperareException($"{rol} „{valoare}” nu există — valorile acceptate: "
+            + string.Join(", ", Enum.GetNames<T>()) + ".");
+    }
 }

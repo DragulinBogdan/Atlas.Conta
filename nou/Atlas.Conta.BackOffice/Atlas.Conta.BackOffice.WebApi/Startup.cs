@@ -92,6 +92,10 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // plăți poate fi un salariat nou (avans/decont), cules în
                     // fluxul operațional ca și furnizorul.
                     options.BusinessObject<Angajat>();
+                    // Fișa de imobilizare (F26-D1/D10) — nomenclator VIU, ca
+                    // `Gestiune`; regulile ei de editare sunt ale gardianului, pe
+                    // ușa comună. Sumele stau pe `api/imobilizari/*`, nu aici.
+                    options.BusinessObject<Imobilizare>();
                     // ═══ Politicile se DESCHID (felia 23, F23-D5) ═══
                     // Comentariul de dinainte („restul e read-only prin
                     // construcție… politică editată pe ușa din dos, în afara
@@ -136,6 +140,9 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // nimeni nu le scrie — ca `Judet`.
                     options.BusinessObject<UnitateMasura>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<CodEconomic>().ConfigureController(c => c.ReadOnly());
+                    // Catalogul HG 2139/2004 (F26-D4) e LEGE, seed-uit de nucleu ca
+                    // `RandD300`: se citește pentru lookup și pentru banda duratei fiscale.
+                    options.BusinessObject<ClasificareImobilizari>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<SursaFinantare>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<CodFunctional>().ConfigureController(c => c.ReadOnly());
                     options.BusinessObject<Proiect>().ConfigureController(c => c.ReadOnly());
@@ -217,6 +224,10 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // Cheia ei are unicitate în schemă (F23-D3), iar gardianul dă
                     // MESAJUL înaintea constraint-ului (60a rămâne plasa).
                     options.BusinessObject<PoliticaTvaImplicit>();
+                    // Cele două politici ale feliei 26 (F26-D4/D10): deja în
+                    // `Politici.TipuriConfigurabile`, deci fără seed nou de permisiuni.
+                    options.BusinessObject<PoliticaAmortizare>();
+                    options.BusinessObject<RegulaDeductibilitate>();
                     // `ClasaProdus` — lookup pentru `TipMaterial` și pentru coloana
                     // de clasă a regulilor de stoc. `ReadOnly`: `Natura` decide
                     // dacă o linie intră în regulile de stoc (23b), iar clasele se

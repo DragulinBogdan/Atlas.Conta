@@ -347,12 +347,12 @@ Nu intră (aritmetică proprie, 105 → 1175 la ieșire).
 
 | ușă | formă |
 |---|---|
-| `api/imobilizari` | nomenclator: `GET`, `GET {id}` (+ parametrii curenți, banda catalogului), `POST`, `PUT {id}`, `DELETE {id}` (`Noua`), `GET {id}/fisa` (situația + rândurile), `GET registru?laData=` (toate fișele: brut / cumulat / net contabil și fiscal / deductibil cumulat). `fisa`/`registru` = sume pe ușa non-secured → cer și citire pe `RegistruImobilizari` (F22-D5) |
-| `api/clasificari` | doar citire (nomenclator de seed), căutare |
+| `api/imobilizari` | *(amendat la pasul 3, F2-D4/42f)* nomenclatorul `Imobilizare` = set OData CRUD (`api/odata/Imobilizare`, ca `Gestiune`; regulile de editare la gardianul `IVerificabilLaCommit` pe ușa comună ⇒ 422 prin `RefuzOdataFilter`; ștergerea doar `Noua`); REST doar ce OData nu poate: `GET {id}/fisa?laData=` (antet + banda catalogului + situația la dată cu parametrii curenți + rândurile registrului ≤ dată) și `GET registru?laData=` (toate fișele puse în funcțiune: brut / cumulat / net contabil și fiscal / deductibil cumulat, totaluri pe server). `fisa`/`registru` = sume pe ușa non-secured → cer și citire pe `RegistruImobilizari` (F22-D5) |
+| `api/clasificari` | *(amendat la pasul 3)* nu există controller: `ClasificareImobilizari` = set OData `ReadOnly()` (`api/odata/ClasificareImobilizari`, ca `CodEconomic`), căutare pe coloana `Cautare` |
 | `api/pif` | agregat cules: CRUD (Draft) + comenzi; `GET linii-sursa?dataStart=&dataEnd=&partenerId=&toate=` (liniile FCT operate de clasă F cu restul neconsumat; plic `{ Candidati, MaiSunt }`, plafon 500). `PifWriteDto { Data, PredatorId, PrimitorId, Linii[{ Id?, ImobilizareId, Fel, LinieSursaId?, Valoare, ValoareFiscala?, inițialele, parametrii }] }` |
 | `api/cas` | `CasWriteDto { Data, Cauza, PredatorId, PrimitorId, Fise[ImobilizareId] }`; liniile le produce serverul; `PUT` le re-produce |
 | `api/amo` | tiparul ITV: `GET` (`Data desc`), `GET {id}`, `GET previzualizare?an=&luna=` (`Motiv?`, `AmortizareVieId?`, `Linii[{ fișă, contabil, fiscal, deductibil, conturi, loc }]`, totalurile), `POST genereaza { An, Luna, UnitateId }`, `POST {id}/regenereaza`, `DELETE {id}`, comenzile; fără `WriteDto` |
-| `api/politici` | `PoliticaAmortizare`, `RegulaDeductibilitate` prin OData + gardian (81), ca celelalte politici |
+| `api/politici` | `PoliticaAmortizare`, `RegulaDeductibilitate` prin OData (`api/odata/…`, seturi adăugate la pasul 3) + gardian (81), ca celelalte politici |
 
 Gate-urile 401 → 400 → 404 → 403 → 422, `EroriDto` (80); `CreareAutorizata` pe
 `genereaza`; id PIF/CAS/AMO pe ușa NTC = 404 (TPT); totalurile pe server
@@ -603,6 +603,34 @@ nou cu `DeLa`?" — dacă da, e seed; dacă nu, e felie.
 3. **API** — `Api/Imobilizari/`, `Api/Pif/`, `Api/Cas/`, `Api/Amo/`,
    controllerele, `api/clasificari`, `linii-sursa`, `E2E-API-IMO`, oracolele,
    `verifica:drift` (WebApi OPRIT), probele HTTP pe host viu.
+   *Executat 2026-09-14, fără opriri; devierile decise de main și consemnate în
+   D10*: (1) nomenclatorul `Imobilizare` și catalogul `ClasificareImobilizari`
+   NU au controller REST — sunt seturi OData (CRUD, respectiv `ReadOnly()`), ca
+   toate nomenclatoarele (F2-D4, 42f, precedentul `ParteneriController`); REST
+   `api/imobilizari` păstrează doar `fisa` și `registru`; cele două politici
+   primesc seturile OData care lipseau. (2) `AmortizareVieId?` din D10 devine
+   `BlocantId` (+ `BlocantNumar`/`BlocantStare`): acoperă și `NeCronologica`/
+   `DraftAnterior`. (3) `Stale` pe AMO citește ACELAȘI criteriu ca gardianul:
+   `AmortizareLunara.LiniileCorespund(RezultatAmortizare)` extras din
+   `ValideazaOperare` (mesajul neschimbat). (4) Restul liniei sursă are o singură
+   aritmetică: `PunereInFunctiune.ConsumatPeLiniiSursa` (pe lot, o interogare
+   grupată) consumată de hook cu un singur id și de `linii-sursa`; filtrul de
+   clasă F e în SQL (`TipMaterial.Clasa.Natura`), înaintea plafonului 500 —
+   `MaiSunt` înseamnă „mai sunt linii de clasă F în perioadă”, filtrul pe rest
+   se aplică în memorie. (5) Liniile CAS le produce serverul din `LiniiIesire`
+   per fișă (politica pe `TipMaterialId`; fără politică = 422 cu fraza
+   gardianului); linia CAS n-are `CentruCost` (nu e pe model), poartă
+   `CodEconomicId` de pe fișă. (6) `PifApply.Aplica` rezolvă TOATE liniile
+   înaintea antetului (F3-D5; `DviApply` are aceeași latență, semnalată, nu
+   atinsă). (7) `ApiEnum.Membru<T>/MembruOptional<T>` generic (patru enum-uri
+   noi pe sârmă). (8) D13 spunea „Revizuire în M+1 → Stale”: pe semantica
+   pasului 2 parametrii curg din luna URMĂTOARE evenimentului, deci draftul lui
+   M+1 rămâne valid; proba datează revizuirea în M (`API-IMO-V7`), motorul
+   neatins. Probele: `API-IMO-V0…V22` pe ambele profiluri; ≈ 60 de oracole în
+   `refuzuri.ps1` (nerulate încă pe host viu — rămân pentru pasul 4, când
+   hostul pornește oricum pentru smoke). Codegen offline idempotent, pur
+   aditiv (+60 căi, +35 scheme, 0 modificate). ModelCheck: bugetar 1049/0,
+   privat 1165/0; `has-pending-model-changes`: niciuna; `Motor/*` neatins.
 4. **Client** — feliile + rute + meniu + `rutaTip` + politicile în grilă; `tsc`
    + `vite build`; smoke în browser pe Privat.
 5. **Smoke XAF** + `--dump-metadata` final.

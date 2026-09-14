@@ -139,18 +139,35 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
         if (clasa.Natura != NaturaClasa.Imobilizare)
             erori.Add($"Linia sursă a fișei {eticheta} nu e de clasă de imobilizări (natura „{clasa.Natura}”).");
 
-        var id = ID;
         var sursaId = l.LinieSursaId.Value;
-        var consumat = os.GetObjectsQuery<PunereInFunctiuneDetaliu>()
-            .Where(d => d.LinieSursaId == sursaId && d.DocumentId != id)
-            .Join(os.GetObjectsQuery<PunereInFunctiune>().Where(p => p.Stare != StareDocument.Stornat),
-                d => d.DocumentId, p => p.ID, (d, p) => d.Valoare)
-            .ToList().Sum();
+        var consumat = ConsumatPeLinieSursa(os, sursaId, ID);
         var peDocument = Detalii.OfType<PunereInFunctiuneDetaliu>()
             .Where(d => d.LinieSursaId == sursaId).Sum(d => d.Valoare);
         if (consumat + peDocument > sursa.Valoare)
             erori.Add($"Linia sursă a fișei {eticheta} are valoarea {sursa.Valoare}, iar punerile în funcțiune "
                 + $"nestornate cumulează {consumat + peDocument} — plafonul liniei de factură e depășit.");
+    }
+
+    /// <summary>Σ `Valoare` a liniilor PIF nestornate legate de o linie sursă, fără documentul dat.</summary>
+    public static decimal ConsumatPeLinieSursa(IObjectSpace os, Guid linieSursaId, Guid? faraDocument) =>
+        ConsumatPeLiniiSursa(os, [linieSursaId], faraDocument).GetValueOrDefault(linieSursaId);
+
+    /// <summary>Aceeași aritmetică, pe lot: o singură interogare grupată pe linia sursă.</summary>
+    public static Dictionary<Guid, decimal> ConsumatPeLiniiSursa(IObjectSpace os,
+            IReadOnlyCollection<Guid> liniiSursa, Guid? faraDocument) {
+        if (liniiSursa.Count == 0)
+            return new Dictionary<Guid, decimal>();
+        var cerute = liniiSursa.Distinct().ToList();
+        var linii = os.GetObjectsQuery<PunereInFunctiuneDetaliu>()
+            .Where(d => d.LinieSursaId != null && cerute.Contains(d.LinieSursaId.Value));
+        if (faraDocument is Guid exclus)
+            linii = linii.Where(d => d.DocumentId != exclus);
+        return linii
+            .Join(os.GetObjectsQuery<PunereInFunctiune>().Where(p => p.Stare != StareDocument.Stornat),
+                d => d.DocumentId, p => p.ID, (d, p) => new { Sursa = d.LinieSursaId.Value, d.Valoare })
+            .ToList()
+            .GroupBy(x => x.Sursa)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Valoare));
     }
 
     public void MaterializeazaRegistrul(IObjectSpace os) {
@@ -508,15 +525,26 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
                 + (analiza.Detaliu == null ? "." : $" ({analiza.Detaliu})."));
             return;
         }
-        var asteptate = analiza.Linii.Select(Cheie).OrderBy(c => c.Fisa).ToList();
-        var culese = Detalii.OfType<AmortizareLunaraDetaliu>().Select(Cheie).OrderBy(c => c.Fisa).ToList();
-        if (!asteptate.SequenceEqual(culese)) {
-            var diferite = asteptate.Except(culese).Concat(culese.Except(asteptate))
-                .Select(c => fise.TryGetValue(c.Fisa, out var f) ? f.NumarInventar : c.Fisa.ToString())
-                .Distinct().Take(5).ToList();
+        var nepotrivite = Nepotriviri(analiza);
+        if (nepotrivite.Count > 0) {
+            var diferite = nepotrivite
+                .Select(id => fise.TryGetValue(id, out var f) ? f.NumarInventar : id.ToString())
+                .Take(5).ToList();
             erori.Add($"Liniile amortizării {Data.Month:00}/{Data.Year} nu mai corespund situației fișelor "
                 + $"({string.Join(", ", diferite)}) — regenerați amortizarea lunii.");
         }
+    }
+
+    /// <summary>Criteriul anti-stale al gardianului, expus și ușii care raportează `Stale`.</summary>
+    public bool LiniileCorespund(RezultatAmortizare analiza) => Nepotriviri(analiza).Count == 0;
+
+    IReadOnlyList<Guid> Nepotriviri(RezultatAmortizare analiza) {
+        var asteptate = analiza.Linii.Select(Cheie).OrderBy(c => c.Fisa).ToList();
+        var culese = Detalii.OfType<AmortizareLunaraDetaliu>().Select(Cheie).OrderBy(c => c.Fisa).ToList();
+        return asteptate.SequenceEqual(culese)
+            ? []
+            : asteptate.Except(culese).Concat(culese.Except(asteptate))
+                .Select(c => c.Fisa).Distinct().ToList();
     }
 
     static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil,
