@@ -669,6 +669,48 @@ nou cu `DeLa`?" — dacă da, e seed; dacă nu, e felie.
    la ieșire (rândul `Iesire` poartă `Luni = 0`); filtrele `FilterRow` pe
    coloanele cu `Lookup` de enum (`Cauza`) neverificate în browser.
 5. **Smoke XAF** + `--dump-metadata` final.
+   *Executat 2026-09-15 (agent de smoke pe hostul Blazor viu, Privat,
+   `--urls=https://localhost:5003`, prin `chrome-devtools`; main a verificat
+   independent și a aplicat fix-urile)*: 7 probe + 2 refuzuri așteptate, 25 de
+   capturi. Navigația (fișele, catalogul cu ≈ 590 de poziții, registrul fără
+   GUID cu `Document`/`Detaliu` ascunse, cele două politici); fișa culeasă în
+   XAF (patru grupuri, starea și datele motorului needitabile); ștergerea unei
+   fișe în funcțiune refuzată de gardian; PIF cules în grila de culegere și
+   operat (`PIF-6`: fișa → În funcțiune, rândul `Intrare` 2 400); PIF pe fișă
+   ieșită refuzat cu cele patru motive; perioadele 2027-01/02 create din XAF;
+   AMO generată din React (50,00 + 100,00) și operată din XAF (`AMO-4`, grila
+   read-only, conturile 6811/2814); CAS creată din React și operată din XAF
+   (`CAS-2`: 100,00 + 2 300,00, fișa → Ieșită). Abateri explicate:
+   previzualizarea unei luni fără perioadă dă `PerioadaInchisa`, nu
+   `LunaLipsa` (12/2026 n-avea fișe eligibile); `Stale = null` pe AMO
+   operată (contractul ITV); numărul se dă la operare. **Defect major găsit
+   (D1, motor de registru, nu UI)**: anularea/stornarea unei AMO verifica doar o
+   amortizare ulterioară, nu și faptele ulterioare ale fișelor ei — `AMO-4`
+   s-a anulat sub `CAS-2` operată, lăsând ieșirea cu cumulatul orfan (−100 fără
+   +100). Fix: `PunereInFunctiune.VerificaFaraFapteUlterioare` devine comună
+   (statică, `id`/`data` explicite) și AMO o apelează după cronologia lunilor
+   (`VerificaFaraDependenti`); probele `IMO-V51b…V51d` (decembrie stornată,
+   ieșire operată pe 20.12 ⇒ anularea și stornarea lui noiembrie refuzate;
+   după stornarea ieșirii anularea trece) pe ambele profiluri; re-verificat pe
+   ușa REST (`POST api/amo/{id}/anuleaza|storneaza` → 422 cu fraza
+   gardianului) și Privat readus la consistență (anulare `CAS-2` → re-operare
+   `AMO-4` → re-operare `CAS-2`). D2 (baseline): `PoliticaAmortizare` fără
+   `HideForeignKeys` (patru FK brute în listă) — adăugat; captions pe cele
+   trei clase de linii („Linie de punere în funcțiune” etc.). Documentele
+   PIF/CAS/AMO nu au intrare proprie în navigație — convenția repo-ului (lista
+   `Document`). Observații pentru review-ul advers (pasul 6) și restanțe:
+   lookup-urile fișei și ale liniei PIF nefiltrate (Tip = toate tipurile de
+   material, Imobilizare = toate fișele, inclusiv ieșite / de pe alt loc);
+   `Clasificare` căutabilă doar pe `Denumire`; rândurile de titlu ale
+   catalogului cu `Cod` = text integral; `Valoare` din `RegulaDeductibilitate`
+   formatată monetar și la `Procent`; `Dată`/`Predator`/`Primitor` editabile pe
+   draftul AMO generat de motor; MDI-ul Atlas.DXF pare să aibă o limită tăcută
+   de ~10 tab-uri (de verificat manual, nu e F26); enum-urile CLR în mesaje
+   (deja notat). `--dump-metadata`: identic înainte și după fix-uri (checkul
+   „Metadata clientului e la zi” verde pe ambele profiluri). ModelCheck:
+   bugetar 1052/0, privat 1168/0; `has-pending-model-changes`: niciuna;
+   `Motor/*` neatins. Rămase în Privat: `SMOKE-XAF-1` (Ieșită), `PIF-6`,
+   `AMO-4`, `CAS-2` operate, perioadele 2027-01/02.
 6. **Review advers** (agent separat: PIF pe fișă `Iesita`; două `Intrare` pe
    aceeași fișă în același commit; plafonul liniei sursă cu PIF stornat;
    `Revizuire` cu durata sub lunile deja amortizate; AMO generată, `Revizuire`

@@ -203,7 +203,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
 
     public void EliminaRegistrul(IObjectSpace os) {
         var fise = Fise(os, Detalii);
-        VerificaFaraFapteUlterioare(os, fise.Keys);
+        VerificaFaraFapteUlterioare(os, ID, Data, fise.Keys);
         os.Delete(RanduriProprii(os));
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>())
             if (l.Fel == FelLiniePif.Intrare)
@@ -212,7 +212,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
         var fise = Fise(os, Detalii);
-        VerificaFaraFapteUlterioare(os, fise.Keys);
+        VerificaFaraFapteUlterioare(os, ID, Data, fise.Keys);
         foreach (var r in RanduriProprii(os))
             Inverseaza(os, r, data);
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>())
@@ -231,10 +231,9 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
     }
 
     // Corecția directă doar fără dependenți (14): un fapt ulterior viu s-a calculat pe cifrele astea.
-    void VerificaFaraFapteUlterioare(IObjectSpace os, IEnumerable<Guid> fise) {
-        var id = ID;
+    internal static void VerificaFaraFapteUlterioare(IObjectSpace os, Guid id, DateOnly data,
+            IEnumerable<Guid> fise) {
         var ids = fise.ToList();
-        var data = Data;
         var ulterioare = os.GetObjectsQuery<RegistruImobilizari>()
             .Where(r => ids.Contains(r.ImobilizareId) && r.DocumentId != id && r.Data >= data)
             .Select(r => new { r.Storno, r.DetaliuId, r.Fel, r.Data }).ToList();
@@ -287,6 +286,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
     };
 }
 
+[XafDisplayName("Linie de punere în funcțiune")]
 public class PunereInFunctiuneDetaliu : DocumentDetaliu {
     public virtual Guid ImobilizareId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
@@ -451,6 +451,7 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
     }
 }
 
+[XafDisplayName("Linie de ieșire de imobilizări")]
 public class IesireImobilizareDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
     public virtual Guid ImobilizareId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
@@ -574,16 +575,22 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
     }
 
     public void EliminaRegistrul(IObjectSpace os) {
-        VerificaFaraAmortizareUlterioara(os);
+        VerificaFaraDependenti(os);
         var id = ID;
         os.Delete(os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList());
     }
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
-        VerificaFaraAmortizareUlterioara(os);
+        VerificaFaraDependenti(os);
         var id = ID;
         foreach (var r in os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList())
             PunereInFunctiune.Inverseaza(os, r, data);
+    }
+
+    void VerificaFaraDependenti(IObjectSpace os) {
+        VerificaFaraAmortizareUlterioara(os);
+        PunereInFunctiune.VerificaFaraFapteUlterioare(os, ID, Data,
+            Detalii.OfType<AmortizareLunaraDetaliu>().Select(l => l.ImobilizareId));
     }
 
     void VerificaFaraAmortizareUlterioara(IObjectSpace os) {
@@ -598,6 +605,7 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
     }
 }
 
+[XafDisplayName("Linie de amortizare lunară")]
 public class AmortizareLunaraDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
     public virtual Guid ImobilizareId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]

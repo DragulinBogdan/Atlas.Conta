@@ -24199,6 +24199,72 @@ void VerificaImobilizari(bool privat) {
             liniiDecembrie.Count == 6 && !liniiDecembrie.Any(l => l.ImobilizareId == idFa));
     }
 
+    // Ieșirea ca DEPENDENT al lunii dinaintea ei (IMO-V51b…V51d; defect găsit la smoke-ul XAF).
+    Guid idCasB;
+    using (var os = provider.CreateObjectSpace()) {
+        var dataDecembrie = Zi(12, 31);
+        var decembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataDecembrie && a.Stare == StareDocument.Operat);
+        MotorOperare.Storneaza(os, decembrie, dataDecembrie);
+
+        var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+        var politica = os.GetObjectByKey<PoliticaAmortizare>(idAmoPolitica);
+        var tipF = os.GetObjectByKey<TipMaterial>(idAmoTip);
+        var situatieB = AmortizareService.Situatie(os, idFb, Zi(12, 20));
+        var casB = os.CreateObject<IesireImobilizare>();
+        casB.Data = Zi(12, 20);
+        casB.Cauza = CauzaIesire.Vanzare;
+        casB.Predator = gestiune;
+        casB.Primitor = unitate;
+        foreach (var (fel, cont, valoare) in new[] {
+                (FelLinieIesire.AmortizareCumulata, politica.ContAmortizareId, situatieB.Amortizare),
+                (FelLinieIesire.ValoareRamasa, politica.ContCheltuialaCedareId, situatieB.NetContabil) }) {
+            var l = os.CreateObject<IesireImobilizareDetaliu>();
+            l.Document = casB;
+            l.ImobilizareId = idFb;
+            l.TipMaterialId = tipF.ID;
+            l.Fel = fel;
+            l.Valoare = valoare;
+            l.Cantitate = 1m;
+            l.ContDebitId = cont;
+            l.ContCreditId = tipF.ContImplicitId;
+            l.RepartitorDebitId = gestiune.ID;
+            l.RepartitorCreditId = gestiune.ID;
+        }
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, casB);
+        idCasB = casB.ID;
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var dataNoiembrie = Zi(11, 30);
+        var noiembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataNoiembrie && a.Stare == StareDocument.Operat);
+        CheckRefuza($"IMO-V51b ({eticheta}) anularea amortizării lui noiembrie, cu decembrie stornată dar cu "
+            + "o IEȘIRE operată pe 20.12 pe o fișă a ei, e refuzată: cumulatul descărcat de ieșire s-a calculat "
+            + "pe rândul lunar al lui noiembrie — faptele ulterioare ale fișelor sunt dependenți, nu doar "
+            + "lunile următoare",
+            () => MotorOperare.AnuleazaOperarea(os, noiembrie));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var dataNoiembrie = Zi(11, 30);
+        var noiembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataNoiembrie && a.Stare == StareDocument.Operat);
+        CheckRefuza($"IMO-V51c ({eticheta}) stornarea aceleiași luni e refuzată pe același gardian",
+            () => MotorOperare.Storneaza(os, noiembrie, Zi(12, 31)));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        MotorOperare.Storneaza(os, os.GetObjectByKey<IesireImobilizare>(idCasB), Zi(12, 31));
+        var dataNoiembrie = Zi(11, 30);
+        var noiembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataNoiembrie && a.Stare == StareDocument.Operat);
+        MotorOperare.AnuleazaOperarea(os, noiembrie);
+        Check($"IMO-V51d ({eticheta}) după stornarea ieșirii, noiembrie se anulează: dependenții stornați nu "
+            + "mai contează, corecția merge de la capătul cronologiei spre trecut",
+            noiembrie.Stare == StareDocument.Draft
+            && !os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.DocumentId == noiembrie.ID));
+    }
+
     // ── IMO-V52: fișa eligibilă fără politică de amortizare ───────────────────
     using (var os = provider.CreateObjectSpace())
         CurataImo(os);

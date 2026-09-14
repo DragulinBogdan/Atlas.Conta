@@ -775,6 +775,8 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.ValoareTva, c => c.Index = -1)
             .Column(d => d.RepartitorCredit, c => c.Index = -1);
 
+        registry.For<PoliticaAmortizare>().HideForeignKeys();        // TipMaterialId/Cont*Id
+
         registry.For<RegistruImobilizari>().HideForeignKeys();
         registry.For<RegistruImobilizari>()
             .ListView(nameof(RegistruImobilizari) + ListView)
