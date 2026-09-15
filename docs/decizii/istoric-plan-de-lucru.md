@@ -543,3 +543,17 @@ detaliat în jurnal):
   import, legătura n→m cu facturile (`DviFactura` + `IVerificabilLaCommit`),
   DVI nu e document stins, `api/dvi` + `felii/dvi`, smoke React și XAF.
   Închide 83-r4.
+- **Felia 26** (2026-09-14/15, decizia 87) — imobilizări și amortizare,
+  contabil și fiscal: fișa ca nomenclator subțire cu parametrii ca fapte
+  datate, registrul al patrulea `RegistruImobilizari` scris prin
+  `IDocumentCuRegistruPropriu` (trei dispecere în motor), PIF (intrare,
+  modernizare, revizuire; nu postează), CAS (două note per fișă din
+  politică, liniile produse de server), AMO generată lunar pe tiparul ITV
+  cu trei cifre din `Motor/AmortizareService.cs` (cota fixată la ultimul
+  eveniment, baza la sfârșitul lunii evenimentului — formula confirmată pe
+  118 active din Flax, 99,49 %), `PoliticaAmortizare` + `RegulaDeductibilitate`
+  versionată + catalogul HG 2139/2004 ca date, `CodEconomic` ca dimensiune
+  pe fișă (F26-r16), nomenclatoarele pe OData, `api/pif|cas|amo` +
+  `felii/imobilizari|pif|cas|amo`, smoke React și XAF, Import1C integral cu
+  raport identic; defectul de cronologie a lunilor (anularea AMO sub CAS
+  operată) găsit la smoke-ul XAF și fixat. Concretizează 9.

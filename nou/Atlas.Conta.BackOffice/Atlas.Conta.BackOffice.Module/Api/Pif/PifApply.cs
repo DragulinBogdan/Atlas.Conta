@@ -58,10 +58,14 @@ public static class PifApply {
             List<PifLinieWriteDto> linii) {
         var existente = doc?.Detalii.ToDictionary(d => d.ID) ?? new Dictionary<Guid, DocumentDetaliu>();
         var pastrate = new HashSet<Guid>();
+        var fiseCerute = new HashSet<Guid>();
         var rezolvate = new List<LinieRezolvata>();
 
         foreach (var l in linii) {
             var fisa = Rezolva.Cere<Imobilizare>(os, l.ImobilizareId, "Fișa de imobilizare");
+            if (!fiseCerute.Add(fisa.ID))
+                throw new OperareException($"Fișa {Eticheta(fisa)} apare de două ori în cerere — "
+                    + "un document poartă un singur eveniment per fișă.");
             // F26-D5: tipul liniei e al FIȘEI, nu al payload-ului.
             var tipMaterial = Rezolva.Cere<TipMaterial>(os, fisa.TipMaterialId,
                 $"Tipul (contul/clasa) fișei {Eticheta(fisa)}");

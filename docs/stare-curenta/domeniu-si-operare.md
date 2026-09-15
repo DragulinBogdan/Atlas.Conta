@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-13.** [Index](README.md)
+**Actualizat: 2026-09-15.** [Index](README.md)
 
 ## Modelul comun
 
@@ -39,8 +39,13 @@ identitatea este exclusivă și schema diferă. (16)
 | `RegistruContabil` | Corespondență debit/credit, valoare și dimensiuni per latură | Da (14, 25e) |
 | `RegistruStoc` | Mișcare de cantitate și valoare pe lot, repartitor și tip de stoc | Da (14, 25e) |
 | `RegistruTva` | Fapt fiscal per linie, sens, cotă, regim, bază și TVA | Nu (68) |
+| `RegistruImobilizari` | Eveniment sau lună per fișă de imobilizare: efecte semnate pe brut, brut fiscal, cumulat contabil/fiscal/deductibil și luni, parametrii de amortizare pe evenimente, locul la data faptului | Nu (87b) |
 
 Registrele sunt scrise prin mecanismele motorului. Nu se editează prin CRUD.
+Al patrulea registru este scris de documentul care îl declară prin
+`IDocumentCuRegistruPropriu` (materializare, eliminare, storno), pe care
+motorul îl cheamă prin interfață în cele trei puncte ale ciclului de viață;
+dependențele dintre faptele aceleiași fișe le refuză tipul, nu motorul. (87c)
 Un rând operat se citește cu valorile și dimensiunile deja rezolvate.
 Excepția scrierii directe pentru migrare este deschiderea contabilă/de stoc,
 marcată prin `DocumentId = null`. (14, 25e, 40d)
@@ -178,6 +183,9 @@ clientul nu introduce o rotunjire contabilă independentă. (42c, 51c, 52a)
 | ASM — asamblare/dezasamblare | Transformare n→m cu linii de produs și consum; fără contare. Diferența valorică absolută trebuie să fie ≤ 0,005. Nu consumă un lot produs de același document. (46d) |
 | RLF — retur la furnizor | Folosește lotul original; culegere pozitivă, postare cu semn negativ pe corespondența originală. (46e, 76d) |
 | RDC — retur de la client | Un document cu linii de venit și cost pe lotul original. Totalul include doar venitul; linia de cost nu are tip TVA. Rolul unei linii salvate nu se convertește prin editare. (46e, 76d) |
+| PIF — punere în funcțiune | Unitate internă → loc; linii per fișă cu `Intrare`, `Modernizare` sau `Revizuire`. Nu postează: scrie evenimentele și parametrii de amortizare în registrul imobilizărilor și materializează starea fișei. `Intrare` cere fișă nouă și parametri completi, cu linie sursă (linia unei FCT operate de clasă F, cu plafonul consumului) sau cu valoare culeasă și inițiale; `Modernizare`/`Revizuire` cer fișă în funcțiune. Refuzat dacă o AMO operată există într-o lună ulterioară. (87e) |
+| CAS — ieșire de imobilizare | Loc → unitate internă, cu cauza (casare, vânzare, lipsă). Se culeg doar fișele; liniile le produce serverul din situația la dată și politica tipului material: amortizarea cumulată contra contului imobilizării (omisă la cumulat zero) și valoarea rămasă pe cheltuiala de cedare (omisă la net zero). Operarea recalculează și refuză liniile care nu mai corespund; refuzată dacă o AMO operată acoperă luna ieșirii sau una ulterioară; după operare avertizează dacă luna precedentă n-are amortizare operată. Fișa devine ieșită. (87f) |
+| AMO — amortizare lunară | Document generat pe unitate internă și lună, ca ITV. Linie per fișă eligibilă cu trei cifre (contabilă, fiscală, deductibilă); postează doar cifra contabilă (cheltuială = amortizare, din politică) și scrie rândul lunar în registrul imobilizărilor. Nu se culege liber; fără flux `/nou`. (87g) |
 
 Regimurile capitalizate nu sunt acceptate pe retururi. Retururile nu devin
 stingători; compensarea lor folosește nota contabilă. (46e, 76g)
@@ -211,6 +219,64 @@ Viramentul nu stinge și nu poate fi stins. Perechea draft autogenerată poate
 fi ștearsă; diferența rămâne vizibilă pe contul de tranzit. Avertismentele
 despre picioare compatibile sunt consultative: două transferuri identice
 pot reprezenta operații distincte. (64, 65)
+
+## Imobilizări
+
+Fișa `Imobilizare` este nomenclator subțire: număr de inventar unic,
+denumire, tip material de clasă F (contul imobilizării este contul implicit
+al tipului), clasificare opțională din catalog, loc (repartitorul notelor),
+centru de cost, responsabil, cod economic (dimensiunea bugetară a
+cheltuielii) și starea materializată de motor: nouă, în funcțiune, ieșită,
+cu datele punerii în funcțiune și ieșirii. Metoda, durata, valoarea
+reziduală, categoria fiscală și valoarea nu sunt pe fișă: sunt fapte datate
+în registru, scrise de documente. Parametrii curenți sunt proiecția
+ultimului eveniment. (87a)
+
+Gardianul fișei: tipul material este de clasă de imobilizări și se schimbă
+doar cât fișa este nouă; locul și codul economic cât este nouă sau în
+funcțiune; nimic pe fișa ieșită; ștergerea doar pe fișa nouă, fără rânduri
+de registru și fără linii de documente care o poartă, chiar în Draft;
+starea și datele le scrie doar motorul. Transferul este schimbarea locului pe fișă, fără
+document: următoarea amortizare postează pe noul loc, istoricul locului
+este pe rândurile lunare. (87a, 87h)
+
+Situația fișei la o dată este suma coloanelor registrului plus parametrii
+ultimului eveniment până la acea dată; fișa, registrul imobilizărilor și
+proiecțiile fiscale sunt sume peste registru. Amortizarea fiscală și cea
+deductibilă nu postează și nu au document propriu: sunt cifre înghețate pe
+rândul lunar, calculate din aceiași parametri datați și din regulile
+valabile la data rândului. (87b)
+
+Aritmetica este exclusiv în `AmortizareService`, ca funcție pură aplicată
+de trei ori pe lună. Cota liniară este valoarea de amortizat împărțită la
+lunile rămase, rotunjită la bani, fixată la ultimul eveniment; suma lunară
+este minimul dintre cotă și rest, iar ultima lună absoarbe restul. Baza
+„la ultimul eveniment" este situația la sfârșitul lunii evenimentului:
+luna evenimentului postează cota veche, parametrii noi curg din luna
+următoare, indiferent de zi. Accelerata amortizează 50 % din brut în
+primele 12 luni de la punere, apoi liniar; degresiva AD1 aplică coeficientul
+pe ani (durata trebuie să fie multiplu de 12) și trece la liniar. Fișa este
+eligibilă în luna M dacă a fost pusă în funcțiune înaintea primei zile,
+nu a ieșit până la ultima zi și mai are rest contabil sau fiscal; linia cu
+contabil zero și fiscal pozitiv rămâne fără conturi. (87g)
+
+Generarea lunară urmează ordinea gardienilor: fișă eligibilă fără politică,
+amortizare vie în lună, amortizare vie ulterioară, draft anterior, lună
+precedentă lipsă, perioadă închisă, nicio fișă. Motivul se raportează la
+previzualizare și refuză comanda. Operarea cere data ultimei zile a lunii
+și aceeași unitate internă pe ambele laturi, apoi recalculează și refuză
+dacă mulțimea liniilor diferă pe fișă, cele trei cifre, conturi, loc, centru
+de cost sau cod economic; același criteriu dă `Stale` pe API. Anularea sau
+stornarea unei amortizări este refuzată dacă există o amortizare operată
+ulterioară sau fapte ulterioare ale fișelor ei (ieșire, modernizare,
+revizuire); aceeași regulă refuză anularea sau stornarea unei puneri în
+funcțiune, iar anularea sau stornarea unei ieșiri este refuzată cât există
+amortizare operată pentru luna ieșirii sau una ulterioară. (87e, 87f, 87g)
+
+Stornoul oricărui document de imobilizări se datează în luna documentului:
+rândul invers datat în altă lună ar lăsa situația fișelor falsă între cele
+două date. O fișă apare o singură dată pe o punere în funcțiune; duratele
+revizuite depășesc lunile deja amortizate. (87e, 87g)
 
 ## Împerechere și stingere automată
 
@@ -266,3 +332,5 @@ registrelor și starea Operat, înainte de commit-ul motorului. (82b, 82c)
 - [Motorul operării](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/MotorOperare.cs)
 - [Serviciul de împerechere](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/ImperechereService.cs)
 - [Documentele de trezorerie](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Trezorerie.cs)
+- [Documentele imobilizărilor](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Imobilizari.cs)
+- [Serviciul de amortizare](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/AmortizareService.cs)

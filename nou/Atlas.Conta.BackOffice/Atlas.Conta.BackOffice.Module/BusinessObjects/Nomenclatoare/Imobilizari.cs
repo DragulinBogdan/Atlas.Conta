@@ -68,20 +68,29 @@ public class Imobilizare : BaseObject, ICuCautare, IVerificabilLaCommit {
             if (Stare != StareImobilizare.Noua || DataPunereInFunctiune != null || DataIesire != null)
                 erori.Add("O fișă nouă se creează în starea Nouă, fără date de punere în funcțiune "
                     + "sau de ieșire — le scrie motorul, la operarea documentelor.");
+            VerificaNaturaTipului(os, erori);
             return;
         }
         var originale = Motor.GardianEditare.Originale(os, this);
         var stareOriginala = (originale?[nameof(Stare)] as StareImobilizare?) ?? Stare;
         if (sters) {
+            var id = ID;
             if (stareOriginala != StareImobilizare.Noua)
                 erori.Add($"Fișa {Eticheta()} e în starea „{stareOriginala}” — se șterge doar cât e Nouă. "
                     + "Anulați sau stornați documentele care au mișcat-o.");
-            else if (os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.ImobilizareId == ID))
+            else if (os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.ImobilizareId == id))
                 erori.Add($"Fișa {Eticheta()} are rânduri de registru — nu se șterge.");
+            else if (os.GetObjectsQuery<PunereInFunctiuneDetaliu>().Any(d => d.ImobilizareId == id)
+                    || os.GetObjectsQuery<IesireImobilizareDetaliu>().Any(d => d.ImobilizareId == id)
+                    || os.GetObjectsQuery<AmortizareLunaraDetaliu>().Any(d => d.ImobilizareId == id))
+                erori.Add($"Fișa {Eticheta()} e purtată de linii de documente (PIF / CAS / AMO, chiar în "
+                    + "Draft) — ștergeți liniile întâi.");
             return;
         }
         if (originale == null)
             return;
+        if (!Equals(originale[nameof(TipMaterialId)], TipMaterialId))
+            VerificaNaturaTipului(os, erori);
         if (Stare != stareOriginala
                 || !Equals(originale[nameof(DataPunereInFunctiune)], DataPunereInFunctiune)
                 || !Equals(originale[nameof(DataIesire)], DataIesire))
@@ -96,6 +105,16 @@ public class Imobilizare : BaseObject, ICuCautare, IVerificabilLaCommit {
             erori.Add($"Tipul (contul) fișei {Eticheta()} se schimbă doar cât e Nouă: "
                 + "contul de imobilizare a intrat deja în politica de amortizare și în note.");
     }
+
+    void VerificaNaturaTipului(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
+        var natura = NaturaTipului(os, TipMaterialId);
+        if (natura != NaturaClasa.Imobilizare)
+            erori.Add($"Tipul (contul) fișei {Eticheta()} trebuie să fie de clasă de imobilizări "
+                + $"(natura „{natura}”).");
+    }
+
+    internal static NaturaClasa NaturaTipului(DevExpress.ExpressApp.IObjectSpace os, Guid tipId) =>
+        Motor.Fapte.ClaseTip(os, [tipId]).GetValueOrDefault(tipId).Natura;
 
     string Eticheta() => string.IsNullOrWhiteSpace(NumarInventar) ? Denumire ?? "(fără număr)" : NumarInventar;
 }

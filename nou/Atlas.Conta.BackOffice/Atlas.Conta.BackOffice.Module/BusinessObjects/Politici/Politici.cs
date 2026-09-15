@@ -701,11 +701,20 @@ public class PoliticaTvaImplicit : BaseObject, ICuProvenienta {
 // Conturile amortizării per tip material de clasă F (F26-D4).
 [NavigationItem("Politici")]
 [XafDisplayName("Politică de amortizare")]
-public class PoliticaAmortizare : BaseObject, ICuProvenienta {
+public class PoliticaAmortizare : BaseObject, ICuProvenienta, IVerificabilLaCommit {
     // F23-D4
     [XafDisplayName("Din seed")]
     [ModelDefault("AllowEdit", "False")]
     public virtual bool DinSeed { get; set; }
+
+    public void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
+        if (os.IsObjectToDelete(this) || os.IsDeletedObject(this))
+            return;
+        var natura = Imobilizare.NaturaTipului(os, TipMaterialId);
+        if (natura != NaturaClasa.Imobilizare)
+            erori.Add("Politica de amortizare se leagă de un tip material de clasă de imobilizări "
+                + $"(natura „{natura}”).");
+    }
 
     public virtual Guid TipMaterialId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]

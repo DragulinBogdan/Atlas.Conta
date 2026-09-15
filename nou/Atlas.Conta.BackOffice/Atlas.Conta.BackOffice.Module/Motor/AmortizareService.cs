@@ -191,10 +191,10 @@ public static class AmortizareService {
         var fisa = os.GetObjectByKey<Imobilizare>(imobilizareId);
         var contImplicit = fisa == null ? null
             : os.GetObjectByKey<TipMaterial>(fisa.TipMaterialId)?.ContImplicitId;
-        var linii = new List<LinieIesire> {
-            new(FelLinieIesire.AmortizareCumulata, situatie.Amortizare,
-                politica?.ContAmortizareId, contImplicit),
-        };
+        var linii = new List<LinieIesire>();
+        if (situatie.Amortizare != 0m)
+            linii.Add(new(FelLinieIesire.AmortizareCumulata, situatie.Amortizare,
+                politica?.ContAmortizareId, contImplicit));
         if (situatie.NetContabil != 0m)
             linii.Add(new(FelLinieIesire.ValoareRamasa, situatie.NetContabil,
                 politica?.ContCheltuialaCedareId, contImplicit));

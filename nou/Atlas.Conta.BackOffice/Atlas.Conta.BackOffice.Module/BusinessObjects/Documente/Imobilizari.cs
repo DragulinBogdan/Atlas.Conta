@@ -43,6 +43,11 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
             }
             ValideazaLinie(os, l, fisa, erori);
         }
+        foreach (var grup in Detalii.OfType<PunereInFunctiuneDetaliu>().GroupBy(l => l.ImobilizareId))
+            if (grup.Count() > 1)
+                erori.Add($"Fișa {(fise.TryGetValue(grup.Key, out var f) ? f.NumarInventar : grup.Key.ToString())} "
+                    + $"apare pe {grup.Count()} linii ale aceleiași puneri în funcțiune — "
+                    + "un document poartă un singur eveniment per fișă.");
 
         var lunaPif = Luna(Data);
         var amoUlterioara = os.GetObjectsQuery<AmortizareLunara>()
@@ -100,6 +105,14 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
         if (l.ValoareReziduala != null && l.ValoareReziduala >= brut)
             erori.Add($"Valoarea reziduală a fișei {eticheta} ({l.ValoareReziduala}) trebuie să fie sub "
                 + $"valoarea brută ({brut}).");
+        if (l.Fel != FelLiniePif.Modernizare) {
+            var luniAmortizate = l.Fel == FelLiniePif.Intrare ? l.LuniAmortizateInitial : situatie.Luni;
+            var minim = l.Fel == FelLiniePif.Revizuire ? luniAmortizate + 1 : luniAmortizate;
+            if (l.DurataLuni < minim || (l.DurataFiscalaLuni > 0 && l.DurataFiscalaLuni < minim))
+                erori.Add($"Duratele fișei {eticheta} ({l.DurataLuni} luni, fiscal {l.DurataFiscalaLuni}) trebuie "
+                    + $"să depășească lunile deja amortizate ({luniAmortizate}) — altfel tot restul ar cădea "
+                    + "într-o singură lună.");
+        }
 
         VerificaBandaCatalogului(os, l, fisa, eticheta, erori);
         VerificaLinieSursa(os, l, eticheta, erori);
@@ -213,6 +226,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
         var fise = Fise(os, Detalii);
         VerificaFaraFapteUlterioare(os, ID, Data, fise.Keys);
+        VerificaLunaStornarii(Data, data);
         foreach (var r in RanduriProprii(os))
             Inverseaza(os, r, data);
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>())
@@ -243,6 +257,15 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
             throw new OperareException(
                 $"Fișele documentului au fapte ulterioare nestornate („{viu.Fel}” din {viu.Data:dd.MM.yyyy}) — "
                 + "anulați-le sau stornați-le pe acelea întâi.");
+    }
+
+    // Situația la o dată e o sumă de rânduri ≤ dată: un rând invers datat în altă lună ar lăsa
+    // lunile dintre document și storno cu o situație falsă (87g).
+    internal static void VerificaLunaStornarii(DateOnly dataDocument, DateOnly dataStorno) {
+        if (Luna(dataStorno) != Luna(dataDocument))
+            throw new OperareException(
+                $"Un document de imobilizări se stornează cu o dată din luna lui ({dataDocument:MM.yyyy}) — "
+                + $"stornarea pe {dataStorno:dd.MM.yyyy} ar lăsa situația fișelor falsă între cele două date.");
     }
 
     internal static void Inverseaza(IObjectSpace os, RegistruImobilizari r, DateOnly data) {
@@ -370,17 +393,10 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
             var feluri = grup.Select(l => l.Fel).ToList();
             if (feluri.Count != feluri.Distinct().Count())
                 erori.Add("O fișă nu poate avea două linii cu același fel pe aceeași ieșire.");
-            if (feluri.Count > 2 || !feluri.Contains(FelLinieIesire.AmortizareCumulata))
-                erori.Add("Fiecare fișă are linia de amortizare cumulată și, dacă netul nu e zero, "
-                    + "linia de valoare rămasă.");
         }
 
         // Luna ieșirii nu se amortizează (F26-D6).
-        var primaZi = new DateOnly(Data.Year, Data.Month, 1);
-        var amo = os.GetObjectsQuery<AmortizareLunara>()
-            .Where(a => a.Stare == StareDocument.Operat && a.Data >= primaZi)
-            .OrderBy(a => a.Data).Select(a => new { a.Numar, a.Data }).FirstOrDefault();
-        if (amo != null)
+        if (AmortizareOperataDinLuna(os, Data) is { } amo)
             erori.Add($"Amortizarea {amo.Numar} ({amo.Data:dd.MM.yyyy}) e operată pentru luna ieșirii sau "
                 + "pentru una ulterioară — luna ieșirii nu se amortizează. Stornați-o înainte.");
 
@@ -431,16 +447,51 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
     }
 
     public void EliminaRegistrul(IObjectSpace os) {
+        VerificaFaraAmortizareUlterioara(os);
         var id = ID;
         os.Delete(os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList());
         ReaduInFunctiune(os);
     }
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
+        VerificaFaraAmortizareUlterioara(os);
+        PunereInFunctiune.VerificaLunaStornarii(Data, data);
         var id = ID;
         foreach (var r in os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList())
             PunereInFunctiune.Inverseaza(os, r, data);
         ReaduInFunctiune(os);
+    }
+
+    // Lunile de după ieșire s-au generat FĂRĂ fișele ieșite (simetricul refuzului de la operare).
+    void VerificaFaraAmortizareUlterioara(IObjectSpace os) {
+        if (AmortizareOperataDinLuna(os, Data) is { } amo)
+            throw new OperareException(
+                $"Amortizarea {amo.Numar} ({amo.Data:dd.MM.yyyy}) e operată pentru luna ieșirii sau una "
+                + "ulterioară, fără fișele ieșite — readuse în funcțiune, lunile acelea le-ar lipsi. "
+                + "Stornați-o pe aceea întâi.");
+    }
+
+    static (string Numar, DateOnly Data)? AmortizareOperataDinLuna(IObjectSpace os, DateOnly data) {
+        var primaZi = new DateOnly(data.Year, data.Month, 1);
+        var amo = os.GetObjectsQuery<AmortizareLunara>()
+            .Where(a => a.Stare == StareDocument.Operat && a.Data >= primaZi)
+            .OrderBy(a => a.Data).Select(a => new { a.Numar, a.Data }).FirstOrDefault();
+        return amo == null ? null : (amo.Numar, amo.Data);
+    }
+
+    public override IReadOnlyList<string> MesajeDupaOperare(IObjectSpace os) {
+        var primaZi = new DateOnly(Data.Year, Data.Month, 1);
+        var ultimaZiPrecedenta = primaZi.AddDays(-1);
+        var primaZiPrecedenta = new DateOnly(ultimaZiPrecedenta.Year, ultimaZiPrecedenta.Month, 1);
+        if (os.GetObjectsQuery<AmortizareLunara>().Any(a => a.Stare == StareDocument.Operat
+                && a.Data >= primaZiPrecedenta && a.Data <= ultimaZiPrecedenta))
+            return [];
+        var puseInainte = PunereInFunctiune.Fise(os, Detalii).Values
+            .Any(f => f.DataPunereInFunctiune < primaZiPrecedenta);
+        return puseInainte
+            ? [$"Luna precedentă ({ultimaZiPrecedenta:MM.yyyy}) n-are amortizare operată, deși fișele ieșite "
+                + "erau în funcțiune — generați și operați amortizarea ei sau confirmați că nu mai aveau rest."]
+            : [];
     }
 
     void ReaduInFunctiune(IObjectSpace os) {
@@ -496,9 +547,12 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
 
     public override void ValideazaOperare(IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not UnitateInterna
-                || os.GetObjectByKey<Repartitor>(PrimitorId) is not UnitateInterna)
-            erori.Add("Amortizarea lunară are pe ambele laturi unitatea internă.");
+        if (PredatorId != PrimitorId || os.GetObjectByKey<Repartitor>(PredatorId) is not UnitateInterna)
+            erori.Add("Amortizarea lunară are pe ambele laturi aceeași unitate internă.");
+        var ultimaZi = new DateOnly(Data.Year, Data.Month, DateTime.DaysInMonth(Data.Year, Data.Month));
+        if (Data != ultimaZi)
+            erori.Add($"Amortizarea lunară se datează în ultima zi a lunii ({ultimaZi:dd.MM.yyyy}) — "
+                + "data o pune generatorul.");
 
         var fise = PunereInFunctiune.Fise(os, Detalii);
         foreach (var linie in Detalii) {
@@ -549,14 +603,14 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
     }
 
     static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil,
-        Guid? Debit, Guid? Credit, Guid? Loc, Guid? CodEconomic) Cheie(LinieAmortizare l) =>
+        Guid? Debit, Guid? Credit, Guid? Loc, Guid? CentruCost, Guid? CodEconomic) Cheie(LinieAmortizare l) =>
         (l.ImobilizareId, l.Contabil, l.Fiscal, l.Deductibil, l.ContCheltuialaId, l.ContAmortizareId,
-            l.LocId, l.CodEconomicId);
+            l.LocId, l.CentruCostId, l.CodEconomicId);
 
     static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil,
-        Guid? Debit, Guid? Credit, Guid? Loc, Guid? CodEconomic) Cheie(AmortizareLunaraDetaliu d) =>
+        Guid? Debit, Guid? Credit, Guid? Loc, Guid? CentruCost, Guid? CodEconomic) Cheie(AmortizareLunaraDetaliu d) =>
         (d.ImobilizareId, d.Valoare, d.ValoareFiscala, d.ValoareDeductibila,
-            d.ContDebitId, d.ContCreditId, d.RepartitorDebitId, d.CodEconomicId);
+            d.ContDebitId, d.ContCreditId, d.RepartitorDebitId, d.CentruCostId, d.CodEconomicId);
 
     public void MaterializeazaRegistrul(IObjectSpace os) {
         foreach (var l in Detalii.OfType<AmortizareLunaraDetaliu>()) {
@@ -582,6 +636,7 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
         VerificaFaraDependenti(os);
+        PunereInFunctiune.VerificaLunaStornarii(Data, data);
         var id = ID;
         foreach (var r in os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList())
             PunereInFunctiune.Inverseaza(os, r, data);

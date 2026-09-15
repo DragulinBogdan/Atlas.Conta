@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-13.** [Index](README.md)
+**Actualizat: 2026-09-15.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -18,7 +18,7 @@ controlate de server. Implicitul TVA al ancorei este editabil. (20, 81e)
 Politicile sunt editabile prin OData în limita permisiunilor și a gărzilor
 de domeniu. Rolul `Configurator` (seed-uit, și pe RELEASE) citește tot și
 scrie doar tipurile din `Politici.TipuriConfigurabile` — lista explicită a
-celor 17 tipuri cu proveniență, consumată și de raportul de profil și de
+celor 19 tipuri cu proveniență, consumată și de raportul de profil și de
 gate-urile de citire; permisiunile rolului se reaplică la fiecare seed. Toate
 tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e, 81k, 84c, 84d)
 
@@ -35,6 +35,8 @@ tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e
 | Închidere TVA | Cele patru conturi sunt toate completate sau toate absente (81e) |
 | Mapare D300 | Destinații de operații; fără mapare simultană la un rând și un strămoș al său (69b, 81e) |
 | Mapare D394 | Operația și sensul trebuie să formeze o combinație permisă (71c, 81e) |
+| Politică de amortizare | Un rând per tip material de clasă de imobilizări (natura verificată la commit): contul de amortizare, cheltuiala cu amortizarea și cheltuiala la cedare; fișa fără politică blochează generarea lunară și ieșirea (87d) |
+| Regulă de deductibilitate | Categoria fiscală, felul (plafon lunar sau procent), valoarea, valabilitatea de la o dată cu temei; aplicată doar utilizării neexclusive când e marcată așa (87d) |
 
 Unicitățile politicilor se aplică rândurilor active, cu tratarea explicită a
 axelor opționale. `Repartitor.Cod` nu este cheie unică globală. (81c, 81-r4)
@@ -170,6 +172,40 @@ Previzualizarea este fără scrieri și explică refuzul prin motive precum
 sau `PerioadaInchisa`. Generarea poate răspunde cu succes fără document,
 însoțită de motiv. Regenerarea verifică toate condițiile și drepturile,
 inclusiv dreptul de creare, înainte să înlocuiască draftul într-o tranzacție. (79a, 79d)
+
+## Amortizarea imobilizărilor
+
+AMO este documentul generat lunar pe unitate internă, pe tiparul ITV;
+mecanica generării, eligibilitatea fișelor, formula și gardienii sunt
+descrise în [domeniu și operare](domeniu-si-operare.md#imobilizări). Aici
+stau datele care o parametrizează. (87d, 87g)
+
+`PoliticaAmortizare` dă, per tip material de clasă F, contul de amortizare,
+contul cheltuielii cu amortizarea și contul cheltuielii la cedare. Seed-ul
+privat acoperă tipurile 205, 208, 212, 2131–2133 și 214 cu perechile lor
+28x și 6811/6583; terenurile nu au rând. Seed-ul bugetar folosește frunzele
+280.08.01, 280.08.09, 281.03.01, 281.03.03 cu 681.01.00 și 691.00.00.
+Niciun simbol de cont nu stă în cod. (87d)
+
+`RegulaDeductibilitate` exprimă legea ca date cu valabilitate: categorie
+fiscală, marcaj „doar neexclusiv", fel (plafon lunar sau procent), valoare,
+`DeLa`/`PanaLa`, temei. La fiecare rând lunar, din regulile valabile la data
+lui, câștigă per categorie și fel rândul cu `DeLa` maxim; plafonul se aplică
+înaintea procentului; fără regulă, deductibilul este egal cu fiscalul.
+Seed-ul privat: plafon 1 500 lei/lună pe vehiculele de persoane cu cel mult
+9 locuri neexclusive (din 2012-02-01), sediul social în locuință 0 % din
+2024-01-01 și 50 % din 2026-01-01. Bugetarul nu are rânduri. O regulă nouă
+sau modificată nu rescrie lunile deja postate. (87d)
+
+O cerință fiscală nouă care încape într-un rând nou cu `DeLa` este seed; un
+fel nou de regulă este mecanism nou în cod, mic și numit. (87d)
+
+`ClasificareImobilizari` este catalogul HG 2139/2004, seed-uit din CSV
+(590 de poziții cu cod; sub-variantele fără cod sunt sărite). Banda de ani a
+poziției dă intervalul duratei fiscale: la punere în funcțiune și la
+revizuire, o durată fiscală în afara benzii se refuză când fișa are
+clasificare; fără clasificare nu se verifică. Perechea de conturi nu este în
+catalog: tipul material îl alege utilizatorul. (87d)
 
 ## Proiecțiile contabile
 

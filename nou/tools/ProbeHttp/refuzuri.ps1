@@ -503,7 +503,8 @@ try {
     #     câte ori luna e liberă), iar perechea `Admin → 422` de domeniu se ia pe
     #     `opereaza`, ca cele trei 403-uri să nu poată ascunde o ușă care nu
     #     ajunge niciodată la regulă.
-    $tipImo = Get-PrimaEntitate 'TipMaterial'
+    # Fișa cere un tip de clasă de imobilizări (87a).
+    $tipImo = Get-PrimaEntitate 'TipMaterial' "Clasa/Natura eq 'Imobilizare'"
     $corpFisa = @{
         NumarInventar = "PROBA-F26-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
         Denumire      = 'Fisa proba F26 (refuzuri)'

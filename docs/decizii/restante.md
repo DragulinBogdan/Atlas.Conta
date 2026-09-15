@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-13.** [Index](README.md)
+**Actualizat: 2026-09-15.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -165,7 +165,8 @@ văzută de utilizator, sunt în
 | 85-r7 | gruparea pe `Server`/`ServerView` încarcă primele rânduri ale fiecărui grup (chei + entități per grup) | deschisă |
 | 85-r8 | `Refresh` execută pagina de două ori pe `Server` | deschisă |
 | 85-r9 | layout-ul salvat al utilizatorului poate ascunde toate coloanele; pe `ServerView` celulele rămân goale până la Refresh (curatoria grilelor, DIM-4) | deschisă |
-| 85-r10 | coloana `Produs` goală în grila Detalii a FCT `WIS26511` (date sau afișare) | deschisă || C1a | fluxul comenzilor (`docs/architecture-notes-2026-07-28.md`) | deschisă |
+| 85-r10 | coloana `Produs` goală în grila Detalii a FCT `WIS26511` (date sau afișare) | deschisă |
+| C1a | fluxul comenzilor (`docs/architecture-notes-2026-07-28.md`) | deschisă |
 | 86-r1 | taxele vamale și accizele în costul de achiziție (ajustare de cost pe lot) | deschisă |
 | 86-r2 | anularea/stornarea unei FCT legate la o DVI operată nu se refuză | deschisă |
 | 86-r3 | RLF pe DVI (retur de import / re-export) | deschisă |
@@ -184,3 +185,25 @@ văzută de utilizator, sunt în
 | 86-r16 | `DocumentDetaliu_ListView` e per clasă de detaliu: al doilea tip cu `[TipDetaliu(typeof(DocumentDetaliu))]` ar împărți grila cu DVI | deschisă |
 | 86-r17 | `Document` fără `DefaultProperty` (85b): lookup-urile și grilele de legătură afișează GUID-ul după selecție | deschisă |
 | 86-r18 | lookup-urile de documente (`_LookupListView`) rămân cu coloanele generate, fără identificarea în față; `ListaRoot<T>` țintește doar `_ListView` | deschisă |
+| F26-r1 | activele din 231 (în curs): PIF care postează 21x = 231 (decizia 87) | deschisă |
+| F26-r2 | deductibilitatea valorii rămase la ieșire (art. 28 (17)) ca `Fel` nou de regulă pe rândul `Iesire` (87) | deschisă |
+| F26-r3 | legătura CAS ↔ FCL de vânzare ca evidență (tiparul `DviFactura`) (87) | deschisă |
+| F26-r4 | degresiva AD2; amortizarea pe unități de producție (87) | deschisă |
+| F26-r5 | transferul ca rând explicit de registru (`Fel = Transfer`, valoare 0) (87) | deschisă |
+| F26-r6 | reevaluarea (locul rezervat în registru; 21x = 105 prin politică extinsă; 105 → 1175 la ieșire) (87) | deschisă |
+| F26-r7 | acțiunea XAF de generare AMO (87) | deschisă |
+| F26-r8 | SAF-T D406 Assets + AssetTransactions din `RegistruImobilizari` (87) | deschisă |
+| F26-r9 | D101 / impozitul pe profit ca proiecție peste `AmortizareDeductibila` (87) | deschisă |
+| F26-r10 | ajustările pentru depreciere (29x), leasingul, obiectele de inventar date în folosință (8035) (87) | deschisă |
+| F26-r11 | repartizarea cheltuielii cu amortizarea pe mai multe centre de cost cu coeficienți (87) | deschisă |
+| F26-r12 | `RegistruImobilizari` pe `ServerView` (85) (87) | deschisă |
+| F26-r13 | migrarea fișelor din 1C (`IntroducereSolduriInitialeMF` → PIF de deschidere cu inițialele): conectorul, nu mecanismul (87) | deschisă |
+| F26-r14 | eligibilitatea metodei fiscale pe categorie (accelerata doar pe echipamente/calculatoare, art. 28 (12)) — azi doar documentată (87) | deschisă |
+| F26-r15 | cele 4 poziții-părinte din catalog cu benzile pe sub-variante fără cod: fără verificare a duratei fiscale până la o decizie (87) | deschisă |
+| F26-r16 | clasificația bugetară a cheltuielii cu amortizarea (codul economic) | închisă la pasul 2b (dimensiune pe fișă, `Imobilizare.CodEconomicId`, 87a/87g) |
+| F26-r17 | brutul fiscal 0 pe linia PIF nu se poate exprima (`ValoareFiscala` 0 = implicit `Valoare`) (87) | deschisă |
+| F26-r18 | anularea unui eveniment PIF din luna unei AMO operate e refuzată deși rândul lunar nu depinde de el (`Data >=` vs „luna >") — refuz fals, pe partea sigură (87) | deschisă |
+| F26-r19 | lookup-urile XAF ale fișei (tip pe natură) și ale liniei PIF (fișe pe stare și loc) nefiltrate (87) | deschisă |
+| F26-r20 | `Clasificare` căutabilă în lookup-ul XAF doar pe denumire; `Valoare` a regulii de deductibilitate formatată monetar la `Procent` (87) | deschisă |
+| F26-r21 | filtrele `FilterRow` pe coloanele cu `Lookup` de enum (`Cauza`) neverificate în browser (87) | deschisă |
+| F26-r22 | două `genereaza` concurente pe aceeași lună creează două drafturi care se blochează reciproc (ca ITV) (87) | deschisă |

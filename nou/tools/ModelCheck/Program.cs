@@ -4080,6 +4080,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaImobilizari(privat: true);
     // Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
     VerificaImobilizariApi(privat: true);
+    // Probele review-ului advers al feliei 26 (`IMO-R*`, 87).
+    VerificaReviewF26(privat: true);
     // Felia 26, pasul 2 — formula contra cifrelor postate în Flax (RECONCILIERE-MF).
     VerificaReconciliereMf();
     // Decizia 85 — modul de acces al ListView-urilor (D85-M1/M2/R1/R2/R3).
@@ -9218,6 +9220,8 @@ VerificaDvi(privat: false);
 VerificaImobilizari(privat: false);
 // Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
 VerificaImobilizariApi(privat: false);
+// Probele review-ului advers al feliei 26 (`IMO-R*`, 87), și pe bugetar.
+VerificaReviewF26(privat: false);
 // Decizia 85 — modul de acces al ListView-urilor (D85-M1/M2/R1/R2/R3).
 VerificaD85(privat: false);
 // Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
@@ -23497,7 +23501,7 @@ void VerificaImobilizari(bool privat) {
         decembrie.Inchisa = false;
         os.CommitChanges();
 
-        MotorOperare.Storneaza(os, pifRevizuire, Zi(8, 1));
+        MotorOperare.Storneaza(os, pifRevizuire, pifRevizuire.Data);
         var dupaStorno = AmortizareService.Situatie(os, idFisa1, Zi(12, 31));
         Console.WriteLine($"     MĂSURAT (IMO-V23/{eticheta}): după storno-ul revizuirii — durata "
             + $"{dupaStorno.DurataLuni}, rânduri {os.GetObjectsQuery<RegistruImobilizari>().Count(r => r.DocumentId == pifRevizuire.ID)}.");
@@ -25333,4 +25337,474 @@ void VerificaApiDvi() {
         && !os.GetObjectsQuery<DviFactura>().IgnoreQueryFilters().Any()
         && !os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
             .Any(r => r.Data >= febStart && r.Data <= febEnd));
+}
+
+// Probele review-ului advers al feliei 26 (`IMO-R*`, decizia 87). Scena stă în 2028/1–12,
+// în afara ferestrei 2027/5–12 a blocurilor `E2E-IMO` / `E2E-API-IMO`.
+void VerificaReviewF26(bool privat) {
+    const string Marcaj = "RVW-F26";
+    const int An = 2028;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipF = privat ? "214" : "214.00.00";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+    string Refuz(Action actiune) {
+        try { actiune(); return null; }
+        catch (OperareException e) { return e.Message; }
+    }
+    string Prima(string mesaj) => mesaj?.Split('\n')[0] ?? "<ACCEPTAT>";
+
+    // Purja documentelor și a fișelor scenei (între probe); scena de repartitori/perioade rămâne.
+    void CurataDocumente(IObjectSpace os) {
+        var pj = new Purja(os);
+        var start = Zi(1, 1);
+        var sfarsit = Zi(12, 31);
+        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= start && d.Data <= sfarsit).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Where(f => f.NumarInventar.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+    void Curata(IObjectSpace os) {
+        CurataDocumente(os);
+        var pj = new Purja(os);
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).ToList());
+        pj.Executa();
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        Curata(os);
+
+    // ── Scena comună: perioadele 2028, unitatea, locul, un centru de cost, codul economic ──
+    Guid idUnitate, idGestiune, idCentru, idCodEc, idTipF, idPolitica;
+    using (var os = provider.CreateObjectSpace()) {
+        Check($"IMO-R0 ({eticheta}) precondiție: 2028 e liber (nicio perioadă, niciun document) — altfel "
+            + "cifrele de mai jos s-ar măsura peste conținut străin",
+            !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An)
+            && !os.GetObjectsQuery<Document>().Any(d => d.Data >= new DateOnly(An, 1, 1)
+                && d.Data <= new DateOnly(An, 12, 31)));
+        for (var luna = 1; luna <= 12; luna++) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+            p.Inchisa = false;
+        }
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-UI";
+        unitate.Denumire = "Unitate review F26";
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-MAG";
+        gestiune.Denumire = "Gestiune review F26";
+        var centru = os.CreateObject<Gestiune>();
+        centru.Cod = Marcaj + "-CC";
+        centru.Denumire = "Centru de cost review F26";
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic review F26";
+        os.CommitChanges();
+        idUnitate = unitate.ID;
+        idGestiune = gestiune.ID;
+        idCentru = centru.ID;
+        idCodEc = codEc.ID;
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        idTipF = tipF.ID;
+        idPolitica = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == tipF.ID).ID;
+    }
+
+    Imobilizare Fisa(IObjectSpace os, string sufix) {
+        var f = os.CreateObject<Imobilizare>();
+        f.NumarInventar = Marcaj + "-" + sufix;
+        f.Denumire = "Fișă review " + sufix;
+        f.TipMaterialId = idTipF;
+        f.LocId = idGestiune;
+        if (!privat)
+            f.CodEconomicId = idCodEc;
+        return f;
+    }
+    PunereInFunctiune Pif(IObjectSpace os, DateOnly data) {
+        var p = os.CreateObject<PunereInFunctiune>();
+        p.Data = data;
+        p.PredatorId = idUnitate;
+        p.PrimitorId = idGestiune;
+        return p;
+    }
+    PunereInFunctiuneDetaliu LiniePif(IObjectSpace os, PunereInFunctiune pif, Guid fisaId, FelLiniePif fel,
+            decimal valoare) {
+        var l = os.CreateObject<PunereInFunctiuneDetaliu>();
+        l.Document = pif;
+        l.ImobilizareId = fisaId;
+        l.TipMaterialId = idTipF;
+        l.Fel = fel;
+        l.Valoare = valoare;
+        l.Cantitate = 1m;
+        return l;
+    }
+    void Parametri(PunereInFunctiuneDetaliu l, int durata) {
+        l.Metoda = MetodaAmortizare.Liniara;
+        l.DurataLuni = durata;
+        l.MetodaFiscala = MetodaAmortizare.Liniara;
+        l.DurataFiscalaLuni = durata;
+        l.CategorieFiscala = CategorieFiscala.Standard;
+        l.UtilizareExclusiva = true;
+    }
+    PunereInFunctiuneDetaliu Intrare(IObjectSpace os, PunereInFunctiune pif, Guid fisaId, decimal valoare,
+            int durata) {
+        var l = LiniePif(os, pif, fisaId, FelLiniePif.Intrare, valoare);
+        Parametri(l, durata);
+        return l;
+    }
+    AmortizareLunara Amo(IObjectSpace os, int luna) {
+        var r = AmortizareService.Incearca(os, An, luna, idUnitate);
+        if (r.Document == null)
+            throw new OperareException($"Scena review: luna {luna:00}/{An} n-a fost generată ({r.Motiv}).");
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, r.Document);
+        return r.Document;
+    }
+    IesireImobilizare Cas(IObjectSpace os, DateOnly data, params Guid[] fise) {
+        var politica = os.GetObjectByKey<PoliticaAmortizare>(idPolitica);
+        var cas = os.CreateObject<IesireImobilizare>();
+        cas.Data = data;
+        cas.Cauza = CauzaIesire.Casare;
+        cas.PredatorId = idGestiune;
+        cas.PrimitorId = idUnitate;
+        foreach (var fisaId in fise) {
+            var fisa = os.GetObjectByKey<Imobilizare>(fisaId);
+            foreach (var linie in AmortizareService.LiniiIesire(os, fisaId, data, politica)) {
+                var l = os.CreateObject<IesireImobilizareDetaliu>();
+                l.Document = cas;
+                l.ImobilizareId = fisaId;
+                l.TipMaterialId = idTipF;
+                l.Fel = linie.Fel;
+                l.Valoare = linie.Valoare;
+                l.Cantitate = 1m;
+                l.ContDebitId = linie.ContDebitId;
+                l.ContCreditId = linie.ContCreditId;
+                l.RepartitorDebitId = idGestiune;
+                l.RepartitorCreditId = idGestiune;
+                l.CodEconomicId = fisa.CodEconomicId;
+            }
+        }
+        os.CommitChanges();
+        return cas;
+    }
+    List<LinieAmortizare> LiniiLuna(IObjectSpace os, int luna) =>
+        AmortizareService.Previzualizeaza(os, An, luna).Linii.ToList();
+
+    // ── IMO-R1: două linii `Intrare` pe aceeași fișă în același PIF ───────────
+    using (var os = provider.CreateObjectSpace()) {
+        var f = Fisa(os, "R1");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, f.ID, 3600m, 36);
+        Intrare(os, pif, f.ID, 3600m, 36);
+        os.CommitChanges();
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, pif));
+        var randuri = os.GetObjectsQuery<RegistruImobilizari>().Count(r => r.ImobilizareId == f.ID);
+        var situatie = AmortizareService.Situatie(os, f.ID, Zi(1, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-R1/{eticheta}): operare → „{Prima(refuz)}”; rânduri `Intrare` pe "
+            + $"fișă: {randuri}; brut la 31.01: {situatie.Valoare}; fișa: {f.Stare}.");
+        Check($"IMO-R1 ({eticheta}) două linii `Intrare` pe ACEEAȘI fișă în același PIF sunt refuzate: fișa e "
+            + "`Noua` pentru amândouă, deci gardianul de stare nu vede linia-soră, iar brutul s-ar dubla",
+            refuz != null);
+    }
+
+    // ── IMO-R2: anularea / stornarea CAS cu AMO operată pentru o lună ULTERIOARĂ ──
+    Guid idR2A, idR2B, idR2C, idCasA, idCasC;
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var a = Fisa(os, "R2A");
+        var b = Fisa(os, "R2B");
+        var c = Fisa(os, "R2C");
+        os.CommitChanges();
+        idR2A = a.ID; idR2B = b.ID; idR2C = c.ID;
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, a.ID, 3600m, 36);
+        Intrare(os, pif, b.ID, 3600m, 36);
+        Intrare(os, pif, c.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+        var casA = Cas(os, Zi(3, 10), a.ID);
+        MotorOperare.Opereaza(os, casA);
+        var casC = Cas(os, Zi(3, 12), c.ID);
+        MotorOperare.Opereaza(os, casC);
+        idCasA = casA.ID;
+        idCasC = casC.ID;
+        var martie = Amo(os, 3);
+        var aprilie = Amo(os, 4);
+        Check($"IMO-R2 ({eticheta}) precondiție: după ieșirile din martie, martie și aprilie se amortizează doar "
+            + "pe fișa rămasă (B)",
+            martie.Detalii.Count == 1 && aprilie.Detalii.Count == 1
+            && martie.Detalii.OfType<AmortizareLunaraDetaliu>().Single().ImobilizareId == b.ID);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var casA = os.GetObjectByKey<IesireImobilizare>(idCasA);
+        var refuzAnulare = Refuz(() => MotorOperare.AnuleazaOperarea(os, casA));
+        Console.WriteLine($"     MĂSURAT (IMO-R2a/{eticheta}): anularea ieșirii din 10.03 cu aprilie operată → "
+            + $"„{Prima(refuzAnulare)}”; fișa A: {os.GetObjectByKey<Imobilizare>(idR2A).Stare}.");
+        Check($"IMO-R2a ({eticheta}) anularea unei ieșiri e refuzată cât timp există amortizare OPERATĂ pentru "
+            + "o lună ulterioară ieșirii: acele luni s-au generat FĂRĂ fișa ieșită, iar readucerea ei în "
+            + "funcțiune lasă lunile lipsă (simetricul refuzului de la operarea PIF-ului retroactiv)",
+            refuzAnulare != null);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var casC = os.GetObjectByKey<IesireImobilizare>(idCasC);
+        var refuzStorno = Refuz(() => MotorOperare.Storneaza(os, casC, Zi(4, 20)));
+        Console.WriteLine($"     MĂSURAT (IMO-R2b/{eticheta}): stornarea ieșirii din 12.03 pe 20.04, cu aprilie "
+            + $"operată → „{Prima(refuzStorno)}”; fișa C: {os.GetObjectByKey<Imobilizare>(idR2C).Stare}.");
+        Check($"IMO-R2b ({eticheta}) stornarea unei ieșiri e refuzată pe același gardian ca anularea",
+            refuzStorno != null);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var mai = LiniiLuna(os, 5);
+        var situatieA = AmortizareService.Situatie(os, idR2A, Zi(4, 30));
+        var situatieC = AmortizareService.Situatie(os, idR2C, Zi(4, 30));
+        Console.WriteLine($"     MĂSURAT (IMO-R2c/{eticheta}): mai are {mai.Count} linii "
+            + $"(A: {mai.Any(l => l.ImobilizareId == idR2A)}, C: {mai.Any(l => l.ImobilizareId == idR2C)}); "
+            + $"A la 30.04: cumulat {situatieA.Amortizare}, luni {situatieA.Luni}; "
+            + $"C la 30.04: cumulat {situatieC.Amortizare}, luni {situatieC.Luni}.");
+        Check($"IMO-R2c ({eticheta}) după cele două corecții refuzate, mai se amortizează tot doar pe B; o "
+            + "fișă readusă în funcțiune cu lunile martie/aprilie lipsă ar reapărea în mai cu `Luni` = 1 și "
+            + "cota veche — o gaură de două luni pe care nimic n-o mai semnalează",
+            mai.Count == 1);
+    }
+
+    // ── IMO-R3: stornarea CAS se datează în luna ieșirii ──
+    Guid idCasR3, idFisaR3;
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var d = Fisa(os, "R3");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, d.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+        var cas = Cas(os, Zi(3, 20), d.ID);
+        MotorOperare.Opereaza(os, cas);
+        idCasR3 = cas.ID;
+        idFisaR3 = d.ID;
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var refuzTarziu = Refuz(() => MotorOperare.Storneaza(os,
+            os.GetObjectByKey<IesireImobilizare>(idCasR3), Zi(4, 15)));
+        Console.WriteLine($"     MĂSURAT (IMO-R3a/{eticheta}): stornarea ieșirii din 20.03 pe 15.04 → „{Prima(refuzTarziu)}”.");
+        Check($"IMO-R3a ({eticheta}) stornarea unei ieșiri într-o lună ULTERIOARĂ e refuzată: rândul invers "
+            + "datat în aprilie ar lăsa situația la 31.03 cu „brut 0” și fișa ar dispărea din luna următoare, "
+            + "apoi ar reapărea în mai — o lună de cheltuială pierdută tăcut",
+            refuzTarziu != null);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var d = os.GetObjectByKey<Imobilizare>(idFisaR3);
+        MotorOperare.Storneaza(os, os.GetObjectByKey<IesireImobilizare>(idCasR3), Zi(3, 31));
+        var martie = Amo(os, 3);
+        var aprilie = AmortizareService.Previzualizeaza(os, An, 4);
+        var laMartie = AmortizareService.Situatie(os, d.ID, Zi(3, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-R3b/{eticheta}): stornată pe 31.03 — fișa: {d.Stare}, ieșire "
+            + $"{d.DataIesire?.ToString() ?? "<null>"}; martie {martie.Detalii.Count} linii; aprilie = "
+            + $"{aprilie.Motiv?.ToString() ?? "<se generează>"}, {aprilie.Linii.Count} linii; situația la 31.03: "
+            + $"brut {laMartie.Valoare}, cumulat {laMartie.Amortizare}.");
+        Check($"IMO-R3b ({eticheta}) stornată în luna ei, ieșirea n-a existat: fișa e în funcțiune, situația la "
+            + "31.03 are brutul întreg și aprilie o amortizează",
+            d.Stare == StareImobilizare.InFunctiune && laMartie.Valoare == 3600m
+            && aprilie.Motiv == null && aprilie.Linii.Any(l => l.ImobilizareId == d.ID));
+    }
+
+    // ── IMO-R4: stornarea AMO se datează în luna ei; regenerarea nu dublează situația lunii ──
+    Guid idAmoR4, idFisaR4;
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var e = Fisa(os, "R4");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, e.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        idAmoR4 = Amo(os, 2).ID;
+        idFisaR4 = e.ID;
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var refuzTarziu = Refuz(() => MotorOperare.Storneaza(os,
+            os.GetObjectByKey<AmortizareLunara>(idAmoR4), Zi(3, 15)));
+        Console.WriteLine($"     MĂSURAT (IMO-R4a/{eticheta}): stornarea lui februarie pe 15.03 → „{Prima(refuzTarziu)}”.");
+        Check($"IMO-R4a ({eticheta}) stornarea unei amortizări într-o lună ULTERIOARĂ e refuzată: rândul invers "
+            + "datat în martie ar lăsa situația la 29.02 cu două luni amortizate după regenerare",
+            refuzTarziu != null);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        MotorOperare.Storneaza(os, os.GetObjectByKey<AmortizareLunara>(idAmoR4), Zi(2, 29));
+        var februarieNou = Amo(os, 2);
+        var laFebruarie = AmortizareService.Situatie(os, idFisaR4, Zi(2, 29));
+        var registru = ImobilizariApply.Registru(os, Zi(2, 29)).Linii.Single(l => l.ImobilizareId == idFisaR4);
+        var martie = LiniiLuna(os, 3).Single(l => l.ImobilizareId == idFisaR4);
+        Console.WriteLine($"     MĂSURAT (IMO-R4b/{eticheta}): februarie stornată pe 29.02 și regenerată "
+            + $"({februarieNou.Numar}); situația la 29.02: cumulat {laFebruarie.Amortizare}, luni {laFebruarie.Luni}; "
+            + $"registrul la 29.02: cumulat {registru.AmortizareCumulata}, net {registru.NetContabil}; "
+            + $"martie = {martie.Contabil}.");
+        Check($"IMO-R4b ({eticheta}) stornată în luna ei și regenerată, situația fișei la 29.02 e o lună "
+            + "amortizată (100,00 / 1 lună), nu două",
+            laFebruarie.Amortizare == 100m && laFebruarie.Luni == 1
+            && registru.AmortizareCumulata == 100m && martie.Contabil == 100m);
+    }
+
+    // ── IMO-R5: `Revizuire` cu durata SUB lunile deja amortizate ──────────────
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var f = Fisa(os, "R5");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, f.ID, 1200m, 12);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+        Amo(os, 3);
+        Amo(os, 4);
+        var revizuire = Pif(os, Zi(5, 10));
+        var l = LiniePif(os, revizuire, f.ID, FelLiniePif.Revizuire, 0m);
+        Parametri(l, 2);
+        os.CommitChanges();
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, revizuire));
+        var mai = refuz == null ? Amo(os, 5) : null;
+        var iunie = refuz == null ? LiniiLuna(os, 6).SingleOrDefault(x => x.ImobilizareId == f.ID) : null;
+        Console.WriteLine($"     MĂSURAT (IMO-R5/{eticheta}): revizuire la durata 2 după 3 luni amortizate → "
+            + $"„{Prima(refuz)}”; mai = {mai?.Detalii.OfType<AmortizareLunaraDetaliu>().Single().Valoare.ToString() ?? "-"}; "
+            + $"iunie = {iunie?.Contabil.ToString() ?? "-"} (rest {1200m - 400m}).");
+        Check($"IMO-R5 ({eticheta}) o revizuire cu durata (contabilă sau fiscală) mai mică sau egală cu lunile "
+            + "deja amortizate e refuzată: `luni_rămase = durată − consumate` ar fi ≤ 0, iar formula ar vărsa "
+            + "tot restul într-o singură lună, tăcut",
+            refuz != null);
+    }
+
+    // ── IMO-R6: centrul de cost schimbat pe fișă ÎNTRE generare și operare ────
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var g = Fisa(os, "R6");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, g.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        var r = AmortizareService.Incearca(os, An, 2, idUnitate);
+        os.CommitChanges();
+        g.CentruCostId = idCentru;
+        os.CommitChanges();
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, r.Document));
+        var nota = os.GetObjectsQuery<RegistruContabil>().FirstOrDefault(n => n.DocumentId == r.Document.ID);
+        Console.WriteLine($"     MĂSURAT (IMO-R6/{eticheta}): operarea draftului cu centrul de cost schimbat pe fișă → "
+            + $"„{Prima(refuz)}”; centrul pe nota postată: "
+            + $"{(nota == null ? "<fără notă>" : nota.DebitCentruCostId == idCentru ? "cel nou" : nota.DebitCentruCostId == null ? "<null>" : "altul")}.");
+        Check($"IMO-R6 ({eticheta}) centrul de cost e dimensiune a notei (`DimensiuniCulese`), la fel ca locul și "
+            + "codul economic: un draft generat înaintea schimbării lui pe fișă ori e refuzat ca stale, ori "
+            + "postează cu centrul CURENT — nu cu unul vechi copiat la generare",
+            refuz != null || (nota != null && nota.DebitCentruCostId == idCentru));
+    }
+
+    // ── IMO-R7: fișă pe un tip material care NU e de clasă de imobilizări ─────
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var tipStrain = os.GetObjectsQuery<TipMaterial>()
+            .First(t => t.Clasa.Natura != NaturaClasa.Imobilizare && t.ContImplicitId != null);
+        var h = Fisa(os, "R7");
+        h.TipMaterialId = tipStrain.ID;
+        string refuzGardian;
+        try {
+            GardianEditare.Verifica(os);
+            refuzGardian = null;
+        }
+        catch (OperareException e) {
+            refuzGardian = e.Message;
+        }
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        var l = Intrare(os, pif, h.ID, 3600m, 36);
+        l.TipMaterialId = tipStrain.ID;
+        os.CommitChanges();
+        var refuzPif = Refuz(() => MotorOperare.Opereaza(os, pif));
+        Console.WriteLine($"     MĂSURAT (IMO-R7/{eticheta}): fișă pe tipul {tipStrain.Cod} (natura "
+            + $"{os.GetObjectByKey<ClasaProdus>(tipStrain.ClasaId)?.Natura}) → gardian „{Prima(refuzGardian)}”, "
+            + $"PIF „{Prima(refuzPif)}”; fișa: {h.Stare}.");
+        Check($"IMO-R7 ({eticheta}) fișa cere un tip material de clasă de IMOBILIZĂRI (F26-D1: „clasă F”): "
+            + "gardianul fișei sau operarea PIF-ului refuză un tip de stoc/serviciu — altfel CAS ar credita "
+            + "contul implicit al unui tip străin, iar o politică de amortizare pe el ar amortiza marfă",
+            refuzGardian != null || refuzPif != null);
+    }
+
+    // ── IMO-R8: ieșirea unei fișe fără nicio amortizare (cumulat 0) ───────────
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var i = Fisa(os, "R8");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, i.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        var cas = Cas(os, Zi(2, 20), i.ID);
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, cas));
+        var note = os.GetObjectsQuery<RegistruContabil>().Where(n => n.DocumentId == cas.ID)
+            .Select(n => n.Valoare).ToList();
+        Console.WriteLine($"     MĂSURAT (IMO-R8/{eticheta}): ieșire fără amortizare → „{Prima(refuz)}”; "
+            + $"{cas.Detalii.Count} linii, note: [{string.Join(", ", note)}].");
+        Check($"IMO-R8 ({eticheta}) ieșirea unei fișe neamortizate postează DOAR nota valorii rămase: linia "
+            + "„amortizare cumulată” de 0 nu lasă un rând de zero în registrul contabil (D6 omite doar linia "
+            + "de net 0; cumulatul 0 nu e tratat)",
+            refuz == null && note.Count > 0 && note.All(v => v != 0m));
+    }
+
+    // ── IMO-R9: anularea unei modernizări din luna unei AMO deja operate (nu depinde de ea) ──
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var j = Fisa(os, "R9");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, j.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+        var modernizare = Pif(os, Zi(2, 10));
+        LiniePif(os, modernizare, j.ID, FelLiniePif.Modernizare, 1650m);
+        os.CommitChanges();
+        var refuzOperare = Refuz(() => MotorOperare.Opereaza(os, modernizare));
+        string refuzAnulare = null;
+        if (refuzOperare == null)
+            using (var osAnulare = provider.CreateObjectSpace())
+                refuzAnulare = Refuz(() => MotorOperare.AnuleazaOperarea(osAnulare,
+                    osAnulare.GetObjectByKey<PunereInFunctiune>(modernizare.ID)));
+        Console.WriteLine($"     MĂSURAT (IMO-R9/{eticheta}): modernizare pe 10.02 cu februarie operată → operare "
+            + $"„{Prima(refuzOperare)}”, anulare „{Prima(refuzAnulare)}”.");
+        Check($"IMO-R9 ({eticheta}) OBSERVAȚIE (nu defect de fond): modernizarea din luna unei amortizări deja "
+            + "operate se operează (luna evenimentului postează cota veche), dar anularea ei e refuzată de "
+            + "`VerificaFaraFapteUlterioare` pe `Data >=`, deși rândul lunar din 29.02 nu s-a calculat pe ea — "
+            + "criteriul de dependență al anulării (data) e mai strict decât cel al operării (luna)",
+            refuzOperare == null && refuzAnulare != null);
+    }
+
+    // ── Curățenia finală ──────────────────────────────────────────────────────
+    using (var os = provider.CreateObjectSpace()) {
+        Curata(os);
+        Check($"IMO-R — curățenie finală ({eticheta}): nicio fișă, nicio perioadă și niciun document 2028 rămase",
+            !os.GetObjectsQuery<Imobilizare>().Any(f => f.NumarInventar.StartsWith(Marcaj))
+            && !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An)
+            && !os.GetObjectsQuery<Document>().Any(d => d.Data >= new DateOnly(An, 1, 1)
+                && d.Data <= new DateOnly(An, 12, 31)));
+    }
 }

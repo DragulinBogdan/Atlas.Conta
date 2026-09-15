@@ -100,16 +100,20 @@ DVI ca agregat cu legătură n→m la facturi, 86); singurul rămas e BPR
 (rezervat, 19). Refuzurile de acces sunt uniforme pe REST și OData și
 MĂSURATE (80). Listele XAF Blazor: `Server` implicit cu paginare, `ServerView`
 pe registre, `Client` explicit pe grilele de culegere, IF/IFV doar cu prag
-(85). Ultima felie închisă: 25 — DVI ca tip de document: TVA-ul în vamă prin
-`PoliticaTva` fără schimbare în motorul de operare, tipurile de import ca
-date (`TipTva.DeImport`), D300 rd. 24/25 și 7/22, `IVerificabilLaCommit` ca
-punct de extensie al gardianului, DVI nu e document stins (86, 2026-09-13).
-Cronologia integrală: `docs/decizii/istoric-plan-de-lucru.md`.
+(85). Imobilizările au modul propriu (87, 2026-09-15): fișa ca nomenclator
+subțire, un singur registru append-only (`RegistruImobilizari`, al patrulea,
+prin `IDocumentCuRegistruPropriu`), PIF/CAS operate, AMO generată lunar cu
+trei cifre (contabil/fiscal/deductibil) din `Motor/AmortizareService.cs`,
+conturile și regulile de deductibilitate exclusiv din politică versionată,
+catalogul HG 2139/2004 ca date. Ultima felie închisă: 26 (87). Cronologia
+integrală: `docs/decizii/istoric-plan-de-lucru.md`.
 
 **Următorul pas**: izolarea motorului de `IObjectSpace` — contract scris
 (`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, pașii 0–7), cu
 avansul din felia 24 pe IM-D2/IM-D4; pornește doar la un semnal real din
-criteriul lui de prioritate. Până atunci candidații sunt 84-r5 (captions, la
+criteriul lui de prioritate. Până atunci candidații sunt restanțele
+imobilizărilor cu cerere de produs (F26-r1 activele din 231, F26-r8 SAF-T
+Assets, F26-r9 D101, F26-r13 migrarea fișelor din 1C), 84-r5 (captions, la
 atingere), 86-r11 (DVI ca document stins, dacă produsul o cere), 86-r13
 (dimensiunea Repartitor a plăților, preexistentă) și 80-r1 dacă expunerea
 crește; `lista-react.md` mai ține doar itemii structurali și 77-r1/r6.

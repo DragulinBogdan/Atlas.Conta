@@ -725,3 +725,78 @@ nou cu `DeLa`?" — dacă da, e seed; dacă nu, e felie.
    patrulea, tipurile, contractul D3; politici-si-fiscalitate: cele două
    politici, catalogul, cadrul D16; api-si-client; limite-curente), istoricul,
    §Închidere aici.
+
+## Închidere (2026-09-15, decizia 87)
+
+| pas | commit | probe |
+|---|---|---|
+| 0 contract | `ef38538` | patru explorări read-only (motor, ITV/registre, 1C Flax, catalog/SAF-T); două runde de întrebări cu owner-ul |
+| 1 model + registru + hook + politici + catalog + seed + gardian + migrație + XAF baseline | `4bf54ff` | ModelCheck bugetar 991/0, privat 1106/0 (re-rulate independent); migrația `20260914113154_F26Imobilizari` (11 tabele noi) |
+| 2 `AmortizareService` + hook-uri + `E2E-IMO` + probe pure + `RECONCILIERE-MF` | `eafe77d` | ModelCheck bugetar 1004/0, privat 1139/0; reconcilierea pe 118 active / 2 559 rânduri: 99,49 % pe formulă, 13 diferențe explicate; Import1C integral IDENTIC cu baseline-ul F18 |
+| 2b `CodEconomic` ca dimensiune pe fișă (F26-r16) | `5d3737c` | ModelCheck bugetar 1024/0, privat 1140/0; migrația `20260914162054_F26CodEconomicImobilizare`; lanțul lunar pe ambele profiluri |
+| 3 API | `73ccadb` | ModelCheck bugetar 1049/0, privat 1165/0; `E2E-API-IMO`; codegen idempotent, pur aditiv (+60 căi, +35 scheme) |
+| 4 client React | `759801d` | `pnpm build` verde; `refuzuri.ps1` 229/229 pe host viu Privat; smoke în browser 11/11 pași, 4/4 refuzuri |
+| 5 smoke XAF | `6bd9c05` | 7 probe + 2 refuzuri așteptate, 25 de capturi; defectul D1 (cronologia lunilor la anularea AMO) fixat cu `IMO-V51b…V51d`; ModelCheck bugetar 1052/0, privat 1168/0; `--dump-metadata` identic |
+| 6 review advers, fix-uri, decizia 087, docs | commit-ul de închidere | 2 MAJOR + 7 MEDIU reparate în frunze; probele `IMO-R0…R9` portate; ModelCheck bugetar 1068/0, privat 1184/0; `has-pending-model-changes`: niciuna; metadata la zi; `refuzuri.ps1` 229/229 pe host viu (WebApi repornit cu Module-ul nou; scena probelor alege tipul pe natura `Imobilizare`); `Motor/*` neatins la pasul 6 |
+
+### Devieri de la contract (toate raportate, nu normalizate)
+
+- **D13 amendat la pasul 2**: baza „la ultimul eveniment" = situația la
+  SFÂRȘITUL lunii evenimentului; parametrii noi curg din luna următoare
+  (formula observată în Flax); eligibilitatea pe DATE, nu pe `Stare`; linia
+  cu contabil 0 / fiscal > 0 fără conturi; `Degresiva` cere durată multiplu
+  de 12; „Revizuire în M+1 → Stale" devine revizuire datată în M.
+- **D10 amendat la pasul 3**: nomenclatoarele pe OData (`Imobilizare` CRUD,
+  `ClasificareImobilizari` `ReadOnly()`, politicile ca seturi); REST doar
+  `fisa`/`registru`; `AmortizareVieId?` → `BlocantId` + `BlocantNumar`/
+  `BlocantStare`.
+- **D1 (2b)**: `Imobilizare.CodEconomicId` — dimensiunea bugetară pe fișă,
+  copiată pe liniile AMO/CAS, a opta componentă a cheii anti-stale (F26-r16,
+  decizia owner-ului).
+- **D4**: catalogul 590/598 (F26-r15); `ClasificareImobilizari` nu e
+  `ICuProvenienta`; pe bugetar perechile de amortizare sunt frunzele
+  `280.08.01`/`280.08.09`/`281.03.01`/`281.03.03`; `VerificareProfilService`
+  primește etichetele celor două politici.
+- **D5**: inițialele refuzate pe intrarea cu linie sursă; `ValoareReziduala`
+  opțională; deductibilul inițial = fiscalul inițial; `PoateFiStins = false`
+  declarat și pe PIF/CAS (86g).
+- **D7**: `Previzualizeaza` cu al patrulea parametru `inlocuieste`; linia
+  AMO fără `Descriere`; `LiniileCorespund` extras pentru `Stale`;
+  anularea/stornarea AMO verifică FAPTELE ulterioare ale fișelor, nu doar o
+  AMO ulterioară (defectul D1 al pasului 5).
+- **D11**: fișa ca ecran de nomenclator pe OData; bifa `Utilizare exclusivă`
+  pleacă explicit `false`; `bani()` extras în `nucleu/format.ts`; fix de
+  tipar al întregului client (`key="nou"` pe rutele `/nou`).
+- **D12**: PIF/CAS/AMO fără intrare proprie în navigația XAF (convenția
+  repo-ului); `PoliticaAmortizare.HideForeignKeys()`; captions pe clasele de
+  linii.
+
+### Review advers (agent separat, în worktree cu `MODELCHECK_BAZA_SUFIX`)
+
+Verdict inițial: felia NU era închidibilă — 2 MAJOR + 7 MEDIU, toate cu
+probe (`IMO-R1…R9`, scena 2028, ambele profiluri; 10 FAIL pe fiecare profil
+= exact probele R, restul suitei verde) sau cu răspuns HTTP pe hostul viu.
+Fix-urile (main, toate în frunze, `MotorOperare` neatins): R1 fișa o singură
+dată per PIF (+ `PifApply`); R2 anularea/stornarea CAS refuzată sub AMO
+operată din luna ieșirii încolo; R3/R4 stornoul PIF/CAS/AMO doar în luna
+documentului (`VerificaLunaStornarii`; proba `IMO-V23` își storna revizuirea
+în luna următoare — corectată la data documentului); R5 duratele revizuite >
+lunile amortizate, lunile inițiale ≤ durate; R6 `CentruCost` în cheia
+anti-stale; R7 natura `Imobilizare` cerută de gardianul fișei și de
+`PoliticaAmortizare` (`IVerificabilLaCommit`); R8 ștergerea fișei refuzată
+sub linii PIF/CAS/AMO; R9 `LiniiIesire` fără nota de 0 la cumulat 0.
+Abaterile nedeclarate: D6 `MesajeDupaOperare` implementat pe CAS; antetul
+AMO verificat la operare (`Data` = ultima zi, laturile egale);
+`Autogenerat = false` consistent cu ITV; `ValoareFiscala` 0 neexprimabil →
+F26-r17; `Scara.cs` cu numele noi de coloane. Observația R9 a raportului
+(refuz fals la anularea evenimentului din luna unei AMO operate) → F26-r18.
+Restanțele noi din observațiile pașilor 4–5: F26-r19…r22. Probele R au fost
+portate în `ModelCheck` (blocul `VerificaReviewF26`, `IMO-R0…R9`, R3/R4
+rescrise pe regula lunii) și trec pe ambele profiluri. Raportul integral:
+`run-f26/review-advers.md` (netrackat).
+
+### Ce a rămas în baza Privat
+
+`SMOKE-F26-1/2/FP`, `SMOKE-XAF-1` (Ieșită), `PIF-1…6`, `AMO-1…4`, `CAS-1…2`
+operate, perioadele fiscale până la 2027-02; nimic din scenele `E2E-IMO`/
+`E2E-API-IMO` (purjate la start și la final).

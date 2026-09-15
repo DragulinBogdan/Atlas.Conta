@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-13.** [Index](README.md)
+**Actualizat: 2026-09-15.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -31,9 +31,25 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   costul de achiziție; comisionarul care refacturează taxa nu are flux propriu.
   Anularea unei facturi legate la o declarație operată nu se refuză; starea
   facturii se arată. (86-r1, 86-r2, 86-r10, 86-r11, 86-r13)
-- Salariile, imobilizările, execuția bugetară completă, producția pe rețete,
-  împărțirea pe cofinanțări și contabilitatea multivalutară nu sunt module
-  complete în produsul curent. Importul 1C nu echivalează cu un import bancar
+- Imobilizările: activele în curs (231) nu au punere în funcțiune care
+  postează; reevaluarea are doar locul rezervat în registru; transferul nu
+  lasă rând explicit; degresiva AD2 și amortizarea pe unități de producție,
+  ajustările pentru depreciere, leasingul și obiectele de inventar în
+  folosință nu sunt acoperite; cheltuiala nu se repartizează pe mai multe
+  centre de cost; legătura ieșirii cu factura de vânzare nu este evidență;
+  deductibilitatea valorii rămase la ieșire nu are regulă; eligibilitatea
+  metodei fiscale pe categorie e doar documentată; patru poziții-părinte din
+  catalog nu au bandă de durată; fișele din 1C nu se migrează încă; nu
+  există acțiune XAF de generare a amortizării. Brutul fiscal zero pe linia
+  de punere în funcțiune nu se poate exprima; anularea unui eveniment din
+  luna unei amortizări deja operate e refuzată deși luna nu depinde de el;
+  două generări simultane ale aceleiași luni lasă două drafturi care se
+  blochează reciproc. Lookup-urile XAF ale fișei și ale liniei PIF nu sunt
+  filtrate pe natură, stare și loc; clasificarea se caută doar pe denumire;
+  mesajele gardienilor scriu numele membrilor enum. (87, F26-r1…r22)
+- Salariile, execuția bugetară completă, producția pe rețete, împărțirea pe
+  cofinanțări și contabilitatea multivalutară nu sunt module complete în
+  produsul curent. Importul 1C nu echivalează cu un import bancar
   operațional general. (9, 21, 31f)
 
 ## Fiscalitate și nomenclatoare

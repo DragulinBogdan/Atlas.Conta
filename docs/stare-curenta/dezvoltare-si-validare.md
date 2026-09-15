@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-12.** [Index](README.md)
+**Actualizat: 2026-09-15.** [Index](README.md)
 
 ## Organizarea sursei
 
@@ -171,6 +171,15 @@ Rulajele pe lot nu sunt țintă când identitatea lotului nu este comparabilă
 structural. Evaluarea exactă, excepția returului fiscal și efectele
 retroactivității se verifică separat. Probele deliberate de sabotaj trebuie
 să demonstreze că reconcilierea detectează abaterile. (45e, 47a, 75c)
+
+Formula amortizării se reconciliază cu cifrele postate în 1C prin blocul
+`RECONCILIERE-MF` din ModelCheck, condiționat de fixture-ul gitignored
+`1C/mf/` (parametrii datați și rândurile lunare per activ): recalculul cu
+`AmortizareService.CotaLunara` se compară lună cu lună, potrivirile și
+diferențele se raportează cu activ, lună, așteptat și postat; blocul nu pică
+pe diferențe, doar pe fixture malformat. Import1C nu generează documente de
+imobilizări; după orice atingere a motorului de operare, raportul integral
+trebuie să rămână identic cu baseline-ul. (87c, 87k)
 
 Prototipul legacy migrează nomenclatoare și solduri de deschidere la granița
 aleasă. Istoricul rămâne în sursă. Deschiderile contabile folosesc convenția

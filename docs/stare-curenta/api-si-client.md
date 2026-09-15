@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-13.** [Index](README.md)
+**Actualizat: 2026-09-15.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -68,9 +68,9 @@ fiecărei entități. (42f, 56)
 
 | Grup | Entități |
 |---|---|
-| Nomenclatoare cu scriere | Gestiune, TipMaterial, Partener, Produs, Angajat, TipTva, Societate (56, 77h, 81e) |
-| Politici cu scriere controlată | MapareD300, MapareD394, PoliticaMiscareSaft, TipDocument, RegulaStoc, RegulaContare, PoliticaConex, PoliticaScadenta, PoliticaValidare, PoliticaTva, PoliticaInchidereTva, PoliticaNumerotare, PoliticaTvaImplicit (81e) |
-| Nomenclatoare pentru citire | Judet, UnitateMasura, CodEconomic, SursaFinantare, CodFunctional, Proiect, ContPropriu, UnitateInterna, Lot, Cont, Angajament, Repartitor, RandD300, ClasaProdus (56, 81e) |
+| Nomenclatoare cu scriere | Gestiune, TipMaterial, Partener, Produs, Angajat, TipTva, Societate, Imobilizare (regulile fișei la gardianul de commit; starea și datele le scrie doar motorul) (56, 77h, 81e, 87i) |
+| Politici cu scriere controlată | MapareD300, MapareD394, PoliticaMiscareSaft, TipDocument, RegulaStoc, RegulaContare, PoliticaConex, PoliticaScadenta, PoliticaValidare, PoliticaTva, PoliticaInchidereTva, PoliticaNumerotare, PoliticaTvaImplicit, PoliticaAmortizare, RegulaDeductibilitate (81e, 87i) |
+| Nomenclatoare pentru citire | Judet, UnitateMasura, CodEconomic, SursaFinantare, CodFunctional, Proiect, ContPropriu, UnitateInterna, Lot, Cont, Angajament, Repartitor, RandD300, ClasaProdus, ClasificareImobilizari (56, 81e, 87i) |
 | Audit pentru citire | AuditDataItemPersistent, AuditEFCoreWeakReference (81e, 81h) |
 
 `TipDocument` permite modificarea implicitului expus; nu permite crearea,
@@ -177,21 +177,25 @@ de clientul React pe OData este o compunere separată, cu aceeași semantică.
 
 | Arie | Conținut |
 |---|---|
-| Documente | Liste și detalii pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC și DVI |
+| Documente | Liste și detalii pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC, DVI, PIF, CAS și AMO |
+| Imobilizări | Fișa ca ecran de nomenclator pe OData, cu panoul „Fișa" (situația la data din URL, parametrii curenți, rândurile registrului) din `GET api/imobilizari/{id}/fisa?laData=`; registrul imobilizărilor la `/imobilizari/registru` din `GET api/imobilizari/registru?laData=`, totaluri de pe server; ambele cer și citirea pe `RegistruImobilizari`. `api/pif`: agregat cules cu lookup de fișă filtrat pe locul primitorului și pe stare, dialogul liniilor de factură de clasă F din `linii-sursa` (plic `{ Candidati, MaiSunt }`, plafon 500, prefill cu restul), parametrii pre-completați pe revizuire din fișă. `api/cas`: antet plus fișele de pe locul predatorului; liniile produse de server. `api/amo`: previzualizare pe an, lună și unitate cu motiv, blocant și cele trei cifre, generare, regenerare cu confirmare, storno (87i, 87j) |
 | Declarații vamale | `api/dvi`: agregat cules (antet, linii, `FacturiIds` ca agregat întreg), `facturi-candidate` cu perioadă obligatorie, filtru implicit pe clasa fiscală extra-UE, plicul `{ Candidati, MaiSunt }` cu plafon 500 decis pe interogare și `TipMaterialSugeratId`; cere și citirea pe FCT. Ecranul: lookup TVA filtrat pe `DeImport`, popup de candidați pe luna declarației, totaluri de pe server (86h, 86i) |
 | Trezorerie și relații | Stingere manuală în limitele contractelor, vizualizarea relațiilor și comenzile documentului (57d, 76g) |
 | TVA lunar | Previzualizare și generare ITV, detaliu și comenzile rezultatului (79e) |
 | Contabilitate | Stoc, balanță, balanță pe plan, fișă de cont, registru-jurnal (66, 67) |
 | Fiscalitate | Jurnale de cumpărări/vânzări, decont TVA, D300, D394, SAF-T L/S (68, 69g, 71g) |
 | Nomenclatoare | Parteneri, produse, societate; sincronizare individuală ANAF (77h) |
-| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, reguli de stoc, reguli de contare (formular popup cu grupuri), politici TVA, conex, validare, mapări D300/D394; „Explică pe acest tip" din fiecare grilă cu tip de document (81i, 84d) |
+| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, reguli de stoc, reguli de contare (formular popup cu grupuri), politici TVA, conex, validare, mapări D300/D394, politici de amortizare, reguli de deductibilitate; „Explică pe acest tip" din fiecare grilă cu tip de document (81i, 84d, 87j) |
 | Explicarea configurației | `/politici/explica`: starea în URL, un card per mecanism cu câștigătorul, candidații eliminați, proveniența și concluzia serverului (84h) |
 | Controlul configurației | Verificarea profilului, proveniență și istoric de audit (81g, 81h, 81i) |
 
-DSC și ITV nu au flux generic de creare prin `/nou`; provin din comenzile
-specifice. Grilele de politici pot deschide un formular popup cu grupuri
-definite de ecran; rândul nou primește propuneri vizibile pentru câmpurile al
-căror gol ar fi refuzat de gardian. (58, 79a, 84d)
+DSC, ITV și AMO nu au flux generic de creare prin `/nou`; provin din
+comenzile specifice. Rutele `/nou` ale întregului client poartă o cheie de
+montare proprie: la tranziția directă de la un detaliu la `/nou`, formularul
+se remontează și nu păstrează starea documentului anterior. Grilele de
+politici pot deschide un formular popup cu grupuri definite de ecran; rândul
+nou primește propuneri vizibile pentru câmpurile al căror gol ar fi refuzat
+de gardian. (58, 79a, 84d, 87g, 87j)
 
 ## Contracte generate
 
