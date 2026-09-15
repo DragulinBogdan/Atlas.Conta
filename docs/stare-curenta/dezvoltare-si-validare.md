@@ -20,6 +20,13 @@
 Sursa curentă rămâne autoritatea când indexul semnalează informații depășite.
 Lipsa indexului nu cere crearea lui automată.
 
+Terminatorii de linie sunt LF în tot repo-ul, impuși de `.gitattributes`
+(`* text=auto eol=lf`); CRLF doar pe `*.cmd`/`*.bat`. `legacy/` și
+`db/export/` sunt `-text`: octeții evidenței rămân neatinși. `.editorconfig`
+cere LF editorilor. Uneltele care scriu CRLF (`dotnet ef`, template-urile VS)
+nu produc diff, fiindcă git normalizează la `add`. Commit-ul de normalizare
+e în `.git-blame-ignore-revs`.
+
 ## Model și persistență
 
 EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea

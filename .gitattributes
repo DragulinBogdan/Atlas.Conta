@@ -1,0 +1,8 @@
+# Terminatorii de linie: LF peste tot; CRLF doar unde interpretorul îl cere.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Evidența (legacy Delphi, exporturile bazei vechi): octeții rămân neatinși.
+legacy/** -text
+db/export/** -text
