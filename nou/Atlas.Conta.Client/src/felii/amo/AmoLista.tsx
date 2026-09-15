@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SelectBox } from 'devextreme-react';
-import { Column, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Search, Sorting } from 'devextreme-react/data-grid';
+import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { amo, SCHEMA_LISTA, TIP_ANTET, type AmoListRand, type PrevizualizareAmo } from './api';
 import { campMeta, defaultProperty, labelEnum } from '../../nucleu/campMeta';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { bani } from '../../nucleu/format';
 import { eroriDin, ia } from '../../nucleu/http';
 import { useUrlStare } from '../../nucleu/urlStare';
+import { GrilaDocumente, INDICIU_GRILA } from '../../nucleu/GrilaDocumente';
 
 // Consola de generare pe tiparul `ItvLista`; cifrele și verdictul vin din previzualizarea serverului (F26-D7, 42c).
 
@@ -166,19 +167,7 @@ export function AmoLista() {
       <div className="imo__sectiune">
         <h3>Amortizările existente</h3>
         {/* Fără `height` fix: blocul de deasupra are înălțime VARIABILĂ. */}
-        <DataGrid
-          dataSource={sursa}
-          remoteOperations
-          showBorders
-          columnAutoWidth
-          onRowDblClick={(e) => navigheaza(`/amo/${(e.data as { Id: string }).Id}`)}
-        >
-          <Sorting mode="multiple" />
-          <FilterRow visible />
-          <HeaderFilter visible><Search enabled /></HeaderFilter>
-          <Paging defaultPageSize={12} />
-          <Pager showInfo showPageSizeSelector allowedPageSizes={[12, 25, 50]} />
-
+        <GrilaDocumente sursa={sursa} ruta="/amo" pagini={[12, 25, 50]}>
           <Column dataField="Numar" caption={cap('Numar')} />
           <Column dataField="Data" caption={cap('Data')} dataType="date" format="dd.MM.yyyy" />
           <Column
@@ -198,11 +187,11 @@ export function AmoLista() {
           <Column dataField="TotalContabil" caption="Amortizare contabilă" dataType="number" format="#,##0.00" alignment="right" />
           <Column dataField="TotalFiscal" caption="Amortizare fiscală" dataType="number" format="#,##0.00" alignment="right" />
           <Column dataField="TotalDeductibil" caption="Amortizare deductibilă" dataType="number" format="#,##0.00" alignment="right" />
-        </DataGrid>
+        </GrilaDocumente>
       </div>
 
       <p className="indiciu">
-        Dublu-click pe un rând deschide amortizarea. Stornarea la chiar data amortizării (ultima zi a
+        {INDICIU_GRILA} Stornarea la chiar data amortizării (ultima zi a
         lunii) redeschide luna.
       </p>
     </div>

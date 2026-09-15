@@ -93,6 +93,12 @@ Ecranele sunt compuse în JSX cu controale concrete. Metadata furnizează
 denumiri, tipuri și constrângeri comune; nu este un descriptor executabil de
 formular. Coloanele specifice aparțin paginii respective. (8, 42e, 43a)
 
+Listele de documente sunt compuse din `ListaDocumente` și `GrilaDocumente`
+(`nucleu/`): grilă remote cu filtre, sortare și paginare pe server; click-ul
+selectează rândul, dublu-click-ul deschide documentul. Pagina dă titlul,
+crearea (lipsește la DSC), perioada opțională din URL și coloanele. Consolele
+ITV și AMO folosesc aceeași grilă sub previzualizare. (43a, 43c)
+
 Formularul deține local întregul DTO de scriere. TanStack Query gestionează
 starea citită de pe server, iar URL-ul starea navigabilă. Nu se menține un
 al doilea magazin global care copiază aceleași documente. (43c)

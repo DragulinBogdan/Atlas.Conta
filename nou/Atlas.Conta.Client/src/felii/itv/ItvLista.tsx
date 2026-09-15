@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SelectBox } from 'devextreme-react';
-import { Column, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Search, Sorting } from 'devextreme-react/data-grid';
+import { Column } from 'devextreme-react/data-grid';
 import { itv, SCHEMA_LISTA, TIP_ANTET, type PrevizualizareItv } from './api';
 import { campMeta, defaultProperty, labelEnum } from '../../nucleu/campMeta';
+import { GrilaDocumente, INDICIU_GRILA } from '../../nucleu/GrilaDocumente';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { eroriDin, ia } from '../../nucleu/http';
 import { useUrlStare } from '../../nucleu/urlStare';
@@ -184,38 +185,18 @@ export function ItvLista() {
 
       <div className="itv__sectiune">
         <h3>Închiderile existente</h3>
-        {/* Grila NU primește `height` cu `calc(100vh − …)`, spre deosebire de
-            listele de documente: deasupra ei stă un bloc de înălțime VARIABILĂ
-            (previzualizarea are patru forme, de la „fără sold" la trei linii cu
-            link), iar o înălțime fixă ar lăsa fie un gol, fie o grilă tăiată. */}
-        <DataGrid
-          dataSource={sursa}
-          remoteOperations
-          showBorders
-          columnAutoWidth
-          onRowDblClick={(e) => navigheaza(`/itv/${(e.data as { Id: string }).Id}`)}
-        >
-          <Sorting mode="multiple" />
-          <FilterRow visible />
-          <HeaderFilter visible><Search enabled /></HeaderFilter>
-          <Paging defaultPageSize={12} />
-          <Pager showInfo showPageSizeSelector allowedPageSizes={[12, 25, 50]} />
-
+        {/* Fără `height` fix: blocul de deasupra are înălțime VARIABILĂ. */}
+        <GrilaDocumente sursa={sursa} ruta="/itv" pagini={[12, 25, 50]}>
           <Column dataField="Numar" caption={cap('Numar')} />
-          {/* `Data` e ultima zi a lunii închise — de aceea ține loc și de „luna":
-              ordinea implicită a listei (`Data` desc) e a serverului. */}
           <Column dataField="Data" caption={cap('Data')} dataType="date" format="dd.MM.yyyy" />
           <Column dataField="Stare" caption={cap('Stare')} />
-          {/* Latura închiderii E unitatea internă, iar DTO-ul o numește așa:
-              caption-ul entității („Predator (de la)") e corect și abstract,
-              vocabularul feliei e „Unitatea". */}
           <Column dataField="UnitateDenumire" caption="Unitatea" />
           <Column dataField="Total" caption={cap('Total')} dataType="number" format="#,##0.00" alignment="right" />
-        </DataGrid>
+        </GrilaDocumente>
       </div>
 
       <p className="indiciu">
-        Dublu-click pe un rând deschide închiderea. Închiderea se generează <strong>cronologic</strong>:
+        {INDICIU_GRILA} Închiderea se generează <strong>cronologic</strong>:
         cât timp o lună are o închidere vie (Draft sau Operat), lunile dinaintea ei sunt blocate. Storno la
         chiar data închiderii (ultima zi a lunii) lasă soldurile exact cum erau și redeschide luna.
       </p>
