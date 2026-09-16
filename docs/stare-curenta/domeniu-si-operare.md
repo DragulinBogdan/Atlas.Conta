@@ -142,6 +142,39 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
 - Scrierea și ștergerea snapshot-urilor aparțin motorului: pe calea securizată
   se refuză, ca la registre. Ștergerea lor este fizică, nu amânată. (F27-D3)
 
+### Soldul citit: referință plus rulaje
+
+- Un singur serviciu răspunde „soldul la data d": snapshot-ul ultimei perioade
+  de referință care se termină până la d, plus rulajele de după ea. Fără nicio
+  perioadă de referință, citirea este integral din registre — de aceea o bază
+  fără închideri dă exact aceleași cifre ca una cu închideri. (F27-D3)
+- Balanța cere referinței să se termine cel târziu cu o zi înaintea începutului
+  perioadei, ca soldul inițial să rămână separabil de rulaj. Aceeași regulă
+  pentru balanța pliată pe planul de conturi, care o consumă. O cheie fără
+  niciun rând de snapshot și fără rulaj în fereastră nu apare: rândul ei ar fi
+  avut inițial, rulaj și sold zero. (F27-D3)
+- Fișa de cont primește soldul de dinaintea perioadei ca un singur rând
+  sintetic din snapshot, datat la sfârșitul referinței: fereastra îl cumulează,
+  iar afișarea îl exclude, ca pe orice rând anterior perioadei. Filtrele de
+  dimensiune se aplică înăuntrul snapshot-ului, deci rândul sintetic poartă
+  exact coordonatele filtrului. (F27-D3)
+- Soldul de stoc, soldurile pe loturi la o dată, soldul unei chei, alocarea
+  FIFO și gardianul de sold negativ pornesc de la aceeași referință. Gardianul
+  cumulează de la rândul sintetic încoace: zilele dinaintea lui sunt într-o
+  perioadă închisă, unde nicio mișcare nouă nu poate ajunge. Textul refuzului
+  nu se schimbă. (F27-D3, 14/25d)
+- Soldurile conturilor de TVA ale închiderii lunare vin din aceeași sursă
+  cumulată. (F27-D3)
+- Excluderea rândurilor unui document (dry-run pe re-operare) și excluderea
+  rândurilor eliminate la anulare ating doar rulajele: un document cu rânduri
+  într-o perioadă închisă nu se mai poate anula. (F27-D3)
+- Cheia cu cantitate ȘI valoare zero lipsește din soldul de stoc și din
+  soldurile pe loturi, ca din snapshot: un lot consumat integral nu mai este o
+  poziție de stoc și nu mai apare în listă. Cheia cu cantitatea zero și valoare
+  nenulă RĂMÂNE — reziduul valoric se vede, nu se ascunde. Motorul nu simte
+  diferența: citește soldurile cu valoare implicită zero pe cheia absentă.
+  (F27-D3, 74g)
+
 ## Contare și dimensiuni
 
 Planul de conturi este sintetic. Analiticele se obțin din dimensiuni în

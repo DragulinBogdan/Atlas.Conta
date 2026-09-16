@@ -280036,6 +280036,14 @@
             "schema": {
               "$ref": "#/components/schemas/DataSourceLoadOptions"
             }
+          },
+          {
+            "name": "laData",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
           }
         ],
         "responses": {

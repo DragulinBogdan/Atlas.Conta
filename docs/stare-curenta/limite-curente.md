@@ -15,9 +15,37 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   generare ale închiderii de TVA și ale amortizării. Uneltele standalone —
   ModelCheck, Import1C, Migrare — cheamă motorul direct, fără tranzacția
   comenzii, deliberat: acolo nu există concurență. (F27-D1)
-- Consumatorii de sold — balanța, fișa de cont, soldul de stoc, motorul,
-  închiderea de TVA, SAF-T — citesc în continuare tot istoricul registrului.
-  Snapshot-urile se scriu și se verifică, dar încă nu sunt consumate. (F27-D3)
+- Balanța, balanța pe plan, fișa de cont, soldul de stoc, soldurile pe loturi,
+  soldul unei chei, alocarea FIFO, gardianul de sold negativ și soldurile de
+  TVA ale închiderii lunare pornesc de la ultima perioadă de referință. Trei
+  citiri rămân pe registrul integral: situația imobilizărilor, fiindcă al
+  patrulea registru nu are snapshot în felia aceasta; oracolul golirilor, care
+  citește rânduri concrete, nu solduri; împerecherile și restul documentelor,
+  până la felia care le datează. (F27-D3)
+- Inițialul de stoc al SAF-T rămâne pe registrul integral: agregatul lui
+  raportează și NUMĂRUL de rânduri de registru pe tipurile de stoc
+  nedeclarate, iar dintr-un snapshot numărul nu se mai poate afla. Inițialul
+  de CONT al SAF-T trece prin balanță, deci pornește de la referință.
+  (F27-D3, F27-r10)
+- Rândurile integral nule dispar din rapoarte după prima închidere. O cheie cu
+  debitul și creditul cumulate zero la referință nu are rând de snapshot, deci
+  un cont sau un cont cu repartitor fără nicio mișcare în perioada cerută nu
+  mai apare deloc în balanță, în loc să apară cu patru zerouri. Măsurat pe baza
+  de import: 1.743 rânduri din 72.910 pe balanța analitică a lunii decembrie,
+  toate cu inițial, rulaj și sold zero. Cifrele rândurilor rămase nu se
+  schimbă, iar declarațiile oricum nu raportează soldul zero. (F27-D3)
+- Citirile cumulate iau snapshot-ul prin spațiul de obiecte al apelantului. Un
+  rol care ar putea citi perioada fiscală fără să poată citi tabelele de
+  solduri ar primi soldul inițial zero, fără avertisment. Rolurile livrate nu
+  au această formă: cine citește perioada citește și soldurile, iar un rol care
+  nu vede perioadele cade pe citirea din registrul integral. (F27-D3)
+- Snapshot-urile de referință se citesc fără filtrarea de securitate pe rând.
+  Fișa de cont își păstrează gate-ul strict (echivalența celor două căi,
+  numărată pe TOT istoricul contului, nu doar pe fereastra de după referință),
+  deci un utilizator restrâns pe rânduri primește 403 ca înainte; balanța și
+  soldul de stoc trec prin LINQ, unde snapshot-ul e o entitate ca oricare
+  alta, iar o restricție pe rând pusă pe registru NU se propagă asupra lui.
+  (F27-D3, 66)
 - Constatările de închidere acoperă doar blocantele structurale ale lanțului.
   Constatările de conținut și severitatea lor ca politică nu sunt acoperite,
   iar corpul cu chei acceptate este primit și ignorat. (F27-D2)

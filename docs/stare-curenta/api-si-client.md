@@ -48,6 +48,14 @@ debit, credit, cantitate și valoare. Comanda nu are subiect, deci gate-ul ei
 este pe tip: dreptul de scriere pe perioada fiscală, același drept ca
 închiderea. Ordinea refuzurilor este 401, apoi 403, apoi 422. (F27-D3)
 
+`GET api/proiectii/sold-stoc` primește opțional `laData`: fără el întoarce
+soldul de azi, cu el soldul la sfârșitul zilei cerute. Parametrul este al
+proiecției, ca perioada balanței, nu filtru de grilă; o valoare imposibilă
+cade pe 400-ul unic al tierului. Schimbare de comportament: un lot consumat
+integral, cu cantitate ȘI valoare zero, nu mai apare în listă; unul cu
+cantitatea zero și valoare nenulă rămâne, ca reziduul valoric să se vadă.
+(F27-D3)
+
 ## Securitate și răspunsuri
 
 Ordinea gărzilor este autentificare, forma cererii, vizibilitatea obiectului,

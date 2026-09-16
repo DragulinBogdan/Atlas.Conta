@@ -486,6 +486,53 @@ Felia e închisă când, pe codul final:
    migrația `20260916131506_F27Pas2SolduriPerioada` (două tabele + indexurile
    filtrate pe `Data` ale registrelor contabil și stoc), aplicată pe cele trei
    baze. Consumatorii NU s-au mutat încă: rămân pentru 2b.
+   *Executat 2b (2026-09-16), cu O OPRIRE raportată; devierile mai jos*:
+   `Motor/SolduriService` a primit partea de CITIRE — `Referinta` (ultima
+   perioadă de referință care se termină până la o dată), `AtomiCumulati`
+   (snapshot contabil proiectat ca `AtomContabil`, datat la sfârșitul
+   referinței, `Concat` cu rulajele de după ea) și `MiscariCumulate`
+   (oglinda de stoc, cu filtrele de document și de produs aplicate per
+   ramură). Mutați: `ContabilProiectii.Balanta` (deci și `BalantaPlan` și
+   inițialul de CONT al SAF-T), `ContabilProiectii.FisaCont` (a treia ramură
+   a uniunii = rândul sintetic din snapshot, cu filtrele de dimensiune
+   aplicate înăuntru și coordonatele lor purtate pe rând),
+   `StocProiectii.SoldStoc` (cu `laData` opțional, expus ca
+   `GET api/proiectii/sold-stoc?laData=`), `StocService.SolduriLaData`,
+   `Sold`, `AlocaFifoTolerant`, `VerificaSoldIntermediar` și
+   `InchidereTvaService.Solduri`. **Oprirea**: `SaftProiectii.AgregatStoc`
+   NU s-a mutat — `Randuri` din agregatul lui e RAPORTAT CA NUMĂR în
+   avertismentul `SoldPeTipStocNeraportat`, iar dintr-un snapshot numărul de
+   rânduri de registru nu se mai poate afla; `RanduriInitiale > 0` ar deveni
+   fals pentru cheile cu sold cumulat zero. Devieri: (1) `SoldStoc` și
+   `SolduriLaData` omit acum cheile cu cantitate ȘI valoare zero — fără asta
+   „identic cu și fără snapshot" e fals prin construcție, fiindcă un lot
+   golit înaintea referinței lipsește din snapshot; consecință vizibilă:
+   lista de sold de stoc nu mai arată loturile consumate integral;
+   (2) `CaleaBrutaEchivalenta` rămâne pe TOT istoricul contului (o fereastră
+   goală după referință ar fi dat 0 = 0 unui utilizator fără drept pe
+   registru și i-ar fi servit soldul din snapshot, necitit prin securitate);
+   (3) `MiscareCumulata` e clasă cu setteri, nu record pozițional: peste o
+   proiecție de constructor EF nu mai vede membrii și `Where`-ul de deasupra
+   cade în evaluare pe client (probat: excepția de traducere); (4) controlul
+   `AsteptatStoc` din `SOL-V2b` citește acum REGISTRUL direct, fiindcă
+   `StocService.SolduriLaData` pornește el însuși din snapshot și proba ar fi
+   devenit circulară. Probe: `SOL-C0` plus 32 de comparații `SOL-C` pe fiecare
+   profil — fiecare consumator citit pe scena deschisă și apoi cu referința
+   01/2031 și cu referința 03/2031, serializat și comparat la cent, la rând și
+   la ordine (inclusiv fișa filtrată pe repartitor și pe „fără repartitor", și
+   refuzul „Sold negativ" cu text identic). ModelCheck bugetar 1142/0, privat
+   1258/0; `refuzuri.ps1` 246/246 pe host viu Privat (neschimbat ca număr);
+   `has-pending-model-changes`: niciuna (2b n-are migrație); codegen
+   idempotent, `pnpm build` verde. Măsurat informativ pe clona Flax (11 luni
+   închise, referința 11/2025): fișa lui `4111` pe decembrie 193 → 79 ms,
+   balanța analitică 318 → 265 ms, soldul de stoc 164 → 43 ms; închiderea
+   costă 0,65 s pe prima lună și 3,8 s pe a unsprezecea, redeschiderea între
+   0,01 și 4,3 s; snapshot-ul referinței = 171.396 + 7.790 rânduri;
+   redeschiderea completă lasă zero perioade închise și zero rânduri. Tot de
+   acolo, o consecință de RAPORTARE care nu se vede pe scena ModelCheck:
+   balanța analitică a lunii decembrie scade de la 72.910 la 71.167 de
+   rânduri, fiindcă 1.743 de chei integral nule nu mai au rând de snapshot —
+   toate cu inițial, rulaj și sold zero. Scris în `limite-curente.md`.
 3. **`DataInregistrare`** (D4): câmpul, implicitul, gardianul mutat,
    registrele și lotul la data înregistrării, storno-ul, fișa/jurnalul,
    XAF + React (câmp în antetul tuturor tipurilor culese, prin
@@ -552,6 +599,10 @@ Felia e închisă când, pe codul final:
 - **F27-r9** `DataInregistrare` pe documentele generate (AMO/ITV/DSC/NIR
   autogenerate): moștenesc data sursei sau ultima zi a lunii, ca azi;
   editabilitatea ei pe generate se decide la cerere.
+- **F27-r10** (deschisă la pasul 2b) SAF-T: inițialul de stoc pe registru
+  integral; mutarea pe referință cere schimbarea semanticii `exista`/`Randuri`
+  din `SoldPeCheie`/`SoldPeTipStocNeraportat`, decizie de raportare, nu de
+  motor. Inițialul de CONT al SAF-T e deja pe referință, prin `Balanta`.
 
 ## Relația cu izolarea motorului (contractul IM)
 

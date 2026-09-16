@@ -23344,15 +23344,19 @@ void VerificaSolduriPerioada(bool privat) {
             .ToDictionary(s => new CheieStoc(s.LotId, s.RepartitorId, s.TipStoc),
                           s => new SoldStoc(s.Cantitate, s.Valoare));
 
-    Dictionary<CheieStoc, SoldStoc> AsteptatStoc(IObjectSpace os, DateOnly panaLa) {
-        // Loturile se iau din REGISTRU, nu din nomenclator: un lot șters logic
-        // cu rânduri de registru vii ar lipsi din al doilea și ar face
-        // comparația falsă în favoarea noastră.
-        var loturi = os.GetObjectsQuery<RegistruStoc>().Select(r => r.LotId).Distinct().ToList();
-        return StocService.SolduriLaData(os, loturi, panaLa)
-            .Where(kv => kv.Value.Cantitate != 0m || kv.Value.Valoare != 0m)
-            .ToDictionary(kv => kv.Key, kv => kv.Value);
-    }
+    // Controlul citește REGISTRUL direct, nu `StocService.SolduriLaData`: de la
+    // pasul 2b serviciul pornește el însuși din snapshot, iar proba ar compara
+    // snapshot-ul cu el însuși. Rândurile șterse logic rămân în afară prin
+    // filtrul global, ca peste tot.
+    Dictionary<CheieStoc, SoldStoc> AsteptatStoc(IObjectSpace os, DateOnly panaLa) =>
+        os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.Data <= panaLa)
+            .GroupBy(r => new { r.LotId, r.RepartitorId, r.TipStoc })
+            .Select(g => new { g.Key, Cantitate = g.Sum(r => r.Cantitate), Valoare = g.Sum(r => r.Valoare) })
+            .ToList()
+            .Where(x => x.Cantitate != 0m || x.Valoare != 0m)
+            .ToDictionary(x => new CheieStoc(x.Key.LotId, x.Key.RepartitorId, x.Key.TipStoc),
+                x => new SoldStoc(x.Cantitate, x.Valoare));
 
     bool EgalContabil(IObjectSpace os, int an, int luna) {
         var snap = SnapshotContabil(os, an, luna);
@@ -23617,6 +23621,154 @@ void VerificaSolduriPerioada(bool privat) {
         os.CommitChanges();
     }
 
+    // ═════ SOL-C: aceleași cifre cu și fără snapshot, consumator cu consumator ═════
+    //
+    // Fiecare consumator mutat pe `SolduriService` (F27-D3) se citește de DOUĂ
+    // ori: cu scena DESCHISĂ (nicio perioadă închisă ⇒ calea de azi, integral
+    // din registre) și după închideri (calea snapshot + rulaje). Rezultatele se
+    // compară SERIALIZATE — la cent, la rând și la ordine; scala zecimală se
+    // normalizează, ca o diferență de `numeric` să nu treacă drept diferență de
+    // cifre. Comparația se face în DOUĂ momente: cu referința 01/{An} (fereastra
+    // deschisă februarie–martie are rulaje reale) și cu referința 03/{An} (toată
+    // scena e înăuntrul snapshot-ului).
+    Guid idContStoc, idContTert;
+    var ziNir = Zi(1, 5);
+    using (var os = provider.CreateObjectSpace()) {
+        var rand = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId != null && r.Document.Data == ziNir)
+            .Select(r => new { r.ContDebitId, r.ContCreditId }).First();
+        idContStoc = rand.ContDebitId;
+        idContTert = rand.ContCreditId;
+    }
+    TipStoc tipScena;
+    Guid idProdus2;
+    using (var os = provider.CreateObjectSpace()) {
+        tipScena = os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.LotId == idLot2 && r.RepartitorId == idGestA)
+            .Select(r => r.TipStoc).First();
+        idProdus2 = os.GetObjectByKey<Lot>(idLot2).ProdusId;
+    }
+
+    string N(decimal v) => v.ToString("0.000000", System.Globalization.CultureInfo.InvariantCulture);
+
+    Dictionary<string, string> Citiri(IObjectSpace os) {
+        var ds = Zi(2, 1);
+        var de = Zi(3, 31);
+        var c = new Dictionary<string, string>();
+        string Bal(bool analitic, Guid? codEc = null) => string.Join("\n",
+            ContabilProiectii.Balanta(os, ds, de, analitic, codEconomicId: codEc).ToList()
+                .OrderBy(r => r.ContSimbol ?? "", StringComparer.Ordinal).ThenBy(r => r.ContId)
+                .ThenBy(r => r.RepartitorId)
+                .Select(r => $"{r.ContSimbol}|{r.ContId}|{r.RepartitorId}|{N(r.InitialDebit)}|"
+                    + $"{N(r.InitialCredit)}|{N(r.SoldInitialDebit)}|{N(r.SoldInitialCredit)}|"
+                    + $"{N(r.RulajDebit)}|{N(r.RulajCredit)}|{N(r.SoldFinalDebit)}|{N(r.SoldFinalCredit)}"));
+        c["balanta-sintetic"] = Bal(false);
+        c["balanta-analitic"] = Bal(true);
+        c["balanta-dimensiune"] = Bal(true, idCodEc);
+        c["balanta-plan"] = string.Join("\n", ContabilProiectii.BalantaPlan(os, ds, de)
+            .Select(r => $"{r.ContSimbol}|{r.ContId}|{r.ParinteId}|{r.Nivel}|{r.AreCopii}|"
+                + $"{r.AreMiscareProprie}|{N(r.InitialDebit)}|{N(r.InitialCredit)}|{N(r.RulajDebit)}|"
+                + $"{N(r.RulajCredit)}|{N(r.SoldFinalDebit)}|{N(r.SoldFinalCredit)}"));
+        string Fisa(Guid contId, Guid? repartitor = null, bool faraRepartitor = false) => string.Join("\n",
+            ContabilProiectii.FisaCont(os, contId, ds, de, repartitorId: repartitor,
+                    repartitorNul: faraRepartitor).ToList()
+                .Select(r => $"{r.Id}|{r.Data:yyyy-MM-dd}|{r.Sens}|{N(r.Debit)}|{N(r.Credit)}|"
+                    + $"{N(r.SoldCurent)}|{r.ContrapartidaSimbol}|{r.RepartitorDenumire}|"
+                    + $"{r.DocumentId}|{r.Storno}"));
+        c["fisa-cont-stoc"] = Fisa(idContStoc);
+        c["fisa-cont-tert"] = Fisa(idContTert);
+        // Filtrul de dimensiune trece PRIN rândul sintetic: snapshot-ul se
+        // filtrează înăuntru, iar rândul poartă apoi coordonatele filtrului, ca
+        // să treacă neatins prin filtrele nivelului (b). Ambele variante ale
+        // santinelei: un repartitor anume și „fără repartitor".
+        c["fisa-cont-filtrata"] = Fisa(idContTert, repartitor: idFurnizor);
+        c["fisa-cont-fara-repartitor"] = Fisa(idContStoc, faraRepartitor: true);
+        string Stoc(DateOnly? la) => string.Join("\n",
+            StocProiectii.SoldStoc(os, la).ToList()
+                .OrderBy(r => r.LotId).ThenBy(r => r.RepartitorId)
+                .ThenBy(r => r.TipStoc, StringComparer.Ordinal)
+                .Select(r => $"{r.LotId}|{r.RepartitorId}|{r.TipStoc}|{N(r.Cantitate)}|{N(r.Valoare)}|"
+                    + $"{r.ProdusCod}|{r.GestiuneDenumire}"));
+        c["sold-stoc-azi"] = Stoc(null);
+        c["sold-stoc-la-data"] = Stoc(Ultima(An, 2));
+        // Lotul 1 a ieșit INTEGRAL din gestiunea A: cheia lui e cantitate 0 și
+        // valoare 0, deci lipsește din listă pe AMBELE căi — din snapshot o taie
+        // regula cheilor integral zero, din registru filtrul care o oglindește.
+        c["sold-stoc-lot-golit"] = StocProiectii.SoldStoc(os).ToList()
+            .Any(r => r.LotId == idLot1 && r.RepartitorId == idGestA) ? "PREZENT" : "absent";
+        string Solduri(DateOnly la) => string.Join("\n",
+            StocService.SolduriLaData(os, [idLot1, idLot2], la)
+                .OrderBy(kv => kv.Key.LotId).ThenBy(kv => kv.Key.RepartitorId).ThenBy(kv => kv.Key.TipStoc)
+                .Select(kv => $"{kv.Key.LotId}|{kv.Key.RepartitorId}|{kv.Key.TipStoc}|"
+                    + $"{N(kv.Value.Cantitate)}|{N(kv.Value.Valoare)}"));
+        c["solduri-la-data"] = Solduri(Ultima(An, 2)) + "\n──\n" + Solduri(Ultima(An, 3));
+        // Cheia golită INTEGRAL (lotul 1 din gestiunea A) și cea rămasă, plus o
+        // dată istorică: „absentă din snapshot” trebuie să dea tot 0.
+        c["sold-pe-cheie"] = N(StocService.Sold(os, new CheieStoc(idLot1, idGestA, tipScena)))
+            + "|" + N(StocService.Sold(os, new CheieStoc(idLot2, idGestA, tipScena)))
+            + "|" + N(StocService.Sold(os, new CheieStoc(idLot2, idGestA, tipScena), Ultima(An, 2)))
+            + "|" + N(StocService.Sold(os, new CheieStoc(idLot1, idGestB, tipScena)));
+        var fifo = StocService.AlocaFifoTolerant(os, idProdus2, idGestA, tipScena, Ultima(An, 3), 8m);
+        c["aloca-fifo"] = string.Join(",", fifo.Alocari.Select(a => $"{a.LotId}:{N(a.Cantitate)}"))
+            + "|" + N(fifo.Ramas);
+        var itv = InchidereTvaService.Solduri(os, idContStoc, idContTert, Ultima(An, 3));
+        c["itv-solduri"] = $"{N(itv.Sold4426)}|{N(itv.Sold4427)}";
+        // Gardianul 25d: o ieșire de aprilie PESTE sold trebuie refuzată cu EXACT
+        // același text, iar una SUB sold trebuie să treacă — pe ambele căi.
+        var cheie = new CheieStoc(idLot2, idGestA, tipScena);
+        c["refuz-sold-negativ"] = Refuz(() => StocService.VerificaSoldIntermediar(os,
+            [new MiscareStoc(cheie, Zi(4, 15), -50m)])) ?? "<a trecut>";
+        c["sold-intermediar-sub-sold"] = Refuz(() => StocService.VerificaSoldIntermediar(os,
+            [new MiscareStoc(cheie, Zi(4, 15), -3m)])) ?? "<a trecut>";
+        return c;
+    }
+
+    string PrimaDiferenta(string a, string b) {
+        var la = a.Split('\n');
+        var lb = b.Split('\n');
+        for (var i = 0; i < Math.Max(la.Length, lb.Length); i++) {
+            var x = i < la.Length ? la[i] : "<lipsă>";
+            var y = i < lb.Length ? lb[i] : "<lipsă>";
+            if (x != y)
+                return $"rândul {i + 1}: fără snapshot „{x}” ≠ cu snapshot „{y}”";
+        }
+        return "<identice>";
+    }
+
+    Dictionary<string, string> citiriDeschis;
+    using (var os = provider.CreateObjectSpace())
+        citiriDeschis = Citiri(os);
+    Console.WriteLine($"     MĂSURAT (SOL-C/{eticheta}): citiri de referință pe scena DESCHISĂ — "
+        + string.Join(", ", citiriDeschis.OrderBy(kv => kv.Key, StringComparer.Ordinal)
+            .Select(kv => $"{kv.Key} {kv.Value.Split('\n').Length} rd.")) + ".");
+    Check($"SOL-C0 ({eticheta}) precondiția comparației: citirile de pe scena deschisă sunt NEgoale "
+        + "(refuzul gardianului de sold există ca text, fișa și balanța au rânduri) — altfel „identic” "
+        + "ar fi adevărat prin vid",
+        citiriDeschis["refuz-sold-negativ"].StartsWith("Sold negativ")
+        && citiriDeschis["sold-intermediar-sub-sold"] == "<a trecut>"
+        && citiriDeschis["balanta-sintetic"].Length > 0 && citiriDeschis["fisa-cont-stoc"].Length > 0
+        && citiriDeschis["fisa-cont-filtrata"].Length > 0
+        && citiriDeschis["sold-stoc-azi"].Length > 0);
+    Check($"SOL-C0b ({eticheta}) lotul consumat INTEGRAL din gestiunea A lipsește din `SoldStoc` deja pe scena "
+        + "DESCHISĂ: cheia cu cantitate ȘI valoare zero nu mai e o poziție de stoc, nici din registru, nici din "
+        + "snapshot — schimbarea de comportament e afirmată aici, nu dedusă din egalitatea de mai jos",
+        citiriDeschis["sold-stoc-lot-golit"] == "absent");
+
+    void ComparaCitirile(string moment) {
+        Dictionary<string, string> acum;
+        using (var os = provider.CreateObjectSpace())
+            acum = Citiri(os);
+        foreach (var cheie in citiriDeschis.Keys.OrderBy(k => k, StringComparer.Ordinal)) {
+            var egal = citiriDeschis[cheie] == acum[cheie];
+            if (!egal)
+                Console.WriteLine($"     DIFERENȚĂ ({eticheta}, {moment}, {cheie}): "
+                    + PrimaDiferenta(citiriDeschis[cheie], acum[cheie]));
+            Check($"SOL-C ({eticheta}, {moment}) „{cheie}” iese IDENTIC cu și fără snapshot: consumatorul "
+                + "pornește de la ultima perioadă de referință, nu de la începutul registrului",
+                egal);
+        }
+    }
+
     // ═════════════════════ SOL-V1: lanțul și referințele ═════════════════════
     using (var os = provider.CreateObjectSpace())
         PerioadaService.Inchide(os, An, 1, [], null, Marcaj);
@@ -23626,6 +23778,7 @@ void VerificaSolduriPerioada(bool privat) {
             RanduriSnapshot(os, An, 1) > 0 && Referinte(os) == $"01/{An}"
             && RanduriSnapshot(os, An, 2) == 0);
     }
+    ComparaCitirile($"referința 01/{An}");
     using (var os = provider.CreateObjectSpace())
         PerioadaService.Inchide(os, An, 2, [], null, Marcaj);
     using (var os = provider.CreateObjectSpace()) {
@@ -23644,6 +23797,7 @@ void VerificaSolduriPerioada(bool privat) {
             RanduriSnapshot(os, An, 1) == 0 && RanduriSnapshot(os, An, 2) == 0
             && RanduriSnapshot(os, An, 3) > 0 && Referinte(os) == $"03/{An}");
     }
+    ComparaCitirile($"referința 03/{An}");
 
     // ═════════════════════ SOL-V2: egalitatea la cent ═════════════════════
     using (var os = provider.CreateObjectSpace()) {
@@ -23659,9 +23813,10 @@ void VerificaSolduriPerioada(bool privat) {
         var snapStoc = SnapshotStoc(os, An, 3);
         var asteptatStoc = AsteptatStoc(os, Ultima(An, 3));
         Console.WriteLine($"     MĂSURAT (SOL-V2/{eticheta}): snapshot stoc {snapStoc.Count} chei, "
-            + $"`StocService.SolduriLaData` {asteptatStoc.Count} chei.");
-        Check($"SOL-V2b ({eticheta}) snapshot(03/{An}) stoc = `StocService.SolduriLaData` pe toate loturile, la "
-            + "cent, pe cheia `(lot, repartitor, tip)`", EgalStoc(os, An, 3));
+            + $"recalcul LINQ pe registru {asteptatStoc.Count} chei.");
+        Check($"SOL-V2b ({eticheta}) snapshot(03/{An}) stoc = `SUM` peste `RegistruStoc`, la cent, pe cheia "
+            + "`(lot, repartitor, tip)` — controlul citește REGISTRUL, nu `StocService`, care de la pasul 2b "
+            + "pornește el însuși din snapshot", EgalStoc(os, An, 3));
 
         var cheieGolita = snapStoc.Keys.Any(k => k.LotId == idLot1 && k.RepartitorId == idGestA);
         var soldGolit = StocService.SolduriLaData(os, [idLot1], Ultima(An, 3))

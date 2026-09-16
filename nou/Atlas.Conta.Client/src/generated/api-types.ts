@@ -83185,6 +83185,7 @@ export interface operations {
         parameters: {
             query?: {
                 loadOptions?: components["schemas"]["DataSourceLoadOptions"];
+                laData?: string;
             };
             header?: never;
             path?: never;

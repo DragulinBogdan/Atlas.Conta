@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
@@ -124,6 +125,102 @@ public static class SolduriService {
         foreach (var p in PerioadeCuSnapshot(os).Where(p => !referinte.Contains(p)))
             Elimina(os, p.An, p.Luna);
         return new RaportReconstructie(randuri);
+    }
+
+    // ═══════════════════ citirea ═══════════════════
+
+    /// <summary>Ultima perioadă DE REFERINȚĂ al cărei sfârșit e `&lt;= panaLa`; null = citire integrală din registre.</summary>
+    public static (int An, int Luna, DateOnly Sfarsit)? Referinta(IObjectSpace os, DateOnly panaLa) {
+        (int An, int Luna, DateOnly Sfarsit)? gasita = null;
+        foreach (var (an, luna) in Referinte(os)) {
+            var sfarsit = Sfarsit(an, luna);
+            if (sfarsit <= panaLa && (gasita == null || sfarsit > gasita.Value.Sfarsit))
+                gasita = (an, luna, sfarsit);
+        }
+        return gasita;
+    }
+
+    // Atomii contabili ai unei citiri: snapshot-ul referinței (un rând per cheie
+    // completă, cu debitul și creditul CUMULATE, datat la sfârșitul referinței)
+    // plus rulajele de după ea. Fără referință = forma de azi, integral din
+    // registre — de aceea o bază fără nicio închidere dă exact același rezultat.
+    // `granita` cere referinței să se termine cel târziu atunci: balanța o dă ca
+    // `dataStart − 1`, ca soldul inițial (`Data < dataStart`) să rămână separabil
+    // prin `SUM(CASE)`. Cheia absentă din snapshot e zero — nimeni nu face
+    // `Single()` pe el.
+    /// <summary>Atomii contabili până la `panaLa`, porniți de la ultima referință care se termină până la `granita`.</summary>
+    public static IQueryable<AtomContabil> AtomiCumulati(IObjectSpace os, DateOnly panaLa, DateOnly? granita = null) {
+        var atomi = ContabilProiectii.Atomi(os);
+        if (Referinta(os, granita ?? panaLa) is not { } r)
+            return atomi.Where(a => a.Data <= panaLa);
+        var (an, luna, sfarsit) = r;
+        return os.GetObjectsQuery<SoldPerioadaContabil>().IgnoreAutoIncludes()
+            .Where(s => s.An == an && s.Luna == luna)
+            .Select(s => new AtomContabil {
+                Data = sfarsit,
+                ContId = s.ContId,
+                Debit = s.Debit,
+                Credit = s.Credit,
+                RepartitorId = s.RepartitorId,
+                MaterialId = s.MaterialId,
+                CodFunctionalId = s.CodFunctionalId,
+                CodEconomicId = s.CodEconomicId,
+                SursaFinantareId = s.SursaFinantareId,
+                UnitateId = s.UnitateId,
+                ProiectId = s.ProiectId,
+                CentruCostId = s.CentruCostId
+            })
+            .Concat(atomi.Where(a => a.Data > sfarsit && a.Data <= panaLa));
+    }
+
+    // Clasă cu setteri, proiectată prin inițializator de obiect, ca
+    // `AtomContabil`: peste o proiecție de CONSTRUCTOR, EF nu mai vede membrii,
+    // iar orice `Where` de deasupra cade în evaluare pe client.
+    /// <summary>O mișcare de stoc cumulată: rândul sintetic al referinței sau un rând de registru de după ea.</summary>
+    public sealed class MiscareCumulata {
+        public Guid Id { get; set; }
+        public Guid LotId { get; set; }
+        public Guid RepartitorId { get; set; }
+        public TipStoc TipStoc { get; set; }
+        public DateOnly Data { get; set; }
+        public decimal Cantitate { get; set; }
+        public decimal Valoare { get; set; }
+    }
+
+    // Oglinda de stoc a lui `AtomiCumulati`, pe cheia registrului. `panaLa` null
+    // = „azi/tot". Cele două filtre opționale se aplică PER RAMURĂ, fiindcă n-au
+    // aceeași semnificație pe amândouă: rândurile unui document nu pot fi
+    // excluse din snapshot (un document cu rânduri în perioadă închisă nu se mai
+    // poate anula), iar produsul trăiește pe navigația `Lot`, absentă din
+    // proiecție.
+    /// <summary>Mișcările de stoc până la `panaLa`, pornite de la ultima referință care se termină până la `granita`.</summary>
+    public static IQueryable<MiscareCumulata> MiscariCumulate(IObjectSpace os, DateOnly? panaLa,
+            DateOnly? granita = null, Guid? faraDocumentId = null, Guid? produsId = null) {
+        var registru = os.GetObjectsQuery<RegistruStoc>().IgnoreAutoIncludes();
+        if (panaLa is { } pl)
+            registru = registru.Where(r => r.Data <= pl);
+        if (faraDocumentId is { } docId)
+            registru = registru.Where(r => r.DocumentId != docId);
+        if (produsId is { } pid)
+            registru = registru.Where(r => r.Lot.ProdusId == pid);
+        IQueryable<MiscareCumulata> Proiecteaza(IQueryable<RegistruStoc> sursa) =>
+            sursa.Select(r => new MiscareCumulata {
+                Id = r.ID, LotId = r.LotId, RepartitorId = r.RepartitorId, TipStoc = r.TipStoc,
+                Data = r.Data, Cantitate = r.Cantitate, Valoare = r.Valoare
+            });
+        if (Referinta(os, granita ?? panaLa ?? DateOnly.MaxValue) is not { } r0)
+            return Proiecteaza(registru);
+        var (an, luna, sfarsit) = r0;
+        var snapshot = os.GetObjectsQuery<SoldPerioadaStoc>().IgnoreAutoIncludes()
+            .Where(s => s.An == an && s.Luna == luna);
+        if (produsId is { } pidSnap)
+            snapshot = snapshot.Where(s => s.Lot.ProdusId == pidSnap);
+        return snapshot
+            .Select(s => new MiscareCumulata {
+                Id = s.ID, LotId = s.LotId, RepartitorId = s.RepartitorId, TipStoc = s.TipStoc,
+                Data = sfarsit, Cantitate = s.Cantitate, Valoare = s.Valoare
+            })
+            .Concat(Proiecteaza(registru.Where(r => r.Data > sfarsit)));
     }
 
     // ═══════════════════ scrierea ═══════════════════

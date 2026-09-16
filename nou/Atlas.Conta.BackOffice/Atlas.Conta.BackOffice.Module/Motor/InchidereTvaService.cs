@@ -267,12 +267,14 @@ public static class InchidereTvaService {
     // ar spune altceva decât refuză operarea). De aici `public` (F21-D2d).
     public static (decimal Sold4426, decimal Sold4427) Solduri(
         IObjectSpace os, Guid deductibilaId, Guid colectataId, DateOnly panaLa) {
-        decimal Debit(Guid contId) => os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => r.Data <= panaLa && r.ContDebitId == contId)
-            .Sum(r => (decimal?)r.Valoare) ?? 0m;
-        decimal Credit(Guid contId) => os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => r.Data <= panaLa && r.ContCreditId == contId)
-            .Sum(r => (decimal?)r.Valoare) ?? 0m;
+        // Sursa e cumulată (F27-D3): snapshot-ul ultimei perioade de referință
+        // plus rulajele de după ea. Atomul poartă latura, deci cele două sume se
+        // scriu pe `Debit`/`Credit`, nu pe `ContDebitId`/`ContCreditId`.
+        var atomi = SolduriService.AtomiCumulati(os, panaLa);
+        decimal Debit(Guid contId) => atomi.Where(a => a.ContId == contId)
+            .Sum(a => (decimal?)a.Debit) ?? 0m;
+        decimal Credit(Guid contId) => atomi.Where(a => a.ContId == contId)
+            .Sum(a => (decimal?)a.Credit) ?? 0m;
         return (Math.Max(0m, Debit(deductibilaId) - Credit(deductibilaId)),
                 Math.Max(0m, Credit(colectataId) - Debit(colectataId)));
     }

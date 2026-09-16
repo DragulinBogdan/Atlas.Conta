@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using DevExtreme.AspNet.Data;
@@ -306,8 +307,11 @@ public static class ContabilProiectii {
         Guid? proiectId = null, Guid? centruCostId = null) {
 
         // Tot ce s-a întâmplat până la sfârșitul perioadei: soldul inițial e
-        // partea de dinainte de `dataStart`, nu o a doua interogare.
-        var atomi = Atomi(os).Where(a => a.Data <= dataEnd);
+        // partea de dinainte de `dataStart`, nu o a doua interogare. Sursa
+        // pornește de la ultima perioadă DE REFERINȚĂ care se termină până la
+        // `dataStart − 1` (F27-D3), ca inițialul să rămână separabil prin
+        // `SUM(CASE)`; fără referință e exact `Atomi(os)` de azi.
+        var atomi = SolduriService.AtomiCumulati(os, dataEnd, dataStart.AddDays(-1));
 
         // Filtrele, aplicate PE ATOMI, deci ÎNAINTE de agregare și fiecare pe
         // LATURA LUI: atomul de debit poartă dimensiunile de debit, cel de
@@ -640,7 +644,9 @@ public static class ContabilProiectii {
     // ═══ Forma: trei niveluri, fiecare cu un motiv ═══
     //   (a) unpivot-ul (R-D1) pe UN cont: `ContDebitId = @cont` ⇒ sens „D",
     //       `ContCreditId = @cont` ⇒ sens „C". Un rând cu ACELAȘI cont pe ambele
-    //       laturi produce, corect, două rânduri. Tăiat aici la `Data <= dataEnd`.
+    //       laturi produce, corect, două rânduri. Tăiat aici la `Data <= dataEnd`
+    //       și, când există o perioadă de referință, la `Data > sfârșitul ei`:
+    //       restul vine ca a TREIA ramură, rândul sintetic din snapshot (F27-D3).
     //   (b) fereastra, peste TOT ce e `<= dataEnd` — de asta soldul curent
     //       include soldul inițial fără o a doua interogare scalară. Filtrele de
     //       dimensiune se aplică la ACEST nivel, adică ÎNAINTE de fereastră: „fișa
@@ -700,9 +706,22 @@ public static class ContabilProiectii {
             "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId",
             "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId"
         };
+        var valoriDimensiuni = new Dictionary<string, Guid?> {
+            ["RepartitorId"] = repartitorId, ["MaterialId"] = materialId,
+            ["CodFunctionalId"] = codFunctionalId, ["CodEconomicId"] = codEconomicId,
+            ["SursaFinantareId"] = sursaFinantareId, ["UnitateId"] = unitateId,
+            ["ProiectId"] = proiectId, ["CentruCostId"] = centruCostId
+        };
         string Dimensiuni(string prefix) =>
             string.Concat(dimensiuni.Select(d =>
                 $",\n            r.\"Dimensiuni{prefix}_{d}\" AS \"{d}\""));
+
+        // F27-D3: rândurile de dinaintea ultimei perioade DE REFERINȚĂ nu se mai
+        // citesc — vin ca UN SINGUR rând sintetic din snapshot-ul ei, datat la
+        // sfârșitul referinței. Fereastra îl cumulează (deci soldul curent al
+        // primului rând afișat e același), iar nivelul (c) îl exclude prin
+        // `Data >= dataStart`. Fără referință, SQL-ul e cel de dinainte.
+        var referinta = SolduriService.Referinta(os, dataStart.AddDays(-1));
 
         var latura = new StringBuilder();
         foreach (var (semn, contPropriu, contOpus, debit, credit) in new[] {
@@ -724,6 +743,41 @@ public static class ContabilProiectii {
                             r."Storno" AS "Storno"{Dimensiuni(semn == "D" ? "Debit" : "Credit")}
                         FROM "RegistruContabil" r
                         WHERE r."GCRecord" = 0 AND r."{contPropriu}" = {P(contId)} AND r."Data" <= {P(dataEnd)}
+                """);
+            if (referinta is { } rr)
+                latura.Append($" AND r.\"Data\" > {P(rr.Sfarsit)}");
+        }
+
+        if (referinta is { } r) {
+            // Cheia snapshot-ului e cea COMPLETĂ a atomului, deci filtrele de
+            // dimensiune se aplică ÎNĂUNTRU, înaintea sumei; rândul sintetic
+            // poartă apoi exact coordonatele filtrului, ca să treacă neschimbat
+            // prin filtrele nivelului (b), care rămân scrise o singură dată.
+            var coloaneSnapshot = string.Concat(dimensiuni.Select(d =>
+                valoriDimensiuni[d] is Guid vd
+                    ? $",\n            {P(vd)}::uuid AS \"{d}\""
+                    : $",\n            CAST(NULL AS uuid) AS \"{d}\""));
+            var undeSnapshot = new StringBuilder();
+            foreach (var d in dimensiuni)
+                if (valoriDimensiuni[d] is Guid vd)
+                    undeSnapshot.Append($"\n              AND s.\"{d}\" = {P(vd)}");
+            if (repartitorNul)
+                undeSnapshot.Append("\n              AND s.\"RepartitorId\" IS NULL");
+            latura.Append("\n        UNION ALL\n");
+            latura.Append($"""
+                        SELECT
+                            '00000000-0000-0000-0000-000000000000'::uuid AS "Id",
+                            {P(r.Sfarsit)}::date AS "Data",
+                            CAST(NULL AS text) AS "NumarNota",
+                            CAST('S' AS text) AS "Sens",
+                            COALESCE(SUM(s."Debit"), CAST(0 AS numeric(18,2))) AS "Debit",
+                            COALESCE(SUM(s."Credit"), CAST(0 AS numeric(18,2))) AS "Credit",
+                            CAST(NULL AS uuid) AS "ContrapartidaId",
+                            CAST(NULL AS uuid) AS "DocumentId",
+                            CAST(false AS boolean) AS "Storno"{coloaneSnapshot}
+                        FROM "SolduriPerioadaContabil" s
+                        WHERE s."GCRecord" = 0 AND s."An" = {P(r.An)} AND s."Luna" = {P(r.Luna)}
+                          AND s."ContId" = {P(contId)}{undeSnapshot}
                 """);
         }
 
@@ -856,6 +910,13 @@ public static class ContabilProiectii {
     // căi sunt egale prin construcție, deci un check ar trece și cu gate-ul șters.
     // Proba lui e HTTP, cu token, pe doi utilizatori cu drepturi diferite (vezi
     // contractul feliei).
+    //
+    // Fereastra comparată rămâne TOT istoricul contului, deși fișa nu-l mai
+    // citește rând cu rând (F27-D3): soldul de dinaintea referinței îi vine din
+    // snapshot, iar snapshot-ul NU trece prin `SecurityQueryCompiler`. Îngustată
+    // la rulajele de după referință, numărătoarea ar da 0 = 0 pentru un
+    // utilizator fără drept pe registru care cere o lună fără mișcări — și i-ar
+    // servi totuși soldul inițial agregat. Costul e un index scan pe cont.
     public static bool CaleaBrutaEchivalenta(IObjectSpace os, Guid contId, DateOnly dataEnd) {
         var securizat = os.GetObjectsQuery<RegistruContabil>()
             .Count(r => (r.ContDebitId == contId || r.ContCreditId == contId) && r.Data <= dataEnd);
