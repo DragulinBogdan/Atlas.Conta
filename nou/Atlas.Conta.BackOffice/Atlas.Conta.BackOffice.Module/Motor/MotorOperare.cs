@@ -393,6 +393,9 @@ public static class MotorOperare {
             rand.Tva = t.Tva;
         }
 
+        doc.TotalStingere = Scara.RotunjesteBani(                                     // F27-D7
+            doc.LiniiCreanta(doc.Detalii.AsQueryable()).Sum(d => d.Valoare + d.ValoareTva));
+
         // 3b. Registrul PROPRIU al tipului, prin interfață (F26-D3).
         if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
             cuRegistruPropriu.MaterializeazaRegistrul(os);
@@ -614,6 +617,7 @@ public static class MotorOperare {
             cuRegistruPropriu.EliminaRegistrul(os);
         doc.Stare = StareDocument.Draft;
         doc.DataOperare = null;
+        doc.TotalStingere = null;                                                    // F27-D7
         os.CommitChanges();
     }
 
@@ -629,7 +633,7 @@ public static class MotorOperare {
         GardianPerioada.VerificaDeschisa(os, dataStorno);
         VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
-        VerificaFaraImperecheri(os, doc);
+        ImperechereService.InverseazaLaStorno(os, doc, dataStorno);                   // F27-D8
         StergeConexeDraftAutogenerate(os, doc);
 
         var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();

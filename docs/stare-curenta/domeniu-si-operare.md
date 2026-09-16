@@ -458,6 +458,26 @@ revizuite depășesc lunile deja amortizate. (87e, 87g)
 sumă pozitivă și posibil parțială. Link-ul se poate șterge; nu se editează.
 Suma trebuie să respecte disponibilul ambelor părți și contrapartida comună. (31d, 41d)
 
+Împerecherea este un fapt **datat** (`Data`): automat, data înregistrării
+stingătorului; manual, ziua cerută, implicit azi. Data trebuie să cadă
+într-o perioadă deschisă și să nu preceadă data înregistrării niciunuia
+dintre documentele legate. (F27-D8)
+
+Ștergerea rămâne liberă cât timp `Data` cade în fereastra deschisă. O
+împerechere dintr-o perioadă închisă nu se șterge: se desface printr-un
+**rând invers** — aceleași documente, sumă negativă, `Data` în perioadă
+deschisă și nu înaintea originalului, `InverseazaId` completat. Legătura
+original ↔ invers este 1:1, iar rândul invers îl scrie doar motorul
+(`ImperechereService.Desfa`, acțiunea „Desfă împerecherea”, `POST
+api/imperecheri/{id}/desfa`). `Asignat` însumează **algebric**, deci
+desfacerea eliberează restul pe ambele documente fără a șterge nimic. (F27-D8)
+
+La stornarea unui document împerecheat, împerecherile din fereastra deschisă
+se cer șterse ca înainte, iar cele dintr-o perioadă închisă și încă
+neinversate primesc rândurile inverse la data stornării, scrise de
+`ImperechereService.InverseazaLaStorno` înainte de storno. Anularea rămâne
+refuzată la orice împerechere. (F27-D8)
+
 Contractele documentului sunt:
 
 | Contract | Semnificație |
@@ -473,6 +493,40 @@ Un tip care nu închide nicio datorie o declară prin `PoateFiStins = false`
 plafonul stingătorului oferă un singur sens. Totalul folosit la stingere este
 Σ(valoare + TVA) pe liniile creanței; un tip cu altă formulă a restului nu
 intră pe rolul de document stins. (86g)
+
+Totalul este **fapt scris**, nu agregat la citire: motorul îl calculează din
+`LiniiCreanta` și îl pune pe `Document.TotalStingere` la operare, în aceeași
+tranzacție cu registrele; îl șterge la anulare; nu îl atinge la storno.
+`ImperechereService.Total` îl citește de pe cheie și refuză explicit un
+document ieșit din Draft fără total scris. Câmpul este al motorului:
+gardianul refuză scrierea lui pe ușa securizată. (F27-D7)
+
+### Partide deschise
+
+`PartidaDeschisa` (`An`, `Luna`, `DocumentId`, `Rest`) este restul de stins al
+fiecărui document operat la sfârșitul unei perioade **de referință**, scris de
+`SolduriService.MaterializeazaPartide` în tranzacția închiderii, lângă
+snapshot-urile de solduri și cu aceeași regulă de referință. Rest =
+`TotalStingere` − Σ `Imperechere.Suma` (ambele roluri, algebric, `Data` până la
+sfârșitul perioadei); rândurile cu rest zero se omit. Ștearsă la redeschidere,
+rescrisă la re-închidere, verificată de `Reconstruieste` (existente /
+recalculate / diferite + Δrest). La 31.12 lista este chiar arieratele la nivel
+de document. (F27-D7)
+
+`ImperecheriProiectii.DocumenteCuRest(contrapartidă?, sens?, laData?)` pornește
+de la ultima perioadă de referință: candidații sunt partidele ei, plus
+documentele înregistrate după ea, plus documentele atinse de o împerechere din
+fereastra deschisă (o desfacere poate readuce în listă un document stins
+integral la închidere). Costul este mărginit de fereastra deschisă plus
+numărul partidelor, nu de tot istoricul. `ReturClient` a intrat în uniune
+(a șasea ramură): totalul lui este cel filtrat prin `LiniiCreanta`, scris de
+motor, deci proiecția nu mai poate diverge de serviciu. Rândurile lui rămân
+totuși în afara listei, dar din alt motiv — creanța unui retur este negativă
+după operare, iar filtrul `Rest > 0` o taie. (F27-D7)
+
+`ContabilProiectii.SoldParteneri(laData, contId?, repartitorId?, dimensiuni)`
+este partea de sold a balanței analitice pe aceeași cheie (cont × repartitor),
+citită prin aceiași atomi cumulați; rândurile cu sold net zero se omit. (F27-D7)
 
 Entitățile care își poartă singure invarianții de commit implementează
 `IVerificabilLaCommit`; gardianul le cheamă prin interfață înaintea

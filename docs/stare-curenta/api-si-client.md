@@ -77,6 +77,31 @@ integral, cu cantitate ȘI valoare zero, nu mai apare în listă; unul cu
 cantitatea zero și valoare nenulă rămâne, ca reziduul valoric să se vadă.
 (F27-D3)
 
+`POST api/imperecheri` primește opțional `Data` (ziua faptului de stingere;
+absent = azi). `POST api/imperecheri/{id}/desfa` cu `{ Data }` scrie rândul
+invers al unei împerecheri dintr-o perioadă închisă: 400 pe corp malformat,
+404 pe inexistentă sau invizibilă, 403 fără drept de **scriere** pe instanță
+(desfacerea scrie un rând, nu șterge), 422 pe domeniu (deja desfăcută, rând
+invers, dată sub cea a împerecherii, perioadă închisă a rândului nou).
+`DELETE api/imperecheri/{id}` rămâne calea din fereastra deschisă; pe o
+împerechere dintr-o perioadă închisă dă 422, cu trimitere la desfacere.
+Panoul de stingeri poartă pe fiecare rând `Data`, `InverseazaId`, `Desfacuta`
+și `PerioadaDeschisa` — verdictul „ce buton are dreptul să apară" e
+server-computed, nu dedus în client. (F27-D8, 80a)
+
+`GET api/proiectii/documente-cu-rest` primește opțional `laData`: restul se
+citește la ziua cerută, pornind de la partidele deschise ale ultimei perioade
+de referință. Absent = la zi. Proiecția include acum și `ReturClient`.
+(F27-D7)
+
+`GET api/proiectii/sold-parteneri?laData=&contId=&repartitorId=` întoarce
+soldurile pe (cont × repartitor) la o dată, cu aceleași filtre de dimensiune
+ca balanța și cu rândurile de sold net zero omise. `laData` absent = azi; o
+dată nevalidă cade pe 400. Citirea cere dreptul pe registrul contabil, ca
+balanța. Ecranul `/sold-parteneri` din client ține data în URL și duce prin
+dublu-click în fișa contului. Repartitorul e dimensiunea laturii, nu partenerul
+contului de terț — ecranul o spune explicit. (F27-D7)
+
 ## Securitate și răspunsuri
 
 Ordinea gărzilor este autentificare, forma cererii, vizibilitatea obiectului,

@@ -13,7 +13,8 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 public sealed record RandReconstructie(int An, int Luna,
     long ContabilExistente, long ContabilRecalculate, long ContabilDiferite,
     long StocExistente, long StocRecalculate, long StocDiferite,
-    decimal DiferentaDebit, decimal DiferentaCredit, decimal DiferentaCantitate, decimal DiferentaValoare);
+    decimal DiferentaDebit, decimal DiferentaCredit, decimal DiferentaCantitate, decimal DiferentaValoare,
+    long PartideExistente, long PartideRecalculate, long PartideDiferite, decimal DiferentaRest);
 
 /// <summary>Raportul comenzii de reconstrucție: un rând per perioadă de referință, chiar și fără diferențe.</summary>
 public sealed record RaportReconstructie(IReadOnlyList<RandReconstructie> Referinte);
@@ -37,6 +38,13 @@ public class DiferentaStocSql {
     public virtual decimal DiferentaValoare { get; set; }
 }
 
+public class DiferentaPartideSql {
+    public virtual long Existente { get; set; }
+    public virtual long Recalculate { get; set; }
+    public virtual long Diferite { get; set; }
+    public virtual decimal DiferentaRest { get; set; }
+}
+
 public class PerioadaSnapshotSql {
     public virtual int An { get; set; }
     public virtual int Luna { get; set; }
@@ -56,6 +64,7 @@ public static class SolduriService {
 
     const string Contabil = "\"SolduriPerioadaContabil\"";
     const string Stoc = "\"SolduriPerioadaStoc\"";
+    const string Partide = "\"PartideDeschise\"";
 
     // Sentinela de comparare a dimensiunilor lipsă: `IS NOT DISTINCT FROM` ar
     // fi corect, dar nu e hashable. `Guid.Empty` nu poate fi id de rând real
@@ -87,11 +96,53 @@ public static class SolduriService {
         var precedentaStoc = AreRanduri(os, Stoc, anPrec, lunaPrec) ? (anPrec, lunaPrec) : ((int, int)?)null;
         ScrieContabil(os, an, luna, precedentaContabil);
         ScrieStoc(os, an, luna, precedentaStoc);
+        MaterializeazaPartide(os, an, luna);
     }
+
+    // F27-D7: partidele deschise ale perioadei — restul de stins al fiecărui
+    // document operat la sfârșitul ei. NU e incrementală ca snapshot-urile:
+    // restul e diferența a două cumulate, nu o sumă de rulaje, iar mulțimea
+    // documentelor cu rest e mică prin natura ei (ce e neîncasat, nu ce s-a emis).
+    /// <summary>Scrie partidele deschise ale perioadei, din totalurile documentelor și imperecheri.</summary>
+    public static void MaterializeazaPartide(IObjectSpace os, int an, int luna) {
+        EliminaPartide(os, an, luna);
+        var argumente = new List<object>();
+        string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
+        var pAn = P(an);
+        var pLuna = P(luna);
+        var pSfarsit = P(Sfarsit(an, luna));
+        var sql = $"""
+            INSERT INTO {Partide} ("ID", "GCRecord", "OptimisticLockField", "An", "Luna", "DocumentId", "Rest")
+            SELECT gen_random_uuid(), 0, 0, {pAn}, {pLuna}, d."ID",
+                   d."TotalStingere" - COALESCE(i."Asignat", 0)
+            FROM "Documente" d
+            LEFT JOIN (
+            {AsignariPanaLa(pSfarsit)}
+            ) i ON i."Doc" = d."ID"
+            WHERE d."GCRecord" = 0 AND d."Stare" = {(int)StareDocument.Operat}
+              AND d."TotalStingere" IS NOT NULL AND d."DataInregistrare" <= {pSfarsit}
+              AND d."TotalStingere" - COALESCE(i."Asignat", 0) <> 0
+            """;
+        Executa(os, sql, argumente.ToArray());
+    }
+
+    // Unpivot-ul imperecherii pe AMBELE laturi, agregat per document și tăiat pe
+    // `Data` — geamănul în SQL al lui `ImperechereService.Asignat`. ALGEBRIC:
+    // rândurile inverse (F27-D8) intră cu semnul lor.
+    static string AsignariPanaLa(string panaLa) => $"""
+              SELECT u."Doc", SUM(u."Suma") AS "Asignat" FROM (
+                SELECT "DocumentStingatorId" AS "Doc", "Suma" FROM "Imperecheri"
+                 WHERE "GCRecord" = 0 AND "Data" <= {panaLa}
+                UNION ALL
+                SELECT "DocumentId" AS "Doc", "Suma" FROM "Imperecheri"
+                 WHERE "GCRecord" = 0 AND "Data" <= {panaLa}
+              ) u GROUP BY u."Doc"
+            """;
 
     /// <summary>Perioada are deja snapshot scris?</summary>
     public static bool AreSnapshot(IObjectSpace os, int an, int luna) =>
-        AreRanduri(os, Contabil, an, luna) || AreRanduri(os, Stoc, an, luna);
+        AreRanduri(os, Contabil, an, luna) || AreRanduri(os, Stoc, an, luna)
+        || AreRanduri(os, Partide, an, luna);
 
     // F27-D3: ștergere FIZICĂ, nu `GCRecord`. Snapshot-ul nu e nomenclator și
     // n-are urmă de păstrat — e o proiecție rescrisă din registre, iar un rând
@@ -100,7 +151,11 @@ public static class SolduriService {
     public static void Elimina(IObjectSpace os, int an, int luna) {
         Executa(os, $"DELETE FROM {Contabil} WHERE \"An\" = {{0}} AND \"Luna\" = {{1}}", an, luna);
         Executa(os, $"DELETE FROM {Stoc} WHERE \"An\" = {{0}} AND \"Luna\" = {{1}}", an, luna);
+        EliminaPartide(os, an, luna);
     }
+
+    static void EliminaPartide(IObjectSpace os, int an, int luna) =>
+        Executa(os, $"DELETE FROM {Partide} WHERE \"An\" = {{0}} AND \"Luna\" = {{1}}", an, luna);
 
     /// <summary>Recalculează integral fiecare referință, RAPORTEAZĂ diferențele, apoi rescrie.</summary>
     public static RaportReconstructie Reconstruieste(IObjectSpace os) {
@@ -109,11 +164,13 @@ public static class SolduriService {
         foreach (var (an, luna) in referinte) {
             var contabil = DiferenteContabil(os, an, luna);
             var stoc = DiferenteStoc(os, an, luna);
+            var partide = DiferentePartide(os, an, luna);
             randuri.Add(new RandReconstructie(an, luna,
                 contabil.Existente, contabil.Recalculate, contabil.Diferite,
                 stoc.Existente, stoc.Recalculate, stoc.Diferite,
                 contabil.DiferentaDebit, contabil.DiferentaCredit,
-                stoc.DiferentaCantitate, stoc.DiferentaValoare));
+                stoc.DiferentaCantitate, stoc.DiferentaValoare,
+                partide.Existente, partide.Recalculate, partide.Diferite, partide.DiferentaRest));
         }
         // Rescrierea vine DUPĂ raport (35b): diferența se constată pe ce era în
         // bază, nu pe ce urmează să scriem.
@@ -121,6 +178,7 @@ public static class SolduriService {
             Elimina(os, an, luna);
             ScrieContabil(os, an, luna, null);
             ScrieStoc(os, an, luna, null);
+            MaterializeazaPartide(os, an, luna);
         }
         foreach (var p in PerioadeCuSnapshot(os).Where(p => !referinte.Contains(p)))
             Elimina(os, p.An, p.Luna);
@@ -382,11 +440,48 @@ public static class SolduriService {
         return Interogheaza<DiferentaStocSql>(os, sql, argumente.ToArray()).Single();
     }
 
+    static DiferentaPartideSql DiferentePartide(IObjectSpace os, int an, int luna) {
+        var argumente = new List<object>();
+        string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
+        var pSfarsit = P(Sfarsit(an, luna));
+        var pAn = P(an);
+        var pLuna = P(luna);
+        var sql = $"""
+            WITH recalc AS (
+              SELECT d."ID" AS "DocumentId", d."TotalStingere" - COALESCE(i."Asignat", 0) AS "Rest"
+              FROM "Documente" d
+              LEFT JOIN (
+            {AsignariPanaLa(pSfarsit)}
+              ) i ON i."Doc" = d."ID"
+              WHERE d."GCRecord" = 0 AND d."Stare" = {(int)StareDocument.Operat}
+                AND d."TotalStingere" IS NOT NULL AND d."DataInregistrare" <= {pSfarsit}
+                AND d."TotalStingere" - COALESCE(i."Asignat", 0) <> 0
+            ),
+            existent AS (
+              SELECT "DocumentId", "Rest" FROM {Partide} WHERE "An" = {pAn} AND "Luna" = {pLuna}
+            ),
+            j AS (
+              SELECT e."DocumentId" AS "DocE", r."DocumentId" AS "DocR",
+                     e."Rest" AS "RestE", r."Rest" AS "RestR"
+              FROM existent e FULL OUTER JOIN recalc r ON e."DocumentId" = r."DocumentId"
+            )
+            SELECT (SELECT COUNT(*) FROM existent) AS "Existente",
+                   (SELECT COUNT(*) FROM recalc) AS "Recalculate",
+                   COUNT(*) FILTER (WHERE "DocE" IS NULL OR "DocR" IS NULL
+                                       OR "RestE" <> "RestR") AS "Diferite",
+                   COALESCE(SUM(ABS(COALESCE("RestR", 0) - COALESCE("RestE", 0))), 0) AS "DiferentaRest"
+            FROM j
+            """;
+        return Interogheaza<DiferentaPartideSql>(os, sql, argumente.ToArray()).Single();
+    }
+
     static IReadOnlyList<(int An, int Luna)> PerioadeCuSnapshot(IObjectSpace os) {
         const string sql = $"""
             SELECT "An", "Luna" FROM {Contabil} GROUP BY "An", "Luna"
             UNION
             SELECT "An", "Luna" FROM {Stoc} GROUP BY "An", "Luna"
+            UNION
+            SELECT "An", "Luna" FROM {Partide} GROUP BY "An", "Luna"
             """;
         return Interogheaza<PerioadaSnapshotSql>(os, sql).Select(p => (p.An, p.Luna)).ToList();
     }

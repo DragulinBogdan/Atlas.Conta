@@ -32,6 +32,19 @@ public sealed class ImperechereWriteDto {
     // contrapartidă × sens — e singurul care știe sub ce grup a fost ales
     // rândul. `null` = se deduce, cazul tuturor plăților/încasărilor.
     public Guid? ContrapartidaId { get; set; }
+    // Ziua faptului de stingere (F27-D8), OPȚIONALĂ: `null` = azi. Trebuie să
+    // cadă într-o perioadă deschisă și să nu preceadă înregistrarea niciunuia
+    // dintre documente — refuzurile sunt ale serviciului.
+    public DateOnly? Data { get; set; }
+}
+
+// ── Desfacerea unei imperecheri dintr-o perioadă închisă (F27-D8) ──────────
+// Nu e ștergere: o perioadă închisă nu se rescrie, deci se scrie un RÂND INVERS
+// (aceleași documente, sumă negativă) în fereastra deschisă.
+public sealed class DesfaImperechereRequestDto {
+    // Data rândului invers; `null` = azi. În perioadă deschisă și nu înaintea
+    // datei imperecherii desfăcute.
+    public DateOnly? Data { get; set; }
 }
 
 // Legătura creată, plată. Numerele de rest NU sunt aici: după creare clientul
@@ -42,6 +55,10 @@ public sealed class ImperechereReadDto {
     public Guid DocumentStingatorId { get; set; }
     public Guid DocumentId { get; set; }
     public decimal Suma { get; set; }
+    public DateOnly Data { get; set; }
+    // Imperecherea pe care rândul de față o DESFACE (F27-D8); null pe un rând
+    // obișnuit.
+    public Guid? InverseazaId { get; set; }
     public bool Autogenerat { get; set; }
 }
 
@@ -84,6 +101,17 @@ public sealed class StingereRandDto {
     public Guid Id { get; set; }
     public bool EsteStingator { get; set; }
     public Guid CelalaltDocumentId { get; set; }
+    // Ziua faptului de stingere (F27-D8) — reperul pe care panoul decide între
+    // ȘTERGE (fereastra deschisă) și DESFACE (perioadă închisă).
+    public DateOnly Data { get; set; }
+    // Rândul care desface o imperechere închisă: sumă negativă, `Inverseaza`
+    // completat. Panoul îl arată ca atare, nu îl ascunde.
+    public Guid? InverseazaId { get; set; }
+    // Rândul de față e DEJA desfăcut de un rând invers — nu se mai desface.
+    public bool Desfacuta { get; set; }
+    // `Data` cade într-o perioadă DESCHISĂ? Server-computed (perioada e a bazei,
+    // nu a clientului — 42c): decide ce buton are dreptul să apară.
+    public bool PerioadaDeschisa { get; set; }
     // Codul ancorei `TipDocument` (FCT, PLT…) — vocabularul de rutare al
     // clientului (`/fct/{id}`), ca la `DocumentCopilDto`.
     public string CelalaltTip { get; set; }

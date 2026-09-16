@@ -98,10 +98,35 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Reclasificarea pe 1174 a erorilor semnificative din exerciții anterioare
   rămâne notă contabilă manuală — motorul nu judecă semnificația. (F27-r1)
 - Corecția moștenește integral gardienii stornării: un document cu împerecheri
-  cere ștergerea lor înainte (până la pasul 6 al feliei, care le face fapt
-  datat și le inversează), iar un document cu conex operat sau cu latură
-  pereche operată e refuzat exact ca la storno. Comanda nu relaxează nimic.
-  (F27-D6, F27-D8)
+  în fereastra DESCHISĂ cere ștergerea lor înainte (cele dintr-o perioadă
+  închisă se inversează singure la storno), iar un document cu conex operat sau
+  cu latură pereche operată e refuzat exact ca la storno. Comanda nu relaxează
+  nimic. (F27-D6, F27-D8)
+- Partidele deschise nu poartă scadența și nu se grupează pe vechime:
+  scadențarul și aging-ul sunt aceeași listă cu scadența alături, felie de
+  raportare proprie. (F27-D7, F27-r2)
+- Soldul partenerului nu apare în lookup-urile de partener din culegere:
+  există ca ecran și ca rută, nu ca o coloană `Sold` pe `Partener`. (F27-r7)
+- `sold-parteneri` grupează pe dimensiunea **Repartitor**, care urmează
+  laturile documentului (debit←predator, credit←primitor — 00 §5), NU contul
+  de terț: pe o factură de client atomul de debit al lui 4111 poartă
+  emitentul, iar clientul apare pe atomul de credit al venitului (măsurat pe
+  baza Privat: 103.301 din 108.912 rânduri de 4111 au „Sediul central" pe
+  debit). Ecranul dă deci soldul pe cheia contabilă așa cum e ea, nu creanța
+  per partener; creanța per partener se citește din partidele deschise
+  (`documente-cu-rest`). Dimensionarea contului de terț pe partener e decizie
+  separată, nu a acestei felii. (F27-D7)
+- `ReturClient` intră în proiecția de rest, dar rândurile lui nu apar:
+  creanța unui retur e negativă după operare (venit stornat), iar filtrul
+  `Rest > 0` o taie. Împerecherea unui retur rămâne pe calea directă
+  (serviciu / XAF). (F27-D7)
+- Rămân pe registrul integral, fără partide: `ImperecheriProiectii.Asignari`
+  (unpivot-ul folosit de panoul notei de compensare) și `ImperechereService`
+  pe un document anume — ambele sunt căi de COMANDĂ, pe mulțimi mărginite.
+  (F27-D7)
+- Coloana „Dată” a împerecherii apare în panoul de stingeri și în lista XAF,
+  dar nu există listă proprie de împerecheri în clientul React: desfacerea se
+  face din panoul documentului. (F27-D8)
 - Legătura de corecție nu apare în coloanele listelor de documente și nu se
   poate filtra pe ea: se vede pe ecranul documentului, ca bandă, și în grupul
   „Corecție" al DetailView-ului XAF. (F27-D6)

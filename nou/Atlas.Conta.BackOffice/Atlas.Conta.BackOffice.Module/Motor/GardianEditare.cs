@@ -222,10 +222,13 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 // tranzacția închiderii.
                 case SoldPerioadaContabil:
                 case SoldPerioadaStoc:
+                // Partidele deschise ale perioadelor de referință (F27-D7): tot
+                // proiecție a motorului, scrisă în tranzacția închiderii.
+                case PartidaDeschisa:
                     if (!registruRaportat) {
                         registruRaportat = true;
-                        erori.Add("Registrele (stoc/contabil/TVA/imobilizări/solduri de perioadă) se scriu doar de "
-                            + "motor, la operare — nu se creează, modifică sau șterg direct.");
+                        erori.Add("Registrele (stoc/contabil/TVA/imobilizări/solduri și partide de perioadă) se scriu "
+                            + "doar de motor, la operare — nu se creează, modifică sau șterg direct.");
                     }
                     break;
                 // (m) F27-D1 — istoricul perioadei e registrul închiderilor: îl
@@ -379,9 +382,10 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (doc.Stare != StareDocument.Draft)
                 erori.Add($"Un document nou se creează în starea Draft, nu „{doc.Stare}” "
                     + "— operarea îi schimbă starea.");
-            if (doc.Autogenerat || doc.DocumentSursaId != null || doc.DataOperare != null)
-                erori.Add("Legătura de grup conex (Autogenerat/DocumentSursa) și DataOperare "
-                    + "le scrie doar motorul.");
+            if (doc.Autogenerat || doc.DocumentSursaId != null || doc.DataOperare != null
+                    || doc.TotalStingere != null)
+                erori.Add("Legătura de grup conex (Autogenerat/DocumentSursa), DataOperare "
+                    + "și totalul de stins le scrie doar motorul.");
             if (!string.IsNullOrEmpty(doc.Numar) && AreNumerotare(os, doc))
                 erori.Add($"Numărul documentului vine din seria tipului (PoliticaNumerotare) "
                     + "— nu se culege.");
@@ -405,9 +409,10 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "(Operează / Anulează operarea / Stornează).");
         if (!Equals(originale[nameof(Document.DataOperare)], doc.DataOperare)
                 || !Equals(originale[nameof(Document.Autogenerat)], doc.Autogenerat)
-                || !Equals(originale[nameof(Document.DocumentSursaId)], doc.DocumentSursaId))
+                || !Equals(originale[nameof(Document.DocumentSursaId)], doc.DocumentSursaId)
+                || !Equals(originale[nameof(Document.TotalStingere)], doc.TotalStingere))
             erori.Add($"Câmpurile de operare și de grup conex ale documentului {Eticheta(doc)} "
-                + "(DataOperare, Autogenerat, DocumentSursa) le scrie doar motorul.");
+                + "(DataOperare, Autogenerat, DocumentSursa, Total de stins) le scrie doar motorul.");
         var numarOriginal = originale[nameof(Document.Numar)] as string;
         if (!string.Equals(numarOriginal ?? "", doc.Numar ?? "", StringComparison.Ordinal)
                 && AreNumerotare(os, doc))
@@ -506,20 +511,53 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     // (re-validarea sumei ar cere excluderea propriului rând), Delete liber
     // (link fără registre proprii; gardianul de anulare/storno din motor există).
     static void VerificaImperechere(IObjectSpace os, Imperechere imperechere, ICollection<string> erori) {
-        if (EsteSters(os, imperechere))
+        if (EsteSters(os, imperechere)) {
+            // F27-D8: ștergerea rămâne liberă în fereastra deschisă (link fără
+            // registre proprii), dar o imperechere dintr-o perioadă închisă
+            // NU dispare — se desface prin rând invers, datat în deschis.
+            if (!PerioadaDeschisa(os, imperechere.Data))
+                erori.Add("O împerechere dintr-o perioadă închisă nu se șterge — "
+                    + "se desface prin rând invers („Desfă împerecherea”).");
             return;
+        }
         if (!os.IsNewObject(imperechere)) {
             erori.Add("Imperecherea nu se editează — șterge-o și creeaz-o din nou.");
+            return;
+        }
+        // F27-D8: rândul invers e al MOTORULUI (`Desfă`, stornarea unui document
+        // imperecheat) — pe ușa securizată nu se scrie, ca legătura de corecție.
+        if (imperechere.InverseazaId != null) {
+            erori.Add("Rândul invers al unei imperecheri îl scrie doar motorul („Desfă împerecherea”).");
+            return;
+        }
+        if (imperechere.Data == default) {
+            erori.Add("Data imperecherii e obligatorie — stingerea e un fapt datat.");
+            return;
+        }
+        if (!PerioadaDeschisa(os, imperechere.Data)) {
+            erori.Add($"Perioada {imperechere.Data.Month:00}/{imperechere.Data.Year} e închisă — "
+                + "o imperechere se scrie doar într-o perioadă deschisă.");
             return;
         }
         // Limitare asumată (ca gardianul de sold, decizia 25f): două link-uri
         // NOI în același commit nu se văd reciproc la Σ ≤ rest.
         try {
             ImperechereService.ValideazaCreare(os,
-                imperechere.DocumentStingator, imperechere.Document, imperechere.Suma);
+                imperechere.DocumentStingator, imperechere.Document, imperechere.Suma,
+                null, imperechere.Data);
         }
         catch (OperareException ex) {
             erori.Add(ex.Message);
+        }
+    }
+
+    static bool PerioadaDeschisa(IObjectSpace os, DateOnly data) {
+        try {
+            GardianPerioada.VerificaDeschisa(os, data);
+            return true;
+        }
+        catch (OperareException) {
+            return false;
         }
     }
 

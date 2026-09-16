@@ -31,4 +31,5 @@ public sealed record ReconstructieRezultatDto(ReconstructieReferintaDto[] Referi
 public sealed record ReconstructieReferintaDto(int An, int Luna,
     long ContabilExistente, long ContabilRecalculate, long ContabilDiferite,
     long StocExistente, long StocRecalculate, long StocDiferite,
-    decimal DiferentaDebit, decimal DiferentaCredit, decimal DiferentaCantitate, decimal DiferentaValoare);
+    decimal DiferentaDebit, decimal DiferentaCredit, decimal DiferentaCantitate, decimal DiferentaValoare,
+    long PartideExistente, long PartideRecalculate, long PartideDiferite, decimal DiferentaRest);

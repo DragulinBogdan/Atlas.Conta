@@ -654,6 +654,18 @@ public class Imperechere : BaseObject {
     public virtual Guid DocumentId { get; set; }
     public virtual Document Document { get; set; }
     public virtual decimal Suma { get; set; }
+    // F27-D8: imperecherea e fapt DATAT — automat = data înregistrării
+    // stingătorului, manual = data cerută, în perioadă deschisă și nu înaintea
+    // înregistrării niciunuia dintre documente. Partidele deschise și
+    // `DocumenteCuRest` taie pe ea.
+    [XafDisplayName("Data")]
+    public virtual DateOnly Data { get; set; }
+    // F27-D8: rândul INVERS care desface o imperechere dintr-o perioadă închisă
+    // (`Suma` negativă, aceleași documente). Legătura e 1:1 și e a motorului.
+    public virtual Guid? InverseazaId { get; set; }
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Inversează împerecherea")]
+    public virtual Imperechere Inverseaza { get; set; }
     // Marcaj de proveniență (creată de motor la plata autogenerată) — nu se culege
     // de operator, deci read-only în UI.
     [ModelDefault("AllowEdit", "False")]

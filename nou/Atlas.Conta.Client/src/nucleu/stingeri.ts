@@ -16,6 +16,7 @@ type Scheme = components['schemas'];
 export type Stingeri = Scheme['StingeriDto'];
 export type StingereRand = Scheme['StingereRandDto'];
 export type ImperechereWrite = Scheme['ImperechereWriteDto'];
+export type DesfaImperechere = Scheme['DesfaImperechereRequestDto'];
 export type DocumentCuRest = Scheme['DocumentCuRestRand'];
 
 const BAZA = '/api/imperecheri';
@@ -27,9 +28,16 @@ export const stingeri = {
 
   creeaza: (dto: ImperechereWrite) => posteaza<{ Id?: string }>(BAZA, dto),
 
-  // Liberă (31d): legătura n-are registre proprii, iar dispariția ei redeschide
-  // anularea/stornarea ambelor documente (affordances oneste — F3-D2).
+  // Liberă (31d) CÂT TIMP data imperecherii cade în fereastra deschisă: legătura
+  // n-are registre proprii, iar dispariția ei redeschide anularea/stornarea
+  // ambelor documente (affordances oneste — F3-D2).
   sterge: (id: string) => sterge(`${BAZA}/${id}`),
+
+  // F27-D8: o imperechere dintr-o perioadă închisă NU se șterge — se desface
+  // printr-un rând invers, datat în fereastra deschisă. Verdictul „ce buton
+  // are voie să apară" vine server-computed pe rând (`PerioadaDeschisa`), nu
+  // dintr-un calcul de perioade în TS (42c).
+  desfa: (id: string, dto: DesfaImperechere) => posteaza<{ Id?: string }>(`${BAZA}/${id}/desfa`, dto),
 
   // Candidații de stins: proiecția de REST, filtrată pe contrapartidă ȘI pe
   // SENS ÎN proiecție (parametri, nu filtre DataSourceLoader — contrapartida e
@@ -41,10 +49,13 @@ export const stingeri = {
   // parametrul lipsește din URL și proiecția nu filtrează pe sens — exact
   // comportamentul de dinainte de F19-D16, pentru tipurile care nu declară sens.
   // O valoare necunoscută e refuzată de rută cu 400, nu ignorată tăcut (57a).
-  storeCandidati: (contrapartidaId: string, sens?: string | null) =>
+  // `laData` (F27-D7) taie restul la o zi: proiecția pornește de la partidele
+  // deschise ale ultimei perioade de referință. Absent = „la zi".
+  storeCandidati: (contrapartidaId: string, sens?: string | null, laData?: string | null) =>
     storeRemote(
       `/api/proiectii/documente-cu-rest?contrapartidaId=${encodeURIComponent(contrapartidaId)}`
-      + (sens ? `&sens=${encodeURIComponent(sens)}` : ''),
+      + (sens ? `&sens=${encodeURIComponent(sens)}` : '')
+      + (laData ? `&laData=${encodeURIComponent(laData)}` : ''),
       'DocumentId'),
 };
 

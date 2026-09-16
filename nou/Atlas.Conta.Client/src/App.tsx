@@ -36,6 +36,7 @@ import { SoldStoc } from './felii/stoc/SoldStoc';
 import { Balanta } from './felii/raportare/Balanta';
 import { BalantaPlan } from './felii/raportare/BalantaPlan';
 import { FisaCont } from './felii/raportare/FisaCont';
+import { SoldParteneri } from './felii/raportare/SoldParteneri';
 import { RegistruJurnal } from './felii/raportare/RegistruJurnal';
 import { JurnalCumparari, JurnalVanzari } from './felii/tva/JurnalTva';
 import { DecontTva } from './felii/tva/DecontTva';
@@ -155,6 +156,9 @@ export function App() {
         <Route path="/balanta" element={<Balanta />} />
         <Route path="/balanta-plan" element={<BalantaPlan />} />
         <Route path="/fisa-cont" element={<FisaCont />} />
+        {/* F27-D7: soldurile pe partener la o zi — partea de sold a balanței
+            analitice, ecranul pe care partidele deschise îl fac ieftin. */}
+        <Route path="/sold-parteneri" element={<SoldParteneri />} />
         <Route path="/jurnal" element={<RegistruJurnal />} />
         {/* Jurnalele de TVA (felia 11): aceeași proiecție pe laturi diferite,
             deci rute proprii — nu un ecran cu comutator. Sunt două rapoarte
@@ -269,6 +273,7 @@ function Meniu() {
       <NavLink to="/stoc">Sold stoc</NavLink>
       <NavLink to="/balanta">Balanță</NavLink>
       <NavLink to="/balanta-plan">Balanță pe plan</NavLink>
+      <NavLink to="/sold-parteneri">Solduri pe repartitor</NavLink>
       <NavLink to="/jurnal">Registru-jurnal</NavLink>
       <span className="meniu__grup">TVA și declarații</span>
       <NavLink to="/jurnal-cumparari">Jurnal cumpărări</NavLink>

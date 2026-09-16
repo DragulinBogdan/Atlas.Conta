@@ -100,7 +100,11 @@ public static class Scara {
         // Cifrele imobilizărilor sunt tot bani postați sau derivați din ei (F26-D2).
         // `Debit`/`Credit` sunt cumulatele pe laturi ale snapshot-ului de
         // perioadă (F27-D3): suma unor valori de postare, deci tot bani.
+        // `TotalStingere` (F27-D7) e Σ valorilor de postare ale liniilor de
+        // creanță, iar `Rest` al partidei deschise e diferența lui față de
+        // stingeri — amândouă bani postați.
         "Valoare" or "ValoareTva" or "Suma" or "Baza" or "Tva" or "Debit" or "Credit"
+            or "TotalStingere" or "Rest"
             or "ValoareFiscala" or "ValoareDeductibila" or "ValoareReziduala"
             or "Amortizare" or "AmortizareFiscala" or "AmortizareDeductibila"
             or "AmortizareInitiala" or "AmortizareFiscalaInitiala" => Bani,

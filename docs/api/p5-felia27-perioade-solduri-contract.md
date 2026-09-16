@@ -541,6 +541,10 @@ Felia e închisă când, pe codul final:
    XAF + React (câmp în antetul tuturor tipurilor culese, prin
    `ContaUiBaseline`), `metadata.json`. Oprire: ModelCheck identic;
    Import1C integral cu raport identic (prima probă supremă a feliei).
+   *Proba supremă #1 (main, 2026-09-17)*: Import1C integral pe `Import1C.Flax`
+   (16.09 22:21 → 17.09 01:04, `--recreeaza --cititori` + `--reclasifica`, exit 0)
+   ⇒ `reconciliere-20260916-222253.txt` IDENTIC pe conținut sortat cu baseline-ul
+   `reconciliere-20260914-164035.txt` (singura diferență: linia cu timestamp-ul).
    *Executat 2026-09-16, fără opriri; devierile raportate*: `Document.DataInregistrare`
    (`DateOnly`, „Data înregistrării”) cu index filtrat pe rândurile vii; migrația
    `20260916184148_F27Pas3DataInregistrare` (coloană + backfill `= "Data"` în
@@ -754,6 +758,58 @@ Felia e închisă când, pe codul final:
    gardianul + rândul invers, `DocumenteCuRest` rescris, `ReturClient`
    inclus, `sold-parteneri`. Oprire: ModelCheck identic; Import1C integral
    identic; perf pe `DocumenteCuRest` sub 150 ms.
+   *Executat 2026-09-17, fără opriri; devierile raportate*: `Document.TotalStingere`
+   (`decimal?`, al motorului), `Imperechere.Data` + `InverseazaId`/`Inverseaza`
+   (FK self, `Restrict`, unicitate filtrată — legătura e 1:1) și
+   `PartidaDeschisa` (`BusinessObjects/Registre/SolduriPerioada.cs`, tabela
+   `PartideDeschise`, unic pe `(An, Luna, DocumentId)`); migrația
+   `20260916220304_F27Pas6PartideImperecheri` cu TREI backfill-uri
+   (`TotalStingere` din liniile de creanță — filtrul `LotId IS NULL` al lui
+   `ReturClient` E exprimabil în SQL, deci returul a intrat în backfill corect;
+   zero pe documentele operate fără linii; `Imperechere.Data`), aplicată pe
+   `Atlas.Conta.BackOffice`, `.Privat` și `ModelCheck.Privat`. Pe Privat
+   backfill-ul e verificat cu SQL: 0 diferențe față de recalcul pe 205.168 de
+   documente operate/stornate, 46.057 de împerecheri datate, iar 1.638 de RDC-uri
+   au total DIFERIT de brutul liniilor (dovada că filtrul s-a aplicat).
+   **Devieri**: (1) `MaterializeazaPartide` e chemată din
+   `SolduriService.Materializeaza`, nu din `PerioadaService.Inchide` — cei trei
+   apelanți (închidere, redeschidere pe P−1, reconstrucție) o vor toți, iar
+   `Elimina`/`AreSnapshot` acoperă partidele uniform; `PerioadaService` rămâne
+   NEATINS. (2) Backfill-ul lui `Imperechere.Data` ia
+   `GREATEST(stingător, stins)`, nu data stingătorului singură, ca invariantul
+   de ordine să fie adevărat și pe istoric (pe bazele de azi cele două coincid).
+   (3) `InverseazaLaStorno` refuză pe perioada deschisă doar legăturile VII
+   (nici inverse, nici deja inversate): altfel o desfacere din fereastra
+   deschisă ar fi blocat stornarea documentului pe care tocmai îl elibera.
+   (4) `DocumenteCuRest` are o a TREIA ramură de candidați față de contract —
+   documentele atinse de o împerechere din fereastra deschisă: un document
+   stins integral la închidere lipsește din partide, dar o desfacere ulterioară
+   îi readuce restul, iar fără ramura asta proiecția ar fi tăcut incompletă
+   (probat: `PAR-V11`). (5) `sold-parteneri` grupează pe dimensiunea
+   **Repartitor**, care urmează laturile documentului (00 §5), nu contul de
+   terț: pe factura de client atomul de debit al lui 4111 poartă EMITENTUL
+   (103.301 din 108.912 rânduri pe baza Privat), deci ecranul nu e „creanța per
+   partener" — aceea se citește din partidele deschise. Scris în
+   `limite-curente.md` și spus pe ecran; dimensionarea conturilor de terț pe
+   partener rămâne decizie separată. (6) `ReturClient` a intrat în uniune, dar
+   rândurile lui tot nu apar: creanța unui retur e NEGATIVĂ după operare, iar
+   `Rest > 0` o taie (`PAR-V23`) — excluderea prin ramură lipsă nu mai e însă
+   necesară, iar antetul cu amânarea e șters.
+   `MotorOperare` a primit EXACT trei instrucțiuni (`git diff --stat`: 5+/1−):
+   `TotalStingere` la operare, `null` la anulare, apelul `InverseazaLaStorno`
+   în locul gardianului de împerecheri la storno (gardianul rămâne al anulării).
+   Probe `PAR-V0…V24` pe ambele profiluri (scena 2035; V22/V23 doar pe privat,
+   unde există planul de stoc/venit al RDC-ului). ModelCheck bugetar 1215/0,
+   privat 1358/0; `refuzuri.ps1` 272/272 pe host viu Privat (+11: `desfa`,
+   `sold-parteneri`, `documente-cu-rest?laData=`); `has-pending-model-changes`
+   curat, metadata regenerată, codegen idempotent, `pnpm build` verde.
+   **Perf** (informativ, host viu Privat, ZERO perioade închise):
+   `documente-cu-rest` filtrat pe contrapartida-reper (4.861 FCT) 423 → **147 ms**
+   (min din 5; media 161) — câștigul vine din dispariția lui `Brut` (un
+   `GROUP BY` peste tot `DocumentDetalii`), nu din partide, care încă nu există
+   pe baza aceea; nefiltrat 304 ms / 25.081 de rânduri, cifră confirmată la rând
+   cu o recalculare SQL independentă; `sold-parteneri` 337 ms / 70.732 de rânduri.
+   Ținta oficială (< 150 ms după 11 luni închise) rămâne a pasului 8.
 7. **Constatările și acceptarea** (D2 complet): `PoliticaInchidere` (seed),
    setul inițial de constatări, corpul `Acceptate`, dialogul XAF și ecranul
    React `/perioade`, istoricul cu acceptări. Oprire: ModelCheck identic +

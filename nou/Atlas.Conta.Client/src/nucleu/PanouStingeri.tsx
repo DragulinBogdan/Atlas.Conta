@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { NumberBox } from 'devextreme-react';
+import { DateBox, NumberBox } from 'devextreme-react';
 import { Column, DataGrid, FilterRow, Pager, Paging, Sorting } from 'devextreme-react/data-grid';
 import { PanouErori } from './PanouErori';
 import { ConfirmareInline } from './ConfirmareInline';
 import { eroriDin } from './http';
+import { azi, izolataZi } from './zi';
 import { rutaTip, stingeri, type DocumentCuRest, type StingereRand } from './stingeri';
 
 // Panoul de STINGERI (F3-D8) — componentă de NUCLEU fiindcă resursa e a
@@ -89,11 +90,18 @@ export function PanouStingeri(props: {
   const [candidat, setCandidat] = useState<DocumentCuRest | null>(null);
   const [grupAles, setGrupAles] = useState<GrupCandidati | null>(null);
   const [suma, setSuma] = useState<number | undefined>(undefined);
+  // F27-D8: stingerea e un fapt DATAT. Ziua se culege ca pe un document (azi
+  // implicit); serverul refuză o dată dintr-o perioadă închisă sau anterioară
+  // înregistrării documentelor — refuzul se afișează, nu se anticipează în TS.
+  const [dataStingere, setDataStingere] = useState<string>(() => azi());
   const [ocupat, setOcupat] = useState(false);
   // Rândul pentru care se cere confirmarea ștergerii — confirmare INLINE, nu
   // `window.confirm`: dialogul nativ BLOCHEAZĂ renderer-ul (găsit la smoke F3),
   // pe lângă că nu e stilabil. Nul = nicio confirmare în așteptare.
   const [randDeSters, setRandDeSters] = useState<StingereRand | null>(null);
+  // Rândul de DESFĂCUT (perioadă închisă) + ziua rândului invers.
+  const [randDeDesfacut, setRandDeDesfacut] = useState<StingereRand | null>(null);
+  const [dataDesfacerii, setDataDesfacerii] = useState<string>(() => azi());
   // Reîncărcarea grilei REMOTE de candidați: store nou ⇒ grilă reîncărcată.
   // (Rândurile se schimbă la fiecare stingere — restul lor scade.)
   const [versiune, setVersiune] = useState(0);
@@ -166,8 +174,14 @@ export function PanouStingeri(props: {
           DocumentId: candidat.DocumentId,
           Suma: suma,
           ContrapartidaId: grupAles?.contrapartidaId,
+          Data: dataStingere,
         }
-        : { DocumentStingatorId: candidat.DocumentId, DocumentId: documentId, Suma: suma });
+        : {
+          DocumentStingatorId: candidat.DocumentId,
+          DocumentId: documentId,
+          Suma: suma,
+          Data: dataStingere,
+        });
       setCandidat(null);
       setGrupAles(null);
       setSuma(undefined);
@@ -185,6 +199,20 @@ export function PanouStingeri(props: {
     setOcupat(true);
     try {
       await stingeri.sterge(rand.Id);
+      await reincarca();
+    }
+    catch (e) { setErori(eroriDin(e)); }
+    finally { setOcupat(false); }
+  }
+
+  async function confirmaDesfacere() {
+    const rand = randDeDesfacut;
+    if (!rand?.Id) return;
+    setErori([]);
+    setOcupat(true);
+    try {
+      await stingeri.desfa(rand.Id, { Data: dataDesfacerii });
+      setRandDeDesfacut(null);
       await reincarca();
     }
     catch (e) { setErori(eroriDin(e)); }
@@ -215,6 +243,16 @@ export function PanouStingeri(props: {
         value={suma}
         format="#,##0.00"
         onValueChanged={(e) => setSuma(e.value == null ? undefined : Number(e.value))}
+      />
+      <span>la data</span>
+      <DateBox
+        value={dataStingere}
+        displayFormat="dd.MM.yyyy"
+        width={140}
+        onValueChanged={(e) => {
+          if (!e.event) return;
+          setDataStingere(izolataZi(e.value) ?? azi());
+        }}
       />
       <button
         type="button"
@@ -261,28 +299,83 @@ export function PanouStingeri(props: {
               cellRender={(c) => <Celalalt rand={c.data as StingereRand} />}
             />
             <Column dataField="Suma" caption="Sumă" dataType="number" format="#,##0.00" alignment="right" />
+            {/* F27-D8: ziua faptului de stingere, nu a documentelor. E reperul
+                pe care serverul decide între ȘTERGE și DESFACE. */}
+            <Column dataField="Data" caption="Dată" dataType="date" format="dd.MM.yyyy" width={110} />
             <Column
-              dataField="Autogenerat"
-              caption="Autogenerat"
-              width={110}
-              cellRender={(c) => ((c.data as StingereRand).Autogenerat ? 'da' : 'nu')}
+              caption="Fel"
+              width={130}
+              cellRender={(c) => {
+                const rand = c.data as StingereRand;
+                if (rand.InverseazaId) return <span className="indiciu">desfacere</span>;
+                if (rand.Desfacuta) return <span className="indiciu">desfăcută</span>;
+                return rand.Autogenerat ? <span>autogenerat</span> : <span />;
+              }}
             />
             <Column
               caption=""
-              width={90}
-              cellRender={(c) => (
-                <button
-                  type="button"
-                  className="buton buton--mic"
-                  disabled={ocupat}
-                  onClick={() => setRandDeSters(c.data as StingereRand)}
-                >
-                  Șterge
-                </button>
-              )}
+              width={110}
+              cellRender={(c) => {
+                const rand = c.data as StingereRand;
+                // Rândul dintr-o perioadă DESCHISĂ se șterge (link fără registre
+                // proprii); cel dintr-o perioadă închisă nu dispare — se desface
+                // prin rând invers. Verdictul e al serverului, pe rând.
+                if (rand.PerioadaDeschisa) {
+                  return (
+                    <button
+                      type="button"
+                      className="buton buton--mic"
+                      disabled={ocupat}
+                      onClick={() => setRandDeSters(rand)}
+                    >
+                      Șterge
+                    </button>
+                  );
+                }
+                if (rand.InverseazaId || rand.Desfacuta) return <span className="indiciu">—</span>;
+                return (
+                  <button
+                    type="button"
+                    className="buton buton--mic"
+                    disabled={ocupat}
+                    onClick={() => { setDataDesfacerii(azi()); setRandDeDesfacut(rand); }}
+                  >
+                    Desfă
+                  </button>
+                );
+              }}
             />
           </DataGrid>
         )}
+
+      {randDeDesfacut && (
+        <div className="cerere-data">
+          <span>
+            Desfaceți stingerea cu{' '}
+            <strong>{randDeDesfacut.CelalaltTip} {randDeDesfacut.CelalaltNumar}</strong>?
+            {' '}Perioada ei e închisă, deci se scrie un rând invers (
+            {(-(randDeDesfacut.Suma ?? 0)).toFixed(2)}) la data
+          </span>
+          <DateBox
+            value={dataDesfacerii}
+            displayFormat="dd.MM.yyyy"
+            width={140}
+            onValueChanged={(e) => {
+              if (!e.event) return;
+              setDataDesfacerii(izolataZi(e.value) ?? azi());
+            }}
+          />
+          <button
+            type="button"
+            className="buton buton--primar"
+            disabled={ocupat}
+            onClick={() => void confirmaDesfacere()}
+          >
+            Desfă
+          </button>
+          <button type="button" className="buton" onClick={() => setRandDeDesfacut(null)}>Renunță</button>
+        </div>
+      )}
 
       {randDeSters && (
         <ConfirmareInline

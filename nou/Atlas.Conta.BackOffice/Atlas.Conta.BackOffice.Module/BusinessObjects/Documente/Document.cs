@@ -149,6 +149,14 @@ public abstract class Document : BaseObject {
     [XafDisplayName("Motivul corecției")]
     public virtual MotivCorectie? MotivCorectie { get; set; }
 
+    // F27-D7. Totalul stins de imperecheri, scris de motor la operare din
+    // `LiniiCreanta`; null cât documentul nu e operat. Fapt scris, nu agregat la
+    // citire: `ImperechereService.Total` îl citește de pe cheie, iar partidele
+    // deschise și `DocumenteCuRest` pornesc de la el.
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Total de stins")]
+    public virtual decimal? TotalStingere { get; set; }
+
     [DevExpress.ExpressApp.DC.Aggregated]
     public virtual ObservableCollection<DocumentDetaliu> Detalii { get; set; } = new();
 

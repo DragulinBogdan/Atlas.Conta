@@ -141,6 +141,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<RegistruImobilizari> RegistruImobilizari { get; set; }
         public DbSet<SoldPerioadaContabil> SolduriPerioadaContabil { get; set; }
         public DbSet<SoldPerioadaStoc> SolduriPerioadaStoc { get; set; }
+        public DbSet<PartidaDeschisa> PartideDeschise { get; set; }
         public DbSet<Imobilizare> Imobilizari { get; set; }
         public DbSet<ClasificareImobilizari> ClasificariImobilizari { get; set; }
         public DbSet<PoliticaAmortizare> PoliticiAmortizare { get; set; }
@@ -309,6 +310,28 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.HasOne(s => s.Lot).WithMany().HasForeignKey(s => s.LotId)
                     .OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(s => s.Repartitor).WithMany().HasForeignKey(s => s.RepartitorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // F27-D7: partidele deschise ale perioadelor de referință. Un rând
+            // per (perioadă × document), rescris la fiecare închidere — aceeași
+            // ștergere FIZICĂ ca snapshot-urile, deci unicitate fără filtru pe
+            // `GCRecord`. FK `Restrict`: documentul nu dispare de sub partida lui.
+            modelBuilder.Entity<PartidaDeschisa>(b => {
+                b.HasIndex(p => new { p.An, p.Luna, p.DocumentId }).IsUnique();
+                b.HasIndex(p => new { p.An, p.Luna });
+                b.HasOne(p => p.Document).WithMany().HasForeignKey(p => p.DocumentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // F27-D8: imperecherea e fapt datat — proiecția de rest taie fereastra
+            // deschisă pe `Data`, iar rândul invers arată spre cel pe care îl
+            // desface. Legătura e 1:1 (unicitate filtrată pe rândurile vii, ca la
+            // corecție) și `Restrict`: originalul nu dispare de sub inversul lui.
+            modelBuilder.Entity<Imperechere>(b => {
+                b.HasIndex(i => i.Data).HasFilter("\"GCRecord\" = 0");
+                b.HasIndex(i => i.InverseazaId).IsUnique().HasFilter("\"GCRecord\" = 0");
+                b.HasOne(i => i.Inverseaza).WithMany().HasForeignKey(i => i.InverseazaId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 

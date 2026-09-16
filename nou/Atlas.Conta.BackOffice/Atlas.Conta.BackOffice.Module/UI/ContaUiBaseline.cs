@@ -168,7 +168,17 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(r => r.PerioadaLuna, c => c.Index = 2)
             .Column(r => r.ScrisLa, c => c.Index = -1);
         registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
-        registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId
+        registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId/InverseazaId
+        // F27-D8: imperecherea e fapt datat, iar rândul invers se vede ca atare —
+        // lista lor e singurul loc din XAF unde desfacerea se citește.
+        registry.For<Imperechere>()
+            .ListView(nameof(Imperechere) + ListView)
+            .Column(i => i.Data, c => { c.Index = 0; c.SortIndex = 0; c.SortOrder = DevExpress.Data.ColumnSortOrder.Descending; })
+            .Column(i => i.DocumentStingator, c => c.Index = 1)
+            .Column(i => i.Document, c => c.Index = 2)
+            .Column(i => i.Suma, c => c.Index = 3)
+            .Column(i => i.Inverseaza, c => c.Index = 4)
+            .Column(i => i.Autogenerat, c => c.Index = 5);
         registry.For<RandD300>().HideForeignKeys();                 // ParinteId/OglindaAId
         registry.For<MapareD300>().HideForeignKeys();               // TipTvaId/RandId
         registry.For<MapareD394>().HideForeignKeys();               // TipTvaId

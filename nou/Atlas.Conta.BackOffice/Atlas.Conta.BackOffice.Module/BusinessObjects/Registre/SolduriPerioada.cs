@@ -79,3 +79,24 @@ public class SoldPerioadaStoc : BaseObject {
     [XafDisplayName("Valoare")]
     public virtual decimal Valoare { get; set; }
 }
+
+// Partida deschisă a unei perioade DE REFERINȚĂ (F27-D7): restul de stins al
+// unui document operat la sfârșitul ei. Aceeași regulă de referință ca
+// snapshot-urile de mai sus — la 31.12 lista E arieratele la nivel de document.
+// Rândurile cu rest zero se omit: partida închisă nu mai e partidă.
+[XafDisplayName("Partidă deschisă")]
+public class PartidaDeschisa : BaseObject {
+    [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
+    [DevExpress.ExpressApp.Model.ModelDefault("DisplayFormat", "{0:0}")]
+    public virtual int An { get; set; }
+    public virtual int Luna { get; set; }
+
+    public virtual Guid DocumentId { get; set; }
+    [XafDisplayName("Document")]
+    public virtual Document Document { get; set; }
+
+    // `TotalStingere − Σ Imperechere.Suma` (ambele roluri, algebric, cu `Data`
+    // până la sfârșitul perioadei).
+    [XafDisplayName("Rest")]
+    public virtual decimal Rest { get; set; }
+}

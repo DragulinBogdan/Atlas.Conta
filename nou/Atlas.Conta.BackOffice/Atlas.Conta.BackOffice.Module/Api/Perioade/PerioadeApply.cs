@@ -36,7 +36,8 @@ public static class PerioadeApply {
             .Select(r => new ReconstructieReferintaDto(r.An, r.Luna,
                 r.ContabilExistente, r.ContabilRecalculate, r.ContabilDiferite,
                 r.StocExistente, r.StocRecalculate, r.StocDiferite,
-                r.DiferentaDebit, r.DiferentaCredit, r.DiferentaCantitate, r.DiferentaValoare))
+                r.DiferentaDebit, r.DiferentaCredit, r.DiferentaCantitate, r.DiferentaValoare,
+                r.PartideExistente, r.PartideRecalculate, r.PartideDiferite, r.DiferentaRest))
             .ToArray());
     }
 

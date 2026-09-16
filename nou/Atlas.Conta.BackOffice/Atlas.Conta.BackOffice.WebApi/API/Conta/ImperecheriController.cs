@@ -63,6 +63,30 @@ public class ImperecheriController : ContaApiController {
             return NoContent();
         }), OperatieAcces.Stergere);
 
+    // F27-D8: DESFACEREA unei imperecheri dintr-o perioadă închisă — rând
+    // INVERS, nu ștergere. `DELETE` rămâne calea din fereastra deschisă (unde
+    // gardianul îl lasă); aici e singura cale dincolo de graniță.
+    //
+    // Ordinea de pe sârmă (F22-D1): 400 (data malformată) → 404 (inexistentă sau
+    // invizibilă) → 403 (Write pe instanță — desfacerea SCRIE, nu șterge) → 422
+    // (domeniul: deja desfăcută, rând invers, dată sub cea a imperecherii,
+    // perioadă închisă a rândului nou). Comanda rulează pe ușa non-secured:
+    // rândul invers e al motorului, iar gardianul îl refuză pe cea securizată.
+    [HttpPost("{id:guid}/desfa")]
+    [ProducesResponseType(typeof(ImperechereReadDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult Desfa(Guid id, [FromBody] DesfaImperechereRequestDto cerere) {
+        var refuz = Autorizeaza<Imperechere>(id);
+        if (refuz != null)
+            return refuz;
+        return Domeniu(() => {
+            using var os = NonSecured(typeof(Imperechere));
+            return Ok(ImperechereApply.Desfa(os, id, cerere));
+        });
+    }
+
     // Panoul de stingeri al unui document, într-un singur apel (F3-D3):
     // Total/Asignat/Rămas din `ImperechereService` + rândurile cu partea opusă.
     // 404 dacă documentul nu există (Apply întoarce null).

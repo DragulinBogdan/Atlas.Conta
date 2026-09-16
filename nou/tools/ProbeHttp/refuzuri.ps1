@@ -1,4 +1,4 @@
-#requires -Version 7
+﻿#requires -Version 7
 <#
 ═══════════════════════════════════════════════════════════════════════════════
   refuzuri.ps1 — matricea de refuzuri de ACCES, măsurată pe HTTP (felia 22, F22-D9)
@@ -678,6 +678,26 @@ try {
     Proba -Cerere 'creare împerechere' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/imperecheri' -Corp $corpImperechere -Contine 'crea' | Out-Null
     Proba -Cerere 'creare împerechere' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/imperecheri' -Corp $corpImperechere -Contine 'crea' | Out-Null
     Proba -Cerere 'ștergere împerechere inexistentă' -User 'Admin' -Asteptat 404 -Metoda DELETE -Cale "/api/imperecheri/$idInexistent" -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    # ── F27-D8: desfacerea prin rând invers ────────────────────────────────
+    # Desfacerea SCRIE un rând, deci gate-ul e Write pe instanță (nu Delete):
+    # 404 pentru cine nu vede legătura, 403 pentru cine o vede fără drept de
+    # scriere. Subiectul e un id inexistent, deci `Admin` rămâne pe 404 —
+    # matricea nu creează împerecheri, ca să nu lase urme.
+    $corpDesfa = @{ Data = (Get-Date -Format 'yyyy-MM-dd') }
+    Proba -Cerere 'desfacere împerechere inexistentă' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'desfacere împerechere' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'desfacere împerechere' -User 'Cititor' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' -Nota 'inexistentul răspunde înaintea dreptului' | Out-Null
+    Proba -Cerere 'desfacere împerechere' -User 'Configurator' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    # ── F27-D7: proiecțiile noi de sold și restul la o dată ────────────────
+    Proba -Cerere 'solduri pe repartitor' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/sold-parteneri' -Contine '"data"' -Nota 'citirea e permisă rolului Cititori' | Out-Null
+    Proba -Cerere 'solduri pe repartitor la o dată' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/sold-parteneri?laData=2026-12-31' -Contine '"totalCount"' | Out-Null
+    Proba -Cerere 'solduri pe repartitor cu dată invalidă' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/sold-parteneri?laData=nu-e-data' -Contine 'laData', 'not valid' -Nota 'binding-ul refuză înaintea domeniului; mesajul lui rămâne cel generic' | Out-Null
+    Proba -Cerere 'solduri pe repartitor' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/sold-parteneri' -Contine '"data":[]' -Nota 'registrul invizibil ⇒ listă goală, nu 403' | Out-Null
+    Proba -Cerere 'documente cu rest la o dată' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/documente-cu-rest?laData=2026-12-31' -Contine '"totalCount"' | Out-Null
+    Proba -Cerere 'documente cu rest la o dată' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/documente-cu-rest?laData=2026-12-31' -Contine '"data":[]' -Nota 'documentele invizibile ⇒ listă goală' | Out-Null
+    Proba -Cerere 'documente cu rest cu dată invalidă' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/documente-cu-rest?laData=nu-e-data' -Contine 'laData' | Out-Null
 
     # ── F23: politicile, implicitele și auditul (F23-D10 + F23-D9) ─────────
     # Ce a schimbat măsurătoarea pasului 2 față de tabelul din contract, și de

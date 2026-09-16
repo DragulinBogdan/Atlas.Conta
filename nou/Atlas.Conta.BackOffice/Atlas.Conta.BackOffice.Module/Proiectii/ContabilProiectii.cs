@@ -100,6 +100,25 @@ public sealed class BalantaRand {
     public decimal SoldFinalCredit { get; set; }
 }
 
+// Soldul unui cont pe un repartitor, la o dată (F27-D7). E balanța ANALITICĂ
+// redusă la ce întreabă un contabil despre partenerii lui: „cât are de dat /
+// de luat fiecare, azi". Cheia e aceeași — `Cont × Repartitor` —, iar cifrele
+// vin din aceiași atomi cumulați, deci rândurile coincid la cent cu balanța.
+public sealed class SoldPartenerRand {
+    public Guid ContId { get; set; }
+    public string ContSimbol { get; set; }
+    public string ContDenumire { get; set; }
+    // Null = grupul „fără repartitor", rând legitim ca în balanța analitică.
+    public Guid? RepartitorId { get; set; }
+    public string RepartitorDenumire { get; set; }
+
+    // Brutele cumulate până la dată, separat pe laturi (netarea nu e aditivă — 66d).
+    public decimal Debit { get; set; }
+    public decimal Credit { get; set; }
+    public decimal SoldDebitor { get; set; }
+    public decimal SoldCreditor { get; set; }
+}
+
 // Un nod al balanței pliate pe planul de conturi (BP-D1). Aceleași opt cifre ca
 // `BalantaRand` — deliberat, ca ecranul să se citească la fel la orice nivel —
 // plus poziția în arbore.
@@ -464,6 +483,69 @@ public static class ContabilProiectii {
             OrdineLista.Crescator(nameof(BalantaRand.ContSimbol)),
             OrdineLista.Crescator(nameof(BalantaRand.ContId))
         };
+
+    // Soldurile pe (cont × repartitor) la o dată (F27-D7): partea de SOLD a
+    // balanței analitice, fără noțiunea de perioadă. `laData` e parametru al
+    // PROIECȚIEI (granița cumulului), nu filtru de grilă; filtrele de dimensiune
+    // se aplică pe atomi, înaintea agregării, exact ca la balanță. Rândurile cu
+    // sold net zero se omit — echivalentul lui `Rest > 0` din partidele deschise.
+    public static IQueryable<SoldPartenerRand> SoldParteneri(
+        IObjectSpace os, DateOnly laData, Guid? contId = null,
+        Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
+        Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
+        Guid? proiectId = null, Guid? centruCostId = null) {
+
+        var atomi = SolduriService.AtomiCumulati(os, laData);
+        if (contId is Guid vCont) atomi = atomi.Where(a => a.ContId == vCont);
+        if (repartitorId is Guid vRep) atomi = atomi.Where(a => a.RepartitorId == vRep);
+        if (materialId is Guid vMat) atomi = atomi.Where(a => a.MaterialId == vMat);
+        if (codFunctionalId is Guid vCf) atomi = atomi.Where(a => a.CodFunctionalId == vCf);
+        if (codEconomicId is Guid vCe) atomi = atomi.Where(a => a.CodEconomicId == vCe);
+        if (sursaFinantareId is Guid vSf) atomi = atomi.Where(a => a.SursaFinantareId == vSf);
+        if (unitateId is Guid vUn) atomi = atomi.Where(a => a.UnitateId == vUn);
+        if (proiectId is Guid vPr) atomi = atomi.Where(a => a.ProiectId == vPr);
+        if (centruCostId is Guid vCc) atomi = atomi.Where(a => a.CentruCostId == vCc);
+
+        var agregate = atomi
+            .GroupBy(a => new { a.ContId, a.RepartitorId })
+            .Select(g => new {
+                g.Key.ContId,
+                g.Key.RepartitorId,
+                Debit = g.Sum(a => a.Debit),
+                Credit = g.Sum(a => a.Credit)
+            });
+
+        // LEFT pe ambele etichete, ca la balanța analitică: un atom nu se pierde
+        // fiindcă i-a dispărut numele (cont șters logic, repartitor absent).
+        var etichetate =
+            from a in agregate
+            join c in os.GetObjectsQuery<Cont>() on a.ContId equals c.ID into grupCont
+            from c in grupCont.DefaultIfEmpty()
+            join r in os.GetObjectsQuery<Repartitor>()
+                on a.RepartitorId equals (Guid?)r.ID into grupRep
+            from r in grupRep.DefaultIfEmpty()
+            let net = a.Debit - a.Credit
+            select new SoldPartenerRand {
+                ContId = a.ContId,
+                ContSimbol = c == null ? null : c.Simbol,
+                ContDenumire = c == null ? null : c.Denumire,
+                RepartitorId = a.RepartitorId,
+                RepartitorDenumire = r == null ? null : r.Denumire,
+                Debit = a.Debit,
+                Credit = a.Credit,
+                SoldDebitor = net > 0m ? net : 0m,
+                SoldCreditor = net < 0m ? -net : 0m
+            };
+        return etichetate.Where(x => x.SoldDebitor != 0m || x.SoldCreditor != 0m);
+    }
+
+    // Ordine TOTALĂ, ca la balanța analitică: cheia de grupare e `Cont ×
+    // Repartitor`, deci simbolul singur nu paginează stabil.
+    public static SortingInfo[] OrdineSoldParteneri() => new[] {
+        OrdineLista.Crescator(nameof(SoldPartenerRand.ContSimbol)),
+        OrdineLista.Crescator(nameof(SoldPartenerRand.ContId)),
+        OrdineLista.Crescator(nameof(SoldPartenerRand.RepartitorId))
+    };
 
     // ── Balanța pliată pe planul de conturi (BP-D1…BP-D5) ───────────────────
     //

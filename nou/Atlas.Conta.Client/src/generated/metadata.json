@@ -447,7 +447,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "AmortizareLunaraDetaliu": {
@@ -551,7 +552,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "AsamblareDetaliu": {
@@ -599,7 +601,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "ClasaProdus": {
@@ -695,7 +698,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "DecontDetaliu": {
@@ -748,7 +752,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "DescarcareGestiuneDetaliu": {
@@ -802,7 +807,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "DocumentDetaliu": {
@@ -848,7 +854,8 @@
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
         "TipInstrument": "Instrument de plată",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "DocumentTrezorerieDetaliu": {
@@ -899,7 +906,8 @@
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
         "Taxa": "TVA în vamă",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "DviFactura": {
@@ -934,7 +942,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "FacturaIesireDetaliu": {
@@ -998,6 +1007,7 @@
         "Stare": "Stare",
         "TethysId": "TethysId",
         "Total": "Total (brut)",
+        "TotalStingere": "Total de stins",
         "Valuta": "Valută"
       }
     },
@@ -1068,7 +1078,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "IesireImobilizareDetaliu": {
@@ -1131,11 +1142,14 @@
       "DefaultProperty": null,
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Data": "Data",
         "Document": "Document",
         "DocumentId": "Document",
         "DocumentStingator": "DocumentStingator",
         "DocumentStingatorId": "DocumentStingator",
         "ID": "ID",
+        "Inverseaza": "Inversează împerecherea",
+        "InverseazaId": "Inversează împerecherea",
         "Suma": "Suma"
       }
     },
@@ -1163,7 +1177,8 @@
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
         "TipInstrument": "Instrument de plată",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "InchiderePerioada": {
@@ -1199,7 +1214,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "Judet": {
@@ -1232,7 +1248,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "ListaDiferenteInventarDetaliu": {
@@ -1334,7 +1351,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "NirDetaliu": {
@@ -1388,7 +1406,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "NotaContabilaDetaliu": {
@@ -1442,7 +1461,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "Partener": {
@@ -1473,6 +1493,17 @@
         "TipTvaImplicit": "Tip TVA implicit",
         "TipTvaImplicitId": "Tip TVA implicit",
         "TvaLaIncasare": "TVA la încasare"
+      }
+    },
+    "PartidaDeschisa": {
+      "DefaultProperty": null,
+      "Membri": {
+        "An": "An",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Luna": "Luna",
+        "Rest": "Rest"
       }
     },
     "PerioadaFiscala": {
@@ -1510,7 +1541,8 @@
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
         "TipInstrument": "Instrument de plată",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "PoliticaAmortizare": {
@@ -1677,7 +1709,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "PunereInFunctiuneDetaliu": {
@@ -1751,7 +1784,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "RegistruContabil": {
@@ -2005,7 +2039,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "ReturFurnizor": {
@@ -2027,7 +2062,8 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)"
+        "Total": "Total (brut)",
+        "TotalStingere": "Total de stins"
       }
     },
     "SetareProfil": {

@@ -23,20 +23,25 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // tavanul de 120 e corect (60 datorie + 60 creanță), lipsea regula că fiecare
 // jumătate se consumă pe latura ei.
 public static class ImperechereService {
-    // Totalul documentului, din liniile PERSISTATE (nu navigația Detalii —
-    // apelanții nu garantează lazy loading, iar imperecherea se face pe
-    // documente deja operate, deci comise). BRUT (P1, design §3): plata stinge
+    // Totalul documentului e FAPT SCRIS (F27-D7): motorul îl calculează la
+    // operare din `LiniiCreanta` și îl scrie pe `Document.TotalStingere`, iar
+    // serviciul îl citește pe cheie. BRUT (P1, design §3): plata stinge
     // Valoare + ValoareTva; la regimurile capitalizate ValoareTva e 0.
-    // Filtrul `LiniiCreanta` ține serviciul în oglindă cu `Document.Total`
-    // suprascris (ReturClient: doar liniile de venit — review advers 1C-a).
     public static decimal Total(IObjectSpace os, Guid documentId) {
         var doc = os.GetObjectByKey<Document>(documentId);
-        var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == documentId);
-        if (doc != null)
-            linii = doc.LiniiCreanta(linii);
-        return linii.Select(d => (decimal?)(d.Valoare + d.ValoareTva)).Sum() ?? 0m;
+        if (doc == null)
+            return 0m;
+        if (doc.TotalStingere is decimal total)
+            return total;
+        if (doc.Stare == StareDocument.Draft)
+            return 0m;
+        throw new OperareException(
+            $"Documentul {doc.Numar} e {doc.Stare} dar n-are totalul de stins scris — "
+            + "totalul se scrie la operare (F27-D7); re-operați documentul.");
     }
 
+    // ALGEBRIC (F27-D8): rândurile inverse intră cu semn, ca registrele — o
+    // imperechere desfăcută prin rând invers eliberează restul, fără ștergere.
     public static decimal Asignat(IObjectSpace os, Guid documentId) =>
         os.GetObjectsQuery<Imperechere>()
             .Where(i => i.DocumentStingatorId == documentId || i.DocumentId == documentId)
@@ -51,11 +56,86 @@ public static class ImperechereService {
     // apelantul o știe (panoul de compensare afișează candidații grupați per
     // contrapartidă × sens). `null` = se deduce; deducția REFUZĂ ambiguitatea în
     // loc s-o rezolve tăcut — vezi `ValideazaCreare`.
+    //
+    // `data` (F27-D8) = ziua faptului de stingere; `null` = azi. Perioada ei
+    // trebuie să fie deschisă — al șaselea apelant al gardianului de perioadă.
     public static Imperechere Imperecheaza(IObjectSpace os,
-        Document stingator, Document document, decimal suma, Guid? contrapartidaId = null) {
-        var imperechere = Creeaza(os, stingator, document, suma, autogenerat: false, contrapartidaId);
+        Document stingator, Document document, decimal suma, Guid? contrapartidaId = null,
+        DateOnly? data = null) {
+        using var tx = TranzactieComanda.Incepe(os);
+        var zi = data ?? DateOnly.FromDateTime(DateTime.Today);
+        GardianPerioada.VerificaDeschisa(os, zi);
+        var imperechere = Creeaza(os, stingator, document, suma, autogenerat: false, contrapartidaId, zi);
         os.CommitChanges();
+        tx.Commit();
         return imperechere;
+    }
+
+    // F27-D8: desfacerea unei imperecheri dintr-o perioadă închisă — rând INVERS,
+    // nu ștergere (o perioadă închisă nu se rescrie). Comite.
+    public static Imperechere Desfa(IObjectSpace os, Guid imperechereId, DateOnly data) {
+        using var tx = TranzactieComanda.Incepe(os);
+        var original = os.GetObjectByKey<Imperechere>(imperechereId)
+            ?? throw new OperareException("Imperecherea nu există.");
+        GardianPerioada.VerificaDeschisa(os, data);
+        var invers = CreeazaInvers(os, original, data);
+        os.CommitChanges();
+        tx.Commit();
+        return invers;
+    }
+
+    // Rândul invers, FĂRĂ commit. NU cere ambele documente `Operat`: stingătorul
+    // poate fi tocmai documentul pe care comanda apelantă îl stornează.
+    internal static Imperechere CreeazaInvers(IObjectSpace os, Imperechere original, DateOnly data) {
+        if (original.InverseazaId != null)
+            throw new OperareException(
+                "Imperecherea e ea însăși un rând invers — nu se desface a doua oară.");
+        if (os.GetObjectsQuery<Imperechere>().Any(i => i.InverseazaId == original.ID))
+            throw new OperareException("Imperecherea e deja desfăcută printr-un rând invers.");
+        if (data < original.Data)
+            throw new OperareException("Data desfacerii nu poate preceda data imperecherii.");
+        var invers = os.CreateObject<Imperechere>();
+        invers.DocumentStingatorId = original.DocumentStingatorId;
+        invers.DocumentId = original.DocumentId;
+        invers.Suma = -original.Suma;
+        invers.Data = data;
+        invers.InverseazaId = original.ID;
+        invers.Autogenerat = false;
+        return invers;
+    }
+
+    // F27-D8, chemată din `MotorOperare.Storneaza` în locul gardianului de
+    // imperecheri: ce e în fereastra DESCHISĂ se cere șters (ca azi), ce e
+    // într-o perioadă închisă se inversează la data stornării. Regula stă aici,
+    // în motor rămâne apelul.
+    internal static void InverseazaLaStorno(IObjectSpace os, Document doc, DateOnly dataStorno) {
+        var legaturi = os.GetObjectsQuery<Imperechere>()
+            .Where(i => i.DocumentStingatorId == doc.ID || i.DocumentId == doc.ID)
+            .ToList();
+        if (legaturi.Count == 0)
+            return;
+        // Perechea (original, invers) s-a anulat deja pe ea însăși; ce contează
+        // sunt legăturile VII — cele care mai poartă o sumă neanulată.
+        var inversate = legaturi.Where(i => i.InverseazaId != null)
+            .Select(i => i.InverseazaId.Value).ToHashSet();
+        var vii = legaturi
+            .Where(i => i.InverseazaId == null && !inversate.Contains(i.ID))
+            .ToList();
+        if (vii.Any(i => EstePerioadaDeschisa(os, i.Data)))
+            throw new OperareException(
+                "Documentul are imperecheri (stingeri) — ștergeți-le întâi, apoi anulați/stornați.");
+        foreach (var legatura in vii)
+            CreeazaInvers(os, legatura, dataStorno);
+    }
+
+    static bool EstePerioadaDeschisa(IObjectSpace os, DateOnly data) {
+        try {
+            GardianPerioada.VerificaDeschisa(os, data);
+            return true;
+        }
+        catch (OperareException) {
+            return false;
+        }
     }
 
     // Decizia 82: motorul cunoaște mecanismul, tipul declară participarea.
@@ -75,24 +155,28 @@ public static class ImperechereService {
             document.Detalii.Sum(d => d.Valoare + d.ValoareTva) - Asignat(os, document.ID),
             Ramas(os, sursa.ID));
         if (suma > 0)
-            Creeaza(os, document, sursa, suma, autogenerat: true);
+            // F27-D8: stingătorul e documentul operat acum, deci faptul e datat
+            // la data lui de înregistrare (perioada ei e deschisă prin gardian).
+            Creeaza(os, document, sursa, suma, autogenerat: true, data: document.DataInregistrare);
     }
 
     // Fără commit — folosită în tranzacția operării și de împerecherea manuală.
     internal static Imperechere Creeaza(IObjectSpace os,
         Document stingator, Document document, decimal suma, bool autogenerat,
-        Guid? contrapartidaId = null) {
+        Guid? contrapartidaId = null, DateOnly? data = null) {
         // Rotunjirea ÎNAINTE de validare, nu după: altfel suma validată contra
         // restului n-ar fi cea persistată în `numeric(18,2)` și o stingere ar
         // putea depăși plafonul cu bani mărunți (`Scara`).
         suma = Scara.RotunjesteBani(suma);
         // Validarea rulează ÎNAINTE de CreateObject — comportamentul existent
         // (motorul nu lasă rând-fantomă pe eșec) rămâne exact.
-        ValideazaCreare(os, stingator, document, suma, contrapartidaId);
+        var zi = data ?? DateOnly.FromDateTime(DateTime.Today);
+        ValideazaCreare(os, stingator, document, suma, contrapartidaId, zi);
         var imperechere = os.CreateObject<Imperechere>();
         imperechere.DocumentStingator = stingator;
         imperechere.Document = document;
         imperechere.Suma = suma;
+        imperechere.Data = zi;
         imperechere.Autogenerat = autogenerat;
         return imperechere;
     }
@@ -103,10 +187,17 @@ public static class ImperechereService {
     // business; null-guard pe navigații (culegerea prin UI le poate lăsa goale —
     // motorul le trimite mereu setate).
     internal static void ValideazaCreare(IObjectSpace os,
-        Document stingator, Document document, decimal suma, Guid? contrapartidaId = null) {
+        Document stingator, Document document, decimal suma, Guid? contrapartidaId = null,
+        DateOnly? data = null) {
         if (stingator == null || document == null)
             throw new OperareException(
                 "Imperecherea leagă un document care stinge de un document stins — ambele sunt obligatorii.");
+        // F27-D8: faptul de stingere nu poate precede intrarea în evidență a
+        // niciunuia dintre documentele pe care le leagă.
+        if (data is DateOnly zi && zi != default
+                && (zi < stingator.DataInregistrare || zi < document.DataInregistrare))
+            throw new OperareException(
+                "Data imperecherii nu poate preceda data înregistrării documentelor.");
         if (stingator.Stare != StareDocument.Operat || document.Stare != StareDocument.Operat)
             throw new OperareException("Imperecherea leagă două documente operate (registrele lor există).");
         if (document.ID == stingator.ID)
