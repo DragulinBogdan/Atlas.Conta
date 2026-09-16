@@ -108,15 +108,18 @@ conturile și regulile de deductibilitate exclusiv din politică versionată,
 catalogul HG 2139/2004 ca date. Ultima felie închisă: 26 (87). Cronologia
 integrală: `docs/decizii/istoric-plan-de-lucru.md`.
 
-**Următorul pas**: izolarea motorului de `IObjectSpace` — contract scris
-(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, pașii 0–7), cu
-avansul din felia 24 pe IM-D2/IM-D4; pornește doar la un semnal real din
-criteriul lui de prioritate. Până atunci candidații sunt restanțele
-imobilizărilor cu cerere de produs (F26-r1 activele din 231, F26-r8 SAF-T
-Assets, F26-r9 D101, F26-r13 migrarea fișelor din 1C), 84-r5 (captions, la
-atingere), 86-r11 (DVI ca document stins, dacă produsul o cere), 86-r13
-(dimensiunea Repartitor a plăților, preexistentă) și 80-r1 dacă expunerea
-crește; `lista-react.md` mai ține doar itemii structurali și 77-r1/r6.
+**Următorul pas**: felia 27 — perioada ca lanț, închiderea ca comandă cu
+acceptare conștientă, soldurile și partidele deschise materializate la
+închidere, `DataInregistrare` pe document, `PerioadaDeclarare` pe registrul
+fiscal, corecția legată cu motiv — contract scris
+(`docs/api/p5-felia27-perioade-solduri-contract.md`, F27-D1…D10, pașii
+0–8), prioritate decisă pe cerința de produs (solduri la zi, soldul
+partenerilor, arieratele la închiderea de an). Izolarea motorului de
+`IObjectSpace` (`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10)
+vine DUPĂ felia 27, care îi face implementabil contractul de citire pe stoc.
+Candidații rămași după: restanțele imobilizărilor cu cerere de produs
+(F26-r1, F26-r8, F26-r9, F26-r13), 84-r5, 86-r11, 86-r13, 80-r1;
+`lista-react.md` mai ține doar itemii structurali și 77-r1/r6.
 
 **Capcane de probare**: `genereaza` SCRIE ori de câte ori luna e liberă (79);
 probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe
