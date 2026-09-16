@@ -68,6 +68,28 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         Asamblare(registry);
         Dvi(registry);
         Imobilizari(registry);
+        Perioade(registry);
+    }
+
+    // F27-D1: lanțul se citește în ordine cronologică, nu în ordinea inserării;
+    // istoricul e listă imbricată pe perioadă (registru, deci fără CRUD).
+    static void Perioade(UiBaselineRegistry registry) {
+        registry.For<PerioadaFiscala>()
+            .ListView(nameof(PerioadaFiscala) + ListView)
+            .Column(p => p.An, c => { c.Index = 0; c.SortIndex = 0; c.SortOrder = DevExpress.Data.ColumnSortOrder.Ascending; })
+            .Column(p => p.Luna, c => { c.Index = 1; c.SortIndex = 1; c.SortOrder = DevExpress.Data.ColumnSortOrder.Ascending; })
+            .Column(p => p.Inchisa, c => c.Index = 2)
+            .Column(p => p.InchisaLa, c => c.Index = 3)
+            .Column(p => p.InchisaPrimaOara, c => c.Index = -1);
+        registry.For<InchiderePerioada>().HideForeignKeys();
+        registry.For<InchiderePerioada>()
+            .ListView(nameof(PerioadaFiscala) + "_" + nameof(PerioadaFiscala.Istoric) + ListView)
+            .Column(i => i.La, c => { c.Index = 0; c.SortIndex = 0; c.SortOrder = DevExpress.Data.ColumnSortOrder.Ascending; })
+            .Column(i => i.Fel, c => c.Index = 1)
+            .Column(i => i.De, c => c.Index = 2)
+            .Column(i => i.Motiv, c => c.Index = 3)
+            .Column(i => i.Acceptari, c => c.Index = 4)
+            .Column(i => i.Perioada, c => c.Index = -1);
     }
 
     // Ascunderea generică a scalarilor `{Nav}Id` care au navigație pereche

@@ -1,6 +1,6 @@
 # Atlas.Conta — starea curentă și regulile aplicabile
 
-**Actualizat: 2026-09-15.** Referința este implementarea din workspace,
+**Actualizat: 2026-09-16.** Referința este implementarea din workspace,
 inclusiv modificările locale. Documentele descriu regulile în forma lor
 actuală, organizate pe responsabilități.
 

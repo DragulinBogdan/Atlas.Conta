@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-15.** [Index](README.md)
+**Actualizat: 2026-09-16.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -10,6 +10,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Serializarea operațiilor concurente și reluarea idempotentă generală a
   comenzilor nu sunt acoperite complet. Validarea într-o singură operație
   nu dovedește protecția față de două comenzi simultane. (25f, 42f)
+- Închiderea unei perioade și operarea unui document în ea nu sunt
+  serializate între ele: fiecare comandă își citește și își scrie starea
+  fără o blocare comună a rândului perioadei. (F27-D1)
+- Constatările de închidere acoperă doar blocantele structurale ale lanțului.
+  Constatările de conținut și severitatea lor ca politică nu sunt acoperite,
+  iar corpul cu chei acceptate este primit și ignorat. (F27-D2)
+- Închiderea și redeschiderea perioadei au ecran în XAF Blazor, nu în
+  clientul React. (F27-D2)
 - Două împerecheri noi, încă necomise în același context, au o limită de
   vizibilitate în calculele bazate pe interogarea bazei. Plafoanele nu trebuie
   prezentate ca protecție completă pentru orice lot de scrieri concurente. (41d)

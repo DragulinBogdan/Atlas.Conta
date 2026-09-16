@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-15.** [Index](README.md)
+**Actualizat: 2026-09-16.** [Index](README.md)
 
 ## Modelul comun
 
@@ -90,6 +90,26 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
   corespondența originală și marcaj `Storno`; nu inversează conturile. (25d, 46a)
 - O perioadă absentă se consideră închisă. Administratorul nu ocolește
   granița perioadei fiscale închise. (14, 25d)
+
+### Perioada fiscală ca lanț
+
+- Perioada este o verigă identificată prin an și lună, unică între rândurile
+  vii. Anul și luna se culeg la creare și nu se mai schimbă. (F27-D1)
+- Starea perioadei — închisă, momentul închiderii curente și momentul primei
+  închideri — aparține motorului. Pe calea securizată se refuză orice scriere
+  asupra ei, ca la registre. (F27-D1)
+- Închiderea unei perioade cere perioada precedentă închisă. O perioadă
+  precedentă absentă este închisă prin absență și dă capătul lanțului. (F27-D1)
+- Redeschiderea cere perioada următoare deschisă sau absentă și un motiv
+  scris: se redeschide numai ultima perioadă închisă. Momentul primei
+  închideri nu se șterge la redeschidere. (F27-D1)
+- Fiecare închidere și redeschidere scrie un rând în istoricul perioadei, cu
+  felul, momentul, utilizatorul și motivul. Istoricul este append-only și
+  aparține motorului. (F27-D1)
+- Verificarea de închidere întoarce constatări tipizate, cu cheie stabilă,
+  fel, severitate și text. Comanda reia verificarea și refuză pe blocante.
+  Constatările acoperite sunt cele structurale: perioadă nedefinită, perioadă
+  deja închisă, perioadă precedentă deschisă. (F27-D2)
 
 ## Contare și dimensiuni
 

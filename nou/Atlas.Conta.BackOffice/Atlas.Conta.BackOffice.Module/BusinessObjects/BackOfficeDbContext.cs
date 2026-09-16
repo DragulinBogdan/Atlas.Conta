@@ -61,6 +61,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<Unitate> Unitati { get; set; }
         public DbSet<Angajament> Angajamente { get; set; }
         public DbSet<PerioadaFiscala> PerioadeFiscale { get; set; }
+        // Istoricul închiderilor/redeschiderilor de perioadă (F27-D1), append-only.
+        public DbSet<InchiderePerioada> InchideriPerioade { get; set; }
         public DbSet<TipTva> TipuriTva { get; set; }
         // Nomenclatorul de județe (felia 15, D15-D1): ISO 3166-2:RO, seed-uit tot
         // în NUCLEU (împărțirea administrativă nu ține de planul de conturi).
@@ -249,6 +251,22 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<DviFactura>()
                 .HasOne(f => f.Factura).WithMany().HasForeignKey(f => f.FacturaId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // F27-D1: perioada e verigă de lanț, deci `(An, Luna)` e IDENTITATE, nu
+            // o coincidență. Filtrat pe rândurile vii ca toate unicitățile de pe
+            // tipuri cu ștergere amânată (60a) — altfel o perioadă ștearsă ar
+            // bloca recrearea aceleiași luni. Fără index, `VerificaDeschisa`
+            // (`FirstOrDefault`) ar fi ales nedeterminist între două rânduri.
+            modelBuilder.Entity<PerioadaFiscala>()
+                .HasIndex(p => new { p.An, p.Luna }).IsUnique()
+                .HasFilter("\"GCRecord\" = 0");
+            // Istoricul nu dispare cu perioada (Restrict) și nu e agregat al ei:
+            // e registrul închiderilor, nu o colecție de culegere.
+            modelBuilder.Entity<InchiderePerioada>(b => {
+                b.HasOne(i => i.Perioada).WithMany(p => p.Istoric).HasForeignKey(i => i.PerioadaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasIndex(i => i.PerioadaId);
+            });
 
             // FK-uri `Restrict`: convenția globală `SetNull`/`Cascade` ar goli tăcut fișa sau linia-sursă (F26-D1/D2/D5).
             modelBuilder.Entity<Imobilizare>(b => {

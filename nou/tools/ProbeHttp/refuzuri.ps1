@@ -914,6 +914,76 @@ try {
     Proba -Cerere 'ștergere partener de probă' -User 'Admin' -Asteptat 200 -Metoda DELETE -Cale "/api/odata/Partener($idPartenerUe)" -FaraJson -Nota 'curățenie' | Out-Null
     Proba -Cerere 'verificare profil (după curățenie)' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/politici/verificare' -Contine '[]' -Nota 'fără urme' | Out-Null
 
+    # ── Perioadele: lanțul și comenzile lui (felia 27, F27-D1/D2) ──────────
+    # Nimic nu se SCRIE aici, prin construcție: comanda cerută lui `Admin` e una
+    # pe care lanțul o refuză oricum (luna aleasă are precedenta DESCHISĂ), iar
+    # redeschiderea se cere pe o perioadă care nu e închisă. Capcana ocolită e
+    # cea a lui `itv/genereaza` (felia 21): un gate picat n-are voie să scrie.
+    $lantRasp = Invoke-Cerere -Metoda GET -Cale '/api/perioade' -Token $tokenAdmin
+    if ($lantRasp.Status -ne 200) { throw "Descoperirea lanțului de perioade a picat: HTTP $($lantRasp.Status)" }
+    $lant = @($lantRasp.Corp | ConvertFrom-Json)
+    $perioadaBlocata = $null
+    $precedentaDeschisa = $null
+    for ($i = $lant.Count - 1; $i -ge 1; $i--) {
+        $pv = $lant[$i]
+        $qv = $lant[$i - 1]
+        $anPrecedent = if ($pv.Luna -eq 1) { $pv.An - 1 } else { $pv.An }
+        $lunaPrecedenta = if ($pv.Luna -eq 1) { 12 } else { $pv.Luna - 1 }
+        if ($qv.An -eq $anPrecedent -and $qv.Luna -eq $lunaPrecedenta -and -not $qv.Inchisa -and -not $pv.Inchisa) {
+            $perioadaBlocata = $pv
+            $precedentaDeschisa = $qv
+            break
+        }
+    }
+    if (-not $perioadaBlocata) { throw 'Nicio lună cu precedenta DESCHISĂ — proba de 422 pe lanț ar putea SCRIE.' }
+    $calePerioada = "/api/perioade/$($perioadaBlocata.An)/$($perioadaBlocata.Luna)"
+    $etichetaPrecedenta = '{0:00}/{1}' -f $precedentaDeschisa.Luna, $precedentaDeschisa.An
+    Write-Host "  perioade: $($lant.Count) verigi; blocată $($perioadaBlocata.Luna)/$($perioadaBlocata.An) (precedenta $etichetaPrecedenta deschisă)" -ForegroundColor DarkGray
+
+    # Lista e o CITIRE pe tip: `Cititor` o are, `User` nu — iar verdictul lui e
+    # 403, nu 200 gol, fiindcă lanțul filtrat ar fi un răspuns FALS (80e).
+    Proba -Cerere 'lanțul perioadelor' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/perioade' -Contine '"An":' | Out-Null
+    Proba -Cerere 'lanțul perioadelor' -User 'User' -Asteptat 403 -Metoda GET -Cale '/api/perioade' -Contine 'citi' -Nota 'lanț filtrat = lanț fals' | Out-Null
+    # Comanda: 403 pentru cine vede perioada dar n-o poate scrie; `Configurator`
+    # are Write DOAR pe politici, iar perioada nu e politică (83i).
+    Proba -Cerere 'închide perioada' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'modifica' | Out-Null
+    Proba -Cerere 'închide perioada' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'modifica' -Nota 'perioada nu e politică' | Out-Null
+    # `User` nu vede perioada ⇒ 404, aceeași frază ca pe orice subiect invizibil.
+    Proba -Cerere 'închide perioada' -User 'User' -Asteptat 404 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Luna nedefinită: tot 404, fiindcă subiectul rutei e LUNA, nu un `{id}`.
+    Proba -Cerere 'închide o lună nedefinită' -User 'Admin' -Asteptat 404 -Metoda POST -Cale '/api/perioade/2099/12/inchide' -Corp @{ Acceptate = @() } -Contine 'nu există sau nu e vizibil' | Out-Null
+    # 400 de SINTAXĂ, înaintea oricărei întrebări de drept.
+    Proba -Cerere 'închide luna 13' -User 'Admin' -Asteptat 400 -Metoda POST -Cale '/api/perioade/2026/13/inchide' -Corp @{ Acceptate = @() } -Contine 'trebuie să fie' | Out-Null
+    # 422 pe `Admin`: are dreptul, îl refuză LANȚUL — și nu scrie nimic.
+    Proba -Cerere 'închide o lună cu precedenta deschisă' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'precedent', $etichetaPrecedenta -Nota 'F27-D1: lanțul' | Out-Null
+    Proba -Cerere 'redeschide o perioadă deschisă' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/redeschide" -Corp @{ Motiv = 'probă' } -Contine 'nu are ce redeschide' | Out-Null
+    Proba -Cerere 'redeschide fără motiv' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/redeschide" -Corp @{ Motiv = '' } -Contine 'motiv' -Nota 'regulă a motorului, nu de sintaxă' | Out-Null
+    # Verificarea e un VERDICT: gate de citire pe instanță, apoi constatările.
+    Proba -Cerere 'verificarea închiderii' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA' | Out-Null
+    Proba -Cerere 'verificarea închiderii' -User 'User' -Asteptat 404 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Lanțul a rămas NEATINS: nicio perioadă închisă de matrice.
+    $lantDupa = @((Invoke-Cerere -Metoda GET -Cale '/api/perioade' -Token $tokenAdmin).Corp | ConvertFrom-Json)
+    $inchiseDupa = @($lantDupa | Where-Object { $_.Inchisa }).Count
+    $script:Numar++
+    $verdictLant = 'PASS'
+    $motivLant = ''
+    if ($lantDupa.Count -ne $lant.Count -or $inchiseDupa -ne @($lant | Where-Object { $_.Inchisa }).Count) {
+        $verdictLant = 'FAIL'
+        $motivLant = "lanțul s-a schimbat: $($lant.Count) → $($lantDupa.Count) verigi, închise $inchiseDupa"
+    }
+    $script:Rezultate.Add([pscustomobject]@{
+            Nr         = $script:Numar
+            Cerere     = '`GET /api/perioade` (după scena perioadelor)'
+            User       = 'Admin'
+            Asteptat   = 'lanț neatins'
+            Primit     = "$($lantDupa.Count) verigi, $inchiseDupa închise"
+            Corp       = ''
+            Ms         = 0
+            Verdict    = $verdictLant
+            Motive     = $motivLant
+            CorpIntreg = ''
+        })
+
     # ── Neautentificat: 401 rămâne primul (F22-D11) ────────────────────────
     $anonim = Invoke-Cerere -Metoda GET -Cale "/api/nir/$idNir"
     $script:Numar++

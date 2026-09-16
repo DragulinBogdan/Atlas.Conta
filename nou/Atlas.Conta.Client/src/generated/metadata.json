@@ -109,6 +109,10 @@
       "PlafonLunar": "Plafon lunar",
       "Procent": "Procent"
     },
+    "FelInchiderePerioada": {
+      "Inchidere": "Închidere",
+      "Redeschidere": "Redeschidere"
+    },
     "FelLinieIesire": {
       "AmortizareCumulata": "Amortizare cumulată",
       "ValoareRamasa": "Valoare rămasă"
@@ -215,6 +219,10 @@
     "SensTva": {
       "Achizitie": "Achiziție",
       "Livrare": "Livrare"
+    },
+    "SeveritateConstatare": {
+      "Blocant": "Blocant",
+      "Avertisment": "Avertisment"
     },
     "StareDocument": {
       "Draft": "Draft",
@@ -1101,6 +1109,20 @@
         "Total": "Total (brut)"
       }
     },
+    "InchiderePerioada": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Acceptari": "Acceptări",
+        "De": "De",
+        "DeId": "Utilizator",
+        "Fel": "Fel",
+        "ID": "ID",
+        "La": "La",
+        "Motiv": "Motiv",
+        "Perioada": "Perioada",
+        "PerioadaId": "Perioada"
+      }
+    },
     "InchidereTva": {
       "DefaultProperty": null,
       "Membri": {
@@ -1381,7 +1403,9 @@
       "Membri": {
         "An": "An",
         "ID": "ID",
-        "Inchisa": "Inchisa",
+        "Inchisa": "Închisă",
+        "InchisaLa": "Închisă la",
+        "InchisaPrimaOara": "Închisă prima oară",
         "Luna": "Luna"
       }
     },

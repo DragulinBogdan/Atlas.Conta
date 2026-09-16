@@ -448,6 +448,24 @@ Felia e închisă când, pe codul final:
    pe `Inchisa`, `inchide`/`redeschide` pe REST și XAF, refuzurile uniforme,
    probele lanțului. Oprire: ModelCheck identic + probele noi;
    `refuzuri.ps1` verde cu scenele perioadelor.
+   *Executat 2026-09-16, fără opriri; devierile raportate*: `PerioadaFiscala`
+   în fișier propriu cu `InchiderePerioada` + `FelInchiderePerioada`,
+   `SeveritateConstatare` în `Enums.cs`, `Motor/PerioadaService`
+   (`Verifica`/`Inchide`/`Redeschide`/`Lant`), `Api/Perioade/*`,
+   `PerioadeController`, `PerioadaFiscalaController` (XAF), `ContaUiBaseline`;
+   migrația `20260916123442_F27Pas1PerioadaLant` (tabela `InchideriPerioade`,
+   două coloane noi, index unic filtrat pe `(An, Luna)`, zero atingeri de
+   date), aplicată pe cele trei baze fără duplicate preexistente. Gardianul a
+   primit și un control POZITIV (perioada deschisă fără istoric se șterge).
+   Cele două probe care scriau `Inchisa = true` trec pe comandă: F21-D9.5d
+   închide lanțul 2026 întreg și îl redeschide invers (12/2026 nu e capăt de
+   lanț, iar cifrele 52,5/42 sunt ale scenei 2026), gardianul de perioadă al
+   motorului se mută pe o perioadă de scenă în 2029 (capăt de lanț prin
+   absența precedentei). ModelCheck bugetar 1087/0, privat 1203/0 (+19
+   `PER-V0…V10`); `refuzuri.ps1` 242/242 pe host viu Privat, cu lanțul
+   neatins; `pnpm build` verde, codegen idempotent. Rămân deschise: corpul
+   `Acceptate` primit și ignorat (pasul 7), cursa închidere ↔ operare (F1 din
+   amendamente, pasul 2), ecranul React `/perioade` (pasul 7).
 2. **Snapshot-urile și `SolduriService`** (D3): tabelele, scrierea la
    închidere, ștergerea la redeschidere, reconstrucția cu raport,
    consumatorii mutați unul câte unul (proiecții → motor → ITV → SAF-T),

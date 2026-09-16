@@ -96,6 +96,28 @@ void Rezumat() {
     Environment.ExitCode = esecuri == 0 ? 0 : 1;
 }
 
+// Felia 27 (F27-D1): `Inchisa` nu se mai scrie direct nicăieri — probele închid
+// și redeschid prin comanda motorului, singura ușă. Lanțul cere ordinea, deci
+// redeschiderea se face în ORDINE INVERSĂ.
+void InchideLant(IObjectSpace os, int an, params int[] luni) {
+    foreach (var luna in luni)
+        PerioadaService.Inchide(os, an, luna, [], null, "ModelCheck");
+}
+
+void RedeschideLant(IObjectSpace os, int an, params int[] luni) {
+    foreach (var luna in luni.Reverse())
+        PerioadaService.Redeschide(os, an, luna, "Probă ModelCheck", null, "ModelCheck");
+}
+
+// Istoricul rămâne append-only în produs; în harness e reziduu de scenă, deci se
+// purjă FIZIC (F13-D2), ca orice scenă.
+void PurjaIstoricPerioade(IObjectSpace os, int an) {
+    var ids = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+        .Where(p => p.An == an).Select(p => p.ID).ToList();
+    new Purja(os).Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+        .Where(i => ids.Contains(i.PerioadaId))).Executa();
+}
+
 // D10 — disciplina migrațiilor aplicată codegen-ului (43d): canonic e artefactul
 // COMIS, unealta doar verifică. Dacă `metadata.json` există și nu mai corespunde
 // modelului (caption adăugat, enum extins, DefaultProperty mutat), rularea
@@ -2459,10 +2481,11 @@ if (profil == ProfilContabil.Privat) {
             // vie", blocând cronologic toate lunile dinaintea lui. Același gardian
             // ca la operare (`GardianPerioada`), adus la GENERARE: la raport
             // motivul, la comandă refuzul.
-            var perioadaDec = os.FirstOrDefault<PerioadaFiscala>(p => p.An == 2026 && p.Luna == 12);
+            // F27-D1: perioada se închide prin COMANDA motorului, iar lanțul cere
+            // toate lunile anterioare închise — 12/2026 nu e capăt de lanț.
+            var luni2026 = Enumerable.Range(1, 12).ToArray();
             try {
-                perioadaDec.Inchisa = true;
-                os.CommitChanges();
+                InchideLant(os, 2026, luni2026);
                 var prevPerioadaInchisa = InchidereTvaApply.Previzualizeaza(os, 2026, 12);
                 Check("F21-D9.5d (79 M2) — cu perioada 12/2026 ÎNCHISĂ, previzualizarea lunii dă "
                     + "`PerioadaInchisa`, nu `Motiv == null`. Anti-vacuitate: soldurile ies TOTUȘI (52,5/42 — "
@@ -2481,8 +2504,8 @@ if (profil == ProfilContabil.Privat) {
                     !os.GetObjectsQuery<InchidereTva>().Any(d => d.Data >= new DateOnly(2026, 12, 1)));
             }
             finally {
-                perioadaDec.Inchisa = false;
-                os.CommitChanges();
+                RedeschideLant(os, 2026, luni2026);
+                PurjaIstoricPerioade(os, 2026);
             }
             Check("F21-D9.5d — după REDESCHIDEREA perioadei motivul dispare (verdictul era al perioadei, nu al "
                 + "lunii): decembrie redevine generabil pe aceleași solduri",
@@ -4076,6 +4099,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaDvi(privat: true);
     // Felia 25, pasul 2 — ușa `api/dvi` prin `DviApply` (E2E-API-DVI).
     VerificaApiDvi();
+    // Felia 27, pasul 1 — perioada ca lanț și comanda de închidere (PER-V0…V10).
+    VerificaPerioade(privat: true);
     // Felia 26, pasul 1 — imobilizările pe scenă (IMO-V0…V28).
     VerificaImobilizari(privat: true);
     // Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
@@ -4202,14 +4227,25 @@ using (var os = provider.CreateObjectSpace()) {
     // --- Gardianul de perioadă ---
     var inAfara = Transfer(mag1, mag2, 1m, new DateOnly(2025, 12, 15));
     CheckRefuza("Perioadă nedefinită → refuz", () => MotorOperare.Opereaza(os, inAfara));
-    var iunie = os.FirstOrDefault<PerioadaFiscala>(p => p.An == 2026 && p.Luna == 6);
-    iunie.Inchisa = true;
-    inAfara.Data = new DateOnly(2026, 6, 5);
+    // F27-D1: închiderea trece prin COMANDA motorului, iar lanțul cere P−1
+    // închisă. Luna probată e deci o perioadă de SCENĂ dintr-un an liber (2029),
+    // capăt de lanț prin absența precedentei — nu 06/2026 din seed, care ar fi
+    // cerut închiderea lunilor 1–5.
+    const int AnScenaPerioada = 2029;
+    var scenaPerioada = os.CreateObject<PerioadaFiscala>();
+    scenaPerioada.An = AnScenaPerioada;
+    scenaPerioada.Luna = 6;
+    os.CommitChanges();
+    InchideLant(os, AnScenaPerioada, 6);
+    inAfara.Data = new DateOnly(AnScenaPerioada, 6, 5);
     CheckRefuza("Perioadă închisă → refuz", () => MotorOperare.Opereaza(os, inAfara));
-    iunie.Inchisa = false;
+    RedeschideLant(os, AnScenaPerioada, 6);
     os.Delete(inAfara.Detalii.ToList());
     os.Delete(inAfara);
     os.CommitChanges();
+    PurjaIstoricPerioade(os, AnScenaPerioada);
+    new Purja(os).Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+        .Where(p => p.An == AnScenaPerioada)).Executa();
 
     // --- FIFO ---
     var alocari = StocService.AlocaFifo(os, produs.ID, mag1.ID, TipStoc.Magazie, new DateOnly(2026, 7, 1), 3m);
@@ -9216,6 +9252,8 @@ VerificaF24Rol(privat: false);
 VerificaF24Gardian(privat: false);
 // Felia 25 — declarația vamală de import (DVI-V0 pe bugetar: ancoră inertă).
 VerificaDvi(privat: false);
+// Felia 27, pasul 1 — perioada ca lanț și comanda de închidere (PER-V0…V10).
+VerificaPerioade(privat: false);
 // Felia 26, pasul 1 — imobilizările pe scenă (IMO-V0…V28), și pe bugetar.
 VerificaImobilizari(privat: false);
 // Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
@@ -22953,6 +22991,259 @@ void VerificaReconciliereMf() {
 }
 
 // Felia 26 (E2E-IMO): scena stă în 2027/5–12, în afara perioadelor seed-uite (precedentul `D17-V2`); conturile se CITESC din politică.
+// Felia 27, pasul 1 (F27-D1/D2): perioada ca LANȚ, cu închiderea și
+// redeschiderea ca operații ale motorului. Scena stă în 2030 — în afara
+// perioadelor seed-uite (2026) și a tuturor celorlalte scene (2027 imobilizări,
+// 2028 review F26, 2029 gardianul de perioadă al motorului). Lunile 1 și 2 NU se
+// creează deliberat: absența lor face din 03/2030 CAPĂTUL lanțului.
+void VerificaPerioade(bool privat) {
+    const string Marcaj = "E2E-PER";
+    const int An = 2030;
+    var eticheta = privat ? "privat" : "bugetar";
+
+    void CurataPer(IObjectSpace os) {
+        // F13-D2: curățenia de scenă = purjă FIZICĂ, în ordinea dependențelor.
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.ID)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(x => x.An == An).Select(x => x.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(x => x.An == An).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    // Calea REALĂ: dispecerul din gardian, nu corpul regulii.
+    static string RefuzGardianPer(IObjectSpace os) {
+        try {
+            GardianEditare.Verifica(os);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataPer(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(x => x.An == An);
+        var documente = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        Console.WriteLine($"     MĂSURAT (PER-V0/{eticheta}): {perioade} perioade și {documente} documente în {An} după purjă.");
+        Check($"PER-V0 ({eticheta}) precondiție: anul {An} e liber (nicio perioadă, niciun document) — altfel "
+            + "lanțul probat mai jos ar fi măsurat peste conținut străin",
+            perioade == 0 && documente == 0);
+    }
+
+    Guid idGestiuneA, idGestiuneB;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 3, 4, 5 }) {
+            var x = os.CreateObject<PerioadaFiscala>();
+            x.An = An;
+            x.Luna = luna;
+        }
+        var a = os.CreateObject<Gestiune>();
+        a.Cod = Marcaj + "-G1";
+        a.Denumire = "Gestiune probă perioade 1";
+        var b = os.CreateObject<Gestiune>();
+        b.Cod = Marcaj + "-G2";
+        b.Denumire = "Gestiune probă perioade 2";
+        os.CommitChanges();
+        idGestiuneA = a.ID;
+        idGestiuneB = b.ID;
+    }
+
+    // ── PER-V1…V5: lanțul, prin comanda motorului ──
+    using (var os = provider.CreateObjectSpace()) {
+        var refuzNecontigua = Refuz(() => PerioadaService.Inchide(os, An, 4, [], null, Marcaj));
+        Check($"PER-V1 ({eticheta}) închiderea lui 04/{An} cu 03/{An} DESCHISĂ e refuzată: perioadele se închid "
+            + "în LANȚ, iar o lună sărită ar lăsa granița falsă pentru tot ce se operează înaintea ei",
+            refuzNecontigua != null && refuzNecontigua.Contains($"03/{An}"));
+
+        var prima = PerioadaService.Inchide(os, An, 3, [], null, Marcaj);
+        var p3 = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 3);
+        Check($"PER-V2 ({eticheta}) 03/{An} se închide deși 02/{An} nu EXISTĂ: perioada absentă e închisă prin "
+            + "absență, deci dă capătul lanțului; `InchisaLa` și `InchisaPrimaOara` se nasc egale, iar istoricul "
+            + "primește un singur rând `Închidere`, fără motiv",
+            p3.Inchisa && p3.InchisaLa != null && p3.InchisaPrimaOara == p3.InchisaLa
+            && p3.InchisaLa == prima.La && prima.Fel == FelInchiderePerioada.Inchidere && prima.Motiv == null
+            && os.GetObjectsQuery<InchiderePerioada>().Count(i => i.PerioadaId == p3.ID) == 1);
+
+        var refuzDouaOri = Refuz(() => PerioadaService.Inchide(os, An, 3, [], null, Marcaj));
+        Check($"PER-V3 ({eticheta}) a doua închidere a lui 03/{An} e refuzată — comanda RERULEAZĂ verificarea, "
+            + "deci „deja închisă” e blocant, nu operație idempotentă tăcută",
+            refuzDouaOri != null && refuzDouaOri.Contains("deja închisă"));
+
+        var refuzFaraMotiv = Refuz(() => PerioadaService.Redeschide(os, An, 3, "   ", null, Marcaj));
+        Check($"PER-V4 ({eticheta}) redeschiderea fără motiv e refuzată: redeschiderea e o excepție care se "
+            + "justifică în scris, nu un buton",
+            refuzFaraMotiv != null && refuzFaraMotiv.Contains("motiv"));
+
+        PerioadaService.Inchide(os, An, 4, [], null, Marcaj);
+        var refuzUrmatoareaInchisa = Refuz(() => PerioadaService.Redeschide(os, An, 3, "probă", null, Marcaj));
+        Check($"PER-V5 ({eticheta}) cu 04/{An} închisă, redeschiderea lui 03/{An} e refuzată — se redeschide doar "
+            + "ULTIMA perioadă închisă, deci cascada e explicită și un „stale” pe lunile deja închise devine "
+            + "imposibil prin construcție",
+            refuzUrmatoareaInchisa != null && refuzUrmatoareaInchisa.Contains($"04/{An}"));
+        PerioadaService.Redeschide(os, An, 4, "probă: eliberez lanțul", null, Marcaj);
+    }
+
+    // ── PER-V6: gardianul motorului vede bitul scris de comandă ──
+    using (var os = provider.CreateObjectSpace()) {
+        var doc = os.CreateObject<NotaTransfer>();
+        doc.Data = new DateOnly(An, 3, 15);
+        doc.PredatorId = idGestiuneA;
+        doc.PrimitorId = idGestiuneB;
+        doc.NumarPV = Marcaj;
+        os.CommitChanges();
+        var refuzMotor = Refuz(() => MotorOperare.Opereaza(os, doc));
+        Check($"PER-V6 ({eticheta}) după închidere, operarea unui document datat în 03/{An} e refuzată cu TEXTUL "
+            + "gardianului de perioadă — comanda de închidere și hot path-ul motorului citesc același bit",
+            refuzMotor == $"Perioada 03/{An} e închisă.");
+    }
+
+    // ── PER-V7: închidere → redeschidere → închidere ──
+    using (var os = provider.CreateObjectSpace()) {
+        var p3 = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 3);
+        var primaOara = p3.InchisaPrimaOara;
+        PerioadaService.Redeschide(os, An, 3, "probă: eroare materială", null, Marcaj);
+        var deschisaCurat = !p3.Inchisa && p3.InchisaLa == null && p3.InchisaPrimaOara == primaOara;
+        var aDoua = PerioadaService.Inchide(os, An, 3, [], null, Marcaj);
+        var istoric = os.GetObjectsQuery<InchiderePerioada>()
+            .Where(i => i.PerioadaId == p3.ID).OrderBy(i => i.La).ToList();
+        Console.WriteLine($"     MĂSURAT (PER-V7/{eticheta}): istoric 03/{An} = "
+            + string.Join(" → ", istoric.Select(i => i.Fel.ToString())) + ".");
+        Check($"PER-V7 ({eticheta}) închidere → redeschidere → închidere pe 03/{An}: `InchisaPrimaOara` rămâne a "
+            + "PRIMEI închideri (reperul rectificativei, nu se șterge la redeschidere), `InchisaLa` e a celei de-a "
+            + "doua, iar istoricul are trei rânduri în ordine, cu motiv DOAR pe redeschidere",
+            deschisaCurat
+            && p3.InchisaPrimaOara == primaOara && p3.InchisaLa == aDoua.La
+            && istoric.Count == 3
+            && istoric[0].Fel == FelInchiderePerioada.Inchidere
+            && istoric[1].Fel == FelInchiderePerioada.Redeschidere
+            && istoric[2].Fel == FelInchiderePerioada.Inchidere
+            && istoric[0].Motiv == null && istoric[2].Motiv == null
+            && !string.IsNullOrWhiteSpace(istoric[1].Motiv));
+    }
+
+    // ── PER-V8: gardianul de editare, pe CALEA REALĂ (dispecerul) ──
+    // Fiecare caz pe ObjectSpace propriu, necomis: refuzul e verdictul, nu efectul.
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.CreateObject<PerioadaFiscala>();
+        x.An = An;
+        x.Luna = 9;
+        x.Inchisa = true;
+        Check($"PER-V8a ({eticheta}) crearea unei perioade DEJA închise e refuzată: starea e a motorului, deci "
+            + "nu se poate naște închisă pe ușa securizată",
+            RefuzGardianPer(os)?.Contains("DESCHISĂ") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
+        x.Inchisa = true;
+        Check($"PER-V8b ({eticheta}) trecerea lui `Inchisa` pe o perioadă existentă e refuzată cu fraza „o face "
+            + "doar motorul” — exact regula pe care registrele o au de la decizia 14",
+            RefuzGardianPer(os)?.Contains("doar motorul") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
+        x.An = An + 1;
+        Check($"PER-V8c ({eticheta}) mutarea lunii unei perioade existente e refuzată: `(An, Luna)` e identitatea "
+            + "verigii, iar rescrierea ei ar muta granița sub documentele deja operate",
+            RefuzGardianPer(os)?.Contains("nu se schimbă") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.CreateObject<PerioadaFiscala>();
+        x.An = An;
+        x.Luna = 5;
+        Check($"PER-V8d ({eticheta}) a doua verigă pe aceeași lună e refuzată de gardian, înainte ca indexul unic "
+            + "să o refuze de bază",
+            RefuzGardianPer(os)?.Contains("există deja") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p5 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
+        var rand = os.CreateObject<InchiderePerioada>();
+        rand.PerioadaId = p5.ID;
+        rand.Fel = FelInchiderePerioada.Inchidere;
+        rand.La = DateTime.UtcNow;
+        Check($"PER-V8e ({eticheta}) crearea unui rând de istoric direct e refuzată: istoricul închiderilor e "
+            + "append-only ȘI exclusiv al motorului, ca cele patru registre",
+            RefuzGardianPer(os)?.Contains("doar de motor") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p3 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 3);
+        var rand = os.GetObjectsQuery<InchiderePerioada>().First(i => i.PerioadaId == p3.ID);
+        os.Delete(rand);
+        Check($"PER-V8f ({eticheta}) ștergerea unui rând de istoric e refuzată pe aceeași frază — append-only "
+            + "înseamnă și „nu se rescrie urma”",
+            RefuzGardianPer(os)?.Contains("doar de motor") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p3 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 3);
+        os.Delete(p3);
+        Check($"PER-V8g ({eticheta}) ștergerea unei perioade ÎNCHISE e refuzată: granița nu dispare prin "
+            + "ștergerea verigii",
+            RefuzGardianPer(os)?.Contains("nu se șterge") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p4 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 4);
+        os.Delete(p4);
+        var refuzIstoric = RefuzGardianPer(os);
+        Check($"PER-V8h ({eticheta}) ștergerea unei perioade DESCHISE care are istoric e tot refuzată (04/{An} a "
+            + "fost închisă și redeschisă): FK-ul e `Restrict`, iar urma nu rămâne orfană",
+            refuzIstoric != null && refuzIstoric.Contains("istoric"));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p5 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
+        os.Delete(p5);
+        Check($"PER-V8i ({eticheta}) control POZITIV: o perioadă deschisă fără istoric se șterge — gardianul "
+            + "refuză granița și urma, nu nomenclatorul",
+            RefuzGardianPer(os) == null);
+    }
+
+    // ── PER-V9: unicitatea e și a BAZEI, nu doar a gardianului ──
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.CreateObject<PerioadaFiscala>();
+        x.An = An;
+        x.Luna = 5;
+        string violare = null;
+        try {
+            os.CommitChanges();
+        }
+        catch (Exception e) {
+            for (var ex = e; ex != null; ex = ex.InnerException)
+                if (ex.Message.Contains("IX_PerioadeFiscale_An_Luna"))
+                    violare = ex.Message;
+        }
+        Check($"PER-V9 ({eticheta}) duplicatul `(An, Luna)` e refuzat și de BAZĂ (indexul unic filtrat pe "
+            + "`GCRecord = 0`), pe o cale fără gardian — fără el `VerificaDeschisa` ar alege nedeterminist între "
+            + "două rânduri",
+            violare != null);
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataPer(os);
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters().Count(x => x.An == An);
+        var istoric = os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters().Count();
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        Check($"PER-V10 ({eticheta}) fără reziduu: nicio perioadă, niciun rând de istoric și niciun document {An} "
+            + "rămase după purjă — scena e re-rulabilă identic",
+            perioade == 0 && documente == 0 && istoric == 0);
+    }
+}
+
 void VerificaImobilizari(bool privat) {
     const string Marcaj = "E2E-IMO";
     const int An = 2027;

@@ -3,6 +3,7 @@ using System;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Atlas.Conta.BackOffice.Module.Migrations
 {
     [DbContext(typeof(BackOfficeEFCoreDbContext))]
-    partial class BackOfficeEFCoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260916123442_F27Pas1PerioadaLant")]
+    partial class F27Pas1PerioadaLant
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -447,6 +447,15 @@ public enum FelConstatare {
     [XafDisplayName("Mapare lipsă")] MapareLipsa = 5,
 }
 
+// Cât de tare refuză o constatare de închidere de perioadă (F27-D2). Blocantul
+// nu se acceptă niciodată; avertismentul se închide doar acceptat pe cheie.
+// Severitatea constatărilor DE CONȚINUT devine politică la pasul 7; blocantele
+// STRUCTURALE (lanțul) rămân în cod.
+public enum SeveritateConstatare {
+    [XafDisplayName("Blocant")] Blocant = 1,
+    [XafDisplayName("Avertisment")] Avertisment = 2,
+}
+
 // ═══ Verdictele POTRIVIRII (felia 24, F24-D5/D6) ═══════════════════════════
 //
 // Stau aici, nu lângă `Motor/Potrivire.cs`, din același motiv ca

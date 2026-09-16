@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-15.** [Index](README.md)
+**Actualizat: 2026-09-16.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -29,6 +29,17 @@ ajută utilizatorul; validarea serverului rămâne obligatorie. (56, 57a, 77h)
 Operarea, anularea și stornarea sunt comenzi, nu modificări directe ale
 stării prin DTO. Regulile și tranzacția lor sunt descrise în
 [domeniu și operare](domeniu-si-operare.md). (42b)
+
+Închiderea și redeschiderea perioadei sunt tot comenzi, pe `api/perioade`:
+`GET api/perioade` întoarce lanțul și cere dreptul de citire pe tipul
+perioadei; `GET api/perioade/{an}/{luna}/verificare` întoarce constatările;
+`POST api/perioade/{an}/{luna}/inchide` primește cheile acceptate, iar
+`POST api/perioade/{an}/{luna}/redeschide` motivul. Subiectul acestor rute
+este luna, nu un identificator: ea se rezolvă pe calea securizată, deci
+ordinea refuzurilor rămâne 400 pentru an sau lună în afara marginilor, 404
+pentru lună nedefinită sau invizibilă, 403 pentru lipsa dreptului cerut și
+422 pentru refuzul lanțului. Motivul absent la redeschidere este refuz de
+domeniu, nu de cerere. (F27-D1, F27-D2, 80a)
 
 ## Securitate și răspunsuri
 

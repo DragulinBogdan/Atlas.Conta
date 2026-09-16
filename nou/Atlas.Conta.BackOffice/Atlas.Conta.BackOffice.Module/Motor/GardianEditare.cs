@@ -175,6 +175,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     public static void Verifica(IObjectSpace os) {
         var erori = new List<string>();
         var registruRaportat = false;
+        var istoricRaportat = false;
         // Lista se materializează: ramura de PROVENIENȚĂ (F23-D4) SCRIE pe
         // obiectele parcurse (`DinSeed = false`), iar `ModifiedObjects` e o
         // vedere peste change tracker-ul EF — nu se enumeră în timp ce se scrie
@@ -221,6 +222,21 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                         erori.Add("Registrele (stoc/contabil/TVA/imobilizări) se scriu doar de motor, la operare — "
                             + "nu se creează, modifică sau șterg direct.");
                     }
+                    break;
+                // (m) F27-D1 — istoricul perioadei e registrul închiderilor: îl
+                // scrie doar `PerioadaService`, pe ușa non-secured, exact ca pe
+                // cele patru registre de mai sus.
+                case InchiderePerioada:
+                    if (!istoricRaportat) {
+                        istoricRaportat = true;
+                        erori.Add("Istoricul închiderilor de perioadă se scrie doar de motor, la închidere "
+                            + "și la redeschidere — nu se creează, modifică sau șterge direct.");
+                    }
+                    break;
+                // (n) F27-D1 — perioada e verigă de lanț: `An`/`Luna` se culeg o
+                // singură dată, starea e a motorului.
+                case PerioadaFiscala perioada:
+                    VerificaPerioadaFiscala(os, perioada, erori);
                     break;
                 case Document doc:
                     VerificaDocument(os, doc, erori);
@@ -299,6 +315,50 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (erori.Count > 0)
             throw new OperareException(string.Join("\n", erori.Distinct()));
     }
+
+    // (n) Perioada fiscală (F27-D1). `An`/`Luna` sunt IDENTITATEA verigii: se
+    // culeg la creare și nu se mai mișcă, fiindcă o lună rescrisă ar muta tăcut
+    // granița sub documentele deja operate. Cele trei câmpuri de stare le scrie
+    // exclusiv `PerioadaService`, pe ușa non-secured — aici, ca pe registre, nu
+    // trece nici administratorul.
+    static void VerificaPerioadaFiscala(IObjectSpace os, PerioadaFiscala perioada, ICollection<string> erori) {
+        if (EsteSters(os, perioada)) {
+            if (perioada.Inchisa)
+                erori.Add($"Perioada {EtichetaPerioada(perioada)} e închisă — o perioadă închisă nu se șterge. "
+                    + "Redeschideți-o întâi.");
+            if (os.GetObjectsQuery<InchiderePerioada>().Any(i => i.PerioadaId == perioada.ID))
+                erori.Add($"Perioada {EtichetaPerioada(perioada)} are istoric de închideri — "
+                    + "ștergerea ei ar rupe urma operațiilor motorului.");
+            return;
+        }
+        if (perioada.An < AnMinimPerioada || perioada.An > AnMaximPerioada)
+            erori.Add($"Anul perioadei trebuie să fie între {AnMinimPerioada} și {AnMaximPerioada}.");
+        if (perioada.Luna < 1 || perioada.Luna > 12)
+            erori.Add("Luna perioadei trebuie să fie între 1 și 12.");
+        if (os.IsNewObject(perioada)) {
+            if (perioada.Inchisa || perioada.InchisaLa != null || perioada.InchisaPrimaOara != null)
+                erori.Add("O perioadă nouă se creează DESCHISĂ — închiderea o face doar motorul (Închide / Redeschide).");
+            if (os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == perioada.An && p.Luna == perioada.Luna))
+                erori.Add($"Perioada {EtichetaPerioada(perioada)} există deja — o lună are o singură verigă în lanț.");
+            return;
+        }
+        var originale = Originale(os, perioada);
+        if (originale == null)
+            return;
+        if ((originale[nameof(PerioadaFiscala.An)] as int?) != perioada.An
+                || (originale[nameof(PerioadaFiscala.Luna)] as int?) != perioada.Luna)
+            erori.Add($"Luna unei perioade existente nu se schimbă ({EtichetaPerioada(perioada)}) — "
+                + "ștergeți perioada greșită și creați-o pe cea corectă.");
+        if ((originale[nameof(PerioadaFiscala.Inchisa)] as bool?) != perioada.Inchisa
+                || (originale[nameof(PerioadaFiscala.InchisaLa)] as DateTime?) != perioada.InchisaLa
+                || (originale[nameof(PerioadaFiscala.InchisaPrimaOara)] as DateTime?) != perioada.InchisaPrimaOara)
+            erori.Add("Închiderea perioadei o face doar motorul (Închide / Redeschide).");
+    }
+
+    // Aceleași margini ca pe API (`PerioadeController.AnMinim/AnMaxim`).
+    const int AnMinimPerioada = 2000, AnMaximPerioada = 2100;
+
+    static string EtichetaPerioada(PerioadaFiscala perioada) => $"{perioada.Luna:00}/{perioada.An}";
 
     // (a) Documentul: se culege cât e Draft. Starea e SERVER-OWNED — tranzițiile
     // le face doar motorul, în ObjectSpace-ul lui non-secured. Review-ul advers
