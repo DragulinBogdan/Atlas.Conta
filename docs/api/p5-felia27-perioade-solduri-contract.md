@@ -472,6 +472,20 @@ Felia e închisă când, pe codul final:
    fiecare cu proba „identic cu și fără snapshot". Oprire: ModelCheck
    identic; proba de egalitate la cent pe scena 2028; `Motor/StocService`
    cu snapshot și `VerificaSoldIntermediar` cu același text de refuz.
+   *Executat 2a (2026-09-16), fără opriri; devierile raportate*: tranzacția
+   comenzii (`Motor/TranzactieComanda`) în `OperareApi` (operare/anulare/storno),
+   în `InchidereTvaApply`/`AmoApply` (`Genereaza`/`Regenereaza`) și în comenzile
+   perioadei; `GardianPerioada.VerificaDeschisa` citește prin
+   `SqlQuery … FOR SHARE` cu textele NESCHIMBATE, iar `PerioadaService` ia
+   `FOR UPDATE` pe rândul perioadei ca primă instrucțiune. `SoldPerioadaContabil`
+   și `SoldPerioadaStoc` (`BusinessObjects/Registre/SolduriPerioada.cs`) cu
+   unicitatea cheii complete `NULLS NOT DISTINCT`, `Motor/SolduriService`
+   (`Referinte`/`AreSnapshot`/`Materializeaza`/`Elimina`/`Reconstruieste`),
+   `POST api/perioade/reconstruieste` cu gate de SCRIERE pe tip
+   (`ContaApiController.PoateScrie`) și acțiunea XAF „Reconstruiește soldurile";
+   migrația `20260916131506_F27Pas2SolduriPerioada` (două tabele + indexurile
+   filtrate pe `Data` ale registrelor contabil și stoc), aplicată pe cele trei
+   baze. Consumatorii NU s-au mutat încă: rămân pentru 2b.
 3. **`DataInregistrare`** (D4): câmpul, implicitul, gardianul mutat,
    registrele și lotul la data înregistrării, storno-ul, fișa/jurnalul,
    XAF + React (câmp în antetul tuturor tipurilor culese, prin

@@ -110,6 +110,37 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
   fel, severitate și text. Comanda reia verificarea și refuză pe blocante.
   Constatările acoperite sunt cele structurale: perioadă nedefinită, perioadă
   deja închisă, perioadă precedentă deschisă. (F27-D2)
+- Fiecare comandă a motorului rulează într-o tranzacție explicită, deschisă pe
+  ObjectSpace-ul ei: operarea, anularea și stornarea prin adaptorul de
+  operare, generarea și regenerarea închiderii de TVA și a amortizării,
+  închiderea, redeschiderea și reconstrucția perioadei. Gardianul de perioadă
+  citește starea lunii blocând rândul în citire, iar comenzile perioadei îl
+  blochează în scriere înainte de orice calcul. Cele două comenzi se
+  serializează astfel între ele, iar două operări concurente nu se blochează
+  una pe alta. (F27-D1)
+
+### Soldurile materializate la închidere
+
+- Snapshot-ul unei perioade există dacă și numai dacă perioada este DE
+  REFERINȚĂ: ultima perioadă închisă sau un decembrie închis. Nu este registru
+  și nu este urmă — se reconstruiește integral din registre. (F27-D3)
+- Cheia snapshot-ului este cheia completă a atomului: cont plus cele opt
+  dimensiuni ale laturii pe partea contabilă, lot, repartitor și tip de stoc
+  pe partea de stoc. Debitul și creditul se cumulează separat, fiindcă netarea
+  nu este aditivă. Orice raport este rollup aditiv peste ea. (F27-D3, 66d)
+- Cheile integral zero se omit. Cheia absentă înseamnă zero pentru orice
+  consumator. (F27-D3)
+- Închiderea scrie snapshot-ul lunii ca sumă între snapshot-ul precedentei și
+  rulajele lunii, iar dacă precedenta nu este capăt de an îi șterge
+  snapshot-ul. Fără snapshot precedent, luna se calculează prin sumă peste tot
+  istoricul. Redeschiderea șterge snapshot-ul lunii și îl reconstruiește pe al
+  precedentei, tot prin sumă integrală. Registrele nu se ating. (F27-D3)
+- Reconstrucția recalculează integral fiecare perioadă de referință,
+  raportează diferențele pe rânduri și pe sume înainte de a rescrie, apoi
+  șterge snapshot-urile perioadelor care nu mai sunt referințe. Raportul iese
+  și când nu există nicio diferență. (F27-D3, 35b)
+- Scrierea și ștergerea snapshot-urilor aparțin motorului: pe calea securizată
+  se refuză, ca la registre. Ștergerea lor este fizică, nu amânată. (F27-D3)
 
 ## Contare și dimensiuni
 

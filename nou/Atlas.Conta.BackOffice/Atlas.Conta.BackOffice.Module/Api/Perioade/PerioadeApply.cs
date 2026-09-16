@@ -25,6 +25,21 @@ public static class PerioadeApply {
             RedeschidePerioadaRequestDto cerere, Guid? deId, string de) =>
         Din(os, PerioadaService.Redeschide(os, an, luna, cerere?.Motiv, deId, de));
 
+    // Raportul se ia pe starea dinaintea rescrierii, iar rescrierea e în ACEEAȘI
+    // tranzacție: un eșec la jumătate n-are voie să lase referințe pe jumătate
+    // reconstruite (F27-D1/D3).
+    public static ReconstructieRezultatDto Reconstruieste(IObjectSpace os) {
+        using var tx = TranzactieComanda.Incepe(os);
+        var raport = SolduriService.Reconstruieste(os);
+        tx.Commit();
+        return new ReconstructieRezultatDto(raport.Referinte
+            .Select(r => new ReconstructieReferintaDto(r.An, r.Luna,
+                r.ContabilExistente, r.ContabilRecalculate, r.ContabilDiferite,
+                r.StocExistente, r.StocRecalculate, r.StocDiferite,
+                r.DiferentaDebit, r.DiferentaCredit, r.DiferentaCantitate, r.DiferentaValoare))
+            .ToArray());
+    }
+
     static InchiderePerioadaRezultatDto Din(IObjectSpace os, InchiderePerioada rand) =>
         new(Din(os.GetObjectByKey<PerioadaFiscala>(rand.PerioadaId)), rand.Fel.ToString(), rand.La, rand.De);
 

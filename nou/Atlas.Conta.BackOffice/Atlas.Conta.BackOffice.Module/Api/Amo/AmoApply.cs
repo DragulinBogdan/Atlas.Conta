@@ -142,15 +142,18 @@ public static class AmoApply {
     public static GenerareAmoRezultatDto Genereaza(IObjectSpace os, GenerareAmoRequestDto cerere) {
         if (cerere == null)
             throw new OperareException("Lipsește corpul cererii.");
+        using var tx = TranzactieComanda.Incepe(os);
         var r = AmortizareService.Incearca(os, cerere.An, cerere.Luna, cerere.UnitateId);
         if (r.Document != null)
             os.CommitChanges();
+        tx.Commit();
         return Rezultat(r);
     }
 
     // Întâi se calculează, apoi se șterge: un refuz aruncă înaintea oricărui `Delete`,
     // iar `inlocuieste: id` scoate draftul de față din gardianul de lună ocupată (79d).
     public static GenerareAmoRezultatDto Regenereaza(IObjectSpace os, Guid id) {
+        using var tx = TranzactieComanda.Incepe(os);
         var doc = Rezolva.Cere<AmortizareLunara>(os, id, "Amortizarea lunară");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
@@ -163,6 +166,7 @@ public static class AmoApply {
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
         os.CommitChanges();
+        tx.Commit();
         return Rezultat(r);
     }
 

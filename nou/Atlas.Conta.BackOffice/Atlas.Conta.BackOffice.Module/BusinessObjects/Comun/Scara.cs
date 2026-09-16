@@ -98,7 +98,9 @@ public static class Scara {
         // e bani, nu preț: la `Capitalizat` se desface din valoarea BRUTĂ deja
         // rotunjită, iar jurnalele o adună server-side pe perioade întregi.
         // Cifrele imobilizărilor sunt tot bani postați sau derivați din ei (F26-D2).
-        "Valoare" or "ValoareTva" or "Suma" or "Baza" or "Tva"
+        // `Debit`/`Credit` sunt cumulatele pe laturi ale snapshot-ului de
+        // perioadă (F27-D3): suma unor valori de postare, deci tot bani.
+        "Valoare" or "ValoareTva" or "Suma" or "Baza" or "Tva" or "Debit" or "Credit"
             or "ValoareFiscala" or "ValoareDeductibila" or "ValoareReziduala"
             or "Amortizare" or "AmortizareFiscala" or "AmortizareDeductibila"
             or "AmortizareInitiala" or "AmortizareFiscalaInitiala" => Bani,

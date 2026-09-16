@@ -23,3 +23,12 @@ public sealed class RedeschidePerioadaRequestDto {
 
 /// <summary>Rezultatul unei comenzi de perioadă: starea nouă plus rândul de istoric scris.</summary>
 public sealed record InchiderePerioadaRezultatDto(PerioadaDto Perioada, string Fel, DateTime La, string De);
+
+/// <summary>Rezultatul reconstrucției soldurilor: un rând per perioadă de referință, chiar fără diferențe.</summary>
+public sealed record ReconstructieRezultatDto(ReconstructieReferintaDto[] Referinte);
+
+/// <summary>Cifrele unei perioade de referință: ce era, ce a ieșit din recalcul, cât diferă.</summary>
+public sealed record ReconstructieReferintaDto(int An, int Luna,
+    long ContabilExistente, long ContabilRecalculate, long ContabilDiferite,
+    long StocExistente, long StocRecalculate, long StocDiferite,
+    decimal DiferentaDebit, decimal DiferentaCredit, decimal DiferentaCantitate, decimal DiferentaValoare);

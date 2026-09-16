@@ -27,6 +27,7 @@ public class PerioadaFiscalaController : ObjectViewController<ObjectView, Perioa
 
     readonly SimpleAction inchide;
     readonly PopupWindowShowAction redeschide;
+    readonly SimpleAction reconstruieste;
 
     public PerioadaFiscalaController() {
         inchide = new SimpleAction(this, "PerioadaFiscala.Inchide", PredefinedCategory.RecordEdit) {
@@ -45,6 +46,18 @@ public class PerioadaFiscalaController : ObjectViewController<ObjectView, Perioa
         };
         redeschide.CustomizePopupWindowParams += Redeschide_CustomizePopupWindowParams;
         redeschide.Execute += Redeschide_Execute;
+
+        // Fără subiect: recalculează TOATE perioadele de referință, deci nu
+        // depinde de rândul selectat (F27-D3).
+        reconstruieste = new SimpleAction(this, "PerioadaFiscala.Reconstruieste", PredefinedCategory.RecordEdit) {
+            Caption = "Reconstruiește soldurile",
+            ToolTip = "Recalculează integral soldurile perioadelor de referință și raportează diferențele.",
+            SelectionDependencyType = SelectionDependencyType.Independent,
+            TargetViewType = ViewType.ListView,
+            ConfirmationMessage = "Reconstruiți soldurile perioadelor de referință? Recalculul citește tot "
+                + "istoricul registrelor și rescrie snapshot-urile; diferențele se raportează întâi.",
+        };
+        reconstruieste.Execute += Reconstruieste_Execute;
     }
 
     protected override void OnActivated() {
@@ -64,6 +77,36 @@ public class PerioadaFiscalaController : ObjectViewController<ObjectView, Perioa
         var perioada = View?.CurrentObject as PerioadaFiscala;
         inchide.Enabled[CheieStare] = perioada is { Inchisa: false };
         redeschide.Enabled[CheieStare] = perioada is { Inchisa: true };
+    }
+
+    void Reconstruieste_Execute(object sender, SimpleActionExecuteEventArgs e) {
+        if (Application.Security is not IRequestSecurityStrategy cerinte
+                || !cerinte.CanWrite(typeof(PerioadaFiscala), ObjectSpace))
+            throw new UserFriendlyException(Refuzuri.FaraDrept(OperatieAcces.Modificare, typeof(PerioadaFiscala)));
+        ReconstructieRezultatDto rezultat;
+        var fabrica = Application.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
+        using (var osMotor = fabrica.CreateNonSecuredObjectSpace(typeof(PerioadaFiscala))) {
+            try {
+                rezultat = PerioadeApply.Reconstruieste(osMotor);
+            }
+            catch (OperareException ex) {
+                throw new UserFriendlyException(ex.Message);
+            }
+        }
+        ObjectSpace.Refresh();
+        Informeaza(Rezuma(rezultat));
+    }
+
+    // Raportul iese ȘI fără diferențe, cu zerouri explicite (35b).
+    static string Rezuma(ReconstructieRezultatDto rezultat) {
+        if (rezultat.Referinte.Length == 0)
+            return "Nicio perioadă de referință: nu există perioade închise, deci nu s-a reconstruit nimic.";
+        var linii = rezultat.Referinte.Select(r =>
+            $"{r.Luna:00}/{r.An}: contabil {r.ContabilExistente} → {r.ContabilRecalculate} "
+            + $"({r.ContabilDiferite} diferite, Δdebit {r.DiferentaDebit:0.00}, Δcredit {r.DiferentaCredit:0.00}); "
+            + $"stoc {r.StocExistente} → {r.StocRecalculate} ({r.StocDiferite} diferite, "
+            + $"Δcantitate {r.DiferentaCantitate:0.000}, Δvaloare {r.DiferentaValoare:0.00})");
+        return string.Join(Environment.NewLine, linii);
     }
 
     void Inchide_Execute(object sender, SimpleActionExecuteEventArgs e) {

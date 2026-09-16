@@ -139,6 +139,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // alias-ul `using ...Entitate =` de care are nevoie `RegistruContabil`.
         public DbSet<RegistruTva> RegistruTva { get; set; }
         public DbSet<RegistruImobilizari> RegistruImobilizari { get; set; }
+        public DbSet<SoldPerioadaContabil> SolduriPerioadaContabil { get; set; }
+        public DbSet<SoldPerioadaStoc> SolduriPerioadaStoc { get; set; }
         public DbSet<Imobilizare> Imobilizari { get; set; }
         public DbSet<ClasificareImobilizari> ClasificariImobilizari { get; set; }
         public DbSet<PoliticaAmortizare> PoliticiAmortizare { get; set; }
@@ -267,6 +269,56 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     .OnDelete(DeleteBehavior.Restrict);
                 b.HasIndex(i => i.PerioadaId);
             });
+
+            // F27-D3: snapshot-urile perioadelor de referință. Cheia completă e
+            // UNICĂ per perioadă, cu `NULLS NOT DISTINCT` (Postgres 15+) —
+            // dimensiunile sunt nullable, iar semantica cerută e „aceleași
+            // dimensiuni lipsă = aceeași cheie", nu „fiecare NULL e altceva".
+            // Fără filtru pe `GCRecord`: rândurile se șterg FIZIC (nu e
+            // nomenclator, e proiecție rescrisă la fiecare închidere).
+            // FK-uri `Restrict` și fără `AutoInclude`: consumatorii agregă, nu
+            // afișează — spre deosebire de `RegistruContabil` (41c).
+            modelBuilder.Entity<SoldPerioadaContabil>(b => {
+                b.HasIndex(s => new {
+                    s.An, s.Luna, s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId,
+                    s.CodEconomicId, s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId
+                }).IsUnique().AreNullsDistinct(false);
+                b.HasIndex(s => new { s.An, s.Luna });
+                b.HasOne(s => s.Cont).WithMany().HasForeignKey(s => s.ContId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Repartitor).WithMany().HasForeignKey(s => s.RepartitorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Material).WithMany().HasForeignKey(s => s.MaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.CodFunctional).WithMany().HasForeignKey(s => s.CodFunctionalId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.CodEconomic).WithMany().HasForeignKey(s => s.CodEconomicId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.SursaFinantare).WithMany().HasForeignKey(s => s.SursaFinantareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Unitate).WithMany().HasForeignKey(s => s.UnitateId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Proiect).WithMany().HasForeignKey(s => s.ProiectId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.CentruCost).WithMany().HasForeignKey(s => s.CentruCostId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<SoldPerioadaStoc>(b => {
+                b.HasIndex(s => new { s.An, s.Luna, s.LotId, s.RepartitorId, s.TipStoc }).IsUnique();
+                b.HasIndex(s => new { s.An, s.Luna });
+                b.HasOne(s => s.Lot).WithMany().HasForeignKey(s => s.LotId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Repartitor).WithMany().HasForeignKey(s => s.RepartitorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Rulajele unei luni se citesc pe `Data` (spike B.4: 70,6 → 37,9 ms
+            // pe contabil, 16,2 → 14,1 pe stoc, plan de index scan în loc de
+            // parallel seq scan). Filtrat pe rândurile vii, ca toate citirile.
+            modelBuilder.Entity<RegistruContabil>()
+                .HasIndex(r => r.Data).HasFilter("\"GCRecord\" = 0");
+            modelBuilder.Entity<RegistruStoc>()
+                .HasIndex(r => r.Data).HasFilter("\"GCRecord\" = 0");
 
             // FK-uri `Restrict`: convenția globală `SetNull`/`Cascade` ar goli tăcut fișa sau linia-sursă (F26-D1/D2/D5).
             modelBuilder.Entity<Imobilizare>(b => {

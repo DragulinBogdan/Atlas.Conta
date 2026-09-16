@@ -961,6 +961,16 @@ try {
     # Verificarea e un VERDICT: gate de citire pe instanță, apoi constatările.
     Proba -Cerere 'verificarea închiderii' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA' | Out-Null
     Proba -Cerere 'verificarea închiderii' -User 'User' -Asteptat 404 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Reconstrucția soldurilor (F27-D3): comandă FĂRĂ subiect (rescrie toate
+    # perioadele de referință), deci gate-ul ei e pe TIP — `Write` pe
+    # `PerioadaFiscala`, același drept ca `inchide`. Pe baza vie nu există nicio
+    # perioadă închisă (verificat pe lanț mai sus), deci `Admin` primește un
+    # raport GOL și comanda NU scrie nimic — aceeași disciplină ca la `inchide`.
+    Proba -Cerere 'reconstruiește soldurile' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine 'modifica' -Nota 'citirea nu dă dreptul de a rescrie' | Out-Null
+    Proba -Cerere 'reconstruiește soldurile' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine 'modifica' -Nota 'perioada nu e politică' | Out-Null
+    Proba -Cerere 'reconstruiește soldurile' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine 'modifica' -Nota 'gate pe TIP, nu pe instanță' | Out-Null
+    Proba -Cerere 'reconstruiește soldurile' -User 'Admin' -Asteptat 200 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine '"Referinte":[]' -Nota 'nicio perioadă închisă ⇒ nimic de reconstruit' | Out-Null
+
     # Lanțul a rămas NEATINS: nicio perioadă închisă de matrice.
     $lantDupa = @((Invoke-Cerere -Metoda GET -Cale '/api/perioade' -Token $tokenAdmin).Corp | ConvertFrom-Json)
     $inchiseDupa = @($lantDupa | Where-Object { $_.Inchisa }).Count

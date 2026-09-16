@@ -217,10 +217,15 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 case RegistruTva:
                 // Al patrulea registru, scris prin `IDocumentCuRegistruPropriu` (F26-D2/D3).
                 case RegistruImobilizari:
+                // Snapshot-urile perioadelor de referință (F27-D3): nu sunt
+                // registre, dar se scriu pe aceeași ușă — doar motorul, în
+                // tranzacția închiderii.
+                case SoldPerioadaContabil:
+                case SoldPerioadaStoc:
                     if (!registruRaportat) {
                         registruRaportat = true;
-                        erori.Add("Registrele (stoc/contabil/TVA/imobilizări) se scriu doar de motor, la operare — "
-                            + "nu se creează, modifică sau șterg direct.");
+                        erori.Add("Registrele (stoc/contabil/TVA/imobilizări/solduri de perioadă) se scriu doar de "
+                            + "motor, la operare — nu se creează, modifică sau șterg direct.");
                     }
                     break;
                 // (m) F27-D1 — istoricul perioadei e registrul închiderilor: îl

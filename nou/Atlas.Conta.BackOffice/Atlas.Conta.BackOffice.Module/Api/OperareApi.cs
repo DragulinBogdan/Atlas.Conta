@@ -32,7 +32,11 @@ public sealed record OperareRezultat(
 // motorului. Căile standalone (ModelCheck/Import1C/Migrare) pot folosi orice
 // ObjectSpace — gardianul nu e activ acolo.
 public static class OperareApi {
+    // F27-D1: tranzacția comenzii ține blocarea luată de `GardianPerioada` peste
+    // `CommitChanges`, deci închiderea unei perioade nu se poate strecura între
+    // verificare și scrierea registrelor. `MotorOperare` rămâne neatins.
     public static OperareRezultat Opereaza(IObjectSpace os, Guid documentId) {
+        using var tx = TranzactieComanda.Incepe(os);
         var doc = Incarca(os, documentId);
         var conex = MotorOperare.Opereaza(os, doc);
         var mesaje = new List<string>();
@@ -43,18 +47,23 @@ public static class OperareApi {
         // nu aruncă — o operare cu registre deja comise nu poate eșua din cauza
         // unui mesaj.
         mesaje.AddRange(doc.MesajeDupaOperare(os));
+        tx.Commit();
         return new OperareRezultat(doc.ID, doc.Stare, conex?.ID, mesaje);
     }
 
     public static OperareRezultat AnuleazaOperarea(IObjectSpace os, Guid documentId) {
+        using var tx = TranzactieComanda.Incepe(os);
         var doc = Incarca(os, documentId);
         MotorOperare.AnuleazaOperarea(os, doc);
+        tx.Commit();
         return new OperareRezultat(doc.ID, doc.Stare, null, Array.Empty<string>());
     }
 
     public static OperareRezultat Storneaza(IObjectSpace os, Guid documentId, DateOnly dataStorno) {
+        using var tx = TranzactieComanda.Incepe(os);
         var doc = Incarca(os, documentId);
         MotorOperare.Storneaza(os, doc, dataStorno);
+        tx.Commit();
         return new OperareRezultat(doc.ID, doc.Stare, null, Array.Empty<string>());
     }
 

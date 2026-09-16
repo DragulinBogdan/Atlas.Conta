@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -4101,6 +4102,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaApiDvi();
     // Felia 27, pasul 1 — perioada ca lanț și comanda de închidere (PER-V0…V10).
     VerificaPerioade(privat: true);
+    // Felia 27, pasul 2a — soldurile materializate la închidere (SOL-V*) și cursa (PER-C*).
+    VerificaSolduriPerioada(privat: true);
     // Felia 26, pasul 1 — imobilizările pe scenă (IMO-V0…V28).
     VerificaImobilizari(privat: true);
     // Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
@@ -9254,6 +9257,8 @@ VerificaF24Gardian(privat: false);
 VerificaDvi(privat: false);
 // Felia 27, pasul 1 — perioada ca lanț și comanda de închidere (PER-V0…V10).
 VerificaPerioade(privat: false);
+// Felia 27, pasul 2a — soldurile materializate la închidere (SOL-V*) și cursa (PER-C*).
+VerificaSolduriPerioada(privat: false);
 // Felia 26, pasul 1 — imobilizările pe scenă (IMO-V0…V28), și pe bugetar.
 VerificaImobilizari(privat: false);
 // Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
@@ -23003,6 +23008,10 @@ void VerificaPerioade(bool privat) {
 
     void CurataPer(IObjectSpace os) {
         // F13-D2: curățenia de scenă = purjă FIZICĂ, în ordinea dependențelor.
+        // Snapshot-urile scrise de comanda de închidere (F27-D3) ies ÎNTÂI:
+        // FK-urile lor spre cont/repartitor sunt `Restrict`.
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
         var pj = new Purja(os);
         var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
             .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
@@ -23241,6 +23250,563 @@ void VerificaPerioade(bool privat) {
         Check($"PER-V10 ({eticheta}) fără reziduu: nicio perioadă, niciun rând de istoric și niciun document {An} "
             + "rămase după purjă — scena e re-rulabilă identic",
             perioade == 0 && documente == 0 && istoric == 0);
+    }
+}
+
+// Felia 27, pasul 2a — soldurile materializate la închidere (`SOL-V*`) și cursa
+// închidere ↔ operare pe calea REALĂ a comenzilor (`PER-C*`, forma F1 din spike
+// A.0/A.2). Scena stă în 2031–2032, în afara tuturor celorlalte scene ale suitei.
+void VerificaSolduriPerioada(bool privat) {
+    const string Marcaj = "E2E-SOL";
+    const int An = 2031;
+    var eticheta = privat ? "privat" : "bugetar";
+    // Tipul de material cu natura Stoc: planul bugetar n-are „371”.
+    var codTipStoc = privat ? "371" : "302.01.00";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+    DateOnly Ultima(int an, int luna) => new(an, luna, DateTime.DaysInMonth(an, luna));
+
+    // ─────────── curățenia de scenă (purjă FIZICĂ, F13-D2) ───────────
+    void CurataSol(IObjectSpace os) {
+        // Snapshot-urile ÎNTÂI: FK-urile lor spre lot/repartitor/cont sunt
+        // `Restrict`, deci un rând rămas ar bloca purja nomenclatoarelor.
+        for (var luna = 1; luna <= 12; luna++) {
+            SolduriService.Elimina(os, An, luna);
+            SolduriService.Elimina(os, An + 1, luna);
+        }
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An + 1, 12, 31))
+            .Select(d => d.ID).ToList();
+        var produsIds = os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID).ToList();
+        var lotIds = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => produsIds.Contains(l.ProdusId)).Select(l => l.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID)).OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => lotIds.Contains(l.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => produsIds.Contains(p.ID)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An || p.An == An + 1).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An || p.An == An + 1).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    // ─────────── citirea snapshot-ului și recalculul de control ───────────
+    (Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?) CheieAtom(AtomContabil a) =>
+        (a.ContId, a.RepartitorId, a.MaterialId, a.CodFunctionalId, a.CodEconomicId,
+         a.SursaFinantareId, a.UnitateId, a.ProiectId, a.CentruCostId);
+
+    Dictionary<(Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?), (decimal D, decimal C)>
+            SnapshotContabil(IObjectSpace os, int an, int luna) =>
+        os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An == an && s.Luna == luna)
+            .Select(s => new {
+                s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId, s.CodEconomicId,
+                s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId, s.Debit, s.Credit
+            })
+            .ToList()
+            .ToDictionary(
+                s => (s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId, s.CodEconomicId,
+                      s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId),
+                s => (s.Debit, s.Credit));
+
+    // Recalculul de control e LINQ pe `ContabilProiectii.Atomi`, nu SQL: dacă
+    // ambele căi ar fi scrise la fel, proba n-ar mai proba nimic.
+    Dictionary<(Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?), (decimal D, decimal C)>
+            AsteptatContabil(IObjectSpace os, DateOnly panaLa) =>
+        ContabilProiectii.Atomi(os).Where(a => a.Data <= panaLa).ToList()
+            .GroupBy(CheieAtom)
+            .Select(g => new { g.Key, D = g.Sum(a => a.Debit), C = g.Sum(a => a.Credit) })
+            .Where(x => x.D != 0m || x.C != 0m)
+            .ToDictionary(x => x.Key, x => (x.D, x.C));
+
+    Dictionary<CheieStoc, SoldStoc> SnapshotStoc(IObjectSpace os, int an, int luna) =>
+        os.GetObjectsQuery<SoldPerioadaStoc>().Where(s => s.An == an && s.Luna == luna)
+            .Select(s => new { s.LotId, s.RepartitorId, s.TipStoc, s.Cantitate, s.Valoare })
+            .ToList()
+            .ToDictionary(s => new CheieStoc(s.LotId, s.RepartitorId, s.TipStoc),
+                          s => new SoldStoc(s.Cantitate, s.Valoare));
+
+    Dictionary<CheieStoc, SoldStoc> AsteptatStoc(IObjectSpace os, DateOnly panaLa) {
+        // Loturile se iau din REGISTRU, nu din nomenclator: un lot șters logic
+        // cu rânduri de registru vii ar lipsi din al doilea și ar face
+        // comparația falsă în favoarea noastră.
+        var loturi = os.GetObjectsQuery<RegistruStoc>().Select(r => r.LotId).Distinct().ToList();
+        return StocService.SolduriLaData(os, loturi, panaLa)
+            .Where(kv => kv.Value.Cantitate != 0m || kv.Value.Valoare != 0m)
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+    }
+
+    bool EgalContabil(IObjectSpace os, int an, int luna) {
+        var snap = SnapshotContabil(os, an, luna);
+        var asteptat = AsteptatContabil(os, Ultima(an, luna));
+        return snap.Count == asteptat.Count
+            && snap.All(kv => asteptat.TryGetValue(kv.Key, out var a) && a == kv.Value)
+            && asteptat.All(kv => snap.ContainsKey(kv.Key));
+    }
+
+    bool EgalStoc(IObjectSpace os, int an, int luna) {
+        var snap = SnapshotStoc(os, an, luna);
+        var asteptat = AsteptatStoc(os, Ultima(an, luna));
+        return snap.Count == asteptat.Count
+            && snap.All(kv => asteptat.TryGetValue(kv.Key, out var a) && a == kv.Value)
+            && asteptat.All(kv => snap.ContainsKey(kv.Key));
+    }
+
+    int RanduriSnapshot(IObjectSpace os, int an, int luna) =>
+        os.GetObjectsQuery<SoldPerioadaContabil>().Count(s => s.An == an && s.Luna == luna)
+        + os.GetObjectsQuery<SoldPerioadaStoc>().Count(s => s.An == an && s.Luna == luna);
+
+    string Referinte(IObjectSpace os) =>
+        string.Join(", ", SolduriService.Referinte(os).Select(r => $"{r.Luna:00}/{r.An}"));
+
+    // ─────────── cursa: a doua conexiune, `lock_timeout` pe comandă ───────────
+    string CodPostgres(Exception e) {
+        for (var ex = e; ex != null; ex = ex.InnerException)
+            if (ex is Npgsql.PostgresException pg)
+                return pg.SqlState;
+        return null;
+    }
+    // `null` = comanda a trecut; altfel SQLSTATE-ul (55P03 = lock_timeout).
+    string CuLockTimeout(Action<IObjectSpace> comanda) {
+        using var os = provider.CreateObjectSpace();
+        var db = ((EFCoreObjectSpace)os).DbContext.Database;
+        db.OpenConnection();
+        try {
+            db.ExecuteSqlRaw("SET lock_timeout = '1500ms'");
+            comanda(os);
+            return null;
+        }
+        catch (Exception e) {
+            return CodPostgres(e) ?? e.GetType().Name;
+        }
+        finally {
+            db.CloseConnection();
+        }
+    }
+
+    // ═════════════════════ precondiția ═════════════════════
+    using (var os = provider.CreateObjectSpace())
+        CurataSol(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An || p.An == An + 1);
+        var inchise = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.Inchisa);
+        var snapshoturi = os.GetObjectsQuery<SoldPerioadaContabil>().Count()
+            + os.GetObjectsQuery<SoldPerioadaStoc>().Count();
+        Console.WriteLine($"     MĂSURAT (SOL-V0/{eticheta}): {perioade} perioade în {An}–{An + 1}, "
+            + $"{inchise} perioade închise în bază, {snapshoturi} rânduri de snapshot.");
+        Check($"SOL-V0 ({eticheta}) precondiție: {An}–{An + 1} sunt libere, NICIO perioadă a bazei nu e închisă "
+            + "și nu există niciun snapshot — altfel mulțimea perioadelor DE REFERINȚĂ probată mai jos ar fi "
+            + "măsurată peste conținut străin",
+            perioade == 0 && inchise == 0 && snapshoturi == 0);
+    }
+
+    // ═════════════════════ scena ═════════════════════
+    Guid idGestA, idGestB, idFurnizor, idLot1, idLot2, idBtrB, idCodEc;
+    using (var os = provider.CreateObjectSpace()) {
+        for (var luna = 1; luna <= 12; luna++) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+        }
+        var tipMat = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipStoc);
+        var gestA = os.CreateObject<Gestiune>();
+        gestA.Cod = Marcaj + "-GA";
+        gestA.Denumire = "Gestiune solduri A";
+        var gestB = os.CreateObject<Gestiune>();
+        gestB.Cod = Marcaj + "-GB";
+        gestB.Denumire = "Gestiune solduri B";
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = Marcaj + "-F";
+        furnizor.Denumire = "Furnizor solduri";
+        furnizor.CodFiscal = "RO33333338";
+        furnizor.InregistratTva = true;
+        Produs Prod(string sufix) {
+            var p = os.CreateObject<Produs>();
+            p.Cod = Marcaj + sufix;
+            p.Denumire = "Produs solduri" + sufix;
+            p.UM = "BUC";
+            p.TipMaterial = tipMat;
+            return p;
+        }
+        var produs1 = Prod("-P1");
+        var produs2 = Prod("-P2");
+        // Dimensiunea CULEASĂ a scenei: pe profilul bugetar contul de furnizori
+        // o cere (`VerificaDimensiuniObligatorii`), iar pe privat e opțională —
+        // aceeași scenă, cheia snapshot-ului nenulă pe ambele profiluri.
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic solduri";
+        os.CommitChanges();
+        Check($"SOL — precondiție de profil ({eticheta}): tipul de material cu natura Stoc („{codTipStoc}”) e "
+            + "în seed pe AMBELE profiluri, deci scena de stoc e aceeași",
+            tipMat != null && tipMat.Clasa?.Natura == NaturaClasa.Stoc);
+
+        // Ianuarie: NIR cu DOUĂ loturi în aceeași gestiune.
+        var nir = os.CreateObject<NIR>();
+        nir.Data = Zi(1, 5);
+        nir.Predator = furnizor;
+        nir.Primitor = gestA;
+        var l1 = os.CreateObject<NirDetaliu>();
+        l1.Document = nir; l1.TipMaterial = tipMat; l1.Cantitate = 10m; l1.PretUnitar = 10m;
+        l1.CodEconomicId = codEc.ID;
+        var lot1 = l1.CreeazaLot(os, produs1, gestA);
+        var l2 = os.CreateObject<NirDetaliu>();
+        l2.Document = nir; l2.TipMaterial = tipMat; l2.Cantitate = 20m; l2.PretUnitar = 15m;
+        l2.CodEconomicId = codEc.ID;
+        var lot2 = l2.CreeazaLot(os, produs2, gestA);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nir);
+        os.CommitChanges();
+
+        idGestA = gestA.ID;
+        idGestB = gestB.ID;
+        idFurnizor = furnizor.ID;
+        idLot1 = lot1.ID;
+        idLot2 = lot2.ID;
+        idCodEc = codEc.ID;
+        idBtrB = Guid.Empty;
+    }
+
+    // ── PER-C1/PER-C2: cursa, înainte de orice închidere ──
+    using (var os = provider.CreateObjectSpace()) {
+        var btrProba = os.CreateObject<NotaTransfer>();
+        btrProba.Data = Zi(1, 20);
+        btrProba.PredatorId = idGestA;
+        btrProba.PrimitorId = idGestB;
+        btrProba.NumarPV = Marcaj + "-C1";
+        var linie = os.CreateObject<DocumentDetaliu>();
+        linie.Document = btrProba;
+        linie.TipMaterial = os.GetObjectByKey<Lot>(idLot2).Produs.TipMaterial;
+        linie.LotId = idLot2;
+        linie.Cantitate = 1m;
+        os.CommitChanges();
+        var idProba = btrProba.ID;
+
+        using (var externa = new Npgsql.NpgsqlConnection(connectionString)) {
+            externa.Open();
+            using var txExterna = externa.BeginTransaction();
+            using (var cmd = externa.CreateCommand()) {
+                cmd.CommandText = "SELECT \"ID\" FROM \"PerioadeFiscale\" "
+                    + $"WHERE \"An\" = {An} AND \"Luna\" = 1 AND \"GCRecord\" = 0 FOR UPDATE";
+                cmd.ExecuteNonQuery();
+            }
+            var refuz = CuLockTimeout(o => OperareApi.Opereaza(o, idProba));
+            Console.WriteLine($"     MĂSURAT (PER-C1/{eticheta}): operarea sub închidere „în curs” a ieșit cu "
+                + $"„{refuz ?? "<a trecut>"}”.");
+            Check($"PER-C1 ({eticheta}) cu o închidere „în curs” care ține `FOR UPDATE` pe rândul perioadei, "
+                + "operarea AȘTEAPTĂ și cade pe `lock_timeout` (55P03) — gardianul citește prin `FOR SHARE` în "
+                + "tranzacția comenzii, deci documentul nu se poate strecura în perioada care se închide",
+                refuz == "55P03");
+            txExterna.Rollback();
+        }
+        var dupa = CuLockTimeout(o => OperareApi.Opereaza(o, idProba));
+        Check($"PER-C2 ({eticheta}) după eliberarea lock-ului aceeași comandă TRECE — blocarea serializează "
+            + "cursa, nu interzice operarea", dupa == null);
+
+        using (var externa = new Npgsql.NpgsqlConnection(connectionString)) {
+            externa.Open();
+            using var txExterna = externa.BeginTransaction();
+            using (var cmd = externa.CreateCommand()) {
+                cmd.CommandText = "SELECT \"ID\" FROM \"PerioadeFiscale\" "
+                    + $"WHERE \"An\" = {An} AND \"Luna\" = 1 AND \"GCRecord\" = 0 FOR SHARE";
+                cmd.ExecuteNonQuery();
+            }
+            var refuz = CuLockTimeout(o => PerioadaService.Inchide(o, An, 1, [], null, Marcaj));
+            Console.WriteLine($"     MĂSURAT (PER-C3/{eticheta}): închiderea sub operare „în curs” a ieșit cu "
+                + $"„{refuz ?? "<a trecut>"}”.");
+            Check($"PER-C3 ({eticheta}) simetric: cu o operare „în curs” care ține `FOR SHARE`, comanda de "
+                + "închidere cade pe `lock_timeout` la `FOR UPDATE` — `SUM`-ul soldurilor nu apucă să ruleze "
+                + "peste un registru care încă se scrie",
+                refuz == "55P03");
+            txExterna.Rollback();
+        }
+        using (var o = provider.CreateObjectSpace()) {
+            Check($"PER-C4 ({eticheta}) închiderea eșuată pe lock NU a lăsat nimic în urmă: 01/{An} e tot "
+                + "deschisă, fără rând de istoric — tranzacția comenzii s-a anulat integral",
+                !o.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == 1).Inchisa
+                && !o.GetObjectsQuery<InchiderePerioada>().Any(i => i.De == Marcaj));
+        }
+    }
+
+    // ── restul scenei: februarie (ieșiri + notă cu dimensiuni), martie (storno) ──
+    using (var os = provider.CreateObjectSpace()) {
+        var lot1 = os.GetObjectByKey<Lot>(idLot1);
+        var lot2 = os.GetObjectByKey<Lot>(idLot2);
+        var tipMat = lot1.Produs.TipMaterial;
+        var gestA = os.GetObjectByKey<Repartitor>(idGestA);
+        var gestB = os.GetObjectByKey<Repartitor>(idGestB);
+
+        // BTR-A: lotul 1 iese INTEGRAL din gestiunea A ⇒ cheia (lot1, A, tip)
+        // ajunge la cantitate 0 ȘI valoare 0, deci trebuie să LIPSEASCĂ din snapshot.
+        var btrA = os.CreateObject<NotaTransfer>();
+        btrA.Data = Zi(2, 10);
+        btrA.PredatorId = idGestA;
+        btrA.PrimitorId = idGestB;
+        btrA.NumarPV = Marcaj + "-A";
+        var linA = os.CreateObject<DocumentDetaliu>();
+        linA.Document = btrA; linA.TipMaterial = tipMat; linA.LotId = idLot1; linA.Cantitate = 10m;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, btrA);
+        os.CommitChanges();
+
+        // BTR-B: parțial pe lotul 2 — stornat în martie.
+        var btrB = os.CreateObject<NotaTransfer>();
+        btrB.Data = Zi(2, 20);
+        btrB.PredatorId = idGestA;
+        btrB.PrimitorId = idGestB;
+        btrB.NumarPV = Marcaj + "-B";
+        var linB = os.CreateObject<DocumentDetaliu>();
+        linB.Document = btrB; linB.TipMaterial = tipMat; linB.LotId = idLot2; linB.Cantitate = 5m;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, btrB);
+        os.CommitChanges();
+        idBtrB = btrB.ID;
+
+        // Notă contabilă cu dimensiuni pe AMBELE laturi: repartitori diferiți pe
+        // debit și pe credit, plus dimensiunea culeasă a notei (cod economic).
+        var dataNir = Zi(1, 5);
+        var randNir = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId != null && r.Document.Data == dataNir).ToList()
+            .FirstOrDefault(r => r.DebitRepartitorId != null || r.CreditRepartitorId != null);
+        if (randNir != null) {
+            var ntc = os.CreateObject<NotaContabila>();
+            ntc.Data = Zi(2, 25);
+            ntc.PredatorId = idGestA;
+            ntc.PrimitorId = idGestB;
+            var linN = os.CreateObject<NotaContabilaDetaliu>();
+            linN.Document = ntc;
+            linN.TipMaterial = tipMat;
+            linN.ContDebitId = randNir.ContDebitId;
+            linN.ContCreditId = randNir.ContCreditId;
+            linN.Valoare = 42.37m;
+            linN.CodEconomicId = idCodEc;
+            linN.RepartitorDebitId = idGestA;
+            linN.RepartitorCreditId = idFurnizor;
+            os.CommitChanges();
+            var refuzNtc = Refuz(() => MotorOperare.Opereaza(os, ntc));
+            if (refuzNtc != null) {
+                os.Delete(ntc.Detalii.ToList());
+                os.Delete(ntc);
+                os.CommitChanges();
+            }
+            Console.WriteLine($"     MĂSURAT (SOL/{eticheta}): nota cu dimensiuni pe ambele laturi — "
+                + $"{(refuzNtc == null ? "operată" : "refuzată: " + refuzNtc.Split('\n')[0])}.");
+        }
+
+        // Martie: storno-ul unui document din februarie, la data stornării.
+        MotorOperare.Storneaza(os, os.GetObjectByKey<Document>(idBtrB), Zi(3, 10));
+        os.CommitChanges();
+    }
+
+    // ═════════════════════ SOL-V1: lanțul și referințele ═════════════════════
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Inchide(os, An, 1, [], null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Check($"SOL-V1a ({eticheta}) după închiderea lui 01/{An} există snapshot DOAR pentru ea, iar ea e "
+            + $"singura perioadă de referință",
+            RanduriSnapshot(os, An, 1) > 0 && Referinte(os) == $"01/{An}"
+            && RanduriSnapshot(os, An, 2) == 0);
+    }
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Inchide(os, An, 2, [], null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Check($"SOL-V1b ({eticheta}) închiderea lui 02/{An} mută referința: snapshot(01/{An}) DISPARE (nu e "
+            + $"capăt de an), snapshot(02/{An}) apare — snapshot-ul există ⇔ perioada e DE REFERINȚĂ",
+            RanduriSnapshot(os, An, 1) == 0 && RanduriSnapshot(os, An, 2) > 0
+            && Referinte(os) == $"02/{An}");
+    }
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Inchide(os, An, 3, [], null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Console.WriteLine($"     MĂSURAT (SOL-V1/{eticheta}): referințe = [{Referinte(os)}]; "
+            + $"snapshot 03/{An} = {RanduriSnapshot(os, An, 3)} rânduri.");
+        Check($"SOL-V1c ({eticheta}) după 01 → 02 → 03 rămâne un SINGUR snapshot, al ultimei perioade închise; "
+            + "lunile intermediare nu se păstrează (stocarea, nu timpul, e costul lui D3)",
+            RanduriSnapshot(os, An, 1) == 0 && RanduriSnapshot(os, An, 2) == 0
+            && RanduriSnapshot(os, An, 3) > 0 && Referinte(os) == $"03/{An}");
+    }
+
+    // ═════════════════════ SOL-V2: egalitatea la cent ═════════════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var snap = SnapshotContabil(os, An, 3);
+        var asteptat = AsteptatContabil(os, Ultima(An, 3));
+        Console.WriteLine($"     MĂSURAT (SOL-V2/{eticheta}): snapshot contabil {snap.Count} chei, "
+            + $"recalcul LINQ {asteptat.Count} chei.");
+        Check($"SOL-V2a ({eticheta}) snapshot(03/{An}) contabil = `SUM` peste `ContabilProiectii.Atomi` pe cheia "
+            + "COMPLETĂ a atomului (cont + 8 dimensiuni ale laturii), la cent și în AMBELE sensuri — inclusiv "
+            + "rândurile de storno, care intră algebric (R-D7)",
+            EgalContabil(os, An, 3));
+
+        var snapStoc = SnapshotStoc(os, An, 3);
+        var asteptatStoc = AsteptatStoc(os, Ultima(An, 3));
+        Console.WriteLine($"     MĂSURAT (SOL-V2/{eticheta}): snapshot stoc {snapStoc.Count} chei, "
+            + $"`StocService.SolduriLaData` {asteptatStoc.Count} chei.");
+        Check($"SOL-V2b ({eticheta}) snapshot(03/{An}) stoc = `StocService.SolduriLaData` pe toate loturile, la "
+            + "cent, pe cheia `(lot, repartitor, tip)`", EgalStoc(os, An, 3));
+
+        var cheieGolita = snapStoc.Keys.Any(k => k.LotId == idLot1 && k.RepartitorId == idGestA);
+        var soldGolit = StocService.SolduriLaData(os, [idLot1], Ultima(An, 3))
+            .TryGetValue(new CheieStoc(idLot1, idGestA, snapStoc.Keys.First(k => k.LotId == idLot1).TipStoc),
+                out var s) ? s : new SoldStoc(0m, 0m);
+        Console.WriteLine($"     MĂSURAT (SOL-V2c/{eticheta}): lotul golit integral are sold "
+            + $"({soldGolit.Cantitate}, {soldGolit.Valoare}) și e {(cheieGolita ? "PREZENT" : "absent")} în snapshot.");
+        Check($"SOL-V2c ({eticheta}) cheia lotului golit INTEGRAL din gestiunea A lipsește din snapshot: "
+            + "cheile integral zero se omit, iar „absentă” și „zero” sunt același răspuns pentru consumator",
+            !cheieGolita && soldGolit.Cantitate == 0m && soldGolit.Valoare == 0m);
+    }
+
+    // ═════════════════════ SOL-V3: decembrie rămâne ═════════════════════
+    for (var luna = 4; luna <= 12; luna++)
+        using (var os = provider.CreateObjectSpace())
+            PerioadaService.Inchide(os, An, luna, [], null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        var p = os.CreateObject<PerioadaFiscala>();
+        p.An = An + 1;
+        p.Luna = 1;
+        os.CommitChanges();
+    }
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Inchide(os, An + 1, 1, [], null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        var dec = SnapshotContabil(os, An, 12);
+        var ian = SnapshotContabil(os, An + 1, 1);
+        Console.WriteLine($"     MĂSURAT (SOL-V3/{eticheta}): referințe = [{Referinte(os)}]; "
+            + $"snapshot 12/{An} = {dec.Count} chei, 01/{An + 1} = {ian.Count} chei.");
+        Check($"SOL-V3 ({eticheta}) capătul de an RĂMÂNE referință: după închiderea lui 01/{An + 1} referințele "
+            + $"sunt 12/{An} ȘI 01/{An + 1}, lunile 04–11 n-au snapshot, iar cele două snapshot-uri sunt "
+            + "IDENTICE (nicio mișcare în ianuarie) — incrementala peste snapshot(P−1) dă exact `SUM`-ul",
+            Referinte(os) == $"12/{An}, 01/{An + 1}"
+            && Enumerable.Range(4, 8).All(l => RanduriSnapshot(os, An, l) == 0)
+            && dec.Count > 0 && dec.Count == ian.Count
+            && dec.All(kv => ian.TryGetValue(kv.Key, out var v) && v == kv.Value)
+            && EgalContabil(os, An, 12) && EgalContabil(os, An + 1, 1));
+    }
+
+    // ═════════════════════ SOL-V4: redeschiderea ═════════════════════
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Redeschide(os, An + 1, 1, "probă: redeschid ianuarie", null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Check($"SOL-V4a ({eticheta}) redeschiderea lui 01/{An + 1} îi ȘTERGE snapshot-ul și îl lasă intact pe "
+            + $"cel al lui 12/{An} — care era deja referință ca capăt de an, deci n-are ce reconstrui",
+            RanduriSnapshot(os, An + 1, 1) == 0 && RanduriSnapshot(os, An, 12) > 0
+            && Referinte(os) == $"12/{An}");
+    }
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Redeschide(os, An, 12, "probă: redeschid decembrie", null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Console.WriteLine($"     MĂSURAT (SOL-V4/{eticheta}): referințe după redeschiderea lui 12/{An} = "
+            + $"[{Referinte(os)}]; snapshot 11/{An} = {RanduriSnapshot(os, An, 11)} rânduri.");
+        Check($"SOL-V4b ({eticheta}) redeschiderea lui 12/{An} îi șterge snapshot-ul și îl RECONSTRUIEȘTE pe al "
+            + $"lui 11/{An} prin `SUM` integral (P−2 nu mai are din ce porni) — egal la cent cu recalculul",
+            RanduriSnapshot(os, An, 12) == 0 && RanduriSnapshot(os, An, 11) > 0
+            && Referinte(os) == $"11/{An}" && EgalContabil(os, An, 11) && EgalStoc(os, An, 11));
+    }
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Inchide(os, An, 12, [], null, Marcaj);
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Inchide(os, An + 1, 1, [], null, Marcaj);
+    using (var os = provider.CreateObjectSpace())
+        Check($"SOL-V4c ({eticheta}) re-închiderea 12/{An} → 01/{An + 1} readuce exact cele două referințe: "
+            + "ciclul închidere → redeschidere → închidere e idempotent pe snapshot-uri",
+            Referinte(os) == $"12/{An}, 01/{An + 1}"
+            && EgalContabil(os, An, 12) && EgalContabil(os, An + 1, 1));
+
+    // ═════════════════════ SOL-V5: reconstrucția ═════════════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var raport = SolduriService.Reconstruieste(os);
+        Console.WriteLine($"     MĂSURAT (SOL-V5/{eticheta}): " + string.Join("; ", raport.Referinte.Select(r =>
+            $"{r.Luna:00}/{r.An} contabil {r.ContabilExistente}→{r.ContabilRecalculate} ({r.ContabilDiferite} dif.), "
+            + $"stoc {r.StocExistente}→{r.StocRecalculate} ({r.StocDiferite} dif.)")) + ".");
+        Check($"SOL-V5a ({eticheta}) reconstrucția pe scena închisă raportează ZERO diferențe pe ambele "
+            + "referințe, cu cifrele scrise explicit — raportul iese ȘI când totul e în regulă (35b)",
+            raport.Referinte.Count == 2
+            && raport.Referinte.All(r => r.ContabilDiferite == 0 && r.StocDiferite == 0
+                && r.DiferentaDebit == 0m && r.DiferentaCredit == 0m
+                && r.DiferentaCantitate == 0m && r.DiferentaValoare == 0m
+                && r.ContabilExistente == r.ContabilRecalculate
+                && r.StocExistente == r.StocRecalculate));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        // Coruperea unui rând de snapshot: SQL brut, pe lângă orice cale a motorului.
+        var afectate = ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSql(
+            FormattableStringFactory.Create(
+                "UPDATE \"SolduriPerioadaContabil\" SET \"Debit\" = \"Debit\" + 1 "
+                + "WHERE \"ID\" = (SELECT \"ID\" FROM \"SolduriPerioadaContabil\" "
+                + "WHERE \"An\" = {0} AND \"Luna\" = {1} ORDER BY \"ID\" LIMIT 1)", An + 1, 1));
+        Check($"SOL-V5b ({eticheta}) premisă: un rând al referinței 01/{An + 1} a fost corupt cu +1 leu pe debit",
+            afectate == 1);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var raport = SolduriService.Reconstruieste(os);
+        var stricata = raport.Referinte.Single(r => r.An == An + 1 && r.Luna == 1);
+        var curata = raport.Referinte.Single(r => r.An == An && r.Luna == 12);
+        Console.WriteLine($"     MĂSURAT (SOL-V5c/{eticheta}): 01/{An + 1} — {stricata.ContabilDiferite} rânduri "
+            + $"diferite, Δdebit = {stricata.DiferentaDebit}.");
+        Check($"SOL-V5c ({eticheta}) reconstrucția RAPORTEAZĂ exact rândul corupt (1 rând diferit, Δdebit = 1) "
+            + "și doar pe referința atinsă — diferența se raportează, nu se ascunde (35b)",
+            stricata.ContabilDiferite == 1 && stricata.DiferentaDebit == 1m && stricata.DiferentaCredit == 0m
+            && stricata.ContabilExistente == stricata.ContabilRecalculate
+            && curata.ContabilDiferite == 0 && curata.StocDiferite == 0);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var raport = SolduriService.Reconstruieste(os);
+        Check($"SOL-V5d ({eticheta}) al doilea apel dă zero: rescrierea din primul a repus snapshot-ul pe "
+            + "registre, iar egalitatea la cent se întoarce",
+            raport.Referinte.All(r => r.ContabilDiferite == 0 && r.StocDiferite == 0)
+            && EgalContabil(os, An + 1, 1) && EgalStoc(os, An + 1, 1));
+    }
+
+    // ═════════════════════ SOL-V6: cheia pe profilul curent ═════════════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var snap = os.GetObjectsQuery<SoldPerioadaContabil>()
+            .Where(s => s.An == An + 1 && s.Luna == 1)
+            .Select(s => new {
+                s.RepartitorId, s.MaterialId, s.CodFunctionalId, s.CodEconomicId,
+                s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId
+            }).ToList();
+        var cuRepartitor = snap.Count(s => s.RepartitorId != null);
+        var cuBugetare = snap.Count(s => s.CodFunctionalId != null || s.CodEconomicId != null
+            || s.SursaFinantareId != null || s.UnitateId != null || s.ProiectId != null);
+        Console.WriteLine($"     MĂSURAT (SOL-V6/{eticheta}): {snap.Count} chei, {cuRepartitor} cu repartitor, "
+            + $"{cuBugetare} cu cel puțin o dimensiune bugetară.");
+        Check($"SOL-V6 ({eticheta}) cheia snapshot-ului poartă dimensiunile LATURII, nu ale raportului: "
+            + "rândurile scenei au repartitori diferiți pe debit față de credit, deci cheia completă e singura "
+            + "din care orice rollup (cont, cont × repartitor, cont × dimensiuni) iese ADITIV",
+            snap.Count > 0 && cuRepartitor > 0 && cuBugetare > 0);
+    }
+
+    // ═════════════════════ curățenia ═════════════════════
+    using (var os = provider.CreateObjectSpace())
+        CurataSol(os);
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Count(p => p.An == An || p.An == An + 1);
+        var snapshoturi = os.GetObjectsQuery<SoldPerioadaContabil>().IgnoreQueryFilters().Count()
+            + os.GetObjectsQuery<SoldPerioadaStoc>().IgnoreQueryFilters().Count();
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An + 1, 12, 31));
+        Check($"SOL-V7 ({eticheta}) fără reziduu: nicio perioadă {An}–{An + 1}, niciun document și NICIUN rând "
+            + "de snapshot rămase — scena e re-rulabilă identic",
+            perioade == 0 && documente == 0 && snapshoturi == 0);
     }
 }
 

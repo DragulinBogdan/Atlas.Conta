@@ -73,6 +73,25 @@ public class PerioadeController : ContaApiController {
     public IActionResult Redeschide(int an, int luna, [FromBody] RedeschidePerioadaRequestDto cerere) =>
         Comanda(an, luna, os => PerioadeApply.Redeschide(os, an, luna, cerere, UserId(), securitate?.UserName));
 
+    // Reconstrucția n-are lună ca subiect: recalculează integral TOATE perioadele
+    // de referință și raportează diferențele înainte de rescriere (F27-D3, 35b).
+    // Gate-ul e pe TIP, `Write` pe `PerioadaFiscala` — același drept ca
+    // `inchide`, fiindcă pe tierul REST nu există o noțiune de „Administrator"
+    // separată de permisiunile XAF.
+    [HttpPost("reconstruieste")]
+    [ProducesResponseType(typeof(ReconstructieRezultatDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult Reconstruieste() {
+        using (var os = Secured(typeof(PerioadaFiscala)))
+            if (!PoateScrie(typeof(PerioadaFiscala), os))
+                return RefuzScriere(typeof(PerioadaFiscala));
+        return Domeniu(() => {
+            using var os = NonSecured(typeof(PerioadaFiscala));
+            return Ok(PerioadeApply.Reconstruieste(os));
+        });
+    }
+
     IActionResult Comanda(int an, int luna, Func<IObjectSpace, InchiderePerioadaRezultatDto> comanda) {
         var erori = Perioada(an, luna);
         if (erori.Count > 0)

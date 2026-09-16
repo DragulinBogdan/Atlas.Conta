@@ -1,5 +1,8 @@
+using System.Runtime.CompilerServices;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
@@ -46,6 +49,8 @@ public static class PerioadaService {
     /// <summary>Închide luna dacă verificarea o permite; scrie rândul de istoric. Comite.</summary>
     public static InchiderePerioada Inchide(IObjectSpace os, int an, int luna,
             IReadOnlyCollection<string> acceptate, Guid? deId, string de) {
+        using var tx = TranzactieComanda.Incepe(os);
+        Blocheaza(os, an, luna);
         var blocante = Verifica(os, an, luna)
             .Where(c => c.Severitate == SeveritateConstatare.Blocant)
             .ToList();
@@ -53,18 +58,28 @@ public static class PerioadaService {
             throw new OperareException(string.Join("\n", blocante.Select(c => c.Text)));
 
         var perioada = Gaseste(os, an, luna);
+        // Snapshot(P) = snapshot(P−1) + rulaje(P); P−1 iese din referințe dacă
+        // nu e capăt de an (F27-D3).
+        SolduriService.Materializeaza(os, an, luna);
+        var (anPrecedent, lunaPrecedenta) = Precedenta(an, luna);
+        if (lunaPrecedenta != 12 && Gaseste(os, anPrecedent, lunaPrecedenta) is { Inchisa: true })
+            SolduriService.Elimina(os, anPrecedent, lunaPrecedenta);
+
         var acum = DateTime.UtcNow;
         perioada.Inchisa = true;
         perioada.InchisaLa = acum;
         perioada.InchisaPrimaOara ??= acum;
         var rand = Istoric(os, perioada, FelInchiderePerioada.Inchidere, acum, deId, de);
         os.CommitChanges();
+        tx.Commit();
         return rand;
     }
 
     /// <summary>Redeschide ULTIMA perioadă închisă, cu motiv. Comite.</summary>
     public static InchiderePerioada Redeschide(IObjectSpace os, int an, int luna,
             string motiv, Guid? deId, string de) {
+        using var tx = TranzactieComanda.Incepe(os);
+        Blocheaza(os, an, luna);
         var erori = new List<string>();
         var perioada = Gaseste(os, an, luna);
         if (perioada == null)
@@ -81,13 +96,42 @@ public static class PerioadaService {
         if (erori.Count > 0)
             throw new OperareException(string.Join("\n", erori));
 
+        // Snapshot(P) dispare cu închiderea lui; P−1 redevine ultima închisă,
+        // deci referință — reconstruită prin `SUM` integral, fiindcă P−2 nu mai
+        // are snapshot din care să pornească (F27-D3).
+        SolduriService.Elimina(os, an, luna);
+        var (anPrecedent, lunaPrecedenta) = Precedenta(an, luna);
+        if (Gaseste(os, anPrecedent, lunaPrecedenta) is { Inchisa: true }
+                && !SolduriService.AreSnapshot(os, anPrecedent, lunaPrecedenta))
+            SolduriService.Materializeaza(os, anPrecedent, lunaPrecedenta);
+
         var acum = DateTime.UtcNow;
         perioada.Inchisa = false;
         perioada.InchisaLa = null;
         var rand = Istoric(os, perioada, FelInchiderePerioada.Redeschidere, acum, deId, de);
         rand.Motiv = motiv.Trim();
         os.CommitChanges();
+        tx.Commit();
         return rand;
+    }
+
+    // Prima instrucțiune a comenzii (F27-D1): `FOR UPDATE` pe rândul perioadei,
+    // ca `SUM`-ul să nu ruleze înaintea blocării. `FOR SHARE`-ul gardianului de
+    // operare așteaptă aici, iar două operări concurente nu se blochează între
+    // ele (spike A.0). `"GCRecord" = 0` explicit — SQL brut, fără filtru global.
+    static void Blocheaza(IObjectSpace os, int an, int luna) {
+        const string sql = """
+            SELECT "ID" AS "Value"
+            FROM "PerioadeFiscale"
+            WHERE "An" = {0} AND "Luna" = {1} AND "GCRecord" = 0
+            FOR UPDATE
+            """;
+        if (os is not EFCoreObjectSpace efCore)
+            throw new InvalidOperationException(
+                $"Comanda de perioadă cere un ObjectSpace EF Core; „{os?.GetType().Name ?? "null"}” nu expune `DbContext`.");
+        efCore.DbContext.Database
+            .SqlQuery<Guid>(FormattableStringFactory.Create(sql, an, luna))
+            .ToList();
     }
 
     static InchiderePerioada Istoric(IObjectSpace os, PerioadaFiscala perioada, FelInchiderePerioada fel,

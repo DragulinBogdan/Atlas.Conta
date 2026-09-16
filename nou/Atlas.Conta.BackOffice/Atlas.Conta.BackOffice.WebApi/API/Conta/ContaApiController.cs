@@ -300,6 +300,17 @@ public abstract class ContaApiController : ControllerBase {
         securitate is IRequestSecurityStrategy cerinte
             && cerinte.CanCreate(tip, os) && cerinte.CanWrite(tip, os);
 
+    // ═══ Gate-ul de SCRIERE, la nivel de TIP (F27-D3) ═══
+    // Comanda de reconstrucție a soldurilor n-are subiect (rescrie toate
+    // perioadele de referință) și nu creează nimic — întrebarea ei e „are voie
+    // omul ăsta să scrie perioade?". Simetricul lui `PoateCiti`, pe
+    // `SecurityOperations.Write`.
+    protected bool PoateScrie(Type tip, IObjectSpace os) =>
+        securitate is IRequestSecurityStrategy cerinte && cerinte.CanWrite(tip, os);
+
+    protected IActionResult RefuzScriere(Type tip) =>
+        RefuzAccesRezultat(OperatieAcces.Modificare, tip);
+
     // ═══ 404-ul, cu MOTIV (F22-D4) ═══
     // `NotFound()` gol obligă clientul să inventeze textul — exact ce făcea
     // `nucleu/http.ts` pe rutele OData, cu fraze scrise în TS care nu aveau de

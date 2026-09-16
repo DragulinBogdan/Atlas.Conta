@@ -1963,6 +1963,49 @@
         "Telefon": "Telefon"
       }
     },
+    "SoldPerioadaContabil": {
+      "DefaultProperty": null,
+      "Membri": {
+        "An": "An",
+        "CentruCost": "Centru cost",
+        "CentruCostId": "Centru cost",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "CodFunctional": "Cod funcțional",
+        "CodFunctionalId": "Cod funcțional",
+        "Cont": "Cont",
+        "ContId": "Cont",
+        "Credit": "Credit",
+        "Debit": "Debit",
+        "ID": "ID",
+        "Luna": "Luna",
+        "Material": "Material",
+        "MaterialId": "Material",
+        "Proiect": "Proiect",
+        "ProiectId": "Proiect",
+        "Repartitor": "Repartitor",
+        "RepartitorId": "Repartitor",
+        "SursaFinantare": "Sursă finanțare",
+        "SursaFinantareId": "Sursă finanțare",
+        "Unitate": "Unitate",
+        "UnitateId": "Unitate"
+      }
+    },
+    "SoldPerioadaStoc": {
+      "DefaultProperty": null,
+      "Membri": {
+        "An": "An",
+        "Cantitate": "Cantitate",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "Luna": "Luna",
+        "Repartitor": "Repartitor",
+        "RepartitorId": "Repartitor",
+        "TipStoc": "Tip stoc",
+        "Valoare": "Valoare"
+      }
+    },
     "SursaFinantare": {
       "DefaultProperty": "Denumire",
       "Membri": {

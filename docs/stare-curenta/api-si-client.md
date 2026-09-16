@@ -41,6 +41,13 @@ pentru lună nedefinită sau invizibilă, 403 pentru lipsa dreptului cerut și
 422 pentru refuzul lanțului. Motivul absent la redeschidere este refuz de
 domeniu, nu de cerere. (F27-D1, F27-D2, 80a)
 
+`POST api/perioade/reconstruieste` recalculează integral soldurile
+perioadelor de referință și întoarce, per referință, câte rânduri existau,
+câte au ieșit din recalcul, câte diferă și suma absolută a diferențelor pe
+debit, credit, cantitate și valoare. Comanda nu are subiect, deci gate-ul ei
+este pe tip: dreptul de scriere pe perioada fiscală, același drept ca
+închiderea. Ordinea refuzurilor este 401, apoi 403, apoi 422. (F27-D3)
+
 ## Securitate și răspunsuri
 
 Ordinea gărzilor este autentificare, forma cererii, vizibilitatea obiectului,

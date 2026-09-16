@@ -10,9 +10,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Serializarea operațiilor concurente și reluarea idempotentă generală a
   comenzilor nu sunt acoperite complet. Validarea într-o singură operație
   nu dovedește protecția față de două comenzi simultane. (25f, 42f)
-- Închiderea unei perioade și operarea unui document în ea nu sunt
-  serializate între ele: fiecare comandă își citește și își scrie starea
-  fără o blocare comună a rândului perioadei. (F27-D1)
+- Închiderea unei perioade și operarea unui document în ea sunt serializate
+  numai pe căile care trec prin adaptorul de operare și prin comenzile de
+  generare ale închiderii de TVA și ale amortizării. Uneltele standalone —
+  ModelCheck, Import1C, Migrare — cheamă motorul direct, fără tranzacția
+  comenzii, deliberat: acolo nu există concurență. (F27-D1)
+- Consumatorii de sold — balanța, fișa de cont, soldul de stoc, motorul,
+  închiderea de TVA, SAF-T — citesc în continuare tot istoricul registrului.
+  Snapshot-urile se scriu și se verifică, dar încă nu sunt consumate. (F27-D3)
 - Constatările de închidere acoperă doar blocantele structurale ale lanțului.
   Constatările de conținut și severitatea lor ca politică nu sunt acoperite,
   iar corpul cu chei acceptate este primit și ignorat. (F27-D2)

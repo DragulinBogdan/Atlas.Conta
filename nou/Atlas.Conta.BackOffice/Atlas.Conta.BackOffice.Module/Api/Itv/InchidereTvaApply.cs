@@ -203,9 +203,11 @@ public static class InchidereTvaApply {
     public static GenerareItvRezultatDto Genereaza(IObjectSpace os, GenerareItvRequestDto cerere) {
         if (cerere == null)
             throw new OperareException("Lipsește corpul cererii.");
+        using var tx = TranzactieComanda.Incepe(os);
         var r = InchidereTvaService.Incearca(os, cerere.An, cerere.Luna, cerere.UnitateId);
         if (r.Document != null)
             os.CommitChanges();
+        tx.Commit();
         return Rezultat(r);
     }
 
@@ -227,6 +229,7 @@ public static class InchidereTvaApply {
     // documentelor ei) e LEGITIM: draftul vechi e depășit și se șterge, iar
     // raportul iese cu `DocumentId = null`.
     public static GenerareItvRezultatDto Regenereaza(IObjectSpace os, Guid id) {
+        using var tx = TranzactieComanda.Incepe(os);
         var doc = Rezolva.Cere<InchidereTva>(os, id, "Închiderea de TVA");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
@@ -239,6 +242,7 @@ public static class InchidereTvaApply {
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
         os.CommitChanges();
+        tx.Commit();
         return Rezultat(r);
     }
 
