@@ -10163,6 +10163,8 @@ export interface components {
             Fiscal?: number;
             /** Format: double */
             Deductibil?: number;
+            /** Format: int32 */
+            Luni?: number;
             /** Format: uuid */
             ContCheltuialaId?: string | null;
             ContCheltuialaSimbol?: string | null;

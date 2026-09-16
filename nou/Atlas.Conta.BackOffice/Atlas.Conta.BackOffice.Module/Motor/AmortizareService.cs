@@ -46,10 +46,10 @@ public readonly record struct RegulaSnapshot(
 public readonly record struct LinieIesire(
     FelLinieIesire Fel, decimal Valoare, Guid? ContDebitId, Guid? ContCreditId);
 
-/// <summary>O linie a amortizării lunii: cele trei cifre, conturile și dimensiunile.</summary>
+/// <summary>O linie a amortizării lunii: cele trei cifre, lunile acoperite, conturile și dimensiunile.</summary>
 public sealed record LinieAmortizare(
     Guid ImobilizareId, string NumarInventar, string Denumire, Guid TipMaterialId,
-    decimal Contabil, decimal Fiscal, decimal Deductibil,
+    decimal Contabil, decimal Fiscal, decimal Deductibil, int Luni,
     Guid? ContCheltuialaId, Guid? ContAmortizareId,
     Guid LocId, Guid? CentruCostId, Guid? CodEconomicId);
 
@@ -233,6 +233,7 @@ public static class AmortizareService {
             linie.Valoare = l.Contabil;
             linie.ValoareFiscala = l.Fiscal;
             linie.ValoareDeductibila = l.Deductibil;
+            linie.Luni = l.Luni;
             linie.ContDebitId = l.ContCheltuialaId;
             linie.ContCreditId = l.ContAmortizareId;
             linie.RepartitorDebitId = l.LocId;
@@ -370,20 +371,26 @@ public static class AmortizareService {
         foreach (var f in fise.OrderBy(f => f.NumarInventar)) {
             var randuri = perFisa.GetValueOrDefault(f.ID) ?? [];
             var laM1 = Situatie(randuri, ultimaZiPrecedenta);
-            if (laM1.DataUltimEveniment == null)
+            // Fișa fără eveniment la M−1 dar cu rânduri în M e PIF-ul înregistrat întârziat:
+            // singurul lui eveniment e în M, deci baza se citește la sfârșitul lui M (F27-D4).
+            var referinta = laM1.DataUltimEveniment != null ? laM1 : Situatie(randuri, ultimaZi);
+            if (referinta.DataUltimEveniment == null)
                 continue;
-            var contabil = Cifra(randuri, laM1, f.DataPunereInFunctiune, fiscal: false);
-            var fiscal = Cifra(randuri, laM1, f.DataPunereInFunctiune, fiscal: true);
+            var luni = LuniDeRecuperat(randuri, referinta, f.DataPunereInFunctiune.Value, ultimaZi);
+            if (luni <= 0)
+                continue;
+            var contabil = Cifra(randuri, referinta, f.DataPunereInFunctiune, fiscal: false, luni);
+            var fiscal = Cifra(randuri, referinta, f.DataPunereInFunctiune, fiscal: true, luni);
             if (contabil <= 0m && fiscal <= 0m)
                 continue;
             if (!politici.TryGetValue(f.TipMaterialId, out var conturi)) {
                 faraPolitica ??= f.NumarInventar;
                 continue;
             }
-            var deductibil = Deductibil(fiscal, laM1.CategorieFiscala ?? CategorieFiscala.Standard,
-                laM1.UtilizareExclusiva ?? false, reguli, ultimaZi);
+            var deductibil = Deductibil(fiscal, referinta.CategorieFiscala ?? CategorieFiscala.Standard,
+                referinta.UtilizareExclusiva ?? false, reguli, ultimaZi);
             linii.Add(new LinieAmortizare(f.ID, f.NumarInventar, f.Denumire, f.TipMaterialId,
-                contabil, fiscal, deductibil,
+                contabil, fiscal, deductibil, luni,
                 contabil == 0m ? null : conturi.ContCheltuialaAmortizareId,
                 contabil == 0m ? null : conturi.ContAmortizareId,
                 f.LocId, f.CentruCostId, f.CodEconomicId));
@@ -391,14 +398,35 @@ public static class AmortizareService {
         return new CalculLuna(linii, faraPolitica);
     }
 
+    // Lunile DATORATE la sfârșitul lui M (de la luna de după punere) minus cele ACOPERITE de
+    // amortizările scrise; plafonul e durata rămasă, iar restul de rotunjire rămâne o lună (F27-D4).
+    static int LuniDeRecuperat(List<RandRegistru> randuri, SituatieImobilizare referinta,
+            DateOnly punere, DateOnly ultimaZi) {
+        var acoperite = 0;
+        var initiale = 0;
+        foreach (var r in randuri)
+            if (r.Fel == FelMiscareImobilizare.Amortizare)
+                acoperite += r.Luni;
+            else
+                initiale += r.Luni;
+        var datorate = Math.Max(0, Luna(ultimaZi) - Luna(punere));
+        var durata = Math.Max(referinta.DurataLuni ?? 0, referinta.DurataFiscalaLuni ?? 0);
+        return Math.Min(datorate - acoperite, Math.Max(1, durata - initiale - acoperite));
+    }
+
+    static int Luna(DateOnly data) => data.Year * 12 + data.Month;
+
     // Baza = situația la SFÂRȘITUL lunii ultimului eveniment; luna evenimentului postează încă cota
-    // veche, iar restul și lunile se citesc la sfârșitul lunii precedente (F26-D7, formula 1C).
-    static decimal Cifra(List<RandRegistru> randuri, SituatieImobilizare laM1, DateOnly? punere, bool fiscal) {
-        var sfarsitEveniment = UltimaZiLuna(laM1.DataUltimEveniment.Value);
+    // veche, iar restul și lunile se citesc din situația de referință (F26-D7, formula 1C).
+    // `luni` > 1 = recuperare: cotele celor `luni` luni se însumează ITERATIV, cu pragurile
+    // degresivului și ale acceleratului avansate la fiecare pas (F27-D4).
+    static decimal Cifra(List<RandRegistru> randuri, SituatieImobilizare referinta, DateOnly? punere,
+            bool fiscal, int luni) {
+        var sfarsitEveniment = UltimaZiLuna(referinta.DataUltimEveniment.Value);
         var baza = Situatie(randuri, sfarsitEveniment);
         var metoda = (fiscal ? baza.MetodaFiscala : baza.Metoda) ?? MetodaAmortizare.Liniara;
         // Faza accelerată consumată ⇒ baza se citește la capătul ei, nu la eveniment (F26-D7).
-        if (metoda == MetodaAmortizare.Accelerata && punere != null && laM1.Luni >= 12) {
+        if (metoda == MetodaAmortizare.Accelerata && punere != null && referinta.Luni >= 12) {
             var capat = UltimaZiLuna(new DateOnly(punere.Value.Year, punere.Value.Month, 1).AddMonths(12));
             if (capat > sfarsitEveniment)
                 baza = Situatie(randuri, capat);
@@ -408,18 +436,23 @@ public static class AmortizareService {
             return 0m;
         var reziduala = fiscal ? 0m : baza.ValoareReziduala ?? 0m;
         var restCurent = fiscal
-            ? laM1.ValoareFiscala - laM1.AmortizareFiscala
-            : laM1.Valoare - (laM1.ValoareReziduala ?? 0m) - laM1.Amortizare;
+            ? referinta.ValoareFiscala - referinta.AmortizareFiscala
+            : referinta.Valoare - (referinta.ValoareReziduala ?? 0m) - referinta.Amortizare;
         if (restCurent <= 0m)
             return 0m;
-        return CotaLunara(new BazaAmortizare(
-            metoda,
-            fiscal ? baza.ValoareFiscala - baza.AmortizareFiscala : baza.Valoare - reziduala - baza.Amortizare,
-            durata - baza.Luni,
-            laM1.Luni - baza.Luni,
-            restCurent,
-            fiscal ? baza.ValoareFiscala : baza.Valoare,
-            laM1.Luni));
+        var deAmortizat = fiscal
+            ? baza.ValoareFiscala - baza.AmortizareFiscala
+            : baza.Valoare - reziduala - baza.Amortizare;
+        var brut = fiscal ? baza.ValoareFiscala : baza.Valoare;
+        var total = 0m;
+        for (var i = 0; i < luni && restCurent > 0m; i++) {
+            var cota = CotaLunara(new BazaAmortizare(
+                metoda, deAmortizat, durata - baza.Luni,
+                referinta.Luni - baza.Luni + i, restCurent, brut, referinta.Luni + i));
+            total += cota;
+            restCurent -= cota;
+        }
+        return total;
     }
 
     static DateOnly UltimaZiLuna(DateOnly data) =>

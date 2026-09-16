@@ -96,10 +96,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   răspunsul este fals cu listă goală. Corecția în perioadă închisă — stornoul
   legat cu motiv, care mută rândurile fiscale în perioada originalului pentru
   `EroareMateriala` — nu există încă. (F27-D5, F27-D6, F27-r5)
-- Data înregistrării: amortizarea unei fișe puse în funcțiune întârziat
-  pornește din luna înregistrării, fiindcă registrul de imobilizări e datat
-  acolo: lunile dintre data documentului și data înregistrării nu se
-  amortizează, iar recuperarea lor rămâne deschisă. Documentele generate
+- Data înregistrării: documentele generate
   (AMO, ITV, DSC și NIR autogenerat) moștenesc data înregistrării sursei sau
   ultima zi a lunii; editabilitatea ei pe ele nu e decisă. Plata autogenerată
   din factura de intrare face excepție: data ei este cea culeasă, iar data

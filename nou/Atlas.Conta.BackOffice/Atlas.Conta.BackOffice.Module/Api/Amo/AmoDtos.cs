@@ -14,6 +14,8 @@ public sealed class LinieAmoDto {
     public decimal Contabil { get; set; }
     public decimal Fiscal { get; set; }
     public decimal Deductibil { get; set; }
+    /// <summary>Lunile acoperite de sumele liniei: > 1 pe recuperarea unei puneri în funcțiune întârziate.</summary>
+    public int Luni { get; set; }
     public Guid? ContCheltuialaId { get; set; }
     public string ContCheltuialaSimbol { get; set; }
     public Guid? ContAmortizareId { get; set; }

@@ -302426,6 +302426,10 @@
             "type": "number",
             "format": "double"
           },
+          "Luni": {
+            "type": "integer",
+            "format": "int32"
+          },
           "ContCheltuialaId": {
             "type": "string",
             "format": "uuid",

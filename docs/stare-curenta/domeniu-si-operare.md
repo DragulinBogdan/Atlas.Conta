@@ -374,9 +374,31 @@ luna evenimentului postează cota veche, parametrii noi curg din luna
 următoare, indiferent de zi. Accelerata amortizează 50 % din brut în
 primele 12 luni de la punere, apoi liniar; degresiva AD1 aplică coeficientul
 pe ani (durata trebuie să fie multiplu de 12) și trece la liniar. Fișa este
-eligibilă în luna M dacă a fost pusă în funcțiune înaintea primei zile,
-nu a ieșit până la ultima zi și mai are rest contabil sau fiscal; linia cu
-contabil zero și fiscal pozitiv rămâne fără conturi. (87g)
+eligibilă în luna M dacă a fost pusă în funcțiune înaintea primei zile, nu a
+ieșit până la ultima zi, are cel puțin un eveniment de registru până la
+ultima zi și mai are rest contabil sau fiscal; linia cu contabil zero și
+fiscal pozitiv rămâne fără conturi. (87g)
+
+Lunile pe care le acoperă amortizarea lunii M sunt cele DATORATE minus cele
+ACOPERITE: datorate = lunile întregi de la luna de după punerea în funcțiune
+până la M inclusiv (luna punerii nu se amortizează), acoperite = suma
+coloanei de luni a rândurilor de amortizare până la sfârșitul lui M.
+Diferența nulă sau negativă scoate fișa din lună. Diferența mai mare decât
+unu este o RECUPERARE: fișa a intrat în evidență după luna punerii în
+funcțiune, fiindcă registrul se scrie la data înregistrării. Cota lunii este
+atunci suma cotelor celor n luni, calculată iterativ — pragurile
+degresivului și ale acceleratului avansează la fiecare pas, iar restul scade
+după fiecare — nu cota lunii înmulțită cu n; recuperarea nu depășește restul
+de amortizat și nici durata rămasă. Deductibilul se calculează pe SUMA
+lunii, cu regulile valabile la sfârșitul ei: plafonul lunar este al lunii de
+declarare și se aplică o singură dată pe suma recuperată, nu o dată pe
+fiecare lună recuperată. Linia amortizării și rândul de registru poartă
+lunile acoperite; ele intră în cheia anti-stale a operării și se inversează
+la storno ca oricare altă coloană. Fișa fără niciun eveniment până la
+sfârșitul lunii precedente, dar cu rânduri în M, este punerea în funcțiune
+înregistrată întârziat: baza și parametrii i se citesc la sfârșitul lui M.
+Gardianul lunii precedente lipsă rămâne neatins: se recuperează doar ce
+n-a avut cum să fie amortizat, nu ce n-a fost amortizat. (F27-D4)
 
 Generarea lunară urmează ordinea gardienilor: fișă eligibilă fără politică,
 amortizare vie în lună, amortizare vie ulterioară, draft anterior, lună

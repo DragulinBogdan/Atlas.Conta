@@ -648,6 +648,46 @@ Felia e închisă când, pe codul final:
    a primit cele trei coloane noi, altfel cădea în afara filtrului;
    (5) `D16-V2` citește registrul prin același helper, ca proba independentă să
    măsoare aceeași fereastră ca proiecția.
+
+   *Executat 4b (2026-09-16), fără opriri*: recuperarea amortizării întârziate
+   stă în `Motor/AmortizareService.cs` — restul motorului neatins. Lunile lunii M
+   se citesc ca DATORATE − ACOPERITE (`LuniDeRecuperat`): datorate = lunile
+   întregi de la luna de după `DataPunereInFunctiune` până la M inclusiv,
+   acoperite = suma coloanei `Luni` a rândurilor cu `Fel = Amortizare` până la
+   sfârșitul lui M. Devierea de la textul pin-uit: plafonul nu se aplică pe
+   `datorate`, ci pe `n`, ca DURATĂ RĂMASĂ (`max(durata contabilă, durata
+   fiscală) − luni inițiale − acoperite`) cu podeaua 1 — altfel fișa cu luni
+   inițiale de deschidere (`LuniAmortizateInitial`, care numără luni de
+   DINAINTEA punerii în evidență) ar fi ieșit cu `n` negativ, iar restul de
+   rotunjire de după ultima lună a duratei (Citan: 34 de luni pe o durată de 33)
+   n-ar mai fi fost postat; cu podeaua, `n = 1` reproduce exact calculul de azi
+   și toate probele `IMO-*` rămân neschimbate numeric și ca text. Aritmetica:
+   `Cifra` primește `n` și iterează `CotaLunara`, cu `LuniDeLaEveniment`,
+   `LuniDeLaPunere` și `RestCurent` avansate la fiecare pas — nu `n × cota`.
+   Eligibilitatea: fișa fără eveniment la M−1 dar cu rânduri în M (PIF-ul
+   înregistrat întârziat) își citește baza și parametrii la sfârșitul lui M;
+   pentru toate celelalte, ca azi. Gardianul `LunaLipsa` e NEATINS.
+   `LinieAmortizare.Luni`, `AmortizareLunaraDetaliu.Luni` (`AllowEdit=False`,
+   caption „Luni acoperite”, migrația `20260916201658_F27Pas4bLuniAmortizate` cu
+   backfill `1`), `rand.Luni = l.Luni` în `MaterializeazaRegistrul`, `Luni` în
+   cheia anti-stale `Nepotriviri`; `Inverseaza` copia deja `-r.Luni`, deci
+   stornoul n-a cerut nimic. Deductibilul se calculează pe SUMA lunii, cu regula
+   de la sfârșitul ei: plafonul lunar se aplică O SINGURĂ dată pe suma
+   recuperată (decizie scrisă în `domeniu-si-operare.md`). `LinieAmoDto.Luni` pe
+   API, coloana „Luni acoperite” în grila AMO din React și în ListView-ul XAF al
+   liniilor. Probe `AMO-V0…V8` în blocul review-ului F26 (scena 2028, cu
+   ianuarie–februarie închise prin `PerioadaService.Inchide` și desfăcute la
+   final): fișa întârziată recuperează două luni (200,00 = 2 × 100,00, rândul de
+   registru cu `Luni` = 2) lângă martorul înregistrat la timp (o lună), degresivul
+   (300,00) și acceleratul (500,00) egalează la ban aritmetica pură iterativă,
+   plafonul de vehicul se aplică o dată (privat 8.000 fiscal ⇒ 1.500 deductibil;
+   bugetarul, fără reguli, deductibil = fiscal), situația la 30.04 e IDENTICĂ cu
+   a martorului (3 luni, 300,00), `LunaLipsa` refuză la fel ca înainte, `Luni`
+   schimbat pe draft e refuzat anti-stale, stornoul scrie `-2`. ModelCheck
+   bugetar 1174/0 (de la 1165), privat 1309/0 (de la 1300) — exact cele nouă
+   probe noi, nicio cifră existentă schimbată; `has-pending-model-changes` curat,
+   `--dump-metadata` și codegen-ul idempotente, `pnpm build` verde,
+   `refuzuri.ps1` 254/254 pe host viu Privat (număr neschimbat).
 5. **Corecția** (D6): `CorecteazaId`, `MotivCorectie`, comanda `corecteaza`
    pe REST și XAF (pe fiecare tip, prin controllerul de bază), verificarea la
    commit, efectul fiscal per motiv, ecranul React (buton pe documentul

@@ -3,6 +3,7 @@ using Atlas.Conta.BackOffice.Module.UI;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
+using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -602,14 +603,14 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
                 .Select(c => c.Fisa).Distinct().ToList();
     }
 
-    static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil,
+    static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil, int Luni,
         Guid? Debit, Guid? Credit, Guid? Loc, Guid? CentruCost, Guid? CodEconomic) Cheie(LinieAmortizare l) =>
-        (l.ImobilizareId, l.Contabil, l.Fiscal, l.Deductibil, l.ContCheltuialaId, l.ContAmortizareId,
+        (l.ImobilizareId, l.Contabil, l.Fiscal, l.Deductibil, l.Luni, l.ContCheltuialaId, l.ContAmortizareId,
             l.LocId, l.CentruCostId, l.CodEconomicId);
 
-    static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil,
+    static (Guid Fisa, decimal Contabil, decimal Fiscal, decimal Deductibil, int Luni,
         Guid? Debit, Guid? Credit, Guid? Loc, Guid? CentruCost, Guid? CodEconomic) Cheie(AmortizareLunaraDetaliu d) =>
-        (d.ImobilizareId, d.Valoare, d.ValoareFiscala, d.ValoareDeductibila,
+        (d.ImobilizareId, d.Valoare, d.ValoareFiscala, d.ValoareDeductibila, d.Luni,
             d.ContDebitId, d.ContCreditId, d.RepartitorDebitId, d.CentruCostId, d.CodEconomicId);
 
     public void MaterializeazaRegistrul(IObjectSpace os) {
@@ -621,7 +622,7 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
             rand.Amortizare = l.Valoare;
             rand.AmortizareFiscala = l.ValoareFiscala;
             rand.AmortizareDeductibila = l.ValoareDeductibila;
-            rand.Luni = 1;
+            rand.Luni = l.Luni;
             rand.RepartitorId = l.RepartitorDebitId ?? PrimitorId;
             rand.Document = this;
             rand.Detaliu = l;
@@ -672,6 +673,11 @@ public class AmortizareLunaraDetaliu : DocumentDetaliu, ILinieCuPostareExplicita
     public virtual decimal ValoareFiscala { get; set; }
     [XafDisplayName("Amortizare deductibilă")]
     public virtual decimal ValoareDeductibila { get; set; }
+
+    // > 1 pe recuperarea unei fișe puse în funcțiune întârziat; ajunge pe `RegistruImobilizari.Luni` (F27-D4).
+    [XafDisplayName("Luni acoperite")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual int Luni { get; set; } = 1;
 
     public virtual Guid? ContDebitId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]

@@ -27602,6 +27602,207 @@ void VerificaReviewF26(bool privat) {
             refuzOperare == null && refuzAnulare != null);
     }
 
+    // ── AMO-V0…V8 (F27-D4): recuperarea amortizării fișei puse în funcțiune întârziat ─
+    // Aritmetica de referință, PURĂ: cotele celor `luni` luni, una după alta, ca în `Grafic`.
+    decimal Recuperat(MetodaAmortizare metoda, decimal valoare, int durata, int luni) {
+        var rest = valoare;
+        var total = 0m;
+        for (var i = 0; i < luni && rest > 0m; i++) {
+            var cota = AmortizareService.CotaLunara(
+                new BazaAmortizare(metoda, valoare, durata, i, rest, valoare, i));
+            total += cota;
+            rest -= cota;
+        }
+        return total;
+    }
+    void ParametriMetoda(PunereInFunctiuneDetaliu l, int durata, MetodaAmortizare metoda,
+            CategorieFiscala categorie, bool exclusiv) {
+        l.Metoda = metoda;
+        l.DurataLuni = durata;
+        l.MetodaFiscala = metoda;
+        l.DurataFiscalaLuni = durata;
+        l.CategorieFiscala = categorie;
+        l.UtilizareExclusiva = exclusiv;
+    }
+    AmortizareLunaraDetaliu Linie(AmortizareLunara amo, Guid fisaId) =>
+        amo.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == fisaId);
+
+    Guid idLaTimp, idLiniar, idDegresiv, idAccelerat, idVehicul;
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        Check($"AMO-V0 ({eticheta}) precondiție: 12/{An - 1} nu există (01/{An} e capăt de lanț) și toate cele "
+            + $"12 luni {An} sunt deschise — altfel închiderea scenei n-ar avea același înțeles",
+            !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An - 1 && p.Luna == 12)
+            && os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An && !p.Inchisa) == 12);
+    }
+
+    // Martorul: aceeași fișă, înregistrată LA TIMP, amortizată lună de lună.
+    using (var os = provider.CreateObjectSpace()) {
+        var laTimp = Fisa(os, "AMO-LT");
+        os.CommitChanges();
+        idLaTimp = laTimp.ID;
+        var pif = Pif(os, Zi(1, 5));
+        pif.DataInregistrare = Zi(1, 5);
+        Intrare(os, pif, laTimp.ID, 6000m, 60);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+    }
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Inchide(os, An, 1, [], null, Marcaj);
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Inchide(os, An, 2, [], null, Marcaj);
+
+    // Cele patru fișe întârziate: același PIF, cu `Data` în ianuarie (închis) și
+    // `DataInregistrare` în martie (deschis).
+    Guid idAmoMartie;
+    using (var os = provider.CreateObjectSpace()) {
+        var liniar = Fisa(os, "AMO-LIN");
+        var degresiv = Fisa(os, "AMO-DEG");
+        var accelerat = Fisa(os, "AMO-ACC");
+        var vehicul = Fisa(os, "AMO-VEH");
+        os.CommitChanges();
+        idLiniar = liniar.ID; idDegresiv = degresiv.ID;
+        idAccelerat = accelerat.ID; idVehicul = vehicul.ID;
+        var pif = Pif(os, Zi(1, 5));
+        pif.DataInregistrare = Zi(3, 10);
+        Intrare(os, pif, liniar.ID, 6000m, 60);
+        ParametriMetoda(LiniePif(os, pif, degresiv.ID, FelLiniePif.Intrare, 6000m), 60,
+            MetodaAmortizare.Degresiva, CategorieFiscala.Standard, true);
+        ParametriMetoda(LiniePif(os, pif, accelerat.ID, FelLiniePif.Intrare, 6000m), 60,
+            MetodaAmortizare.Accelerata, CategorieFiscala.Standard, true);
+        ParametriMetoda(LiniePif(os, pif, vehicul.ID, FelLiniePif.Intrare, 240000m), 60,
+            MetodaAmortizare.Liniara, CategorieFiscala.VehiculPersoaneMax9Locuri, false);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+
+        var martie = Amo(os, 3);
+        idAmoMartie = martie.ID;
+        var lt = Linie(martie, idLaTimp);
+        var lin = Linie(martie, idLiniar);
+        var randuri = os.GetObjectsQuery<RegistruImobilizari>()
+            .Where(r => r.DocumentId == martie.ID).ToList();
+        var randLiniar = randuri.Single(r => r.ImobilizareId == idLiniar);
+        var randLaTimp = randuri.Single(r => r.ImobilizareId == idLaTimp);
+        Console.WriteLine($"     MĂSURAT (AMO-V1/{eticheta}): martie — la timp {lt.Valoare}/{lt.Luni} luni, "
+            + $"întârziată {lin.Valoare}/{lin.Luni} luni; rândurile de registru: {randLaTimp.Luni} / "
+            + $"{randLiniar.Luni} luni, datate {randLaTimp.Data:dd.MM.yyyy}.");
+        Check($"AMO-V1 ({eticheta}) fișa pusă în funcțiune pe {Zi(1, 5):dd.MM.yyyy} și înregistrată pe "
+            + $"{Zi(3, 10):dd.MM.yyyy} intră în amortizarea lunii 03/{An} cu DOUĂ luni (februarie + martie): "
+            + "200,00 = 2 × 100,00, iar rândul de registru poartă `Luni` = 2, nu 1. Fișa înregistrată la timp "
+            + "rămâne pe o lună — recuperarea e datorată, nu un mod nou de calcul",
+            lin.Luni == 2 && lin.Valoare == 200m && lin.ValoareFiscala == 200m
+            && randLiniar.Luni == 2 && randLiniar.Amortizare == 200m
+            && lt.Luni == 1 && lt.Valoare == 100m && randLaTimp.Luni == 1);
+
+        var deg = Linie(martie, idDegresiv);
+        var acc = Linie(martie, idAccelerat);
+        var degAsteptat = Recuperat(MetodaAmortizare.Degresiva, 6000m, 60, 2);
+        var accAsteptat = Recuperat(MetodaAmortizare.Accelerata, 6000m, 60, 2);
+        Console.WriteLine($"     MĂSURAT (AMO-V2/{eticheta}): degresiv {deg.Valoare} (aritmetica pură "
+            + $"{degAsteptat}), accelerat {acc.Valoare} (pură {accAsteptat}).");
+        Check($"AMO-V2 ({eticheta}) recuperarea se calculează ITERATIV, nu ca `n × cota`: pe degresiv și pe "
+            + "accelerat suma celor două luni egalează la ban suma cotelor lunare ale aritmeticii pure, cu "
+            + "pragurile (anul degresivului, cele 12 luni ale acceleratului) avansate la fiecare pas",
+            deg.Luni == 2 && deg.Valoare == degAsteptat && degAsteptat == 300m
+            && acc.Luni == 2 && acc.Valoare == accAsteptat && accAsteptat == 500m);
+
+        var veh = Linie(martie, idVehicul);
+        Console.WriteLine($"     MĂSURAT (AMO-V3/{eticheta}): vehiculul neexclusiv — fiscal "
+            + $"{veh.ValoareFiscala}, deductibil {veh.ValoareDeductibila}.");
+        Check($"AMO-V3 ({eticheta}) deductibilul se calculează pe SUMA lunii, cu regula valabilă la sfârșitul "
+            + "ei: plafonul lunar e al LUNII DE DECLARARE, deci se aplică O SINGURĂ dată pe suma recuperată, "
+            + "nu o dată pe fiecare lună recuperată (privat: 8.000 fiscal ⇒ 1.500 deductibil; pe bugetar nu "
+            + "există regulă de deductibilitate, deci deductibilul E fiscalul)",
+            veh.Luni == 2 && veh.ValoareFiscala == 8000m
+            && veh.ValoareDeductibila == (privat ? 1500m : 8000m));
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var aprilie = Amo(os, 4);
+        var lin = Linie(aprilie, idLiniar);
+        var lt = Linie(aprilie, idLaTimp);
+        var sitLiniar = AmortizareService.Situatie(os, idLiniar, Zi(4, 30));
+        var sitLaTimp = AmortizareService.Situatie(os, idLaTimp, Zi(4, 30));
+        Console.WriteLine($"     MĂSURAT (AMO-V4/{eticheta}): aprilie — întârziată {lin.Valoare}/{lin.Luni}, "
+            + $"la timp {lt.Valoare}/{lt.Luni}; la 30.04 — întârziată {sitLiniar.Amortizare}/{sitLiniar.Luni} "
+            + $"luni, la timp {sitLaTimp.Amortizare}/{sitLaTimp.Luni} luni.");
+        Check($"AMO-V4 ({eticheta}) după recuperare fișa revine la ritmul de o lună, iar situația ei la 30.04 "
+            + "e IDENTICĂ cu a fișei înregistrate la timp (3 luni, 300,00): întârzierea de evidență nu lasă "
+            + "urmă în grafic",
+            lin.Luni == 1 && lin.Valoare == 100m && lt.Luni == 1 && lt.Valoare == 100m
+            && sitLiniar.Luni == 3 && sitLiniar.Amortizare == 300m
+            && sitLaTimp.Luni == 3 && sitLaTimp.Amortizare == 300m);
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var refuz = Refuz(() => AmortizareService.Incearca(os, An, 6, idUnitate));
+        var raport = AmortizareService.Previzualizeaza(os, An, 6);
+        Console.WriteLine($"     MĂSURAT (AMO-V5/{eticheta}): 06/{An} cu 05 negenerată → „{Prima(refuz)}”, "
+            + $"raport {raport.Motiv}.");
+        Check($"AMO-V5 ({eticheta}) recuperarea NU e o cale de a sări luni: 06/{An}, cu mai negenerată deși "
+            + "avea fișe eligibile, cade pe același gardian `LunaLipsa` ca înainte — se recuperează doar ce "
+            + "n-a avut cum să fie amortizat, nu ce n-a fost amortizat",
+            refuz != null && raport.Motiv == MotivNegenerare.LunaLipsa);
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = AmortizareService.Genereaza(os, An, 5, idUnitate);
+        os.CommitChanges();
+        Linie(draft, idLiniar).Luni = 2;
+        os.CommitChanges();
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, draft));
+        Console.WriteLine($"     MĂSURAT (AMO-V6/{eticheta}): `Luni` schimbat pe draft → „{Prima(refuz)}”.");
+        Check($"AMO-V6 ({eticheta}) `Luni` intră în cheia anti-stale a operării: o linie culeasă cu alte luni "
+            + "decât cele recalculate e refuzată, ca oricare dintre cele trei cifre — altfel registrul ar "
+            + "putea primi un cumulat de luni pe care nimic nu l-a calculat",
+            refuz != null && refuz.Contains("nu mai corespund"));
+        os.Delete(draft.Detalii.ToList());
+        os.Delete(draft);
+        os.CommitChanges();
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var ultimaZiAprilie = Zi(4, 30);
+        var aprilie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == ultimaZiAprilie && a.Stare == StareDocument.Operat);
+        MotorOperare.Storneaza(os, aprilie, Zi(4, 30));
+        MotorOperare.Storneaza(os, os.GetObjectByKey<AmortizareLunara>(idAmoMartie), Zi(3, 31));
+        var inverse = os.GetObjectsQuery<RegistruImobilizari>()
+            .Where(r => r.DocumentId == idAmoMartie && r.Storno && r.ImobilizareId == idLiniar).ToList();
+        var situatie = AmortizareService.Situatie(os, idLiniar, Zi(4, 30));
+        var martieLibera = AmortizareService.Previzualizeaza(os, An, 3);
+        Console.WriteLine($"     MĂSURAT (AMO-V7/{eticheta}): {inverse.Count} rând invers cu "
+            + $"{inverse[0].Luni} luni și {inverse[0].Amortizare}; la 30.04 — {situatie.Amortizare} / "
+            + $"{situatie.Luni} luni; martie = {martieLibera.Motiv?.ToString() ?? "<se generează>"}.");
+        Check($"AMO-V7 ({eticheta}) stornoul unei amortizări cu recuperare scrie `-2` luni, nu `-1`: situația "
+            + "fișei revine la zero luni și zero cumulat, iar luna redevine liberă — lunile sunt o coloană a "
+            + "registrului, deci se inversează ca oricare alta",
+            inverse.Count == 1 && inverse[0].Luni == -2 && inverse[0].Amortizare == -200m
+            && situatie.Luni == 0 && situatie.Amortizare == 0m && martieLibera.Motiv == null);
+    }
+
+    // Scena își desface urmele: perioadele se redeschid, istoricul și snapshot-urile se purjează.
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Redeschide(os, An, 2, "probă AMO: desfacerea scenei", null, Marcaj);
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Redeschide(os, An, 1, "probă AMO: desfacerea scenei", null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).Select(p => p.ID).ToList();
+        var pj = new Purja(os);
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Executa();
+        Check($"AMO-V8 ({eticheta}) scena se desface complet: cele două luni închise sunt din nou deschise, "
+            + "fără istoric și fără snapshot rămas — proba e re-rulabilă identic",
+            os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An && !p.Inchisa) == 12
+            && !os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+                .Any(i => perioadeIds.Contains(i.PerioadaId)));
+    }
+
     // ── Curățenia finală ──────────────────────────────────────────────────────
     using (var os = provider.CreateObjectSpace()) {
         Curata(os);

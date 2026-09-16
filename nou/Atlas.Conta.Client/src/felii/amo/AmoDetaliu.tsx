@@ -200,6 +200,7 @@ export function AmoDetaliu() {
             <Column dataField="Contabil" caption="Amortizare contabilă" dataType="number" format="#,##0.00" alignment="right" />
             <Column dataField="Fiscal" caption="Amortizare fiscală" dataType="number" format="#,##0.00" alignment="right" />
             <Column dataField="Deductibil" caption="Amortizare deductibilă" dataType="number" format="#,##0.00" alignment="right" />
+            <Column dataField="Luni" caption="Luni acoperite" dataType="number" alignment="right" />
             <Column dataField="ContCheltuialaSimbol" caption="Cont de cheltuială" width={140} />
             <Column dataField="ContAmortizareSimbol" caption="Cont de amortizare" width={140} />
             <Column dataField="LocDenumire" caption="Loc" />
