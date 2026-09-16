@@ -275,6 +275,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
                     .Group("GrupDocument", "Document", d => d
                         .Item(x => x.Numar)
                         .Item(x => x.Data)
+                        .Item(x => x.DataInregistrare)
                         .Item(x => x.Predator)
                         .Item(x => x.Primitor)))
                 .Group("GrupDetalii", "Detalii", g => g

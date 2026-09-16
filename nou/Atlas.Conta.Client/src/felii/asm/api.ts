@@ -92,6 +92,7 @@ export function linieGoala(): AsmLinieWrite {
 export function spreWrite(citit: AsmRead): AsmWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

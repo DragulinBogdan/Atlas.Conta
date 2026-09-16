@@ -27,7 +27,7 @@ public static class PifApply {
         var rezolvate = RezolvaLinii(os, doc, dto.Linii ?? new List<PifLinieWriteDto>());
         doc ??= os.CreateObject<PunereInFunctiune>();
 
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         doc.Predator = predator;
         doc.Primitor = primitor;
 
@@ -140,7 +140,7 @@ public static class PifApply {
         var h = os.GetObjectsQuery<PunereInFunctiune>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -169,6 +169,7 @@ public static class PifApply {
 
         return new PifReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

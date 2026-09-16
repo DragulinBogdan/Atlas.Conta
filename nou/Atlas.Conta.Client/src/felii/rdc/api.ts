@@ -94,6 +94,7 @@ export function linieGoala(): RdcLinieWrite {
 export function spreWrite(citit: RdcRead): RdcWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

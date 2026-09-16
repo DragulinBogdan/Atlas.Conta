@@ -52,7 +52,7 @@ public static class TrezorerieApply {
             doc = os.CreateObject<T>();
         }
 
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar (ca la BTR/FCT): (1) rezolvarea validează
         // existența cu mesaj de domeniu, (2) regulile XAF de culegere stau pe
         // navigație, (3) pe o entitate urmărită, navigația încărcată ar rescrie
@@ -251,7 +251,7 @@ public static class TrezorerieApply {
         var h = os.GetObjectsQuery<T>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 d.TipInstrument, d.NumarExtras, d.DataExtras,
@@ -320,6 +320,7 @@ public static class TrezorerieApply {
 
         return new TrezorerieReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

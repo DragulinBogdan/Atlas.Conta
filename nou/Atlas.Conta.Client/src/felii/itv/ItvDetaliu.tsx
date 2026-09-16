@@ -194,6 +194,7 @@ export function ItvDetaliu() {
           <div className="grila-campuri">
             <Static membru="Numar" valoare={doc?.Numar} />
             <Static membru="Data" valoare={ziLocala(doc?.Data)} />
+            <Static membru="DataInregistrare" valoare={ziLocala(doc?.DataInregistrare)} />
             <Explicit eticheta="Luna închisă" valoare={etichetaLuna(doc)} />
             <Explicit eticheta="Unitatea internă" valoare={doc?.UnitateDenumire} />
             <Static membru="Stare" valoare={labelEnum('StareDocument', doc?.Stare)} />

@@ -55,7 +55,7 @@ public static class ReturClientApply {
 
         // `Numar` NU se atinge (F19-D6): seria „RDC-" e server-owned, asignată la
         // MATERIALIZARE, în propria operare (53b).
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar: rezolvarea validează existența cu mesaj de
         // domeniu. TIPUL laturilor (Partener → Gestiune) rămâne invariant al
         // OPERĂRII.
@@ -238,7 +238,7 @@ public static class ReturClientApply {
         var h = os.GetObjectsQuery<ReturClient>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -267,6 +267,7 @@ public static class ReturClientApply {
 
         return new RdcReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

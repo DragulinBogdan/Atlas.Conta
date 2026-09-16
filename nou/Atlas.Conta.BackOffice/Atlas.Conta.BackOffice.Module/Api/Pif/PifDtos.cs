@@ -4,6 +4,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Pif;
 
 public sealed class PifWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     /// <summary>Unitatea internă care pune în funcțiune.</summary>
     public Guid PredatorId { get; set; }
     /// <summary>Locul: gestiunea / unitatea / angajatul pe care stau fișele liniilor.</summary>
@@ -62,6 +64,7 @@ public sealed class PifReadDto {
     public Guid Id { get; set; }
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
     public Guid PredatorId { get; set; }

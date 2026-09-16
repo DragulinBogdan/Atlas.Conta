@@ -26,6 +26,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Ldi;
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 public sealed class LdiWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     // Gestiunea inventariată → comisia de inventariere (calitatea `Comisie` —
     // decizia 28d). Tipul laturilor se validează abia la operare; `Aplica`
     // verifică doar existența.
@@ -77,6 +79,7 @@ public sealed class LdiReadDto {
     // pe draft e null.
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

@@ -40,7 +40,7 @@ import { RlfEditorLinie, type EticheteCulese } from './RlfEditorLinie';
 // stinge. Calea de compensare a unui retur cu factura originală e NOTA CONTABILĂ
 // (`/ntc`, felia 19) — de aceea nu montăm `PanouStingeri` aici.
 
-const CAMPURI_ANTET: (keyof RlfWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof RlfWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function RlfDetaliu() {
@@ -254,6 +254,7 @@ export function RlfDetaliu() {
                   WriteDto (F19-D6). */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<RlfWrite> camp="Data" />
+              <CampData<RlfWrite> camp="DataInregistrare" />
               <Lookup<RlfWrite>
                 camp="PredatorId"
                 entitate="Gestiune"

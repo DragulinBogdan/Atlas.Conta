@@ -53,7 +53,7 @@ import { AsmEditorLinie, type EticheteCulese } from './AsmEditorLinie';
 // operatorul care redeschide documentul a doua zi vede același lucru ca cel care
 // tocmai a apăsat butonul.
 
-const CAMPURI_ANTET: (keyof AsmWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof AsmWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function AsmDetaliu() {
@@ -389,6 +389,7 @@ export function AsmDetaliu() {
                   WriteDto (F19-D6). */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<AsmWrite> camp="Data" />
+              <CampData<AsmWrite> camp="DataInregistrare" />
               {/* PREDATORUL e gestiunea în care se asamblează — și tot în ea se
                   nasc loturile produselor (`GestiuneLoturiCulese`, F19-D3).
                   Caption-ul bazei („Predator (de la)") e corect, dar prea

@@ -22,7 +22,7 @@ import {
 
 // Antetul și fișele se culeg; liniile le produce serverul din situația fișelor la `Data` (F26-D6).
 
-const CAMPURI_ANTET: (keyof CasWrite & string)[] = ['Data', 'Cauza', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof CasWrite & string)[] = ['Data', 'DataInregistrare', 'Cauza', 'PredatorId', 'PrimitorId'];
 const capAntet = (m: string) => campMeta(TIP_ANTET, m, SCHEMA_ANTET).caption;
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, 'CasLinieReadDto').caption;
 
@@ -244,6 +244,7 @@ export function CasDetaliu() {
           >
             <div className="grila-campuri">
               <CampData<CasWrite> camp="Data" />
+              <CampData<CasWrite> camp="DataInregistrare" />
               <CampSelectie<CasWrite> camp="Cauza" enumerare="CauzaIesire" obligatoriu />
               {/* Predatorul e LOCUL de pe fișe; primitorul e unitatea internă
                   care înregistrează ieșirea. */}

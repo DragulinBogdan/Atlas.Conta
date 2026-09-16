@@ -78,6 +78,7 @@ export function spreWrite(citit: FctRead): FctWrite {
   return {
     Numar: citit.Numar,
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     DataScadenta: citit.DataScadenta,

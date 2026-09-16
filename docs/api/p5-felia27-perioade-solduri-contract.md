@@ -538,6 +538,54 @@ Felia e închisă când, pe codul final:
    XAF + React (câmp în antetul tuturor tipurilor culese, prin
    `ContaUiBaseline`), `metadata.json`. Oprire: ModelCheck identic;
    Import1C integral cu raport identic (prima probă supremă a feliei).
+   *Executat 2026-09-16, fără opriri; devierile raportate*: `Document.DataInregistrare`
+   (`DateOnly`, „Data înregistrării”) cu index filtrat pe rândurile vii; migrația
+   `20260916184148_F27Pas3DataInregistrare` (coloană + backfill `= "Data"` în
+   aceeași migrație + index), aplicată pe cele patru baze. Implicitul stă la TREI
+   seam-uri, niciunul în setter: `DocumentDefaultsController` (la creare, plus un
+   abonament `ObjectSpace.ObjectChanged` pe `Data` care o trage după ea cât timp
+   cele două erau egale — `OldValue` E populat pe `EFCoreObjectSpace`, prin
+   `propertyChangeTracker.GetPreviousValue`, spre deosebire de
+   `BaseObjectSpace.Object_PropertyChanged`), `Api/DocumentApply.AplicaDate` (un
+   helper nou, chemat din cele 15 `*Apply` în locul lui `doc.Data = dto.Data`) și
+   normalizarea din `MotorOperare.CalculeazaSiValideaza` („`default` ⇒ `Data`”),
+   care ține Import1C/Migrare neatinse. Ordinea `DataInregistrare >= Data` e
+   refuzată în toate trei (gardianul de Committing, adaptorul de scriere, motorul),
+   cu text identic. `git diff Motor/MotorOperare.cs` = 8 înlocuiri de dată (gardianul
+   de perioadă la operare și la anulare, lotul, `RegistruStoc`, `RegistruContabil`,
+   data `MiscareStoc`-urilor gardianului de sold, `conex.DataInregistrare`, capătul
+   stornoului) + normalizarea + gardul de ordine + textul stornoului; `RegistruTva.Data`
+   NEATINS. `StocService`: o singură linie (`SolduriLaData` la `AplicaValoareIesire`);
+   `VerificaGoliri` nu s-a atins — e funcție PURĂ peste rândurile de registru, deci
+   urmează data lor fără să știe de document. Imobilizările: `RegistruImobilizari.Data`,
+   `VerificaFaraFapteUlterioare`, `VerificaLunaStornarii`, `AmortizareOperataDinLuna`,
+   `AmortizareService.Situatie`/`LiniiIesire` și cronologia AMO↔PIF trec pe data
+   înregistrării; `Imobilizare.DataPunereInFunctiune`/`DataIesire` rămân pe data
+   FIZICĂ (sunt ale fișei, nu ale registrului). Secundarele: DSC-ul din FCL și latura
+   pereche a viramentului moștenesc data înregistrării sursei; plata autogenerată din
+   FCT NU — `plata.Data` e câmp CULES (`PlataData ?? Data`), iar data sursei ar putea
+   fi anterioară lui și ar cădea pe propriul gard de ordine, deci i se normalizează la
+   data ei (scris în `limite-curente.md`). Probe: `DIR-V0…V13` pe ambele profiluri
+   (documentul întârziat cu registrele, lotul și numărul de serie la înregistrare;
+   implicitul care cade pe gardianul perioadei; ordinea refuzată pe ambele uși;
+   `RegistruTva` pe data faptului fiscal și conexul cu ambele date; anularea permisă
+   în perioada înregistrării; stornoul refuzat înainte de înregistrare și acceptat
+   după; FIFO care consumă lotul cules la timp înaintea celui întârziat;
+   „Sold negativ” cu text identic; PIF întârziat cu stornoul cerut în luna
+   înregistrării; calea fără câmp cules, cu registrele la `Data`).
+   Documentele GENERATE primesc data înregistrării la CREARE, prin
+   `DocumentApply.Generat` chemat din `AmoApply`/`InchidereTvaApply`
+   (`Genereaza`+`Regenereaza`) și din `FacturaIesireApply.GenereazaDescarcare` —
+   serviciile rămân neatinse, iar toate ecranele (inclusiv cele XAF) trec prin
+   aceste `*Apply`. Fără el, draftul generat ar fi purtat `default` până la
+   operare și l-ar fi ARĂTAT așa.
+   React: câmpul în cele 15 formulare de culegere, ca afișare pe cele 3 ecrane
+   generate, ȘI în cele 15 `spreWrite` (fără asta, o re-salvare a documentului
+   citit ar fi rescris tăcut data înregistrării peste data documentului — găsit
+   la smoke, nu la citirea codului). Coloana din listele de documente NU s-a
+   adăugat: ar fi dus atingerile React la 48 de fișiere, peste pragul din regula
+   de oprire (scris în `limite-curente.md`). `refuzuri.ps1` primește două scene
+   noi (POST și PUT de DVI cu data înregistrării înaintea datei ⇒ 422).
 4. **`PerioadaDeclarare` și rectificativa** (D5) + recuperarea amortizării
    întârziate (D4): câmpurile pe `RegistruTva`, `DeclarareIntarziata` pe
    `PoliticaTva` (seed pe ambele profiluri), completarea în

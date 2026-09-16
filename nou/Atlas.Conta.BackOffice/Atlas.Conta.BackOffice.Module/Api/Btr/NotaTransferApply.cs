@@ -39,7 +39,7 @@ public static class NotaTransferApply {
             doc = os.CreateObject<NotaTransfer>();
         }
 
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar: (1) rezolvarea validează existența cu mesaj
         // de domeniu (altfel ar ieși o violare de FK din Postgres), (2) regulile
         // XAF de culegere (`RuleRequiredField`) stau pe navigație, (3) pe o
@@ -124,7 +124,7 @@ public static class NotaTransferApply {
         var h = os.GetObjectsQuery<NotaTransfer>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 d.NumarPV, d.DataPV, d.Autogenerat, d.DocumentSursaId
@@ -150,6 +150,7 @@ public static class NotaTransferApply {
 
         return new NotaTransferReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

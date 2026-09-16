@@ -31,6 +31,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Fcl;
 public sealed class FacturaIesireWriteDto {
     // `Numar` nu apare deliberat (vezi antetul): seria fiscală e a serverului.
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     // Emitentul (repartitor intern) — tipul laturii se validează la OPERARE.
     public Guid PredatorId { get; set; }
     // Clientul (Partener) — la fel, tipul se cere abia la operare.
@@ -84,6 +86,7 @@ public sealed class FacturaIesireReadDto {
     // Server-owned: null pe draft, seria „FCL-" abia după operare.
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

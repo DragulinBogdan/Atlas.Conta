@@ -44,7 +44,7 @@ import { TrezorerieEditorLinie } from './TrezorerieEditorLinie';
 //     manual generau, tăcut, un al treilea document și dublau postarea).
 //     „(niciuna)" rămâne default-ul: generarea automată E comportamentul normal.
 
-const CAMPURI_ANTET: (keyof TrzWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof TrzWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 // Tipul tehnic cu care se precompletează linia nouă, per mod (F7-D8/31a).
@@ -309,6 +309,7 @@ export function TrezorerieDetaliu(props: {
           >
             <div className="grila-campuri">
               <CampData<TrzWrite> camp="Data" />
+              <CampData<TrzWrite> camp="DataInregistrare" />
               {laturi}
               {/* Instrumentul e ENUM pe sârmă ca STRING (F3-D1): valorile vin din
                   metadata, nu dintr-o listă ținută în client. */}

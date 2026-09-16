@@ -54,6 +54,37 @@ Stările sunt `Draft`, `Operat` și `Stornat`. Documentul și liniile sale sunt
 editabile în Draft. Starea originală din persistență este autoritatea
 gardianului de editare; un formular vechi nu redeschide dreptul de scriere. (14, 55a)
 
+### Data documentului și data înregistrării
+
+Documentul poartă două date. `Data` este a documentului fizic: numerotarea,
+scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
+`DataInregistrare` este data la care documentul intră în evidență. (F27-D4)
+
+- Registrele contabil, de stoc și de imobilizări, precum și lotul născut din
+  liniile documentului, se scriu la data înregistrării. `RegistruTva.Data`
+  rămâne data faptului fiscal, adică data documentului. (F27-D4, F27-D5)
+- Gardianul de perioadă întreabă despre perioada datei înregistrării, la
+  operare și la anulare. Un document cu data fizică într-o perioadă închisă și
+  data înregistrării în cea deschisă se operează: documentul întârziat este
+  flux normal, nu excepție, și nu atinge soldurile perioadei închise. (F27-D4)
+- Ordinea FIFO este ordinea intrării în evidență, fiindcă lotul se naște la
+  data înregistrării. Este singura ordine compatibilă cu „sold ≥ 0 la orice
+  dată”. (13, F27-D4)
+- Data stornării nu poate preceda data înregistrării. Pentru documentele de
+  imobilizări stornoul se cere în luna înregistrării. (25d, 87g, F27-D4)
+- Data înregistrării nu poate preceda data documentului. Regula este scrisă în
+  gardianul de editare, în adaptorul de scriere al API-ului și în motor: căile
+  standalone nu trec prin gardianul de Committing. (F27-D4)
+- Implicitul este data documentului și se aplică la seam-uri, nu în setter: la
+  creare și la schimbarea datei în ecranul XAF cât timp cele două erau egale,
+  în adaptorul de scriere când clientul nu trimite câmpul, iar în motor ca
+  normalizare pentru orice cale care nu-l culege (Import1C, Migrare, generate).
+  Registrele unui document fără câmp cules cad acolo unde cădeau înainte. (F27-D4)
+- Documentul conex și cele secundare care copiază data sursei moștenesc și data
+  înregistrării ei. Documentele generate (amortizarea lunară, închiderea de TVA,
+  descărcarea de gestiune) o primesc egală cu data lor chiar la creare, nu abia
+  la operare. (17, F27-D4, F27-r9)
+
 ### Operarea
 
 1. Culegerea se salvează prin ușa securizată. (42b)

@@ -30,7 +30,7 @@ import { DecEditorLinie, type EticheteCulese } from './DecEditorLinie';
 // editorul de linie) și **stingerea pe lanțul avans↔decont↔regularizare**
 // (31d/32d) — decontul stă pe rolul de STINS, ca factura.
 
-const CAMPURI_ANTET: (keyof DecWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId', 'NumarPV', 'DataPV'];
+const CAMPURI_ANTET: (keyof DecWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId', 'NumarPV', 'DataPV'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function DecDetaliu() {
@@ -244,6 +244,7 @@ export function DecDetaliu() {
                   (F8-D3). Pe un draft e gol — asta e adevărul, nu o lipsă. */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<DecWrite> camp="Data" />
+              <CampData<DecWrite> camp="DataInregistrare" />
               {/* TITULARUL care justifică avansul: un `Angajat` (invariant al
                   operării). Caption-ul bazei („Predator (de la)") e corect, dar
                   prea abstract pentru ecranul de decont — felia îl numește în

@@ -84,6 +84,7 @@ export function linieGoala(): NirLinieWrite {
 export function spreWrite(citit: NirRead): NirWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

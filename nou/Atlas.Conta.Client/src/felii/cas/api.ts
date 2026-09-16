@@ -48,6 +48,7 @@ export function antetGol(): CasWrite {
 export function spreWrite(citit: CasRead): CasWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     Cauza: citit.Cauza,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,

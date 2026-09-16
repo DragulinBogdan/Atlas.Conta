@@ -108,7 +108,7 @@ public static class StocService {
             .Select(m => m.Miscare.Cheie.LotId).Distinct().ToList();
         if (loturiIesire.Count == 0)
             return;
-        var solduri = SolduriLaData(os, loturiIesire, doc.Data, doc.ID);
+        var solduri = SolduriLaData(os, loturiIesire, doc.DataInregistrare, doc.ID);
         var acumulat = new Dictionary<CheieStoc, SoldStoc>();
         var deciseValori = new HashSet<Guid>();
         foreach (var (detaliu, regula, miscare) in miscari) {

@@ -37,7 +37,7 @@ import { NtcEditorLinie, type EticheteCulese } from './NtcEditorLinie';
 // Panoul de la subsol NU e cel al trezoreriei: nota poartă contrapartidele pe
 // LINII, iar plafonul are și SENS (F19-D16) — vezi `grupuri` mai jos.
 
-const CAMPURI_ANTET: (keyof NtcWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof NtcWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function NtcDetaliu() {
@@ -270,6 +270,7 @@ export function NtcDetaliu() {
                   adevărul, nu o lipsă. */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<NtcWrite> camp="Data" />
+              <CampData<NtcWrite> camp="DataInregistrare" />
               {/* AMBELE laturi sunt repartitori INTERNI: contrapartidele reale
                   (partenerii compensării) stau pe LINII, pe cele două câmpuri de
                   repartitor ale postării. Lookup-urile sunt NEFILTRATE (F6-D8):

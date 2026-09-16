@@ -52,7 +52,7 @@ public static class ListaDiferenteInventarApply {
 
         // `Numar` NU se atinge (F6-D4): seria „LDI-" e server-owned, asignată la
         // MATERIALIZARE, în propria operare (GATE XAF D6).
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar (ca peste tot): rezolvarea validează
         // existența cu mesaj de domeniu, iar pe o entitate urmărită navigația
         // încărcată ar rescrie la fixup un FK setat direct. TIPUL laturilor
@@ -281,7 +281,7 @@ public static class ListaDiferenteInventarApply {
         var h = os.GetObjectsQuery<ListaDiferenteInventar>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -337,6 +337,7 @@ public static class ListaDiferenteInventarApply {
 
         return new LdiReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

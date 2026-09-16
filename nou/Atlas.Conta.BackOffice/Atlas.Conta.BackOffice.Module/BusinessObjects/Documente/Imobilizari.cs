@@ -49,9 +49,9 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
                     + $"apare pe {grup.Count()} linii ale aceleiași puneri în funcțiune — "
                     + "un document poartă un singur eveniment per fișă.");
 
-        var lunaPif = Luna(Data);
+        var lunaPif = Luna(DataInregistrare);
         var amoUlterioara = os.GetObjectsQuery<AmortizareLunara>()
-            .Where(a => a.Stare == StareDocument.Operat && a.Data > Data)
+            .Where(a => a.Stare == StareDocument.Operat && a.Data > DataInregistrare)
             .OrderBy(a => a.Data).Select(a => new { a.Numar, a.Data }).FirstOrDefault();
         if (amoUlterioara != null && Luna(amoUlterioara.Data) > lunaPif)
             erori.Add($"Există o amortizare operată pentru o lună ulterioară ({amoUlterioara.Numar}, "
@@ -100,7 +100,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
             erori.Add($"Cifrele inițiale (amortizare cumulată, luni) se culeg doar pe intrarea FĂRĂ linie sursă "
                 + $"a fișei {eticheta} — deschidere, producție proprie sau migrare.");
 
-        var situatie = AmortizareService.Situatie(os, fisa.ID, Data);
+        var situatie = AmortizareService.Situatie(os, fisa.ID, DataInregistrare);
         var brut = situatie.Valoare + l.Valoare;
         if (l.ValoareReziduala != null && l.ValoareReziduala >= brut)
             erori.Add($"Valoarea reziduală a fișei {eticheta} ({l.ValoareReziduala}) trebuie să fie sub "
@@ -187,7 +187,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
         var fise = Fise(os, Detalii);
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>()) {
             var rand = os.CreateObject<RegistruImobilizari>();
-            rand.Data = Data;
+            rand.Data = DataInregistrare;
             rand.ImobilizareId = l.ImobilizareId;
             rand.Fel = Fel(l.Fel);
             rand.Valoare = l.Valoare;
@@ -216,7 +216,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
 
     public void EliminaRegistrul(IObjectSpace os) {
         var fise = Fise(os, Detalii);
-        VerificaFaraFapteUlterioare(os, ID, Data, fise.Keys);
+        VerificaFaraFapteUlterioare(os, ID, DataInregistrare, fise.Keys);
         os.Delete(RanduriProprii(os));
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>())
             if (l.Fel == FelLiniePif.Intrare)
@@ -225,8 +225,8 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
         var fise = Fise(os, Detalii);
-        VerificaFaraFapteUlterioare(os, ID, Data, fise.Keys);
-        VerificaLunaStornarii(Data, data);
+        VerificaFaraFapteUlterioare(os, ID, DataInregistrare, fise.Keys);
+        VerificaLunaStornarii(DataInregistrare, data);
         foreach (var r in RanduriProprii(os))
             Inverseaza(os, r, data);
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>())
@@ -396,7 +396,7 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
         }
 
         // Luna ieșirii nu se amortizează (F26-D6).
-        if (AmortizareOperataDinLuna(os, Data) is { } amo)
+        if (AmortizareOperataDinLuna(os, DataInregistrare) is { } amo)
             erori.Add($"Amortizarea {amo.Numar} ({amo.Data:dd.MM.yyyy}) e operată pentru luna ieșirii sau "
                 + "pentru una ulterioară — luna ieșirii nu se amortizează. Stornați-o înainte.");
 
@@ -409,14 +409,14 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
                     + "conturile ieșirii vin exclusiv din ea.");
                 continue;
             }
-            var asteptate = AmortizareService.LiniiIesire(os, grup.Key, Data, politica)
+            var asteptate = AmortizareService.LiniiIesire(os, grup.Key, DataInregistrare, politica)
                 .OrderBy(l => l.Fel).ToList();
             var culese = grup
                 .Select(l => new LinieIesire(l.Fel, l.Valoare, l.ContDebitId, l.ContCreditId))
                 .OrderBy(l => l.Fel).ToList();
             if (!culese.SequenceEqual(asteptate))
                 erori.Add($"Liniile fișei {fisa.NumarInventar} nu mai corespund situației din registru la "
-                    + $"{Data:dd.MM.yyyy} — așteptat "
+                    + $"{DataInregistrare:dd.MM.yyyy} — așteptat "
                     + string.Join(", ", asteptate.Select(l => $"{l.Fel} {l.Valoare}"))
                     + ". Regenerați liniile ieșirii.");
         }
@@ -425,9 +425,9 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
     public void MaterializeazaRegistrul(IObjectSpace os) {
         var fise = PunereInFunctiune.Fise(os, Detalii);
         foreach (var grup in Detalii.OfType<IesireImobilizareDetaliu>().GroupBy(l => l.ImobilizareId)) {
-            var situatie = AmortizareService.Situatie(os, grup.Key, Data);
+            var situatie = AmortizareService.Situatie(os, grup.Key, DataInregistrare);
             var rand = os.CreateObject<RegistruImobilizari>();
-            rand.Data = Data;
+            rand.Data = DataInregistrare;
             rand.ImobilizareId = grup.Key;
             rand.Fel = FelMiscareImobilizare.Iesire;
             rand.Valoare = -situatie.Valoare;
@@ -455,7 +455,7 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
         VerificaFaraAmortizareUlterioara(os);
-        PunereInFunctiune.VerificaLunaStornarii(Data, data);
+        PunereInFunctiune.VerificaLunaStornarii(DataInregistrare, data);
         var id = ID;
         foreach (var r in os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList())
             PunereInFunctiune.Inverseaza(os, r, data);
@@ -464,7 +464,7 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
 
     // Lunile de după ieșire s-au generat FĂRĂ fișele ieșite (simetricul refuzului de la operare).
     void VerificaFaraAmortizareUlterioara(IObjectSpace os) {
-        if (AmortizareOperataDinLuna(os, Data) is { } amo)
+        if (AmortizareOperataDinLuna(os, DataInregistrare) is { } amo)
             throw new OperareException(
                 $"Amortizarea {amo.Numar} ({amo.Data:dd.MM.yyyy}) e operată pentru luna ieșirii sau una "
                 + "ulterioară, fără fișele ieșite — readuse în funcțiune, lunile acelea le-ar lipsi. "
@@ -480,7 +480,7 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
     }
 
     public override IReadOnlyList<string> MesajeDupaOperare(IObjectSpace os) {
-        var primaZi = new DateOnly(Data.Year, Data.Month, 1);
+        var primaZi = new DateOnly(DataInregistrare.Year, DataInregistrare.Month, 1);
         var ultimaZiPrecedenta = primaZi.AddDays(-1);
         var primaZiPrecedenta = new DateOnly(ultimaZiPrecedenta.Year, ultimaZiPrecedenta.Month, 1);
         if (os.GetObjectsQuery<AmortizareLunara>().Any(a => a.Stare == StareDocument.Operat
@@ -615,7 +615,7 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
     public void MaterializeazaRegistrul(IObjectSpace os) {
         foreach (var l in Detalii.OfType<AmortizareLunaraDetaliu>()) {
             var rand = os.CreateObject<RegistruImobilizari>();
-            rand.Data = Data;
+            rand.Data = DataInregistrare;
             rand.ImobilizareId = l.ImobilizareId;
             rand.Fel = FelMiscareImobilizare.Amortizare;
             rand.Amortizare = l.Valoare;
@@ -636,7 +636,7 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
         VerificaFaraDependenti(os);
-        PunereInFunctiune.VerificaLunaStornarii(Data, data);
+        PunereInFunctiune.VerificaLunaStornarii(DataInregistrare, data);
         var id = ID;
         foreach (var r in os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList())
             PunereInFunctiune.Inverseaza(os, r, data);
@@ -644,7 +644,7 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
 
     void VerificaFaraDependenti(IObjectSpace os) {
         VerificaFaraAmortizareUlterioara(os);
-        PunereInFunctiune.VerificaFaraFapteUlterioare(os, ID, Data,
+        PunereInFunctiune.VerificaFaraFapteUlterioare(os, ID, DataInregistrare,
             Detalii.OfType<AmortizareLunaraDetaliu>().Select(l => l.ImobilizareId));
     }
 

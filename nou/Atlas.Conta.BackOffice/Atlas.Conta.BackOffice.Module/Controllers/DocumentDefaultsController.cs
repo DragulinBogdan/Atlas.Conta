@@ -24,14 +24,28 @@ public class DocumentDefaultsController : ObjectViewController<DetailView, Docum
         base.OnActivated();
         Aplica();
         View.CurrentObjectChanged += OnCurrentObjectChanged;
+        ObjectSpace.ObjectChanged += OnObjectChanged;
     }
 
     protected override void OnDeactivated() {
+        ObjectSpace.ObjectChanged -= OnObjectChanged;
         View.CurrentObjectChanged -= OnCurrentObjectChanged;
         base.OnDeactivated();
     }
 
     void OnCurrentObjectChanged(object sender, EventArgs e) => Aplica();
+
+    // F27-D4: data înregistrării URMEAZĂ data documentului cât timp cele două
+    // erau egale; culeasă distinct, rămâne. `OldValue` e populat pe EF Core
+    // (surse 26.1.3, `EFCoreObjectSpace.EFCoreObject_PropertyChanged` :199-201,
+    // prin `propertyChangeTracker.GetPreviousValue`), spre deosebire de
+    // `BaseObjectSpace.Object_PropertyChanged`, care trimite null.
+    void OnObjectChanged(object sender, ObjectChangedEventArgs e) {
+        if (e.Object is not Document doc || e.PropertyName != nameof(Document.Data))
+            return;
+        if (e.OldValue is DateOnly veche && veche == doc.DataInregistrare)
+            doc.DataInregistrare = doc.Data;
+    }
 
     void Aplica() {
         var doc = ViewCurrentObject;
@@ -40,5 +54,6 @@ public class DocumentDefaultsController : ObjectViewController<DetailView, Docum
         if (doc == null || doc.Data != default || !ObjectSpace.IsNewObject(doc))
             return;
         doc.Data = DateOnly.FromDateTime(DateTime.Today);
+        doc.DataInregistrare = doc.Data;
     }
 }

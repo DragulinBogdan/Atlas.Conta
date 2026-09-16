@@ -22,7 +22,7 @@ import { EditorLinie } from './EditorLinie';
 //   (3) efemeride    → linia în editare, erorile afișate.
 // URL-ul e starea globală: `/btr/nou` și `/btr/:id`.
 
-const CAMPURI_ANTET: (keyof BtrWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId', 'NumarPV', 'DataPV'];
+const CAMPURI_ANTET: (keyof BtrWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId', 'NumarPV', 'DataPV'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function BtrDetaliu() {
@@ -176,6 +176,7 @@ export function BtrDetaliu() {
           >
             <div className="grila-campuri">
               <CampData<BtrWrite> camp="Data" />
+              <CampData<BtrWrite> camp="DataInregistrare" />
               <Lookup<BtrWrite> camp="PredatorId" entitate="Gestiune" mod="local" />
               <Lookup<BtrWrite> camp="PrimitorId" entitate="Gestiune" mod="local" />
               <CampText<BtrWrite> camp="NumarPV" />

@@ -56,7 +56,7 @@ public static class FacturaIntrareApply {
         // Numărul furnizorului: CULES (FCT n-are politică de numerotare), deci
         // spre deosebire de BTR intră din payload. `ValideazaOperare` îl cere.
         doc.Numar = dto.Numar;
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar (ca la BTR): rezolvarea validează existența
         // cu mesaj de domeniu, regulile XAF de culegere stau pe navigație, iar pe
         // o entitate urmărită navigația încărcată ar rescrie la fixup un FK setat
@@ -299,7 +299,7 @@ public static class FacturaIntrareApply {
         var h = os.GetObjectsQuery<FacturaIntrare>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 // TPT: cast-ul devine LEFT JOIN pe tabela `Partener` — null pe
                 // orice alt tip de repartitor.
@@ -363,6 +363,7 @@ public static class FacturaIntrareApply {
 
         return new FacturaIntrareReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PredatorCodFiscal = h.PredatorCodFiscal,

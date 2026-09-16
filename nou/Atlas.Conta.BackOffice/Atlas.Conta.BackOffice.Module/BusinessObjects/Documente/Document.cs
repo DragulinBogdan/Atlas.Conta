@@ -81,6 +81,11 @@ public abstract class Document : BaseObject {
     [XafDisplayName("Dată")]
     public virtual DateOnly Data { get; set; }
 
+    // F27-D4: data intrării în evidență, pe care se scriu registrele, lotul și
+    // gardianul de perioadă; `Data` rămâne a documentului fizic.
+    [XafDisplayName("Data înregistrării")]
+    public virtual DateOnly DataInregistrare { get; set; }
+
     // Validare de CULEGERE (context Save al pipeline-ului UI XAF): FK-urile
     // Predator/PrimitorId sunt NOT NULL în schemă, dar Guid.Empty NU e null —
     // regula stă pe NAVIGAȚIE, ca să blocheze commit-ul înainte ca INSERT-ul cu

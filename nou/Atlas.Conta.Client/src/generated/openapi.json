@@ -295565,6 +295565,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "An": {
             "type": "integer",
             "format": "int32"
@@ -295961,6 +295965,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -296033,6 +296041,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -296455,6 +296468,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -296512,6 +296529,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -296727,6 +296749,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Cauza": {
             "type": "string",
             "nullable": true
@@ -296799,6 +296825,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "Cauza": {
             "type": "string",
@@ -297950,6 +297981,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -298088,6 +298123,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -298402,6 +298442,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -298654,6 +298698,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -298726,6 +298774,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -299399,6 +299452,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -299492,6 +299549,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -299813,6 +299875,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -299945,6 +300011,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -300811,6 +300882,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "An": {
             "type": "integer",
             "format": "int32"
@@ -301347,6 +301422,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -301404,6 +301483,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -302056,6 +302140,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -302129,6 +302217,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -302286,6 +302379,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -302360,6 +302457,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -302662,6 +302764,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -302719,6 +302825,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -303265,6 +303376,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -303325,6 +303440,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -304587,6 +304707,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -304648,6 +304772,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -305717,6 +305846,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -305774,6 +305907,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",
@@ -307712,6 +307850,10 @@
             "type": "string",
             "format": "date"
           },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date"
+          },
           "Stare": {
             "type": "string",
             "nullable": true
@@ -307827,6 +307969,11 @@
           "Data": {
             "type": "string",
             "format": "date"
+          },
+          "DataInregistrare": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "PredatorId": {
             "type": "string",

@@ -102,6 +102,7 @@ export function linieGoala(): PifLinieWrite {
 export function spreWrite(citit: PifRead): PifWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

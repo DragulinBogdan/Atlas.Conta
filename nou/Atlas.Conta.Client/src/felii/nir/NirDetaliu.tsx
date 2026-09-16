@@ -32,7 +32,7 @@ import { NirEditorLinie, type EticheteCulese } from './NirEditorLinie';
 // `ConexId` → aici, unde recepția parțială se corectează pe cantitate, iar marfa
 // și prețul rămân ale lotului moștenit (F5-D4).
 
-const CAMPURI_ANTET: (keyof NirWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof NirWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function NirDetaliu() {
@@ -247,6 +247,7 @@ export function NirDetaliu() {
                   (F5-D8). Pe un draft e gol — asta e adevărul, nu o lipsă. */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<NirWrite> camp="Data" />
+              <CampData<NirWrite> camp="DataInregistrare" />
               {/* Furnizorul: 129k parteneri ⇒ căutare server-side. */}
               <LookupGrila<NirWrite> camp="PredatorId" entitate="Partener" cauta={['Cautare', 'CodFiscal']} />
               {/* Gestiunea primitoare: tot din ea se nasc loturile liniilor

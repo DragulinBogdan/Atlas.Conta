@@ -30,6 +30,13 @@ Operarea, anularea și stornarea sunt comenzi, nu modificări directe ale
 stării prin DTO. Regulile și tranzacția lor sunt descrise în
 [domeniu și operare](domeniu-si-operare.md). (42b)
 
+Fiecare DTO de scriere al unui document poartă `DataInregistrare` ca dată
+opțională: absentă înseamnă „data documentului”, nu „gol”. Adaptorul comun
+(`Api/DocumentApply.AplicaDate`) aplică implicitul și refuză, de domeniu, o
+dată a înregistrării anterioară datei documentului — pe toate cele
+cincisprezece uși de scriere. DTO-urile de citire ale documentelor o expun
+alături de `Data`. (F27-D4)
+
 Închiderea și redeschiderea perioadei sunt tot comenzi, pe `api/perioade`:
 `GET api/perioade` întoarce lanțul și cere dreptul de citire pe tipul
 perioadei; `GET api/perioade/{an}/{luna}/verificare` întoarce constatările;
@@ -128,6 +135,12 @@ ITV și AMO folosesc aceeași grilă sub previzualizare. (43a, 43c)
 Formularul deține local întregul DTO de scriere. TanStack Query gestionează
 starea citită de pe server, iar URL-ul starea navigabilă. Nu se menține un
 al doilea magazin global care copiază aceleași documente. (43c)
+
+Formularele de culegere au „Data înregistrării” lângă „Dată”. Câmpul gol nu
+se trimite, deci serverul aplică implicitul; ecranele documentelor generate o
+arată doar. Conversia citire → scriere a fiecărei felii o poartă explicit: un
+câmp lipsă de acolo s-ar fi rescris tăcut la fiecare re-salvare. Coloana din
+listele de documente rămâne de adăugat. (F27-D4)
 
 Liniile se editează într-un editor separat, apoi se afișează în grilă.
 Totalurile, resturile și disponibilitatea comenzilor sunt calculate de

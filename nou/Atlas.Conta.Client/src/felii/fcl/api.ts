@@ -89,6 +89,7 @@ export function linieGoala(): FclLinieWrite {
 export function spreWrite(citit: FclRead): FclWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     DataScadenta: citit.DataScadenta,

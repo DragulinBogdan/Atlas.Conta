@@ -4,6 +4,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Cas;
 
 public sealed class CasWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     /// <summary>`Casare` | `Vanzare` | `Lipsa`, pe NUME (57a).</summary>
     public string Cauza { get; set; }
     /// <summary>Locul de pe fișe.</summary>
@@ -32,6 +34,7 @@ public sealed class CasReadDto {
     public Guid Id { get; set; }
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     public string Cauza { get; set; }
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

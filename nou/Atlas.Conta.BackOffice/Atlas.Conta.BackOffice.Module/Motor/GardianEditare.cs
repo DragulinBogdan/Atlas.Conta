@@ -385,6 +385,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (!string.IsNullOrEmpty(doc.Numar) && AreNumerotare(os, doc))
                 erori.Add($"Numărul documentului vine din seria tipului (PoliticaNumerotare) "
                     + "— nu se culege.");
+            VerificaDataInregistrare(doc, erori);
             return;
         }
         var originale = Originale(os, doc);
@@ -409,6 +410,16 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 && AreNumerotare(os, doc))
             erori.Add($"Numărul documentului {Eticheta(doc)} vine din seria tipului "
                 + "(PoliticaNumerotare) — nu se editează.");
+        VerificaDataInregistrare(doc, erori);
+    }
+
+    // F27-D4. `default` = necules: motorul o normalizează la `Data` în operare,
+    // deci un draft venit pe o cale care n-o culege nu se refuză aici. Pe
+    // documentul ieșit din Draft e înghețată ca orice alt câmp, prin întoarcerea
+    // de mai sus.
+    static void VerificaDataInregistrare(Document doc, ICollection<string> erori) {
+        if (doc.DataInregistrare != default && doc.DataInregistrare < doc.Data)
+            erori.Add("Data înregistrării nu poate preceda data documentului.");
     }
 
     // (a) Liniile urmează starea documentului-gazdă (registrele s-au scris din

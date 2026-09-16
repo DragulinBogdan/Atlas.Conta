@@ -36,6 +36,8 @@ public sealed class FacturaIntrareWriteDto {
     // Numărul FURNIZORULUI — cules, nu generat (FCT n-are politică de numerotare).
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     public Guid PredatorId { get; set; }
     public Guid PrimitorId { get; set; }
     public DateOnly? DataScadenta { get; set; }
@@ -103,6 +105,7 @@ public sealed class FacturaIntrareReadDto {
     public Guid Id { get; set; }
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

@@ -32,7 +32,7 @@ import { FctEditorLinie, type EticheteCulese } from './FctEditorLinie';
 // operare, oferit ca link în panoul de rezultat).
 
 const CAMPURI_ANTET: (keyof FctWrite & string)[] =
-  ['Numar', 'Data', 'PredatorId', 'PrimitorId', 'DataScadenta', 'NumarPV', 'DataPV', 'CodCpv'];
+  ['Numar', 'Data', 'DataInregistrare', 'PredatorId', 'PrimitorId', 'DataScadenta', 'NumarPV', 'DataPV', 'CodCpv'];
 const capAntet = (m: string) => campMeta(TIP_ANTET, m, SCHEMA_ANTET).caption;
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
@@ -247,6 +247,7 @@ export function FctDetaliu() {
             <div className="grila-campuri">
               <CampText<FctWrite> camp="Numar" obligatoriu />
               <CampData<FctWrite> camp="Data" />
+              <CampData<FctWrite> camp="DataInregistrare" />
               {/* Furnizorul: 129k parteneri ⇒ lookup cu grilă, căutare server-side. */}
               <LookupGrila<FctWrite> camp="PredatorId" entitate="Partener" cauta={['Cautare', 'CodFiscal']} />
               <Lookup<FctWrite> camp="PrimitorId" entitate="Gestiune" mod="local" />

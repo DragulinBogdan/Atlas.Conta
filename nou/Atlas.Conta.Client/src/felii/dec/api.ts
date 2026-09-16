@@ -90,6 +90,7 @@ export function linieGoala(): DecLinieWrite {
 export function spreWrite(citit: DecRead): DecWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     NumarPV: citit.NumarPV,

@@ -35,6 +35,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Ntc;
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 public sealed class NtcWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     // Ambele laturi = repartitori INTERNI (ex. SEDIU). Tipul lor e invariant al
     // OPERĂRII (`NotaContabila.ValideazaOperare` refuză `Partener`), nu al
     // culegerii: draftul are voie să fie greșit, operarea nu.
@@ -84,6 +86,7 @@ public sealed class NtcReadDto {
     // pe draft e null.
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

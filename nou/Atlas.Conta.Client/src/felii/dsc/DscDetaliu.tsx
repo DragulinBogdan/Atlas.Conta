@@ -100,6 +100,7 @@ export function DscDetaliu() {
         <div className="grila-campuri">
           <Static membru="Numar" valoare={doc?.Numar} />
           <Static membru="Data" valoare={doc?.Data} />
+          <Static membru="DataInregistrare" valoare={doc?.DataInregistrare} />
           <Static membru="Stare" valoare={labelEnum('StareDocument', doc?.Stare)} />
           <Static membru="PredatorId" eticheta="Gestiune" valoare={doc?.PredatorDenumire} />
           <Static membru="PrimitorId" eticheta="Client" valoare={doc?.PrimitorDenumire} />

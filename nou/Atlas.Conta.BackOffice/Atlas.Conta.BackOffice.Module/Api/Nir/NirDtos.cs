@@ -30,6 +30,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Nir;
 //     culegere îl lasă deliberat neatins.
 public sealed class NirWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     // Furnizorul (Partener) → gestiunea recepționară; TIPUL laturilor se
     // validează abia la operare (`NIR.ValideazaOperare`) — un draft are voie să
     // fie incomplet până atunci, `Aplica` verifică doar existența.
@@ -74,6 +76,7 @@ public sealed class NirReadDto {
     // MATERIALIZARE, în propria operare (GATE XAF D6) — pe draft e null.
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

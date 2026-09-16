@@ -88,6 +88,19 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   blochează reciproc. Lookup-urile XAF ale fișei și ale liniei PIF nu sunt
   filtrate pe natură, stare și loc; clasificarea se caută doar pe denumire;
   mesajele gardienilor scriu numele membrilor enum. (87, F26-r1…r22)
+- Data înregistrării: rândurile de TVA rămân pe data faptului fiscal, fără
+  perioadă de declarare distinctă, deci un document întârziat cade în jurnalul
+  lunii lui fizice și nu există încă noțiunea de conținut de rectificativă
+  (pasul 4 al feliei). Amortizarea unei fișe puse în funcțiune întârziat
+  pornește din luna înregistrării, fiindcă registrul de imobilizări e datat
+  acolo: lunile dintre data documentului și data înregistrării nu se
+  amortizează, iar recuperarea lor rămâne a aceluiași pas. Documentele generate
+  (AMO, ITV, DSC și NIR autogenerat) moștenesc data înregistrării sursei sau
+  ultima zi a lunii; editabilitatea ei pe ele nu e decisă. Plata autogenerată
+  din factura de intrare face excepție: data ei este cea culeasă, iar data
+  înregistrării i se normalizează la ea, nu la a facturii. Coloana „Data
+  înregistrării” lipsește din coloanele listelor de documente ale clientului
+  React și din DTO-urile lor de listă. (F27-D4, F27-D5, F27-r9)
 - Salariile, execuția bugetară completă, producția pe rețete, împărțirea pe
   cofinanțări și contabilitatea multivalutară nu sunt module complete în
   produsul curent. Importul 1C nu echivalează cu un import bancar

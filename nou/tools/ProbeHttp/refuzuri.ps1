@@ -446,6 +446,22 @@ try {
     # de mai sus ar putea ascunde o ușă care nu ajunge niciodată la regulă.
     Proba -Cerere 'operare DVI fără MRN' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "/api/dvi/$idDvi/opereaza" -Contine 'MRN' -Nota 'domeniul rămâne' | Out-Null
 
+    # F27-D4: ordinea celor două date ale documentului e regulă de CULEGERE, deci
+    # refuzul e de domeniu (422) pe `Admin`, pe ambele uși de scriere ale
+    # agregatului. Nimic de curățat: POST-ul refuzat nu comite, iar PUT-ul lasă
+    # draftul creat mai sus, pe care `finally` îl șterge oricum.
+    $corpDviDataInversata = @{
+        Numar            = ''
+        Data             = '2026-06-15'
+        DataInregistrare = '2026-06-10'
+        PredatorId       = $partener.ID
+        PrimitorId       = $unitate.ID
+        Linii            = @()
+        FacturiIds       = @()
+    }
+    Proba -Cerere 'creare DVI cu data înregistrării înaintea datei' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/dvi' -Corp $corpDviDataInversata -Contine 'Data înregistrării nu poate preceda data documentului' -Nota 'F27-D4' | Out-Null
+    Proba -Cerere 'modificare DVI cu data înregistrării înaintea datei' -User 'Admin' -Asteptat 422 -Metoda PUT -Cale "/api/dvi/$idDvi" -Corp $corpDviDataInversata -Contine 'Data înregistrării nu poate preceda data documentului' -Nota 'F27-D4' | Out-Null
+
     # `facturi-candidate` cere DOUĂ drepturi (DVI-D5): declarația din rută, dacă
     # vine, și CITIREA pe facturi — panoul arată facturi, nu declarații, iar o
     # listă filtrată tăcut ar propune legături pe care operatorul nu le poate face.

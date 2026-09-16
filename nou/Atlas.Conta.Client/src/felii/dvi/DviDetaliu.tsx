@@ -31,7 +31,7 @@ import { PanouFacturi } from './PanouFacturi';
 // agregatul poartă o a doua colecție — `FacturiIds`, legăturile cu facturile de
 // import, trimise ÎNTREGI la fiecare salvare.
 
-const CAMPURI_ANTET: (keyof DviWrite & string)[] = ['Numar', 'Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof DviWrite & string)[] = ['Numar', 'Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capAntet = (m: string) => campMeta(TIP_ANTET, m, SCHEMA_ANTET).caption;
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
@@ -278,6 +278,7 @@ export function DviDetaliu() {
               {/* `Numar` E MRN-ul declarației, cules — nu o serie proprie. */}
               <CampText<DviWrite> camp="Numar" obligatoriu />
               <CampData<DviWrite> camp="Data" />
+              <CampData<DviWrite> camp="DataInregistrare" />
               {/* Predatorul e PARTENERUL căruia i se datorează taxa (biroul
                   vamal, cu cont implicit 446): 129k parteneri ⇒ lookup cu grilă,
                   căutare server-side. */}

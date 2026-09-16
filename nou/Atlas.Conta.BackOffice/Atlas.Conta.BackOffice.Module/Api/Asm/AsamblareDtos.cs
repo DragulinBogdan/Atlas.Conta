@@ -22,6 +22,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Asm;
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 public sealed class AsmWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     // Gestiunea în care se asamblează → gestiunea care primește (de regulă
     // aceeași). Tipul laturilor se validează abia la operare; `Aplica` verifică
     // doar existența.
@@ -75,6 +77,7 @@ public sealed class AsmReadDto {
     // pe draft e null.
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

@@ -33,7 +33,7 @@ public static class DviApply {
         doc ??= os.CreateObject<BusinessObjects.Dvi>();
 
         doc.Numar = dto.Numar;
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         doc.Predator = predator;
         doc.Primitor = primitor;
 
@@ -163,7 +163,7 @@ public static class DviApply {
         var h = os.GetObjectsQuery<BusinessObjects.Dvi>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -199,6 +199,7 @@ public static class DviApply {
 
         return new DviReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

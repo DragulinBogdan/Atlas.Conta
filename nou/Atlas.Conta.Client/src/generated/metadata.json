@@ -425,6 +425,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -524,6 +525,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -568,6 +570,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -658,6 +661,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataPV": "Dată PV",
         "DocumentSursa": "Document sursă",
@@ -709,6 +713,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -759,6 +764,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -797,6 +803,7 @@
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
         "DataExtras": "Dată extras",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -847,6 +854,7 @@
         "Autogenerat": "Autogenerat",
         "Baza": "Valoare în vamă",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -876,6 +884,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataScadenta": "Scadență",
         "DocumentSursa": "Document sursă",
@@ -927,6 +936,7 @@
         "CodCpv": "Cod CPV",
         "Curs": "Curs",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataPV": "Dată PV",
         "DataScadenta": "Scadență",
@@ -1005,6 +1015,7 @@
         "Autogenerat": "Autogenerat",
         "Cauza": "Cauză",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1092,6 +1103,7 @@
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
         "DataExtras": "Dată extras",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1128,6 +1140,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1157,6 +1170,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1255,6 +1269,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1305,6 +1320,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1353,6 +1369,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataPV": "Dată PV",
         "DocumentSursa": "Document sursă",
@@ -1415,6 +1432,7 @@
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
         "DataExtras": "Dată extras",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1581,6 +1599,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1651,6 +1670,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1898,6 +1918,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1916,6 +1937,7 @@
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",

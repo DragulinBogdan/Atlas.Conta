@@ -48,7 +48,7 @@ public static class BonConsumApply {
         // `Numar` NU se atinge (F6-D4): seria „BCS-" e server-owned, asignată la
         // MATERIALIZARE, în propria operare (GATE XAF D6) — gardianul de
         // Committing o și păzește pe tipurile cu politică de numerotare.
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar (ca la BTR/NIR): rezolvarea validează
         // existența cu mesaj de domeniu, iar pe o entitate urmărită navigația
         // încărcată ar rescrie la fixup un FK setat direct. TIPUL laturilor
@@ -178,7 +178,7 @@ public static class BonConsumApply {
         var h = os.GetObjectsQuery<BonConsum>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -210,6 +210,7 @@ public static class BonConsumApply {
 
         return new BcsReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

@@ -256,6 +256,7 @@ public abstract class DocumentTrezorerie : Document {
 
         var pereche = CreeazaPereche(os);
         pereche.Data = Data;
+        pereche.DataInregistrare = DataInregistrare;
         // Legătura se scrie pe COPIL (F8-D6): el e Draft, deci partea scriibilă.
         pereche.LaturaPerecheId = ID;
         pereche.TipInstrument = TipInstrument;

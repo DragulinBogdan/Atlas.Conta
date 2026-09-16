@@ -48,7 +48,7 @@ public static class CasApply {
         }
 
         doc ??= os.CreateObject<IesireImobilizare>();
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         doc.Cauza = cauza;
         doc.Predator = predator;
         doc.Primitor = primitor;
@@ -96,7 +96,7 @@ public static class CasApply {
         var h = os.GetObjectsQuery<IesireImobilizare>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Cauza, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Cauza, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -121,6 +121,7 @@ public static class CasApply {
 
         return new CasReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Cauza = h.Cauza.ToString(),
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,

@@ -20,7 +20,7 @@ import { PifEditorLinie, type EticheteCulese } from './PifEditorLinie';
 
 // Șablonul DVI (43c); primitorul e LOCUL fișelor, un document acoperă un singur loc (F26-D5).
 
-const CAMPURI_ANTET: (keyof PifWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof PifWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capAntet = (m: string) => campMeta(TIP_ANTET, m, SCHEMA_ANTET).caption;
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
@@ -224,6 +224,7 @@ export function PifDetaliu() {
           >
             <div className="grila-campuri">
               <CampData<PifWrite> camp="Data" />
+              <CampData<PifWrite> camp="DataInregistrare" />
               {/* Predatorul e unitatea internă care pune în funcțiune. */}
               <Lookup<PifWrite> camp="PredatorId" entitate="UnitateInterna" mod="local" />
               <div>

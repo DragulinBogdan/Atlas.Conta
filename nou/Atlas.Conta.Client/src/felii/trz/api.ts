@@ -93,6 +93,7 @@ export function linieGoala(): TrzLinieWrite {
 export function spreWrite(citit: TrzRead): TrzWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     TipInstrument: citit.TipInstrument,

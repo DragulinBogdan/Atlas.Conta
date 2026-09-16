@@ -68,7 +68,7 @@ public static class InchidereTvaApply {
         var h = os.GetObjectsQuery<InchidereTva>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, UnitateDenumire = d.Predator.Denumire
             })
             .FirstOrDefault();
@@ -131,6 +131,7 @@ public static class InchidereTvaApply {
 
         return new ItvReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             An = h.Data.Year, Luna = h.Data.Month,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             UnitateId = h.PredatorId, UnitateDenumire = h.UnitateDenumire,
@@ -205,6 +206,7 @@ public static class InchidereTvaApply {
             throw new OperareException("Lipsește corpul cererii.");
         using var tx = TranzactieComanda.Incepe(os);
         var r = InchidereTvaService.Incearca(os, cerere.An, cerere.Luna, cerere.UnitateId);
+        DocumentApply.Generat(r.Document);
         if (r.Document != null)
             os.CommitChanges();
         tx.Commit();
@@ -238,6 +240,7 @@ public static class InchidereTvaApply {
 
         var r = InchidereTvaService.Incearca(os, doc.Data.Year, doc.Data.Month, doc.PredatorId,
             inlocuieste: doc.ID);
+        DocumentApply.Generat(r.Document);
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);

@@ -55,7 +55,7 @@ public static class AsamblareApply {
 
         // `Numar` NU se atinge (F19-D6): seria „ASM-" e server-owned, asignată la
         // MATERIALIZARE, în propria operare (53b).
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar (ca peste tot): rezolvarea validează
         // existența cu mesaj de domeniu, iar pe o entitate urmărită navigația
         // încărcată ar rescrie la fixup un FK setat direct. TIPUL laturilor
@@ -533,7 +533,7 @@ public static class AsamblareApply {
         var h = os.GetObjectsQuery<Asamblare>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -592,6 +592,7 @@ public static class AsamblareApply {
 
         return new AsmReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

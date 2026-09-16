@@ -62,7 +62,12 @@ public static class MotorOperare {
     static PlanOperare CalculeazaSiValideaza(IObjectSpace os, Document doc) {
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException("Doar un document în starea Draft poate fi operat.");
-        GardianPerioada.VerificaDeschisa(os, doc.Data);
+        // F27-D4: căile care nu culeg câmpul (Import1C, Migrare, generatele) intră cu `default`.
+        if (doc.DataInregistrare == default)
+            doc.DataInregistrare = doc.Data;
+        if (doc.DataInregistrare < doc.Data)
+            throw new OperareException("Data înregistrării nu poate preceda data documentului.");
+        GardianPerioada.VerificaDeschisa(os, doc.DataInregistrare);
 
         // F13-D1: TVA-ul CULES pe o linie de taxare inversă la LIVRARE nu are
         // unde să meargă, iar `PregatesteOperare` îl aduce la 0 (regula D1) —
@@ -337,7 +342,7 @@ public static class MotorOperare {
             // mărginit; coloana e oricum `numeric(18,6)`, rotunjirea aici ține
             // instanța din ObjectSpace-ul viu egală cu ce se persistă.
             lot.PretUnitar = Scara.RotunjestePret(linie.Valoare / linie.Cantitate);
-            lot.Data = doc.Data;
+            lot.Data = doc.DataInregistrare;
             if (linie is ILinieCuAtributeLot atribute) {
                 lot.DataExpirare = atribute.DataExpirare;
                 lot.LotFabricatie = atribute.LotFabricatie;
@@ -346,7 +351,7 @@ public static class MotorOperare {
 
         foreach (var (detaliu, regula, miscare) in miscari) {
             var rand = os.CreateObject<RegistruStoc>();
-            rand.Data = doc.Data;
+            rand.Data = doc.DataInregistrare;
             rand.TipStoc = miscare.Cheie.TipStoc;
             rand.LotId = miscare.Cheie.LotId;
             rand.RepartitorId = miscare.Cheie.RepartitorId;
@@ -358,7 +363,7 @@ public static class MotorOperare {
 
         foreach (var n in note) {
             var rand = os.CreateObject<RegistruContabil>();
-            rand.Data = doc.Data;
+            rand.Data = doc.DataInregistrare;
             rand.ContDebitId = n.ContDebit;
             rand.ContCreditId = n.ContCredit;
             rand.Valoare = n.Valoare;
@@ -454,7 +459,7 @@ public static class MotorOperare {
                     }
                     var repartitorId = regula.Latura == LaturaDocument.Predator ? doc.PredatorId : doc.PrimitorId;
                     miscari.Add((d, regula, new MiscareStoc(
-                        new CheieStoc(d.LotId.Value, repartitorId, regula.TipStoc), doc.Data, regula.Semn * d.Cantitate)));
+                        new CheieStoc(d.LotId.Value, repartitorId, regula.TipStoc), doc.DataInregistrare, regula.Semn * d.Cantitate)));
                 }
         }
         return miscari;
@@ -531,6 +536,7 @@ public static class MotorOperare {
             ?? throw new OperareException($"Clasa documentului conex ({tipTinta?.ClrType}) nu există.");
         var conex = (Document)os.CreateObject(tipClr);
         conex.Data = sursa.Data;
+        conex.DataInregistrare = sursa.DataInregistrare;
         conex.PredatorId = politica.InverseazaLaturi ? sursa.PrimitorId : sursa.PredatorId;
         conex.PrimitorId = politica.InverseazaLaturi ? sursa.PredatorId : sursa.PrimitorId;
         conex.DocumentSursa = sursa;
@@ -563,7 +569,7 @@ public static class MotorOperare {
     public static void AnuleazaOperarea(IObjectSpace os, Document doc) {
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi anulat.");
-        GardianPerioada.VerificaDeschisa(os, doc.Data);
+        GardianPerioada.VerificaDeschisa(os, doc.DataInregistrare);
         VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
         VerificaFaraImperecheri(os, doc);
@@ -612,8 +618,8 @@ public static class MotorOperare {
     public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi stornat.");
-        if (dataStorno < doc.Data)
-            throw new OperareException("Data stornării nu poate preceda data documentului.");
+        if (dataStorno < doc.DataInregistrare)
+            throw new OperareException("Data stornării nu poate preceda data înregistrării documentului.");
         GardianPerioada.VerificaDeschisa(os, dataStorno);
         VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);

@@ -320,6 +320,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<RegistruStoc>()
                 .HasIndex(r => r.Data).HasFilter("\"GCRecord\" = 0");
 
+            // F27-D4: consumatorii de perioadă filtrează documentele pe data înregistrării.
+            modelBuilder.Entity<Document>()
+                .HasIndex(d => d.DataInregistrare).HasFilter("\"GCRecord\" = 0");
+
             // FK-uri `Restrict`: convenția globală `SetNull`/`Cascade` ar goli tăcut fișa sau linia-sursă (F26-D1/D2/D5).
             modelBuilder.Entity<Imobilizare>(b => {
                 b.HasOne(f => f.TipMaterial).WithMany().HasForeignKey(f => f.TipMaterialId)

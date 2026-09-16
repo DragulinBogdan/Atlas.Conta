@@ -47,6 +47,7 @@ public sealed class AmoReadDto {
     public Guid Id { get; set; }
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     public int An { get; set; }
     public int Luna { get; set; }
     public string Stare { get; set; }

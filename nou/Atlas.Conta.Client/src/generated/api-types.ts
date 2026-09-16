@@ -8081,6 +8081,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             /** Format: int32 */
             An?: number;
             /** Format: int32 */
@@ -8220,6 +8222,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -8247,6 +8251,8 @@ export interface components {
         AsmWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -8397,6 +8403,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -8417,6 +8425,8 @@ export interface components {
         BcsWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -8489,6 +8499,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Cauza?: string | null;
             Stare?: string | null;
             /** Format: date-time */
@@ -8512,6 +8524,8 @@ export interface components {
         CasWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             Cauza?: string | null;
             /** Format: uuid */
             PredatorId?: string;
@@ -8898,6 +8912,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -8946,6 +8962,8 @@ export interface components {
         DecontWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -9050,6 +9068,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -9142,6 +9162,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -9166,6 +9188,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -9379,6 +9403,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -9410,6 +9436,8 @@ export interface components {
         FacturaIesireWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -9526,6 +9554,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -9569,6 +9599,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -9869,6 +9901,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             /** Format: int32 */
             An?: number;
             /** Format: int32 */
@@ -10058,6 +10092,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -10078,6 +10114,8 @@ export interface components {
         LdiWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -10317,6 +10355,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -10342,6 +10382,8 @@ export interface components {
         NirWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -10399,6 +10441,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -10425,6 +10469,8 @@ export interface components {
         NotaTransferWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -10529,6 +10575,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -10549,6 +10597,8 @@ export interface components {
         NtcWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -10733,6 +10783,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -10754,6 +10806,8 @@ export interface components {
         PifWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -11225,6 +11279,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -11247,6 +11303,8 @@ export interface components {
         RdcWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -11649,6 +11707,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -11669,6 +11729,8 @@ export interface components {
         RlfWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */
@@ -12353,6 +12415,8 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string;
             Stare?: string | null;
             /** Format: date-time */
             DataOperare?: string | null;
@@ -12392,6 +12456,8 @@ export interface components {
         TrezorerieWriteDto: {
             /** Format: date */
             Data?: string;
+            /** Format: date */
+            DataInregistrare?: string | null;
             /** Format: uuid */
             PredatorId?: string;
             /** Format: uuid */

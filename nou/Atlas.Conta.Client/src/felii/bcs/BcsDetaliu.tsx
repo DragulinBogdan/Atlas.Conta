@@ -27,7 +27,7 @@ import { EditorLinie, type EticheteCulese } from './EditorLinie';
 // predatoare și +Consum pe locul de consum primitor. Ecranul nu spune nimic
 // despre asta — registrele sunt fapta motorului; el doar culege laturile.
 
-const CAMPURI_ANTET: (keyof BcsWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof BcsWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function BcsDetaliu() {
@@ -225,6 +225,7 @@ export function BcsDetaliu() {
           >
             <div className="grila-campuri">
               <CampData<BcsWrite> camp="Data" />
+              <CampData<BcsWrite> camp="DataInregistrare" />
               <Lookup<BcsWrite> camp="PredatorId" entitate="Gestiune" mod="local" />
               <div>
                 {/* Primitorul e LOCUL DE CONSUM: un intern purtător al calității
