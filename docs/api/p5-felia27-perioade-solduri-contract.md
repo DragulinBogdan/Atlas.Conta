@@ -107,6 +107,46 @@ pornește pe cerința de produs, iar mărginirea costului e consecința.
   registru): felia aceasta îl face posibil; contractul „Relații" primește
   perioada ca lanț. Felia 27 precede izolarea motorului.
 
+## Amendamente după pasul 0 (2026-09-16, spike `p5-felia27-pas0-spike.md`)
+
+- **F27-D1 (cursa), tranșată: F1 pe ambele capete.** Tranzacția e a
+  `DbContext`-ului ObjectSpace-ului propriu al comenzii
+  (`((EFCoreObjectSpace)os).DbContext.Database.BeginTransaction()`, cast-ul
+  canonic din `ContabilProiectii.cs:790`), deci NU e „în afara
+  ObjectSpace-ului"; F27-r3 nu se activează. Operarea: tranzacția în
+  `OperareApi` (cele patru metode) și în `InchidereTvaApply`/`AmoApply.Genereaza`
+  — `MotorOperare` neatins; `GardianPerioada.VerificaDeschisa` citește prin
+  `SqlQuery … FOR SHARE` cu `"GCRecord" = 0` explicit, ÎN LOCUL
+  `FirstOrDefault`-ului (zero statement-uri în plus; 0 rânduri ⇒ „nedefinită =
+  închisă"). Închiderea: tranzacție proprie în `PerioadaService.Inchide` —
+  `FOR UPDATE` pe rând → verificare → `SUM` → snapshot/partide → `Inchisa` →
+  `CommitChanges` → `Commit`. F2 (interceptor) respins ca gardian de graniță
+  (depinde tăcut de `AutoTransactionBehavior.Always`); F3 respins (conflict
+  fals între două operări în aceeași lună); F5 respins. Intră în pasul 2.
+- **F27-D3 (snapshot-urile), amendat: perioade DE REFERINȚĂ, nu toate cele
+  închise.** Măsurat: cheia completă crește cu ~15 k/lună și nu scade; un
+  snapshot per perioadă închisă ar ajunge la ~27 M rânduri la 5 ani (~19×
+  registrul). Regula nouă: snapshot există ⇔ perioada e DE REFERINȚĂ = ultima
+  perioadă închisă SAU un decembrie închis (capăt de an). Închiderea lui P scrie
+  snapshot(P) = snapshot(P−1) + rulaje(P) (`UNION ALL` + `GROUP BY`, nu JOIN —
+  dimensiunile nullable) și ȘTERGE snapshot(P−1) dacă P−1 nu e decembrie;
+  redeschiderea lui P șterge snapshot(P) și RECONSTRUIEȘTE snapshot(P−1) prin
+  `SUM` integral (≤ 1,5 s la 5 ani; redeschiderea e rară). Invariantul probat
+  devine: pentru fiecare perioadă de referință snapshot(P) = `SUM(registru,
+  DataInregistrare <= sfârșit P)` la cent, pe fiecare cheie, și nicio altă
+  perioadă nu are snapshot. `SolduriService` pornește de la ULTIMA perioadă de
+  referință ≤ d (o dată istorică între capete costă cel mult un an de rulaje).
+  Cheile integral zero (debit ȘI credit cumulate 0; cantitate ȘI valoare 0) se
+  OMIT (−92,9 % pe stoc); cheia absentă = zero pentru orice consumator.
+  Aceeași regulă de referință pentru `PartidaDeschisa` (F27-D7): arieratele la
+  31.12 rămân acoperite. Pragul de timp (30 s) e respectat cu marjă ~20×;
+  cheia completă rămâne.
+- **Index pe `Data`** (`WHERE "GCRecord" = 0`) pe `RegistruContabil` și
+  `RegistruStoc`: intră în migrația pasului 2 (rulajele lunii 70,6 → 37,9 ms).
+- **Unicitate `(An, Luna)`** pe `PerioadeFiscale`: index unic filtrat, în pasul 1.
+- **Notă pentru ModelCheck:** `EFCoreOptimisticLockInterceptor` NU e înregistrat
+  pe căile standalone; orice probă de concurență îl înregistrează explicit.
+
 ## Deciziile
 
 ### F27-D1 — Perioada fiscală e lanț; `Inchisa` se scrie doar prin comandă
@@ -394,6 +434,15 @@ Felia e închisă când, pe codul final:
    (F27-r3) și merge pe verificarea în tranzacție singură; dacă `SUM`-ul
    integral pe cheia completă a atomului depășește 30 s, cheia se
    reproiectează înainte de pasul 2.
+   *Executat (2026-09-16)*: `docs/api/p5-felia27-pas0-spike.md`. F1 probat
+   pe calea reală XAF (`CommitChanges` se înrolează în `CurrentTransaction`;
+   `FOR SHARE` ține rândul înainte și după commit; rollback-ul anulează și
+   commit-ul); F2 condiționat (`AutoTransactionBehavior.Always`,
+   `DbTransactionInterceptor` cu `override`); F3 cu conflict fals; F5 respins.
+   `SUM` integral pe cheia completă: 300 ms azi (187.378 chei), ~1,5 s la
+   5 ani; o lună 70,6 ms (37,9 cu index pe `Data`); incrementala identică la
+   cent cu `SUM`-ul direct. Regula de oprire neatinsă pe ambele întrebări;
+   amendamentele de mai sus.
 1. **Lanțul și comanda de închidere** (D1, D2 fără constatări): schema
    (`InchiderePerioada`, `Inchisa`/`InchisaLa`/`InchisaPrimaOara`), gardianul
    pe `Inchisa`, `inchide`/`redeschide` pe REST și XAF, refuzurile uniforme,
