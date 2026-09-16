@@ -324,6 +324,16 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<Document>()
                 .HasIndex(d => d.DataInregistrare).HasFilter("\"GCRecord\" = 0");
 
+            // F27-D6: corecția arată spre originalul stornat. `WithMany()` fără
+            // colecție (ca `LaturaPereche`): legătura e 1:1 și se verifică la
+            // commit, iar o colecție ar sugera „mai multe corecții". Restrict —
+            // originalul nu dispare de sub corecția care îl explică.
+            modelBuilder.Entity<Document>()
+                .HasOne(d => d.Corecteaza).WithMany().HasForeignKey(d => d.CorecteazaId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Document>()
+                .HasIndex(d => d.CorecteazaId).HasFilter("\"GCRecord\" = 0");
+
             // F27-D5: jurnalele, decontul, D300, D394 și SAF-T filtrează registrul
             // fiscal pe PERIOADA DE DECLARARE, nu pe data faptului.
             modelBuilder.Entity<RegistruTva>()

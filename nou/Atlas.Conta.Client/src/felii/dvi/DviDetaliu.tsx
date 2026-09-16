@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData, CampText } from '../../nucleu/campuri';
@@ -247,6 +248,7 @@ export function DviDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Declarație vamală de import — nouă' : `Declarație vamală ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} baza={doc?.Baza} tva={doc?.Tva} modificat={modificat || nou} />}

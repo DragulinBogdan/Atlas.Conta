@@ -185,6 +185,18 @@ stinge `InchisaPrimaOara`, deci reperul rămâne cel al primei declarații.
 D300 și D394 pe exact o lună calendaristică raportează `Rectificativa` și
 diferențele față de declarat, pe cheia decontului. (F27-D5, F27-D1)
 
+Corecția unui document operat decide efectul FISCAL prin motiv, nu contarea.
+La `Eroare materială`, rândurile inverse ale storno-ului ȘI rândurile
+documentului nou se declară în perioada în care s-au declarat rândurile
+ORIGINALULUI: diferența apare atunci ca rectificativă pe acea lună, cu exact
+cele două seturi de rânduri. La `Fapt nou` nimic nu se mută — rândul invers
+cade în perioada stornării (JT-D5) și documentul nou pe regula normală a
+politicii, pe direcție. Un original fără rânduri fiscale nu are ce moșteni,
+deci corecția lui cade tot pe regula normală. Contarea documentului nou este
+cea normală, din politică; reclasificarea pe 1174 a erorilor semnificative din
+exerciții anterioare rămâne notă contabilă manuală (F27-r1) — motorul nu
+judecă semnificația. (F27-D6, F27-D5)
+
 ## Închiderea lunară TVA
 
 ITV este document specializat generat de serviciul lunar. Politica are patru

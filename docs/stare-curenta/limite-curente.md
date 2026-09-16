@@ -93,9 +93,18 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   pentru D300/D394, este felie proprie. Rectificativa se raportează numai pe
   o perioadă care acoperă exact o lună calendaristică: pe un interval mai lung
   întrebarea nu are subiect (nu există o singură declarație depusă), iar
-  răspunsul este fals cu listă goală. Corecția în perioadă închisă — stornoul
-  legat cu motiv, care mută rândurile fiscale în perioada originalului pentru
-  `EroareMateriala` — nu există încă. (F27-D5, F27-D6, F27-r5)
+  răspunsul este fals cu listă goală. (F27-D5, F27-r5)
+- Corecția unui document operat: motivul decide efectul fiscal, nu contarea.
+  Reclasificarea pe 1174 a erorilor semnificative din exerciții anterioare
+  rămâne notă contabilă manuală — motorul nu judecă semnificația. (F27-r1)
+- Corecția moștenește integral gardienii stornării: un document cu împerecheri
+  cere ștergerea lor înainte (până la pasul 6 al feliei, care le face fapt
+  datat și le inversează), iar un document cu conex operat sau cu latură
+  pereche operată e refuzat exact ca la storno. Comanda nu relaxează nimic.
+  (F27-D6, F27-D8)
+- Legătura de corecție nu apare în coloanele listelor de documente și nu se
+  poate filtra pe ea: se vede pe ecranul documentului, ca bandă, și în grupul
+  „Corecție" al DetailView-ului XAF. (F27-D6)
 - Data înregistrării: documentele generate
   (AMO, ITV, DSC și NIR autogenerat) moștenesc data înregistrării sursei sau
   ultima zi a lunii; editabilitatea ei pe ele nu e decisă. Plata autogenerată

@@ -19,6 +19,15 @@ public sealed record OperareRezultat(
     Guid? ConexId,
     IReadOnlyList<string> Mesaje);
 
+// Rezultatul comenzii de CORECȚIE (F27-D6), tot ca date: originalul (acum
+// `Stornat`) și draftul nou, plus codul tipului — apelantul deschide draftul,
+// iar codul îi spune pe ce ecran.
+public sealed record CorectieRezultat(
+    Guid OriginalId,
+    Guid CorectieId,
+    StareDocument StareOriginal,
+    string TipCod);
+
 // Adaptorul „comandă prin ID" peste MotorOperare (decizia 42b): puntea dintre
 // tierul apelant (Web API la pasul 5, DocumentOperareController azi) și motor e
 // ID-ul în ambele sensuri — nicio entitate nu trece granița.
@@ -65,6 +74,15 @@ public static class OperareApi {
         MotorOperare.Storneaza(os, doc, dataStorno);
         tx.Commit();
         return new OperareRezultat(doc.ID, doc.Stare, null, Array.Empty<string>());
+    }
+
+    // F27-D6: corecția are tranzacția în serviciu (storno + draft nou sunt o
+    // singură comandă); adaptorul traduce entitățile în chei, ca surorile lui.
+    public static CorectieRezultat Corecteaza(IObjectSpace os, Guid documentId, DateOnly dataCorectie,
+            MotivCorectie motiv) {
+        var (storno, corectie) = CorectieService.Corecteaza(os, documentId, dataCorectie, motiv);
+        return new CorectieRezultat(storno.ID, corectie.ID, storno.Stare,
+            MotorOperare.GasesteTipDocument(os, corectie).Cod);
     }
 
     // Dry-run (D3): fazele calculează+validează, fără materializare și fără

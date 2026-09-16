@@ -48,6 +48,20 @@ pentru lună nedefinită sau invizibilă, 403 pentru lipsa dreptului cerut și
 422 pentru refuzul lanțului. Motivul absent la redeschidere este refuz de
 domeniu, nu de cerere. (F27-D1, F27-D2, 80a)
 
+`POST api/documente/{id}/corecteaza` corectează un document operat, pe orice
+tip: ruta e a BAZEI, iar documentul se rezolvă polimorf. Corpul poartă `Data`
+(a corecției) și `Motiv` — numele membrului de enum, ca string pe sârmă.
+Răspunsul dă originalul, documentul nou, starea originalului și `TipCod`,
+codul tipului cu care clientul știe pe ce ecran să navigheze. Ordinea
+refuzurilor este 400 pentru motiv necunoscut sau absent, cu valorile acceptate
+enumerate, 404 pentru document inexistent sau invizibil, 403 pentru lipsa
+dreptului de scriere pe instanță sau a dreptului de creare pe tipul concret —
+comanda produce un document nou — și 422 pentru refuzurile domeniului.
+DTO-urile de citire ale documentelor poartă `Corectie` (originalul, eticheta
+lui și motivul) sau `null`. În client, comanda și banda „Corectează pe …" sunt
+o singură componentă a nucleului, montată de shell pe toate ecranele de
+document. (F27-D6, 80a)
+
 `POST api/perioade/reconstruieste` recalculează integral soldurile
 perioadelor de referință și întoarce, per referință, câte rânduri existau,
 câte au ieșit din recalcul, câte diferă și suma absolută a diferențelor pe

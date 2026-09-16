@@ -71,10 +71,18 @@ public readonly record struct PlafonStingere(decimal Datorie, decimal Creanta) {
 // lucru), Operat = verde bold (registrele există), Stornat = gri tăiat (rândurile
 // au fost inversate). Roșul rămâne al erorilor de validare, nu al stornării.
 [NavigationItem("Documente")]
+// Textul de afișare al oricărei REFERINȚE spre un document (F27-D6): fără el,
+// `Corectează documentul` și `Document sursă` arătau GUID-ul rândului.
+[XafDefaultProperty(nameof(Numar))]
 [Appearance("Document_Stare_Operat", AppearanceItemType.ViewItem, "Stare = 'Operat'",
     TargetItems = nameof(Stare), FontColor = "Green", FontStyle = DevExpress.Drawing.DXFontStyle.Bold)]
 [Appearance("Document_Stare_Stornat", AppearanceItemType.ViewItem, "Stare = 'Stornat'",
     TargetItems = nameof(Stare), FontColor = "Gray", FontStyle = DevExpress.Drawing.DXFontStyle.Strikeout)]
+// F27-D6: grupul „Corecție" din baseline există pe TOATE tipurile (câmpurile
+// sunt ale bazei), dar are ce spune doar pe documentul care chiar corectează.
+[Appearance("Document_Corectie_Ascuns", AppearanceItemType.ViewItem, "CorecteazaId Is Null",
+    TargetItems = nameof(Corecteaza) + ";" + nameof(MotivCorectie),
+    Visibility = DevExpress.ExpressApp.Editors.ViewItemVisibility.Hide)]
 public abstract class Document : BaseObject {
     [XafDisplayName("Număr")]
     public virtual string Numar { get; set; }
@@ -129,6 +137,17 @@ public abstract class Document : BaseObject {
     public virtual Document DocumentSursa { get; set; }
     [ModelDefault("AllowEdit", "False")]
     public virtual bool Autogenerat { get; set; }
+
+    // F27-D6: corecția peste graniță = storno-ul originalului + documentul de
+    // față. Legătura e 1:1, ale motorului amândouă (`CorectieService`), iar
+    // motivul decide efectul FISCAL (perioada de declarare), nu contarea.
+    public virtual Guid? CorecteazaId { get; set; }
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Corectează documentul")]
+    public virtual Document Corecteaza { get; set; }
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Motivul corecției")]
+    public virtual MotivCorectie? MotivCorectie { get; set; }
 
     [DevExpress.ExpressApp.DC.Aggregated]
     public virtual ObservableCollection<DocumentDetaliu> Detalii { get; set; } = new();

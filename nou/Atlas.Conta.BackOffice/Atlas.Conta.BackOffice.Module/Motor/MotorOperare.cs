@@ -378,7 +378,7 @@ public static class MotorOperare {
             var rand = os.CreateObject<RegistruTva>();
             rand.Data = doc.Data;
             var (perioadaAn, perioadaLuna) = RegistruTvaService.PerioadaDeclarare(
-                os, doc.Data, doc.DataInregistrare, t.Regula);                       // F27-D5
+                os, doc, doc.Data, doc.DataInregistrare, t.Regula);                  // F27-D5/D6
             rand.PerioadaAn = perioadaAn;
             rand.PerioadaLuna = perioadaLuna;
             rand.ScrisLa = scrisLa;
@@ -768,7 +768,9 @@ public static class MotorOperare {
         GasesteTipDocument(os, ClasaReala(doc).Name);
 
     // EF Core dă proxy-uri de change-tracking — clasa reală e pe tipul de bază.
-    internal static Type ClasaReala(Document doc) {
+    // Publică de la F27-D6: gate-ul de creare al corecției întreabă pe TIPUL
+    // CONCRET al documentului, iar tierul REST e alt assembly.
+    public static Type ClasaReala(Document doc) {
         var tip = doc.GetType();
         while (tip.Assembly.IsDynamic || tip.Name.EndsWith("Proxy"))
             tip = tip.BaseType;

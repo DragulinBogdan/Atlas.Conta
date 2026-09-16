@@ -693,6 +693,61 @@ Felia e închisă când, pe codul final:
    commit, efectul fiscal per motiv, ecranul React (buton pe documentul
    stornabil din perioadă închisă + banda „corectează pe …"). Oprire:
    ModelCheck identic + probele corecției; smoke în browser.
+   *Executat 5 (2026-09-17), fără opriri*: `Document.CorecteazaId` (FK self
+   `Restrict`, index filtrat) + `Document.MotivCorectie` (`EroareMateriala` |
+   `FaptNou`), migrația `20260916210018_F27Pas5Corectie`; ambele ALE MOTORULUI
+   — `GardianEditare.VerificaDocument` refuză scrierea lor pe ușa securizată,
+   la creare și la editare, iar invariantul legăturii
+   (`GardianEditare.VerificaLegaturaCorectiei`: motiv prezent, original
+   existent și STORNAT, același tip concret, 1:1) rulează la FIECARE commit
+   securizat ȘI în comandă, unde gardianul nu e activ. Comanda e
+   `Motor/CorectieService.Corecteaza` (tranzacția comenzii, un singur
+   `CommitChanges`): storno prin `MotorOperare.Storneaza` NEATINS, apoi
+   documentul nou. Culegerea se copiază GENERIC prin metadata EF
+   (`Entry(...).Metadata.GetProperties()` — tot lanțul TPT, scalare + FK-uri),
+   cu excluderile `ID`/`Stare`/`DataOperare`/`DataInregistrare`/
+   `DocumentSursaId`/`Autogenerat`/`CorecteazaId`/`MotivCorectie`/`GCRecord`/
+   `OptimisticLockField` pe antet și `ID`/`DocumentId` pe linii; `Numar` și
+   `Data` se păstrează (`AsignaNumar` onorează numărul, deci seria nu se
+   consumă — NU există nicio unicitate de număr pe serie în model, verificat,
+   deci excepția pin-uită n-a fost necesară). Lotul: linia care l-a NĂSCUT
+   (`Lot.LinieIntrareId == linia`) primește pe copie un lot PROPRIU nou,
+   nefinalizat (tot prin copiere generică, fără `Data`/`PretUnitar`), pe care
+   motorul îl finalizează la operare; linia care doar CONSUMĂ păstrează
+   `LotId`. Efectul fiscal: rândurile de storno primesc perioada originalului
+   la `EroareMateriala` (scris în `CorectieService`, nu în `Storneaza`), iar
+   documentul nou o primește prin `RegistruTvaService.PerioadaDeclarare`, care
+   capătă `Document` ca prim argument (`MotorOperare` — o singură linie).
+   Ușile: `OperareApi.Corecteaza` → `CorectieRezultat`, `POST
+   api/documente/{id}/corecteaza` (controller nou, ordinea 400 → 404 → 403 cu
+   Create+Write pe TIPUL CONCRET → 422), `PopupWindowShowAction` „Corectează"
+   pe `DocumentOperareController` cu `CorectieParametri` non-persistent și
+   draftul deschis în `TargetWindow.NewWindow`, grupul „Corecție" pe baza
+   `Document` în `ContaUiBaseline` (ascuns prin `[Appearance]` când
+   `CorecteazaId` e null). Deviere raportată: refuzul „deja corectat" se
+   verifică ÎNAINTEA celui de stare — un original corectat e oricum `Stornat`,
+   deci ordinea pin-uită ar fi înghițit mesajul specific. A doua deviere:
+   `ReadDto`-urile primesc UN câmp `Corectie` (`CorectieDto` partajat:
+   `OriginalId`, `Eticheta`, `Motiv`), nu trei câmpuri plate — o linie pe
+   fiecare din cele 18 `*Apply`, prin `ApiProiectii.Corectie`. A treia:
+   `[XafDefaultProperty(nameof(Numar))]` pe `Document`, altfel link-ul din
+   grupul „Corecție" (și `Document sursă`) arătau GUID-ul rândului. React:
+   `nucleu/CorectieDocument.tsx` (buton + dialog cu dată și motiv + banda
+   „Corectează pe …"), slot `corectie` pe `DocumentShell`, o linie în fiecare
+   din cele 18 ecrane de document. Probe `COR-V0…V19` pe ambele profiluri
+   (scena 2034, ianuarie închis): storno-ul la data corecției, documentul nou
+   cu `Numar`/`Data` păstrate și culegerea copiată, lotul renăscut vs. lotul
+   păstrat, operarea corecției cu linia schimbată, refuzurile (draft, perioadă
+   închisă, deja corectat, legătura scrisă de mână, original ne-stornat,
+   1:1), snapshot-ul lui 01/2034 identic + reconstrucția cu zero diferențe,
+   notele originalului însumând zero; pe privat, în plus, `EroareMateriala` ⇒
+   perioada originalului pe storno ȘI pe documentul nou ⇒ rectificativa lui
+   01/2034 cu exact cele două rânduri (−100 și +150), `FaptNou` ⇒ regula
+   normală D5 pe ambele direcții. ModelCheck bugetar 1191/0 (de la 1174),
+   privat 1332/0 (de la 1309); `refuzuri.ps1` 261/261 pe host viu Privat (de la
+   254, cu scena `corecteaza`); `has-pending-model-changes` curat,
+   `--dump-metadata` și codegen-ul idempotente, `pnpm build` verde; smoke React
+   și XAF cu capturi în `run-f27/pas5/`.
 6. **Totalul, partidele deschise, împerecherea datată** (D7, D8):
    `TotalStingere` scris la operare (backfill în migrație pentru documentele
    operate existente), `PartidaDeschisa` la închidere, `Imperechere.Data` +

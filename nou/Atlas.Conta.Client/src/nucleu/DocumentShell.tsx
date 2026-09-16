@@ -42,6 +42,12 @@ export function DocumentShell(props: {
   // Slot sub panoul de rezultat: acolo unde răspunsul serverului cere o
   // NAVIGARE, nu doar un text (FCT operată → „Deschide NIR-ul generat").
   rezultatExtra?: ReactNode;
+  // F27-D6: corecția documentului — butonul cu dialogul lui și banda
+  // „Corectează pe …". Slot, nu componentă cunoscută de shell (ca `subsol`):
+  // ecranul montează `<CorectieDocument>`, shell-ul îi dă doar locul, sub bara
+  // de comenzi. De ce nu o `Comanda`: comanda culege DOI parametri (data și
+  // motivul), iar `cereData` e făcut pentru unul singur.
+  corectie?: ReactNode;
   ocupat?: boolean;
   antet: ReactNode;
   linii?: ReactNode;
@@ -79,7 +85,7 @@ export function DocumentShell(props: {
 }) {
   const {
     titlu, sumar, comenzi, erori, mesaje = [], rezultatExtra, ocupat = false,
-    antet, linii, subsol, confirmare, inchideConfirmarea, citire,
+    antet, linii, subsol, confirmare, inchideConfirmarea, citire, corectie,
   } = props;
   const [cerere, setCerere] = useState<Comanda | null>(null);
   const [data, setData] = useState<string | undefined>(azi());
@@ -132,6 +138,8 @@ export function DocumentShell(props: {
           ))}
         </div>
       </div>
+
+      {corectie}
 
       {confirmare}
 

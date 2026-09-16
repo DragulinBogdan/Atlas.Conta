@@ -385,7 +385,10 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (!string.IsNullOrEmpty(doc.Numar) && AreNumerotare(os, doc))
                 erori.Add($"Numărul documentului vine din seria tipului (PoliticaNumerotare) "
                     + "— nu se culege.");
+            if (doc.CorecteazaId != null || doc.MotivCorectie != null)
+                erori.Add(LegaturaCorectiei);
             VerificaDataInregistrare(doc, erori);
+            VerificaLegaturaCorectiei(os, doc, erori);
             return;
         }
         var originale = Originale(os, doc);
@@ -410,7 +413,41 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 && AreNumerotare(os, doc))
             erori.Add($"Numărul documentului {Eticheta(doc)} vine din seria tipului "
                 + "(PoliticaNumerotare) — nu se editează.");
+        if (!Equals(originale[nameof(Document.CorecteazaId)], doc.CorecteazaId)
+                || !Equals(originale[nameof(Document.MotivCorectie)], doc.MotivCorectie))
+            erori.Add(LegaturaCorectiei);
         VerificaDataInregistrare(doc, erori);
+        VerificaLegaturaCorectiei(os, doc, erori);
+    }
+
+    // F27-D6. Legătura de corecție e a MOTORULUI, ca `Stare` și grupul conex:
+    // pe ușa securizată nu se scrie nici la creare, nici la editare.
+    const string LegaturaCorectiei =
+        "Legătura de corecție o scrie doar motorul (Corectează).";
+
+    // F27-D6 — invariantul legăturii, INDEPENDENT de ușa pe care s-a scris:
+    // gardianul îl aplică la fiecare commit securizat (inclusiv pe corecția
+    // legitimă, cât timp e Draft și se culege), iar `CorectieService` îl cheamă
+    // pe ușa non-secured, unde gardianul nu rulează.
+    internal static void VerificaLegaturaCorectiei(IObjectSpace os, Document doc, ICollection<string> erori) {
+        if (doc.CorecteazaId is not Guid originalId)
+            return;
+        if (doc.MotivCorectie == null)
+            erori.Add("Documentul de corecție nu are motiv — corecția se face cu motiv scris.");
+        var original = os.GetObjectByKey<Document>(originalId);
+        if (original == null) {
+            erori.Add("Documentul corectat nu există.");
+            return;
+        }
+        if (original.Stare != StareDocument.Stornat)
+            erori.Add($"Documentul corectat {Eticheta(original)} nu e stornat (starea „{original.Stare}”) — "
+                + "corecția e storno-ul originalului plus documentul nou.");
+        if (MotorOperare.ClasaReala(original) != MotorOperare.ClasaReala(doc))
+            erori.Add($"Corecția trebuie să fie de același tip cu documentul corectat "
+                + $"({MotorOperare.ClasaReala(original).Name}).");
+        if (os.GetObjectsQuery<Document>().Any(d => d.CorecteazaId == originalId && d.ID != doc.ID))
+            erori.Add($"Documentul {Eticheta(original)} e deja corectat de alt document — "
+                + "legătura de corecție e 1:1.");
     }
 
     // F27-D4. `default` = necules: motorul o normalizează la `Data` în operare,

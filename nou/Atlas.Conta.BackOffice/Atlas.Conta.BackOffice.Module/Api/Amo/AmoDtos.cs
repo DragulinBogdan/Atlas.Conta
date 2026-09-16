@@ -66,6 +66,8 @@ public sealed class AmoReadDto {
 
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
+    // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).
+    public CorectieDto Corectie { get; set; }
     public bool PoateStorna { get; set; }
     public bool PoateSterge { get; set; }
     public bool PoateRegenera { get; set; }

@@ -160,6 +160,7 @@ public static class NotaTransferApply {
             // Affordances din stare — aceleași surse ca acțiunile XAF.
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat,
             PoateStorna = h.Stare == StareDocument.Operat,
             Linii = linii.Select(l => new NotaTransferLinieReadDto {

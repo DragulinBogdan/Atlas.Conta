@@ -120,6 +120,8 @@ public sealed class AsmReadDto {
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
+    // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).
+    public CorectieDto Corectie { get; set; }
     public bool PoateStorna { get; set; }
     // Comanda proprie feliei (F19-D4): are rost doar pe un Draft cu cel puțin o
     // linie de fiecare rol. Restul refuzurilor (consum fără lot, cantitate 0,

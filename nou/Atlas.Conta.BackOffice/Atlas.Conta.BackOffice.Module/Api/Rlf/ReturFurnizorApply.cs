@@ -302,6 +302,7 @@ public static class ReturFurnizorApply {
             Total = linii.Sum(l => l.Valoare + l.ValoareTva),
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             Linii = linii.Select(l => new RlfLinieReadDto {

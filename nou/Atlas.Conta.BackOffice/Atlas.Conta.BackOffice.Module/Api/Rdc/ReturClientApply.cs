@@ -277,6 +277,7 @@ public static class ReturClientApply {
             TotalCost = linii.Where(l => l.LotId != null).Sum(l => l.Valoare),
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             Linii = linii.Select(l => new RdcLinieReadDto {

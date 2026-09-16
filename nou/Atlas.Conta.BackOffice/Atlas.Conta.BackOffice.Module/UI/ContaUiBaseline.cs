@@ -294,7 +294,14 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
                     .Item(x => x.DataOperare)
                     .Item(x => x.DocumentSursa)
                     .Item(x => x.Autogenerat)
-                    .Item(x => x.Total)));
+                    .Item(x => x.Total))
+                // F27-D6: legătura de corecție, o singură declarație pe BAZĂ
+                // (câmpurile sunt ale ei). Read-only prin `ModelDefault` pe
+                // model; grupul se ascunde pe documentele care nu corectează
+                // nimic, prin `[Appearance]` pe `Document`.
+                .Group("GrupCorectie", "Corecție", g => g
+                    .Item(x => x.Corecteaza)
+                    .Item(x => x.MotivCorectie)));
 
         registry.For<FacturaIntrare>()
             .Layout(l => l

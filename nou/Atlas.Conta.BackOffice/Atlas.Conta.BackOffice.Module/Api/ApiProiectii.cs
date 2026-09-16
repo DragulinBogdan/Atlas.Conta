@@ -17,6 +17,29 @@ internal static class ApiProiectii {
     public static string EtichetaLot(string produs, DateOnly? data, decimal? pretUnitar)
         => data == null ? null : Lot.EtichetaLot(produs, data.Value, pretUnitar ?? 0m);
 
+    // F27-D6 — legătura de corecție a unui document, ca DTO partajat: o singură
+    // proiecție pentru toate cele 18 `*Apply`, nu 18 copii ale aceluiași join.
+    // `null` = documentul nu corectează nimic (cazul majoritar, o citire pe
+    // indexul filtrat).
+    public static CorectieDto Corectie(IObjectSpace os, Guid id) {
+        var rand = os.GetObjectsQuery<Document>()
+            .Where(d => d.ID == id && d.CorecteazaId != null)
+            .Select(d => new {
+                OriginalId = d.CorecteazaId.Value, d.MotivCorectie,
+                d.Corecteaza.Numar, Data = (DateOnly?)d.Corecteaza.Data
+            })
+            .FirstOrDefault();
+        if (rand == null)
+            return null;
+        return new CorectieDto {
+            OriginalId = rand.OriginalId,
+            Eticheta = string.IsNullOrWhiteSpace(rand.Numar)
+                ? rand.Data?.ToString("dd.MM.yyyy")
+                : $"{rand.Numar} din {rand.Data:dd.MM.yyyy}",
+            Motiv = rand.MotivCorectie?.ToString()
+        };
+    }
+
     // Grupul conex al unui document. Coloanele plate vin dintr-o proiecție;
     // CODUL TIPULUI nu poate veni din SQL — sub TPT nu există discriminator, iar
     // ancora `TipDocument` se găsește după NUMELE CLASEI CLR

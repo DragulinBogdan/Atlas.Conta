@@ -125,6 +125,40 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
 - O perioadă absentă se consideră închisă. Administratorul nu ocolește
   granița perioadei fiscale închise. (14, 25d)
 
+### Corecția unui document operat
+
+- Nu există editare în loc a unui document operat. Peste graniță corecția
+  este o singură comandă: `Corectează`, pe orice tip. (55a, F27-D6)
+- Comanda stornează originalul la data cerută și creează, în aceeași
+  tranzacție, un DRAFT nou de același tip concret, cu `CorecteazaId` spre
+  original și `MotivCorectie` (`Eroare materială` / `Fapt nou`). Gardienii
+  stornării rămân neschimbați: perioada corecției deschisă, data ≥ data
+  înregistrării, fără copii operați, fără latură pereche operată, fără
+  împerecheri. (F27-D6)
+- Legătura este 1:1 și o scrie doar motorul. Invariantul se verifică și la
+  fiecare commit securizat: original existent și stornat, de același tip
+  concret, motiv prezent, niciun al doilea document spre același original.
+- Documentul nou păstrează `Numar` și `Data` ale documentului fizic (seria nu
+  se consumă din nou) și primește `DataInregistrare` = data corecției.
+- Culegerea se copiază generic, prin metadata EF: toate proprietățile scalare
+  și FK-urile mapate ale lanțului TPT, pe antet și pe linii. Nu se copiază
+  identitatea (`ID`), câmpurile motorului (`Stare`, `DataOperare`,
+  `Autogenerat`, `DocumentSursaId`), datele proprii corecției
+  (`DataInregistrare`, `CorecteazaId`, `MotivCorectie`) și câmpurile de
+  infrastructură ale lui `BaseObject`.
+- Lotul: linia care a NĂSCUT un lot (`Lot.LinieIntrareId == linia`) primește
+  pe copie un lot PROPRIU, nou și nefinalizat, pe care motorul îl finalizează
+  la operare (preț, dată). Linia care doar CONSUMĂ un lot îl păstrează prin
+  `LotId`, copiat ca orice FK. (26e)
+- Un original nu se corectează de două ori, iar un document care nu e operat
+  nu se corectează deloc.
+- Perioada închisă nu se atinge: storno-ul și documentul nou trăiesc în
+  fereastra deschisă, iar snapshot-ul perioadei rămâne cel de la închidere.
+  Efectul FISCAL al motivului e în `politici-si-fiscalitate.md`.
+- Comanda: `Motor/CorectieService.cs`, prin `Api/OperareApi.Corecteaza`;
+  ușile sunt `POST api/documente/{id}/corecteaza` și acțiunea XAF
+  „Corectează" de pe orice DetailView de document.
+
 ### Perioada fiscală ca lanț
 
 - Perioada este o verigă identificată prin an și lună, unică între rândurile

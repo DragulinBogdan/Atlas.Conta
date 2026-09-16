@@ -38,8 +38,18 @@ public static class RegistruTvaService {
     // (nedefinită = închisă, regula gardianului) decide politica tipului.
     // Citire simplă, fără blocare: rândul perioadei e deja ținut de gardianul
     // care a verificat `DataInregistrare`.
-    public static (int An, int Luna) PerioadaDeclarare(IObjectSpace os, DateOnly dataFapt,
+    //
+    // F27-D6: corecția pentru EROARE MATERIALĂ aparține fiscal perioadei
+    // originalului — rândurile documentului nou se declară acolo unde s-au
+    // declarat ale lui, deci diferența apare ca rectificativă pe acea lună.
+    // Faptul nou rămâne pe regula normală.
+    public static (int An, int Luna) PerioadaDeclarare(IObjectSpace os, Document doc, DateOnly dataFapt,
             DateOnly dataInregistrare, DeclarareIntarziata regula) {
+        if (doc.CorecteazaId is Guid originalId && doc.MotivCorectie == MotivCorectie.EroareMateriala) {
+            var alOriginalului = PerioadaOriginalului(os, originalId);
+            if (alOriginalului != null)
+                return alOriginalului.Value;
+        }
         var deschisa = os.GetObjectsQuery<PerioadaFiscala>()
             .Where(p => p.An == dataFapt.Year && p.Luna == dataFapt.Month)
             .Select(p => (bool?)p.Inchisa)
@@ -50,6 +60,18 @@ public static class RegistruTvaService {
             ? (dataInregistrare.Year, dataInregistrare.Month)
             : (dataFapt.Year, dataFapt.Month);
     }
+
+    // F27-D6 — perioada în care s-au declarat faptele fiscale ale unui document:
+    // rândurile lui NESTORNATE (toate au aceeași perioadă, scrisă de regula de
+    // mai sus la operare). `null` = documentul n-a avut fapte fiscale, deci
+    // corecția lui n-are ce moșteni și cade pe regula normală.
+    public static (int An, int Luna)? PerioadaOriginalului(IObjectSpace os, Guid documentId) =>
+        os.GetObjectsQuery<RegistruTva>()
+            .Where(r => r.DocumentId == documentId && !r.Storno)
+            .Select(r => new { r.PerioadaAn, r.PerioadaLuna })
+            .FirstOrDefault() is { } p
+            ? (p.PerioadaAn, p.PerioadaLuna)
+            : null;
 
     // Forma folosită de MOTOR: primește ce are deja rezolvat (tipul documentului,
     // liniile pe care tocmai le-a pregătit `PregatesteOperare`).

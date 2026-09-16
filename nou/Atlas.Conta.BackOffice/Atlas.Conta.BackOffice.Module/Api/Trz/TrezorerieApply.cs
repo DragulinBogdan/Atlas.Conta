@@ -343,6 +343,7 @@ public static class TrezorerieApply {
             DocumentSursaTip = ApiProiectii.CodTip(os, h.DocumentSursaId),
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri
                 && faraLaturaPerecheOperata,
             PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri

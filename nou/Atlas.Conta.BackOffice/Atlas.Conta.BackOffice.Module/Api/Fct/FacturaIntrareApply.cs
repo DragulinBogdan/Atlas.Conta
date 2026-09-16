@@ -380,6 +380,7 @@ public static class FacturaIntrareApply {
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             Copii = copii,

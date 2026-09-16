@@ -600,6 +600,7 @@ public static class AsamblareApply {
             SumaConsum = sumaConsum, SumaProdus = sumaProdus, Diferenta = sumaProdus - sumaConsum,
             PoateEdita = draft,
             PoateOpera = draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             PoateDistribui = draft

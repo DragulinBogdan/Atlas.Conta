@@ -5,6 +5,7 @@ import { SelectBox } from 'devextreme-react';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import DataSource from 'devextreme/data/data_source';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData, CampSelectie } from '../../nucleu/campuri';
@@ -215,6 +216,7 @@ export function CasDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Ieșire de imobilizări — nouă' : `Ieșire de imobilizări ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}

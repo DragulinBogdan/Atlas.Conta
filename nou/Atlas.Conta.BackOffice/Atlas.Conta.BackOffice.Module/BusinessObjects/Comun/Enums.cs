@@ -86,6 +86,16 @@ public enum DeclarareIntarziata {
     [XafDisplayName("În perioada faptului")] PerioadaFaptului = 2,
 }
 
+// De ce se corectează un document operat (F27-D6). Decide EFECTUL FISCAL al
+// perechii storno + document nou, nu contarea: eroarea materială aparține
+// perioadei originale (rândurile de TVA păstrează perioada ei de declarare ⇒
+// rectificativă), faptul nou e un fapt al perioadei corecției (regula normală
+// D5). Fără membru 0 — convenția din fișier.
+public enum MotivCorectie {
+    [XafDisplayName("Eroare materială")] EroareMateriala = 1,
+    [XafDisplayName("Fapt nou")] FaptNou = 2,
+}
+
 // Latura jurnalului de TVA (JT-D1): cumpărări sau vânzări. Sensul NU e o a doua
 // axă de configurare — se derivă din `PoliticaTva.Directie` a tipului de
 // document (Deductibil → Achiziție, Colectat → Livrare), acolo unde profilul a

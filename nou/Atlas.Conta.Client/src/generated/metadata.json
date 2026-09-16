@@ -149,6 +149,10 @@
       "Accelerata": "Accelerată",
       "Degresiva": "Degresivă"
     },
+    "MotivCorectie": {
+      "EroareMateriala": "Eroare materială",
+      "FaptNou": "Fapt nou"
+    },
     "MotivEliminare": {
       "SemnNepotrivit": "Semnul liniei nu se potrivește",
       "TipMaterialDiferit": "Regula e pe alt tip de material",
@@ -425,15 +429,18 @@
   },
   "Tipuri": {
     "AmortizareLunara": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -526,15 +533,18 @@
       }
     },
     "Asamblare": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -571,15 +581,18 @@
       }
     },
     "BonConsum": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -662,9 +675,11 @@
       }
     },
     "Decont": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
@@ -672,6 +687,7 @@
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "NumarPV": "Număr PV",
         "Predator": "Predator (de la)",
@@ -714,15 +730,18 @@
       }
     },
     "DescarcareGestiune": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -765,15 +784,18 @@
       }
     },
     "Document": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -803,9 +825,11 @@
       }
     },
     "DocumentTrezorerie": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataExtras": "Dată extras",
         "DataInregistrare": "Data înregistrării",
@@ -815,6 +839,7 @@
         "ID": "ID",
         "LaturaPereche": "Latura pereche",
         "LaturaPerecheId": "Latura pereche",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "NumarExtras": "Număr extras",
         "Predator": "Predator (de la)",
@@ -854,16 +879,19 @@
       }
     },
     "Dvi": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Baza": "Valoare în vamă",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -885,9 +913,11 @@
       }
     },
     "FacturaIesire": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
@@ -897,6 +927,7 @@
         "GestiuneDescarcare": "Gestiune de descărcare",
         "GestiuneDescarcareId": "Gestiune de descărcare",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -933,12 +964,14 @@
       }
     },
     "FacturaIntrare": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
         "ChitantaData": "ChitantaData",
         "ChitantaNumar": "ChitantaNumar",
         "CodCpv": "Cod CPV",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Curs": "Curs",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
@@ -950,6 +983,7 @@
         "GenereazaChitanta": "GenereazaChitanta",
         "GenereazaPlata": "Generează plata",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "NumarPV": "Număr PV",
         "PlataContPropriu": "Cont propriu (din care se plătește)",
@@ -1015,16 +1049,19 @@
       }
     },
     "IesireImobilizare": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
         "Cauza": "Cauză",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -1103,9 +1140,11 @@
       }
     },
     "Incasare": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataExtras": "Dată extras",
         "DataInregistrare": "Data înregistrării",
@@ -1115,6 +1154,7 @@
         "ID": "ID",
         "LaturaPereche": "Latura pereche",
         "LaturaPerecheId": "Latura pereche",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "NumarExtras": "Număr extras",
         "Predator": "Predator (de la)",
@@ -1141,15 +1181,18 @@
       }
     },
     "InchidereTva": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -1171,15 +1214,18 @@
       }
     },
     "ListaDiferenteInventar": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -1270,15 +1316,18 @@
       }
     },
     "NIR": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -1321,15 +1370,18 @@
       }
     },
     "NotaContabila": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -1370,9 +1422,11 @@
       }
     },
     "NotaTransfer": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
@@ -1380,6 +1434,7 @@
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "NumarPV": "Număr PV",
         "Predator": "Predator (de la)",
@@ -1432,9 +1487,11 @@
       }
     },
     "Plata": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataExtras": "Dată extras",
         "DataInregistrare": "Data înregistrării",
@@ -1444,6 +1501,7 @@
         "ID": "ID",
         "LaturaPereche": "Latura pereche",
         "LaturaPerecheId": "Latura pereche",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "NumarExtras": "Număr extras",
         "Predator": "Predator (de la)",
@@ -1601,15 +1659,18 @@
       }
     },
     "PunereInFunctiune": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -1672,15 +1733,18 @@
       }
     },
     "RaportProductie": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -1923,15 +1987,18 @@
       }
     },
     "ReturClient": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",
@@ -1942,15 +2009,18 @@
       }
     },
     "ReturFurnizor": {
-      "DefaultProperty": null,
+      "DefaultProperty": "Numar",
       "Membri": {
         "Autogenerat": "Autogenerat",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
         "Numar": "Număr",
         "Predator": "Predator (de la)",
         "PredatorId": "Predator (de la)",

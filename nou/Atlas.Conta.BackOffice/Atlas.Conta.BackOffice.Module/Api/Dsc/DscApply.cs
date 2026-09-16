@@ -88,6 +88,7 @@ public static class DscApply {
             // affordance de editare ar minți contractul (precedentul NIR, F2-D5).
             PoateEdita = false,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             Linii = linii.Select(l => new DscLinieReadDto {

@@ -1000,6 +1000,23 @@ try {
     Proba -Cerere 'rectificativă fără lună' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/rectificativa-tva?an=2026' -Contine 'obligatoriu' | Out-Null
     Proba -Cerere 'rectificativă pe o lună nedefinită' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/proiectii/rectificativa-tva?an=2099&luna=12' -Contine 'nu există sau nu e vizibil' | Out-Null
 
+    # ── Corecția unui document operat (F27-D6) ──────────────────────
+    # Comandă a BAZEI, nu a unei felii: ruta e `api/documente/{id}/corecteaza`,
+    # documentul se rezolvă POLIMORF. Ordinea de pe sârmă se vede pe patru
+    # răspunsuri diferite pentru ACELAȘI id: 400 (motiv necunoscut — enum pe
+    # NUME, 57a) înaintea oricărei întrebări de drept, 404 pentru cine nu vede
+    # documentul, 403 pentru cine îl vede fără drept de scriere, 422 pentru cine
+    # are dreptul și îl refuză domeniul. Subiectul e draftul de NIR al matricei,
+    # deci refuzul de domeniu e chiar „nu e operat" — și nu scrie nimic.
+    $corpCorectie = @{ Data = (Get-Date -Format 'yyyy-MM-dd'); Motiv = 'EroareMateriala' }
+    Proba -Cerere 'corectează documentul' -User 'Admin' -Asteptat 400 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp @{ Data = (Get-Date -Format 'yyyy-MM-dd'); Motiv = 'Habar' } -Contine 'nu există', 'EroareMateriala' -Nota 'sintaxa, înaintea dreptului' | Out-Null
+    Proba -Cerere 'corectează documentul' -User 'Admin' -Asteptat 400 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp @{ Data = (Get-Date -Format 'yyyy-MM-dd') } -Contine 'nu e cules' -Nota 'motivul lipsă e tot 400' | Out-Null
+    Proba -Cerere 'corectează documentul' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp $corpCorectie -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'corectează documentul' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp $corpCorectie -Contine 'modifica' -Nota 'vede documentul, n-are dreptul de scriere' | Out-Null
+    Proba -Cerere 'corectează documentul' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp $corpCorectie -Contine 'modifica' | Out-Null
+    Proba -Cerere 'corectează un document inexistent' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/documente/$idInexistent/corecteaza" -Corp $corpCorectie -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'corectează un DRAFT' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp $corpCorectie -Contine 'doar un document operat' -Nota 'F27-D6: are dreptul, îl refuză domeniul' | Out-Null
+
     # Lanțul a rămas NEATINS: nicio perioadă închisă de matrice.
     $lantDupa = @((Invoke-Cerere -Metoda GET -Cale '/api/perioade' -Token $tokenAdmin).Corp | ConvertFrom-Json)
     $inchiseDupa = @($lantDupa | Where-Object { $_.Inchisa }).Count
