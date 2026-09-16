@@ -448,6 +448,12 @@ internal static class ProfilPrivat {
                 p.Directie = directie;
                 p.SursaContrapartida = sursa;
                 p.ContrapartidaFallbackId = os.FirstOrDefault<Cont>(c => c.Simbol == fallback)?.ID;
+                // F27-D5 — deductibilul se declară în perioada primirii facturii
+                // (art. 301 Cod fiscal, fără rectificativă); factura noastră
+                // rămâne fiscal a perioadei ei, deci colectatul o rectifică.
+                p.DeclarareIntarziata = directie == DirectieTva.Deductibil
+                    ? DeclarareIntarziata.PerioadaInregistrarii
+                    : DeclarareIntarziata.PerioadaFaptului;
             });
         }
         Politica("FCT", DirectieTva.Deductibil, SursaCont.RepartitorPredator, "401");

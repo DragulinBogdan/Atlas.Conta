@@ -291,7 +291,10 @@ pornește pe cerința de produs, iar mărginirea costului e consecința.
   Profilul poate alege altfel; motorul nu știe de ce.
 - **Conținutul de rectificativă** pentru P = rândurile cu perioada de
   declarare P scrise după `InchisaPrimaOara` a lui P
-  (`DataOperare > InchisaPrimaOara`). Nu există flag: e derivat din două
+  (`DataOperare > InchisaPrimaOara`).
+  *Notă de execuție (pasul 4a)*: reperul per rând e `RegistruTva.ScrisLa`, nu
+  `Document.DataOperare` — `DataOperare` e a documentului și nu descrie rândul
+  de storno, scris mai târziu peste același document. Nu există flag: e derivat din două
   timestamp-uri. D300/D394/D406 pe o perioadă închisă cu astfel de rânduri
   se raportează ca RECTIFICATIVĂ, cu secțiunea „diferențe față de declarat"
   = exact acele rânduri. Redeschiderea NU șterge `InchisaPrimaOara`: ce a
@@ -593,6 +596,58 @@ Felia e închisă când, pe codul final:
    secțiunea de rectificativă. Oprire: ModelCheck identic; D300/D394 pe baza
    de import identice cu cele de dinainte pentru perioadele fără rânduri
    întârziate (nicio schimbare pe istoric).
+   *Executat 4a (2026-09-16), cu O OPRIRE raportată; devierile mai jos*:
+   `RegistruTva` a primit `PerioadaAn`/`PerioadaLuna` (perioada de DECLARARE) și
+   `ScrisLa` (momentul scrierii RÂNDULUI, UTC); `PoliticaTva.DeclarareIntarziata`
+   (`PerioadaInregistrarii` | `PerioadaFaptului`) cu seed privat pe DIRECȚIE
+   (FCT/DEC/RLF/DVI deduc ⇒ perioada înregistrării, FCL/RDC colectează ⇒ perioada
+   faptului); bugetarul rămâne fără rânduri `PoliticaTva`, deci inert. Regula de
+   completare stă într-o singură funcție, `RegistruTvaService.PerioadaDeclarare`,
+   cu trei apelanți: materializarea din `MotorOperare.Opereaza` (regula ajunge
+   acolo prin `RandTva.Regula`, ca motorul să nu recitească politica), rândul
+   invers din `Storneaza` (perioada stornării, JT-D5) și `BackfillTva.Scrie`.
+   `git diff Motor/MotorOperare.cs` = exact cele două blocuri de materializare.
+   Migrația `20260916193817_F27Pas4PerioadaDeclarare` (trei coloane pe registru,
+   una pe politică, backfill `PerioadaAn/Luna` din `Data` și `ScrisLa` din
+   `Document.DataOperare`, index filtrat `(PerioadaAn, PerioadaLuna)`), aplicată
+   pe `Atlas.Conta.BackOffice`, `.Privat` și `Import1C.Flax.Api`; baza
+   `Import1C.Flax` a rămas neatinsă (import în curs), iar `ModelCheck.Privat` se
+   migrează singură. Consumatorii: toate cele șase citiri (jurnal, decont,
+   D300:177, D394:287 și :635, SAF-T:350 și :2231) trec prin helperul unic
+   `TvaProiectii.IntreLuni`; `PerioadaAn`/`PerioadaLuna` intră ȘI în cheia de
+   grupare a jurnalului și ies pe `JurnalTvaRand`. `TvaProiectii.Rectificativa`
+   (rândurile perioadei cu `ScrisLa > InchisaPrimaOara`, plus agregatul pe cheia
+   decontului) + `GET api/proiectii/rectificativa-tva?an=&luna=` cu gate dublu
+   (404 din perioadă, 403 din registru); `D300Dto`/`D394Dto` primesc
+   `Rectificativa` și `DiferenteDeclarat`, completate doar pe o lună exactă.
+   SAF-T: doar filtrul; marcajul în fișier rămâne F27-r5.
+
+   **OPRIREA (regula de oprire, punctul „o probă existentă D4 își schimbă
+   cifrele”)**: `D4-V3 storno` tăia luna august în două ferestre de ZILE
+   (1–20.08 operarea, 21–31.08 stornarea) și cerea cifre diferite pe ele. Cu
+   filtrul pe perioada de DECLARARE, care are granularitate de LUNĂ, o fereastră
+   sub-lunară nu mai taie nimic: ambele jumătăți întorc luna întreagă. Nu e un
+   defect de implementare, ci consecința directă a formulei pin-uite în D5 —
+   perioada fiscală E luna, deci un interval de zile nu mai poate selecta o
+   parte din ea. Probele care cer o fereastră de zile pe un raport fiscal nu mai
+   sunt exprimabile. Am adaptat proba păstrând TOATE cifrele lunii (2500 / 525,
+   nrFact 6, Documente 5) și mutând dovada „stornoul e un fapt distinct, în
+   perioada stornării” pe registrul citit direct (un rând, −400 / −84, perioada
+   de declarare 08); proba afirmă acum explicit și consecința nouă (ambele
+   jumătăți = luna întreagă). Decizia de a păstra formula simplă a lui D5 în
+   locul unui filtru compus (zile pentru rândurile nemutate, lună pentru cele
+   mutate) e a implementării și cere ratificare.
+
+   Alte devieri: (1) contractul spune `DataOperare > InchisaPrimaOara` pentru
+   conținutul de rectificativă — `DataOperare` e a DOCUMENTULUI și nu descrie
+   rândul de storno scris mai târziu, deci reperul per rând e `ScrisLa`;
+   (2) DTO-urile se numesc `D300Dto`/`D394Dto`, nu `D300Rezultat`/`D394Rezultat`;
+   (3) `PoliticaTva` are acum două enum-uri fără membru 0, deci scena `F23-V4`
+   își culege explicit `DeclarareIntarziata` (tiparul feliei 24, F24-G1) — textul
+   și verdictele ei rămân identice; (4) rândul injectat prin SQL brut în `D4-V7`
+   a primit cele trei coloane noi, altfel cădea în afara filtrului;
+   (5) `D16-V2` citește registrul prin același helper, ca proba independentă să
+   măsoare aceeași fereastră ca proiecția.
 5. **Corecția** (D6): `CorecteazaId`, `MotivCorectie`, comanda `corecteaza`
    pe REST și XAF (pe fiecare tip, prin controllerul de bază), verificarea la
    commit, efectul fiscal per motiv, ecranul React (buton pe documentul

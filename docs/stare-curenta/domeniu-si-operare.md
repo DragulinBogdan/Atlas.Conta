@@ -62,7 +62,10 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
 
 - Registrele contabil, de stoc și de imobilizări, precum și lotul născut din
   liniile documentului, se scriu la data înregistrării. `RegistruTva.Data`
-  rămâne data faptului fiscal, adică data documentului. (F27-D4, F27-D5)
+  rămâne data faptului fiscal, adică data documentului; perioada în care faptul
+  se declară este o coordonată separată pe rândul fiscal, decisă de politică
+  atunci când perioada faptului e închisă. Regulile ei sunt în
+  [politici și fiscalitate](politici-si-fiscalitate.md). (F27-D4, F27-D5)
 - Gardianul de perioadă întreabă despre perioada datei înregistrării, la
   operare și la anulare. Un document cu data fizică într-o perioadă închisă și
   data înregistrării în cea deschisă se operează: documentul întârziat este

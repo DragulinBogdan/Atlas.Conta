@@ -9,6 +9,7 @@ import { eroriDin, ia } from '../../nucleu/http';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { urlCu, useUrlStare } from '../../nucleu/urlStare';
 import { CasetaPerioada, lunaCurenta } from '../raportare/comune';
+import { BandaRectificativa } from './BandaRectificativa';
 
 // D394 — declarația informativă (felia 14, D4-D7): aceleași cifre ca în D300,
 // așezate PER PARTENER (OPANAF 3769/2015, mod. 2194/2025). Ecran separat de
@@ -154,6 +155,11 @@ export function D394() {
           <CartusH cote={rezumatCote} />
         </>
       )}
+
+      <BandaRectificativa
+        rectificativa={citit.data?.Rectificativa}
+        diferente={citit.data?.DiferenteDeclarat}
+      />
 
       {/* D4-D4: nimic nu se pierde. Panoul apare DOAR când există grupuri care
           n-au unde cădea în declarație — dar atunci arată cifrele lor. */}

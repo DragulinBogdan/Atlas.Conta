@@ -347,8 +347,9 @@ public static class SaftProiectii {
             .ToList();
 
         // ── 5. Rândurile fiscale ale perioadei ───────────────────────────────
-        var randuriTva = os.GetObjectsQuery<RegistruTva>()
-            .Where(r => r.Data >= dataStart && r.Data <= dataEnd)
+        // Perioada de DECLARARE (F27-D5), ca la D300/D394 — marcajul de
+        // rectificativă în fișierul depus rămâne felie proprie (F27-r5).
+        var randuriTva = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), dataStart, dataEnd)
             .Select(r => new {
                 r.ID, r.DocumentId, r.DetaliuId, r.Sens, r.TipTvaId, r.Regim, r.Cota, r.Baza, r.Tva, r.Storno
             })
@@ -2228,8 +2229,7 @@ public static class SaftProiectii {
             .ToList()
             .ToDictionary(t => t.ID);
         var codTvaFolosit = new Dictionary<string, (decimal Cota, string Denumire)>(StringComparer.Ordinal);
-        foreach (var p in os.GetObjectsQuery<RegistruTva>()
-                     .Where(r => r.Data >= dataStart && r.Data <= dataEnd)
+        foreach (var p in TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), dataStart, dataEnd)
                      .Select(r => new { r.TipTvaId, r.Sens })
                      .Distinct()
                      .ToList()) {

@@ -76,6 +76,16 @@ public enum RegimTva {
 // autolichidare 4426 = 4427, pe `Colectat` nicio taxă și niciun rând.
 public enum DirectieTva { Deductibil = 1, Colectat = 2 }
 
+// Unde se declară un fapt fiscal a cărui perioadă e deja închisă (F27-D5) —
+// DATĂ pe `PoliticaTva`, nu regulă în motor: art. 301 Cod fiscal exercită
+// dreptul de deducere în perioada primirii facturii (fără rectificativă), pe
+// când o factură emisă de noi și neînregistrată la timp rămâne fiscal a
+// perioadei originale. Profilul alege; motorul nu știe de ce.
+public enum DeclarareIntarziata {
+    [XafDisplayName("În perioada înregistrării")] PerioadaInregistrarii = 1,
+    [XafDisplayName("În perioada faptului")] PerioadaFaptului = 2,
+}
+
 // Latura jurnalului de TVA (JT-D1): cumpărări sau vânzări. Sensul NU e o a doua
 // axă de configurare — se derivă din `PoliticaTva.Directie` a tipului de
 // document (Deductibil → Achiziție, Colectat → Livrare), acolo unde profilul a

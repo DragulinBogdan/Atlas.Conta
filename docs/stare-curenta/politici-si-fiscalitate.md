@@ -156,6 +156,35 @@ citite prin referințe nu constituie snapshot complet al nomenclatoarelor.
 Gruparea ține separat sensul, tipul TVA și marcajul storno. Backfill-ul
 folosește același generator ca operarea. (68)
 
+### Perioada de declarare și rectificativa
+
+Rândul fiscal poartă două coordonate de timp: `Data` este a faptului fiscal
+(data documentului, iar pe rândul invers data stornării), `PerioadaAn` și
+`PerioadaLuna` sunt perioada în care faptul se DECLARĂ. Jurnalele, decontul,
+D300, D394 și SAF-T filtrează pe perioada de declarare. (F27-D5)
+
+Regula de completare este una singură, la scrierea rândului: dacă perioada
+datei faptului este deschisă, perioada de declarare este a ei. Dacă este
+închisă sau nedefinită — nedefinită înseamnă închisă, ca la gardian — decide
+politica tipului, prin câmpul `DeclarareIntarziata` de pe `PoliticaTva`:
+`PerioadaInregistrarii` sau `PerioadaFaptului`. Seed-ul privat o pune pe
+direcție: deductibilul (FCT, DEC, RLF, DVI) declară în perioada înregistrării,
+colectatul (FCL, RDC) în perioada faptului. Profilul poate alege altfel;
+motorul nu știe de ce. Profilul bugetar nu are rânduri `PoliticaTva`, deci
+câmpul este inert acolo. (F27-D5, 29, 35d)
+
+Rândul invers al unui storno se declară în perioada stornării, deschisă prin
+gardian. Perioada de declarare este snapshot pe rând, ca regimul și cota: o
+politică schimbată ulterior nu rescrie rândurile deja scrise. (JT-D5, JT-D3)
+
+Rectificativa nu este un marcaj cules, ci un derivat din două momente:
+conținutul de rectificativă al unei perioade este mulțimea rândurilor
+declarate în ea și scrise (`ScrisLa`) după `InchisaPrimaOara` a ei. O perioadă
+niciodată închisă nu are reper, deci nu are rectificativă. Redeschiderea nu
+stinge `InchisaPrimaOara`, deci reperul rămâne cel al primei declarații.
+D300 și D394 pe exact o lună calendaristică raportează `Rectificativa` și
+diferențele față de declarat, pe cheia decontului. (F27-D5, F27-D1)
+
 ## Închiderea lunară TVA
 
 ITV este document specializat generat de serviciul lunar. Politica are patru

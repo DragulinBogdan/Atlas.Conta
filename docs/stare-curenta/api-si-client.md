@@ -132,9 +132,28 @@ selectează rândul, dublu-click-ul deschide documentul. Pagina dă titlul,
 crearea (lipsește la DSC), perioada opțională din URL și coloanele. Consolele
 ITV și AMO folosesc aceeași grilă sub previzualizare. (43a, 43c)
 
+Proiecțiile fiscale filtrează pe perioada de DECLARARE, nu pe data faptului:
+`jurnal-tva`, `decont-tva`, `d300`, `d394` și SAF-T. Perioada de declarare
+are granularitate de LUNĂ: `dataStart`/`dataEnd` se citesc ca luni, deci o
+fereastră sub-lunară întoarce luna întreagă. Rândul de jurnal poartă ambele
+coordonate — data faptului și perioada de declarare. (F27-D5)
+`GET api/proiectii/rectificativa-tva?an=&luna=` întoarce conținutul de
+rectificativă al unei perioade: rândurile declarate în ea și scrise după prima
+ei închidere, plus agregatul lor pe cheia decontului. Gate-ul este dublu:
+existența perioadei se rezolvă pe ușa securizată (404 pentru lună nedefinită
+sau invizibilă), iar cifrele cer dreptul de citire pe registrul fiscal (403);
+marginile lipsă sau în afara intervalului sunt 400. D300 și D394 poartă
+`Rectificativa` și `DiferenteDeclarat`, completate doar când perioada cerută
+acoperă exact o lună calendaristică. (F27-D5, 80a)
+
 Formularul deține local întregul DTO de scriere. TanStack Query gestionează
 starea citită de pe server, iar URL-ul starea navigabilă. Nu se menține un
 al doilea magazin global care copiază aceleași documente. (43c)
+
+Jurnalele de TVA au coloana „Perioada” lângă „Data”, iar textul explicativ
+spune că însumarea e pe perioada de declarare. D300 și D394 arată banda
+„RECTIFICATIVĂ — diferențe față de declarat” cu agregatul, doar când serverul
+o raportează. (F27-D5)
 
 Formularele de culegere au „Data înregistrării” lângă „Dată”. Câmpul gol nu
 se trimite, deci serverul aplică implicitul; ecranele documentelor generate o

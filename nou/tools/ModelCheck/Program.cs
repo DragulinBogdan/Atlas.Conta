@@ -606,13 +606,19 @@ if (profil == ProfilContabil.Privat) {
             plusLdi != null && plusLdi.SemnFiltru == +1
             && plusLdi.ContCredit?.Simbol == "7588");
         PoliticaTva Tva(string cod) => os.FirstOrDefault<PoliticaTva>(p => p.TipDocument.Cod == cod);
-        Check("Seed: PoliticaTva — FCT/DEC deduc (401/542), FCL colectează (4111); NIR/PLT/INC fără rând",
+        Check("Seed: PoliticaTva — FCT/DEC deduc (401/542), FCL colectează (4111); NIR/PLT/INC fără rând; "
+            + "declararea faptului întârziat urmează DIRECȚIA (deductibilul în perioada înregistrării — art. 301, "
+            + "colectatul în perioada faptului)",
             Tva("FCT")?.Directie == DirectieTva.Deductibil && Tva("FCT").SursaContrapartida == SursaCont.RepartitorPredator
             && Tva("FCT").ContrapartidaFallback?.Simbol == "401"
             && Tva("DEC")?.Directie == DirectieTva.Deductibil && Tva("DEC").ContrapartidaFallback?.Simbol == "542"
             && Tva("FCL")?.Directie == DirectieTva.Colectat && Tva("FCL").SursaContrapartida == SursaCont.RepartitorPrimitor
             && Tva("FCL").ContrapartidaFallback?.Simbol == "4111"
-            && Tva("NIR") == null && Tva("PLT") == null && Tva("INC") == null);
+            && Tva("NIR") == null && Tva("PLT") == null && Tva("INC") == null
+            && new[] { "FCT", "DEC", "RLF", "DVI" }
+                .All(c => Tva(c)?.DeclarareIntarziata == DeclarareIntarziata.PerioadaInregistrarii)
+            && new[] { "FCL", "RDC" }
+                .All(c => Tva(c)?.DeclarareIntarziata == DeclarareIntarziata.PerioadaFaptului));
         Check("Seed: profilul de validare privat — fără clasificație bugetară; FCL NU mai interzice stocul (P2, descărcarea de gestiune preia vânzarea din stoc)",
             os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCT") == null
             && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCL")?.NaturaInterzisa != NaturaClasa.Stoc);
@@ -4106,6 +4112,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaSolduriPerioada(privat: true);
     // Felia 27, pasul 3 — data înregistrării (DIR-V0…V13).
     VerificaDataInregistrare(privat: true);
+    // Felia 27, pasul 4a — perioada de declarare pe registrul fiscal (PDT-V0…V14).
+    VerificaPerioadaDeclarare(privat: true);
     // Felia 26, pasul 1 — imobilizările pe scenă (IMO-V0…V28).
     VerificaImobilizari(privat: true);
     // Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
@@ -9263,6 +9271,8 @@ VerificaPerioade(privat: false);
 VerificaSolduriPerioada(privat: false);
 // Felia 27, pasul 3 — data înregistrării (DIR-V0…V13).
 VerificaDataInregistrare(privat: false);
+// Felia 27, pasul 4a — perioada de declarare (PDT-V0 pe bugetar: ancoră inertă).
+VerificaPerioadaDeclarare(privat: false);
 // Felia 26, pasul 1 — imobilizările pe scenă (IMO-V0…V28), și pe bugetar.
 VerificaImobilizari(privat: false);
 // Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
@@ -12923,8 +12933,7 @@ void VerificaSaft(bool privat) {
         rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft == rez.TvaRegistru && rez.TvaRegistru != 0m);
     // Registrul fiscal al lunii, citit INDEPENDENT de proiecție (altfel cusătura
     // 3 s-ar măsura tot pe cifrele ei): baza tipurilor FĂRĂ secțiune de facturi.
-    var randuriTvaScena = os.GetObjectsQuery<RegistruTva>()
-        .Where(r => r.Data >= pStart && r.Data <= pEnd)
+    var randuriTvaScena = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), pStart, pEnd)
         .Select(r => new { r.DocumentId, r.Baza }).ToList();
     // Tipurile de factură se citesc pe CLASELE CLR (FCL/FCT/RDC/RLF), nu prin
     // `CoduriTip` — ca proba să nu depindă de aceeași funcție pe care o folosește
@@ -16747,21 +16756,37 @@ void VerificaD394(bool cuTva) {
         + "C: 1); Σ nrFact pe rândurile lui F1 = numărul facturilor lui (A1, A2, RLF pe A + A1 încă o dată pe C = 3 + 1)",
         Op(1, "33333333", "V", 0).NrFact == 1 && Op(1, "12345678", "C", 21).NrFact == 1
         && d4.Operatiuni.Where(o => o.CuiP == "12345678").Sum(o => o.NrFact) == 4);
-    // Tăietura: prima jumătate (operarea), a doua (stornarea).
+    // Tăietura de ZILE nu mai taie: declarația filtrează pe perioada de
+    // DECLARARE, care e LUNA (F27-D5), deci ambele jumătăți ale lui august
+    // întorc luna întreagă. Faptul că stornoul e un fapt distinct se citește din
+    // registru (rândurile lui sunt în a doua jumătate, cu semn) și din
+    // nrFact 6 peste Documente 5 — numărătoarea e (Document × Storno).
     var jum1 = D394Proiectii.D394(os, pStart, mijloc);
     var jum2 = D394Proiectii.D394(os, mijloc.AddDays(1), pEnd);
     var s1 = jum1.Operatiuni.Single(o => o.CuiP == "33333333" && o.Tip == "L" && o.Cota == 21);
     var s2 = jum2.Operatiuni.SingleOrDefault(o => o.CuiP == "33333333" && o.Tip == "L" && o.Cota == 21);
+    var stornoRegistru = os.GetObjectsQuery<RegistruTva>()
+        .Where(r => r.Storno && r.Data > mijloc && r.Data <= pEnd && r.PartenerId == c1.ID
+            && r.Sens == SensTva.Livrare && r.Cota == 21m)
+        .Select(r => new { r.Baza, r.Tva, r.PerioadaAn, r.PerioadaLuna })
+        .ToList();
     Console.WriteLine($"     MĂSURAT (D4-V3 storno): 1–20.08 L/21 C1 {s1.Baza:N2}/{s1.Tva:N2} nrFact {s1.NrFact}; "
-        + $"21–31.08 {s2?.Baza:N2}/{s2?.Tva:N2} nrFact {s2?.NrFact}; luna întreagă {Op(1, "33333333", "L", 21).Baza:N2} nrFact {Op(1, "33333333", "L", 21).NrFact}.");
-    Check("D4-V3 storno: în perioada stornării rândul L/21 al lui C1 poartă DOAR stornoul — sume NEGATIVE (−400 / "
-        + "−84) și nrFact 1 (factura de storno e o factură); în perioada operării, +400 intră cu 1 (2900 / 609, "
-        + "nrFact 5); pe luna întreagă cele două se netează pe același DOCUMENT (Documente 5, 2500 / 525) dar sunt "
-        + "DOUĂ FACTURI la ANAF — nrFact 6, fiindcă unitatea de numărare e (Document × Storno), nu DocumentId",
-        s2 is { Baza: -400m, Tva: -84m, NrFact: 1, Documente: 1, Randuri: 1 }
-        && s1 is { Baza: 2900m, Tva: 609m, NrFact: 5, Documente: 5 }
+        + $"21–31.08 {s2?.Baza:N2}/{s2?.Tva:N2} nrFact {s2?.NrFact}; luna întreagă {Op(1, "33333333", "L", 21).Baza:N2} nrFact {Op(1, "33333333", "L", 21).NrFact}; "
+        + $"registru 21–31.08: {stornoRegistru.Count} rânduri, Σ {stornoRegistru.Sum(r => r.Baza):N2}/{stornoRegistru.Sum(r => r.Tva):N2}.");
+    Check("D4-V3 storno: rândurile inverse ale lui C1 stau în a doua jumătate a lunii, cu sume NEGATIVE "
+        + "(−400 / −84) și cu perioada de declarare a stornării; pe luna întreagă ele se netează cu operarea pe "
+        + "același DOCUMENT (Documente 5, 2500 / 525) dar sunt DOUĂ FACTURI la ANAF — nrFact 6, fiindcă unitatea "
+        + "de numărare e (Document × Storno), nu DocumentId. O fereastră de ZILE nu mai taie luna: declarația "
+        + "filtrează pe perioada de DECLARARE, care e luna întreagă (F27-D5), deci ambele jumătăți întorc aceleași "
+        + "cifre ca luna",
+        stornoRegistru.Count == 1
+        && stornoRegistru[0].Baza == -400m && stornoRegistru[0].Tva == -84m
+        && stornoRegistru[0].PerioadaAn == pEnd.Year && stornoRegistru[0].PerioadaLuna == pEnd.Month
         && Op(1, "33333333", "L", 21) is { Baza: 2500m, Tva: 525m, NrFact: 6, Documente: 5 }
-        && jum2.Operatiuni.Count == 1);
+        && s1 is { Baza: 2500m, Tva: 525m, NrFact: 6, Documente: 5 }
+        && s2 is { Baza: 2500m, Tva: 525m, NrFact: 6, Documente: 5 }
+        && jum1.Operatiuni.Count == d4.Operatiuni.Count
+        && jum2.Operatiuni.Count == d4.Operatiuni.Count);
 
     // ══════════ D4-V4: nimic nu se pierde — cusătura cu registrul ══════════
     var brut = os.GetObjectsQuery<RegistruTva>()
@@ -16931,13 +16956,14 @@ void VerificaD394(bool cuTva) {
     var db = ((EFCoreObjectSpace)os).DbContext.Database;
     var idInjectat = Guid.NewGuid();
     db.ExecuteSql($@"INSERT INTO ""RegistruTva"" (""ID"", ""GCRecord"", ""OptimisticLockField"", ""Data"", ""Sens"", ""DocumentId"", ""DetaliuId"",
-            ""PartenerId"", ""TipTvaId"", ""Regim"", ""Cota"", ""Baza"", ""Tva"", ""Storno"")
+            ""PartenerId"", ""TipTvaId"", ""Regim"", ""Cota"", ""Baza"", ""Tva"", ""Storno"", ""PerioadaAn"", ""PerioadaLuna"", ""ScrisLa"")
         VALUES ({idInjectat}, 0, 0, {d5}, {(int)SensTva.Livrare}, {fclLV.ID}, {linieTi.ID}, {c1.ID}, {ti21.ID},
-            {(int)RegimTva.TaxareInversa}, 21, 100, 21, false)");
+            {(int)RegimTva.TaxareInversa}, 21, 100, 21, false, {d5.Year}, {d5.Month}, {DateTime.UtcNow})");
     var cuV = D394Proiectii.D394(os, pStart, pEnd);
     var vCuTva = cuV.Operatiuni.Single(o => o.CuiP == "33333333" && o.Tip == "V");
     var avV = cuV.Avertismente.FirstOrDefault(a => a.Cod == "TvaPeTipFaraColoana");
-    var brutV = os.GetObjectsQuery<RegistruTva>().Where(r => r.Data >= pStart && r.Data <= pEnd && r.Sens == SensTva.Livrare)
+    var brutV = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), pStart, pEnd)
+        .Where(r => r.Sens == SensTva.Livrare)
         .Sum(r => (decimal?)r.Tva) ?? 0m;
     var opVTva = cuV.Operatiuni.Where(o => o.Sens == "Livrare").Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat)
         + cuV.Neincluse.Where(n => n.Sens == "Livrare").Sum(n => n.Tva);
@@ -20892,12 +20918,14 @@ void VerificaF23Gardian(bool privat) {
         p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
         p.Directie = DirectieTva.Deductibil;
         p.SursaContrapartida = SursaCont.Explicit;
+        p.DeclarareIntarziata = DeclarareIntarziata.PerioadaInregistrarii;
     });
     var ptvaBun = RefuzF23(os => {
         var p = os.CreateObject<PoliticaTva>();
         p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
         p.Directie = DirectieTva.Deductibil;
         p.SursaContrapartida = SursaCont.Explicit;
+        p.DeclarareIntarziata = DeclarareIntarziata.PerioadaInregistrarii;
         p.ContrapartidaFallback = os.GetObjectByKey<Cont>(idCont);
     });
     RegulaContare RcNoua(IObjectSpace os) {
@@ -24370,6 +24398,358 @@ void VerificaDataInregistrare(bool privat) {
         Check($"DIR-V13 ({eticheta}) fără reziduu: nicio perioadă {An}, niciun document și nicio fișă rămase — "
             + "scena e re-rulabilă identic",
             perioade == 0 && documente == 0 && fise == 0);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Felia 27, pasul 4a (F27-D5): perioada de DECLARARE pe registrul fiscal, iar
+// rectificativa ca DERIVAT din două timestamp-uri. Scena e a anului 2033.
+// ══════════════════════════════════════════════════════════════════════════
+void VerificaPerioadaDeclarare(bool privat) {
+    const string Marcaj = "E2E-PDT";
+    const int An = 2033;
+    var eticheta = privat ? "privat" : "bugetar";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+
+    // Neplătitorul n-are `PoliticaTva`, deci registrul fiscal îi rămâne gol și
+    // regula de declarare întârziată n-are pe ce să se aplice: ancoră, nu scenă.
+    if (!privat) {
+        using var osB = provider.CreateObjectSpace();
+        var politici = osB.GetObjectsQuery<PoliticaTva>().Count();
+        var randuriB = osB.GetObjectsQuery<RegistruTva>().Count();
+        Console.WriteLine($"     MĂSURAT (PDT-V0/{eticheta}): {politici} rânduri `PoliticaTva`, "
+            + $"{randuriB} rânduri `RegistruTva`.");
+        Check($"PDT-V0 ({eticheta}) profilul neplătitor n-are nicio `PoliticaTva`, deci `RegistruTva` e gol și "
+            + "`DeclarareIntarziata` e inertă — perioada de declarare nu schimbă nimic acolo unde nu există "
+            + "fapte fiscale",
+            politici == 0 && randuriB == 0);
+        return;
+    }
+
+    void CurataPdt(IObjectSpace os) {
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID)).OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    List<RegistruTva> Fiscale(IObjectSpace os, Guid docId) =>
+        os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == docId)
+            .OrderBy(r => r.Storno).ToList();
+
+    using (var os = provider.CreateObjectSpace())
+        CurataPdt(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An);
+        var documente = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var inchise = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.Inchisa);
+        Console.WriteLine($"     MĂSURAT (PDT-V0/{eticheta}): {perioade} perioade și {documente} documente în "
+            + $"{An}, {inchise} perioade închise în bază.");
+        Check($"PDT-V0 ({eticheta}) precondiție: anul {An} e liber și nicio perioadă a bazei nu e închisă — "
+            + $"altfel închiderea lui 01/{An} n-ar fi capăt de lanț, iar jurnalele lunii ar fi măsurate peste "
+            + "conținut străin",
+            perioade == 0 && documente == 0 && inchise == 0);
+    }
+
+    Guid idFurnizor, idClient, idGestiune, idSediu, idTipCheltuiala, idTipVenit, idN21, idPoliticaFcl;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 1, 2, 3, 4 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+        }
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = Marcaj + "-F";
+        furnizor.Denumire = "Furnizor perioadă de declarare";
+        furnizor.CodFiscal = "RO33333339";
+        furnizor.InregistratTva = true;
+        var client = os.CreateObject<Partener>();
+        client.Cod = Marcaj + "-C";
+        client.Denumire = "Client perioadă de declarare";
+        client.CodFiscal = "RO44444442";
+        client.InregistratTva = true;
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-G";
+        gestiune.Denumire = "Gestiune perioadă de declarare";
+        os.CommitChanges();
+        idFurnizor = furnizor.ID;
+        idClient = client.ID;
+        idGestiune = gestiune.ID;
+        idSediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU").ID;
+        idTipCheltuiala = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628").ID;
+        idTipVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704").ID;
+        idN21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21").ID;
+        var politicaFct = os.FirstOrDefault<PoliticaTva>(p => p.TipDocument.Cod == "FCT");
+        var politicaFcl = os.FirstOrDefault<PoliticaTva>(p => p.TipDocument.Cod == "FCL");
+        idPoliticaFcl = politicaFcl.ID;
+        Check($"PDT-V0b ({eticheta}) seed-ul a pus regula de declarare pe DIRECȚIE: deductibilul (FCT) declară "
+            + "în perioada ÎNREGISTRĂRII (art. 301 — fără rectificativă), colectatul (FCL) în perioada "
+            + "FAPTULUI (factura noastră rămâne fiscal a lunii ei, deci se rectifică)",
+            politicaFct.DeclarareIntarziata == DeclarareIntarziata.PerioadaInregistrarii
+            && politicaFcl.DeclarareIntarziata == DeclarareIntarziata.PerioadaFaptului);
+    }
+
+    // ── PDT-V1: perioada DESCHISĂ a faptului câștigă întotdeauna ──
+    using (var os = provider.CreateObjectSpace()) {
+        var fct = os.CreateObject<FacturaIntrare>();
+        fct.Numar = Marcaj + "-FCT0";
+        fct.Data = Zi(3, 3);
+        fct.DataInregistrare = Zi(3, 10);
+        fct.PredatorId = idFurnizor;
+        fct.PrimitorId = idGestiune;
+        var linie = os.CreateObject<FacturaIntrareDetaliu>();
+        linie.Document = fct;
+        linie.TipMaterialId = idTipCheltuiala;
+        linie.Cantitate = 1m;
+        linie.PretUnitar = 100m;
+        linie.TipTvaId = idN21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fct);
+        var randuri = Fiscale(os, fct.ID);
+        Console.WriteLine($"     MĂSURAT (PDT-V1/{eticheta}): {randuri.Count} rânduri, `Data` "
+            + $"{Ziua(randuri[0].Data)}, perioada {randuri[0].PerioadaLuna:00}/{randuri[0].PerioadaAn}, "
+            + $"`ScrisLa` {randuri[0].ScrisLa:yyyy-MM-dd HH:mm:ss}.");
+        Check($"PDT-V1 ({eticheta}) faptul dintr-o perioadă DESCHISĂ ({Zi(3, 3):dd.MM.yyyy}, înregistrat pe "
+            + $"{Zi(3, 10):dd.MM.yyyy}) se declară în perioada LUI, oricare ar fi politica — regula de "
+            + "declarare întârziată se aplică doar peste o graniță închisă",
+            randuri.Count == 1 && randuri[0].Data == Zi(3, 3)
+            && randuri[0].PerioadaAn == An && randuri[0].PerioadaLuna == 3);
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        PerioadaService.Inchide(os, An, 1, [], null, Marcaj);
+        var p = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 1);
+        Check($"PDT — precondiție de scenă ({eticheta}): 01/{An} se închide (capăt de lanț) și își reține "
+            + "`InchisaPrimaOara` — reperul contra căruia se citește conținutul de rectificativă",
+            p.Inchisa && p.InchisaPrimaOara != null);
+    }
+
+    // ── PDT-V2…V4: faptul întârziat, pe ambele direcții ──
+    Guid idFctTarziu, idFclTarziu;
+    using (var os = provider.CreateObjectSpace()) {
+        var fct = os.CreateObject<FacturaIntrare>();
+        fct.Numar = Marcaj + "-FCT1";
+        fct.Data = Zi(1, 20);
+        fct.DataInregistrare = Zi(2, 5);
+        fct.PredatorId = idFurnizor;
+        fct.PrimitorId = idGestiune;
+        var linieFct = os.CreateObject<FacturaIntrareDetaliu>();
+        linieFct.Document = fct;
+        linieFct.TipMaterialId = idTipCheltuiala;
+        linieFct.Cantitate = 1m;
+        linieFct.PretUnitar = 300m;
+        linieFct.TipTvaId = idN21;
+
+        var fcl = os.CreateObject<FacturaIesire>();
+        fcl.Numar = Marcaj + "-FCL1";
+        fcl.Data = Zi(1, 20);
+        fcl.DataInregistrare = Zi(2, 5);
+        fcl.PredatorId = idSediu;
+        fcl.PrimitorId = idClient;
+        var linieFcl = os.CreateObject<FacturaIesireDetaliu>();
+        linieFcl.Document = fcl;
+        linieFcl.TipMaterialId = idTipVenit;
+        linieFcl.Cantitate = 1m;
+        linieFcl.PretUnitar = 500m;
+        linieFcl.TipTvaId = idN21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fct);
+        MotorOperare.Opereaza(os, fcl);
+        idFctTarziu = fct.ID;
+        idFclTarziu = fcl.ID;
+
+        var rFct = Fiscale(os, fct.ID);
+        var rFcl = Fiscale(os, fcl.ID);
+        Console.WriteLine($"     MĂSURAT (PDT-V2/{eticheta}): FCT `Data` {Ziua(rFct[0].Data)} perioada "
+            + $"{rFct[0].PerioadaLuna:00}/{rFct[0].PerioadaAn}; FCL `Data` {Ziua(rFcl[0].Data)} perioada "
+            + $"{rFcl[0].PerioadaLuna:00}/{rFcl[0].PerioadaAn}.");
+        Check($"PDT-V2 ({eticheta}) factura de intrare cu `Data` {Zi(1, 20):dd.MM.yyyy} (perioadă ÎNCHISĂ) "
+            + $"înregistrată pe {Zi(2, 5):dd.MM.yyyy} păstrează `Data` FAPTULUI pe rând, dar se declară în "
+            + $"02/{An} — `PerioadaInregistrarii`, adică exact dreptul de deducere exercitat la primire",
+            rFct.Count == 1 && rFct[0].Data == Zi(1, 20)
+            && rFct[0].PerioadaAn == An && rFct[0].PerioadaLuna == 2 && rFct[0].Baza == 300m);
+        Check($"PDT-V3 ({eticheta}) factura de ieșire, cu ACELEAȘI date, se declară în 01/{An} — "
+            + "`PerioadaFaptului`: factura noastră aparține fiscal lunii ei, iar consecința e o rectificativă, "
+            + "nu o mutare tăcută",
+            rFcl.Count == 1 && rFcl[0].Data == Zi(1, 20)
+            && rFcl[0].PerioadaAn == An && rFcl[0].PerioadaLuna == 1 && rFcl[0].Baza == 500m);
+        Check($"PDT-V4 ({eticheta}) `ScrisLa` e populat pe toate rândurile scenei, în UTC — fără el "
+            + "rectificativa n-ar avea al doilea timestamp",
+            rFct.Concat(rFcl).All(r => r.ScrisLa != default && r.ScrisLa.Kind != DateTimeKind.Local));
+    }
+
+    // ── PDT-V5/V6: conținutul de rectificativă ──
+    using (var os = provider.CreateObjectSpace()) {
+        var rect = TvaProiectii.Rectificativa(os, An, 1);
+        var rectFebruarie = TvaProiectii.Rectificativa(os, An, 2);
+        Console.WriteLine($"     MĂSURAT (PDT-V5/{eticheta}): 01/{An} — {rect.Randuri.Count} rânduri, "
+            + $"{rect.Agregat.Count} poziții de agregat, bază {rect.Agregat.Sum(a => a.Baza)}, TVA "
+            + $"{rect.Agregat.Sum(a => a.Tva)}; 02/{An} — rectificativă: {rectFebruarie.EsteRectificativa}.");
+        Check($"PDT-V5 ({eticheta}) conținutul de rectificativă al lui 01/{An} e EXACT rândul facturii de "
+            + "ieșire întârziate: declarat în perioada închisă, scris după închiderea ei. Nu există flag — e "
+            + "diferența dintre `ScrisLa` și `InchisaPrimaOara`",
+            rect.EsteRectificativa && rect.InchisaPrimaOara != null
+            && rect.Randuri.Count == 1 && rect.Randuri[0].DocumentId == idFclTarziu
+            && rect.Randuri[0].Sens == "Livrare" && rect.Randuri[0].Baza == 500m
+            && rect.Randuri[0].Tva == 105m && !rect.Randuri[0].Storno
+            && rect.Agregat.Count == 1 && rect.Agregat[0].Baza == 500m && rect.Agregat[0].Tva == 105m
+            && rect.Agregat[0].Randuri == 1);
+        Check($"PDT-V6 ({eticheta}) 02/{An} NU e rectificativă deși are cifre scrise târziu: n-a fost închisă "
+            + "niciodată, deci n-are declarație depusă de rectificat — reperul lipsește, nu cifrele",
+            !rectFebruarie.EsteRectificativa && rectFebruarie.InchisaPrimaOara == null
+            && rectFebruarie.Randuri.Count == 0 && rectFebruarie.Agregat.Count == 0);
+    }
+
+    // ── PDT-V7: politica DECIDE, iar motorul nu știe de ce ──
+    using (var os = provider.CreateObjectSpace()) {
+        // Rândul `DinSeed` se schimbă pe ușa de SISTEM (gardianul de Committing nu
+        // se aplică pe OS-ul standalone), ca în F24-V1; valoarea se pune la loc mai
+        // jos, ca proba de aliniere a seed-ului să rămână adevărată la re-rulare.
+        var politica = os.GetObjectByKey<PoliticaTva>(idPoliticaFcl);
+        politica.DeclarareIntarziata = DeclarareIntarziata.PerioadaInregistrarii;
+        os.CommitChanges();
+
+        var fcl = os.CreateObject<FacturaIesire>();
+        fcl.Numar = Marcaj + "-FCL2";
+        fcl.Data = Zi(1, 21);
+        fcl.DataInregistrare = Zi(2, 6);
+        fcl.PredatorId = idSediu;
+        fcl.PrimitorId = idClient;
+        var linie = os.CreateObject<FacturaIesireDetaliu>();
+        linie.Document = fcl;
+        linie.TipMaterialId = idTipVenit;
+        linie.Cantitate = 1m;
+        linie.PretUnitar = 700m;
+        linie.TipTvaId = idN21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fcl);
+        var randuri = Fiscale(os, fcl.ID);
+        Console.WriteLine($"     MĂSURAT (PDT-V7/{eticheta}): cu politica pe `PerioadaInregistrarii`, a doua "
+            + $"factură de ieșire întârziată cade în {randuri[0].PerioadaLuna:00}/{randuri[0].PerioadaAn}.");
+        Check($"PDT-V7 ({eticheta}) aceeași factură de ieșire, aceeași întârziere, ALT rezultat, fiindcă "
+            + "politica tipului s-a schimbat: regula de declarare e DATĂ, nu cod — motorul o citește și n-o "
+            + "judecă (invariantul IV)",
+            randuri.Count == 1 && randuri[0].PerioadaAn == An && randuri[0].PerioadaLuna == 2);
+
+        politica.DeclarareIntarziata = DeclarareIntarziata.PerioadaFaptului;
+        os.CommitChanges();
+        Check($"PDT-V7b ({eticheta}) politica revine la valoarea de seed — rândul deja scris NU se schimbă, "
+            + "fiindcă perioada de declarare e SNAPSHOT pe rând, ca `Regim` și `Cota` (JT-D3)",
+            os.GetObjectByKey<PoliticaTva>(idPoliticaFcl).DeclarareIntarziata
+                == DeclarareIntarziata.PerioadaFaptului
+            && Fiscale(os, fcl.ID)[0].PerioadaLuna == 2);
+    }
+
+    // ── PDT-V8…V11: consumatorii filtrează pe PERIOADA DE DECLARARE ──
+    using (var os = provider.CreateObjectSpace()) {
+        List<Guid> Jurnal(SensTva sens, int luna) =>
+            TvaProiectii.JurnalTva(os, sens, Zi(luna, 1), Zi(luna, DateTime.DaysInMonth(An, luna)))
+                .ToList().Select(r => r.DocumentId).ToList();
+
+        var vanzariIanuarie = Jurnal(SensTva.Livrare, 1);
+        var vanzariFebruarie = Jurnal(SensTva.Livrare, 2);
+        var cumparariIanuarie = Jurnal(SensTva.Achizitie, 1);
+        var cumparariFebruarie = Jurnal(SensTva.Achizitie, 2);
+        Console.WriteLine($"     MĂSURAT (PDT-V8/{eticheta}): jurnal vânzări 01 = {vanzariIanuarie.Count} "
+            + $"rânduri, 02 = {vanzariFebruarie.Count}; cumpărări 01 = {cumparariIanuarie.Count}, 02 = "
+            + $"{cumparariFebruarie.Count}.");
+        Check($"PDT-V8 ({eticheta}) jurnalul de VÂNZĂRI pe 01/{An} conține factura de ieșire întârziată, deși "
+            + "ea a fost scrisă în februarie: jurnalul e pe perioada de DECLARARE, iar ea a rămas a faptului",
+            vanzariIanuarie.Contains(idFclTarziu) && !vanzariFebruarie.Contains(idFclTarziu));
+        Check($"PDT-V9 ({eticheta}) jurnalul de CUMPĂRĂRI pe 02/{An} conține factura de intrare întârziată, "
+            + $"iar cel pe 01/{An} nu — aceeași regulă, cealaltă politică",
+            cumparariFebruarie.Contains(idFctTarziu) && !cumparariIanuarie.Contains(idFctTarziu));
+
+        var randJurnal = TvaProiectii.JurnalTva(os, SensTva.Livrare, Zi(1, 1), Zi(1, 31))
+            .ToList().Single(r => r.DocumentId == idFclTarziu);
+        Check($"PDT-V9b ({eticheta}) rândul de jurnal poartă AMBELE coordonate: `Data` faptului "
+            + $"({Zi(1, 20):dd.MM.yyyy}) și perioada de declarare (01/{An}) — diferența dintre ele e chiar "
+            + "ce trebuie să vadă contabilul",
+            randJurnal.Data == Zi(1, 20) && randJurnal.PerioadaAn == An && randJurnal.PerioadaLuna == 1);
+
+        var d300 = D300Proiectii.D300(os, Zi(1, 1), Zi(1, 31), new ParametriD300());
+        var d394 = D394Proiectii.D394(os, Zi(1, 1), Zi(1, 31));
+        var d300Trimestru = D300Proiectii.D300(os, Zi(1, 1), Zi(3, 31), new ParametriD300());
+        Console.WriteLine($"     MĂSURAT (PDT-V10/{eticheta}): D300 01/{An} rectificativă = "
+            + $"{d300.Rectificativa} cu {d300.DiferenteDeclarat.Count} poziții (bază "
+            + $"{d300.DiferenteDeclarat.Sum(a => a.Baza)}); D394 = {d394.Rectificativa} cu "
+            + $"{d394.DiferenteDeclarat.Count}; pe trimestru = {d300Trimestru.Rectificativa}.");
+        Check($"PDT-V10 ({eticheta}) D300 pe 01/{An} se raportează ca RECTIFICATIVĂ, cu „diferențele față de "
+            + "declarat” = exact agregatul rândurilor scrise după închidere",
+            d300.Rectificativa && d300.DiferenteDeclarat.Count == 1
+            && d300.DiferenteDeclarat[0].Baza == 500m && d300.DiferenteDeclarat[0].Tva == 105m);
+        Check($"PDT-V11 ({eticheta}) D394 pe aceeași lună spune același lucru, din aceeași sursă — cusătura "
+            + "dintre cele două declarații nu se rupe",
+            d394.Rectificativa && d394.DiferenteDeclarat.Count == 1
+            && d394.DiferenteDeclarat[0].Baza == 500m && d394.DiferenteDeclarat[0].Tva == 105m);
+        Check($"PDT-V11b ({eticheta}) pe un interval de MAI MULTE luni întrebarea n-are subiect (nu există O "
+            + "declarație depusă): `Rectificativa` e falsă și lista goală, declarat ca limită",
+            !d300Trimestru.Rectificativa && d300Trimestru.DiferenteDeclarat.Count == 0);
+    }
+
+    // ── PDT-V12: stornoul e fapt al perioadei stornării ──
+    using (var os = provider.CreateObjectSpace()) {
+        MotorOperare.Storneaza(os, os.GetObjectByKey<FacturaIesire>(idFclTarziu), Zi(2, 10));
+        var inverse = Fiscale(os, idFclTarziu).Where(r => r.Storno).ToList();
+        Console.WriteLine($"     MĂSURAT (PDT-V12/{eticheta}): {inverse.Count} rânduri inverse, `Data` "
+            + $"{Ziua(inverse[0].Data)}, perioada {inverse[0].PerioadaLuna:00}/{inverse[0].PerioadaAn}.");
+        Check($"PDT-V12 ({eticheta}) rândul invers al unei facturi declarate în 01/{An} cade în 02/{An}, nu în "
+            + "01: stornoul e un fapt al perioadei stornării (JT-D5), iar declarația deja depusă rămâne cum a "
+            + "fost depusă. Excepția cu motiv e a corecției (F27-D6, pasul 5)",
+            inverse.Count == 1 && inverse[0].Data == Zi(2, 10)
+            && inverse[0].PerioadaAn == An && inverse[0].PerioadaLuna == 2
+            && inverse[0].Baza == -500m && inverse[0].ScrisLa != default);
+    }
+
+    // ── PDT-V13: redeschiderea nu șterge reperul ──
+    using (var os = provider.CreateObjectSpace()) {
+        PerioadaService.Redeschide(os, An, 1, "probă: reperul rectificativei", null, Marcaj);
+        var p = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 1);
+        var rect = TvaProiectii.Rectificativa(os, An, 1);
+        Check($"PDT-V13 ({eticheta}) redeschiderea lui 01/{An} NU stinge `InchisaPrimaOara`, deci conținutul "
+            + "de rectificativă rămâne detectabil — ce a fost declarat o dată rămâne reperul, oricâte "
+            + "redeschideri urmează",
+            !p.Inchisa && p.InchisaPrimaOara != null
+            && rect.EsteRectificativa && rect.Randuri.Count == 1);
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataPdt(os);
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters().Count(p => p.An == An);
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var politica = os.GetObjectByKey<PoliticaTva>(idPoliticaFcl);
+        Check($"PDT-V14 ({eticheta}) fără reziduu: nicio perioadă {An}, niciun document rămas, iar politica "
+            + "de seed e la valoarea ei — scena e re-rulabilă identic",
+            perioade == 0 && documente == 0
+            && politica.DeclarareIntarziata == DeclarareIntarziata.PerioadaFaptului);
     }
 }
 

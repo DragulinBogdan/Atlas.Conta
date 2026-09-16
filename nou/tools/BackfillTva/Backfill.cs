@@ -251,6 +251,11 @@ public static class Backfill {
             return;
         var rand = os.CreateObject<RegistruTva>();
         rand.Data = data;
+        // Backfill-ul repară un TRECUT deja operat: perioada de declarare e a
+        // faptului, iar momentul scrierii e cel al operării documentului (F27-D5).
+        rand.PerioadaAn = data.Year;
+        rand.PerioadaLuna = data.Month;
+        rand.ScrisLa = doc.DataOperare ?? DateTime.UtcNow;
         rand.Document = doc;
         rand.DetaliuId = t.DetaliuId;
         rand.Sens = t.Sens;

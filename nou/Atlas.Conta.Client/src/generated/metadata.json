@@ -75,6 +75,10 @@
       "RolTertMixt": "Roluri de terț mixte pe aceeași mișcare",
       "ReziduValoricFaraCantitate": "Rezidu valoric fără cantitate"
     },
+    "DeclarareIntarziata": {
+      "PerioadaInregistrarii": "În perioada înregistrării",
+      "PerioadaFaptului": "În perioada faptului"
+    },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",
       "Repartitor": "Repartitor",
@@ -1536,6 +1540,7 @@
       "Membri": {
         "ContrapartidaFallback": "ContrapartidaFallback",
         "ContrapartidaFallbackId": "ContrapartidaFallback",
+        "DeclarareIntarziata": "Declararea faptului întârziat",
         "DinSeed": "Din seed",
         "Directie": "Directie",
         "ID": "ID",
@@ -1796,7 +1801,10 @@
         "ID": "ID",
         "Partener": "Partener",
         "PartenerId": "Partener",
+        "PerioadaAn": "Perioada (an)",
+        "PerioadaLuna": "Perioada (luna)",
         "Regim": "Regim TVA",
+        "ScrisLa": "Scris la",
         "Sens": "Sens",
         "Storno": "Storno",
         "TipTva": "TipTva",

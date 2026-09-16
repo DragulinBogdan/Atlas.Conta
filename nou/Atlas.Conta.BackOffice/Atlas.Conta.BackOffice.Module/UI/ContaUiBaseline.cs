@@ -160,7 +160,13 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(r => r.Document, c => c.Index = -1)
             .Column(r => r.Detaliu, c => c.Index = -1)
             .Column(r => r.Partener, c => c.Index = -1)
-            .Column(r => r.TipTva, c => c.Index = -1);
+            .Column(r => r.TipTva, c => c.Index = -1)
+            // Perioada de declarare stă lângă data faptului: diferența dintre
+            // ele e chiar ce arată F27-D5. `ScrisLa` e timestamp tehnic (reperul
+            // rectificativei) — se citește în raport, nu în listă.
+            .Column(r => r.PerioadaAn, c => c.Index = 1)
+            .Column(r => r.PerioadaLuna, c => c.Index = 2)
+            .Column(r => r.ScrisLa, c => c.Index = -1);
         registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
         registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId
         registry.For<RandD300>().HideForeignKeys();                 // ParinteId/OglindaAId

@@ -324,6 +324,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<Document>()
                 .HasIndex(d => d.DataInregistrare).HasFilter("\"GCRecord\" = 0");
 
+            // F27-D5: jurnalele, decontul, D300, D394 și SAF-T filtrează registrul
+            // fiscal pe PERIOADA DE DECLARARE, nu pe data faptului.
+            modelBuilder.Entity<RegistruTva>()
+                .HasIndex(r => new { r.PerioadaAn, r.PerioadaLuna }).HasFilter("\"GCRecord\" = 0");
+
             // FK-uri `Restrict`: convenția globală `SetNull`/`Cascade` ar goli tăcut fișa sau linia-sursă (F26-D1/D2/D5).
             modelBuilder.Entity<Imobilizare>(b => {
                 b.HasOne(f => f.TipMaterial).WithMany().HasForeignKey(f => f.TipMaterialId)

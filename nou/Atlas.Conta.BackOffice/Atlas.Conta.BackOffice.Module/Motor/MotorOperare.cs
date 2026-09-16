@@ -373,9 +373,15 @@ public static class MotorOperare {
             rand.Detaliu = n.Detaliu;
         }
 
+        var scrisLa = DateTime.UtcNow;
         foreach (var t in plan.RanduriTva) {
             var rand = os.CreateObject<RegistruTva>();
             rand.Data = doc.Data;
+            var (perioadaAn, perioadaLuna) = RegistruTvaService.PerioadaDeclarare(
+                os, doc.Data, doc.DataInregistrare, t.Regula);                       // F27-D5
+            rand.PerioadaAn = perioadaAn;
+            rand.PerioadaLuna = perioadaLuna;
+            rand.ScrisLa = scrisLa;
             rand.Document = doc;
             rand.DetaliuId = t.DetaliuId;
             rand.Sens = t.Sens;
@@ -667,9 +673,15 @@ public static class MotorOperare {
         // Identitatea fiscală (`Sens`/`TipTva`/`Regim`/`Cota`/partener) se copiază
         // ca atare — snapshot-ul rândului original, nu o re-derivare din politica
         // de azi, care între timp poate fi alta.
+        var scrisLaStorno = DateTime.UtcNow;
         foreach (var r in randuriTva) {
             var invers = os.CreateObject<RegistruTva>();
             invers.Data = dataStorno;
+            // Perioada stornării e deschisă prin gardian, deci faptul se declară
+            // în ea (JT-D5/F27-D5); excepția cu motiv e a corecției (F27-D6).
+            invers.PerioadaAn = dataStorno.Year;
+            invers.PerioadaLuna = dataStorno.Month;
+            invers.ScrisLa = scrisLaStorno;
             invers.Sens = r.Sens;
             invers.Document = doc;
             invers.DetaliuId = r.DetaliuId;

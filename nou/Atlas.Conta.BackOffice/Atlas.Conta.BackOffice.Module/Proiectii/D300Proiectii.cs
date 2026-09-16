@@ -96,6 +96,12 @@ public sealed class D300Dto {
     public List<D300Rand> Randuri { get; set; } = [];
     public List<D300Nemapat> Nemapate { get; set; } = [];
     public List<string> Avertismente { get; set; } = [];
+    // F27-D5 — decontul unei luni deja închise o dată, care are cifre scrise
+    // după închidere, E o rectificativă; `DiferenteDeclarat` sunt exact acele
+    // cifre. Pe un interval de mai multe luni întrebarea n-are subiect (nu
+    // există O declarație depusă): fals, cu lista goală.
+    public bool Rectificativa { get; set; }
+    public List<DecontTvaRand> DiferenteDeclarat { get; set; } = [];
 }
 
 public static class D300Proiectii {
@@ -157,9 +163,9 @@ public static class D300Proiectii {
 
         // ── 1. Agregatul de registru (D3-D3 pasul 1) ────────────────────────
         //
-        // Filtru pe `Data` a RÂNDULUI (data stornării pentru rândurile inverse,
-        // 25d) — coerent cu jurnalele: decontul lunii deja depuse rămâne cum a
-        // fost depus, iar stornarea se declară în luna în care s-a făcut.
+        // Filtru pe PERIOADA DE DECLARARE (F27-D5), coerent cu jurnalele: un fapt
+        // înregistrat după închiderea lunii lui cade unde spune politica, iar
+        // stornarea se declară în luna în care s-a făcut.
         //
         // `Storno` NU intră în filtru și nici în cheie: spre deosebire de jurnal
         // (unde separarea ține granularitatea per document cerută de D394), aici
@@ -174,8 +180,7 @@ public static class D300Proiectii {
         // un `MIN`. Cheia mai fină nu schimbă NICIO cifră de rând (sumele sunt
         // aceleași oricât de fin grupezi), dar face `D300Nemapat.Cota` să fie
         // cifra care a intrat în calcul, nu cea de azi.
-        var agregate = os.GetObjectsQuery<RegistruTva>()
-            .Where(r => r.Data >= dataStart && r.Data <= dataEnd)
+        var agregate = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), dataStart, dataEnd)
             .GroupBy(r => new { r.Sens, r.TipTvaId, r.Regim, r.Cota })
             .Select(g => new {
                 g.Key.Sens,
@@ -481,6 +486,14 @@ public static class D300Proiectii {
                 Surse = n.Surse.Count == 0 ? null : string.Join(", ", n.Surse)
             })
             .ToList();
+        // F27-D5 — decontul lunii care a mai fost declarată o dată, cu cifre
+        // scrise după închidere, se raportează ca RECTIFICATIVĂ, iar diferențele
+        // sunt exact acele cifre. Derivat, nu flag.
+        if (TvaProiectii.LunaExacta(dataStart, dataEnd) is (int anDeclarat, int lunaDeclarata)) {
+            var rectificativa = TvaProiectii.Rectificativa(os, anDeclarat, lunaDeclarata);
+            rezultat.Rectificativa = rectificativa.EsteRectificativa;
+            rezultat.DiferenteDeclarat = rectificativa.Agregat;
+        }
         return rezultat;
     }
 

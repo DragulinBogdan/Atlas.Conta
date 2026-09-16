@@ -987,6 +987,19 @@ try {
     Proba -Cerere 'reconstruiește soldurile' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine 'modifica' -Nota 'gate pe TIP, nu pe instanță' | Out-Null
     Proba -Cerere 'reconstruiește soldurile' -User 'Admin' -Asteptat 200 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine '"Referinte":[]' -Nota 'nicio perioadă închisă ⇒ nimic de reconstruit' | Out-Null
 
+    # ── Conținutul de rectificativă (F27-D5) ────────────────────────
+    # Proiecție, ca jurnalul — dar cu gate DUBLU: perioada dă 404-ul (subiectul
+    # rutei e luna), registrul fiscal dă 403-ul. `User` nu vede perioada, deci
+    # se oprește la 404 — ordinea 400 → 404 → 403 a deciziei 80, pe o rută cu
+    # două tipuri. Nimic nu se scrie: e GET.
+    $caleRect = "/api/proiectii/rectificativa-tva?an=$($perioadaBlocata.An)&luna=$($perioadaBlocata.Luna)"
+    Proba -Cerere 'conținut de rectificativă' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale $caleRect -Contine '"EsteRectificativa":false' -Nota 'perioadă nicio dată închisă ⇒ fără reper' | Out-Null
+    Proba -Cerere 'conținut de rectificativă' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleRect -Contine '"Randuri":[]' | Out-Null
+    Proba -Cerere 'conținut de rectificativă' -User 'User' -Asteptat 404 -Metoda GET -Cale $caleRect -Contine 'nu există sau nu e vizibil' -Nota 'perioada invizibilă răspunde înaintea registrului' | Out-Null
+    Proba -Cerere 'rectificativă pe luna 13' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/rectificativa-tva?an=2026&luna=13' -Contine 'trebuie să fie' | Out-Null
+    Proba -Cerere 'rectificativă fără lună' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/rectificativa-tva?an=2026' -Contine 'obligatoriu' | Out-Null
+    Proba -Cerere 'rectificativă pe o lună nedefinită' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/proiectii/rectificativa-tva?an=2099&luna=12' -Contine 'nu există sau nu e vizibil' | Out-Null
+
     # Lanțul a rămas NEATINS: nicio perioadă închisă de matrice.
     $lantDupa = @((Invoke-Cerere -Metoda GET -Cale '/api/perioade' -Token $tokenAdmin).Corp | ConvertFrom-Json)
     $inchiseDupa = @($lantDupa | Where-Object { $_.Inchisa }).Count

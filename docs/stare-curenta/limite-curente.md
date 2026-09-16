@@ -88,13 +88,18 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   blochează reciproc. Lookup-urile XAF ale fișei și ale liniei PIF nu sunt
   filtrate pe natură, stare și loc; clasificarea se caută doar pe denumire;
   mesajele gardienilor scriu numele membrilor enum. (87, F26-r1…r22)
-- Data înregistrării: rândurile de TVA rămân pe data faptului fiscal, fără
-  perioadă de declarare distinctă, deci un document întârziat cade în jurnalul
-  lunii lui fizice și nu există încă noțiunea de conținut de rectificativă
-  (pasul 4 al feliei). Amortizarea unei fișe puse în funcțiune întârziat
+- Perioada de declarare: SAF-T filtrează pe ea, dar fișierul depus nu poartă
+  niciun marcaj de rectificativă — formatul de depunere, pentru D406 ca și
+  pentru D300/D394, este felie proprie. Rectificativa se raportează numai pe
+  o perioadă care acoperă exact o lună calendaristică: pe un interval mai lung
+  întrebarea nu are subiect (nu există o singură declarație depusă), iar
+  răspunsul este fals cu listă goală. Corecția în perioadă închisă — stornoul
+  legat cu motiv, care mută rândurile fiscale în perioada originalului pentru
+  `EroareMateriala` — nu există încă. (F27-D5, F27-D6, F27-r5)
+- Data înregistrării: amortizarea unei fișe puse în funcțiune întârziat
   pornește din luna înregistrării, fiindcă registrul de imobilizări e datat
   acolo: lunile dintre data documentului și data înregistrării nu se
-  amortizează, iar recuperarea lor rămâne a aceluiași pas. Documentele generate
+  amortizează, iar recuperarea lor rămâne deschisă. Documentele generate
   (AMO, ITV, DSC și NIR autogenerat) moștenesc data înregistrării sursei sau
   ultima zi a lunii; editabilitatea ei pe ele nu e decisă. Plata autogenerată
   din factura de intrare face excepție: data ei este cea culeasă, iar data

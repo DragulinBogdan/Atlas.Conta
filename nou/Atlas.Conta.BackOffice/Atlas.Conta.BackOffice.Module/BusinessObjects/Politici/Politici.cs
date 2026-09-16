@@ -313,6 +313,10 @@ public class PoliticaTva : BaseObject, ICuProvenienta {
     public virtual SursaCont SursaContrapartida { get; set; }
     public virtual Guid? ContrapartidaFallbackId { get; set; }
     public virtual Cont ContrapartidaFallback { get; set; }
+    // F27-D5 — perioada în care se declară un fapt fiscal a cărui perioadă e
+    // deja închisă. Inert cât timp toate perioadele atinse sunt deschise.
+    [XafDisplayName("Declararea faptului întârziat")]
+    public virtual DeclarareIntarziata DeclarareIntarziata { get; set; }
 }
 
 // Conturile închiderii lunare de TVA (FAZA 1C §6) — DATE per profil, nu

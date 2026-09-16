@@ -158,6 +158,10 @@ public sealed class D394Avertisment {
 }
 
 public sealed class D394Dto {
+    // F27-D5 — vezi `D300Dto`: aceeași derivare, aceeași limită pe intervale
+    // de mai multe luni.
+    public bool Rectificativa { get; set; }
+    public List<DecontTvaRand> DiferenteDeclarat { get; set; } = [];
     public List<D394Operatiune> Operatiuni { get; set; } = [];
     public List<D394Rezumat> Rezumat { get; set; } = [];
     public List<D394RezumatCota> RezumatCote { get; set; } = [];
@@ -284,8 +288,7 @@ public static class D394Proiectii {
         // stornoul cade pe cota originală) dar INTRĂ în cheie: la ANAF factura și
         // factura de storno sunt DOUĂ facturi, iar la noi stornoul stă pe același
         // `DocumentId` (25d) — unitatea de numărare nrFact e (Document × Storno).
-        var agregate = os.GetObjectsQuery<RegistruTva>()
-            .Where(r => r.Data >= dataStart && r.Data <= dataEnd)
+        var agregate = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), dataStart, dataEnd)
             .GroupBy(r => new { r.DocumentId, r.Storno, r.PartenerId, r.Sens, r.TipTvaId, r.Cota })
             .Select(g => new {
                 g.Key.DocumentId,
@@ -632,8 +635,7 @@ public static class D394Proiectii {
             .Select(m => m.Key).ToHashSet();
         var idsDetaliuVc = new List<(TipOperatiuneD394 Tip, Guid DetaliuId, decimal Baza)>();
         if (perechiVc.Count > 0)
-            idsDetaliuVc = os.GetObjectsQuery<RegistruTva>()
-                .Where(r => r.Data >= dataStart && r.Data <= dataEnd)
+            idsDetaliuVc = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), dataStart, dataEnd)
                 .Select(r => new { r.DetaliuId, r.TipTvaId, r.Sens, r.Baza })
                 .ToList()
                 .Where(r => perechiVc.Contains((r.TipTvaId, r.Sens)))
@@ -691,6 +693,14 @@ public static class D394Proiectii {
             ordonate.SelectMany(r => r.Parteneri.Values).Where(p => p.Sters).DistinctBy(p => p.Id).OrderBy(p => p.Id)
                 .Select(p => ($"„{p.Denumire}” (CUI {p.CuiP ?? "—"})", (decimal?)null)).ToList());
 
+        // F27-D5 — decontul lunii care a mai fost declarată o dată, cu cifre
+        // scrise după închidere, se raportează ca RECTIFICATIVĂ, iar diferențele
+        // sunt exact acele cifre. Derivat, nu flag.
+        if (TvaProiectii.LunaExacta(dataStart, dataEnd) is (int anDeclarat, int lunaDeclarata)) {
+            var rectificativa = TvaProiectii.Rectificativa(os, anDeclarat, lunaDeclarata);
+            rezultat.Rectificativa = rectificativa.EsteRectificativa;
+            rezultat.DiferenteDeclarat = rectificativa.Agregat;
+        }
         return rezultat;
     }
 }

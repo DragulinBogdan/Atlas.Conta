@@ -96,6 +96,18 @@ function JurnalTva({ sens, titlu }: { sens: Sens; titlu: string }) {
         <Pager showInfo showPageSizeSelector allowedPageSizes={[50, 100, 200]} />
 
         <Column dataField={camp('Data')} caption="Data" dataType="date" format="dd.MM.yyyy" width={100} fixed />
+        {/* Perioada de DECLARARE (F27-D5) — cea pe care jurnalul FILTREAZĂ. Egală
+            cu luna lui `Data` pentru tot ce se înregistrează la timp; diferită
+            exact pentru faptul întârziat, care e singurul motiv pentru care
+            coloana există. Filtrarea e închisă: perioada e PARAMETRU al
+            raportului, nu filtru de grilă. */}
+        <Column
+          dataField={camp('PerioadaAn')}
+          caption="Perioada"
+          width={100}
+          allowFiltering={false}
+          cellRender={celulaPerioada}
+        />
         <Column
           dataField={camp('DocumentNumar')}
           caption="Document"
@@ -165,7 +177,10 @@ function JurnalTva({ sens, titlu }: { sens: Sens; titlu: string }) {
 
       <p className="indiciu">
         Un rând = o factură × un tip de TVA (o factură cu două cote apare de două ori).
-        Stornările intră cu semn negativ, la data stornării — jurnalul unei luni deja declarate rămâne cum a fost.
+        Rândurile sunt însumate pe perioada de <strong>declarare</strong>, nu pe data facturii: un fapt înregistrat
+        după închiderea lunii lui apare în perioada dată de politica tipului (deductibilul în luna înregistrării,
+        colectatul în luna faptului), iar coloana <strong>Perioada</strong> o arată lângă dată.
+        Stornările intră cu semn negativ, în perioada stornării — jurnalul unei luni deja declarate rămâne cum a fost.
         Pe deconturi contrapartida e <strong>titularul</strong> (angajatul), nu comerciantul de pe bon: atât știe modelul.
         Liniile fără tip de TVA nu apar deloc — e o gaură a datelor, care se măsoară, nu se umple cu un regim presupus.
       </p>
@@ -207,6 +222,11 @@ function celulaPartener({ data }: { data: JurnalTvaRand }) {
 function celulaTipTva({ data }: { data: JurnalTvaRand }) {
   if (data.TipTvaCod) return <span>{data.TipTvaCod}</span>;
   return <span className="indiciu" title={data.TipTvaId ?? ''}>(tip TVA indisponibil)</span>;
+}
+
+function celulaPerioada({ data }: { data: JurnalTvaRand }) {
+  if (!data.PerioadaAn) return <span className="indiciu">—</span>;
+  return <span>{String(data.PerioadaLuna).padStart(2, '0')}/{data.PerioadaAn}</span>;
 }
 
 function celulaRegim({ data }: { data: JurnalTvaRand }) {

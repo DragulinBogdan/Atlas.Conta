@@ -29,7 +29,27 @@ public static class RegistruTvaService {
     // apelantului.
     public readonly record struct RandTva(
         Guid DetaliuId, SensTva Sens, Guid? PartenerId, Guid TipTvaId,
-        RegimTva Regim, decimal Cota, decimal Baza, decimal Tva);
+        RegimTva Regim, decimal Cota, decimal Baza, decimal Tva,
+        DeclarareIntarziata Regula);
+
+    // F27-D5 — perioada în care faptul se DECLARĂ, pentru un fapt petrecut la
+    // `dataFapt` și înregistrat la `dataInregistrare`. Perioada deschisă a
+    // faptului câștigă întotdeauna; peste o perioadă închisă SAU nedefinită
+    // (nedefinită = închisă, regula gardianului) decide politica tipului.
+    // Citire simplă, fără blocare: rândul perioadei e deja ținut de gardianul
+    // care a verificat `DataInregistrare`.
+    public static (int An, int Luna) PerioadaDeclarare(IObjectSpace os, DateOnly dataFapt,
+            DateOnly dataInregistrare, DeclarareIntarziata regula) {
+        var deschisa = os.GetObjectsQuery<PerioadaFiscala>()
+            .Where(p => p.An == dataFapt.Year && p.Luna == dataFapt.Month)
+            .Select(p => (bool?)p.Inchisa)
+            .FirstOrDefault() == false;
+        if (deschisa)
+            return (dataFapt.Year, dataFapt.Month);
+        return regula == DeclarareIntarziata.PerioadaInregistrarii
+            ? (dataInregistrare.Year, dataInregistrare.Month)
+            : (dataFapt.Year, dataFapt.Month);
+    }
 
     // Forma folosită de MOTOR: primește ce are deja rezolvat (tipul documentului,
     // liniile pe care tocmai le-a pregătit `PregatesteOperare`).
@@ -98,7 +118,8 @@ public static class RegistruTvaService {
                     + "reatribuiți-l pe linie înainte de operare.");
             var (regim, cota) = info;
             var (baza, tva) = Cifre(regim, cota, d.Valoare, d.ValoareTva);
-            randuri.Add(new RandTva(d.ID, sens, partenerId, d.TipTvaId.Value, regim, cota, baza, tva));
+            randuri.Add(new RandTva(d.ID, sens, partenerId, d.TipTvaId.Value, regim, cota, baza, tva,
+                politica.DeclarareIntarziata));
         }
         return randuri;
     }
