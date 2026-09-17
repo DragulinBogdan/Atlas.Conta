@@ -899,6 +899,33 @@ Felia e închisă când, pe codul final:
    17.09.2026) și ștergerea ei din fereastra deschisă a readus baza exact la
    starea dinainte.
 
+   *Executat 8b (review pasul 7) (2026-09-17), fără opriri*: review-ul advers al
+   pasului 7 (agent separat, probele `F27-RA*`, scena 2037) a dat două fix-uri,
+   amândouă în `Motor/PerioadaService.cs` și niciunul cerând migrație. (1)
+   Rândul de rezumat al unei familii plafonate e o ACCEPTARE ÎN BLOC: păstrează
+   cheia `{FEL}:REZUMAT`, dar primește severitatea din politică pe aceeași cale
+   ca rândurile individuale (inclusiv sufixul „fără politică — avertisment
+   implicit") și spune în text câte rânduri nelistate acoperă, plus că
+   acceptarea lui le acceptă pe toate. Înainte, severitatea lui era hardcodată
+   `Avertisment` (un fel pe `Blocant` se închidea cu rezumatul acceptat), iar
+   comentariul din cod pretindea că rândul n-are cheie proprie — contrazis de
+   cod. Alternativa „rezumat neacceptabil" face imposibilă închiderea unei luni
+   cu peste 200 de rânduri de același fel, iar „informativ, exclus din refuz"
+   ar fi ignorat tăcut rândurile nelistate: acceptarea în bloc, cu cifra pe
+   ecran și la severitatea familiei, e singura formă care rămâne CONȘTIENTĂ
+   (F27-D2). (2) Un fapt, o constatare: `DraftInPerioada` exclude din
+   INTEROGARE (deci și din plafon, și din numărătoarea totală) documentele deja
+   raportate de `ItvLipsa`/`AmoLipsa` în aceeași verificare — dar numai pe cele
+   RAPORTATE EFECTIV: cu felul lor pe `Ignorat` (nu se caută) draftul apare
+   normal ca `DRAFT-IN-PERIOADA:{id}`, altfel faptul ar dispărea de tot.
+   Probele `F27-RA*` (22 pe privat, 16 pe bugetar; `F27-RA5a/b/c` și
+   `F27-RA6a/b` scrise pe comportamentul corect, `F27-RA6c` nouă pe felul
+   `Ignorat`, `F27-RA10` pe lipsa de reziduu și politica neatinsă). ModelCheck
+   bugetar 1278/0, privat 1434/0, loguri în `run-f27/pas8b7/` și
+   `run-f27/pas8b7b/`; `has-pending-model-changes` curat; niciun DTO și niciun
+   contract OpenAPI atins, deci fără codegen și fără `refuzuri.ps1` (ușa HTTP
+   neatinsă). Docs: domeniu-si-operare, limite-curente.
+
 ## Ce NU intră (amânări cu nume, textul aici)
 
 - **F27-r1** reclasificarea pe 1174 a erorilor semnificative din exerciții

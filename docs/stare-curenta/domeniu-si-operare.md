@@ -193,8 +193,15 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
   fiecare document operat, scadent și cu rest la sfârșitul perioadei.
   Cheile lor sunt `ITV-LIPSA`, `AMO-LIPSA`, `DRAFT-IN-PERIOADA:{id}` și
   `REST-SCADENT:{id}`; primele două n-au sufix fiindcă amândouă sunt ale
-  societății, nu ale unei unități interne. Fiecare familie listează cel mult 200
-  de rânduri și rezumă restul. (F27-D2)
+  societății, nu ale unei unități interne. Un fapt dă o singură constatare:
+  documentul în lucru raportat deja de familia lui — închiderea de TVA sau
+  amortizarea existente ca draft — nu se mai repetă ca `DRAFT-IN-PERIOADA` și
+  nu intră nici în numărătoarea acelei familii; dacă felul care l-ar raporta e
+  `Ignorat` (deci nu se caută), documentul apare normal ca draft. Fiecare
+  familie listează cel mult 200 de rânduri, iar restul intră într-un rând de
+  rezumat cu cheia `{FEL}:REZUMAT`, la severitatea familiei, care spune câte
+  rânduri nelistate acoperă: acceptarea lui le acceptă pe toate, în bloc.
+  (F27-D2)
 - Închiderea reia verificarea în aceeași tranzacție: orice blocantă refuză
   oricum, iar orice avertisment a cărui cheie nu a fost acceptată refuză și el.
   Refuzul poartă lista ÎNTREAGĂ, un rând pe linie, ca ecranul s-o arate și

@@ -66,9 +66,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   scadență (plată, încasare, decont, retur) rămâne în afara ei chiar cu rest.
   (F27-D2)
 - Constatările de închidere listează cel mult 200 de rânduri per fel, iar
-  restul intră într-un rând de rezumat fără cheie proprie: o constatare
-  nelistată nu se poate accepta individual. Pe o lună cu peste 200 de drafturi
-  închiderea cere deci fie operarea lor, fie coborârea severității felului.
+  restul intră într-un rând de rezumat cu cheie proprie, la severitatea
+  familiei, care spune câte rânduri acoperă: acceptarea lui e o acceptare ÎN
+  BLOC a celor nelistate, nu una pe constatări individuale. Pe o lună cu peste
+  200 de rânduri de același fel operatorul vede deci cifra, nu lista.
   (F27-D2)
 - Constatările de conținut se caută doar când niciun blocant STRUCTURAL nu
   stă în picioare: pe o lună cu precedenta deschisă ecranul arată doar

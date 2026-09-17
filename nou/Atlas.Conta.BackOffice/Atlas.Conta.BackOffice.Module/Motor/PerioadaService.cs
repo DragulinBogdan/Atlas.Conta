@@ -82,32 +82,40 @@ public static class PerioadaService {
         bool Activ(FelConstatareInchidere fel) =>
             !politici.TryGetValue(fel, out var severitate) || severitate != SeveritateConstatare.Ignorat;
 
+        (SeveritateConstatare Severitate, string Sufix) Politica(FelConstatareInchidere fel) =>
+            politici.TryGetValue(fel, out var severitate)
+                ? (severitate, "")
+                : (SeveritateConstatare.Avertisment, " (fără politică — avertisment implicit)");
+
         void Adauga(FelConstatareInchidere fel, string cheie, string text, Guid? obiectId, string eticheta) {
-            if (!politici.TryGetValue(fel, out var severitate)) {
-                constatari.Add(new ConstatareInchidere(cheie, fel.ToString(), SeveritateConstatare.Avertisment,
-                    text + " (fără politică — avertisment implicit)", obiectId, eticheta));
-                return;
-            }
-            constatari.Add(new ConstatareInchidere(cheie, fel.ToString(), severitate, text, obiectId, eticheta));
+            var (severitate, sufix) = Politica(fel);
+            constatari.Add(new ConstatareInchidere(cheie, fel.ToString(), severitate, text + sufix,
+                obiectId, eticheta));
         }
 
-        // Plafonul se aplică pe o familie cu multe rânduri; rezumatul păstrează
-        // cifra, dar n-are cheie proprie — nu se acceptă o constatare nelistată.
+        // Rândul de rezumat se acceptă, iar acceptarea lui e ÎN BLOC: acoperă
+        // toate rândurile nelistate ale familiei, la severitatea ei (F27-D2).
         void Rezumat(FelConstatareInchidere fel, int total) {
             if (total <= MaximPerFel)
                 return;
-            constatari.Add(new ConstatareInchidere($"{Cheie(fel)}:REZUMAT", fel.ToString(),
-                SeveritateConstatare.Avertisment,
-                $"Încă {total - MaximPerFel} rânduri de același fel (din {total} în total) — nelistate.",
+            var (severitate, sufix) = Politica(fel);
+            constatari.Add(new ConstatareInchidere($"{Cheie(fel)}:REZUMAT", fel.ToString(), severitate,
+                $"Încă {Randuri(total - MaximPerFel)} de același fel (din {total} în total) — nelistate; "
+                + "acceptarea acestui rând le acceptă pe toate." + sufix,
                 null, "(rezumat)"));
         }
 
-        if (Activ(FelConstatareInchidere.ItvLipsa))
-            ItvLipsa(os, an, luna, primaZi, ultimaZi, Adauga);
-        if (Activ(FelConstatareInchidere.AmoLipsa))
-            AmoLipsa(os, an, luna, primaZi, ultimaZi, Adauga);
+        // Un fapt, o constatare: draftul deja raportat de familia lui nu se mai
+        // repetă ca `DRAFT-IN-PERIOADA` (F27-D2).
+        var raportate = new List<Guid>(2);
+        if (Activ(FelConstatareInchidere.ItvLipsa)
+                && ItvLipsa(os, an, luna, primaZi, ultimaZi, Adauga) is { } itvId)
+            raportate.Add(itvId);
+        if (Activ(FelConstatareInchidere.AmoLipsa)
+                && AmoLipsa(os, an, luna, primaZi, ultimaZi, Adauga) is { } amoId)
+            raportate.Add(amoId);
         if (Activ(FelConstatareInchidere.DraftInPerioada))
-            DraftInPerioada(os, an, luna, primaZi, ultimaZi, Adauga, Rezumat);
+            DraftInPerioada(os, an, luna, primaZi, ultimaZi, raportate, Adauga, Rezumat);
         if (Activ(FelConstatareInchidere.RestScadent))
             RestScadent(os, an, luna, ultimaZi, Adauga, Rezumat);
     }
@@ -115,17 +123,17 @@ public static class PerioadaService {
     // ITV: luna se închide cu decontul ei făcut. Profilul fără politică de
     // închidere de TVA (bugetarul) n-are ce deconta — tip inert, nicio
     // constatare; iar o lună fără sold pe cele două conturi n-avea ce închide.
-    static void ItvLipsa(IObjectSpace os, int an, int luna, DateOnly primaZi, DateOnly ultimaZi,
+    static Guid? ItvLipsa(IObjectSpace os, int an, int luna, DateOnly primaZi, DateOnly ultimaZi,
             Action<FelConstatareInchidere, string, string, Guid?, string> adauga) {
         var previzualizare = InchidereTvaService.Previzualizeaza(os, an, luna);
         if (previzualizare.Motiv is MotivNegenerare.ProfilInert or MotivNegenerare.FaraSold)
-            return;
+            return null;
         var vie = os.GetObjectsQuery<InchidereTva>()
             .Where(d => d.Data >= primaZi && d.Data <= ultimaZi && d.Stare != StareDocument.Stornat)
             .Select(d => new { d.ID, d.Numar, d.Stare })
             .FirstOrDefault();
         if (vie is { Stare: StareDocument.Operat })
-            return;
+            return null;
         var text = vie == null
             ? $"Închiderea de TVA pentru {Eticheta(an, luna)} lipsește — soldurile de TVA ale lunii rămân "
                 + "deschise, iar după închiderea perioadei nu se mai pot deconta pe ea."
@@ -133,21 +141,22 @@ public static class PerioadaService {
                 + $"({vie.Numar ?? "fără număr"}) — un draft nu scrie registre, deci soldurile lunii rămân deschise.";
         adauga(FelConstatareInchidere.ItvLipsa, Cheie(FelConstatareInchidere.ItvLipsa), text,
             vie?.ID, vie?.Numar ?? Eticheta(an, luna));
+        return vie?.ID;
     }
 
     // AMO: calculul lunii e al SOCIETĂȚII, nu al unei unități interne
     // (`AmortizareService.CalculeazaLinii` n-are parametru de unitate — unitatea
     // e doar latura documentului generat), deci cheia n-are sufix.
-    static void AmoLipsa(IObjectSpace os, int an, int luna, DateOnly primaZi, DateOnly ultimaZi,
+    static Guid? AmoLipsa(IObjectSpace os, int an, int luna, DateOnly primaZi, DateOnly ultimaZi,
             Action<FelConstatareInchidere, string, string, Guid?, string> adauga) {
         if (AmortizareService.CalculeazaLinii(os, an, luna).Count == 0)
-            return;
+            return null;
         var vie = os.GetObjectsQuery<AmortizareLunara>()
             .Where(d => d.Data >= primaZi && d.Data <= ultimaZi && d.Stare != StareDocument.Stornat)
             .Select(d => new { d.ID, d.Numar, d.Stare })
             .FirstOrDefault();
         if (vie is { Stare: StareDocument.Operat })
-            return;
+            return null;
         var text = vie == null
             ? $"Amortizarea lunară pentru {Eticheta(an, luna)} lipsește, deși există fișe de amortizat — "
                 + "după închidere luna nu mai poate primi amortizarea ei."
@@ -155,24 +164,25 @@ public static class PerioadaService {
                 + $"({vie.Numar ?? "fără număr"}) — un draft nu scrie registrul imobilizărilor.";
         adauga(FelConstatareInchidere.AmoLipsa, Cheie(FelConstatareInchidere.AmoLipsa), text,
             vie?.ID, vie?.Numar ?? Eticheta(an, luna));
+        return vie?.ID;
     }
 
     // Draftul din perioadă NU e un document mort (F27-D4): după închidere rămâne
     // operabil, cu o dată de înregistrare ulterioară. Constatarea spune exact
     // asta — altfel operatorul ar crede că pierde culegerea.
     static void DraftInPerioada(IObjectSpace os, int an, int luna, DateOnly primaZi, DateOnly ultimaZi,
+            List<Guid> raportate,
             Action<FelConstatareInchidere, string, string, Guid?, string> adauga,
             Action<FelConstatareInchidere, int> rezumat) {
-        var drafturi = os.GetObjectsQuery<Document>()
+        var interogare = os.GetObjectsQuery<Document>()
             .Where(d => d.Stare == StareDocument.Draft
-                && d.DataInregistrare >= primaZi && d.DataInregistrare <= ultimaZi)
+                && d.DataInregistrare >= primaZi && d.DataInregistrare <= ultimaZi
+                && !raportate.Contains(d.ID));
+        var drafturi = interogare
             .OrderBy(d => d.DataInregistrare).ThenBy(d => d.Numar)
             .Take(MaximPerFel + 1)
             .ToList();
-        var total = drafturi.Count <= MaximPerFel
-            ? drafturi.Count
-            : os.GetObjectsQuery<Document>().Count(d => d.Stare == StareDocument.Draft
-                && d.DataInregistrare >= primaZi && d.DataInregistrare <= ultimaZi);
+        var total = drafturi.Count <= MaximPerFel ? drafturi.Count : interogare.Count();
         foreach (var draft in drafturi.Take(MaximPerFel)) {
             var eticheta = $"{MotorOperare.ClasaReala(draft).Name} {draft.Numar ?? "fără număr"}";
             adauga(FelConstatareInchidere.DraftInPerioada,
@@ -216,6 +226,10 @@ public static class PerioadaService {
         }
         rezumat(FelConstatareInchidere.RestScadent, restante.Count);
     }
+
+    // Acordul numeralului: 1 rând, 2–19 rânduri, 20+ „de rânduri".
+    static string Randuri(int n) =>
+        n == 1 ? "1 rând" : $"{n}{(n % 100 is >= 1 and <= 19 ? "" : " de")} rânduri";
 
     static string Cheie(FelConstatareInchidere fel) => fel switch {
         FelConstatareInchidere.ItvLipsa => "ITV-LIPSA",
