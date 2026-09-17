@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.Anaf;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Import1C;
@@ -96,6 +97,11 @@ string anafUrl = null;
 // flag-uri sunt modul „doar nomenclatoare", pentru o bază deja importată.
 var societate = false;
 var umNc = false;
+// `--inchide-lunile` (felia 27, F27-D10): după fiecare lună COMPLETĂ, perioada ei
+// se închide prin comanda motorului, cu toate constatările de acum acceptate pe
+// cheie. Lunile următoare se importă atunci peste snapshot-uri, nu peste registrul
+// integral — iar raportul de reconciliere trebuie să rămână identic.
+var inchideLunile = false;
 int? saftAn = null;
 var saftLuna = 0;
 // Modulul cerut: `L` (lunar) sau `S` (stocuri). Un singur câmp, nu două perechi
@@ -140,6 +146,9 @@ for (var i = 0; i < args.Length; i++) {
             break;
         case "--um-nc":
             umNc = true;
+            break;
+        case "--inchide-lunile":
+            inchideLunile = true;
             break;
         case "--saft":
         case "--saft-s":
@@ -186,7 +195,7 @@ for (var i = 0; i < args.Length; i++) {
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
                 + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--recreeaza] "
                 + "[--reclasifica] [--anaf] [--anaf-url <url>] [--deblocheaza <view>:<cheie>] "
-                + "[--societate] [--um-nc] [--saft <an> <lună>] [--saft-s <an> <lună>]");
+                + "[--societate] [--um-nc] [--inchide-lunile] [--saft <an> <lună>] [--saft-s <an> <lună>]");
             return 2;
     }
 }
@@ -845,14 +854,95 @@ if (sabotaj)
     bucla.ActiveazaSabotajLuna();
 var luni = new List<RezultatLuna>();
 var lunaPicata = 0;
+var inchideri = new List<(int An, int Luna, int Acceptate, string PeFel, TimeSpan Durata,
+    int Contabil, int Stoc, int Partide)>();
+var inchideriOprite = false;
+
+// Blocanta de CONȚINUT se rezolvă prin POLITICĂ (e dată, nu cod — F27-D2), exact
+// ca la operatorul care închide o lună fără decontul ei (precedentul
+// `InchideAcceptTot` din ModelCheck); blocanta STRUCTURALĂ a lanțului nu se
+// configurează, deci oprește închiderile pentru restul rulării.
+void CoboaraPolitici(IEnumerable<FelConstatareInchidere> feluri) {
+    using var os = provider.CreateObjectSpace();
+    foreach (var fel in feluri) {
+        var rand = os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == fel);
+        if (rand == null || rand.Severitate == SeveritateConstatare.Avertisment)
+            continue;
+        rand.Severitate = SeveritateConstatare.Avertisment;
+        Console.WriteLine($"  politica de închidere pe baza de import: {fel} → Avertisment");
+    }
+    os.CommitChanges();
+}
+
+void OpresteInchiderile(int an, int luna, string motiv) {
+    inchideriOprite = true;
+    Check($"--inchide-lunile: perioada {luna:00}/{an} închisă ({motiv})", false);
+    Avert($"--inchide-lunile: închiderea perioadei {luna:00}/{an} a eșuat ({motiv}) — "
+        + "închiderile se opresc pentru restul rulării, lanțul fiind contiguu.");
+}
+
+void InchideLunaImport(int an, int luna) {
+    if (inchideriOprite)
+        return;
+    for (var incercare = 0; incercare < 2; incercare++) {
+        using var os = provider.CreateObjectSpace();
+        var constatari = PerioadaService.Verifica(os, an, luna);
+        var blocante = constatari
+            .Where(c => c.Severitate == SeveritateConstatare.Blocant).ToList();
+        if (blocante.Count > 0) {
+            var feluri = blocante
+                .Select(b => Enum.TryParse<FelConstatareInchidere>(b.Fel, out var f)
+                    ? f : (FelConstatareInchidere?)null)
+                .ToList();
+            if (incercare > 0 || feluri.Any(f => f == null)) {
+                OpresteInchiderile(an, luna,
+                    string.Join(" | ", blocante.Select(b => $"{b.Cheie}: {b.Text}")));
+                return;
+            }
+            CoboaraPolitici(feluri.Select(f => f.Value).Distinct());
+            continue;
+        }
+        var acceptate = constatari.Select(c => c.Cheie).Distinct().ToArray();
+        var cronometruInchidere = System.Diagnostics.Stopwatch.StartNew();
+        try {
+            PerioadaService.Inchide(os, an, luna, acceptate, null, "Import1C");
+        }
+        catch (Exception ex) {
+            OpresteInchiderile(an, luna, ex.Message);
+            return;
+        }
+        var durata = cronometruInchidere.Elapsed;
+        using var osCifre = provider.CreateObjectSpace();
+        var contabil = osCifre.GetObjectsQuery<SoldPerioadaContabil>()
+            .Count(s => s.An == an && s.Luna == luna);
+        var randuriStoc = osCifre.GetObjectsQuery<SoldPerioadaStoc>()
+            .Count(s => s.An == an && s.Luna == luna);
+        var partide = osCifre.GetObjectsQuery<PartidaDeschisa>()
+            .Count(p => p.An == an && p.Luna == luna);
+        var peFel = constatari.Count == 0
+            ? "niciuna"
+            : string.Join(", ", constatari.GroupBy(c => c.Fel)
+                .OrderBy(g => g.Key, StringComparer.Ordinal)
+                .Select(g => $"{g.Key} × {g.Count()}"));
+        inchideri.Add((an, luna, acceptate.Length, peFel, durata, contabil, randuriStoc, partide));
+        Console.WriteLine($"  Perioada {luna:00}/{an} ÎNCHISĂ în {durata.TotalSeconds:N1}s — "
+            + $"constatări acceptate: {peFel}; snapshot {contabil} rânduri contabile / "
+            + $"{randuriStoc} de stoc, {partide} partide deschise.");
+        return;
+    }
+}
+
 var cronometruDocumente = System.Diagnostics.Stopwatch.StartNew();
 for (var luna = 1; luna <= panaLa; luna++) {
     var rez = bucla.ImportaLuna(anImport, luna);
     luni.Add(rez);
     // Verdictul lunii = importul ȘI contractul (§12.4, pasul 6): o lună în care
     // toate documentele au intrat, dar soldurile nu bat, e tot o lună picată.
-    if (rez.Esecuri == 0 && rez.ContractePicate == 0)
+    if (rez.Esecuri == 0 && rez.ContractePicate == 0) {
+        if (inchideLunile)
+            InchideLunaImport(anImport, luna);
         continue;
+    }
     // Stop dur implicit (§12.4): o lună picată oprește rularea cu raportul
     // complet; `--continua` o transformă în recoltare de găuri, cu diferențele
     // purtate înainte.
@@ -866,6 +956,24 @@ for (var luna = 1; luna <= panaLa; luna++) {
     }
 }
 var durataDocumente = cronometruDocumente.Elapsed;
+
+if (inchideLunile) {
+    Console.WriteLine($"\n--- Închiderile de perioadă (--inchide-lunile) ---");
+    foreach (var i in inchideri)
+        Console.WriteLine($"  {i.Luna:00}/{i.An}  {i.Durata.TotalSeconds,8:N1}s  "
+            + $"{i.Acceptate,3} acceptate  contabil {i.Contabil,8}  stoc {i.Stoc,8}  "
+            + $"partide {i.Partide,7}  [{i.PeFel}]");
+    using var os = provider.CreateObjectSpace();
+    var perioade = os.GetObjectsQuery<PerioadaFiscala>()
+        .Select(p => new { p.An, p.Luna, p.Inchisa }).ToList();
+    var deschise = perioade.Where(p => !p.Inchisa)
+        .OrderBy(p => p.An).ThenBy(p => p.Luna).ToList();
+    Console.WriteLine($"Perioade în bază: {perioade.Count}; închise {perioade.Count - deschise.Count}; "
+        + $"deschise {deschise.Count}"
+        + (deschise.Count == 0 ? "." : $": {string.Join(", ", deschise.Select(p => $"{p.Luna:00}/{p.An}"))}."));
+    Check($"--inchide-lunile: {inchideri.Count} perioade închise din {panaLa} luni importate",
+        inchideri.Count == panaLa);
+}
 
 // Invariantul de IDEMPOTENȚĂ al importului de documente, verificabil pe ORICE
 // rulare (contorul „importate" nu e: e 0 la a doua rulare prin construcție).

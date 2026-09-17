@@ -862,6 +862,84 @@ Felia e închisă când, pe codul final:
    durabilă a–k), README-ul jurnalului, `restante.md` (F27-r1…), istoricul,
    CLAUDE.md §Stare, stare-curenta, contractul §Închidere.
 
+   *Executat 8a (2026-09-17), cu o OPRIRE de perf tranșată prin măsurare (mai jos)*: `Import1C
+   --recreeaza --cititori --inchide-lunile` pe `Atlas.Conta.Import1C.Flax`
+   (12:12:24 → 14:27:12, exit 0; `--reclasifica` după, 19 s, exit 0 — atinge
+   doar `Partener`/`Produs`, niciun document și niciun registru, deci nu scrie
+   în perioade închise). **Proba supremă**: raportul
+   `reconciliere-20260917-121343.txt` e IDENTIC pe conținut sortat cu
+   baseline-ul `reconciliere-20260914-164035.txt` (diferă antetul cu data și o
+   linie reordonată între două grupuri cu același contor) — cu lunile închise
+   PE PARCURS, adică importul citește peste snapshot-uri, nu peste registrul
+   integral. 12/12 luni ale lui 2025 închise, 0 constatări fiecare, 0,7 s →
+   5,2 s; la 12/2025 snapshot 184.780 rânduri contabile, 7.914 de stoc,
+   201.046 partide. Perioadele bazei sunt 24: cele 12 ale lui 2025 și cele 12
+   ale lui **2026, deschise**, scrise de seed (`ContaSeeder.SeedPerioadeFiscale`
+   are anul hardcodat), fără niciun document — de tranșat la 8c.
+   **Integritatea soldurilor** (`POST api/perioade/reconstruieste`, 9,4 s): o
+   singură referință (12/2025 = ultima închisă și singurul decembrie închis),
+   iar `SolduriPerioadaContabil`/`SolduriPerioadaStoc`/`PartideDeschise` nu
+   conțineau nicio altă perioadă; **0 diferențe pe toate trei** (contabil
+   184.780 existente / 184.780 recalculate, stoc 7.914 / 7.914, partide
+   201.046 / 201.046, toate deltele 0,00). Redeschiderea lui 12/2025 cu motiv:
+   **6,2 s**, cu rematerializarea prin `SUM` integral a referinței noi, 11/2025
+   (171.396 / 7.790 / 184.458).
+   **Perf pe HTTP, A/B pe ACEEAȘI bază** (metoda din `p5-perf-masuratori.md`;
+   „A" = 11 luni închise, „B" = lanțul desfăcut prin 11 redeschideri succesive,
+   deci zero referințe și zero partide, apoi RE-ÎNCHIS în ordine cronologică cu
+   aceleași cifre la rând și `Reconstruieste` 0 diferențe): fișa `4111` pe
+   decembrie 187 → **122 ms**, balanța analitică pe decembrie 254 → **210 ms**,
+   `documente-cu-rest` pe contrapartida-reper 171 → **181 ms** (zgomot — vezi
+   mai jos), `sold-parteneri` la 31.12 290 → 219 ms, `sold-stoc` la zi 153 → 50 ms,
+   balanța sintetică 83 → 58 ms, operarea FCT-ului cu 49 de linii 411 →
+   **394 ms**. Comenzile lanțului: închiderea 1,0 s (ianuarie) → 5,2 s
+   (noiembrie), redeschiderea 0,0 → 6,1 s, `Reconstruieste` 6,9–9,4 s. Cifrele
+   de pe `Atlas.Conta.BackOffice.Privat` (aceeași zi) stau în addendum ca
+   CONTEXT, nu ca termen de comparație — două baze diferă din motive proprii.
+   **FIXUL DE PERF: MĂSURAT ȘI RESPINS, nu neîncercat.** `documente-cu-rest`
+   rata ținta în AMBELE stări, deci nu din cauza partidelor — planul lega
+   agregatul `Imperecheri`, un tabel DERIVAT, prin `Nested Loop Left Join` cu
+   `Rows Removed by Join Filter: 2.184.985` și două `Seq Scan`, identic cu și
+   fără referință (`PartideDeschise` era deja atinsă prin index). S-au măsurat
+   trei forme corelate, pe aceeași bază, pe TREI coloane — grilă filtrată,
+   grilă nefiltrată și nefiltrat FĂRĂ `LIMIT` (forma pe care o materializează
+   `RestScadent`): fereastra corelată 82 / 473 / **1.024 ms**, `Asignari` ca
+   două sume corelate 87 / 539 / **1.230 ms**, ambele legături corelate
+   200 / 2.902 / — ms, față de 181 / 423 / **220 ms** azi. Corelarea elimină
+   complet `Seq Scan`-urile (indexurile `IX_Imperecheri_DocumentId` și
+   `IX_Imperecheri_DocumentStingatorId` există și se folosesc; nicio migrație
+   nu lipsește) și ar duce panoul filtrat la 82 ms, dar mută costul de 4,6× pe
+   calea NEPLAFONATĂ a închiderii. O sută de milisecunde pe un panou nu se
+   plătesc cu 0,8 s pe o comandă de închidere ⇒ **V0 rămâne, restanța e
+   F27-r16** (candidații de la 59 și forma legăturilor se rezolvă împreună).
+   Lecția de metodă, scrisă în addendum: măsurătoarea pe grilă PAGINATĂ
+   ascundea asta — pe `take=20` varianta arăta ca o pierdere de 12%.
+   **Despre ținta de „< 150 ms"**: calibrată pe baza `Privat`, unde forma de
+   azi dă 147 ms (pasul 6) și 131 ms la re-măsurare; cele 181 ms sunt de pe
+   baza de import, alt set de date — pe baza pe care a fost pusă, ținta NU e
+   încălcată.
+   **Cele două ținte rămase ratate** (fără optimizare, ca la regula de
+   oprire): fișa (< 100 ms) — calea de date costă 7 ms (snapshot-ul taie
+   fereastra la 12.953 atomi în loc de 144.248), restul e cadrul unei cereri
+   (58 de instrucțiuni SQL de securitate per ObjectSpace, hidratare,
+   serializare), deci se ratează din AFARA feliei (F27-r14); balanța analitică
+   (< 100 ms) — cardinalitatea cheii `Cont×Repartitor` (71.167 de grupe), iar
+   `work_mem` NU e butonul care pare: 136 ms la 4 MB (agregare paralelă cu
+   sortare pe disc) față de 155/162/183 ms la 8/16/64 MB, unde planificatorul
+   renunță la paralelism; ținta fusese calibrată pe IANUARIE (84 ms la 66),
+   comparabilul lui decembrie e „an = 269 ms" (F27-r15).
+   **Închiderea probelor**: `refuzuri.ps1` 285/285, exit 0, pe host viu Privat
+   (`run-f27/pas8a/refuzuri.log`); ModelCheck bugetar 1278/0 și privat 1434/0,
+   re-rulat detașat pe HEAD (`run-f27/pas8a/`); `has-pending-model-changes`
+   curat; `--dump-metadata` idempotent; `pnpm verifica:drift` exit 0 și
+   `pnpm build` verde, cu hosturile OPRITE. Baza de import rămâne cu 11 luni
+   închise și 12/2025 deschisă, fără reziduu viu. Docs: addendumul de perf,
+   `dezvoltare-si-validare` (proba supremă `--inchide-lunile`),
+   `limite-curente` (diagnosticul lui `documente-cu-rest` și ținta calibrată pe
+   altă bază). Probele s-au rulat de două ori pe EXACT acest cod, o dată
+   înainte și o dată după ce varianta corelată a fost aplicată și retrasă
+   (`run-f27/pas8a/` și `run-f27/pas8a-final/`), cu aceleași cifre.
+
    *Executat 8b (2026-09-17), fără opriri; devierile raportate*: review-ul
    advers a rulat pe pașii 0–6 (worktree `Atlas.Conta-review-f27b`, bază
    `_review`) și a dat 0 MAJOR, 3 MEDIU, 5 MINOR, 7 OBSERVAȚII. Fix-urile,
@@ -952,6 +1030,11 @@ Felia e închisă când, pe codul final:
 - **F27-r9** `DataInregistrare` pe documentele generate (AMO/ITV/DSC/NIR
   autogenerate): moștenesc data sursei sau ultima zi a lunii, ca azi;
   editabilitatea ei pe generate se decide la cerere.
+- **F27-r11** (constatare de produs, pasul 6) dimensionarea conturilor de terț
+  pe PARTENER: azi `Repartitor` urmează laturile documentului (debit←predator,
+  credit←primitor), deci `sold-parteneri` dă soldul pe cheia contabilă așa cum
+  e ea, nu creanța per partener — aceea se citește din partidele deschise.
+  Familia 64h / 73-r12 / 86-r13; decizie de model, nu a acestei felii.
 - **F27-r12** (propusă de review-ul advers, pasul 8b) integritatea
   snapshot-ului memorată în istoric: `InchiderePerioada` reține numărul de
   rânduri contabile/de stoc/de partide și sumele scrise la închidere, o

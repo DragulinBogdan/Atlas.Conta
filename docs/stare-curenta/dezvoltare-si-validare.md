@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-15.** [Index](README.md)
+**Actualizat: 2026-09-17.** [Index](README.md)
 
 ## Organizarea sursei
 
@@ -165,6 +165,16 @@ NTC este punte numai pentru cazurile permise explicit, nu fallback universal
 pentru documente nerecunoscute. Transformările și transferurile sunt
 clasificate în ASM, BTR sau NTC după faptul economic. FCL importată postează
 venitul; DSC folosește loturile identificate de sursă. (49a, 49d, 75b)
+
+`--inchide-lunile` închide fiecare lună imediat după importul ei, prin
+`PerioadaService.Inchide` cu toate constatările curente acceptate (politica de
+închidere a bazei de import coboară `ItvLipsa` la avertisment — politică, nu
+ocolire). E proba supremă a soldurilor materializate: raportul de reconciliere
+trebuie să rămână IDENTIC cu baseline-ul rulării fără închideri, adică importul
+citește peste snapshot-uri, nu peste registrul integral, și scrie aceleași
+cifre. Verificat 2026-09-17 pe anul 2025: 12/12 luni închise, 0 constatări per
+lună, raport identic cu `reconciliere-20260914-164035.txt`, `Reconstruieste`
+0 diferențe pe contabil, stoc și partide. (F27-D1, F27-D3)
 
 ## Reconciliere și migrare legacy
 

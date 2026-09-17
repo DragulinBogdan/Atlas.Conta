@@ -151,6 +151,33 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   (unpivot-ul folosit de panoul notei de compensare) și `ImperechereService`
   pe un document anume — ambele sunt căi de COMANDĂ, pe mulțimi mărginite.
   (F27-D7)
+- `documente-cu-rest` rămâne proiecția scumpă, iar partidele nu schimbă asta:
+  pe baza de import costă 181 ms filtrat pe o contrapartidă (171 ms cu lanțul
+  desfăcut — diferență în zgomot), 423 ms nefiltrat pe grilă și 220 ms pe
+  forma nefiltrată fără paginare. Cauza e cea de la 59 — uniunea tuturor
+  documentelor operate ale celor opt tipuri, cu filtrul abia în `WHERE`-ul
+  exterior — plus legăturile ca tabele derivate: agregatul `Imperecheri` intră
+  prin `Nested Loop Left Join` cu două `Seq Scan` și 2,18 M de rânduri respinse.
+  Corelarea legăturii ELIMINĂ `Seq Scan`-urile și duce panoul filtrat la 82 ms,
+  dar mută costul pe calea nefiltrată neplafonată (220 ms → 1,02 s), pe care o
+  consumă constatarea de rest scadent la închidere — deci nu e fixul; cifrele
+  și variantele respinse sunt în `docs/api/p5-perf-masuratori.md` §Felia 27.
+  Niciun index nu lipsește. (F27-r16)
+- Ținta de 150 ms a lui `documente-cu-rest` a fost calibrată pe baza `Privat`
+  (147 ms la pasul 6, 131 ms la re-măsurare); cele 181 ms sunt de pe baza de
+  import, alt set de date. Pe baza pe care a fost pusă, ținta nu e încălcată.
+- Fișa de cont și balanța analitică coboară cu închiderile (187 → 122 ms,
+  respectiv 254 → 210 ms, A/B pe aceeași bază), dar rămân peste ținta de
+  100 ms. La fișă costul nu mai e proiecția — 7 ms —, ci cadrul unei cereri
+  (58 de instrucțiuni de securitate per ObjectSpace, hidratare, serializare),
+  deci ținta se ratează din afara feliei (F27-r14). La balanța analitică e
+  cardinalitatea cheii `Cont×Repartitor` (71.167 de grupe); ridicarea lui
+  `work_mem` NU ajută, o înrăutățește (136 ms la 4 MB cu agregare paralelă și
+  sortare pe disc, 183 ms la 64 MB cu hash aggregate secvențial) — ținta e de
+  re-calibrat (F27-r15). (F27-D3)
+- Balanța analitică pe decembrie are 71.167 de rânduri cu snapshot și 72.910
+  fără: cheile cu debit ȘI credit cumulat zero nu se scriu în snapshot.
+  (F27-D3)
 - Coloana „Dată” a împerecherii apare în panoul de stingeri și în lista XAF,
   dar nu există listă proprie de împerecheri în clientul React: desfacerea se
   face din panoul documentului. (F27-D8)
