@@ -105,23 +105,32 @@ subțire, un singur registru append-only (`RegistruImobilizari`, al patrulea,
 prin `IDocumentCuRegistruPropriu`), PIF/CAS operate, AMO generată lunar cu
 trei cifre (contabil/fiscal/deductibil) din `Motor/AmortizareService.cs`,
 conturile și regulile de deductibilitate exclusiv din politică versionată,
-catalogul HG 2139/2004 ca date. Ultima felie închisă: 26 (87). Cronologia
-integrală: `docs/decizii/istoric-plan-de-lucru.md`.
+catalogul HG 2139/2004 ca date. Perioada e lanț și închiderea e comandă (88,
+2026-09-17): perioade contigue cu absența = închidere, verificare → acceptare
+conștientă pe cheie → închidere în tranzacție, severitatea constatărilor din
+politică; soldurile și partidele deschise se materializează DOAR pe perioadele
+de referință (ultima închisă + decembrie), citite printr-un singur serviciu
+(`Motor/SolduriService`); `DataInregistrare` e reperul registrelor, iar `Data`
+rămâne a documentului fizic; `PerioadaDeclarare` e reperul fiscal, cu
+rectificativa derivată din `InchisaPrimaOara`; corecția în perioadă închisă =
+storno legat + document nou cu motiv; împerecherea e fapt datat, desfăcut prin
+rând invers. Ultima felie închisă: 27 (88). Cronologia integrală:
+`docs/decizii/istoric-plan-de-lucru.md`.
 
-**Următorul pas**: felia 27 — perioada ca lanț, închiderea ca comandă cu
-acceptare conștientă, soldurile și partidele deschise materializate la
-închidere, `DataInregistrare` pe document, `PerioadaDeclarare` pe registrul
-fiscal, corecția legată cu motiv — contract scris
-(`docs/api/p5-felia27-perioade-solduri-contract.md`, F27-D1…D10, pașii
-0–8), prioritate decisă pe cerința de produs (solduri la zi, soldul
-partenerilor, arieratele la închiderea de an). Izolarea motorului de
-`IObjectSpace` (`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10)
-vine DUPĂ felia 27, care îi face implementabil contractul de citire pe stoc.
-Candidații rămași după: restanțele imobilizărilor cu cerere de produs
-(F26-r1, F26-r8, F26-r9, F26-r13), 84-r5, 86-r11, 86-r13, 80-r1;
+**Următorul pas**: izolarea motorului de `IObjectSpace`
+(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10) — felia 27 i-a făcut
+implementabil contractul de citire, iar `SolduriService` e primul adaptor al lui
+IM-D4. Candidații rămași după: restanțele imobilizărilor cu cerere de produs
+(F26-r1, F26-r8, F26-r9, F26-r13), restanțele feliei 27 cu cerere de produs
+(F27-r11 dimensionarea conturilor de terț pe partener, F27-r13 perioadele unei
+baze noi, F27-r1 reclasificarea pe 1174), 84-r5, 86-r11, 86-r13, 80-r1;
 `lista-react.md` mai ține doar itemii structurali și 77-r1/r6.
 
-**Capcane de probare**: `genereaza` SCRIE ori de câte ori luna e liberă (79);
+**Capcane de probare**: o cifră de perf se compară DOAR cu ea însăși pe
+ACEEAȘI bază (A/B prin schimbarea stării, nu între baze — altfel diferența de
+date trece drept efect), iar o grilă paginată ascunde costul căii care consumă
+TOT (`LIMIT` oprește execuția devreme, `ToList` nu); `genereaza` SCRIE ori de
+câte ori luna e liberă (79);
 probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe
 host viu (Privat, după re-seed pentru `Cititor`/`Configurator`), nu se refac
 de mână; două ModelCheck-uri în paralel cer worktree + `MODELCHECK_BAZA_SUFIX`

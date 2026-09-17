@@ -557,3 +557,49 @@ detaliat în jurnal):
   `felii/imobilizari|pif|cas|amo`, smoke React și XAF, Import1C integral cu
   raport identic; defectul de cronologie a lunilor (anularea AMO sub CAS
   operată) găsit la smoke-ul XAF și fixat. Concretizează 9.
+- **Felia 27** (2026-09-16/17, decizia 88, contract
+  `docs/api/p5-felia27-perioade-solduri-contract.md`, F27-D1…D10) — perioada
+  ca lanț, închiderea ca comandă, soldurile materializate. Nouă pași, un agent
+  per pas, commit per pas: **0** spike-ul cursei și al costului snapshot-ului
+  (F1 probat pe calea reală XAF; `SUM` integral 300 ms azi / ~1,5 s la 5 ani ⇒
+  două amendamente: tranzacția e a comenzii, snapshot doar pe perioadele de
+  REFERINȚĂ); **1** lanțul și comenzile `inchide`/`redeschide` cu istoric
+  append-only și gardianul pe `Inchisa`; **2a** tranzacția comenzii +
+  `FOR SHARE`/`FOR UPDATE` + cele două tabele de snapshot, **2b**
+  `SolduriService` la citire cu toți consumatorii mutați (o oprire: inițialul
+  de stoc al SAF-T rămâne pe registrul integral, F27-r10); **3**
+  `Document.DataInregistrare` cu implicitul la trei seam-uri, registrele și
+  lotul la data înregistrării; **4a** `PerioadaDeclarare` + `ScrisLa` pe
+  `RegistruTva` cu rectificativa ca derivat (o oprire: perioada fiscală E luna,
+  deci o probă pe fereastră de zile nu mai e exprimabilă), **4b** recuperarea
+  amortizării întârziate cu `Luni` pe linie și pe registru; **5** corecția ca
+  storno legat + document nou cu motiv, cu culegerea copiată generic prin
+  metadata EF; **6** `TotalStingere` la operare, `PartidaDeschisa` la
+  închidere, împerecherea datată cu desfacere prin rând invers,
+  `DocumenteCuRest` rescris, `sold-parteneri` (constatarea de produs: dimensiunea
+  `Repartitor` urmează laturile, nu contul de terț — F27-r11); **7**
+  `PoliticaInchidere` (al 20-lea tip configurabil), cele patru constatări de
+  conținut, acceptarea conștientă, dialogul XAF și `/perioade` în React (o
+  oprire: severitatea se coboară în POLITICĂ pe durata închiderilor de scenă,
+  calea operatorului real); **8a** probele supreme, integritatea soldurilor și
+  perf-ul, **8b** două runde de review advers (pașii 0–6: 0 MAJOR, 3 MEDIU,
+  5 MINOR, 7 observații; pasul 7: rezumatul plafonat ca acceptare în bloc și
+  „un fapt, o constatare"), **8c** decizia 88 și restanțele.
+  **Ce a ieșit la 8a**: Import1C integral pe Flax CU lunile închise pe parcurs
+  (2026-09-17, 12:12 → 14:27, exit 0; 12/12 luni, 0 constatări, 0,7 → 5,2 s per
+  lună) ⇒ importul citește peste snapshot-uri, iar raportul de reconciliere e
+  IDENTIC pe conținut cu baseline-ul feliei 26 — proba supremă a feliei;
+  reconstrucția soldurilor cu **0 diferențe** pe toate trei materializările
+  (184.780 contabil / 7.914 stoc / 201.046 partide). A/B-ul pe ACEEAȘI bază
+  (lanțul desfăcut prin 11 redeschideri, apoi re-închis cronologic cu aceleași
+  cifre la rând) a INFIRMAT bănuiala de regresie a partidelor: fișa `4111`
+  187 → 122 ms, balanța analitică 254 → 210 ms, soldul de stoc 153 → 50 ms,
+  operarea unei FCT cu 49 de linii 411 → 394 ms, iar `documente-cu-rest`
+  171 → 181 ms, adică neschimbat cu și fără partide. Fixul de formă al
+  proiecției (corelarea legăturii pe fereastră) a fost MĂSURAT ȘI RESPINS
+  motivat, nu omis: duce panoul filtrat la 82 ms, dar calea neplafonată a
+  constatării de rest scadent de la 220 ms la 1,02 s — nu se plătește, deci
+  felia rămâne pe forma existentă (F27-r16). Au rămas neatinse două ținte,
+  NEoptimizate conform regulii de oprire (F27-r14 cadrul cererii, F27-r15
+  cardinalitatea balanței analitice). Închidere: ModelCheck bugetar 1278/0, privat 1434/0;
+  `refuzuri.ps1` 285/285. Amendează 31d; închide 79-r3.

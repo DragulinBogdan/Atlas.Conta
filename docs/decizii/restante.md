@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-15.** [Index](README.md)
+**Actualizat: 2026-09-17.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -23,7 +23,7 @@ văzută de utilizator, sunt în
 | 46f | imperecherea returului, toleranța ASM, disciplina de apelant ITV | deschisă |
 | 51e | `PoliticaEvaluare` (CMP) | deschisă |
 | 52h | consumul ASM pe proveniență, reziduul TRANZIT | deschisă |
-| 53i | culegerea de produs pe ASM, localizarea shell-ului, perioadele fiscale manuale, `Data` pe conexe | parțial: ASM închis de 76b |
+| 53i | culegerea de produs pe ASM, localizarea shell-ului, perioadele fiscale manuale (≠ 2026 se adaugă de mână — continuată ca F27-r13), `Data` pe conexe | parțial: ASM închis de 76b |
 | DIM-4 | curatoria grilei registrului, vizibilitatea dimensiunilor per profil (`SetareProfil`) | deschisă |
 | 55g | JWT secrets la deploy, `$metadata` expune tot modelul, `Lot.Eticheta` pe OData | deschisă |
 | 62g/66j | finisaj de client și ecrane XAF (`lista-react.md`) | deschisă |
@@ -117,7 +117,7 @@ văzută de utilizator, sunt în
 | 78-r1 | căutarea din grilele XAF rămâne sensibilă la diacritice (nu trec prin `DataSourceLoader`; asumat, 44/53) | deschisă |
 | 79-r1 | acțiunea XAF „Generează închiderea" (închisă 2026-09-02) | închisă 2026-09-02 |
 | 79-r2 | `PoliticaInchidereTva` pe OData + ecran React (închisă de 81i) | închisă de 81i |
-| 79-r3 | închiderea perioadei fiscale din client (53i) | deschisă |
+| 79-r3 | închiderea perioadei fiscale din client (53i) | închisă de 88 (React `/perioade`: lanț, verificare cu bife, închidere, redeschidere, istoric) |
 | 79-r4 | mesajul `[Range]` în engleză pe `genereaza` (70-r5) | deschisă |
 | 79-r5 | storno-ul unei închideri la o dată din ALTĂ lună ⇒ previzualizarea lunii raportează `FaraSold` (cauza greșită; data implicită din ecran e cea corectă) | deschisă |
 | 79-r6 | cine are drept de citire pe `InchidereTva` vede prin previzualizare soldurile de TVA ale societății fără drept pe `RegistruContabil` (consecința asumată a lui 79b; închisă de 80e) | închisă de 80e |
@@ -207,3 +207,21 @@ văzută de utilizator, sunt în
 | F26-r20 | `Clasificare` căutabilă în lookup-ul XAF doar pe denumire; `Valoare` a regulii de deductibilitate formatată monetar la `Procent` (87) | deschisă |
 | F26-r21 | filtrele `FilterRow` pe coloanele cu `Lookup` de enum (`Cauza`) neverificate în browser (87) | deschisă |
 | F26-r22 | două `genereaza` concurente pe aceeași lună creează două drafturi care se blochează reciproc (ca ITV) (87) | deschisă |
+| F27-r1 | reclasificarea pe 1174 a erorilor semnificative din exerciții anterioare; pragul de semnificație ca politică (decizia 88) | deschisă |
+| F27-r2 | scadențar/aging pe partidele deschise (aceeași listă + scadența + bucket-uri) (88) | deschisă |
+| F27-r3 | cursa închidere ↔ operare prin blocarea verigii perioadei (88) | închisă la pasul 0 — F1 probat pe ambele capete, restanța nu s-a activat |
+| F27-r4 | închiderea de an ca operație distinctă (121 → 1174/117, soldurile de deschidere ale anului nou) (88) | deschisă |
+| F27-r5 | D406/D300/D394 rectificative ca FIȘIER (marcajul de rectificativă în XML/PDF; proiecțiile expun deja conținutul) (88) | deschisă |
+| F27-r6 | constatări de închidere pe reconcilierea 1C (documente neimportate în P): conectorul, nu mecanismul (88) | deschisă |
+| F27-r7 | soldul în lookup-urile de partener din culegere (coloană prin `sold-parteneri`) (88) | deschisă |
+| F27-r8 | concurența între operatori (25f) rămâne parcată; felia rezolvă doar cursa perioadei (88) | deschisă |
+| F27-r9 | editabilitatea datei de înregistrare pe documentele GENERATE (o primesc la creare, din sursă sau din lună) (88) | deschisă |
+| F27-r10 | SAF-T: inițialul de stoc rămâne pe registrul integral (mutarea pe referință cere schimbarea semanticii lui `Randuri` din `SoldPeTipStocNeraportat` — decizie de raportare) (88) | deschisă |
+| F27-r11 | dimensionarea conturilor de terț pe PARTENER: azi `Repartitor` urmează laturile documentului, deci `sold-parteneri` nu e creanța per partener (familia 64h/73-r12/86-r13) (88) | deschisă |
+| F27-r12 | integritatea snapshot-ului memorată în istoric (rânduri + sume la închidere, constatare + probă, referința fără rânduri refuzată); azi un rând șters direct din bază dă o balanță tăcut greșită (88, review 8b) | deschisă |
+| F27-r13 | perioadele fiscale ale unei baze noi: seed-ul scrie 12 luni ale unui AN HARDCODAT (2026), iar crearea se poate face doar din XAF — nu din React și nu prin OData (lipsă de ergonomie, nu funcțională; continuă 53i) (88) | deschisă |
+| F27-r14 | costul de CADRU al unei cereri (58 de instrucțiuni SQL de bootstrap de securitate per ObjectSpace + hidratare + serializare): motivul pentru care fișa de cont ratează ținta end-to-end deși calea ei de date costă 7 ms (88) | deschisă |
+| F27-r15 | ținta de perf a balanței analitice (< 100 ms) era calibrată pe ianuarie; pe decembrie, cu 71.167 de grupe `Cont × Repartitor`, nu e atingibilă în forma de azi — de re-calibrat sau de pre-agregat (88) | deschisă |
+| F27-r16 | forma proiecției `DocumenteCuRest`: candidații de la 59 (uniunea tuturor documentelor operate) și forma legăturilor se rezolvă ÎMPREUNĂ — corelarea legăturii duce panoul filtrat la 82 ms, dar calea neplafonată a constatării de rest scadent de la 220 ms la 1,02 s (respinsă motivat, cu cifre; niciun index nu lipsește) (88) | deschisă |
+| F27-r17 | ordinea totală a listei `op1` din D394: cheia de ordonare nu e totală pentru persoanele fizice fără cod cu aceeași denumire, deci două generări ale aceleiași luni pot diferi la rând (familia 72-r7) (88) | deschisă |
+| F27-r18 | coloana cu data înregistrării în LISTELE React de documente (câmpul e cules și afișat pe formulare; coloana ar fi trecut pragul de atingeri al pasului 3) (88) | deschisă |
