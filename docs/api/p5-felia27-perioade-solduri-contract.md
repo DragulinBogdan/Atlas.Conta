@@ -862,6 +862,43 @@ Felia e închisă când, pe codul final:
    durabilă a–k), README-ul jurnalului, `restante.md` (F27-r1…), istoricul,
    CLAUDE.md §Stare, stare-curenta, contractul §Închidere.
 
+   *Executat 8b (2026-09-17), fără opriri; devierile raportate*: review-ul
+   advers a rulat pe pașii 0–6 (worktree `Atlas.Conta-review-f27b`, bază
+   `_review`) și a dat 0 MAJOR, 3 MEDIU, 5 MINOR, 7 OBSERVAȚII. Fix-urile,
+   fiecare cu proba lui:
+
+   | # | Constatare | Fix | Proba |
+   |---|---|---|---|
+   | 1b MEDIU | `Reconstruieste` nu lua niciun lock: o închidere care comitea după citirea referințelor rămânea fără snapshot, iar soldurile porneau tăcut de la zero | `SolduriService.Reconstruieste` blochează LANȚUL ÎNTREG (`FOR UPDATE` pe `PerioadeFiscale`) ca primă instrucțiune, ca `PerioadaService.Blocheaza` | `F27-R1b` |
+   | 3e MEDIU | plata autogenerată a unei facturi înregistrate după ziua plății nu se putea opera (împerecherea automată ar fi precedat înregistrarea facturii) | `FacturaIntrare.GenereazaSecundar` dă plății `DataInregistrare = max(ziua plății, înregistrarea facturii)`; `MotorOperare` neatins | `F27-R3c` |
+   | L3 MEDIU | ștergerea originalului unei împerecheri desfăcute cădea pe fixup-ul EF al rândului invers, cu text fără legătură; pe o cale fără gardian rândul invers rămânea orfan | `GardianEditare.VerificaImperechere` refuză pe fond ștergerea unei împerecheri cu rând invers și ștergerea unui rând invers, și tace pe modificarea COLATERALĂ a rândului invers | `F27-RL2` |
+   | 1c MINOR | împerecherea nouă din XAF se comitea pe ușa securizată, unde `FOR SHARE`-ul gardianului e în autocommit ⇒ fereastră până la `SaveChanges` | acțiunea „Împerechează" (dialog, 79-r1) rulează `ImperechereService.Imperecheaza` pe ObjectSpace non-secured, după gate-ul de creare pe tip; `New` retras, ecranele read-only | `F27-R1c`, `F27-R1d` |
+   | 3c MINOR | corecția copia `TotalStingere` (câmp al motorului) pe draftul nou | `nameof(Document.TotalStingere)` în `CorectieService.ExcluseDocument` | `F27-R3e` |
+   | L1 MINOR | lanțul cu gol lăsa snapshot orfan (eliminarea căuta doar P−1 DEFINIT) | `PerioadaService.Inchide` elimină snapshot-urile tuturor referințelor de dinaintea lui P care nu sunt decembrie, citite înainte de marcarea închiderii | `F27-RL3` |
+   | L2 MINOR | `PerioadaFaptului` peste o perioadă NEDEFINITĂ declara rândul într-o lună inexistentă, fără reper și fără închidere | `RegistruTvaService.PerioadaDeclarare`: perioada faptului nedefinită ⇒ perioada înregistrării, indiferent de politică | `F27-RL4` |
+   | 10 MINOR | `refuzuri.ps1` n-avea 403 pe `desfa` cu subiect VIZIBIL | scenă nouă pe o împerechere existentă, descoperită prin OData, cu `Cititor` ⇒ 403 | `refuzuri.ps1` |
+   | 2' OBS | `Rectificativa` răspundea și pe o perioadă redeschisă, fără s-o spună | `PerioadaDeschisa` pe `RectificativaTva`, `D300Dto` și `D394Dto`; banda React scrie „perioadă redeschisă — conținutul devine rectificativă la re-închidere" | build client |
+   | 5, L4, L5, 12, 9 OBS | consecințe acceptate | documentate în politici-si-fiscalitate (D394 cu partener schimbat), domeniu-si-operare (`Desfa` în fereastra deschisă, aproximarea recuperării AMO), limite-curente (`ScrisLa` pe stornourile de dinaintea migrației, integritatea snapshot-ului ⇒ **F27-r12**) | — |
+
+   Probele review-ului (`VerificaReviewF27`, scena 2036) intră în ModelCheck pe
+   ambele profiluri, adaptate la pasul 7 (închiderile trec prin
+   `InchideAcceptTot`). Două probe și-au schimbat FORMA, nu subiectul, fiindcă
+   fix-ul a mutat calea: `F27-R1d` probează acum comanda (culegerea validată de
+   gardian înainte de închidere devine comandă, iar comanda de după închidere e
+   REFUZATĂ — ModelCheck n-are gardian pe `CommitChanges`, deci „commit-ul
+   refuzat" nu era observabil acolo), iar `F27-RL4` afirmă noul comportament în
+   loc să măsoare defectul.
+
+   ModelCheck bugetar 1262/0, privat 1412/0; `refuzuri.ps1` 285/285 pe host viu
+   Privat (+1: `desfa` cu subiect VIZIBIL); `has-pending-model-changes` curat
+   (niciun fix nu cere migrație), metadata neatinsă, codegen idempotent
+   (`PerioadaDeschisa` pe cele trei scheme), `pnpm build` verde. Smoke XAF pe
+   Privat, capturi în `run-f27/pas8b/`: lista fără `New`, cu „Împerechează" și
+   „Desfă împerecherea"; dialogul cu cei patru parametri; comanda a scris o
+   împerechere reală (PLT `SED00000010-2` stinge FCT `API13522020` cu 11,11 la
+   17.09.2026) și ștergerea ei din fereastra deschisă a readus baza exact la
+   starea dinainte.
+
 ## Ce NU intră (amânări cu nume, textul aici)
 
 - **F27-r1** reclasificarea pe 1174 a erorilor semnificative din exerciții
@@ -888,6 +925,13 @@ Felia e închisă când, pe codul final:
 - **F27-r9** `DataInregistrare` pe documentele generate (AMO/ITV/DSC/NIR
   autogenerate): moștenesc data sursei sau ultima zi a lunii, ca azi;
   editabilitatea ei pe generate se decide la cerere.
+- **F27-r12** (propusă de review-ul advers, pasul 8b) integritatea
+  snapshot-ului memorată în istoric: `InchiderePerioada` reține numărul de
+  rânduri contabile/de stoc/de partide și sumele scrise la închidere, o
+  constatare de închidere (și o probă) le compară cu ce e în bază, iar
+  `Referinta` refuză o referință fără niciun rând când numărul memorat e
+  pozitiv. Azi un rând de snapshot șters direct din bază dă o balanță tăcut
+  greșită, detectabilă doar prin reconstrucție.
 - **F27-r10** (deschisă la pasul 2b) SAF-T: inițialul de stoc pe registru
   integral; mutarea pe referință cere schimbarea semanticii `exista`/`Randuri`
   din `SoldPeCheie`/`SoldPeTipStocNeraportat`, decizie de raportare, nu de

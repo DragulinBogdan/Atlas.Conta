@@ -288,6 +288,20 @@ try {
         }.GetNewClosure())
     Write-Host "  nir draft: $idNir" -ForegroundColor DarkGray
 
+    # O împerechere EXISTENTĂ, ca subiect VIZIBIL al probei de desfacere (review
+    # advers F27, 10). `Imperechere` nu e set OData, deci se descoperă prin
+    # panoul de stingeri al documentelor: prima plată care poartă o legătură.
+    # Doar citită — proba pe ea se oprește la 403, deci nu lasă urme.
+    $idImperechere = $null
+    foreach ($plata in ((Invoke-Cerere -Metoda GET -Cale '/api/plt?take=60' -Token $tokenAdmin).Corp | ConvertFrom-Json).data) {
+        $stingeri = (Invoke-Cerere -Metoda GET -Cale "/api/imperecheri/$($plata.Id)/stingeri" -Token $tokenAdmin).Corp | ConvertFrom-Json
+        if (@($stingeri.Imperecheri).Count -gt 0) { $idImperechere = @($stingeri.Imperecheri)[0].Id; break }
+    }
+    if (-not $idImperechere) {
+        throw 'Nicio împerechere pe primele 60 de plăți — proba `desfa` cu subiect vizibil n-are subiect.'
+    }
+    Write-Host "  imperechere: $idImperechere" -ForegroundColor DarkGray
+
     $idInexistent = [guid]::NewGuid()
 
     # ═══ 3. Matricea ════════════════════════════════════════════════════════
@@ -689,6 +703,11 @@ try {
     Proba -Cerere 'desfacere împerechere' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' | Out-Null
     Proba -Cerere 'desfacere împerechere' -User 'Cititor' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' -Nota 'inexistentul răspunde înaintea dreptului' | Out-Null
     Proba -Cerere 'desfacere împerechere' -User 'Configurator' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Review advers F27 (10): pe un id INEXISTENT 404-ul ascunde întrebarea de
+    # drept. Pe o împerechere pe care `Cititor` O VEDE, refuzul trebuie să fie
+    # 403 „modifica" — desfacerea scrie. Subiectul e un rând EXISTENT, descoperit
+    # prin OData: proba nu creează nimic, iar 403-ul nu scrie nimic.
+    Proba -Cerere 'desfacere împerechere vizibilă' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/imperecheri/$idImperechere/desfa" -Corp $corpDesfa -Contine 'modifica' -Nota 'Write pe instanță: desfacerea scrie' | Out-Null
 
     # ── F27-D7: proiecțiile noi de sold și restul la o dată ────────────────
     Proba -Cerere 'solduri pe repartitor' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/sold-parteneri' -Contine '"data"' -Nota 'citirea e permisă rolului Cititori' | Out-Null

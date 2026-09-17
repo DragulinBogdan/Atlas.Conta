@@ -158,6 +158,7 @@ export function D394() {
 
       <BandaRectificativa
         rectificativa={citit.data?.Rectificativa}
+        perioadaDeschisa={citit.data?.PerioadaDeschisa}
         diferente={citit.data?.DiferenteDeclarat}
       />
 

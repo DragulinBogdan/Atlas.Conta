@@ -157,8 +157,24 @@ public static class SolduriService {
     static void EliminaPartide(IObjectSpace os, int an, int luna) =>
         Executa(os, $"DELETE FROM {Partide} WHERE \"An\" = {{0}} AND \"Luna\" = {{1}}", an, luna);
 
+    // Prima instrucțiune a comenzii, ca `PerioadaService.Blocheaza`: fără ea o
+    // închidere care comite după citirea referințelor ar rămâne fără snapshot —
+    // pasul final de mai jos îl șterge ca „perioadă care nu e referință”.
+    // Subiectul e LANȚUL ÎNTREG, nu o lună: reconstrucția atinge toate
+    // referințele, iar ea e rară.
+    static void BlocheazaLantul(IObjectSpace os) {
+        const string sql = """
+            SELECT "ID" AS "Value"
+            FROM "PerioadeFiscale"
+            WHERE "GCRecord" = 0
+            FOR UPDATE
+            """;
+        Interogheaza<Guid>(os, sql);
+    }
+
     /// <summary>Recalculează integral fiecare referință, RAPORTEAZĂ diferențele, apoi rescrie.</summary>
     public static RaportReconstructie Reconstruieste(IObjectSpace os) {
+        BlocheazaLantul(os);
         var referinte = Referinte(os);
         var randuri = new List<RandReconstructie>();
         foreach (var (an, luna) in referinte) {

@@ -521,9 +521,25 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (!PerioadaDeschisa(os, imperechere.Data))
                 erori.Add("O împerechere dintr-o perioadă închisă nu se șterge — "
                     + "se desface prin rând invers („Desfă împerecherea”).");
+            // Perechea (original, invers) se anulează pe ea însăși: ștergerea
+            // oricăreia dintre laturi ar învia jumătatea rămasă, cu semnul ei,
+            // și ar muta tăcut restul ambelor documente.
+            else if (AreRandInvers(os, imperechere.ID))
+                erori.Add("Împerecherea a fost desfăcută prin rând invers — nu se mai șterge; "
+                    + "rândul invers e cel care o anulează.");
+            else if (imperechere.InverseazaId != null)
+                erori.Add("Un rând invers nu se șterge — desfacerea e fapt; "
+                    + "corectați prin altă împerechere.");
             return;
         }
         if (!os.IsNewObject(imperechere)) {
+            // Fixup-ul EF nulează `InverseazaId` pe rândul invers când
+            // originalul lui e în curs de ștergere: modificarea e COLATERALĂ,
+            // iar refuzul care contează e cel al ștergerii de mai sus. Fără
+            // gardul ăsta, textul generic de editare ar ajunge primul și ar
+            // ascunde motivul real.
+            if (imperechere.InverseazaId == null && EsteFixupDeStergere(os, imperechere))
+                return;
             erori.Add("Imperecherea nu se editează — șterge-o și creeaz-o din nou.");
             return;
         }
@@ -553,6 +569,15 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             erori.Add(ex.Message);
         }
     }
+
+    // Interogarea merge în BAZĂ, deci vede legătura încă persistată chiar dacă
+    // fixup-ul a nulat-o în memorie.
+    static bool AreRandInvers(IObjectSpace os, Guid imperechereId) =>
+        os.GetObjectsQuery<Imperechere>().Any(i => i.InverseazaId == imperechereId);
+
+    static bool EsteFixupDeStergere(IObjectSpace os, Imperechere invers) =>
+        Originale(os, invers)?[nameof(Imperechere.InverseazaId)] is Guid originalId
+        && os.ModifiedObjects.OfType<Imperechere>().Any(i => i.ID == originalId && EsteSters(os, i));
 
     static bool PerioadaDeschisa(IObjectSpace os, DateOnly data) {
         try {

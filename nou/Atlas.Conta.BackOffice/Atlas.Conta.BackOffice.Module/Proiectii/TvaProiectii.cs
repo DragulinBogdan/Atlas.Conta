@@ -121,6 +121,10 @@ public sealed class RectificativaTva {
     // Reperul: momentul primei închideri. Redeschiderea NU îl șterge, deci ce a
     // fost declarat o dată rămâne reperul.
     public DateTime? InchisaPrimaOara { get; set; }
+    // Perioada e DESCHISĂ acum (redeschisă după prima declarare, ori încă
+    // nedefinită ca închidere): conținutul de mai jos devine rectificativă abia
+    // la re-închidere, iar ecranul o spune.
+    public bool PerioadaDeschisa { get; set; }
     public bool EsteRectificativa { get; set; }
     public List<RectificativaTvaRand> Randuri { get; set; } = [];
     // Pe cheia DECONTULUI (Sens × TipTva × Regim × Cotă) — „diferențele față de
@@ -395,10 +399,12 @@ public static class TvaProiectii {
     // Întoarce liste MATERIALIZATE, ca D300/D394: e un raport, nu o grilă.
     public static RectificativaTva Rectificativa(IObjectSpace os, int an, int luna) {
         var rezultat = new RectificativaTva { An = an, Luna = luna };
-        rezultat.InchisaPrimaOara = os.GetObjectsQuery<PerioadaFiscala>()
+        var perioada = os.GetObjectsQuery<PerioadaFiscala>()
             .Where(p => p.An == an && p.Luna == luna)
-            .Select(p => p.InchisaPrimaOara)
+            .Select(p => new { p.InchisaPrimaOara, p.Inchisa })
             .FirstOrDefault();
+        rezultat.InchisaPrimaOara = perioada?.InchisaPrimaOara;
+        rezultat.PerioadaDeschisa = perioada is { Inchisa: false };
         if (rezultat.InchisaPrimaOara is not DateTime reper)
             return rezultat;
 

@@ -101,6 +101,8 @@ public sealed class D300Dto {
     // cifre. Pe un interval de mai multe luni întrebarea n-are subiect (nu
     // există O declarație depusă): fals, cu lista goală.
     public bool Rectificativa { get; set; }
+    // Perioada e deschisă acum: conținutul devine rectificativă la re-închidere.
+    public bool PerioadaDeschisa { get; set; }
     public List<DecontTvaRand> DiferenteDeclarat { get; set; } = [];
 }
 
@@ -492,6 +494,7 @@ public static class D300Proiectii {
         if (TvaProiectii.LunaExacta(dataStart, dataEnd) is (int anDeclarat, int lunaDeclarata)) {
             var rectificativa = TvaProiectii.Rectificativa(os, anDeclarat, lunaDeclarata);
             rezultat.Rectificativa = rectificativa.EsteRectificativa;
+            rezultat.PerioadaDeschisa = rectificativa.PerioadaDeschisa;
             rezultat.DiferenteDeclarat = rectificativa.Agregat;
         }
         return rezultat;

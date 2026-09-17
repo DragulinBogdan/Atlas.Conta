@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-16.** [Index](README.md)
+**Actualizat: 2026-09-17.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -39,6 +39,18 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   solduri ar primi soldul inițial zero, fără avertisment. Rolurile livrate nu
   au această formă: cine citește perioada citește și soldurile, iar un rol care
   nu vede perioadele cade pe citirea din registrul integral. (F27-D3)
+- Integritatea snapshot-ului nu e verificată la citire. Un rând de snapshot
+  șters direct din bază dă o balanță tăcut greșită (inițialul scade), fără
+  niciun semnal; singura detecție e reconstrucția la cerere, care raportează
+  diferența și repară. F27-r12 propune memorarea numărului de rânduri și a
+  sumelor scrise la închidere, verificate ca o constatare de închidere, și
+  refuzul unei referințe goale cu număr memorat pozitiv. (review advers F27, 9)
+- `RegistruTva.ScrisLa` al rândurilor de storno scrise ÎNAINTE de migrația
+  care a introdus câmpul poartă `DataOperare` a documentului, adică un moment
+  anterior stornării. Reperul rectificativei e fals doar pe o bază migrată care
+  avea deja rânduri de storno ȘI care închide ulterior perioade: rândurile
+  acelea pot cădea de partea greșită a primei închideri. Bazele livrate n-au
+  perioade închise la migrare. (review advers F27, 12)
 - Snapshot-urile de referință se citesc fără filtrarea de securitate pe rând.
   Fișa de cont își păstrează gate-ul strict (echivalența celor două căi,
   numărată pe TOT istoricul contului, nu doar pe fereastra de după referință),

@@ -34,8 +34,8 @@ public static class RegistruTvaService {
 
     // F27-D5 — perioada în care faptul se DECLARĂ, pentru un fapt petrecut la
     // `dataFapt` și înregistrat la `dataInregistrare`. Perioada deschisă a
-    // faptului câștigă întotdeauna; peste o perioadă închisă SAU nedefinită
-    // (nedefinită = închisă, regula gardianului) decide politica tipului.
+    // faptului câștigă întotdeauna; peste una ÎNCHISĂ decide politica tipului;
+    // peste una NEDEFINITĂ câștigă înregistrarea, indiferent de politică.
     // Citire simplă, fără blocare: rândul perioadei e deja ținut de gardianul
     // care a verificat `DataInregistrare`.
     //
@@ -50,12 +50,16 @@ public static class RegistruTvaService {
             if (alOriginalului != null)
                 return alOriginalului.Value;
         }
-        var deschisa = os.GetObjectsQuery<PerioadaFiscala>()
+        var inchisa = os.GetObjectsQuery<PerioadaFiscala>()
             .Where(p => p.An == dataFapt.Year && p.Luna == dataFapt.Month)
             .Select(p => (bool?)p.Inchisa)
-            .FirstOrDefault() == false;
-        if (deschisa)
+            .FirstOrDefault();
+        if (inchisa == false)
             return (dataFapt.Year, dataFapt.Month);
+        // Perioada NEDEFINITĂ nu se poate declara: n-are reper de rectificativă
+        // și nu se închide niciodată, deci politica n-are ce alege acolo.
+        if (inchisa == null)
+            return (dataInregistrare.Year, dataInregistrare.Month);
         return regula == DeclarareIntarziata.PerioadaInregistrarii
             ? (dataInregistrare.Year, dataInregistrare.Month)
             : (dataFapt.Year, dataFapt.Month);

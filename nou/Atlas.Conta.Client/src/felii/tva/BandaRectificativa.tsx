@@ -16,7 +16,8 @@ const camp = (n: keyof DecontTvaRand & string) => n;
 const BANI = { dataType: 'number', format: '#,##0.00', alignment: 'right', width: 140 } as const;
 
 export function BandaRectificativa(
-  { rectificativa, diferente }: { rectificativa?: boolean; diferente?: DecontTvaRand[] | null },
+  { rectificativa, perioadaDeschisa, diferente }:
+  { rectificativa?: boolean; perioadaDeschisa?: boolean; diferente?: DecontTvaRand[] | null },
 ) {
   if (!rectificativa) return null;
   const randuri = diferente ?? [];
@@ -30,6 +31,13 @@ export function BandaRectificativa(
         rând și momentul primei închideri a perioadei. Fișierul de depunere marcat ca rectificativ
         rămâne altă unealtă.
       </p>
+      {perioadaDeschisa && (
+        <p className="indiciu">
+          <strong>Perioadă redeschisă</strong> — conținutul de mai jos devine rectificativă la
+          re-închidere. Reperul rămâne prima închidere, deci ce se mai scrie până atunci intră
+          tot aici.
+        </p>
+      )}
       <DataGrid
         dataSource={randuri}
         showBorders

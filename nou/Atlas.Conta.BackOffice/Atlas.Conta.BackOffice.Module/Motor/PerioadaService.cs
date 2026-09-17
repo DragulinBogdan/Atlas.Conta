@@ -248,12 +248,17 @@ public static class PerioadaService {
                 constatari.Select(c => $"{c.Severitate}: {c.Text} [{c.Cheie}]")));
 
         var perioada = Gaseste(os, an, luna);
-        // Snapshot(P) = snapshot(P−1) + rulaje(P); P−1 iese din referințe dacă
-        // nu e capăt de an (F27-D3).
+        // Referințele de dinaintea lui P, citite ÎNAINTE ca P să devină închisă.
+        // Snapshot(P) = snapshot(P−1) + rulaje(P); după el, ce nu e decembrie
+        // iese din referințe (F27-D3). Se elimină TOATE, nu doar P−1: cu o lună
+        // NEDEFINITĂ între ele (închisă prin absență), ultima referință poate fi
+        // mai veche de o lună, iar snapshot-ul ei ar rămâne orfan.
+        var vechi = SolduriService.Referinte(os)
+            .Where(r => r.An * 12 + r.Luna < an * 12 + luna && r.Luna != 12)
+            .ToList();
         SolduriService.Materializeaza(os, an, luna);
-        var (anPrecedent, lunaPrecedenta) = Precedenta(an, luna);
-        if (lunaPrecedenta != 12 && Gaseste(os, anPrecedent, lunaPrecedenta) is { Inchisa: true })
-            SolduriService.Elimina(os, anPrecedent, lunaPrecedenta);
+        foreach (var (anVechi, lunaVeche) in vechi)
+            SolduriService.Elimina(os, anVechi, lunaVeche);
 
         var acum = DateTime.UtcNow;
         perioada.Inchisa = true;

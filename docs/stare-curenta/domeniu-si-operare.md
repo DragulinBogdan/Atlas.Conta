@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-16.** [Index](README.md)
+**Actualizat: 2026-09-17.** [Index](README.md)
 
 ## Modelul comun
 
@@ -87,6 +87,12 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
   înregistrării ei. Documentele generate (amortizarea lunară, închiderea de TVA,
   descărcarea de gestiune) o primesc egală cu data lor chiar la creare, nu abia
   la operare. (17, F27-D4, F27-r9)
+- Plata autogenerată din factura de intrare are data ei proprie (ziua plății
+  culese), dar data înregistrării nu poate precede intrarea facturii în
+  evidență: primește `max(ziua plății, data înregistrării facturii)`. Altfel
+  o factură înregistrată mai târziu decât ziua plății ar fi blocat operarea
+  plății ei, fiindcă împerecherea automată nu poate fi datată sub înregistrarea
+  vreunuia dintre documente. (review advers F27, 3e)
 
 ### Operarea
 
@@ -220,14 +226,21 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
 - Cheile integral zero se omit. Cheia absentă înseamnă zero pentru orice
   consumator. (F27-D3)
 - Închiderea scrie snapshot-ul lunii ca sumă între snapshot-ul precedentei și
-  rulajele lunii, iar dacă precedenta nu este capăt de an îi șterge
-  snapshot-ul. Fără snapshot precedent, luna se calculează prin sumă peste tot
-  istoricul. Redeschiderea șterge snapshot-ul lunii și îl reconstruiește pe al
-  precedentei, tot prin sumă integrală. Registrele nu se ating. (F27-D3)
+  rulajele lunii, apoi șterge snapshot-urile TUTUROR referințelor de dinaintea
+  ei care nu sunt capăt de an, nu doar pe al precedentei definite: cu o lună
+  nedefinită între ele (închisă prin absență), ultima referință poate fi mai
+  veche de o lună, iar snapshot-ul ei ar fi rămas orfan. Referințele se citesc
+  înainte ca luna să fie marcată închisă. Fără snapshot precedent, luna se
+  calculează prin sumă peste tot istoricul. Redeschiderea șterge snapshot-ul
+  lunii și îl reconstruiește pe al precedentei, tot prin sumă integrală.
+  Registrele nu se ating. (F27-D3, review advers F27, L1)
 - Reconstrucția recalculează integral fiecare perioadă de referință,
   raportează diferențele pe rânduri și pe sume înainte de a rescrie, apoi
   șterge snapshot-urile perioadelor care nu mai sunt referințe. Raportul iese
-  și când nu există nicio diferență. (F27-D3, 35b)
+  și când nu există nicio diferență. Prima ei instrucțiune blochează lanțul
+  întreg (`FOR UPDATE` pe perioade), ca la închidere: altfel o închidere care
+  comite după citirea referințelor ar fi rămas fără snapshot, iar soldurile ar
+  fi pornit tăcut de la zero. (F27-D3, 35b, review advers F27, 1b)
 - Scrierea și ștergerea snapshot-urilor aparțin motorului: pe calea securizată
   se refuză, ca la registre. Ștergerea lor este fizică, nu amânată. (F27-D3)
 
@@ -455,6 +468,12 @@ sfârșitul lunii precedente, dar cu rânduri în M, este punerea în funcțiune
 Gardianul lunii precedente lipsă rămâne neatins: se recuperează doar ce
 n-a avut cum să fie amortizat, nu ce n-a fost amortizat. (F27-D4)
 
+Iterația celor n luni pleacă de la situația fișei la ultimul eveniment, nu de
+la situația fiecărei luni recuperate: o fișă reevaluată sau modernizată în
+intervalul recuperat primește pe toate cele n luni cota de DUPĂ eveniment,
+inclusiv pe lunile dinaintea lui. Aproximare declarată — recuperarea e rară,
+iar un eveniment în interiorul ei și mai rar. (review advers F27, L5)
+
 Generarea lunară urmează ordinea gardienilor: fișă eligibilă fără politică,
 amortizare vie în lună, amortizare vie ulterioară, draft anterior, lună
 precedentă lipsă, perioadă închisă, nicio fișă. Motivul se raportează la
@@ -492,6 +511,28 @@ original ↔ invers este 1:1, iar rândul invers îl scrie doar motorul
 (`ImperechereService.Desfa`, acțiunea „Desfă împerecherea”, `POST
 api/imperecheri/{id}/desfa`). `Asignat` însumează **algebric**, deci
 desfacerea eliberează restul pe ambele documente fără a șterge nimic. (F27-D8)
+
+Desfacerea este acceptată și pe o împerechere din fereastra **deschisă**, unde
+ștergerea ar fi fost suficientă: alegerea este deliberată — rândul invers e
+mereu legitim și algebric corect, iar un refuz ar fi cerut apelantului să
+cunoască granița perioadei înaintea comenzii. Rezultatul rămâne două rânduri
+care se anulează, în loc de niciunul. (review advers F27, L4)
+
+Perechea original ↔ invers nu se mai poate desface prin ștergere: ștergerea
+originalului unei împerecheri desfăcute și ștergerea unui rând invers sunt
+refuzate explicit de gardian, cu textul lor. Altfel jumătatea rămasă ar fi
+înviat cu semnul ei, mutând tăcut restul ambelor documente. (review advers
+F27, L3)
+
+Crearea manuală din XAF este o **comandă**, nu culegere: acțiunea
+„Împerechează” de pe lista de împerecheri ia parametrii într-un dialog și
+rulează `ImperechereService.Imperecheaza` pe ObjectSpace non-secured, după
+gate-ul de creare pe tip. `New` este retras, iar ecranele împerecherii sunt
+read-only. Motivul e cursa: gardianul de Committing citește perioada în
+autocommit, deci între validarea lui și `SaveChanges` o închidere se poate
+strecura, iar comanda ia rândul perioadei sub `FOR UPDATE` în tranzacția ei.
+Ștergerea din fereastra deschisă rămâne pe ușa securizată. (review advers
+F27, 1c)
 
 La stornarea unui document împerecheat, împerecherile din fereastra deschisă
 se cer șterse ca înainte, iar cele dintr-o perioadă închisă și încă

@@ -78,6 +78,10 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
             return null;
         var plata = os.CreateObject<Plata>();
         plata.Data = PlataData ?? Data;
+        // Plata nu poate intra în evidență înaintea facturii care o naște: la o
+        // factură înregistrată târziu, imperecherea automată e datată la
+        // înregistrarea plății și n-ar putea precede înregistrarea facturii.
+        plata.DataInregistrare = plata.Data > DataInregistrare ? plata.Data : DataInregistrare;
         plata.Numar = PlataNumar;
         plata.TipInstrument = PlataTipInstrument ?? TipInstrumentPlata.OrdinPlata;
         plata.PredatorId = PlataContPropriuId ?? Guid.Empty;

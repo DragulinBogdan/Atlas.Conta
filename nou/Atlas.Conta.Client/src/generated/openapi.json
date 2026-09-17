@@ -305971,6 +305971,9 @@
           "Rectificativa": {
             "type": "boolean"
           },
+          "PerioadaDeschisa": {
+            "type": "boolean"
+          },
           "DiferenteDeclarat": {
             "type": "array",
             "items": {
@@ -306105,6 +306108,9 @@
         "type": "object",
         "properties": {
           "Rectificativa": {
+            "type": "boolean"
+          },
+          "PerioadaDeschisa": {
             "type": "boolean"
           },
           "DiferenteDeclarat": {
@@ -313892,6 +313898,9 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "PerioadaDeschisa": {
+            "type": "boolean"
           },
           "EsteRectificativa": {
             "type": "boolean"

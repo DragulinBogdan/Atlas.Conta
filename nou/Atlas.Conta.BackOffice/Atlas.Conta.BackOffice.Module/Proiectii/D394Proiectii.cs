@@ -161,6 +161,8 @@ public sealed class D394Dto {
     // F27-D5 — vezi `D300Dto`: aceeași derivare, aceeași limită pe intervale
     // de mai multe luni.
     public bool Rectificativa { get; set; }
+    // Perioada e deschisă acum: conținutul devine rectificativă la re-închidere.
+    public bool PerioadaDeschisa { get; set; }
     public List<DecontTvaRand> DiferenteDeclarat { get; set; } = [];
     public List<D394Operatiune> Operatiuni { get; set; } = [];
     public List<D394Rezumat> Rezumat { get; set; } = [];
@@ -699,6 +701,7 @@ public static class D394Proiectii {
         if (TvaProiectii.LunaExacta(dataStart, dataEnd) is (int anDeclarat, int lunaDeclarata)) {
             var rectificativa = TvaProiectii.Rectificativa(os, anDeclarat, lunaDeclarata);
             rezultat.Rectificativa = rectificativa.EsteRectificativa;
+            rezultat.PerioadaDeschisa = rectificativa.PerioadaDeschisa;
             rezultat.DiferenteDeclarat = rectificativa.Agregat;
         }
         return rezultat;

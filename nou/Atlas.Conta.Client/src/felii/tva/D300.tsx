@@ -185,6 +185,7 @@ export function D300() {
           pare complet și nu e. */}
       <BandaRectificativa
         rectificativa={citit.data?.Rectificativa}
+        perioadaDeschisa={citit.data?.PerioadaDeschisa}
         diferente={citit.data?.DiferenteDeclarat}
       />
 

@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-16.** [Index](README.md)
+**Actualizat: 2026-09-17.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -192,7 +192,10 @@ existența perioadei se rezolvă pe ușa securizată (404 pentru lună nedefinit
 sau invizibilă), iar cifrele cer dreptul de citire pe registrul fiscal (403);
 marginile lipsă sau în afara intervalului sunt 400. D300 și D394 poartă
 `Rectificativa` și `DiferenteDeclarat`, completate doar când perioada cerută
-acoperă exact o lună calendaristică. (F27-D5, 80a)
+acoperă exact o lună calendaristică. Toate trei poartă și `PerioadaDeschisa`:
+pe o lună redeschisă după prima declarare, conținutul e deja calculat, dar
+devine rectificativă abia la re-închidere, iar banda din client o spune.
+(F27-D5, 80a, review advers F27, 2')
 
 Formularul deține local întregul DTO de scriere. TanStack Query gestionează
 starea citită de pe server, iar URL-ul starea navigabilă. Nu se menține un

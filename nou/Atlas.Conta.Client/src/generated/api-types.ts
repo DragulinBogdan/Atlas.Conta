@@ -8889,6 +8889,7 @@ export interface components {
             Nemapate?: components["schemas"]["D300Nemapat"][] | null;
             Avertismente?: string[] | null;
             Rectificativa?: boolean;
+            PerioadaDeschisa?: boolean;
             DiferenteDeclarat?: components["schemas"]["DecontTvaRand"][] | null;
         };
         D300Nemapat: {
@@ -8935,6 +8936,7 @@ export interface components {
         };
         D394Dto: {
             Rectificativa?: boolean;
+            PerioadaDeschisa?: boolean;
             DiferenteDeclarat?: components["schemas"]["DecontTvaRand"][] | null;
             Operatiuni?: components["schemas"]["D394Operatiune"][] | null;
             Rezumat?: components["schemas"]["D394Rezumat"][] | null;
@@ -11683,6 +11685,7 @@ export interface components {
             Luna?: number;
             /** Format: date-time */
             InchisaPrimaOara?: string | null;
+            PerioadaDeschisa?: boolean;
             EsteRectificativa?: boolean;
             Randuri?: components["schemas"]["RectificativaTvaRand"][] | null;
             Agregat?: components["schemas"]["DecontTvaRand"][] | null;

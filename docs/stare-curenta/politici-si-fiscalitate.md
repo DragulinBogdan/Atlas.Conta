@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-15.** [Index](README.md)
+**Actualizat: 2026-09-17.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -165,8 +165,11 @@ Rândul fiscal poartă două coordonate de timp: `Data` este a faptului fiscal
 D300, D394 și SAF-T filtrează pe perioada de declarare. (F27-D5)
 
 Regula de completare este una singură, la scrierea rândului: dacă perioada
-datei faptului este deschisă, perioada de declarare este a ei. Dacă este
-închisă sau nedefinită — nedefinită înseamnă închisă, ca la gardian — decide
+datei faptului este deschisă, perioada de declarare este a ei. Dacă perioada
+faptului NU este definită în bază, perioada de declarare este cea a
+înregistrării, indiferent de politică: o lună care nu există nu are reper de
+rectificativă și nu se închide niciodată, deci nu se poate declara acolo.
+Dacă este definită și închisă, decide
 politica tipului, prin câmpul `DeclarareIntarziata` de pe `PoliticaTva`:
 `PerioadaInregistrarii` sau `PerioadaFaptului`. Seed-ul privat o pune pe
 direcție: deductibilul (FCT, DEC, RLF, DVI) declară în perioada înregistrării,
@@ -184,7 +187,17 @@ declarate în ea și scrise (`ScrisLa`) după `InchisaPrimaOara` a ei. O perioad
 niciodată închisă nu are reper, deci nu are rectificativă. Redeschiderea nu
 stinge `InchisaPrimaOara`, deci reperul rămâne cel al primei declarații.
 D300 și D394 pe exact o lună calendaristică raportează `Rectificativa` și
-diferențele față de declarat, pe cheia decontului. (F27-D5, F27-D1)
+diferențele față de declarat, pe cheia decontului. Răspunsul spune și dacă
+perioada e DESCHISĂ acum (redeschisă după prima declarare): conținutul e deja
+calculat, dar devine rectificativă abia la re-închidere, iar ecranul o scrie
+ca atare. (F27-D5, F27-D1, review advers F27 2')
+
+La `Eroare materială` cu PARTENER schimbat, D394 rectificativ al lunii arată
+partenerul VECHI cu factura originală și cu storno-ul ei (net zero, dar două
+facturi la numărătoare, fiindcă storno-ul e factură de storno la el — §5.2) și
+partenerul NOU cu factura corectată. Consecință acceptată: declarația
+rectificativă spune adevărul despre ce s-a declarat și ce s-a corectat, nu
+rescrie istoria partenerului vechi. (review advers F27, 5)
 
 Corecția unui document operat decide efectul FISCAL prin motiv, nu contarea.
 La `Eroare materială`, rândurile inverse ale storno-ului ȘI rândurile
