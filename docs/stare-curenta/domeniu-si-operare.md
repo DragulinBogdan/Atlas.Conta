@@ -175,9 +175,30 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
   felul, momentul, utilizatorul și motivul. Istoricul este append-only și
   aparține motorului. (F27-D1)
 - Verificarea de închidere întoarce constatări tipizate, cu cheie stabilă,
-  fel, severitate și text. Comanda reia verificarea și refuză pe blocante.
-  Constatările acoperite sunt cele structurale: perioadă nedefinită, perioadă
-  deja închisă, perioadă precedentă deschisă. (F27-D2)
+  fel, severitate, text și obiectul la care se referă. Constatările
+  STRUCTURALE stau în cod și nu se configurează: perioadă nedefinită, perioadă
+  deja închisă, perioadă precedentă deschisă. Ele sunt întotdeauna blocante, iar
+  cât timp una dintre ele stă în picioare constatările de conținut nu se mai
+  caută. (F27-D2)
+- Constatările de CONȚINUT sunt patru, iar severitatea fiecăreia vine din
+  politica de închidere de perioadă, nu din cod: închiderea de TVA lipsă sau
+  neoperată pe lună; amortizarea lunară lipsă sau neoperată, când luna are fișe
+  de amortizat; fiecare document în lucru cu data înregistrării în perioadă;
+  fiecare document operat, scadent și cu rest la sfârșitul perioadei.
+  Cheile lor sunt `ITV-LIPSA`, `AMO-LIPSA`, `DRAFT-IN-PERIOADA:{id}` și
+  `REST-SCADENT:{id}`; primele două n-au sufix fiindcă amândouă sunt ale
+  societății, nu ale unei unități interne. Fiecare familie listează cel mult 200
+  de rânduri și rezumă restul. (F27-D2)
+- Închiderea reia verificarea în aceeași tranzacție: orice blocantă refuză
+  oricum, iar orice avertisment a cărui cheie nu a fost acceptată refuză și el.
+  Refuzul poartă lista ÎNTREAGĂ, un rând pe linie, ca ecranul s-o arate și
+  acceptarea să se dea pe constatări concrete, nu pe un indicator de forțare.
+  Cheile acceptate care nu corespund niciunei constatări de acum se ignoră:
+  raportul citit de operator e o fotografie, refuzul e al stării de acum.
+  Cheile acceptate efectiv se scriu pe rândul de istoric. (F27-D2)
+- Documentul în lucru rămas într-o perioadă închisă NU e document mort: se
+  operează mai departe, cu o dată de înregistrare ulterioară, deci cade în altă
+  perioadă decât cea a documentului fizic. Constatarea o spune. (F27-D2, F27-D4)
 - Fiecare comandă a motorului rulează într-o tranzacție explicită, deschisă pe
   ObjectSpace-ul ei: operarea, anularea și stornarea prin adaptorul de
   operare, generarea și regenerarea închiderii de TVA și a amortizării,

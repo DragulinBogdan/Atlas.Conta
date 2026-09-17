@@ -79,6 +79,8 @@ import { Verificare } from './felii/politici/Verificare';
 import { Explica } from './felii/politici/Explica';
 import { PoliticiAmortizare } from './felii/politici/PoliticiAmortizare';
 import { ReguliDeductibilitate } from './felii/politici/ReguliDeductibilitate';
+import { PoliticiInchidere } from './felii/politici/PoliticiInchidere';
+import { Perioade } from './felii/perioade/Perioade';
 
 // URL-ul E starea globală (43c): deep-linking și refresh gratis, fără store de
 // sincronizat. Ruta statică `/…/nou` e declarată ÎNAINTEA celei parametrice.
@@ -159,6 +161,10 @@ export function App() {
         {/* F27-D7: soldurile pe partener la o zi — partea de sold a balanței
             analitice, ecranul pe care partidele deschise îl fac ieftin. */}
         <Route path="/sold-parteneri" element={<SoldParteneri />} />
+        {/* F27-D1/D2: perioada nu se culege, deci `/perioade` e o CONSOLĂ —
+            lanțul, verificarea cu bifele de acceptare, cele două comenzi și
+            istoricul cu acceptările. N-are `/nou` și n-are `:id`. */}
+        <Route path="/perioade" element={<Perioade />} />
         <Route path="/jurnal" element={<RegistruJurnal />} />
         {/* Jurnalele de TVA (felia 11): aceeași proiecție pe laturi diferite,
             deci rute proprii — nu un ecran cu comutator. Sunt două rapoarte
@@ -230,6 +236,7 @@ export function App() {
         <Route path="/politici/verificare" element={<Verificare />} />
         <Route path="/politici/amortizare" element={<PoliticiAmortizare />} />
         <Route path="/politici/deductibilitate" element={<ReguliDeductibilitate />} />
+        <Route path="/politici/inchidere-perioada" element={<PoliticiInchidere />} />
         <Route path="/politici/explica" element={<Explica />} />
         <Route path="*" element={<Navigate to="/fct" replace />} />
       </Route>
@@ -275,6 +282,7 @@ function Meniu() {
       <NavLink to="/balanta-plan">Balanță pe plan</NavLink>
       <NavLink to="/sold-parteneri">Solduri pe repartitor</NavLink>
       <NavLink to="/jurnal">Registru-jurnal</NavLink>
+      <NavLink to="/perioade">Perioade fiscale</NavLink>
       <span className="meniu__grup">TVA și declarații</span>
       <NavLink to="/jurnal-cumparari">Jurnal cumpărări</NavLink>
       <NavLink to="/jurnal-vanzari">Jurnal vânzări</NavLink>
@@ -304,6 +312,7 @@ function Meniu() {
       <NavLink to="/politici/d394">Mapări D394</NavLink>
       <NavLink to="/politici/amortizare">Amortizare (conturi)</NavLink>
       <NavLink to="/politici/deductibilitate">Deductibilitate fiscală</NavLink>
+      <NavLink to="/politici/inchidere-perioada">Închidere de perioadă</NavLink>
       <NavLink to="/politici/verificare">Verificare profil</NavLink>
       <NavLink to="/politici/explica">Explică</NavLink>
     </nav>

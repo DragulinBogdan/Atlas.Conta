@@ -39,9 +39,18 @@ alături de `Data`. (F27-D4)
 
 Închiderea și redeschiderea perioadei sunt tot comenzi, pe `api/perioade`:
 `GET api/perioade` întoarce lanțul și cere dreptul de citire pe tipul
-perioadei; `GET api/perioade/{an}/{luna}/verificare` întoarce constatările;
-`POST api/perioade/{an}/{luna}/inchide` primește cheile acceptate, iar
-`POST api/perioade/{an}/{luna}/redeschide` motivul. Subiectul acestor rute
+perioadei; `GET api/perioade/{an}/{luna}/verificare` întoarce constatările
+complete — cheie, fel, severitate, text, identificatorul și eticheta obiectului
+— și, fiindcă verdictul ÎNSUMEAZĂ pe ușa nesecurizată documente, închideri de
+TVA, amortizări, împerecheri și politica severităților, cere dreptul de citire
+pe toate acestea: un raport filtrat n-ar ieși gol, ar ieși FALS;
+`GET api/perioade/{an}/{luna}/istoric` întoarce rândurile de istoric ale lunii
+cu felul, momentul, utilizatorul, motivul și cheile acceptate;
+`POST api/perioade/{an}/{luna}/inchide` primește cheile acceptate în corp
+— corpul e opțional, fiindcă a închide fără constatări e cazul normal — și
+răspunde cu acceptările scrise, iar un avertisment neacceptat sau orice blocantă
+iese 422 cu lista întreagă, un rând pe linie;
+`POST api/perioade/{an}/{luna}/redeschide` primește motivul. Subiectul acestor rute
 este luna, nu un identificator: ea se rezolvă pe calea securizată, deci
 ordinea refuzurilor rămâne 400 pentru an sau lună în afara marginilor, 404
 pentru lună nedefinită sau invizibilă, 403 pentru lipsa dreptului cerut și
@@ -286,9 +295,10 @@ de clientul React pe OData este o compunere separată, cu aceeași semantică.
 | Trezorerie și relații | Stingere manuală în limitele contractelor, vizualizarea relațiilor și comenzile documentului (57d, 76g) |
 | TVA lunar | Previzualizare și generare ITV, detaliu și comenzile rezultatului (79e) |
 | Contabilitate | Stoc, balanță, balanță pe plan, fișă de cont, registru-jurnal (66, 67) |
+| Perioade fiscale | `/perioade`: consolă, nu listă — luna în URL, verificarea cu constatările grupate pe severitate și bifă pe fiecare avertisment, închiderea care trimite cheile bifate, redeschiderea cu motiv, istoricul cu acceptările și lanțul întreg (F27-D2) |
 | Fiscalitate | Jurnale de cumpărări/vânzări, decont TVA, D300, D394, SAF-T L/S (68, 69g, 71g) |
 | Nomenclatoare | Parteneri, produse, societate; sincronizare individuală ANAF (77h) |
-| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, reguli de stoc, reguli de contare (formular popup cu grupuri), politici TVA, conex, validare, mapări D300/D394, politici de amortizare, reguli de deductibilitate; „Explică pe acest tip" din fiecare grilă cu tip de document (81i, 84d, 87j) |
+| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, reguli de stoc, reguli de contare (formular popup cu grupuri), politici TVA, conex, validare, mapări D300/D394, politici de amortizare, reguli de deductibilitate, închidere de perioadă; „Explică pe acest tip" din fiecare grilă cu tip de document (81i, 84d, 87j) |
 | Explicarea configurației | `/politici/explica`: starea în URL, un card per mecanism cu câștigătorul, candidații eliminați, proveniența și concluzia serverului (84h) |
 | Controlul configurației | Verificarea profilului, proveniență și istoric de audit (81g, 81h, 81i) |
 

@@ -468,12 +468,23 @@ public enum FelConstatare {
 }
 
 // Cât de tare refuză o constatare de închidere de perioadă (F27-D2). Blocantul
-// nu se acceptă niciodată; avertismentul se închide doar acceptat pe cheie.
-// Severitatea constatărilor DE CONȚINUT devine politică la pasul 7; blocantele
-// STRUCTURALE (lanțul) rămân în cod.
+// nu se acceptă niciodată; avertismentul se închide doar acceptat pe cheie;
+// `Ignorat` nu se emite deloc. Severitatea constatărilor DE CONȚINUT vine din
+// `PoliticaInchidere`; blocantele STRUCTURALE (lanțul) rămân în cod.
 public enum SeveritateConstatare {
     [XafDisplayName("Blocant")] Blocant = 1,
     [XafDisplayName("Avertisment")] Avertisment = 2,
+    [XafDisplayName("Ignorat")] Ignorat = 3,
+}
+
+// Familia unei constatări DE CONȚINUT a închiderii de perioadă (F27-D2). Cheia
+// constatării (pe care se dă acceptarea) e mai fină — poartă și obiectul; felul
+// e ce se configurează în `PoliticaInchidere`.
+public enum FelConstatareInchidere {
+    [XafDisplayName("Închiderea de TVA lipsește sau nu e operată")] ItvLipsa = 1,
+    [XafDisplayName("Amortizarea lunară lipsește sau nu e operată")] AmoLipsa = 2,
+    [XafDisplayName("Document în lucru cu data înregistrării în perioadă")] DraftInPerioada = 3,
+    [XafDisplayName("Document operat cu rest scadent în perioadă")] RestScadent = 4,
 }
 
 // ═══ Verdictele POTRIVIRII (felia 24, F24-D5/D6) ═══════════════════════════

@@ -814,6 +814,41 @@ Felia e închisă când, pe codul final:
    setul inițial de constatări, corpul `Acceptate`, dialogul XAF și ecranul
    React `/perioade`, istoricul cu acceptări. Oprire: ModelCheck identic +
    probele acceptării; `refuzuri.ps1` verde; smoke.
+   *Executat 7 (2026-09-17), cu O OPRIRE raportată (mai jos); devierile în
+   raport*: `FelConstatareInchidere` și `SeveritateConstatare.Ignorat` în
+   `Enums.cs`, `PoliticaInchidere` (`Fel` unic filtrat pe `GCRecord = 0`) în
+   `Politici.cs` + al 20-lea tip din `Politici.TipuriConfigurabile` (deci gate-ul
+   raportului de profil, rolul `Configurator` și proba de aliniere o preiau
+   automat) + ramură în `GardianEditare` (un rând per fel) + `VerificareProfilService`
+   + OData; migrația `20260916231038_F27Pas7PoliticaInchidere`, aplicată pe cele
+   trei baze; seed pe ambele profiluri prin `ContaSeeder.SeedPoliticiInchidere`
+   (privat: ITV Blocant, AMO/Draft Avertisment, Rest Ignorat; bugetar: ITV
+   Ignorat, restul la fel). `PerioadaService.Verifica` capătă cele patru
+   constatări de conținut (`ItvLipsa` prin `InchidereTvaService.Previzualizeaza`,
+   `AmoLipsa` prin `AmortizareService.CalculeazaLinii` — cheie FĂRĂ sufix de
+   unitate, fiindcă lunile amortizabile sunt ale societății —, `DraftInPerioada`
+   și `RestScadent`, cu plafon 200 + rezumat per familie); `Ignorat` nu emite și
+   nici nu CAUTĂ; conținutul se caută doar când niciun blocant structural nu stă
+   în picioare. `Inchide` refuză cu lista ÎNTREAGĂ în forma
+   `"{Severitate}: {Text} [{Cheie}]"`, ignoră cheile care nu corespund niciunei
+   constatări de acum și scrie în `Acceptari` (JSON, ordine stabilă) doar
+   cheile onorate. `GET api/perioade/{an}/{luna}/istoric` (rută nouă);
+   `verificare` cere dreptul de citire pe tot ce însumează (80e).
+   Dialogul XAF: `PopupWindowShowAction` cu ListView imbricat non-persistent
+   (`InchiderePerioadaParametri` + `ConstatareAcceptabila`, `[Aggregated]`,
+   `InlineEditMode = Batch`, `ForbidCRUD("ListView")`, bifă dezactivată prin
+   regulă de aspect pe blocante); React `/perioade` (consolă cu lanț, verificare
+   cu bife, închidere, redeschidere, istoric) + grila `/politici/inchidere-perioada`.
+   Probe `ACC-V0…V18` (scena 2036 + 12/2035, ambele profiluri). ModelCheck
+   privat 1381/0, bugetar 1236/0; `refuzuri.ps1` 284/284 pe host viu Privat;
+   `has-pending-model-changes` curat, metadata/codegen idempotente, `pnpm build`
+   verde. **Oprirea**: `ItvLipsa` BLOCANT pe privat e incompatibil cu scenele
+   harness-ului, care închid perioade fără să facă decontul de TVA al lunii
+   (a-l face le-ar schimba chiar cifrele contabile măsurate), iar blocanta nu se
+   acceptă. Ieșirea aleasă, raportată: `InchideAcceptTot` din ModelCheck
+   coboară severitatea felului în POLITICĂ pe durata închiderii de scenă și o
+   pune la loc — calea unui operator real, nu o ocolire a mecanismului; valoarea
+   de seed rămâne subiectul blocului `ACC-V*`.
 8. **Probele supreme + review advers + docs**: Import1C integral cu
    închiderea lunilor pe parcurs (12 perioade, snapshot verificat contra
    `SUM`), perf după 11 luni închise, `refuzuri.ps1` integral; review advers

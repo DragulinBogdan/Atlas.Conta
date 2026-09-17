@@ -4144,6 +4144,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/perioade/{an}/{luna}/istoric": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/perioade/{an}/{luna}/istoric"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/perioade/{an}/{luna}/inchide": {
         parameters: {
             query?: never;
@@ -4731,6 +4747,166 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["DELETE_api/odata/PoliticaConex/{key}/{navigationProperty}/{relatedKey}/$ref"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/PoliticaInchidere"];
+        put?: never;
+        post: operations["POST_api/odata/PoliticaInchidere"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["PATCH_api/odata/PoliticaInchidere"];
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/PoliticaInchidere/$count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/PoliticaInchidere({key})"];
+        put: operations["PUT_api/odata/PoliticaInchidere({key})"];
+        post?: never;
+        delete: operations["DELETE_api/odata/PoliticaInchidere({key})"];
+        options?: never;
+        head?: never;
+        patch: operations["PATCH_api/odata/PoliticaInchidere({key})"];
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/PoliticaInchidere/{key}"];
+        put: operations["PUT_api/odata/PoliticaInchidere/{key}"];
+        post?: never;
+        delete: operations["DELETE_api/odata/PoliticaInchidere/{key}"];
+        options?: never;
+        head?: never;
+        patch: operations["PATCH_api/odata/PoliticaInchidere/{key}"];
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/PoliticaInchidere({key})/{navigationProperty}/$ref"];
+        put: operations["PUT_api/odata/PoliticaInchidere({key})/{navigationProperty}/$ref"];
+        post: operations["POST_api/odata/PoliticaInchidere({key})/{navigationProperty}/$ref"];
+        delete: operations["DELETE_api/odata/PoliticaInchidere({key})/{navigationProperty}/$ref"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET_api/odata/PoliticaInchidere/{key}/{navigationProperty}/$ref"];
+        put: operations["PUT_api/odata/PoliticaInchidere/{key}/{navigationProperty}/$ref"];
+        post: operations["POST_api/odata/PoliticaInchidere/{key}/{navigationProperty}/$ref"];
+        delete: operations["DELETE_api/odata/PoliticaInchidere/{key}/{navigationProperty}/$ref"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere({key})/{navigationProperty}({relatedKey})/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["DELETE_api/odata/PoliticaInchidere({key})/{navigationProperty}({relatedKey})/$ref"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere({key})/{navigationProperty}/{relatedKey}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["DELETE_api/odata/PoliticaInchidere({key})/{navigationProperty}/{relatedKey}/$ref"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere/{key}/{navigationProperty}({relatedKey})/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["DELETE_api/odata/PoliticaInchidere/{key}/{navigationProperty}({relatedKey})/$ref"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/odata/PoliticaInchidere/{key}/{navigationProperty}/{relatedKey}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["DELETE_api/odata/PoliticaInchidere/{key}/{navigationProperty}/{relatedKey}/$ref"];
         options?: never;
         head?: never;
         patch?: never;
@@ -9730,6 +9906,8 @@ export interface components {
             MaiSunt?: boolean;
         };
         /** @enum {string} */
+        FelConstatareInchidere: "ItvLipsa" | "AmoLipsa" | "DraftInPerioada" | "RestScadent";
+        /** @enum {string} */
         FelDeductibilitate: "PlafonLunar" | "Procent";
         /** @enum {string} */
         FelRandD300: "Operatiuni" | "Total" | "Oglinda" | "Extern";
@@ -9964,6 +10142,19 @@ export interface components {
             /** Format: date-time */
             La?: string;
             De?: string | null;
+            Acceptari?: string[] | null;
+        };
+        IstoricPerioadaDto: {
+            /** Format: int32 */
+            An?: number;
+            /** Format: int32 */
+            Luna?: number;
+            Fel?: string | null;
+            /** Format: date-time */
+            La?: string;
+            De?: string | null;
+            Motiv?: string | null;
+            Acceptari?: string[] | null;
         };
         ItvLinieReadDto: {
             /** Format: uuid */
@@ -10987,6 +11178,20 @@ export interface components {
             TipDocumentTintaId?: string;
             InverseazaLaturi?: boolean;
             NaturaFiltru?: components["schemas"]["NaturaClasa"];
+        };
+        PoliticaInchidere: {
+            /** Format: uuid */
+            ID?: string;
+            DinSeed?: boolean;
+            Fel?: components["schemas"]["FelConstatareInchidere"];
+            Severitate?: components["schemas"]["SeveritateConstatare"];
+        };
+        PoliticaInchidereResourceDelta: {
+            /** Format: uuid */
+            ID?: string;
+            DinSeed?: boolean;
+            Fel?: components["schemas"]["FelConstatareInchidere"];
+            Severitate?: components["schemas"]["SeveritateConstatare"];
         };
         PoliticaInchidereTva: {
             /** Format: uuid */
@@ -12234,6 +12439,8 @@ export interface components {
         SectiuneD300: "Colectata" | "Deductibila" | "Regularizari";
         /** @enum {string} */
         SensTva: "Achizitie" | "Livrare";
+        /** @enum {string} */
+        SeveritateConstatare: "Blocant" | "Avertisment" | "Ignorat";
         SincronizareAnafCerereDto: {
             Ids?: string[] | null;
             Suprascrie?: boolean;
@@ -57549,6 +57756,212 @@ export interface operations {
             };
         };
     };
+    "GET_api/perioade/{an}/{luna}/istoric": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                an: number;
+                luna: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=full": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=none": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.streaming=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.streaming=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/xml": components["schemas"]["IstoricPerioadaDto"][];
+                    "text/plain": components["schemas"]["IstoricPerioadaDto"][];
+                    "application/octet-stream": components["schemas"]["IstoricPerioadaDto"][];
+                    "text/json": components["schemas"]["IstoricPerioadaDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false": components["schemas"]["EroriDto"];
+                    "application/json": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["EroriDto"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["EroriDto"];
+                    "application/xml": components["schemas"]["EroriDto"];
+                    "text/plain": components["schemas"]["EroriDto"];
+                    "application/octet-stream": components["schemas"]["EroriDto"];
+                    "text/json": components["schemas"]["EroriDto"];
+                };
+            };
+        };
+    };
     "POST_api/perioade/{an}/{luna}/inchide": {
         parameters: {
             query?: never;
@@ -64910,6 +65323,1088 @@ export interface operations {
         };
     };
     "DELETE_api/odata/PoliticaConex/{key}/{navigationProperty}/{relatedKey}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                relatedKey: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/PoliticaInchidere": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=minimal": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=full": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=none": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.streaming=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.streaming=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"][];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"][];
+                    "application/xml": components["schemas"]["PoliticaInchidere"][];
+                    "text/plain": components["schemas"]["PoliticaInchidere"][];
+                    "application/octet-stream": components["schemas"]["PoliticaInchidere"][];
+                    "text/json": components["schemas"]["PoliticaInchidere"][];
+                };
+            };
+        };
+    };
+    "POST_api/odata/PoliticaInchidere": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/xml": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/plain": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/*+json": components["schemas"]["PoliticaInchidereResourceDelta"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "PATCH_api/odata/PoliticaInchidere": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=minimal": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=full": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=none": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.streaming=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.streaming=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/json;IEEE754Compatible=false": components["schemas"]["IDeltaSetItem"][];
+                "application/json;IEEE754Compatible=true": components["schemas"]["IDeltaSetItem"][];
+                "application/xml": components["schemas"]["IDeltaSetItem"][];
+                "text/plain": components["schemas"]["IDeltaSetItem"][];
+                "text/json": components["schemas"]["IDeltaSetItem"][];
+                "application/*+json": components["schemas"]["IDeltaSetItem"][];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/PoliticaInchidere/$count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returns the number of entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false": number;
+                    "application/json;odata.metadata=minimal": number;
+                    "application/json;odata.metadata=full;odata.streaming=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false": number;
+                    "application/json;odata.metadata=full": number;
+                    "application/json;odata.metadata=none;odata.streaming=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false": number;
+                    "application/json;odata.metadata=none": number;
+                    "application/json;odata.streaming=true": number;
+                    "application/json;odata.streaming=false": number;
+                    "application/json": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": number;
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": number;
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": number;
+                    "application/json;IEEE754Compatible=false": number;
+                    "application/json;IEEE754Compatible=true": number;
+                    "application/xml": number;
+                    "text/plain": number;
+                    "application/octet-stream": number;
+                    "text/json": number;
+                };
+            };
+        };
+    };
+    "GET_api/odata/PoliticaInchidere({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/xml": components["schemas"]["PoliticaInchidere"];
+                    "text/plain": components["schemas"]["PoliticaInchidere"];
+                    "application/octet-stream": components["schemas"]["PoliticaInchidere"];
+                    "text/json": components["schemas"]["PoliticaInchidere"];
+                };
+            };
+        };
+    };
+    "PUT_api/odata/PoliticaInchidere({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/xml": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/plain": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/*+json": components["schemas"]["PoliticaInchidereResourceDelta"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "DELETE_api/odata/PoliticaInchidere({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "PATCH_api/odata/PoliticaInchidere({key})": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/xml": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/plain": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/*+json": components["schemas"]["PoliticaInchidereResourceDelta"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/PoliticaInchidere/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/json;IEEE754Compatible=false": components["schemas"]["PoliticaInchidere"];
+                    "application/json;IEEE754Compatible=true": components["schemas"]["PoliticaInchidere"];
+                    "application/xml": components["schemas"]["PoliticaInchidere"];
+                    "text/plain": components["schemas"]["PoliticaInchidere"];
+                    "application/octet-stream": components["schemas"]["PoliticaInchidere"];
+                    "text/json": components["schemas"]["PoliticaInchidere"];
+                };
+            };
+        };
+    };
+    "PUT_api/odata/PoliticaInchidere/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/xml": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/plain": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/*+json": components["schemas"]["PoliticaInchidereResourceDelta"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "DELETE_api/odata/PoliticaInchidere/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "PATCH_api/odata/PoliticaInchidere/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=full;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.metadata=none;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=true;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;odata.streaming=false;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=false": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/json;IEEE754Compatible=true": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/xml": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/plain": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "text/json": components["schemas"]["PoliticaInchidereResourceDelta"];
+                "application/*+json": components["schemas"]["PoliticaInchidereResourceDelta"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/PoliticaInchidere({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "PUT_api/odata/PoliticaInchidere({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false": string;
+                "application/json;odata.metadata=minimal": string;
+                "application/json;odata.metadata=full;odata.streaming=true": string;
+                "application/json;odata.metadata=full;odata.streaming=false": string;
+                "application/json;odata.metadata=full": string;
+                "application/json;odata.metadata=none;odata.streaming=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false": string;
+                "application/json;odata.metadata=none": string;
+                "application/json;odata.streaming=true": string;
+                "application/json;odata.streaming=false": string;
+                "application/json": string;
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;IEEE754Compatible=true": string;
+                "application/json;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;IEEE754Compatible=false": string;
+                "application/json;IEEE754Compatible=true": string;
+                "application/xml": string;
+                "text/plain": string;
+                "text/json": string;
+                "application/*+json": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "POST_api/odata/PoliticaInchidere({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false": string;
+                "application/json;odata.metadata=minimal": string;
+                "application/json;odata.metadata=full;odata.streaming=true": string;
+                "application/json;odata.metadata=full;odata.streaming=false": string;
+                "application/json;odata.metadata=full": string;
+                "application/json;odata.metadata=none;odata.streaming=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false": string;
+                "application/json;odata.metadata=none": string;
+                "application/json;odata.streaming=true": string;
+                "application/json;odata.streaming=false": string;
+                "application/json": string;
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;IEEE754Compatible=true": string;
+                "application/json;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;IEEE754Compatible=false": string;
+                "application/json;IEEE754Compatible=true": string;
+                "application/xml": string;
+                "text/plain": string;
+                "text/json": string;
+                "application/*+json": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "DELETE_api/odata/PoliticaInchidere({key})/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "GET_api/odata/PoliticaInchidere/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "PUT_api/odata/PoliticaInchidere/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false": string;
+                "application/json;odata.metadata=minimal": string;
+                "application/json;odata.metadata=full;odata.streaming=true": string;
+                "application/json;odata.metadata=full;odata.streaming=false": string;
+                "application/json;odata.metadata=full": string;
+                "application/json;odata.metadata=none;odata.streaming=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false": string;
+                "application/json;odata.metadata=none": string;
+                "application/json;odata.streaming=true": string;
+                "application/json;odata.streaming=false": string;
+                "application/json": string;
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;IEEE754Compatible=true": string;
+                "application/json;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;IEEE754Compatible=false": string;
+                "application/json;IEEE754Compatible=true": string;
+                "application/xml": string;
+                "text/plain": string;
+                "text/json": string;
+                "application/*+json": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "POST_api/odata/PoliticaInchidere/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json;odata.metadata=minimal;odata.streaming=true": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false": string;
+                "application/json;odata.metadata=minimal": string;
+                "application/json;odata.metadata=full;odata.streaming=true": string;
+                "application/json;odata.metadata=full;odata.streaming=false": string;
+                "application/json;odata.metadata=full": string;
+                "application/json;odata.metadata=none;odata.streaming=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false": string;
+                "application/json;odata.metadata=none": string;
+                "application/json;odata.streaming=true": string;
+                "application/json;odata.streaming=false": string;
+                "application/json": string;
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=minimal;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=minimal;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=full;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=full;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;odata.metadata=none;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;IEEE754Compatible=false": string;
+                "application/json;odata.metadata=none;IEEE754Compatible=true": string;
+                "application/json;odata.streaming=true;IEEE754Compatible=false": string;
+                "application/json;odata.streaming=true;IEEE754Compatible=true": string;
+                "application/json;odata.streaming=false;IEEE754Compatible=false": string;
+                "application/json;odata.streaming=false;IEEE754Compatible=true": string;
+                "application/json;IEEE754Compatible=false": string;
+                "application/json;IEEE754Compatible=true": string;
+                "application/xml": string;
+                "text/plain": string;
+                "text/json": string;
+                "application/*+json": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "DELETE_api/odata/PoliticaInchidere/{key}/{navigationProperty}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "DELETE_api/odata/PoliticaInchidere({key})/{navigationProperty}({relatedKey})/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                relatedKey: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "DELETE_api/odata/PoliticaInchidere({key})/{navigationProperty}/{relatedKey}/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                relatedKey: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "DELETE_api/odata/PoliticaInchidere/{key}/{navigationProperty}({relatedKey})/$ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                relatedKey: string;
+                navigationProperty: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "DELETE_api/odata/PoliticaInchidere/{key}/{navigationProperty}/{relatedKey}/$ref": {
         parameters: {
             query?: never;
             header?: never;

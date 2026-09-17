@@ -18,7 +18,7 @@ controlate de server. Implicitul TVA al ancorei este editabil. (20, 81e)
 Politicile sunt editabile prin OData în limita permisiunilor și a gărzilor
 de domeniu. Rolul `Configurator` (seed-uit, și pe RELEASE) citește tot și
 scrie doar tipurile din `Politici.TipuriConfigurabile` — lista explicită a
-celor 19 tipuri cu proveniență, consumată și de raportul de profil și de
+celor 20 de tipuri cu proveniență, consumată și de raportul de profil și de
 gate-urile de citire; permisiunile rolului se reaplică la fiecare seed. Toate
 tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e, 81k, 84c, 84d)
 
@@ -37,6 +37,7 @@ tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e
 | Mapare D394 | Operația și sensul trebuie să formeze o combinație permisă (71c, 81e) |
 | Politică de amortizare | Un rând per tip material de clasă de imobilizări (natura verificată la commit): contul de amortizare, cheltuiala cu amortizarea și cheltuiala la cedare; fișa fără politică blochează generarea lunară și ieșirea (87d) |
 | Regulă de deductibilitate | Categoria fiscală, felul (plafon lunar sau procent), valoarea, valabilitatea de la o dată cu temei; aplicată doar utilizării neexclusive când e marcată așa (87d) |
+| Închidere de perioadă | Un singur rând per fel de constatare; gardianul refuză al doilea înaintea indexului unic (F27-D2) |
 
 Unicitățile politicilor se aplică rândurilor active, cu tratarea explicită a
 axelor opționale. `Repartitor.Cod` nu este cheie unică globală. (81c, 81-r4)
@@ -196,6 +197,34 @@ deci corecția lui cade tot pe regula normală. Contarea documentului nou este
 cea normală, din politică; reclasificarea pe 1174 a erorilor semnificative din
 exerciții anterioare rămâne notă contabilă manuală (F27-r1) — motorul nu
 judecă semnificația. (F27-D6, F27-D5)
+
+## Închiderea de perioadă
+
+Severitatea constatărilor de CONȚINUT ale închiderii de perioadă este dată, nu
+cod: un rând per fel în politica de închidere de perioadă, cu trei valori.
+`Blocant` refuză închiderea și nu se poate accepta; `Avertisment` o lasă să
+treacă numai cu acceptare explicită pe constatarea concretă, scrisă în
+istoricul lunii; `Ignorat` nu emite constatarea deloc. Un fel fără rând se
+comportă ca avertisment și o SPUNE în textul constatării, ca o configurație pe
+jumătate să nu treacă tăcut. (F27-D2)
+
+Cele patru feluri și seed-ul lor:
+
+| Fel | Privat | Bugetar |
+|---|---|---|
+| Închiderea de TVA lipsește sau nu e operată | Blocant | Ignorat |
+| Amortizarea lunară lipsește sau nu e operată | Avertisment | Avertisment |
+| Document în lucru cu data înregistrării în perioadă | Avertisment | Avertisment |
+| Document operat cu rest scadent în perioadă | Ignorat | Ignorat |
+
+Diferența dintre profiluri este de CONȚINUT, nu de mecanism: bugetarul nu e
+plătitor de TVA, deci închiderea de TVA îi este tip inert, iar un blocant pe ea
+n-ar fi avut niciodată cum să se stingă. Constatarea de închidere de TVA nu se
+emite deloc când profilul n-are politica de conturi completă sau când luna nu
+are sold pe cele două conturi de TVA. (F27-D2)
+
+Blocantele STRUCTURALE ale lanțului nu sunt în această politică și nu se
+configurează: ele sunt regula lanțului. (F27-D2)
 
 ## Închiderea lunară TVA
 

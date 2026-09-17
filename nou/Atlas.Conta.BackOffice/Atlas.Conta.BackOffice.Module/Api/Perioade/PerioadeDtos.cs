@@ -22,7 +22,12 @@ public sealed class RedeschidePerioadaRequestDto {
 }
 
 /// <summary>Rezultatul unei comenzi de perioadă: starea nouă plus rândul de istoric scris.</summary>
-public sealed record InchiderePerioadaRezultatDto(PerioadaDto Perioada, string Fel, DateTime La, string De);
+public sealed record InchiderePerioadaRezultatDto(PerioadaDto Perioada, string Fel, DateTime La, string De,
+    string[] Acceptari);
+
+/// <summary>Un rând al istoricului unei perioade: cine, când, ce fel, cu ce motiv și ce a acceptat.</summary>
+public sealed record IstoricPerioadaDto(int An, int Luna, string Fel, DateTime La, string De, string Motiv,
+    string[] Acceptari);
 
 /// <summary>Rezultatul reconstrucției soldurilor: un rând per perioadă de referință, chiar fără diferențe.</summary>
 public sealed record ReconstructieRezultatDto(ReconstructieReferintaDto[] Referinte);

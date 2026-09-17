@@ -1031,4 +1031,16 @@ public static class ContaSeeder {
                 numerotare.UrmatorulNumar = 1;
         });
     }
+
+    // Mecanismul e comun, conținutul e al profilului (F27-D2): un rând per fel
+    // de constatare, cu severitatea din harta primită. Un fel absent din hartă
+    // NU primește rând — motorul îl tratează atunci ca avertisment implicit.
+    internal static void SeedPoliticiInchidere(IObjectSpace os,
+            Dictionary<FelConstatareInchidere, SeveritateConstatare> severitati) {
+        foreach (var (fel, severitate) in severitati)
+            Aliniaza<PoliticaInchidere>(os, fel.ToString(), p => p.Fel == fel, politica => {
+                politica.Fel = fel;
+                politica.Severitate = severitate;
+            });
+    }
 }

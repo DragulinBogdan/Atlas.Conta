@@ -155,6 +155,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaValidare> PoliticiValidare { get; set; }
         public DbSet<PoliticaTva> PoliticiTva { get; set; }
         public DbSet<PoliticaInchidereTva> PoliticiInchidereTva { get; set; }
+        // Severitatea constatărilor de închidere de perioadă (F27-D2): un rând per fel.
+        public DbSet<PoliticaInchidere> PoliticiInchidere { get; set; }
         // Politica de așezare pe decont (D3-D2): (TipTva × Sens) → rând, n rânduri.
         public DbSet<MapareD300> MapariD300 { get; set; }
         // Politica D394 (D4-D2): (TipTva × Sens) → tip de operațiune, UNA per pereche.
@@ -594,6 +596,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
             modelBuilder.Entity<PoliticaInchidereTva>()
                 .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<PoliticaInchidere>()
+                .HasIndex(p => p.Fel).IsUnique().HasFilter(viu);
 
             // (2) Regulile de alimentare — cheia lor e cheia de POTRIVIRE a
             // motorului, cu nullable-uri pe trepte (`ClasaId`, `TipMaterialId`,

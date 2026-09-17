@@ -312,6 +312,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 case PoliticaInchidereTva inchidere:
                     VerificaPoliticaInchidereTva(inchidere, erori);
                     break;
+                case PoliticaInchidere inchidereaPerioadei:
+                    VerificaPoliticaInchidere(os, inchidereaPerioadei, erori);
+                    break;
                 case MapareD300 mapareD300:
                     VerificaMapareD300(os, mapareD300, erori);
                     break;
@@ -1099,6 +1102,22 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             erori.Add($"Politica de închidere TVA pe {politica.TipDocument?.Cod ?? "(fără tip)"} are "
                 + $"{completate} din 4 conturi — închiderea cere setul COMPLET (deductibilă, colectată, "
                 + "de plată, de recuperat). Completați-le pe toate sau goliți-le pe toate (tip inert).");
+    }
+
+    // `PoliticaInchidere`: un singur rând per fel. Al doilea ar face severitatea
+    // nedeterministă, iar constatarea ar fi când blocantă, când ignorată, după
+    // ce rând întoarce baza prima (F27-D2).
+    static void VerificaPoliticaInchidere(IObjectSpace os, PoliticaInchidere politica,
+            ICollection<string> erori) {
+        if (EsteSters(os, politica))
+            return;
+        var fel = politica.Fel;
+        var duplicat = os.GetObjectsQuery<PoliticaInchidere>()
+            .Where(p => p.Fel == fel).Select(p => p.ID).ToList()
+            .Any(id => id != politica.ID);
+        if (duplicat)
+            erori.Add($"Există deja o politică de închidere pe felul „{fel}” — "
+                + "un fel are o singură severitate. Editați rândul existent.");
     }
 
     // `MapareD300`: aceleași două reguli ca atributele XAF de pe clasă, chemate

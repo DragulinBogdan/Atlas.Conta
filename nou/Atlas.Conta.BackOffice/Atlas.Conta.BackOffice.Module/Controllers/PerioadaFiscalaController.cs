@@ -2,7 +2,10 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Perioade;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
+using System.ComponentModel;
 using DevExpress.ExpressApp;
+using Atlas.DXF.Core.Appearance.Attributes;
+using DevExpress.ExpressApp.ConditionalAppearance;
 using DevExpress.ExpressApp.Actions;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Security;
@@ -25,17 +28,21 @@ namespace Atlas.Conta.BackOffice.Module.Controllers;
 public class PerioadaFiscalaController : ObjectViewController<ObjectView, PerioadaFiscala> {
     const string CheieStare = "StarePerioada";
 
-    readonly SimpleAction inchide;
+    readonly PopupWindowShowAction inchide;
     readonly PopupWindowShowAction redeschide;
     readonly SimpleAction reconstruieste;
 
     public PerioadaFiscalaController() {
-        inchide = new SimpleAction(this, "PerioadaFiscala.Inchide", PredefinedCategory.RecordEdit) {
+        // Dialog, nu confirmare (F27-D2): închiderea se acceptă pe constatări
+        // CONCRETE, nu pe un „da". Se deschide și când nu e nimic de acceptat —
+        // lista goală e tot un verdict.
+        inchide = new PopupWindowShowAction(this, "PerioadaFiscala.Inchide", PredefinedCategory.RecordEdit) {
             Caption = "Închide perioada",
-            ToolTip = "Închide luna selectată, după verificarea lanțului: perioada închisă e graniță absolută.",
-            ConfirmationMessage = "Închideți perioada selectată? În perioada închisă nu se mai poate opera, "
-                + "anula sau storna niciun document.",
+            ToolTip = "Verifică luna selectată și o închide, cu acceptarea conștientă a avertismentelor.",
+            AcceptButtonCaption = "Închide",
+            CancelButtonCaption = "Renunță",
         };
+        inchide.CustomizePopupWindowParams += Inchide_CustomizePopupWindowParams;
         inchide.Execute += Inchide_Execute;
 
         redeschide = new PopupWindowShowAction(this, "PerioadaFiscala.Redeschide", PredefinedCategory.RecordEdit) {
@@ -109,13 +116,44 @@ public class PerioadaFiscalaController : ObjectViewController<ObjectView, Perioa
         return string.Join(Environment.NewLine, linii);
     }
 
-    void Inchide_Execute(object sender, SimpleActionExecuteEventArgs e) {
+    // Verificarea rulează pe ușa NON-SECURED, ca pe REST: verdictul însumează
+    // documente, închideri de TVA și amortizări, iar un lanț filtrat ar da un
+    // răspuns FALS, nu unul gol (73g/80e).
+    void Inchide_CustomizePopupWindowParams(object sender, CustomizePopupWindowParamsEventArgs e) {
+        var perioada = (PerioadaFiscala)View.CurrentObject;
+        var os = Application.CreateObjectSpace(typeof(InchiderePerioadaParametri));
+        var parametri = os.CreateObject<InchiderePerioadaParametri>();
+        parametri.An = perioada.An;
+        parametri.Luna = perioada.Luna;
+        var fabrica = Application.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
+        using (var osMotor = fabrica.CreateNonSecuredObjectSpace(typeof(PerioadaFiscala)))
+            foreach (var dto in PerioadeApply.Verifica(osMotor, perioada.An, perioada.Luna)) {
+                var rand = os.CreateObject<ConstatareAcceptabila>();
+                rand.Cheie = dto.Cheie;
+                rand.Severitate = dto.Severitate;
+                rand.Fel = dto.Fel;
+                rand.Text = dto.Text;
+                rand.Obiect = dto.ObiectEticheta;
+                parametri.Constatari.Add(rand);
+            }
+        e.View = Application.CreateDetailView(os, parametri);
+        e.View.Caption = $"Închide perioada {perioada.Luna:00}/{perioada.An}";
+    }
+
+    void Inchide_Execute(object sender, PopupWindowShowActionExecuteEventArgs e) {
+        var parametri = (InchiderePerioadaParametri)e.PopupWindowViewCurrentObject;
         var perioada = (PerioadaFiscala)View.CurrentObject;
         var an = perioada.An;
         var luna = perioada.Luna;
+        var cerere = new InchidePerioadaRequestDto {
+            Acceptate = parametri.Constatari.Where(c => c.Acceptata).Select(c => c.Cheie).ToArray(),
+        };
         var rezultat = Comanda(perioada,
-            os => PerioadeApply.Inchide(os, an, luna, null, UserId(), Application.Security?.UserName));
-        Informeaza($"Perioada {luna:00}/{an} a fost închisă la {rezultat.La.ToLocalTime():dd.MM.yyyy HH:mm}.");
+            os => PerioadeApply.Inchide(os, an, luna, cerere, UserId(), Application.Security?.UserName));
+        Informeaza($"Perioada {luna:00}/{an} a fost închisă la {rezultat.La.ToLocalTime():dd.MM.yyyy HH:mm}"
+            + (rezultat.Acceptari.Length == 0
+                ? ", fără constatări de acceptat."
+                : $", cu {rezultat.Acceptari.Length} constatări acceptate."));
     }
 
     void Redeschide_CustomizePopupWindowParams(object sender, CustomizePopupWindowParamsEventArgs e) {
@@ -166,6 +204,71 @@ public class PerioadaFiscalaController : ObjectViewController<ObjectView, Perioa
             Type = InformationType.Success,
             Duration = 8000,
         });
+}
+
+// Parametrii dialogului de închidere (F27-D2): lista constatărilor, cu bifa de
+// acceptare pe avertismente. Non-persistent, ca `RedeschiderePerioadaParametri`;
+// colecția e `[Aggregated]` fiindcă rândurile trăiesc cât dialogul.
+[DomainComponent]
+[XafDisplayName("Închide perioada")]
+public class InchiderePerioadaParametri : NonPersistentBaseObject {
+    int an; int luna;
+
+    [XafDisplayName("An")]
+    [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
+    [DevExpress.ExpressApp.Model.ModelDefault("DisplayFormat", "{0:0}")]
+    [DevExpress.ExpressApp.Model.ModelDefault("AllowEdit", "False")]
+    public int An { get => an; set => SetPropertyValue(ref an, value); }
+
+    [XafDisplayName("Luna")]
+    [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
+    [DevExpress.ExpressApp.Model.ModelDefault("DisplayFormat", "{0:0}")]
+    [DevExpress.ExpressApp.Model.ModelDefault("AllowEdit", "False")]
+    public int Luna { get => luna; set => SetPropertyValue(ref luna, value); }
+
+    [Aggregated]
+    [XafDisplayName("Constatări")]
+    public BindingList<ConstatareAcceptabila> Constatari { get; } = [];
+}
+
+// O constatare, cu bifa ei. `Acceptata` e editabilă doar pe avertisment;
+// blocantul rămâne refuzat de serviciu oricum — bifa ar fi o promisiune falsă.
+[DomainComponent]
+[XafDisplayName("Constatare")]
+// Lista e a VERIFICĂRII: rândurile vin de la server, nu se adaugă și nu se
+// șterg din dialog.
+[ForbidCRUD("ListView")]
+// Bifa se dă în grilă, nu într-un formular per rând: acceptarea e un gest pe
+// listă („astea le știu”), iar `PopupEditForm` (implicitul Blazor) l-ar fi rupt
+// în câte un dialog per constatare.
+[DevExpress.ExpressApp.Model.ModelDefault("InlineEditMode", "Batch")]
+[Appearance("ConstatareBlocanta", AppearanceItemType.ViewItem,
+    "Severitate != 'Avertisment'", TargetItems = nameof(Acceptata), Enabled = false)]
+[DefaultProperty(nameof(Text))]
+public class ConstatareAcceptabila : NonPersistentBaseObject {
+    bool acceptata;
+
+    [Browsable(false)]
+    public string Cheie { get; set; }
+
+    [XafDisplayName("Severitate")]
+    [DevExpress.ExpressApp.Model.ModelDefault("AllowEdit", "False")]
+    public string Severitate { get; set; }
+
+    [XafDisplayName("Fel")]
+    [DevExpress.ExpressApp.Model.ModelDefault("AllowEdit", "False")]
+    public string Fel { get; set; }
+
+    [XafDisplayName("Constatare")]
+    [DevExpress.ExpressApp.Model.ModelDefault("AllowEdit", "False")]
+    public string Text { get; set; }
+
+    [XafDisplayName("Obiect")]
+    [DevExpress.ExpressApp.Model.ModelDefault("AllowEdit", "False")]
+    public string Obiect { get; set; }
+
+    [XafDisplayName("Acceptată")]
+    public bool Acceptata { get => acceptata; set => SetPropertyValue(ref acceptata, value); }
 }
 
 // Parametrul dialogului de redeschidere — cererea `RedeschidePerioadaRequestDto`.

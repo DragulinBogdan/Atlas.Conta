@@ -46,9 +46,38 @@ public class PerioadeController : ContaApiController {
         var refuz = Subiect(an, luna, OperatieAcces.Citire);
         if (refuz != null)
             return refuz;
+        // Verdictul ÎNSUMEAZĂ pe ușa non-secured documente, închideri de TVA,
+        // amortizări, împerecheri și politica severităților: 80e cere dreptul de
+        // citire pe tot ce însumează, altfel „nicio constatare" ar fi un răspuns
+        // plauzibil și FALS pentru cine nu vede rândurile.
+        refuz = CititeIntegral();
+        if (refuz != null)
+            return refuz;
         return Domeniu(() => {
             using var os = NonSecured(typeof(PerioadaFiscala));
             return Ok(PerioadeApply.Verifica(os, an, luna));
+        });
+    }
+
+    /// <summary>Istoricul comenzilor unei luni: închideri, redeschideri, motive, acceptări.</summary>
+    [HttpGet("{an:int}/{luna:int}/istoric")]
+    [ProducesResponseType(typeof(IstoricPerioadaDto[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    public IActionResult Istoric(int an, int luna) {
+        var erori = Perioada(an, luna);
+        if (erori.Count > 0)
+            return BadRequest(EroriDto.Din(erori));
+        var refuz = Subiect(an, luna, OperatieAcces.Citire);
+        if (refuz != null)
+            return refuz;
+        using (var os = Secured(typeof(InchiderePerioada)))
+            if (!PoateCiti(typeof(InchiderePerioada), os))
+                return RefuzCitire(typeof(InchiderePerioada));
+        return Domeniu(() => {
+            using var os = NonSecured(typeof(PerioadaFiscala));
+            return Ok(PerioadeApply.Istoric(os, an, luna));
         });
     }
 
@@ -90,6 +119,20 @@ public class PerioadeController : ContaApiController {
             using var os = NonSecured(typeof(PerioadaFiscala));
             return Ok(PerioadeApply.Reconstruieste(os));
         });
+    }
+
+    // Tipurile pe care verificarea le ÎNSUMEAZĂ pe ușa non-secured (80e).
+    static readonly Type[] TipuriInsumate = [
+        typeof(Document), typeof(InchidereTva), typeof(AmortizareLunara),
+        typeof(Imperechere), typeof(PoliticaInchidere),
+    ];
+
+    IActionResult CititeIntegral() {
+        using var os = Secured(typeof(Document));
+        foreach (var tip in TipuriInsumate)
+            if (!PoateCiti(tip, os))
+                return RefuzCitire(tip);
+        return null;
     }
 
     IActionResult Comanda(int an, int luna, Func<IObjectSpace, InchiderePerioadaRezultatDto> comanda) {

@@ -146,6 +146,8 @@ public static class VerificareProfilService {
             p => codMaterial(p.TipMaterialId)),
         [typeof(RegulaDeductibilitate)] = Tabel<RegulaDeductibilitate>("Reguli de deductibilitate",
             r => $"{r.Categorie} de la {r.DeLa:dd.MM.yyyy}"),
+        [typeof(PoliticaInchidere)] = Tabel<PoliticaInchidere>("Politici de închidere de perioadă",
+            p => p.Fel.ToString()),
     };
 
     static string Cheia(Func<Guid, string> codTip, PoliticaTvaImplicit p) =>

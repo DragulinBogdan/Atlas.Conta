@@ -109,6 +109,12 @@
       "PoliticaLipsa": "Politică lipsă",
       "MapareLipsa": "Mapare lipsă"
     },
+    "FelConstatareInchidere": {
+      "ItvLipsa": "Închiderea de TVA lipsește sau nu e operată",
+      "AmoLipsa": "Amortizarea lunară lipsește sau nu e operată",
+      "DraftInPerioada": "Document în lucru cu data înregistrării în perioadă",
+      "RestScadent": "Document operat cu rest scadent în perioadă"
+    },
     "FelDeductibilitate": {
       "PlafonLunar": "Plafon lunar",
       "Procent": "Procent"
@@ -230,7 +236,8 @@
     },
     "SeveritateConstatare": {
       "Blocant": "Blocant",
-      "Avertisment": "Avertisment"
+      "Avertisment": "Avertisment",
+      "Ignorat": "Ignorat"
     },
     "StareDocument": {
       "Draft": "Draft",
@@ -1571,6 +1578,15 @@
         "TipDocumentSursaId": "TipDocumentSursa",
         "TipDocumentTinta": "TipDocumentTinta",
         "TipDocumentTintaId": "TipDocumentTinta"
+      }
+    },
+    "PoliticaInchidere": {
+      "DefaultProperty": null,
+      "Membri": {
+        "DinSeed": "Din seed",
+        "Fel": "Fel",
+        "ID": "ID",
+        "Severitate": "Severitate"
       }
     },
     "PoliticaInchidereTva": {

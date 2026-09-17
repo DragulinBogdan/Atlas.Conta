@@ -765,3 +765,21 @@ public class RegulaDeductibilitate : BaseObject, ICuProvenienta {
     [XafDisplayName("Temei")]
     public virtual string Temei { get; set; }
 }
+
+// Severitatea constatărilor DE CONȚINUT ale închiderii de perioadă (F27-D2): un
+// rând per fel, cu `Ignorat` ca „nu mă interesa cu asta". Blocantele STRUCTURALE
+// ale lanțului nu sunt aici — ele nu se configurează.
+[NavigationItem("Politici")]
+[XafDisplayName("Politică de închidere de perioadă")]
+public class PoliticaInchidere : BaseObject, ICuProvenienta {
+    // F23-D4
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
+    [XafDisplayName("Fel")]
+    public virtual FelConstatareInchidere Fel { get; set; }
+
+    [XafDisplayName("Severitate")]
+    public virtual SeveritateConstatare Severitate { get; set; }
+}

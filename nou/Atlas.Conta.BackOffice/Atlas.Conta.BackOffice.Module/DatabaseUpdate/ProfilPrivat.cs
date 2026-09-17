@@ -46,6 +46,7 @@ internal static class ProfilPrivat {
         SeedPoliticiDecont(os);
         SeedPoliticiNotaContabila(os);
         SeedPoliticiInchidereTva(os);
+        SeedPoliticiInchiderePerioada(os);
         SeedPoliticiImobilizari(os);
         SeedPoliticiAsamblare(os);
         SeedPoliticiDescarcare(os);
@@ -1162,6 +1163,17 @@ internal static class ProfilPrivat {
             politica.ContDeRecuperatId = ContDupaSimbol("4424");
         });
     }
+
+    // Severitatea constatărilor de închidere de perioadă (F27-D2). Privatul e
+    // plătitor de TVA: luna nu se închide fără decontul ei făcut, deci `ItvLipsa`
+    // e BLOCANT. Restul scadent e informativ la cerere, deci `Ignorat` din seed.
+    static void SeedPoliticiInchiderePerioada(IObjectSpace os) =>
+        ContaSeeder.SeedPoliticiInchidere(os, new() {
+            [FelConstatareInchidere.ItvLipsa] = SeveritateConstatare.Blocant,
+            [FelConstatareInchidere.AmoLipsa] = SeveritateConstatare.Avertisment,
+            [FelConstatareInchidere.DraftInPerioada] = SeveritateConstatare.Avertisment,
+            [FelConstatareInchidere.RestScadent] = SeveritateConstatare.Ignorat,
+        });
 
     // Perechea 20x/21x → 280x/281x; terenurile (211) NU primesc rând (F26-D4).
     static void SeedPoliticiImobilizari(IObjectSpace os) {

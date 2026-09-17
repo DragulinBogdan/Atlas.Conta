@@ -991,12 +991,33 @@ try {
     # 400 de SINTAXĂ, înaintea oricărei întrebări de drept.
     Proba -Cerere 'închide luna 13' -User 'Admin' -Asteptat 400 -Metoda POST -Cale '/api/perioade/2026/13/inchide' -Corp @{ Acceptate = @() } -Contine 'trebuie să fie' | Out-Null
     # 422 pe `Admin`: are dreptul, îl refuză LANȚUL — și nu scrie nimic.
-    Proba -Cerere 'închide o lună cu precedenta deschisă' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'precedent', $etichetaPrecedenta -Nota 'F27-D1: lanțul' | Out-Null
+    Proba -Cerere 'închide o lună cu precedenta deschisă' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'precedent', $etichetaPrecedenta, 'Blocant:', '[PRECEDENTA-DESCHISA' -Nota 'F27-D1/D2: lanțul, cu lista în forma `Severitate: text [cheie]`' | Out-Null
+    # Blocanta nu se acceptă: aceeași cerere cu cheia ei în `Acceptate` iese tot 422.
+    Proba -Cerere 'închide acceptând blocanta' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @("PRECEDENTA-DESCHISA:$($precedentaDeschisa.An)-$('{0:00}' -f $precedentaDeschisa.Luna)") } -Contine 'Blocant:' -Nota 'F27-D2: blocanta nu se acceptă' | Out-Null
     Proba -Cerere 'redeschide o perioadă deschisă' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/redeschide" -Corp @{ Motiv = 'probă' } -Contine 'nu are ce redeschide' | Out-Null
     Proba -Cerere 'redeschide fără motiv' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/redeschide" -Corp @{ Motiv = '' } -Contine 'motiv' -Nota 'regulă a motorului, nu de sintaxă' | Out-Null
-    # Verificarea e un VERDICT: gate de citire pe instanță, apoi constatările.
-    Proba -Cerere 'verificarea închiderii' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA' | Out-Null
+    # Verificarea e un VERDICT: gate de citire pe instanță, apoi dreptul de
+    # citire pe TOT ce însumează (documente, ITV, AMO, imperecheri, politica
+    # severităților — 80e), abia apoi constatările.
+    Proba -Cerere 'verificarea închiderii' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA', '"Severitate":"Blocant"' | Out-Null
+    Proba -Cerere 'verificarea închiderii' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA' -Nota 'citește tot ce însumează verdictul' | Out-Null
     Proba -Cerere 'verificarea închiderii' -User 'User' -Asteptat 404 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'verificarea unei luni nedefinite' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/perioade/2099/12/verificare' -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Istoricul (F27-D2): citire, cu același subiect — luna. Pe o lună niciodată
+    # închisă e o listă GOALĂ, adică un răspuns adevărat, nu un refuz.
+    Proba -Cerere 'istoricul perioadei' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$calePerioada/istoric" -Contine '[]' -Nota 'lună niciodată închisă' | Out-Null
+    Proba -Cerere 'istoricul perioadei' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "$calePerioada/istoric" -Contine '[]' | Out-Null
+    Proba -Cerere 'istoricul perioadei' -User 'User' -Asteptat 404 -Metoda GET -Cale "$calePerioada/istoric" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'istoricul unei luni nedefinite' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/perioade/2099/12/istoric' -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'istoricul lunii 13' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/perioade/2026/13/istoric' -Contine 'trebuie să fie' | Out-Null
+    # Severitatea constatărilor e POLITICĂ, deci trece pe ușa comună a
+    # politicilor: `Configurator` o scrie, `Cititor` și `User` nu (83i).
+    Proba -Cerere 'listă PoliticaInchidere' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale '/api/odata/PoliticaInchidere' -Contine 'ItvLipsa' -Nota 'cine configurează, citește' | Out-Null
+    Proba -Cerere 'creare PoliticaInchidere' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaInchidere' -Corp @{ Fel = 'ItvLipsa'; Severitate = 'Avertisment' } -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare PoliticaInchidere' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaInchidere' -Corp @{ Fel = 'ItvLipsa'; Severitate = 'Avertisment' } -Contine 'crea' | Out-Null
+    # Al doilea rând pe același fel: gardianul îl refuză ca DOMENIU, înaintea
+    # indexului unic — `Admin` are dreptul, îl oprește regula.
+    Proba -Cerere 'al doilea rând pe același fel' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/PoliticaInchidere' -Corp @{ Fel = 'ItvLipsa'; Severitate = 'Avertisment' } -Contine 'o singură severitate' -Nota 'F27-D2: gardianul înaintea indexului' | Out-Null
     # Reconstrucția soldurilor (F27-D3): comandă FĂRĂ subiect (rescrie toate
     # perioadele de referință), deci gate-ul ei e pe TIP — `Write` pe
     # `PerioadaFiscala`, același drept ca `inchide`. Pe baza vie nu există nicio

@@ -31,6 +31,7 @@ internal static class ProfilBugetar {
         SeedPoliticiDecont(os);
         SeedPoliticiNotaContabila(os);
         SeedPoliticiValidare(os);
+        SeedPoliticiInchiderePerioada(os);
         SeedPoliticiImobilizari(os);
         SeedTipTvaImplicit(os);
         // Implicitele de POLITICĂ (felia 23, F23-D2): bugetarul nu primește
@@ -97,6 +98,17 @@ internal static class ProfilBugetar {
             Politica(cod, p => p.CereClasificatieBugetara = true);
         Politica("FCL", p => p.NaturaInterzisa = NaturaClasa.Stoc);
     }
+
+    // Severitatea constatărilor de închidere de perioadă (F27-D2). Bugetarul nu
+    // e plătitor de TVA — ITV e tip inert, deci `ItvLipsa` e `Ignorat`, nu un
+    // blocant care n-ar avea niciodată cum să se stingă.
+    static void SeedPoliticiInchiderePerioada(IObjectSpace os) =>
+        ContaSeeder.SeedPoliticiInchidere(os, new() {
+            [FelConstatareInchidere.ItvLipsa] = SeveritateConstatare.Ignorat,
+            [FelConstatareInchidere.AmoLipsa] = SeveritateConstatare.Avertisment,
+            [FelConstatareInchidere.DraftInPerioada] = SeveritateConstatare.Avertisment,
+            [FelConstatareInchidere.RestScadent] = SeveritateConstatare.Ignorat,
+        });
 
     // Planul CPLAN e pe trei niveluri: perechea de amortizare e FRUNZA categoriei (F26-D4).
     static void SeedPoliticiImobilizari(IObjectSpace os) {

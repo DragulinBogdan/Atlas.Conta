@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
@@ -41,8 +42,35 @@ public static class PerioadeApply {
             .ToArray());
     }
 
+    /// <summary>Istoricul unei luni: rândurile append-only ale comenzilor, cel mai nou întâi.</summary>
+    public static IstoricPerioadaDto[] Istoric(IObjectSpace os, int an, int luna) {
+        var perioada = os.GetObjectsQuery<PerioadaFiscala>()
+            .Where(p => p.An == an && p.Luna == luna)
+            .Select(p => (Guid?)p.ID).FirstOrDefault();
+        if (perioada == null)
+            return [];
+        return os.GetObjectsQuery<InchiderePerioada>()
+            .Where(i => i.PerioadaId == perioada.Value)
+            .OrderByDescending(i => i.La)
+            .Select(i => new { i.Fel, i.La, i.De, i.Motiv, i.Acceptari })
+            .ToList()
+            .Select(i => new IstoricPerioadaDto(an, luna, i.Fel.ToString(), i.La, i.De, i.Motiv,
+                Chei(i.Acceptari)))
+            .ToArray();
+    }
+
+    // `Acceptari` e JSON pe rând (o listă de chei), nu o tabelă: rândul de
+    // istoric e o FOTOGRAFIE, iar cheile nu se interoghează, se citesc.
+    static string[] Chei(string json) {
+        if (string.IsNullOrWhiteSpace(json))
+            return [];
+        try { return JsonSerializer.Deserialize<string[]>(json) ?? []; }
+        catch (JsonException) { return [json]; }
+    }
+
     static InchiderePerioadaRezultatDto Din(IObjectSpace os, InchiderePerioada rand) =>
-        new(Din(os.GetObjectByKey<PerioadaFiscala>(rand.PerioadaId)), rand.Fel.ToString(), rand.La, rand.De);
+        new(Din(os.GetObjectByKey<PerioadaFiscala>(rand.PerioadaId)), rand.Fel.ToString(), rand.La, rand.De,
+            Chei(rand.Acceptari));
 
     static PerioadaDto Din(PerioadaFiscala p) =>
         new(p.An, p.Luna, p.Inchisa, p.InchisaLa, p.InchisaPrimaOara);

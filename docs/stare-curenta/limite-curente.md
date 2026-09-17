@@ -46,11 +46,25 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   soldul de stoc trec prin LINQ, unde snapshot-ul e o entitate ca oricare
   alta, iar o restricție pe rând pusă pe registru NU se propagă asupra lui.
   (F27-D3, 66)
-- Constatările de închidere acoperă doar blocantele structurale ale lanțului.
-  Constatările de conținut și severitatea lor ca politică nu sunt acoperite,
-  iar corpul cu chei acceptate este primit și ignorat. (F27-D2)
-- Închiderea și redeschiderea perioadei au ecran în XAF Blazor, nu în
-  clientul React. (F27-D2)
+- Reconcilierea cu sursa externă 1C NU e constatare de închidere: documentele
+  neimportate într-o perioadă nu opresc și nu semnalează închiderea ei. E
+  treaba conectorului, nu a mecanismului. (F27-D2, F27-r6)
+- Constatarea de rest scadent citește doar documentele cu scadență culeasă sau
+  implicită — facturile de intrare și de ieșire. Un document stins fără
+  scadență (plată, încasare, decont, retur) rămâne în afara ei chiar cu rest.
+  (F27-D2)
+- Constatările de închidere listează cel mult 200 de rânduri per fel, iar
+  restul intră într-un rând de rezumat fără cheie proprie: o constatare
+  nelistată nu se poate accepta individual. Pe o lună cu peste 200 de drafturi
+  închiderea cere deci fie operarea lor, fie coborârea severității felului.
+  (F27-D2)
+- Constatările de conținut se caută doar când niciun blocant STRUCTURAL nu
+  stă în picioare: pe o lună cu precedenta deschisă ecranul arată doar
+  blocanta lanțului, nu și ce ar mai fi de rezolvat în ea. (F27-D2)
+- Dialogul de închidere din XAF Blazor arată constatările ca listă imbricată cu
+  bifă. Bifa pe o constatare blocantă e dezactivată prin regulă de aspect;
+  autoritatea rămâne serviciul, care refuză blocantele indiferent de ce
+  s-a trimis. (F27-D2)
 - Două împerecheri noi, încă necomise în același context, au o limită de
   vizibilitate în calculele bazate pe interogarea bazei. Plafoanele nu trebuie
   prezentate ca protecție completă pentru orice lot de scrieri concurente. (41d)
