@@ -348,9 +348,12 @@ public abstract class DocumentTrezorerie : Document {
             erori.Add("Latura pereche există doar la viramentul intern (ambele laturi conturi proprii) — "
                 + "ștergeți legătura sau corectați laturile.");
 
-        var tinta = os.GetObjectByKey<DocumentTrezorerie>(LaturaPerecheId.Value);
-        if (tinta == null) {
-            erori.Add("Documentul indicat ca latură pereche nu există (a fost șters?) — ștergeți legătura.");
+        var gasit = Motor.RandDupaCheie.Oricare(os, typeof(DocumentTrezorerie), LaturaPerecheId.Value);
+        if (gasit is not DocumentTrezorerie tinta) {
+            erori.Add(gasit == null
+                ? "Documentul indicat ca latură pereche nu există (a fost șters?) — ștergeți legătura."
+                : Motor.RandDupaCheie.Refuz(gasit, typeof(DocumentTrezorerie),
+                    Motor.RandDupaCheie.RolFk(GetType(), nameof(LaturaPereche)), LaturaPerecheId.Value));
             return;
         }
 

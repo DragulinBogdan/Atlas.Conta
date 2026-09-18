@@ -79,7 +79,7 @@ public class FacturaIesireDescarcareController : ObjectViewController<DetailView
         // ObjectSpace-uri e ID-ul, nu instanța).
         var osView = Application.CreateObjectSpace(typeof(DescarcareGestiune));
         e.ShowViewParameters.CreatedView = Application.CreateDetailView(
-            osView, osView.GetObjectByKey<DescarcareGestiune>(dscId));
+            osView, RandDupaCheie.Ca<DescarcareGestiune>(osView, dscId));
         e.ShowViewParameters.TargetWindow = TargetWindow.Default;
 
         if (rezultat.Resturi.Count > 0)

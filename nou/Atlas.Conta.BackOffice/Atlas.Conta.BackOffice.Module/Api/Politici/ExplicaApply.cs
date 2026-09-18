@@ -4,7 +4,6 @@ using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.UI;
 using DevExpress.ExpressApp;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.Api.Politici;
 
@@ -38,20 +37,11 @@ public static class ExplicaApply {
     /// (422), cu fraza unică a lui 80f — referința nu e subiectul cererii.
     /// </summary>
     public static void CereVizibile(IObjectSpace securizat, ExplicaCerere cerere) {
-        Cere<TipMaterial>(securizat, cerere.TipMaterialId, "Tipul (contul/clasa)");
-        Cere<Repartitor>(securizat, cerere.PredatorId, "Predatorul");
-        Cere<Repartitor>(securizat, cerere.PrimitorId, "Primitorul");
-        Cere<Partener>(securizat, cerere.PartenerId, "Partenerul");
-        Cere<Produs>(securizat, cerere.ProdusId, "Produsul");
-    }
-
-    // `Any` pe nomenclator, nu `Rezolva.Cere` (deci nu `GetObjectByKey`): sub TPT
-    // acela CASTEAZĂ rândul găsit, iar un id de altă frunză aruncă
-    // `InvalidCastException` în loc să răspundă „nu e vizibil" (capcana măsurată
-    // în `ImpliciteService.PartenerulDocumentului`). Fraza rămâne cea unică (80f).
-    static void Cere<T>(IObjectSpace os, Guid? id, string rol) where T : BaseObject {
-        if (id is Guid valoare && !os.GetObjectsQuery<T>().Any(o => o.ID == valoare))
-            throw new OperareException(Refuzuri.ReferintaInvizibila(rol, valoare));
+        Rezolva.Optional<TipMaterial>(securizat, cerere.TipMaterialId, "Tipul (contul/clasa)");
+        Rezolva.Optional<Repartitor>(securizat, cerere.PredatorId, "Predatorul");
+        Rezolva.Optional<Repartitor>(securizat, cerere.PrimitorId, "Primitorul");
+        Rezolva.Optional<Partener>(securizat, cerere.PartenerId, "Partenerul");
+        Rezolva.Optional<Produs>(securizat, cerere.ProdusId, "Produsul");
     }
 
     /// <summary>

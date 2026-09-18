@@ -925,26 +925,11 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (intrare.State != EntityState.Added && Equals(valoare.OriginalValue, valoare.CurrentValue))
                 continue;
             var principal = fk.PrincipalEntityType.ClrType;
-            var tinta = os.GetObjectByKey(fk.PrincipalEntityType.GetRootType().ClrType, id);
-            if (tinta != null && principal.IsInstanceOfType(tinta))
+            var tinta = RandDupaCheie.Oricare(os, principal, id);
+            if (principal.IsInstanceOfType(tinta))
                 continue;
-            var dependent = Api.Refuzuri.TipReal(obj.GetType());
-            var rol = $"„{CaptionMembru(dependent, fk.DependentToPrincipal?.Name ?? valoare.Metadata.Name)}” "
-                + $"pe {Api.Refuzuri.Caption(dependent)}";
-            erori.Add(tinta == null
-                ? Api.Refuzuri.ReferintaInvizibila(rol, id)
-                : $"{rol}: rândul ales ({id}) e {Api.Refuzuri.Caption(tinta.GetType())}, "
-                    + $"nu {Api.Refuzuri.Caption(principal)}.");
-        }
-    }
-
-    static string CaptionMembru(Type tip, string membru) {
-        try {
-            var caption = DevExpress.ExpressApp.Utils.CaptionHelper.GetMemberCaption(tip, membru);
-            return string.IsNullOrWhiteSpace(caption) ? membru : caption;
-        }
-        catch {
-            return membru;
+            erori.Add(RandDupaCheie.Refuz(tinta, principal,
+                RandDupaCheie.RolFk(obj.GetType(), fk.DependentToPrincipal?.Name ?? valoare.Metadata.Name), id));
         }
     }
 

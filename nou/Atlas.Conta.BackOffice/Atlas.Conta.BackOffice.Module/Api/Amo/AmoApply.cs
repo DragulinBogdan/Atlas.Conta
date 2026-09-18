@@ -78,7 +78,7 @@ public static class AmoApply {
         bool? stale = null;
         if (h.Stare == StareDocument.Draft) {
             var analiza = AmortizareService.Previzualizeaza(os, h.Data.Year, h.Data.Month, id);
-            var doc = os.GetObjectByKey<AmortizareLunara>(id);
+            var doc = RandDupaCheie.Ca<AmortizareLunara>(os, id);
             stale = !(analiza.Motiv == null && doc != null && doc.LiniileCorespund(analiza));
         }
 

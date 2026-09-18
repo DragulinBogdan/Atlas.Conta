@@ -30965,7 +30965,7 @@ void VerificaF28(bool privat) {
             .Adauga(osC.GetObjectsQuery<ApplicationUser>().Where(u => u.UserName.StartsWith(MarcajF28)))
             .Adauga(osC.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajF28)))
             .Executa();
-    Guid idPartener, idGestiune, idContPropriu;
+    Guid idPartener, idGestiune, idContPropriu, idNir, idDvi, idFcl, idIncasare;
     var liniiScena = new Dictionary<string, string>(StringComparer.Ordinal);
     using (var osS = provider.CreateObjectSpace()) {
         CurataF28(osS);
@@ -31009,6 +31009,8 @@ void VerificaF28(bool privat) {
         legatura.Factura = (FacturaIntrare)documente[typeof(FacturaIntrare)];
         osS.CommitChanges();
         (idPartener, idGestiune, idContPropriu) = (partener.ID, gestiune.ID, contPropriu.ID);
+        (idNir, idDvi, idFcl, idIncasare) = (documente[typeof(NIR)].ID, documente[typeof(Dvi)].ID,
+            documente[typeof(FacturaIesire)].ID, documente[typeof(Incasare)].ID);
     }
 
     // ---- F28-K: ierarhia utilizatorilor XAF (TPH) — utilizator nou + login în același commit, pe calea gardianului ----
@@ -31147,6 +31149,77 @@ void VerificaF28(bool privat) {
         + "documentelor e codul (decizia 20), iar crearea unui rând nou rămâne refuzată integral (F23-V4)",
         tipSters != null && tipSters.Contains("nu se șterge")
         && tipClrSchimbat != null && tipClrSchimbat.Contains("o scrie release-ul"));
+
+    // ---- F28-L/M: rândul după cheie pe un ObjectSpace CU prefetch (ca pe hosturi), cu ținta urmărită sau nu ----
+    EFCoreObjectSpace OsCuPrefetch() {
+        var o = (EFCoreObjectSpace)provider.CreateObjectSpace();
+        o.PreFetchReferenceProperties = true;
+        return o;
+    }
+    string Rezultat(Action actiune) {
+        try { actiune(); return null; }
+        catch (OperareException e) { return e.Message; }
+        catch (Exception e) { return $"EXCEPȚIE {e.GetType().Name}: {e.Message.Split('\n')[0]}"; }
+    }
+    string CereF28<T>(Guid id, bool urmarit) where T : class {
+        using var o = OsCuPrefetch();
+        if (urmarit)
+            o.GetObjectByKey(ctxF28.Model.FindEntityType(typeof(T)).GetRootType().ClrType, id);
+        return Rezultat(() => Rezolva.Cere<T>(o, id, "Referința F28"));
+    }
+    var gestiunePePartener = new[] { true, false }.Select(u => CereF28<Gestiune>(idPartener, u)).ToList();
+    var facturaPeNir = new[] { true, false }.Select(u => CereF28<FacturaIntrare>(idNir, u)).ToList();
+    var gestiunePeGestiune = new[] { true, false }.Select(u => CereF28<Gestiune>(idGestiune, u)).ToList();
+    var gestiuneInexistenta = CereF28<Gestiune>(Guid.NewGuid(), false);
+    var tipMaterialF28 = CereF28<TipMaterial>(ctxF28.Set<TipMaterial>().Select(t => t.ID).First(), false);
+    Console.WriteLine($"     MĂSURAT (F28-L/{eticheta}): Cere<Gestiune>(Partener) urmărit „{gestiunePePartener[0] ?? "<acceptat>"}”, "
+        + $"neurmărit „{gestiunePePartener[1] ?? "<acceptat>"}”; Cere<FacturaIntrare>(NIR) urmărit „{facturaPeNir[0] ?? "<acceptat>"}”, "
+        + $"neurmărit „{facturaPeNir[1] ?? "<acceptat>"}”; Cere<Gestiune>(Gestiune) „{gestiunePeGestiune[0] ?? "acceptat"}” / "
+        + $"„{gestiunePeGestiune[1] ?? "acceptat"}”; inexistent „{gestiuneInexistenta ?? "<acceptat>"}”; "
+        + $"Cere<TipMaterial> „{tipMaterialF28 ?? "acceptat"}”.");
+    Check($"F28-L ({eticheta}) `Rezolva.Cere<T>` pe un ObjectSpace cu `PreFetchReferenceProperties` refuză de DOMENIU, cu fraza "
+        + "regulii (o), un id de alt tip al aceleiași ierarhii (Gestiune←Partener, FacturaIntrare←NIR), identic cu ținta "
+        + "urmărită sau nu (fără `InvalidCastException`); ținta de tipul cerut și tipul fără ierarhie trec, inexistentul "
+        + "rămâne pe fraza unică",
+        gestiunePePartener.All(m => RefuzTip(m, idPartener)) && gestiunePePartener.Distinct().Count() == 1
+        && facturaPeNir.All(m => RefuzTip(m, idNir)) && facturaPeNir.Distinct().Count() == 1
+        && gestiunePeGestiune.All(m => m == null) && tipMaterialF28 == null
+        && gestiuneInexistenta != null && gestiuneInexistenta.Contains("nu există"));
+
+    string dviPeSine;
+    using (var o = OsCuPrefetch()) {
+        var legatura = o.CreateObject<DviFactura>();
+        legatura.DviId = idDvi;
+        legatura.FacturaId = idDvi;
+        dviPeSine = Rezultat(() => GardianEditare.Verifica(o));
+        o.Rollback();
+    }
+    string laturaPeFcl;
+    using (var o = OsCuPrefetch()) {
+        o.GetObjectByKey(typeof(Document), idFcl);
+        var incasare = (Incasare)o.GetObjectByKey(typeof(Document), idIncasare);
+        incasare.LaturaPerecheId = idFcl;
+        var erori = new List<string>();
+        laturaPeFcl = Rezultat(() => incasare.ValideazaOperare(o, erori)) ?? string.Join("\n", erori);
+        o.Rollback();
+    }
+    int Aparitii(string mesaj, string text) => mesaj == null ? 0 : mesaj.Split('\n').Count(l => l.Contains(text));
+    Console.WriteLine($"     MĂSURAT (F28-M/{eticheta}): DviFactura{{Dvi = Factura = DVI}} „{dviPeSine ?? "<acceptat>"}”; "
+        + $"Incasare.LaturaPereche = FCL urmărită „{laturaPeFcl.Replace('\n', '|')}”.");
+    Check($"F28-M ({eticheta}) regulile entității pe cheie (`DviFactura.Verifica`, `DocumentTrezorerie.ValideazaOperare`) "
+        + "refuză de domeniu o țintă de alt tip deja urmărită pe un ObjectSpace cu prefetch — o singură dată fraza „rândul "
+        + "ales”, fără `InvalidCastException`",
+        RefuzTip(dviPeSine, idDvi) && !dviPeSine.StartsWith("EXCEPȚIE") && Aparitii(dviPeSine, "rândul ales") == 1
+        && RefuzTip(laturaPeFcl, idFcl) && !laturaPeFcl.StartsWith("EXCEPȚIE") && Aparitii(laturaPeFcl, "rândul ales") == 1);
+
+    // ---- F28-N: plasa pe sursă — niciun `GetObjectByKey` pe o frunză sau pe un parametru generic în codul produsului ----
+    var scanare = ScanareGetObjectByKey.Scaneaza(ctxF28.Model,
+        Path.GetFullPath(Path.Combine(MetadataDump.DirectorProiect(), "..", "..", "Atlas.Conta.BackOffice")));
+    Console.WriteLine($"     MĂSURAT (F28-N/{eticheta}): {scanare.Fisiere} fișiere, {scanare.Apeluri} apeluri `GetObjectByKey` cu tip "
+        + $"explicit; încălcări {scanare.Incalcari.Count}: [{string.Join("; ", scanare.Incalcari)}].");
+    Check($"F28-N ({eticheta}) în `nou/Atlas.Conta.BackOffice` niciun `GetObjectByKey<T>`/`GetObjectByKey(typeof(T), …)` n-are T "
+        + "frunză a unei ierarhii EF sau parametru generic — rândul după cheie trece prin `RandDupaCheie` (rădăcina + `is`)",
+        scanare.Fisiere > 100 && scanare.Apeluri > 50 && scanare.Incalcari.Count == 0);
 
     // ---- F28-E: cititorul tipului dă aceleași coduri ca `ClasaReala` + ancora, pe toate tipurile concrete ----
     using (var osE = provider.CreateObjectSpace()) {

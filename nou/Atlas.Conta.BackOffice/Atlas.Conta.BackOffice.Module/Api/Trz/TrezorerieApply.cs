@@ -40,8 +40,6 @@ public static class TrezorerieApply {
 
         T doc;
         if (id is Guid existentId) {
-            // `GetObjectByKey<T>` filtrează și pe TIP: un id de încasare
-            // cerut pe ruta plăților nu „adoptă" documentul, ci întoarce null.
             doc = Rezolva.Cere<T>(os, existentId, Fel<T>());
             if (doc.Stare != StareDocument.Draft)
                 throw new OperareException(
@@ -420,7 +418,7 @@ public static class TrezorerieApply {
     // `Lista` (acolo ar fi al doilea agregat pe rând).
     static (LaturaPerecheDto Pereche, bool Activa) Pereche<T>(IObjectSpace os, Guid id)
         where T : DocumentTrezorerie {
-        var doc = os.GetObjectByKey<T>(id);
+        var doc = RandDupaCheie.Ca<T>(os, id);
         if (doc?.PerecheId(os) is not Guid perecheId)
             return (null, false);
         // Proiecție PLATĂ pe celălalt picior — nu-l materializăm ca entitate doar

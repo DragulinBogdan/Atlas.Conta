@@ -114,15 +114,8 @@ public static class DviApply {
         var existente = Legaturi(os, doc.ID);
         // Aceeași disciplină ca la linii (F3-D5): facturile se rezolvă toate
         // înainte, ca un refuz să nu lase o legătură fără factură în ObjectSpace.
-        // Prin interogare pe id-uri, nu `GetObjectByKey` per id: un id al unui
-        // obiect deja urmărit cu alt tip ar arunca cast, nu refuz de domeniu.
-        var idsNoi = cerute.Where(i => !existente.Any(l => l.FacturaId == i)).ToList();
-        var facturi = idsNoi.Count == 0
-            ? new List<FacturaIntrare>()
-            : os.GetObjectsQuery<FacturaIntrare>().Where(f => idsNoi.Contains(f.ID)).ToList();
-        var deLegat = idsNoi
-            .Select(i => facturi.FirstOrDefault(f => f.ID == i)
-                ?? throw new OperareException(Refuzuri.ReferintaInvizibila("Factura de import", i)))
+        var deLegat = cerute.Where(i => !existente.Any(l => l.FacturaId == i))
+            .Select(i => Rezolva.Cere<FacturaIntrare>(os, i, "Factura de import"))
             .ToList();
 
         var deSters = existente.Where(l => !cerute.Contains(l.FacturaId)).ToList();

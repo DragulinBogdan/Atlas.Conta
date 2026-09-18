@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Fcl;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using Microsoft.AspNetCore.Mvc;
 
@@ -149,7 +150,7 @@ public class FclController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult RestNedescarcat(Guid id) => Domeniu(() => {
         using var os = Secured(typeof(FacturaIesire));
-        if (os.GetObjectByKey<FacturaIesire>(id) == null)
+        if (RandDupaCheie.Ca<FacturaIesire>(os, id) == null)
             return Invizibil();
         return Ok(FacturaIesireApply.RestNedescarcat(os, id));
     });

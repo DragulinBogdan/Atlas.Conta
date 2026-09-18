@@ -368,7 +368,7 @@ public static class SincronizareAnafService {
             foreach (var (id, eticheta) in parteneri) {
                 // Re-citire prin ID: după un `Rollback` instanțele obținute
                 // înainte sunt detașate.
-                var p = osNonSecured.GetObjectByKey<Partener>(id);
+                var p = Motor.RandDupaCheie.Ca<Partener>(osNonSecured, id);
                 if (p == null) {
                     rezultat.Sarite.Add(new Sarit(id, eticheta, "partenerul a dispărut între selecție și scriere"));
                     continue;

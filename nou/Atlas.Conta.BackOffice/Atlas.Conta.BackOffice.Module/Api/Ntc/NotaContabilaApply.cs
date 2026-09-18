@@ -161,7 +161,7 @@ public static class NotaContabilaApply {
 
     // ═══ ITV nu e o notă contabilă a acestei felii (F21-D5) ═══
     //
-    // `InchidereTva : NotaContabila` — deci `GetObjectByKey<NotaContabila>`
+    // `InchidereTva : NotaContabila` — deci `RandDupaCheie.Ca<NotaContabila>`
     // ÎNTOARCE și închiderile de TVA, iar până la felia 21 un draft ITV se putea
     // rescrie prin `PUT api/ntc/{id}` (reconcilierea acceptă orice linii; gardianul
     // anti-stale l-ar fi prins abia la OPERARE) sau șterge prin `DELETE`. Nu e o
@@ -344,13 +344,13 @@ public static class NotaContabilaApply {
         // baza de import un partener poate avea sute de documente deschise.
         const int Plafon = 100;
 
-        // F21-D5, a patra ușă a feliei: `GetObjectByKey<NotaContabila>` întoarce și
+        // F21-D5, a patra ușă a feliei: `RandDupaCheie.Ca<NotaContabila>` întoarce și
         // închiderile de TVA, deci panoul de compensare al notei răspundea 200
         // pe un id de ITV. Practic era inert (`CapacitateStingere` pe ITV iese
         // dicționar GOL — liniile n-au repartitori), dar un 200 pe o resursă care
         // nu e a feliei e o afirmație falsă: aceeași frunză, același null ca
         // `Citeste` ⇒ 404 pe `GET api/ntc/{id}/candidati`.
-        var doc = os.GetObjectByKey<NotaContabila>(id);
+        var doc = RandDupaCheie.Ca<NotaContabila>(os, id);
         if (doc == null || doc is InchidereTva)
             return null;
 

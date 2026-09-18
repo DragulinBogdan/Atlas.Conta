@@ -115,9 +115,12 @@ public class DviFactura : BaseObject, IVerificabilLaCommit {
                 + "ștergeți-o și creați-o din nou.");
             return;
         }
-        var dvi = Dvi ?? (DviId != Guid.Empty ? os.GetObjectByKey<Dvi>(DviId) : null);
+        var dvi = Dvi ?? (DviId != Guid.Empty
+            ? Motor.RandDupaCheie.Cere<Dvi>(os, DviId, Motor.RandDupaCheie.RolFk(GetType(), nameof(Dvi)), erori)
+            : null);
         if (dvi == null) {
-            erori.Add("Legătura cere declarația vamală.");
+            if (DviId == Guid.Empty)
+                erori.Add("Legătura cere declarația vamală.");
             return;
         }
         if (dvi.Stare != StareDocument.Draft) {
@@ -127,9 +130,12 @@ public class DviFactura : BaseObject, IVerificabilLaCommit {
         }
         if (sters)
             return;
-        var factura = Factura ?? (FacturaId != Guid.Empty ? os.GetObjectByKey<FacturaIntrare>(FacturaId) : null);
+        var factura = Factura ?? (FacturaId != Guid.Empty
+            ? Motor.RandDupaCheie.Cere<FacturaIntrare>(os, FacturaId, Motor.RandDupaCheie.RolFk(GetType(), nameof(Factura)), erori)
+            : null);
         if (factura == null) {
-            erori.Add("Legătura cere factura de intrare.");
+            if (FacturaId == Guid.Empty)
+                erori.Add("Legătura cere factura de intrare.");
             return;
         }
         if (factura.Stare != StareDocument.Operat)

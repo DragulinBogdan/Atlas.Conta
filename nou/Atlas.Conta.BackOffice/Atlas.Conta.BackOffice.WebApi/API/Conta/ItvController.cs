@@ -84,7 +84,7 @@ public class ItvController : ContaApiController {
     // ⇒ 403), apoi DTO-ul pe ușa non-secured: `Sold4426Curent`/`Sold4427Curent`/
     // `Stale` sunt cifre ale motorului. `null` de la `Citeste` ⇒ 404 și pentru un
     // id care există dar nu e o închidere de TVA — dar acolo gate-ul a răspuns
-    // deja 404, fiindcă `GetObjectByKey<InchidereTva>` nu-l vede.
+    // deja 404, fiindcă `RandDupaCheie.Ca<InchidereTva>` nu-l vede.
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ItvReadDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]

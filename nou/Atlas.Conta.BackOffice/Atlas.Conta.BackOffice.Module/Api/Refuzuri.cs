@@ -51,6 +51,10 @@ public static class Refuzuri {
     public static string ReferintaInvizibila(string rol, object id) =>
         $"{rol} ({id}) nu există sau nu e vizibil(ă) pentru utilizatorul curent.";
 
+    /// <summary>422 — referința există, dar e alt tip al aceleiași ierarhii decât cel cerut (89).</summary>
+    public static string RandDeAltTip(string rol, object id, Type gasit, Type cerut) =>
+        $"{rol}: rândul ales ({id}) e {Caption(gasit)}, nu {Caption(cerut)}.";
+
     static string Verb(OperatieAcces operatie) => operatie switch {
         OperatieAcces.Citire => "citi",
         OperatieAcces.Creare => "crea",

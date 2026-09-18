@@ -177,7 +177,7 @@ public class InchidereTvaGenerareController : ObjectViewController<ListView, Inc
         // controllerele lui — exact ce face click-ul pe un rând al listei.
         ObjectSpace.Refresh();
         var osView = Application.CreateObjectSpace(typeof(InchidereTva));
-        var draft = osView.GetObjectByKey<InchidereTva>(documentId);
+        var draft = RandDupaCheie.Ca<InchidereTva>(osView, documentId);
         if (draft != null) {
             e.ShowViewParameters.CreatedView = Application.CreateDetailView(osView, draft);
             e.ShowViewParameters.TargetWindow = TargetWindow.NewWindow;
