@@ -542,7 +542,7 @@ public static class AsamblareApply {
             return null;
 
         // Citirea liniilor merge pe BAZA detaliului, cu frunza adusă prin `as`
-        // (TPT ⇒ LEFT JOIN în SQL): ASM-urile ISTORICE (importul 1C) poartă linii
+        // (`CASE` pe discriminator, 89): ASM-urile ISTORICE (importul 1C) poartă linii
         // de tip BAZĂ, iar pe frunză singură ar fi ieșit `Linii: []` cu `Total`
         // nenul. NULLABLE EXPLICIT pe TOATE valorile frunzei — inclusiv pe
         // `Directie`: pe o linie de bază cast-ul dă null, iar un enum

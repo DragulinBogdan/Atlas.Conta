@@ -301,8 +301,7 @@ public static class FacturaIntrareApply {
             .Select(d => new {
                 d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
-                // TPT: cast-ul devine LEFT JOIN pe tabela `Partener` — null pe
-                // orice alt tip de repartitor.
+                // Cast-ul pe frunză: null pe orice alt tip de repartitor (89).
                 PredatorCodFiscal = (d.Predator as Partener).CodFiscal,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 d.DataScadenta, d.NumarPV, d.DataPV, d.CodCpv, d.Valuta, d.Curs,

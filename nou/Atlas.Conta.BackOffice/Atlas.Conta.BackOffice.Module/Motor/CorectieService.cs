@@ -11,10 +11,10 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // motivat. Nu e o a doua cale de stornare: `MotorOperare.Storneaza` rămâne
 // neatins, cu toți gardienii lui (dependenți, împerecheri, sold, perioadă).
 //
-// Ce copiază: TOATE proprietățile scalare și FK-urile MAPATE ale lanțului TPT,
+// Ce copiază: TOATE proprietățile scalare și FK-urile MAPATE ale tipului concret,
 // prin metadata EF — nu o listă scrisă de mână pe 15 tipuri, care ar fi tăcut
 // incompletă la primul câmp nou al unei frunze. Ce NU copiază e o listă mică și
-// justificabilă: identitatea (`ID`), ce stăpânește motorul (`Stare`,
+// justificabilă: identitatea (`ID`, discriminatorul `ClrType`), ce stăpânește motorul (`Stare`,
 // `DataOperare`, `Autogenerat`, `DocumentSursaId`, `TotalStingere`), datele proprii corecției
 // (`DataInregistrare`, `CorecteazaId`, `MotivCorectie`) și câmpurile de
 // infrastructură ale lui `BaseObject`.
@@ -28,7 +28,7 @@ public static class CorectieService {
         nameof(Document.ID), nameof(Document.Stare), nameof(Document.DataOperare),
         nameof(Document.DataInregistrare), nameof(Document.DocumentSursaId),
         nameof(Document.Autogenerat), nameof(Document.CorecteazaId), nameof(Document.MotivCorectie),
-        nameof(Document.TotalStingere),
+        nameof(Document.TotalStingere), nameof(Document.ClrType),
         GcRecord, LockField,
     };
 
@@ -36,7 +36,8 @@ public static class CorectieService {
     // CONSUMĂ un lot îl păstrează) și se rescrie mai jos doar pe linia care l-a
     // NĂSCUT.
     static readonly HashSet<string> ExcluseLinie = new(StringComparer.Ordinal) {
-        nameof(DocumentDetaliu.ID), nameof(DocumentDetaliu.DocumentId), GcRecord, LockField,
+        nameof(DocumentDetaliu.ID), nameof(DocumentDetaliu.DocumentId), nameof(DocumentDetaliu.ClrType),
+        GcRecord, LockField,
     };
 
     // Lotul renăscut: identitatea, linia-mamă și cele două câmpuri pe care le
@@ -130,7 +131,7 @@ public static class CorectieService {
         copie.Lot = lotNou;
     }
 
-    // Copierea GENERICĂ prin metadata EF: `GetProperties()` dă, pe TPT, toate
+    // Copierea GENERICĂ prin metadata EF: `GetProperties()` dă toate
     // proprietățile mapate ale lanțului (bază + derivate), inclusiv FK-urile.
     // Navigațiile nu sunt proprietăți, deci nu se ating: relațiile se refac din
     // FK-urile copiate. Proprietățile-umbră n-au CLR-corespondent și n-au ce

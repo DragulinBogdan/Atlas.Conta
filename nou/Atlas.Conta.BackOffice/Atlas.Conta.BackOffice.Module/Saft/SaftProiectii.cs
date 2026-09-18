@@ -367,8 +367,6 @@ public static class SaftProiectii {
         var idsDocumente = randuri.Select(r => r.DocumentId)
             .Concat(randuriTva.Select(t => t.DocumentId))
             .Distinct().ToList();
-        // Tipul documentului POLIMORF, într-un singur query (60b) — sub TPT nu
-        // există discriminator, iar ancora se caută după numele clasei CLR.
         var codPerDocument = ApiProiectii.CoduriTip(os, idsDocumente);
         string CodTip(Guid documentId) => codPerDocument.GetValueOrDefault(documentId);
 
@@ -1738,16 +1736,9 @@ public static class SaftProiectii {
                 + "deci `PhysicalStock` nu-l declară.", g.Valoare);
         }
 
-        // ── 7. Documentele mișcărilor (tipul POLIMORF, într-un query — 60b) ──
+        // ── 7. Documentele mișcărilor ──
         var idsDocumente = randuriStoc.Select(r => r.DocumentId).Distinct().ToList();
-        // Codul tipului DIN ANCORĂ (`TipDocument.ClrType`), doar Guid-uri per
-        // tip, pe TOATE documentele bazei, o singură dată — nu
-        // `ApiProiectii.CoduriTip`, care materializează ENTITĂȚILE polimorf
-        // (toate join-urile TPT) ca să le citească clasa: corect pe o pagină de
-        // 500 de rânduri (60b), 1,4 s pe cele ~9 k documente ale unei luni de
-        // import (felia 18, pasul 1). Dicționarul e partajat cu `ComponenteS3`,
-        // care are nevoie de tipul fiecărui document din ISTORIC.
-        var codPerDocument = CoduriTipPeTipuri(os, tipuriDocument.Select(t => (t.ID, t.Cod, t.ClrType)).ToList());
+        var codPerDocument = ApiProiectii.CoduriTip(os, idsDocumente);
         var documente = os.GetObjectsQuery<Document>()
             .Where(d => idsDocumente.Contains(d.ID))
             .Select(d => new {
@@ -2340,7 +2331,7 @@ public static class SaftProiectii {
         // …și SPARTĂ pe tipul documentului care a produs-o (fixul F7): „371
         // diferă cu 194.122,31” nu se poate acționa, „din care NTC atât și DSC
         // atât” da.
-        ComponenteS3(os, perCont, raportate, dataEnd, codPerDocument, conturi);
+        ComponenteS3(os, perCont, raportate, dataEnd, conturi);
 
         // (S4) Integritatea referințelor din fișier.
         var coduriProdus = rezultat.Produse.Select(p => p.ProductCode).ToHashSet(StringComparer.Ordinal);
@@ -2515,11 +2506,8 @@ public static class SaftProiectii {
     // DOUĂ interogări GRUPATE, niciodată una per document: cardinalitatea
     // rezultatului e (cont × document), nu (rând de registru), iar pe baza de
     // import a doua ar fi însemnat zeci de mii de query-uri.
-    // `codPerDocument` = tipul FIECĂRUI document al bazei (din ancoră, calculat
-    // o dată în §7 și partajat): S3 e pe istoric, deci are nevoie de tot.
     static void ComponenteS3(
             IObjectSpace os, List<SaftDiferentaCont> perCont, List<TipStoc> raportate, DateOnly dataEnd,
-            IReadOnlyDictionary<Guid, string> codPerDocument,
             IReadOnlyDictionary<Guid, (string Simbol, string Denumire, string Functie, RolTertCont RolTert)> conturi) {
         if (perCont.Count == 0)
             return;
@@ -2554,6 +2542,9 @@ public static class SaftProiectii {
                 g.Key.ContDebitId, g.Key.ContCreditId, g.Key.DocumentId, Valoare = g.Sum(r => r.Valoare)
             })
             .ToList();
+        var codPerDocument = ApiProiectii.CoduriTip(os, agregatStoc.Select(x => x.DocumentId)
+            .Concat(agregatGl.Select(x => x.DocumentId))
+            .Where(id => id != null).Select(id => id.Value).Distinct().ToList());
 
         var acumulator = new Dictionary<(string Cont, string Tip), (decimal Stoc, decimal Balanta)>();
         void Aduna(string cont, Guid? documentId, decimal stoc, decimal balanta) {
@@ -2593,51 +2584,6 @@ public static class SaftProiectii {
                 .ThenBy(c => c.TipDocument, StringComparer.Ordinal)
                 .ToList();
     }
-
-    // Codul de tip al documentelor CERUTE, rezolvat pe TABELELE TPT ale
-    // tipurilor, nu prin materializarea documentelor (`ApiProiectii.CoduriTip`).
-    // Aceeași cifră, alt cost: `CoduriTip` încarcă ENTITĂȚI ca să citească numele
-    // clasei CLR — corect pe o pagină de 500 de rânduri (60b), imposibil pe
-    // istoricul întreg al unei baze de import, unde S3 cere `Data <= dataEnd`.
-    // Aici sursa e tot ancora `TipDocument.ClrType` (deci tot DATE, niciun
-    // `is`/`switch` pe frunze), iar fiecare tip întoarce doar Guid-uri.
-    static Dictionary<Guid, string> CoduriTipPeTipuri(
-            IObjectSpace os, List<(Guid Id, string Cod, string ClrType)> tipuri) {
-        var rezultat = new Dictionary<Guid, string>();
-        var metoda = typeof(SaftProiectii).GetMethod(
-            nameof(IdsDocumenteDeTip), BindingFlags.NonPublic | BindingFlags.Static);
-        var clase = typeof(Document).Assembly.GetTypes()
-            .Where(t => !t.IsAbstract && typeof(Document).IsAssignableFrom(t))
-            .GroupBy(t => t.Name, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
-        // Adâncimea CRESCĂTOARE: `GetObjectsQuery<T>` întoarce și subtipurile lui
-        // `T`, deci tipul mai derivat trebuie să scrie ULTIMUL peste id-urile
-        // comune — altfel un document ar fi etichetat cu codul bazei lui.
-        static int Adancime(Type t) {
-            var n = 0;
-            for (var c = t; c != null && c != typeof(Document); c = c.BaseType)
-                n++;
-            return n;
-        }
-        // Fiecare tip listează TOATE id-urile lui (O(documente), ~0,4 s pe Flax,
-        // O SINGURĂ dată per proiecție — rezultatul e partajat de §7 și de S3).
-        // Filtrul pe id-uri ÎN SQL a fost măsurat (felia 18, pasul 1) și
-        // respins: Npgsql îl traduce în `= ANY(@ids)`, adică |ids| sondări de
-        // index PER TIP — 0,15 s pe cele ~9 k documente ale lunii, dar 1,4–1,8 s
-        // pe cele ~78 k ale istoricului pe care le cere S3.
-        foreach (var tip in tipuri
-                     .Where(t => !string.IsNullOrWhiteSpace(t.Cod) && !string.IsNullOrWhiteSpace(t.ClrType))
-                     .Select(t => (t.Cod, Clasa: clase.GetValueOrDefault(t.ClrType)))
-                     .Where(t => t.Clasa != null)
-                     .OrderBy(t => Adancime(t.Clasa))) {
-            foreach (var id in (List<Guid>)metoda.MakeGenericMethod(tip.Clasa).Invoke(null, [os]))
-                rezultat[id] = tip.Cod;
-        }
-        return rezultat;
-    }
-
-    static List<Guid> IdsDocumenteDeTip<T>(IObjectSpace os) where T : Document =>
-        os.GetObjectsQuery<T>().Select(d => d.ID).ToList();
 
     // O SINGURĂ interogare pe `RegistruStoc` cu `Data <= dataEnd`, grupată pe
     // (gestiune × lot × registru), cu sume condiționate: ce e ÎNAINTE de

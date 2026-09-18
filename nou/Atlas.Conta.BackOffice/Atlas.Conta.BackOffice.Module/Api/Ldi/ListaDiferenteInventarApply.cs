@@ -290,7 +290,7 @@ public static class ListaDiferenteInventarApply {
             return null;
 
         // Citirea liniilor merge pe BAZA detaliului, cu frunza adusă prin `as`
-        // (TPT ⇒ LEFT JOIN în SQL): LDI-urile ISTORICE (importul 1C) poartă linii
+        // (`CASE` pe discriminator, 89): LDI-urile ISTORICE (importul 1C) poartă linii
         // de tip BAZĂ, iar pe frunză singură ar fi ieșit `Linii: []` cu `Total`
         // nenul (constatarea F5 pe NIR). NULLABLE EXPLICIT pe TOATE valorile
         // frunzei — inclusiv pe `Directie`: pe o linie de bază cast-ul dă null,

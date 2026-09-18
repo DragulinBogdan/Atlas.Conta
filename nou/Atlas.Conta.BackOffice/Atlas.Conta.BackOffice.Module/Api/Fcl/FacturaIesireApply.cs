@@ -362,8 +362,7 @@ public static class FacturaIesireApply {
                 d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
-                // TPT: cast-ul devine LEFT JOIN pe tabela `Partener` — null pe
-                // orice alt tip de repartitor.
+                // Cast-ul pe frunză: null pe orice alt tip de repartitor (89).
                 PrimitorCodFiscal = (d.Primitor as Partener).CodFiscal,
                 d.DataScadenta,
                 d.GestiuneDescarcareId,

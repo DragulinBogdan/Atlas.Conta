@@ -8,6 +8,7 @@ using DevExpress.ExpressApp.Core;
 using DevExpress.ExpressApp.EFCore;
 using DevExpress.ExpressApp.Security;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -204,6 +205,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             // de pe un document operat e tot o scriere care se refuză).
             if (obj is IVerificabilLaCommit verificabil)
                 verificabil.Verifica(os, erori);
+            // (o) 89 — FK-ul spre o frunză TPH ține doar id-ul rădăcinii; tipul țintei îl ține gardianul.
+            if (!EsteSters(os, obj))
+                VerificaTintePeFrunze(os, obj, erori);
             switch (obj) {
                 // (b) Registrele sunt append-only și EXCLUSIV ale motorului
                 // (decizia 14): nimeni nu le scrie prin UI/API, nici măcar
@@ -886,6 +890,51 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (!Enum.IsDefined(enumul, valoare))
                 erori.Add($"Câmpul „{p.Name}” al rândului {tip.Name} nu are o valoare validă "
                     + $"({valoare}) — alegeți una din listă.");
+        }
+    }
+
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, IForeignKey[]> fkSpreFrunze = new();
+
+    // FK-urile unui tip spre un tip NE-rădăcină al unei ierarhii cu discriminator (TPH).
+    public static IReadOnlyList<IForeignKey> FkSpreFrunze(IEntityType tip) =>
+        fkSpreFrunze.GetOrAdd(tip.ClrType, _ => tip.GetForeignKeys()
+            .Where(fk => fk.Properties.Count == 1 && fk.PrincipalEntityType.BaseType != null
+                && fk.PrincipalEntityType.FindDiscriminatorProperty() != null)
+            .ToArray());
+
+    static void VerificaTintePeFrunze(IObjectSpace os, object obj, ICollection<string> erori) {
+        if (os is not EFCoreObjectSpace efCore
+                || efCore.DbContext.Model.FindRuntimeEntityType(obj.GetType()) is not { } tip
+                || FkSpreFrunze(tip) is not { Count: > 0 } fkuri)
+            return;
+        var intrare = efCore.DbContext.Entry(obj);
+        foreach (var fk in fkuri) {
+            var valoare = intrare.Property(fk.Properties[0].Name);
+            if (valoare.CurrentValue is not Guid id || id == Guid.Empty)
+                continue;
+            if (intrare.State != EntityState.Added && Equals(valoare.OriginalValue, valoare.CurrentValue))
+                continue;
+            var principal = fk.PrincipalEntityType.ClrType;
+            var tinta = os.GetObjectByKey(fk.PrincipalEntityType.GetRootType().ClrType, id);
+            if (tinta != null && principal.IsInstanceOfType(tinta))
+                continue;
+            var dependent = Api.Refuzuri.TipReal(obj.GetType());
+            var rol = $"„{CaptionMembru(dependent, fk.DependentToPrincipal?.Name ?? valoare.Metadata.Name)}” "
+                + $"pe {Api.Refuzuri.Caption(dependent)}";
+            erori.Add(tinta == null
+                ? Api.Refuzuri.ReferintaInvizibila(rol, id)
+                : $"{rol}: rândul ales ({id}) e {Api.Refuzuri.Caption(tinta.GetType())}, "
+                    + $"nu {Api.Refuzuri.Caption(principal)}.");
+        }
+    }
+
+    static string CaptionMembru(Type tip, string membru) {
+        try {
+            var caption = DevExpress.ExpressApp.Utils.CaptionHelper.GetMemberCaption(tip, membru);
+            return string.IsNullOrWhiteSpace(caption) ? membru : caption;
+        }
+        catch {
+            return membru;
         }
     }
 

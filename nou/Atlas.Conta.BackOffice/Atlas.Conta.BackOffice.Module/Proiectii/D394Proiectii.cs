@@ -306,7 +306,7 @@ public static class D394Proiectii {
             .ToList();
 
         // ── 2. Clasificarea (D4-D3 pasul 2) ─────────────────────────────────
-        // Partenerul: join pe FRUNZA `Partener` (TPT), nu cast pe navigația lazy
+        // Partenerul: join pe FRUNZA `Partener`, nu cast pe navigația lazy
         // `Repartitor` (riscul 6). Un `PartenerId` care nu se regăsește aici e
         // un repartitor de alt fel (Angajatul de pe DEC) ⇒ `Neincluse`.
         // `IgnoreQueryFilters` (fix 6 al review-ului): facturile unui partener

@@ -155,7 +155,7 @@ using (var os = provider.CreateObjectSpace()) {
 }
 
 // ============================ Repartitori ============================
-// Clasificările m2m legacy (inventar 10 §1) → clasa TPT (decizia 16):
+// Clasificările m2m legacy (inventar 10 §1) → clasa derivată (decizia 16):
 // identitățile exclusive devin clase, calitățile transversale devin flags.
 // Purtătorii de stoc de deschidere sunt FORȚAȚI Gestiune (lotul cere gestiune),
 // indiferent de clasificarea legacy — semnalul datelor bate eticheta.

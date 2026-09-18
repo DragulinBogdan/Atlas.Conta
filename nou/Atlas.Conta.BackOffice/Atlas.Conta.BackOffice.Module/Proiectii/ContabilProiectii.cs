@@ -157,10 +157,8 @@ public sealed class BalantaPlanRand {
     public decimal SoldFinalCredit { get; set; }
 }
 
-// Contractul rândurilor care poartă un document-sursă. Codul de tip NU poate veni
-// din SQL — sub TPT nu există discriminator, iar ancora `TipDocument` se caută
-// după numele clasei CLR (R-D8/60b) — deci se completează în memorie, peste
-// pagina deja materializată. Interfața există ca aceeași completare să se scrie
+// Contractul rândurilor care poartă un document-sursă. Codul de tip se completează
+// peste pagina deja materializată (`CititorTipDocument`, 89). Interfața există ca aceeași completare să se scrie
 // O SINGURĂ dată pentru fișă și jurnal: două copii ar diverge tăcut (regula care
 // a urcat `CoduriTip` în `ApiProiectii`).
 public interface IRandCuDocument {
@@ -1087,14 +1085,11 @@ public static class ContabilProiectii {
     };
 
     // ── Codul de tip al documentului, peste pagina materializată (R-D8) ─────
-    // Partajat de fișă și jurnal: ambele afișează documentul-sursă cu link, iar
-    // sub TPT codul de tip nu e o coloană (ancora `TipDocument` se caută după
-    // numele clasei CLR — 60b). O SINGURĂ implementare; două ar diverge tăcut.
+    // Partajat de fișă și jurnal: ambele afișează documentul-sursă cu link. O
+    // SINGURĂ implementare; două ar diverge tăcut.
     //
     // Se apelează DUPĂ `Incarca`, adică pe pagină (max. 500 de rânduri), nu pe
-    // toată perioada — `CoduriTip` face un singur query polimorf pe mulțime
-    // (varianta `GetObjectByKey` în buclă a fost măsurată la ~11s pe 335 de
-    // rânduri, 60b). Rândurile de deschidere (`DocumentId == null`) se sar din
+    // toată perioada. Rândurile de deschidere (`DocumentId == null`) se sar din
     // start: n-au document și nu trebuie să pice pe nimic.
     public static void CompleteazaTipDocument(IObjectSpace os, IEnumerable<IRandCuDocument> randuri) {
         var cuDocument = randuri?.Where(r => r?.DocumentId != null).ToList();

@@ -279,7 +279,7 @@ public static class NirApply {
             return null;
 
         // Citirea liniilor merge pe BAZA detaliului, cu frunza NIR (DIM-2) adusă
-        // prin `as` (TPT ⇒ LEFT JOIN în SQL): clona conexă generată azi se naște
+        // prin `as` (`CASE` pe discriminator, 89): clona conexă generată azi se naște
         // pe `NirDetaliu` ([TipDetaliu]), dar NIR-urile ISTORICE (importul/clonele
         // pre-DIM-2) poartă linii de tip BAZĂ — pe frunză singură ar fi ieșit
         // `Linii: []` cu `Total` nenul (constatarea pasului 3 al feliei).
@@ -302,7 +302,7 @@ public static class NirApply {
                 // nu s-a născut din linia asta. Comparația se face pe `LinieIntrareId`
                 // (coloană fără FK — 26e), nu pe prezența produsului.
                 LotLinieIntrareId = l.Lot.LinieIntrareId,
-                // NULLABLE explicit: pe o linie de tip BAZĂ cast-ul TPT dă null,
+                // NULLABLE explicit: pe o linie de tip BAZĂ cast-ul dă null,
                 // iar un `decimal` non-nullable ar pica la materializare.
                 l.Cantitate, PretUnitar = (decimal?)(l as NirDetaliu).PretUnitar,
                 l.Valoare, l.ValoareTva,

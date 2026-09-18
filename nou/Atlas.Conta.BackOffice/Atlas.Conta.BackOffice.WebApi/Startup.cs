@@ -171,7 +171,7 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     //   * `Angajament` — entitatea există, tabela e azi GOALĂ
                     //     (modulul de angajamente e amânat — 22c). Lookup-ul e
                     //     onest: gol înseamnă gol; datele vor veni din alt modul.
-                    //   * `Repartitor` — BAZA TPT, deliberat: cele două câmpuri
+                    //   * `Repartitor` — BAZA ierarhiei, deliberat: cele două câmpuri
                     //     `RepartitorDebit/Credit` ale postării explicite acceptă
                     //     ORICE repartitor (`ILinieCuPostareExplicita` e tipată pe
                     //     bază), deci un lookup pe una dintre derivatele expuse ar

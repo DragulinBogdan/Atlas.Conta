@@ -1,3 +1,4 @@
+using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using Microsoft.EntityFrameworkCore;
@@ -138,16 +139,8 @@ public static class Reconciliere {
             return;
         }
 
-        // Tipul se citește din clasa CLR, materializând POLIMORF într-un singur
-        // query (tiparul 60b) — sub TPT nu există discriminator.
         var ids = randuri.Select(r => r.DocumentId).Distinct().ToList();
-        var tipuri = os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList()
-            .ToDictionary(d => d.ID, d => {
-                var t = d.GetType();
-                while (t.Assembly.IsDynamic || t.Name.EndsWith("Proxy"))
-                    t = t.BaseType;
-                return t.Name;
-            });
+        var tipuri = CititorTipDocument.Clase(os, ids);
 
         Console.WriteLine($"    MĂSURAT (complementul D2): {randuri.Count} rânduri contabile pe conturi de TVA "
             + $"aparțin unor documente FĂRĂ fapte fiscale ({ids.Count} documente). "
@@ -220,12 +213,14 @@ public static class Reconciliere {
         var primele = divergente.Take(10).ToList();
         var ids = primele.Select(d => d.Id).ToList();
         var documente = os.GetObjectsQuery<Document>()
-            .Where(d => ids.Contains(d.ID)).ToList()
+            .Where(d => ids.Contains(d.ID))
+            .Select(d => new { d.ID, d.ClrType, d.Numar, d.Data })
+            .ToList()
             .ToDictionary(d => d.ID);
         Console.WriteLine($"    {divergente.Count} DIVERGENȚE — primele {primele.Count}:");
         foreach (var (id, fiscal, contabil) in primele) {
             var doc = documente.GetValueOrDefault(id);
-            var tip = doc == null ? "?" : NumeClr(doc);
+            var tip = doc?.ClrType ?? "?";
             Console.WriteLine($"      {tip,-16} {doc?.Numar,-16} {doc?.Data:yyyy-MM-dd} {id}: "
                 + $"fiscal {fiscal:N2} vs contabil {contabil:N2} (Δ {fiscal - contabil:N2})");
             foreach (var g in fiscale.Where(r => r.DocumentId == id)
@@ -235,44 +230,30 @@ public static class Reconciliere {
         }
     }
 
-    // TPT n-are discriminator: „de ce tip e documentul” se citește din clasa CLR
-    // (tiparul din ModelCheck / ApiProiectii).
-    static string NumeClr(Document d) {
-        var t = d.GetType();
-        while (t.Assembly.IsDynamic || t.Name.EndsWith("Proxy"))
-            t = t.BaseType;
-        return t.Name;
-    }
-
     // Cititorul comun al mulțimii „documente ale unui tip declarat eveniment de
     // TVA de profilul bazei” (criteriul JT-D2, jumătatea POLITICĂ). E partajat cu
     // faza de backfill ca CITITOR, nu ca rezultat: reconcilierea îl re-execută pe
     // ObjectSpace-ul ei, deci nu moștenește nimic din faza de scriere.
     public static Dictionary<string, HashSet<Guid>> TipuriCuPolitica(IObjectSpace os) {
-        var db = ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)os).DbContext;
-        var rezultat = new Dictionary<string, HashSet<Guid>>();
-        var asamblare = typeof(Document).Assembly;
+        var model = ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)os).DbContext.Model;
+        var discriminatoriPeTip = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
         foreach (var nume in os.GetObjectsQuery<PoliticaTva>()
                      .Select(p => p.TipDocument.ClrType).Distinct().ToList()) {
-            var tip = asamblare.GetTypes()
-                .FirstOrDefault(t => t.Name == nume && typeof(Document).IsAssignableFrom(t));
-            var tabela = tip == null ? null : db.Model.FindEntityType(tip)?.GetTableName();
-            if (tabela == null)
-                continue;
-            // Tabela derivată TPT n-are `GCRecord` (soft delete-ul stă pe
-            // `Documente`): mulțimea se intersectează oricum cu documentele VII,
-            // citite prin LINQ de apelant.
-            //
-            // EF1002 suprimat cu motiv: numele tabelei NU vine din afară, ci din
-            // modelul EF al aceluiași DbContext (`FindEntityType(...).GetTableName()`)
-            // — nu există intrare de utilizator pe traseu. Alternativa parametrizată
-            // nu există: un nume de tabelă nu poate fi parametru SQL.
-#pragma warning disable EF1002
-            rezultat[nume] = db.Database
-                .SqlQueryRaw<Guid>($"SELECT \"ID\" AS \"Value\" FROM \"{tabela}\"")
-                .ToList().ToHashSet();
-#pragma warning restore EF1002
+            var tip = model.GetEntityTypes().FirstOrDefault(t =>
+                t.ClrType.Name == nume && typeof(Document).IsAssignableFrom(t.ClrType));
+            if (tip != null)
+                discriminatoriPeTip[nume] = tip.GetDerivedTypesInclusive()
+                    .Select(t => t.GetDiscriminatorValue() as string).Where(v => v != null)
+                    .ToHashSet(StringComparer.Ordinal);
         }
-        return rezultat;
+        var toti = discriminatoriPeTip.Values.SelectMany(v => v).Distinct().ToList();
+        var documente = toti.Count == 0
+            ? []
+            : os.GetObjectsQuery<Document>()
+                .Where(d => toti.Contains(d.ClrType))
+                .Select(d => new { d.ID, d.ClrType })
+                .ToList();
+        return discriminatoriPeTip.ToDictionary(x => x.Key,
+            x => documente.Where(d => x.Value.Contains(d.ClrType)).Select(d => d.ID).ToHashSet());
     }
 }

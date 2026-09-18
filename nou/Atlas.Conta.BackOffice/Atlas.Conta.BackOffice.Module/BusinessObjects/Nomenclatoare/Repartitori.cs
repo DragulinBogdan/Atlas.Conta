@@ -8,7 +8,7 @@ using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// Decizia 16: TPT — moștenire doar unde schema diferă și identitatea e exclusivă;
+// Decizia 16 (mapare TPH din 89): moștenire doar unde schema diferă și identitatea e exclusivă;
 // calitățile transversale sunt flags, nu clase.
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]

@@ -275,7 +275,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     // căutarea n-ar da eroare — ar TĂCEA, ceea ce e mult mai rău. Proba: pentru
     // TOATE rândurile, valoarea citită din bază == valoarea calculată în
     // memorie. Entitățile se descoperă din model exact ca în `OnModelCreating`
-    // (interfața + proprietatea DECLARATĂ pe tip — sub TPT coloana e a bazei),
+    // (interfața + proprietatea DECLARATĂ pe tip — coloana e a bazei),
     // deci un nomenclator nou intră automat și în probă.
     // SQL brut ⇒ `GCRecord = 0` explicit (66).
     {
@@ -5959,7 +5959,7 @@ using (var os = provider.CreateObjectSpace()) {
 //     WriteDto; apare abia după operare, din serie. Invers față de FCT;
 //   * `Valoare` CULEASĂ pe linie (trezoreria n-are `PregatesteOperare`);
 //   * nucleul GENERIC pe `T : DocumentTrezorerie` — o singură implementare, două
-//     rute, cu filtrarea pe tip făcută de TPT (`Citeste<Plata>` nu vede o
+//     rute, cu filtrarea pe tip în SQL (`Citeste<Plata>` nu vede o
 //     încasare);
 //   * `TipInstrument` ca STRING pe sârmă, în ambele sensuri (round-trip, CASE în
 //     listă, refuz de domeniu la valoare necunoscută);
@@ -8595,7 +8595,7 @@ using (var os = provider.CreateObjectSpace()) {
         && dupaRefuzuri.Linii.Count == 2);
 
     // Linia de tip BAZĂ (decont istoric/importat) referită prin Id: citirea o
-    // arată cu câmpurile frunzei NULE (as-cast pe TPT), reconcilierea o refuză
+    // arată cu câmpurile frunzei NULE (as-cast), reconcilierea o refuză
     // acționabil, iar absența ei din payload o ȘTERGE (proba M3/60d).
     var docIstoricDec = os.GetObjectByKey<Decont>(idDec);
     var linieBaza = os.CreateObject<DocumentDetaliu>();
@@ -10396,7 +10396,7 @@ void VerificaRegistruTva(bool cuTva) {
         furnizor.Cod = MarcajJt + "-FURN";
         furnizor.Denumire = "Furnizor probă jurnal TVA";
         // Codul fiscal e SETAT deliberat: pe `RegistruTva` partenerul e tipat
-        // `Repartitor` (baza TPT — pe Decont e chiar angajatul), deci jurnalul îl
+        // `Repartitor` (baza ierarhiei — pe Decont e chiar angajatul), deci jurnalul îl
         // scoate prin as-cast pe frunza `Partener`. Cu câmpul gol, proba ar fi
         // trecut comparând null cu null.
         furnizor.CodFiscal = "RO12345678";
@@ -10618,19 +10618,11 @@ void VerificaRegistruTva(bool cuTva) {
         // ambele părți se netează — ar fi trecut și cu derivarea complet greșită.
         && (!cuTva || (docIdsFiscale.Count >= 2 && contabilTva.Sum(r => r.Valoare) > 0m)));
 
-    // Materializarea polimorfă a documentelor OPERATE (tiparul 60b: sub TPT, un
-    // singur query pe bază întoarce tipul derivat corect) — TPT n-are
-    // discriminator, deci „de ce tip e documentul” se citește din clasa CLR.
-    static string NumeClr(Document d) {
-        var t = d.GetType();
-        while (t.Assembly.IsDynamic || t.Name.EndsWith("Proxy"))
-            t = t.BaseType;
-        return t.Name;
-    }
     var numeCuPolitica = os.GetObjectsQuery<PoliticaTva>().Select(p => p.TipDocument.ClrType).ToList();
-    var operate = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Operat).ToList();
+    var operate = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Operat)
+        .Select(d => new { d.ID, d.ClrType }).ToList();
     var idsOperate = operate.Select(d => d.ID).ToList();
-    var idsCuPolitica = operate.Where(d => numeCuPolitica.Contains(NumeClr(d))).Select(d => d.ID).ToHashSet();
+    var idsCuPolitica = operate.Where(d => numeCuPolitica.Contains(d.ClrType)).Select(d => d.ID).ToHashSet();
     var liniiOperate = os.GetObjectsQuery<DocumentDetaliu>()
         .Where(d => idsOperate.Contains(d.DocumentId))
         .Select(d => new { d.DocumentId, d.TipTvaId }).ToList();
@@ -10679,8 +10671,9 @@ void VerificaRegistruTva(bool cuTva) {
     var tipuriComplement = complement.Count == 0
         ? new Dictionary<Guid, string>()
         : os.GetObjectsQuery<Document>()
-            .Where(d => complement.Select(c => c.DocumentId).Distinct().Contains(d.ID)).ToList()
-            .ToDictionary(d => d.ID, NumeClr);
+            .Where(d => complement.Select(c => c.DocumentId).Distinct().Contains(d.ID))
+            .Select(d => new { d.ID, d.ClrType }).ToList()
+            .ToDictionary(d => d.ID, d => d.ClrType);
     Console.WriteLine($"     MĂSURAT (complementul D2): {complement.Count} rânduri contabile pe conturi de TVA "
         + $"aparțin unor documente FĂRĂ fapte fiscale"
         + (complement.Count == 0 ? " — mulțimile coincid exact." : ":"));
@@ -30943,4 +30936,144 @@ void VerificaF28(bool privat) {
         + "`Repartitor` (deci trece precondițiile D85-M2 pe ServerView), read-only (`AllowEdit` = false) și cu caption „Tip”"
         + (probleme.Count > 0 ? $" — {string.Join("; ", probleme)}" : ""),
         modelXaf != null && probleme.Count == 0);
+
+    // ---- Scena F28-D/E: repartitori și documente de probă, comise pe ușa de sistem ----
+    const string MarcajF28 = "F28-PROBA";
+    void CurataF28(IObjectSpace osC) =>
+        new Purja(osC)
+            .Adauga(osC.GetObjectsQuery<Document>().Where(d => d.Numar != null && d.Numar.StartsWith(MarcajF28)))
+            .Adauga(osC.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajF28)))
+            .Executa();
+    Guid idPartener, idGestiune, idContPropriu;
+    using (var osS = provider.CreateObjectSpace()) {
+        CurataF28(osS);
+        var partener = osS.CreateObject<Partener>();
+        partener.Cod = MarcajF28 + "-P"; partener.Denumire = "Partener probă F28";
+        var gestiune = osS.CreateObject<Gestiune>();
+        gestiune.Cod = MarcajF28 + "-G"; gestiune.Denumire = "Gestiune probă F28";
+        var contPropriu = osS.CreateObject<ContPropriu>();
+        contPropriu.Cod = MarcajF28 + "-CP"; contPropriu.Denumire = "Cont propriu probă F28";
+        foreach (var et in concrete[typeof(Document)]) {
+            var d = (Document)osS.CreateObject(et.ClrType);
+            d.Numar = $"{MarcajF28}-{et.ClrType.Name}";
+            d.Data = d.DataInregistrare = new DateOnly(2031, 1, 15);
+            d.Predator = gestiune;
+            d.Primitor = gestiune;
+        }
+        osS.CommitChanges();
+        (idPartener, idGestiune, idContPropriu) = (partener.ID, gestiune.ID, contPropriu.ID);
+    }
+
+    // ---- F28-D: FK spre frunză — tipul țintei îl ține gardianul, generic prin metadata EF ----
+    string RefuzF28(Action<IObjectSpace> pregateste) {
+        using var osG = provider.CreateObjectSpace();
+        try {
+            pregateste(osG);
+            GardianEditare.Verifica(osG);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+        finally {
+            osG.Rollback();
+        }
+    }
+    var acoperite = ctxF28.Model.GetEntityTypes()
+        .SelectMany(et => GardianEditare.FkSpreFrunze(et).Where(fk => fk.DeclaringEntityType == et)
+            .Select(fk => $"{et.ClrType.Name}.{fk.Properties[0].Name}→{fk.PrincipalEntityType.ClrType.Name}"))
+        .ToHashSet(StringComparer.Ordinal);
+    string[] asteptate = [
+        "DviFactura.FacturaId→FacturaIntrare", "DviFactura.DviId→Dvi",
+        "DocumentTrezorerie.LaturaPerecheId→DocumentTrezorerie", "Lot.GestiuneId→Gestiune",
+        "Imobilizare.ResponsabilId→Angajat", "Societate.ContBancarId→ContPropriu",
+        "FacturaIesire.GestiuneDescarcareId→Gestiune", "FacturaIntrare.PlataContPropriuId→ContPropriu",
+    ];
+    var neacoperite = asteptate.Where(a => !acoperite.Contains(a)).ToList();
+    var lotPePartener = RefuzF28(o => o.CreateObject<Lot>().GestiuneId = idPartener);
+    var lotPeGestiune = RefuzF28(o => o.CreateObject<Lot>().GestiuneId = idGestiune);
+    var lotPeInexistent = RefuzF28(o => o.CreateObject<Lot>().GestiuneId = Guid.NewGuid());
+    var lotPePartenerNou = RefuzF28(o => {
+        var p = o.CreateObject<Partener>();
+        p.Cod = MarcajF28 + "-PN"; p.Denumire = "Partener nou F28";
+        o.CreateObject<Lot>().GestiuneId = p.ID;
+    });
+    var lotPeGestiuneNoua = RefuzF28(o => {
+        var g = o.CreateObject<Gestiune>();
+        g.Cod = MarcajF28 + "-GN"; g.Denumire = "Gestiune nouă F28";
+        o.CreateObject<Lot>().GestiuneId = g.ID;
+    });
+    Societate SocietateF28(IObjectSpace o) =>
+        o.GetObjectsQuery<Societate>().ToList().FirstOrDefault() ?? o.CreateObject<Societate>();
+    var societatePePartener = RefuzF28(o => SocietateF28(o).ContBancarId = idPartener);
+    var societatePeContPropriu = RefuzF28(o => SocietateF28(o).ContBancarId = idContPropriu);
+    var fclPePartener = RefuzF28(o => o.GetObjectsQuery<FacturaIesire>().ToList()
+        .First(d => d.Numar == MarcajF28 + "-" + nameof(FacturaIesire)).GestiuneDescarcareId = idPartener);
+    bool RefuzTip(string mesaj, Guid id) => mesaj != null && mesaj.Contains($"({id}) e ") && mesaj.Contains(", nu ");
+    bool FaraRefuzTip(string mesaj) => mesaj == null || !mesaj.Contains("rândul ales");
+    Console.WriteLine($"     MĂSURAT (F28-D/{eticheta}): {acoperite.Count} FK-uri spre frunze descoperite "
+        + $"[{string.Join(", ", acoperite.OrderBy(a => a))}]; Lot→Partener „{lotPePartener ?? "<acceptat>"}”; "
+        + $"Lot→Gestiune „{lotPeGestiune ?? "acceptat"}”; Lot→inexistent „{lotPeInexistent ?? "<acceptat>"}”; "
+        + $"Lot→Partener nou „{lotPePartenerNou ?? "<acceptat>"}”; Lot→Gestiune nouă „{lotPeGestiuneNoua ?? "acceptat"}”; "
+        + $"Societate.ContBancar→Partener „{societatePePartener ?? "<acceptat>"}”; Societate.ContBancar→ContPropriu "
+        + $"„{societatePeContPropriu ?? "acceptat"}”; FacturaIesire.GestiuneDescarcare→Partener „{fclPePartener ?? "<acceptat>"}”.");
+    Check($"F28-D ({eticheta}) gardianul refuză cu mesaj de domeniu un FK spre frunză îndreptat spre un rând de ALT tip "
+        + "(Lot→Partener din bază și nou în același commit, Societate.ContBancar→Partener, FacturaIesire.GestiuneDescarcare→"
+        + "Partener) sau spre un id inexistent, lasă să treacă ținta de tipul cerut (Lot→Gestiune din bază și nouă, "
+        + "Societate.ContBancar→ContPropriu), iar regula, descoperită din metadata EF, acoperă cele opt FK-uri de azi"
+        + (neacoperite.Count > 0 ? $" — neacoperite: {string.Join(", ", neacoperite)}" : ""),
+        neacoperite.Count == 0
+        && RefuzTip(lotPePartener, idPartener) && lotPeGestiune == null
+        && lotPeInexistent != null && lotPeInexistent.Contains("nu există")
+        && lotPePartenerNou != null && lotPePartenerNou.Contains(", nu ") && FaraRefuzTip(lotPeGestiuneNoua)
+        && RefuzTip(societatePePartener, idPartener) && FaraRefuzTip(societatePeContPropriu)
+        && RefuzTip(fclPePartener, idPartener));
+
+    var tipSters = RefuzF28(o => o.Delete(o.GetObjectsQuery<TipDocument>().ToList().First(t => t.Cod == "FCT")));
+    var tipClrSchimbat = RefuzF28(o =>
+        o.GetObjectsQuery<TipDocument>().ToList().First(t => t.Cod == "FCT").ClrType = nameof(FacturaIesire));
+    Console.WriteLine($"     MĂSURAT (F28-D/{eticheta}/TipDocument): ștergere → „{tipSters ?? "<acceptat>"}”; "
+        + $"`ClrType` schimbat → „{tipClrSchimbat ?? "<acceptat>"}”.");
+    Check($"F28-D ({eticheta}) pe ușa comună `TipDocument` nu se șterge și nu-și schimbă `ClrType` — fără FK, ancora "
+        + "documentelor e codul (decizia 20), iar crearea unui rând nou rămâne refuzată integral (F23-V4)",
+        tipSters != null && tipSters.Contains("nu se șterge")
+        && tipClrSchimbat != null && tipClrSchimbat.Contains("o scrie release-ul"));
+
+    // ---- F28-E: cititorul tipului dă aceleași coduri ca `ClasaReala` + ancora, pe toate tipurile concrete ----
+    using (var osE = provider.CreateObjectSpace()) {
+        var documente = osE.GetObjectsQuery<Document>()
+            .Where(d => d.Numar != null && d.Numar.StartsWith(MarcajF28)).ToList();
+        var codPeClrType = osE.GetObjectsQuery<TipDocument>().Select(t => new { t.ClrType, t.Cod }).ToList()
+            .Where(t => t.ClrType != null).GroupBy(t => t.ClrType).ToDictionary(g => g.Key, g => g.First().Cod);
+        var inexistent = Guid.NewGuid();
+        var ids = documente.Select(d => d.ID).Append(inexistent).ToList();
+        var coduri = CititorTipDocument.Coduri(osE, ids);
+        var clase = CititorTipDocument.Clase(osE, ids);
+        var diferente = documente
+            .Where(d => {
+                var reala = MotorOperare.ClasaReala(d);
+                return coduri.GetValueOrDefault(d.ID) != codPeClrType.GetValueOrDefault(reala.Name)
+                    || clase.GetValueOrDefault(d.ID) != reala.Name
+                    || CititorTipDocument.Clasa(clase.GetValueOrDefault(d.ID)) != reala;
+            })
+            .Select(d => $"{MotorOperare.ClasaReala(d).Name}: cod „{coduri.GetValueOrDefault(d.ID)}”, "
+                + $"clasă „{clase.GetValueOrDefault(d.ID)}”")
+            .ToList();
+        var tipuriAcoperite = documente.Select(d => MotorOperare.ClasaReala(d)).Distinct().Count();
+        Console.WriteLine($"     MĂSURAT (F28-E/{eticheta}): {documente.Count} documente pe {tipuriAcoperite} tipuri concrete; "
+            + $"diferențe [{string.Join("; ", diferente)}]; id inexistent → cod "
+            + $"„{(coduri.TryGetValue(inexistent, out var codLipsa) ? codLipsa ?? "null" : "<lipsă>")}”.");
+        Check($"F28-E ({eticheta}) `CititorTipDocument` (o proiecție pe discriminator + ancora `TipDocument`) dă, pe câte un "
+            + "document din FIECARE tip concret, exact codul obținut prin materializare (`ClasaReala` + ancora), aceeași "
+            + "clasă (și `Clasa` o rezolvă înapoi la tipul CLR), iar un id "
+            + "inexistent rămâne în contract cu `null`",
+            documente.Count == concrete[typeof(Document)].Count && tipuriAcoperite == documente.Count
+            && diferente.Count == 0
+            && coduri.ContainsKey(inexistent) && coduri[inexistent] == null && !clase.ContainsKey(inexistent));
+        CurataF28(osE);
+    }
+    using (var osF = provider.CreateObjectSpace())
+        Check($"F28 — curățenie finală ({eticheta}): niciun document și niciun repartitor de probă rămas",
+            !osF.GetObjectsQuery<Document>().Any(d => d.Numar != null && d.Numar.StartsWith(MarcajF28))
+            && !osF.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajF28)));
 }

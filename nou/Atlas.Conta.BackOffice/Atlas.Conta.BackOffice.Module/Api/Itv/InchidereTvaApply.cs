@@ -29,7 +29,7 @@ public static class InchidereTvaApply {
     // ═══════════════════════ Citire ═══════════════════════
 
     // `IQueryable` — DataSourceLoader îi pune deasupra filtrarea/sortarea/
-    // paginarea clientului (43c). DOAR `InchidereTva`: sub TPT interogarea pe
+    // paginarea clientului (43c). DOAR `InchidereTva`: interogarea pe
     // frunză NU întoarce alte note (perechea lui F21-D5, unde felia NTC le
     // exclude explicit pe astea).
     //
@@ -75,7 +75,7 @@ public static class InchidereTvaApply {
         if (h == null)
             return null;
 
-        // Liniile pe BAZA detaliului cu frunza prin `as` (TPT ⇒ LEFT JOIN), ca la
+        // Liniile pe BAZA detaliului cu frunza prin `as` (`CASE` pe discriminator, 89), ca la
         // NTC: o închidere importată/istorică ar putea purta linii de tip bază, iar
         // pe frunză singură ar fi ieșit `Linii: []` cu `Total` nenul.
         var linii = os.GetObjectsQuery<DocumentDetaliu>()

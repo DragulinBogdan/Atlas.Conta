@@ -95,8 +95,8 @@ sealed class Catalog {
             proprii[cheie] = id;
         ConturiProprii = proprii;
         Angajati = Legaturi.Incarca(os, "PersoaneFizice");
-        // Pe FRUNZĂ, nu pe baza `Repartitor` (review 79 M9): sub TPT `Cod` e unic
-        // per tabel de frunză, deci un partener 1C cu codul „SEDIU" ar fi putut
+        // Pe FRUNZĂ, nu pe baza `Repartitor` (review 79 M9): `Cod` nu e unic între
+        // familii (81-r4), deci un partener 1C cu codul „SEDIU" ar fi putut
         // câștiga `FirstOrDefault` — iar de la 79a o unitate ne-internă pică
         // luna la generarea ITV, nu mai dă doar o notă cu latură greșită.
         SediuId = CereRepartitor<UnitateInterna>(os, "SEDIU");

@@ -36,9 +36,7 @@ public sealed class JurnalTvaRand : IRandCuDocument {
     public Guid DocumentId { get; set; }
     Guid? IRandCuDocument.DocumentId => DocumentId;
     public string DocumentNumar { get; set; }
-    // Nu vine din SQL (sub TPT nu există discriminator, iar ancora `TipDocument`
-    // se caută după numele clasei CLR — R-D8/60b): se completează în memorie
-    // peste pagină, prin `ContabilProiectii.CompleteazaTipDocument`.
+    // Se completează peste pagină, prin `ContabilProiectii.CompleteazaTipDocument`.
     public string DocumentTip { get; set; }
     public DateOnly Data { get; set; }
     // Perioada de DECLARARE (F27-D5) — cea pe care jurnalul FILTREAZĂ. Diferă de
@@ -52,8 +50,8 @@ public sealed class JurnalTvaRand : IRandCuDocument {
     // `Decont` e chiar ANGAJATUL — jurnalul arată onest ce știe modelul.
     public Guid? PartenerId { get; set; }
     public string PartenerDenumire { get; set; }
-    // Doar `Partener` are cod fiscal (`Repartitor` e baza TPT) — as-cast, adică
-    // LEFT JOIN pe frunză: un angajat sau o gestiune îl lasă gol, nu rupe rândul.
+    // Doar `Partener` are cod fiscal — as-cast: un angajat sau o gestiune îl lasă
+    // gol, nu rupe rândul.
     public string PartenerCodFiscal { get; set; }
 
     public Guid TipTvaId { get; set; }

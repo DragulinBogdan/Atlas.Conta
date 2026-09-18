@@ -180,7 +180,7 @@ public abstract class ContaApiController : ControllerBase {
     // n-are ce căuta aici — o cerere de genul ăsta e un bug de apelant, nu un
     // refuz de utilizator.
     //
-    // `peUsaAsta` (review 80 M1): sub TPT, `GetObjectByKey<T>` găsește și
+    // `peUsaAsta` (review 80 M1): `GetObjectByKey<T>` găsește și
     // derivatele lui `T` — un id de `InchidereTva` e „vizibil" ca `NotaContabila`,
     // deși felia NTC îl EXCLUDE la citire (79c). Fără predicat, aceeași ușă ar
     // spune 404 pe GET și 403/422 pe PUT, adică două adevăruri. Predicatul e

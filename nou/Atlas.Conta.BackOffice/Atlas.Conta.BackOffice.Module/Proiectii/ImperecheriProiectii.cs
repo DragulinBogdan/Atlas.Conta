@@ -10,11 +10,9 @@ namespace Atlas.Conta.BackOffice.Module.Proiectii;
 // REZULTATUL agregat (nu subquery corelat per rând, nu navigație lazy).
 //
 // ═══ De ce UNION PER TIP CONCRET și nu un query pe `Document` ═══
-// Sub TPT nu există discriminator: un `GetObjectsQuery<Document>()` n-ar putea
-// da nici codul tipului (vocabularul de rutare al clientului), nici
-// CONTRAPARTIDA — care e o latură DIFERITĂ per tip (furnizorul e predator pe
-// FCT, clientul e primitor pe FCL…). Uniunea de ramuri concrete pune ambele în
-// SQL, cu literal per ramură.
+// CONTRAPARTIDA e o latură DIFERITĂ per tip (furnizorul e predator pe FCT,
+// clientul e primitor pe FCL…); uniunea de ramuri concrete o pune în SQL, cu
+// codul tipului ca literal per ramură. // 89: F28-r1
 //
 // ═══ MĂRGINIREA (F27-D7) ═══
 // Totalul nu se mai agregă la citire: e `Document.TotalStingere`, scris de motor
@@ -136,8 +134,7 @@ public static class ImperecheriProiectii {
             // le-ar întoarce ca „de stins" — un candidat pe care serverul îl
             // refuză la creare. Filtrul e oglinda predicatului de domeniu
             // (`DocumentTrezorerie.EsteVirament`: AMBELE laturi conturi
-            // proprii); sub TPT testul de tip devine LEFT JOIN pe tabela mică
-            // `ContPropriu` + IS NULL, nu o a doua interogare.
+            // proprii); testul de tip rămâne în SQL, nu o a doua interogare.
             .Concat(os.GetObjectsQuery<Plata>()
                 .Where(d => d.Stare == StareDocument.Operat
                     && !(d.Predator is ContPropriu && d.Primitor is ContPropriu))

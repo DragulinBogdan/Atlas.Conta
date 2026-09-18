@@ -94,9 +94,7 @@ public static class OperareApi {
         return MotorOperare.Valideaza(os, doc);
     }
 
-    // Încărcarea POLIMORFĂ pe baza TPT: `GetObjectByKey<Document>` întoarce
-    // instanța tipului derivat real (același apel îl face motorul pe
-    // `DocumentSursaId` la imperecherea automată — MotorOperare.Opereaza).
+    // Încărcarea POLIMORFĂ: `GetObjectByKey<Document>` întoarce instanța tipului derivat real.
     static Document Incarca(IObjectSpace os, Guid documentId) =>
         Rezolva.Cere<Document>(os, documentId, "Documentul");
 
@@ -109,7 +107,7 @@ public static class OperareApi {
             return MotorOperare.GasesteTipDocument(os, doc).Cod;
         }
         catch (OperareException) {
-            return doc.GetType().Name;
+            return doc.ClrType;
         }
     }
 }

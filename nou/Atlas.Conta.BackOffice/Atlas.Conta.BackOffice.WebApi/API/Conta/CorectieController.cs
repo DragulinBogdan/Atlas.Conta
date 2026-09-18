@@ -1,6 +1,5 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Security;
 using Microsoft.AspNetCore.Mvc;
@@ -65,13 +64,12 @@ public class CorectieController : ContaApiController {
     // Gate-ul de CREARE pe tipul CONCRET al documentului (80b: Create ȘI Write).
     // `Autorizeaza<Document>` a răspuns deja la „e vizibil?" și „am voie să
     // scriu pe el?"; aici se pune întrebarea documentului NOU, pe care comanda
-    // îl produce. Tipul nu poate veni din rută — se citește de pe instanță.
+    // îl produce. Tipul nu poate veni din rută — se citește din discriminator.
     IActionResult RefuzPeTipulConcret(Guid id) {
         using var os = Secured(typeof(Document));
-        var doc = os.GetObjectByKey<Document>(id);
-        if (doc == null)
+        var tip = CititorTipDocument.Clasa(CititorTipDocument.Clase(os, [id]).GetValueOrDefault(id));
+        if (tip == null)
             return Invizibil();
-        var tip = MotorOperare.ClasaReala(doc);
         return PoateCrea(tip, os) ? null : RefuzCreare(tip);
     }
 }

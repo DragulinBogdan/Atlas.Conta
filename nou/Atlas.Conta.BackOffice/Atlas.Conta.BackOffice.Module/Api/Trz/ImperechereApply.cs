@@ -116,10 +116,6 @@ public static class ImperechereApply {
         var deschise = randuri.Select(r => (r.Data.Year, r.Data.Month)).Distinct()
             .ToDictionary(x => x, x => PerioadaDeschisa(os, new DateOnly(x.Year, x.Month, 1)));
 
-        // CODUL TIPULUI nu poate veni din SQL (sub TPT nu există discriminator,
-        // iar ancora se caută după numele clasei CLR) — se rezolvă în memorie,
-        // pe mulțimea MĂRGINITĂ a stingerilor documentului, cu o singură
-        // căutare de ancoră per CLASĂ (`ApiProiectii.CoduriTip`).
         var tipuri = ApiProiectii.CoduriTip(os, randuri.Select(r => r.CelalaltId).ToList());
 
         return new StingeriDto {

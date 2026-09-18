@@ -102,8 +102,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<NotaContabila> NoteContabile { get; set; }
         public DbSet<NotaContabilaDetaliu> NoteContabileDetalii { get; set; }
         // Al 13-lea derivat (FAZA 1C §6): închiderea lunară de TVA — notă
-        // contabilă GENERATĂ (TPT pe două niveluri: Documente → NoteContabile →
-        // InchideriTva); detaliul rămâne NotaContabilaDetaliu.
+        // contabilă GENERATĂ (`InchidereTva : NotaContabila`); detaliul rămâne
+        // NotaContabilaDetaliu.
         public DbSet<InchidereTva> InchideriTva { get; set; }
         // Al 14-lea derivat (FAZA 1C §7): asamblarea/kitting n→m pe stoc
         // (BPR rămâne rezervat — decizia 19).
@@ -579,7 +579,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         //     (77k).
         //
         // Ce NU intră, declarat: `Repartitor.Cod`. Spațiul de coduri e PARTAJAT
-        // pe TPT între parteneri, gestiuni, angajați și conturi proprii, iar
+        // între parteneri, gestiuni, angajați și conturi proprii, iar
         // bazele de import au coliziuni legitime între familii — restanță cu
         // nume, nu o unicitate impusă pe tăcute.
         private static void AplicaUnicitatiPolitici(ModelBuilder modelBuilder) {
@@ -684,7 +684,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         //
         // Trei reguli, toate deduse din model (nicio listă de tipuri aici):
         //   * coloana aparține ENTITĂȚII EF care declară proprietatea, nu clasei
-        //     CLR: sub TPT o singură coloană pe `Repartitor` acoperă Partener/
+        //     CLR: o singură coloană pe `Repartitor` acoperă Partener/
         //     Gestiune/Angajat/UnitateInterna/ContPropriu; o bază CLR nemapată
         //     (`Dimensiune`) lasă coloana pe fiecare derivată.
         //   * numele coloanei de cod se citește din entitate: `Cod`, altfel
@@ -697,7 +697,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // care se caută după (cod, denumire) le are pe amândouă. NOT NULL +
         // CHECK `btrim(...) <> ''` (NOT NULL singur lasă să treacă `''` și
         // `'   '`) pe coloana de cod și pe `Denumire`, în tabelul care le
-        // DECLARĂ (sub TPT: `Repartitori`, o dată pentru toate frunzele). Ușa
+        // DECLARĂ (`Repartitori`, o dată pentru toate frunzele). Ușa
         // de sistem (Import1C, seed, motor) e apărată aici, de schemă; ușa
         // secured primește mesajul de domeniu din `GardianEditare` înaintea
         // bazei, iar violarea de constraint — dacă totuși ajunge — iese tot
@@ -787,8 +787,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
                 if (entityType.ClrType?.Namespace?.StartsWith("Atlas.Conta.") != true)
                     continue;
-                // Declarate, nu moștenite: sub TPT proprietatea bazei apare pe
-                // fiecare derivată, dar aparține (și se configurează) o dată.
+                // Declarate, nu moștenite: proprietatea bazei apare pe fiecare
+                // derivată, dar aparține (și se configurează) o dată.
                 foreach (var proprietate in entityType.GetDeclaredProperties()) {
                     var tip = Nullable.GetUnderlyingType(proprietate.ClrType) ?? proprietate.ClrType;
                     if (tip != typeof(decimal))

@@ -485,7 +485,7 @@ public abstract class DocumentTrezorerie : Document {
                     // predicatului e în `CandidatiPereche`; autoritatea, în
                     // `ValideazaLaturaPereche`.
                     && !(x.Autogenerat && x.DocumentSursaId != null));
-            // Tipul OPUS, filtrat ÎN SQL (sub TPT: LEFT JOIN + IS NOT NULL), dar
+            // Tipul OPUS, filtrat ÎN SQL (discriminator), dar
             // tot din CONTRACTUL domeniului: `Expression.TypeIs` peste
             // `TipLaturaPereche()` — nici `is` pe tip în clasa de bază
             // (invariantul II), nici materializarea tuturor viramentelor dintre

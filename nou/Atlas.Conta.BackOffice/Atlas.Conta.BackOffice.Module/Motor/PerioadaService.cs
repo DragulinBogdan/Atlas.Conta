@@ -180,11 +180,12 @@ public static class PerioadaService {
                 && !raportate.Contains(d.ID));
         var drafturi = interogare
             .OrderBy(d => d.DataInregistrare).ThenBy(d => d.Numar)
+            .Select(d => new { d.ID, d.Numar, d.DataInregistrare, d.ClrType })
             .Take(MaximPerFel + 1)
             .ToList();
         var total = drafturi.Count <= MaximPerFel ? drafturi.Count : interogare.Count();
         foreach (var draft in drafturi.Take(MaximPerFel)) {
-            var eticheta = $"{MotorOperare.ClasaReala(draft).Name} {draft.Numar ?? "fără număr"}";
+            var eticheta = $"{draft.ClrType} {draft.Numar ?? "fără număr"}";
             adauga(FelConstatareInchidere.DraftInPerioada,
                 $"{Cheie(FelConstatareInchidere.DraftInPerioada)}:{draft.ID}",
                 $"Documentul {eticheta} e în lucru cu data înregistrării în {Eticheta(an, luna)} — după "

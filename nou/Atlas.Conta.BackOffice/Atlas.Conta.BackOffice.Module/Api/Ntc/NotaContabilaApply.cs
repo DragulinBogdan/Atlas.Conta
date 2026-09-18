@@ -161,7 +161,7 @@ public static class NotaContabilaApply {
 
     // ═══ ITV nu e o notă contabilă a acestei felii (F21-D5) ═══
     //
-    // Sub TPT, `InchidereTva : NotaContabila` — deci `GetObjectByKey<NotaContabila>`
+    // `InchidereTva : NotaContabila` — deci `GetObjectByKey<NotaContabila>`
     // ÎNTOARCE și închiderile de TVA, iar până la felia 21 un draft ITV se putea
     // rescrie prin `PUT api/ntc/{id}` (reconcilierea acceptă orice linii; gardianul
     // anti-stale l-ar fi prins abia la OPERARE) sau șterge prin `DELETE`. Nu e o
@@ -211,8 +211,8 @@ public static class NotaContabilaApply {
     // sau nu e o notă contabilă.
     public static NtcReadDto Citeste(IObjectSpace os, Guid id) {
         var h = os.GetObjectsQuery<NotaContabila>()
-            // F21-D5: închiderea de TVA are felia ei. EF traduce `is` pe TPT
-            // printr-un test pe frunză, deci filtrul rămâne server-side, iar
+            // F21-D5: închiderea de TVA are felia ei. EF traduce `is`
+            // printr-un test pe discriminator, deci filtrul rămâne server-side, iar
             // `GET api/ntc/{id}` pe un ITV întoarce 404, nu o reprezentare
             // parțială a unui document pe care ecranul de notă nu-l poate scrie.
             .Where(d => !(d is InchidereTva))
@@ -227,7 +227,7 @@ public static class NotaContabilaApply {
             return null;
 
         // Citirea liniilor merge pe BAZA detaliului, cu frunza adusă prin `as`
-        // (TPT ⇒ LEFT JOIN în SQL): notele ISTORICE/importate pot purta linii de
+        // (`CASE` pe discriminator, 89): notele ISTORICE/importate pot purta linii de
         // tip BAZĂ, iar pe frunză singură ar fi ieșit `Linii: []` cu `Total` nenul
         // (constatarea F5 pe NIR). NULLABLE EXPLICIT pe valorile frunzei — pe o
         // linie de bază cast-ul dă null.
@@ -303,7 +303,7 @@ public static class NotaContabilaApply {
             .GroupBy(l => l.DocumentId)
             .Select(g => new { DocumentId = g.Key, Total = g.Sum(x => x.Valoare + x.ValoareTva) });
 
-        // F21-D5: fără filtru, lista notelor conținea și închiderile de TVA (TPT).
+        // F21-D5: fără filtru, lista notelor conținea și închiderile de TVA.
         return from d in os.GetObjectsQuery<NotaContabila>().Where(d => !(d is InchidereTva))
                join t in totaluri on d.ID equals t.DocumentId into agregat
                from t in agregat.DefaultIfEmpty()
@@ -348,7 +348,7 @@ public static class NotaContabilaApply {
         const int Plafon = 100;
 
         // F21-D5, a patra ușă a feliei: `GetObjectByKey<NotaContabila>` întoarce și
-        // închiderile de TVA (TPT), deci panoul de compensare al notei răspundea 200
+        // închiderile de TVA, deci panoul de compensare al notei răspundea 200
         // pe un id de ITV. Practic era inert (`CapacitateStingere` pe ITV iese
         // dicționar GOL — liniile n-au repartitori), dar un 200 pe o resursă care
         // nu e a feliei e o afirmație falsă: aceeași frunză, același null ca

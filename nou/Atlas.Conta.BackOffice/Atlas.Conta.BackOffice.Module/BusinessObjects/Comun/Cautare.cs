@@ -163,9 +163,9 @@ public static class Cautare {
 /// <para>
 /// Declarativă: prezența interfeței e TOT ce cere configurarea generică din
 /// <c>BackOfficeEFCoreDbContext.AplicaColoanaCautare</c> — numele coloanei de
-/// cod se deduce din entitate (`Cod`, altfel `Simbol`), iar sub TPT coloana se
-/// așază pe tipul care DECLARĂ proprietatea (deci pe tabelul bazei
-/// <c>Repartitor</c>, o singură coloană pentru toate frunzele).
+/// cod se deduce din entitate (`Cod`, altfel `Simbol`), iar coloana se așază pe
+/// tipul care DECLARĂ proprietatea (deci o singură coloană pe <c>Repartitori</c>
+/// pentru toate frunzele).
 /// </para>
 /// <para>
 /// Get-only pe contract: valoarea e a BAZEI de date. Proprietatea concretă are

@@ -28,9 +28,8 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 //     global, altfel curățenia n-ar putea vedea (deci nici curăța) reziduul
 //     lăsat de rulările anterioare: exact rândurile care ocupă PK-urile. Cu el,
 //     baza se auto-vindecă la prima rulare, fără intervenție manuală.
-//   • **rădăcina TPT** — purja se dă pe tabela RĂDĂCINĂ a ierarhiei
-//     (`NotaTransfer` → `Documente`), fiindcă FK-urile derivatelor spre bază sunt
-//     `ON DELETE CASCADE`: un `DELETE` pe `Documente` ia cu el rândul derivatei,
+//   • **rădăcina ierarhiei** — purja se dă pe tabela RĂDĂCINII
+//     (`NotaTransfer` → `Documente`, 89): un `DELETE` pe `Documente` ia cu el
 //     detaliile, `RegistruTva` și `Imperecheri`. Ce NU cascadează (`NO ACTION`:
 //     `RegistruContabil`, `RegistruStoc`) se dă explicit, ÎNAINTEA documentelor —
 //     de-aia ordinea pașilor e a apelantului, nu a helper-ului.
@@ -62,7 +61,7 @@ sealed class Purja(IObjectSpace os) {
 
     // Regulă de folosire (review F13, defect 6): purja detașează DOAR tipurile
     // purjate explicit; dependenții luați de CASCADE în bază (`RegistruTva`,
-    // `Imperecheri`, derivatele TPT) rămân în tracker dacă scena i-a încărcat
+    // `Imperecheri`) rămân în tracker dacă scena i-a încărcat
     // înainte — un commit ulterior pe același OS ar da
     // `DbUpdateConcurrencyException`. Deci: purja la ÎNCEPUTUL scenei, pe OS
     // proaspăt, sau la sfârșit, pe un OS care nu se mai folosește.

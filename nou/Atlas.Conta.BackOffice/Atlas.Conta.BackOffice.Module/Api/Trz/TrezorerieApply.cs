@@ -15,7 +15,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Trz;
 // deosebește sunt laturile, iar acelea se validează la OPERARE, în hook-urile
 // tipului. Un al doilea exemplar al reconcilierii ar diverge tăcut.
 // Genericul rămâne traductibil în SQL: `GetObjectsQuery<T>` rezolvă tipul la
-// RUNTIME (`EFCoreObjectSpace.GetQuery(objectType)`), deci sub TPT ajunge
+// RUNTIME (`EFCoreObjectSpace.GetQuery(objectType)`), deci ajunge
 // `DbSet<Plata>`/`DbSet<Incasare>` — nu se materializează nimic în memorie.
 //
 // CONTRACT DE APELANT: `Aplica`/`Sterge` rulează în ObjectSpace-ul SECURED al
@@ -40,7 +40,7 @@ public static class TrezorerieApply {
 
         T doc;
         if (id is Guid existentId) {
-            // `GetObjectByKey<T>` filtrează și pe TIP sub TPT: un id de încasare
+            // `GetObjectByKey<T>` filtrează și pe TIP: un id de încasare
             // cerut pe ruta plăților nu „adoptă" documentul, ci întoarce null.
             doc = Rezolva.Cere<T>(os, existentId, Fel<T>());
             if (doc.Stare != StareDocument.Draft)
@@ -245,8 +245,8 @@ public static class TrezorerieApply {
     // Proiecții PLATE (42c): `Select` înainte de materializare, niciun membru
     // [NotMapped] și nicio navigație enumerată în afara query-ului (25b).
 
-    // `null` dacă documentul nu există / nu e vizibil (F22-D1) SAU nu e de tipul cerut (sub TPT,
-    // `GetObjectsQuery<Plata>` nu vede încasările — filtrarea e în SQL).
+    // `null` dacă documentul nu există / nu e vizibil (F22-D1) SAU nu e de tipul cerut
+    // (`GetObjectsQuery<Plata>` nu vede încasările — filtrarea e în SQL).
     public static TrezorerieReadDto Citeste<T>(IObjectSpace os, Guid id) where T : DocumentTrezorerie {
         var h = os.GetObjectsQuery<T>()
             .Where(d => d.ID == id)
@@ -260,8 +260,7 @@ public static class TrezorerieApply {
                 // FACTURII care a generat-o; null pe o plată culeasă manual.
                 DocumentSursaNumar = d.DocumentSursa.Numar,
                 // F7-D7: predicatul de virament, în ACELAȘI query (test de tip
-                // pe laturi — sub TPT devine JOIN + IS NOT NULL, nu o a doua
-                // interogare). Formula e cea a domeniului
+                // pe laturi, nu o a doua interogare). Formula e cea a domeniului
                 // (`DocumentTrezorerie.EsteVirament`): AMBELE laturi conturi
                 // proprii, nu doar contrapartida — un draft cu laturile
                 // inversate are contrapartida cont propriu fără să fie virament.
@@ -272,7 +271,7 @@ public static class TrezorerieApply {
             return null;
 
         // Citirea liniilor merge pe BAZA detaliului, cu frunza adusă prin `as`
-        // (TPT ⇒ LEFT JOIN în SQL) — uniformitatea citirii e regula feliilor
+        // (`CASE` pe discriminator, 89) — uniformitatea citirii e regula feliilor
         // (pattern-ul NIR): o linie de tip bază (draft vechi, import) apare cu
         // dimensiunile null, în loc să dispară din `Linii` lăsând `Total` nenul.
         var linii = os.GetObjectsQuery<DocumentDetaliu>()
@@ -395,8 +394,7 @@ public static class TrezorerieApply {
                    PrimitorDenumire = d.Primitor.Denumire,
                    Autogenerat = d.Autogenerat,
                    // Aceeași formulă ca în `Citeste` (predicatul domeniului:
-                   // AMBELE laturi conturi proprii), tot în SQL — sub TPT testul
-                   // de tip devine LEFT JOIN pe `ContPropriu` + IS NOT NULL.
+                   // AMBELE laturi conturi proprii), tot în SQL.
                    EsteVirament = d.Predator is ContPropriu && d.Primitor is ContPropriu,
                    Total = (decimal?)t.Total ?? 0m
                };
@@ -415,7 +413,7 @@ public static class TrezorerieApply {
     // deschide) ȘI dacă e ACTIVĂ (`PerecheActivaId`, adică 581 chiar s-a închis).
     // Clientul ramifică pe boolean, nu pe stare — zero predicat de domeniu în TS.
     //
-    // Costul: o materializare a documentului (`GetObjectByKey`, TPT) pe CITIREA
+    // Costul: o materializare a documentului (`GetObjectByKey`) pe CITIREA
     // de detaliu — alături de cele trei interogări ale stingerii, aceeași
     // categorie. Al doilea apel (cel „activ") se face DOAR când perechea găsită
     // e stornată: filtrele lui sunt o submulțime a celor descriptive, deci o
@@ -459,13 +457,8 @@ public static class TrezorerieApply {
     // Picioarele care pot fi declarate pereche pentru un document aflat în
     // culegere (F8-D11). `T` = tipul RUTEI, `TOpus` = tipul candidaților.
     //
-    // De ce două tipuri și nu unul: query-ul trebuie să filtreze tipul ÎN SQL
-    // (sub TPT nu există discriminator, iar mulțimea „viramente între două
-    // conturi" nu e mărginită pe o bază reală — o materializare cu filtrare în
-    // memorie ar fi al doilea `CoduriTip` per rând, 60b), deci tipul opus trebuie
-    // să fie cunoscut la COMPILARE. Transportul îl are (ruta e concretă), dar
-    // AUTORITATEA rămâne contractul domeniului `TipLaturaPereche()` (F8-D8), care
-    // e verificat mai jos: cele două declarații nu pot diverge tăcut.
+    // `TOpus` filtrează tipul opus ÎN SQL; autoritatea rămâne contractul domeniului
+    // `TipLaturaPereche()` (F8-D8), verificat mai jos. // 89: F28-r1
     public static IReadOnlyList<CandidatPerecheDto> CandidatiPereche<T, TOpus>(
         IObjectSpace os, Guid predatorId, Guid primitorId, Guid? exclusId)
         where T : DocumentTrezorerie, new()

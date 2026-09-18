@@ -21,7 +21,7 @@ public sealed class RezultatBackfill {
 }
 
 public static class Backfill {
-    // Documentele se materializează în LOTURI, polimorf (tiparul 60b): sub TPT un
+    // Documentele se materializează în LOTURI, polimorf (tiparul 60b): un
     // singur query pe bază întoarce tipul derivat corect. `GetObjectByKey` în
     // buclă e interzis — măsurat 11,3s pentru 335 de documente (decizia 60b), pe
     // 200.000 ar fi ore.
