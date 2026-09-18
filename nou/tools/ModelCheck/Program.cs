@@ -66,6 +66,23 @@ using SecurityPermissionState = DevExpress.Persistent.Base.SecurityPermissionSta
         return;
     }
 }
+{
+    var indexTph = Array.FindIndex(args, a => a.Equals("--dump-integritate-tph", StringComparison.OrdinalIgnoreCase));
+    if (indexTph >= 0) {
+        if (args.Length <= indexTph + 1 || args[indexTph + 1].StartsWith('-')) {
+            Console.WriteLine("Folosire: ModelCheck --dump-integritate-tph <cale.sql>");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var caleTph = Path.GetFullPath(args[indexTph + 1]);
+        using var ctxTph = new BackOfficeEFCoreDbContext(new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
+            .UseNpgsql("Host=localhost").UseChangeTrackingProxies().Options);
+        var probeTph = IntegritateTph.Probe(ctxTph);
+        File.WriteAllText(caleTph, IntegritateTph.Script(probeTph), new UTF8Encoding(false));
+        Console.WriteLine($"Integritate TPH scrisă: {caleTph} ({probeTph.Count} interogări)");
+        return;
+    }
+}
 
 var profil = args.Any(a => a.Contains("privat", StringComparison.OrdinalIgnoreCase))
     ? ProfilContabil.Privat : ProfilContabil.Bugetar;
@@ -30937,14 +30954,19 @@ void VerificaF28(bool privat) {
         + (probleme.Count > 0 ? $" — {string.Join("; ", probleme)}" : ""),
         modelXaf != null && probleme.Count == 0);
 
-    // ---- Scena F28-D/E: repartitori și documente de probă, comise pe ușa de sistem ----
+    // ---- Scena F28-D…K: repartitori, documente cu câte o linie de tipul declarat, FK-uri spre frunze, pe ușa de sistem ----
     const string MarcajF28 = "F28-PROBA";
     void CurataF28(IObjectSpace osC) =>
         new Purja(osC)
+            .Adauga(osC.GetObjectsQuery<DviFactura>().Where(x => x.Dvi.Numar.StartsWith(MarcajF28)))
             .Adauga(osC.GetObjectsQuery<Document>().Where(d => d.Numar != null && d.Numar.StartsWith(MarcajF28)))
+            .Adauga(osC.GetObjectsQuery<Imobilizare>().Where(i => i.NumarInventar.StartsWith(MarcajF28)))
+            .Adauga(osC.GetObjectsQuery<ApplicationUserLoginInfo>().Where(l => l.User.UserName.StartsWith(MarcajF28)))
+            .Adauga(osC.GetObjectsQuery<ApplicationUser>().Where(u => u.UserName.StartsWith(MarcajF28)))
             .Adauga(osC.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajF28)))
             .Executa();
     Guid idPartener, idGestiune, idContPropriu;
+    var liniiScena = new Dictionary<string, string>(StringComparer.Ordinal);
     using (var osS = provider.CreateObjectSpace()) {
         CurataF28(osS);
         var partener = osS.CreateObject<Partener>();
@@ -30953,16 +30975,103 @@ void VerificaF28(bool privat) {
         gestiune.Cod = MarcajF28 + "-G"; gestiune.Denumire = "Gestiune probă F28";
         var contPropriu = osS.CreateObject<ContPropriu>();
         contPropriu.Cod = MarcajF28 + "-CP"; contPropriu.Denumire = "Cont propriu probă F28";
+        var angajat = osS.CreateObject<Angajat>();
+        angajat.Cod = MarcajF28 + "-A"; angajat.Denumire = "Angajat probă F28";
+        var tipMaterialId = osS.GetObjectsQuery<TipMaterial>().OrderBy(t => t.Cod).Select(t => t.ID).First();
+        var fisa = osS.CreateObject<Imobilizare>();
+        fisa.NumarInventar = MarcajF28 + "-FISA"; fisa.Denumire = "Fișă probă F28";
+        fisa.TipMaterialId = tipMaterialId; fisa.Loc = gestiune; fisa.Responsabil = angajat;
+        var documente = new Dictionary<Type, Document>();
         foreach (var et in concrete[typeof(Document)]) {
             var d = (Document)osS.CreateObject(et.ClrType);
             d.Numar = $"{MarcajF28}-{et.ClrType.Name}";
             d.Data = d.DataInregistrare = new DateOnly(2031, 1, 15);
             d.Predator = gestiune;
             d.Primitor = gestiune;
+            var tipLinie = (Attribute.GetCustomAttribute(et.ClrType, typeof(Atlas.Conta.BackOffice.Module.UI.TipDetaliuAttribute), false)
+                as Atlas.Conta.BackOffice.Module.UI.TipDetaliuAttribute)?.TipDetaliu ?? typeof(DocumentDetaliu);
+            var linie = (DocumentDetaliu)osS.CreateObject(tipLinie);
+            linie.Document = d;
+            linie.TipMaterialId = tipMaterialId;
+            linie.Cantitate = 1m;
+            linie.Valoare = 1m;
+            if (tipLinie.GetProperty(nameof(PunereInFunctiuneDetaliu.ImobilizareId)) is { } imobilizare
+                    && imobilizare.PropertyType == typeof(Guid))
+                imobilizare.SetValue(linie, fisa.ID);
+            documente[et.ClrType] = d;
+            liniiScena[et.ClrType.Name] = tipLinie.Name;
         }
+        ((FacturaIesire)documente[typeof(FacturaIesire)]).GestiuneDescarcare = gestiune;
+        ((FacturaIntrare)documente[typeof(FacturaIntrare)]).PlataContPropriu = contPropriu;
+        ((Plata)documente[typeof(Plata)]).LaturaPereche = (Incasare)documente[typeof(Incasare)];
+        var legatura = osS.CreateObject<DviFactura>();
+        legatura.Dvi = (Dvi)documente[typeof(Dvi)];
+        legatura.Factura = (FacturaIntrare)documente[typeof(FacturaIntrare)];
         osS.CommitChanges();
         (idPartener, idGestiune, idContPropriu) = (partener.ID, gestiune.ID, contPropriu.ID);
     }
+
+    // ---- F28-K: ierarhia utilizatorilor XAF (TPH) — utilizator nou + login în același commit, pe calea gardianului ----
+    string refuzUtilizator;
+    using (var osU = provider.CreateObjectSpace()) {
+        var utilizator = osU.CreateObject<ApplicationUser>();
+        utilizator.UserName = MarcajF28 + "-U";
+        var login = osU.CreateObject<ApplicationUserLoginInfo>();
+        login.LoginProviderName = DevExpress.ExpressApp.Security.SecurityDefaults.PasswordAuthentication;
+        login.ProviderUserKey = utilizator.ID.ToString();
+        login.User = utilizator;
+        refuzUtilizator = Refuz(() => GardianEditare.Verifica(osU));
+        if (refuzUtilizator == null)
+            osU.CommitChanges();
+    }
+    using (var osU = provider.CreateObjectSpace()) {
+        var loginuri = osU.GetObjectsQuery<ApplicationUserLoginInfo>()
+            .Count(l => l.User.UserName == MarcajF28 + "-U");
+        Console.WriteLine($"     MĂSURAT (F28-K/{eticheta}): gardian „{refuzUtilizator ?? "acceptat"}”; login-uri comise pe "
+            + $"utilizatorul de probă: {loginuri}.");
+        Check($"F28-K ({eticheta}) ierarhia utilizatorilor XAF e tot TPH: un `ApplicationUser` nou și "
+            + "`ApplicationUserLoginInfo` spre el, în același commit, trec regula (o) a gardianului (ținta nouă găsită în "
+            + "tracker, de tipul cerut) și se comit",
+            refuzUtilizator == null && loginuri == 1);
+    }
+
+    // ---- F28-H/I/J: integritatea tipului în bază, pe ușa de sistem (aceleași interogări ca `--dump-integritate-tph`) ----
+    var probeTph = IntegritateTph.Probe(ctxF28);
+    var rezultateTph = IntegritateTph.Ruleaza(ctxF28, probeTph);
+    List<RezultatTph> FamilieTph(string familie) => rezultateTph.Where(r => r.Familie == familie).ToList();
+    string Incalcari(List<RezultatTph> lista) =>
+        string.Join("; ", lista.Where(r => r.Incalcari != 0).Select(r => $"{r.Eticheta}: {r.Incalcari}"));
+    var linii = FamilieTph(IntegritateTph.Linii);
+    var fkuri = FamilieTph(IntegritateTph.Fk);
+    var coloane = FamilieTph(IntegritateTph.Coloane);
+    Console.WriteLine($"     MĂSURAT (F28-H/{eticheta}): {linii.Count} tipuri concrete de document, {linii.Sum(r => r.Verificate)} linii "
+        + $"verificate (scena: {string.Join(", ", liniiScena.OrderBy(p => p.Key).Select(p => $"{p.Key}→{p.Value}"))}); "
+        + $"încălcări [{Incalcari(linii)}].");
+    Check($"F28-H ({eticheta}) nicio linie nu are `ClrType` în afara tipului de detaliu declarat de documentul ei "
+        + "(`[TipDetaliu]`, cu subtipurile) sau a lui `DocumentDetaliu` — deci `as` pe frunza documentului citește doar "
+        + "linii ale frunzei sau ale bazei; fiecare tip concret are cel puțin o linie verificată"
+        + (Incalcari(linii) is { Length: > 0 } h ? $" — {h}" : ""),
+        linii.Count == concrete[typeof(Document)].Count && linii.All(r => r.Verificate > 0 && r.Incalcari == 0));
+    Console.WriteLine($"     MĂSURAT (F28-I/{eticheta}): {fkuri.Count} FK-uri spre frunze, {fkuri.Count(r => r.Verificate > 0)} cu "
+        + $"rânduri, {fkuri.Sum(r => r.Verificate)} rânduri verificate "
+        + $"[{string.Join(", ", fkuri.Select(r => $"{r.Eticheta}: {r.Verificate}"))}]; încălcări [{Incalcari(fkuri)}].");
+    Check($"F28-I ({eticheta}) în bază, ținta fiecărui FK spre frunză (descoperit prin `GardianEditare.FkSpreFrunze`) are "
+        + "discriminatorul frunzei sau al unui subtip, și pe rândurile scrise pe ușa de sistem, care nu trec prin regula (o); "
+        + "cele 9 FK-uri acoperite, cel puțin 7 cu rânduri din scenă"
+        + (Incalcari(fkuri) is { Length: > 0 } i ? $" — {i}" : ""),
+        fkuri.Count >= 9 && fkuri.Count(r => r.Verificate > 0) >= 7 && fkuri.All(r => r.Incalcari == 0));
+    var coloaneIerarhii = radacini.ToDictionary(r => r.GetTableName(),
+        r => coloane.Count(c => c.Eticheta.StartsWith(r.GetTableName() + ".", StringComparison.Ordinal)));
+    var directieAsm = Valori($"SELECT count(*)::text AS \"Value\" FROM \"DocumentDetalii\" WHERE \"ClrType\" = 'AsamblareDetaliu' AND \"Directie\" IS NOT NULL").Single();
+    Console.WriteLine($"     MĂSURAT (F28-J/{eticheta}): {coloane.Count} coloane de tip derivat "
+        + $"[{string.Join(", ", coloaneIerarhii.Select(p => $"{p.Key} {p.Value}"))}], {coloane.Sum(r => r.Verificate)} rânduri "
+        + $"de alt tip verificate; `Directie` (enum ne-nullable în CLR) scrisă pe liniile ASM: {directieAsm}; "
+        + $"încălcări [{Incalcari(coloane)}].");
+    Check($"F28-J ({eticheta}) o coloană declarată pe tipuri derivate e NULL pe rândurile oricărui alt tip al ierarhiei "
+        + "(EF nu scrie coloana fratelui, nici pe tipurile valoare) — pe toate ierarhiile TPH ale modelului"
+        + (Incalcari(coloane) is { Length: > 0 } j ? $" — {j}" : ""),
+        coloaneIerarhii.Values.All(n => n > 0) && coloane.Sum(r => r.Verificate) > 0 && directieAsm != "0"
+        && coloane.All(r => r.Incalcari == 0));
 
     // ---- F28-D: FK spre frunză — tipul țintei îl ține gardianul, generic prin metadata EF ----
     string RefuzF28(Action<IObjectSpace> pregateste) {

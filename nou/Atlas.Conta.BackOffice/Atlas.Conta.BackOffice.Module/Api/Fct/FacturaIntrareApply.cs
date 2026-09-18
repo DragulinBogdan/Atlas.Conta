@@ -301,7 +301,7 @@ public static class FacturaIntrareApply {
             .Select(d => new {
                 d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
-                // Cast-ul pe frunză: null pe orice alt tip de repartitor (89).
+                // `as` nu filtrează pe tip: null pe alt repartitor fiindcă `CodFiscal` e doar al lui Partener (F28-J, 89).
                 PredatorCodFiscal = (d.Predator as Partener).CodFiscal,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 d.DataScadenta, d.NumarPV, d.DataPV, d.CodCpv, d.Valuta, d.Curs,

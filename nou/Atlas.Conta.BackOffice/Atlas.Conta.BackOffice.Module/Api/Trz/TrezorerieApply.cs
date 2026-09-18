@@ -270,10 +270,8 @@ public static class TrezorerieApply {
         if (h == null)
             return null;
 
-        // Citirea liniilor merge pe BAZA detaliului, cu frunza adusă prin `as`
-        // (`CASE` pe discriminator, 89) — uniformitatea citirii e regula feliilor
-        // (pattern-ul NIR): o linie de tip bază (draft vechi, import) apare cu
-        // dimensiunile null, în loc să dispară din `Linii` lăsând `Total` nenul.
+        // Pe BAZA detaliului: liniile de tip bază (import, istoric) apar în `Linii`, cu valorile frunzei null.
+        // `as` nu filtrează pe tip; sigur fiindcă liniile unui document sunt frunza lui sau baza (F28-H, 89).
         var linii = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => l.DocumentId == id)
             .OrderBy(l => l.ID)

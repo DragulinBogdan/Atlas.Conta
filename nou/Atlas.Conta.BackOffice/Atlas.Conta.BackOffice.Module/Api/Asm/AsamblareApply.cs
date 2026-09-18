@@ -541,12 +541,9 @@ public static class AsamblareApply {
         if (h == null)
             return null;
 
-        // Citirea liniilor merge pe BAZA detaliului, cu frunza adusă prin `as`
-        // (`CASE` pe discriminator, 89): ASM-urile ISTORICE (importul 1C) poartă linii
-        // de tip BAZĂ, iar pe frunză singură ar fi ieșit `Linii: []` cu `Total`
-        // nenul. NULLABLE EXPLICIT pe TOATE valorile frunzei — inclusiv pe
-        // `Directie`: pe o linie de bază cast-ul dă null, iar un enum
-        // non-nullable ar pica la materializare.
+        // Pe BAZA detaliului: liniile de tip bază (import, istoric) apar în `Linii`, cu valorile frunzei null.
+        // `as` nu filtrează pe tip; sigur fiindcă liniile unui document sunt frunza lui sau baza (F28-H, 89).
+        // Valorile frunzei sunt nullable explicit: pe o linie de bază vin null, iar un tip valoare ar pica la materializare.
         var linii = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => l.DocumentId == id)
             .OrderBy(l => l.ID)

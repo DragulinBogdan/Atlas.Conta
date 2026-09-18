@@ -895,12 +895,22 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
 
     static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, IForeignKey[]> fkSpreFrunze = new();
 
-    // FK-urile unui tip spre un tip NE-rădăcină al unei ierarhii cu discriminator (TPH).
+    // FK-urile unui tip spre un tip NE-rădăcină al unei ierarhii cu discriminator (TPH);
+    // o formă pe care regula (o) n-o verifică (compus, spre cheie alternativă) aruncă.
     public static IReadOnlyList<IForeignKey> FkSpreFrunze(IEntityType tip) =>
-        fkSpreFrunze.GetOrAdd(tip.ClrType, _ => tip.GetForeignKeys()
-            .Where(fk => fk.Properties.Count == 1 && fk.PrincipalEntityType.BaseType != null
-                && fk.PrincipalEntityType.FindDiscriminatorProperty() != null)
-            .ToArray());
+        fkSpreFrunze.GetOrAdd(tip.ClrType, _ => {
+            var fkuri = tip.GetForeignKeys()
+                .Where(fk => fk.PrincipalEntityType.BaseType != null
+                    && fk.PrincipalEntityType.FindDiscriminatorProperty() != null)
+                .ToArray();
+            var nesuportate = fkuri.Where(fk => fk.Properties.Count != 1 || !fk.PrincipalKey.IsPrimaryKey())
+                .Select(fk => $"{fk.DeclaringEntityType.ClrType.Name}({string.Join(", ", fk.Properties.Select(p => p.Name))})"
+                    + $" → {fk.PrincipalEntityType.ClrType.Name}({string.Join(", ", fk.PrincipalKey.Properties.Select(p => p.Name))})")
+                .ToList();
+            return nesuportate.Count == 0 ? fkuri : throw new InvalidOperationException(
+                "FK spre un tip ne-rădăcină al unei ierarhii TPH pe care regula (o) nu-l poate verifica "
+                + $"(compus sau spre o cheie alternativă): {string.Join("; ", nesuportate)}.");
+        });
 
     static void VerificaTintePeFrunze(IObjectSpace os, object obj, ICollection<string> erori) {
         if (os is not EFCoreObjectSpace efCore

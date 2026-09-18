@@ -226,11 +226,8 @@ public static class NotaContabilaApply {
         if (h == null)
             return null;
 
-        // Citirea liniilor merge pe BAZA detaliului, cu frunza adusă prin `as`
-        // (`CASE` pe discriminator, 89): notele ISTORICE/importate pot purta linii de
-        // tip BAZĂ, iar pe frunză singură ar fi ieșit `Linii: []` cu `Total` nenul
-        // (constatarea F5 pe NIR). NULLABLE EXPLICIT pe valorile frunzei — pe o
-        // linie de bază cast-ul dă null.
+        // Pe BAZA detaliului: liniile de tip bază (import, istoric) apar în `Linii`, cu valorile frunzei null.
+        // `as` nu filtrează pe tip; sigur fiindcă liniile unui document sunt frunza lui sau baza (F28-H, 89).
         var linii = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => l.DocumentId == id)
             .OrderBy(l => l.ID)

@@ -75,9 +75,8 @@ public static class InchidereTvaApply {
         if (h == null)
             return null;
 
-        // Liniile pe BAZA detaliului cu frunza prin `as` (`CASE` pe discriminator, 89), ca la
-        // NTC: o închidere importată/istorică ar putea purta linii de tip bază, iar
-        // pe frunză singură ar fi ieșit `Linii: []` cu `Total` nenul.
+        // Pe BAZA detaliului: liniile de tip bază (import, istoric) apar în `Linii`, cu valorile frunzei null.
+        // `as` nu filtrează pe tip; sigur fiindcă liniile unui document sunt frunza lui sau baza (F28-H, 89).
         var linii = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => l.DocumentId == id)
             .OrderBy(l => l.ID)
