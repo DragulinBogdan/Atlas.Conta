@@ -65,8 +65,11 @@ identificatorul între paranteze (`(42b)`, `(76-r1)`).
 Fiecare are textul complet în decizia din paranteză; aici doar cât să nu fie
 contrazise din neatenție.
 
-- **Nucleu generic + moștenire TPT**: `Document` + `DocumentDetaliu` de bază,
+- **Nucleu generic + moștenire TPH**: `Document` + `DocumentDetaliu` de bază,
   derivate per tip; motoarele de stoc și contabile consumă DOAR baza (1–3, 22).
+  Discriminatorul `ClrType` e etichetă, nu comutator; o coloană de frunză se
+  citește doar pe o mulțime restrânsă pe tip sau prin `is ? :` — `as`/cast
+  NU filtrează pe tip (89b).
 - **Structura devine cod, politica rămâne date**: câmpurile per tip = clase;
   conturile, stocul, numerotarea, conexul, scadența, TVA-ul, validările = tabele
   de politică editabile fără release. Politica nu inventează comportament (4).
@@ -114,13 +117,18 @@ de referință (ultima închisă + decembrie), citite printr-un singur serviciu
 rămâne a documentului fizic; `PerioadaDeclarare` e reperul fiscal, cu
 rectificativa derivată din `InchisaPrimaOara`; corecția în perioadă închisă =
 storno legat + document nou cu motiv; împerecherea e fapt datat, desfăcut prin
-rând invers. Ultima felie închisă: 27 (88). Cronologia integrală:
+rând invers. Cele trei ierarhii sunt TPH cu discriminatorul mapat `ClrType`
+(89, 2026-09-18): tipul e dată pe rând, citit printr-un singur cititor, tipul
+țintei unui FK spre frunză îl ține gardianul și îl probează ModelCheck, iar
+lanțul de migrații a fost resetat la un singur `InitialCreate`. Ultima felie
+închisă: 28 (89). Cronologia integrală:
 `docs/decizii/istoric-plan-de-lucru.md`.
 
 **Următorul pas**: izolarea motorului de `IObjectSpace`
-(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10) — felia 27 i-a făcut
-implementabil contractul de citire, iar `SolduriService` e primul adaptor al lui
-IM-D4. Candidații rămași după: restanțele imobilizărilor cu cerere de produs
+(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, amendat de 89) —
+felia 27 i-a făcut implementabil contractul de citire (`SolduriService` e
+primul adaptor al lui IM-D4), iar felia 28 i-a dat maparea finală: contractele
+„Relații”/„Politici” se scriu și se măsoară pe TPH. Candidații rămași după: restanțele imobilizărilor cu cerere de produs
 (F26-r1, F26-r8, F26-r9, F26-r13), restanțele feliei 27 cu cerere de produs
 (F27-r11 dimensionarea conturilor de terț pe partener, F27-r13 perioadele unei
 baze noi, F27-r1 reclasificarea pe 1174), 84-r5, 86-r11, 86-r13, 80-r1;

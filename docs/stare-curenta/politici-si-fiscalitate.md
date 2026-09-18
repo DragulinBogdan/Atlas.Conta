@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-17.** [Index](README.md)
+**Actualizat: 2026-09-18.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -40,7 +40,9 @@ tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e
 | Închidere de perioadă | Un singur rând per fel de constatare; gardianul refuză al doilea înaintea indexului unic (F27-D2) |
 
 Unicitățile politicilor se aplică rândurilor active, cu tratarea explicită a
-axelor opționale. `Repartitor.Cod` nu este cheie unică globală. (81c, 81-r4)
+axelor opționale. `Repartitor.Cod` nu este cheie unică globală, deși toate
+familiile stau pe aceeași tabelă: datele importate au coduri legitim
+repetate între familii. (81c, 81-r4, F28-r2)
 
 ## Implicitele TVA
 

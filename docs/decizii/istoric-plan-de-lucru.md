@@ -15,7 +15,9 @@
 2. **Testul bazei** → pe inventarul real, lista finală de câmpuri pentru
    `Document` / `DocumentDetaliu` de bază (criteriul de la decizia 2).
 3. **Modelul nou** → clase XAF (bază + 6 derivate, TPT), validare declarativă,
-   tabelele de politică.
+   tabelele de politică. *(Notă 2026-09-18: maparea TPT e depășită — din
+   felia 28 cele trei ierarhii sunt TPH cu discriminatorul `ClrType`, decizia 89;
+   textul de aici e istoric.)*
 4. **Migrarea datelor** (EXECUTAT, decizia 34) → green-field la graniță de
    ciclu (decizia 12): nomenclatoare, politici, solduri de deschidere.
    Reconciliere: soldurile de deschidere în sistemul nou = soldurile de
@@ -603,3 +605,39 @@ detaliat în jurnal):
   NEoptimizate conform regulii de oprire (F27-r14 cadrul cererii, F27-r15
   cardinalitatea balanței analitice). Închidere: ModelCheck bugetar 1278/0, privat 1434/0;
   `refuzuri.ps1` 285/285. Amendează 31d; închide 79-r3.
+- **Felia 28** (2026-09-18, decizia 89, contract
+  `docs/api/p5-felia28-tph-contract.md`, F28-D1…D8) — TPH cu discriminatorul
+  mapat `ClrType` pe `Document`, `DocumentDetaliu` și `Repartitor`, tipul ca
+  dată. Cinci pași, un agent per pas: **0** spike-ul de mapare (coloanele
+  partajate fără prefix, 37 / 45 / 28 coloane; gardianul coliziunilor pe
+  tipul de STOCARE — `Directie` și `Fel` sunt enumuri diferite peste
+  `integer`; FK-ul discriminator → `TipDocument.ClrType` a căzut pe calea XAF
+  și fallback-ul declarat s-a ratificat; indexul compus
+  `(ClrType, DocumentId)` respins pe EXPLAIN A/B; cele 45 de migrații șterse,
+  un singur `InitialCreate`; Import1C pe luna 01/2025 identic cu baseline-ul);
+  **1** bazele recreate și probele dependente de TPT rescrise pe intenție,
+  F28-A/B/C/F/G (defect latent scos la iveală: D4-V2 și D16-V2 își luau
+  premisa dintr-un draft orfan istoric); **2** `CititorTipDocument` cu
+  consumatorii mutați (`CoduriTipPeTipuri` dispare, 75-r2 închisă),
+  `GardianEditare` regula (o) pe FK-urile spre frunze (9, descoperite din
+  metadata), F28-D/E; **3** probele supreme: Import1C integral pe `3c4193f`
+  (15:45 → 19:06, exit 0, 3 h 21 min cu o pauză de ~1 h 20 min pusă pe
+  presiunea de memorie a mașinii; ritmul pe lună identic cu F27), raportul
+  `reconciliere-20260918-154628.txt` IDENTIC pe conținut sortat cu
+  baseline-ul, 12/12 luni închise fără constatări (0,7 → 5,4 s),
+  `Reconstruieste` 0 diferențe (10,4 s), integritatea TPH pe Flax 0 încălcări
+  în 103 interogări (14,2 M rânduri), drift și `pnpm build` verzi,
+  `refuzuri.ps1` 294/294. Perf A/B TPT → TPH pe aceeași bază de conținut:
+  fișa `4111` −57 %, operarea FCT −48 %, `CoduriTip` ≈ 10× pe HTTP,
+  `RegistruTva` Server ≈ 60× (42 → 4 JOIN-uri), restul în zgomot; singura
+  regresie, D406 S la rece +0,2 s, e cost per proces (F28-r5); **4**
+  review advers (0 MAJOR, 2 MEDIU, 2 MINOR, 3 observații: contractul greșea —
+  `as`/cast pe frunză NU filtrează pe tip, doar `is ? :` emite `CASE`; ușa
+  de sistem probată prin F28-H/I/J din `IntegritateTph.cs`; F28-K pe
+  ierarhia utilizatorilor XAF), apoi defectul PREEXISTENT scos de o
+  investigație pornită din review (`GetObjectByKey<Frunza>` pe un id urmărit
+  ca altă frunză: 500 sau obiectul greșit, fiindcă identity map-ul EF e per
+  rădăcină și prefetch-ul XAF nu verifică tipul) ⇒ `RandDupaCheie` + fraza
+  unică `RandDeAltTip`, F28-L/M/N, 9 probe noi în `refuzuri.ps1`; docs.
+  Închidere: ModelCheck bugetar 1294/0, privat 1450/0. Amendează 3, 16 și
+  IM-D10; închide 75-r2.

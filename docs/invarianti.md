@@ -44,6 +44,16 @@ ne-persistat prin contract; registrul păstrează setul plin, plat. Stocarea
 rămâne inline pe tabelele owner-ilor (normalizarea în tabelă separată a fost
 analizată și respinsă).
 
+*A doua reconciliere*: maparea TPH (**decizia 89**, 2026-09-18) pune bazele
+și frunzele pe aceeași tabelă, cu discriminatorul `ClrType`. Invariantul nu
+se mută odată cu tabela. **Discriminatorul e etichetă, nu comutator**: tipul
+se citește ca dată (grile, filtre, coduri de tip), dar niciun mecanism al
+nucleului nu decide pe valoarea lui; comportamentul per tip rămâne în hook-uri
+și contracte. **O coloană de frunză se citește doar prin tipul frunzei**
+(mulțime restrânsă pe tip sau `is ? :`), niciodată prin entitatea de bază:
+faptul că stă fizic pe tabela bazei nu o face câmp al bazei. Testul celor două
+condiții de mai sus rămâne singura cale spre bază.
+
 ## III. Registrele sunt singurul adevăr al agregării: append-only, complete, scrise doar de motor
 
 Orice sold, balanță, fișă sau raport e o **sumă peste registre** (+

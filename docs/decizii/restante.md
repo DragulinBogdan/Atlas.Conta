@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-17.** [Index](README.md)
+**Actualizat: 2026-09-18.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -96,7 +96,7 @@ văzută de utilizator, sunt în
 | 74-r14 | gardian produs de stoc fără cont | deschisă |
 | 74-r15 | `FaraCodNc` pe Flax | deschisă |
 | 75-r1 | ASM UI: derivarea valorii produsului din consum | închisă de 76c |
-| 75-r2 | scalarea rezoluției de tip (`CoduriTipPeTipuri` liniar cu baza; `ApiProiectii. CoduriTip` pe hot-path API) | deschisă |
+| 75-r2 | scalarea rezoluției de tip (`CoduriTipPeTipuri` liniar cu baza; `ApiProiectii. CoduriTip` pe hot-path API) | închisă de 89f (`CoduriTipPeTipuri`/`IdsDocumenteDeTip` au dispărut; tipul se citește din discriminator prin `CititorTipDocument`) |
 | 75-r3 | `--continua` fals-roșu pe bază importată (idempotența doar prin re-rulare integrală) | deschisă |
 | 75-r4 | `PretEvaluare` 6 zecimale pe cantități mari vs invariantul 46d | deschisă |
 | 75-r5 | stornoul fără timbru propriu în oracolul golirii | deschisă |
@@ -132,7 +132,7 @@ văzută de utilizator, sunt în
 | 81-r1 | implicitul pe achiziția extra-UE / de la neînregistrat RO (cad pe ancora N21) | deschisă |
 | 81-r2 | seed-ul nu corectează rândurile `DinSeed` | deschisă |
 | 81-r3 | rândul editat înaintea migrației F23 e marcat seed de backfill | deschisă |
-| 81-r4 | `Repartitor.Cod` fără unicitate (spațiu partajat pe TPT) | deschisă |
+| 81-r4 | `Repartitor.Cod` fără unicitate (spațiu partajat pe TPT) — din 89 spațiul de coduri e fizic aceeași tabelă (`Repartitori`, TPH), deci indexul ar fi trivial; unicitatea rămâne blocată de coliziunile legitime între familii din datele de import (continuată ca F28-r2) | deschisă |
 | 81-r5 | PATCH fără schimbare = 204 pentru orice rol (capcană de probă) | deschisă |
 | 81-r6 | `User` pe `api/implicite` ⇒ `Niciuna` | deschisă |
 | 81-r7 | XAF: lookup-urile `TipTva` fără filtrul `Activ`, baseline lipsă pe 8 politici (44/53) | deschisă |
@@ -161,7 +161,7 @@ văzută de utilizator, sunt în
 | 85-r3 | alte proprietăți nemapate care ajung în liste (`Total` pe DetailView rămâne; regula 85g le refuză din ModelCheck) | deschisă |
 | 85-r4 | `PageSize` implicit pe grile (cifra pe probă) | deschisă |
 | 85-r5 | `RegulaStoc_ListView` cu override `Server` redundant cu `Options` (se curăță la atingere) | deschisă |
-| 85-r6 | modul `Server` include navigațiile coloanelor ascunse (`Index = -1`); curatoria = scoase din modelul view-ului (`HideMembers`/`VisibleInListView(false)`), de măsurat pe listele grele | deschisă |
+| 85-r6 | modul `Server` include navigațiile coloanelor ascunse (`Index = -1`); curatoria = scoase din modelul view-ului (`HideMembers`/`VisibleInListView(false)`), de măsurat pe listele grele — din 89 cauza de join a moștenirii dispare (`RegistruTva` Server: 4 JOIN-uri în loc de 35 pe baza de spike), navigațiile coloanelor incluse rămân | deschisă |
 | 85-r7 | gruparea pe `Server`/`ServerView` încarcă primele rânduri ale fiecărui grup (chei + entități per grup) | deschisă |
 | 85-r8 | `Refresh` execută pagina de două ori pe `Server` | deschisă |
 | 85-r9 | layout-ul salvat al utilizatorului poate ascunde toate coloanele; pe `ServerView` celulele rămân goale până la Refresh (curatoria grilelor, DIM-4) | deschisă |
@@ -225,3 +225,8 @@ văzută de utilizator, sunt în
 | F27-r16 | forma proiecției `DocumenteCuRest`: candidații de la 59 (uniunea tuturor documentelor operate) și forma legăturilor se rezolvă ÎMPREUNĂ — corelarea legăturii duce panoul filtrat la 82 ms, dar calea neplafonată a constatării de rest scadent de la 220 ms la 1,02 s (respinsă motivat, cu cifre; niciun index nu lipsește) (88) | deschisă |
 | F27-r17 | ordinea totală a listei `op1` din D394: cheia de ordonare nu e totală pentru persoanele fizice fără cod cu aceeași denumire, deci două generări ale aceleiași luni pot diferi la rând (familia 72-r7) (88) | deschisă |
 | F27-r18 | coloana cu data înregistrării în LISTELE React de documente (câmpul e cules și afișat pe formulare; coloana ar fi trecut pragul de atingeri al pasului 3) (88) | deschisă |
+| F28-r1 | simplificarea `CandidatiPereche<T, TOpus>` și a uniunii per tip din `ImperecheriProiectii` (jumătatea „tip” rezolvată de discriminator, „contrapartida per tip” e semantică); împreună cu F27-r16 (89) | deschisă |
+| F28-r2 | index unic pe `Repartitor.Cod` (81-r4): mecanismul trivial sub TPH, blocat de coliziunile legitime între familii din import (89) | deschisă |
+| F28-r3 | partiționarea sau `CLUSTER` pe `ClrType` — fără cifră care s-o ceară (89) | deschisă |
+| F28-r4 | dezproxarea tipului în patru copii (`ClasaReala`, `TipReal`, `VerificaCodDenumire` inline, `TipDomeniu`); de redus la cele două semantici la atingerea gardianului (89) | deschisă |
+| F28-r5 | D406 S la rece +0,2 s (+7 %) pe 12/2025: cost per proces (SQL-ul mai mic în TPH, chemările calde egale); cauza (JIT/compilarea EF a formei noi) neizolată prin profil (89) | deschisă |

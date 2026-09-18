@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-17.** [Index](README.md)
+**Actualizat: 2026-09-18.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -134,6 +134,14 @@ Crearea cere drepturile de creare și scriere; modificarea cere scriere, iar
 regulilor de domeniu. Un context nesecurizat nu are strategie de securitate
 implicită: drepturile se verifică pe calea securizată care îl precedă. (80b, 80c)
 
+O referință din corpul cererii (un FK cules) se rezolvă pe rădăcina
+ierarhiei tipului cerut, iar tipul se verifică după. O referință spre un rând
+de alt tip al aceleiași ierarhii (de exemplu, un partener ales ca gestiune de
+descărcare) e refuzată cu 422 și o frază unică: „rândul ales (id) e X, nu Y”.
+O referință inexistentă sau invizibilă e refuzată tot cu 422 („nu există sau
+nu e vizibil(ă)”). Răspunsul e determinist: nu depinde de ce a încărcat deja
+cererea. Același refuz îl dă gardianul de commit pe OData și în XAF. (89e, 89i)
+
 Erorile de aplicație REST/OData au forma `{"Erori":[...]}`. Erorile de
 model binding rămân erori de cerere. Constrângerile cunoscute sunt traduse
 în mesaje de domeniu, fără detalii interne ale bazei de date. (39a, 60a, 80d)
@@ -234,8 +242,9 @@ Căutarea uzuală folosește o coloană calculată și stocată în PostgreSQL,
 formată din cod/simbol și denumire normalizate la litere mici, fără
 diacriticele acoperite de maparea comună C#/SQL/metadata. Coloana și
 regulile „ne-gol" stau în tabelul entității EF care declară proprietatea:
-o dată pe rădăcina TPT, pe fiecare derivată a unei baze CLR nemapate.
-(77a, 77-r2, 2026-09-13)
+o dată pe tabela rădăcinii unei ierarhii TPH (`Repartitori`: `Cautare`,
+`CK_Repartitori_Cod_negol`), pe fiecare derivată a unei baze CLR nemapate.
+(77a, 77-r2, 89d)
 
 Filtrele text `contains`, `notcontains`, `startswith` și `endswith` sunt
 normalizate pe calea DataSourceLoader. Egalitatea și inegalitatea rămân
@@ -287,6 +296,11 @@ cu 4 zecimale, „(în culegere)" pe lotul fără dată și preț), deci
 proiectabilă, sortabilă și căutabilă în lookup-ul de lot; eticheta afișată
 de clientul React pe OData este o compunere separată, cu aceeași semantică.
 (85f, 85g)
+
+Tipul concret al unui document, al unei linii sau al unui repartitor este
+membrul mapat `ClrType` („Tip”), read-only. Ca orice coloană mapată, se
+poate afișa, sorta și filtra pe `Server` și `ServerView`, fără join de
+moștenire. (89a)
 
 ## Ecranele disponibile
 

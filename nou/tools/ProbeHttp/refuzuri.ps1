@@ -39,7 +39,8 @@ CEI PATRU UTILIZATORI (F22-D7, 83h)
 
 FĂRĂ URME
   Tot ce scrie pe `Admin` (un NIR draft, iar de la felia 23 un partener și un
-  rând de politică) se șterge în `finally`. `Configurator` are rândul LUI, pe o
+  rând de politică) se șterge în `finally`; `Societate.ContBancarId`, schimbat de
+  proba F28-D, se pune la loc. `Configurator` are rândul LUI, pe o
   cheie proprie: dacă ar reface PATCH-ul pe rândul lui `Admin`, cererea ar putea
   fi un no-op și proba ar trece din alt motiv decât cel probat.
   `POST api/itv/genereaza` se probează DOAR ca `Cititor`/`User`/`Configurator`:
@@ -480,9 +481,27 @@ try {
     # vine, și CITIREA pe facturi — panoul arată facturi, nu declarații, iar o
     # listă filtrată tăcut ar propune legături pe care operatorul nu le poate face.
     $perioadaDvi = 'dataStart=2026-01-01&dataEnd=2026-12-31'
-    # Perioada LARGĂ, pentru proba de plafon: pe baza Privat 2026 are doar
-    # patru facturi operate, 2025 are peste 19.000.
-    $perioadaLargaDvi = 'dataStart=2025-01-01&dataEnd=2026-12-31'
+    # Perioada LARGĂ, pentru proba de plafon: pe baza Privat 2025 are peste
+    # 19.000 de facturi operate. Sfârșitul ei = ziua celei mai recente candidate
+    # a unui furnizor `NeinregistratRo`, găsită mergând înapoi pe paginile rutei
+    # (plafonul taie pe dată, descrescător) — altfel cele 500 pot fi toate RO.
+    $inceputLargDvi = '2025-01-01'
+    $sfarsitCautare = [datetime]'2026-12-31'
+    $ziNeinregistrat = $null
+    for ($pagina = 0; $pagina -lt 100 -and -not $ziNeinregistrat; $pagina++) {
+        $caleCautare = "/api/dvi/facturi-candidate?dataStart=$inceputLargDvi&dataEnd=$($sfarsitCautare.ToString('yyyy-MM-dd'))&toate=true"
+        $rCautare = Invoke-Cerere -Metoda GET -Cale $caleCautare -Token $tokenAdmin
+        if ($rCautare.Status -ne 200) { throw "Descoperirea candidaților DVI a picat: HTTP $($rCautare.Status)" }
+        $plicCautare = $rCautare.Corp | ConvertFrom-Json
+        $neinregistrat = @($plicCautare.Candidati | Where-Object ClasaFiscala -eq 'NeinregistratRo') | Select-Object -First 1
+        if ($neinregistrat) { $ziNeinregistrat = ([datetime]$neinregistrat.Data).ToString('yyyy-MM-dd'); break }
+        if (-not $plicCautare.MaiSunt) { break }
+        $ceaMaiVeche = @($plicCautare.Candidati | ForEach-Object { [datetime]$_.Data } | Sort-Object)[0]
+        $sfarsitCautare = if ($ceaMaiVeche -lt $sfarsitCautare) { $ceaMaiVeche } else { $sfarsitCautare.AddDays(-1) }
+    }
+    if (-not $ziNeinregistrat) { throw 'Nicio factură candidată DVI a unui furnizor NeinregistratRo — proba de plafon n-are subiect.' }
+    $perioadaLargaDvi = "dataStart=$inceputLargDvi&dataEnd=$ziNeinregistrat"
+    Write-Host "  candidați DVI: fereastra largă $inceputLargDvi … $ziNeinregistrat (cea mai recentă candidată NeinregistratRo, pagina $($pagina + 1))" -ForegroundColor DarkGray
     Proba -Cerere 'candidați DVI' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Contine '"Candidati":[]', '"MaiSunt":false' -Nota 'plic, nu tablou' | Out-Null
     Proba -Cerere 'candidați DVI' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Nota 'Read pe tot' | Out-Null
     Proba -Cerere 'candidați DVI' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" | Out-Null
@@ -563,6 +582,15 @@ try {
     Proba -Cerere 'modificare Imobilizare' -User 'User' -Asteptat 404 -Metoda PATCH -Cale "/api/odata/Imobilizare($idFisaImo)" -Corp @{ Denumire = 'Redenumita de User' } -Contine 'nu există sau nu e vizibil' | Out-Null
     Proba -Cerere 'ștergere Imobilizare' -User 'Cititor' -Asteptat 403 -Metoda DELETE -Cale "/api/odata/Imobilizare($idFisaImo)" -Contine 'șterge' | Out-Null
     Proba -Cerere 'ștergere Imobilizare' -User 'User' -Asteptat 404 -Metoda DELETE -Cale "/api/odata/Imobilizare($idFisaImo)" -Contine 'nu există sau nu e vizibil' | Out-Null
+    # F28-D (89, regula (o)): `ResponsabilId` țintește frunza `Angajat`; o `Gestiune`
+    # e alt rând al aceleiași tabele `Repartitori` — refuz la creare și la modificare.
+    $angajat = Get-PrimaEntitate 'Angajat'
+    $corpFisaResponsabilGestiune = $corpFisa.Clone()
+    $corpFisaResponsabilGestiune['NumarInventar'] = "$($corpFisa.NumarInventar)-F28"
+    $corpFisaResponsabilGestiune['ResponsabilId'] = $gestiune.ID
+    Proba -Cerere 'creare Imobilizare cu responsabil = gestiune' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/Imobilizare' -Corp $corpFisaResponsabilGestiune -Contine 'rândul ales', "($($gestiune.ID)) e ", ', nu ' -Nota 'F28-D: rând nou' | Out-Null
+    Proba -Cerere 'responsabil Imobilizare = gestiune' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale "/api/odata/Imobilizare($idFisaImo)" -Corp @{ ResponsabilId = $gestiune.ID } -Contine 'rândul ales', "($($gestiune.ID)) e ", ', nu ' -Nota 'F28-D: FK schimbat' | Out-Null
+    Proba -Cerere 'responsabil Imobilizare = angajat' -User 'Admin' -Asteptat 204 -Metoda PATCH -Cale "/api/odata/Imobilizare($idFisaImo)" -Corp @{ ResponsabilId = $angajat.ID } -FaraJson -Nota 'F28-D: ținta de tipul cerut trece; fișa se șterge la final' | Out-Null
 
     # Catalogul HG 2139/2004: LEGE seed-uita, deci ReadOnly — scrierea n-are ruta.
     Proba -Cerere 'listă ClasificareImobilizari' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/odata/ClasificareImobilizari?$top=1' -Contine '"Cod"' | Out-Null
@@ -821,6 +849,35 @@ try {
     # diferită de cea din bază, altfel n-ar ajunge nici la plasa de permisiuni.
     $societate = Get-PrimaEntitate 'Societate'
     Proba -Cerere 'modificare Societate' -User 'Configurator' -Asteptat 403 -Metoda PATCH -Cale "/api/odata/Societate($($societate.ID))" -Corp @{ Localitate = 'Probă F24' } -Contine 'modifica' | Out-Null
+
+    # ── F28-D pe calea reală: FK spre o frunză TPH (89, regula (o) a gardianului) ─
+    # Sub TPH `ContBancarId` ține doar id-ul rădăcinii `Repartitor`; tipul țintei îl
+    # ține gardianul. Fiecare PATCH schimbă valoarea din bază (altfel e no-op).
+    $caleSocietate = "/api/odata/Societate($($societate.ID))"
+    $contBancarInitial = $societate.ContBancarId
+    $filtruCont = if ($contBancarInitial) { "ID ne $contBancarInitial" } else { $null }
+    $contPropriuAlt = Get-PrimaEntitate 'ContPropriu' $filtruCont
+    Write-Host "  societate: cont bancar $(if ($contBancarInitial) { $contBancarInitial } else { '(gol)' }) → probă pe $($contPropriuAlt.ID)" -ForegroundColor DarkGray
+    Proba -Cerere 'cont bancar al societății = partener' -User 'Configurator' -Asteptat 403 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $partener.ID } -Contine 'modifica' -Nota '80c: dreptul înaintea domeniului' | Out-Null
+    Proba -Cerere 'cont bancar al societății = partener' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $partener.ID } -Contine 'rândul ales', "($($partener.ID)) e ", ', nu ' -Nota 'F28-D: ținta e Partener, nu ContPropriu' | Out-Null
+    Proba -Cerere 'cont bancar al societății = id inexistent' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $idInexistent } -Contine "($idInexistent)", 'nu există sau nu e vizibil' -Nota 'F28-D: referința invizibilă, nu violare de FK' | Out-Null
+    $curatenie.Add({
+            $pus = Invoke-Cerere -Metoda PATCH -Cale $caleSocietate -Token $tokenAdmin -Corp @{ ContBancarId = $contBancarInitial }
+            Write-Host "curățenie: PATCH $caleSocietate ContBancarId → $($pus.Status)" -ForegroundColor DarkGray
+        }.GetNewClosure())
+    Proba -Cerere 'cont bancar al societății = cont propriu' -User 'Admin' -Asteptat 204 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $contPropriuAlt.ID } -FaraJson -Nota 'F28-D: ținta de tipul cerut trece' | Out-Null
+    $contBancarRefacut = Proba -Cerere 'cont bancar al societății refăcut' -User 'Admin' -Asteptat 204 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $contBancarInitial } -FaraJson -Nota 'curățenie: valoarea inițială'
+    if ($contBancarRefacut.Verdict -eq 'PASS') { $curatenie.RemoveAt($curatenie.Count - 1) }
+
+    # Referința REST spre o frunză cu id-ul altei frunze deja urmărite (prefetch): refuz de domeniu, nu cast.
+    $corpFclTip = @{
+        Data                 = (Get-Date -Format 'yyyy-MM-dd')
+        PredatorId           = $gestiune.ID
+        PrimitorId           = $partener.ID
+        GestiuneDescarcareId = $partener.ID
+        Linii                = @()
+    }
+    Proba -Cerere 'FCL cu gestiunea de descărcare = clientul' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/fcl' -Corp $corpFclTip -Contine 'rândul ales', "($($partener.ID)) e ", ', nu ' -Nota '89: nu 500 (InvalidCastException)' | Out-Null
 
     # Gardianul pe politici (F23-D5): trei refuzuri de DOMENIU pe care le ating
     # doar cei cu DREPT de scriere (`Admin` și `Configurator`) — pentru

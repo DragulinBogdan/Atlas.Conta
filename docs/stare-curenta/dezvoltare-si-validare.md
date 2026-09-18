@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-17.** [Index](README.md)
+**Actualizat: 2026-09-18.** [Index](README.md)
 
 ## Organizarea sursei
 
@@ -33,6 +33,35 @@ EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
+Lanțul de migrații a fost resetat la 2026-09-18: singura migrație este
+`20260918113542_InitialCreate`, generată din modelul TPH. Migrațiile de
+dinainte sunt istorie în git, nu în lanț; bazele create pe lanțul vechi nu
+se actualizează, se recreează. Lanțul nou crește prin migrații, ca înainte.
+Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și
+se rulează fără `--no-build`. (23a, 89g)
+
+Bazele de dezvoltare se recreează astfel:
+
+| Bază | Recrearea |
+|---|---|
+| `Atlas.Conta.BackOffice` (bugetar) | `dotnet ef database update`, apoi seed prin Blazor `--updateDatabase --forceUpdate --silent`, cu `ProfilContabil` în mediu |
+| `Atlas.Conta.ModelCheck.Privat` | o recreează ModelCheck |
+| `Atlas.Conta.Import1C.Flax` | Import1C `--recreeaza` |
+| `Atlas.Conta.Import1C.Flax.Api` | clonă a bazei de import după importul integral |
+| `Atlas.Conta.BackOffice.Privat` | clonă a bazei de import, plus updater prin Blazor (rolurile și utilizatorii `Cititor`/`Configurator` pentru `refuzuri.ps1`), cu lanțul perioadelor redeschis integral: probele HTTP presupun zero închideri |
+
+(89g)
+
+Cele trei ierarhii (`Document`, `DocumentDetaliu`, `Repartitor`) sunt TPH:
+câte o tabelă pe rădăcină, discriminatorul `ClrType` cu valorile implicite
+ale EF și index pe el. Proprietățile omonime ale frunzelor-surori împart
+coloana, prin bucla generică `AplicaColoanePartajate`; nu există
+configurare de coloană per proprietate. Două proprietăți omonime cu tip de
+stocare sau facete diferite opresc construirea modelului, cu toate
+coliziunile într-un singur mesaj; se redenumește una dintre ele, nu se
+adaugă prefix. O clasă nouă cu nume mai lung decât coloana discriminatorului
+produce singură o migrație `ALTER COLUMN`. (89a, 89b, 89c)
+
 Actualizarea bazei se execută explicit prin hostul Blazor, cu opțiunile
 `--updateDatabase --forceUpdate --silent`. WebApi verifică compatibilitatea
 și nu devine al doilea updater automat. Baza țintă se verifică înainte de
@@ -57,7 +86,9 @@ stabile după inițializare. (36c, 52a)
 
 Unicitatea politicilor și a codurilor de nomenclator este în schemă, prin
 indexuri unice filtrate pe `GCRecord = 0`: un rând șters logic nu este dublu,
-iar cheia lui se poate reface. (81c)
+iar cheia lui se poate reface. Ancora `TipDocument.ClrType` este unică tot
+așa (`IX_TipuriDocument_ClrType`); discriminatorul documentelor nu are FK
+spre ea, iar corespondența clase concrete ↔ seed o probează ModelCheck. (81c, 89a)
 
 Absența FK-ului pentru `Lot.LinieIntrareId` este intenționată pentru ciclul de
 inserare; integritatea este verificată de mecanismele domeniului. (26e)
@@ -98,10 +129,29 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | Formular sau interacțiune | Build client și verificarea fluxului în browser (66) |
 | Mod de acces al unui ListView XAF, proprietate nouă afișată în liste | ModelCheck (`D85-M1`, `D85-M2`, `D85-R1…R3`) și deschiderea listei în browser pe baza de import: sort, filtru, grupare, detaliu din listă, culegere pe document nou (85h) |
 | Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
+| Tip derivat nou, proprietate nouă pe frunză, FK spre o frunză | ModelCheck pe ambele profiluri (`F28-*`); după un import, `--dump-integritate-tph` rulat pe baza de import (89e, 89h) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
 ModelCheck verifică modelul și execută scenarii de integrare, inclusiv probe
-pure pe funcțiile de potrivire și de seed. Nu are strategie de securitate
+pure pe funcțiile de potrivire și de seed. Probele mapării TPH (`F28-A…K`)
+țin: seed-ul `TipDocument` ↔ clasele concrete, 1:1; coloanele fără prefix de
+tip și schema bazei egală cu modelul; indexul pe `ClrType`; refuzul
+gardianului pe un FK spre frunză cu ținta de alt tip; cititorul de tip egal
+cu clasa reală pe toate tipurile; `ClrType` completat de EF și nescriibil
+din cod; `ClrType` read-only în modelul aplicației; liniile unui document
+de tipul declarat de el; ținta fiecărui FK spre frunză de tipul corect;
+coloanele frunzelor NULL pe rândurile altor tipuri. Ultimele trei rulează
+SQL generat din metadata EF (`IntegritateTph.cs`), iar
+`ModelCheck --dump-integritate-tph <cale.sql>` scrie același SQL pentru a fi
+rulat pe o bază de import, pe care ModelCheck nu o atinge. (89e, 89h)
+
+Căutarea după cheie a unui tip ne-rădăcină trece prin `RandDupaCheie`
+(rădăcina ierarhiei, apoi tipul verificat), niciodată prin
+`GetObjectByKey<Frunza>`: cu prefetch-ul XAF, acela întoarce intrarea
+urmărită fără verificarea tipului. F28-L (aceeași frază cu ținta urmărită și
+neurmărită), F28-M (DVI și latura pereche) și F28-N țin regula. F28-N e o plasă
+pe SURSĂ: scanează `nou/Atlas.Conta.BackOffice` și pică la orice apel
+`GetObjectByKey<T>` cu `T` tip ne-rădăcină. (89i) Nu are strategie de securitate
 XAF; autorizarea se probează prin `nou/tools/ProbeHttp/refuzuri.ps1`, cu
 rolurile Admin, Cititor, User și Configurator. (80i, 81j, 84c)
 
@@ -175,6 +225,18 @@ citește peste snapshot-uri, nu peste registrul integral, și scrie aceleași
 cifre. Verificat 2026-09-17 pe anul 2025: 12/12 luni închise, 0 constatări per
 lună, raport identic cu `reconciliere-20260914-164035.txt`, `Reconstruieste`
 0 diferențe pe contabil, stoc și partide. (F27-D1, F27-D3)
+
+Proba supremă rămâne aceeași după trecerea pe TPH: importul integral cu
+`--recreeaza --cititori --inchide-lunile` trebuie să dea un raport IDENTIC pe
+conținut sortat cu baseline-ul curent
+(`nou/tools/Import1C/reconciliere-20260917-121343.txt`), iar
+`Reconstruieste` 0 diferențe. După ea se rulează pe baza de import SQL-ul
+din `--dump-integritate-tph`: zero rânduri pe fiecare interogare. Verificat
+pe TPH la 2026-09-18: raportul `reconciliere-20260918-154628.txt` e identic pe
+conținut sortat cu baseline-ul; 12/12 luni închise fără constatări;
+`Reconstruieste` a dat 0 diferențe; integritatea TPH a dat 0 încălcări în 103
+interogări. 15 dintre ele sunt vacue pe import (tipuri și legături pe care
+importul nu le produce), iar pe acelea le acoperă ModelCheck. (89g, 89h)
 
 ## Reconciliere și migrare legacy
 

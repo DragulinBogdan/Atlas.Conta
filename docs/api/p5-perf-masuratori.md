@@ -725,3 +725,105 @@ viu). Forma „fără `LIMIT`" se măsoară cu `EXPLAIN (ANALYZE, BUFFERS)` pe S
 real al variantei, cu predicatul de contrapartidă scos și fără `LIMIT`.
 `log_min_duration_statement` resetat la final (verificat `-1`); hosturile
 oprite.
+
+---
+
+## Felia 28 (2026-09-18) — TPT → TPH, A/B pe aceeași bază de conținut
+
+**Măsurare, decizia 89, regula de oprire F28-D8.** Metoda felia 27,
+neschimbată: HTTP end-to-end cu `curl`, WebApi Debug, `Admin`, 6 rulări per
+endpoint, prima aruncată, mediana celor 5 calde, cu parametrii de grilă ai
+clientului (`skip=0&take=20&requireTotalCount=true`, plus `sort=[{Data desc}]`
+pe grilele de documente). Cifrele marcate „în proces” sunt măsurate în
+proces, ca operarea la F27. Zgomotul observat e ±5–10 %.
+
+**A/B PE ACEEAȘI BAZĂ DE CONȚINUT, pe două mapări.** Schema nu se poate
+schimba pe loc, fiindcă lanțul de migrații s-a resetat. A și B sunt deci două
+baze cu ACELAȘI conținut, măsurate pe aceeași mașină, una după alta:
+
+- **A, TPT**: clona înghețată `Atlas.Conta.Import1C.Flax.TPT`, servită de
+  codul `ba20faa` (închiderea feliei 27);
+- **B, TPH**: `Atlas.Conta.Import1C.Flax.TPH`, importul integral al feliei 28,
+  servit de HEAD `14bc649`;
+- aceeași stare a lanțului pe ambele: 01–11/2025 închise, 12/2025 deschisă,
+  referința 11/2025 = 171.396 / 7.790 / 184.458;
+- `VACUUM ANALYZE` pe ambele baze și câte două treceri pe fiecare parte, cu
+  hostul repornit între ele.
+
+Reperele sunt cele de la felia 27: contul `4111`, contrapartida-reper și
+FCT-ul cu 49 de linii (copie Draft operată și anulată la fiecare rulare). În
+plus, trei cifre atribuite TPT: `CoduriTip` pe extrasul cu 335 de stingeri,
+`RegistruTva` în modul `Server` și SAF-T D406 S.
+
+| Probă | A: TPT (trecerea 1 / 2) | B: TPH (trecerea 1 / 2) | Δ | Verdict |
+|---|---|---|---|---|
+| fișa contului `4111`, decembrie | 144 / 126 ms | **61 / 55 ms** | −57 % | mai bun |
+| balanța analitică, decembrie | 211 / 206 ms | 201 / 192 ms | −5 % | zgomot |
+| `sold-parteneri` la 31.12 | 212 / 218 ms | 220 / 206 ms | — | zgomot |
+| `sold-stoc` la zi | 52 / 54 ms | 57 / 50 ms | — | zgomot |
+| balanța sintetică, decembrie | 55 / 53 ms | 48 / 44 ms | −15 % | mai bun |
+| operarea unui FCT cu 49 de linii (în proces) | 404 / 424 ms | **230 / 199 ms** | −48 % | mai bun |
+| `documente-cu-rest`, contrapartida-reper | 176 / 188 ms | 169 / 158 ms | −8 % | zgomot / ușor mai bun |
+| `CoduriTip`, extrasul cu 335 de stingeri, HTTP | 214 / 247 ms | **23 / 23 ms** | ≈ 10× | mai bun |
+| `CoduriTip`, în proces | 35 ms | **1,6 ms** | ≈ 20× | mai bun |
+| `RegistruTva` `Server`, EF în proces | 875 ms | **14,5 ms** | ≈ 60× | mai bun |
+| `RegistruTva` `Server`, EXPLAIN ANALYZE | 1.099 / 1.703 ms | **12 ms** | ≈ 100× | mai bun |
+| D406 S 09/2025, în proces | 2,5 s | 2,5 s | — | zgomot |
+| D406 S 12/2025, în proces, la RECE | 2,7 s | 3,0 s (intercalat 2,7 → 2,9) | +0,2 s (+7 %) | mai prost DOAR la rece (F28-r5) |
+| D406 S prin HTTP, cald | 09: 1224–1298 ms; 12: 1232–1274 ms | 09: 1081–1198 ms; 12: 1243–1277 ms | — | zgomot |
+
+Ca CONTEXT, nu ca termen de comparație, cifrele anterioare pe alte baze:
+- fișa 122 ms, balanța analitică 210 ms, operarea 394 ms (F27, A);
+- `CoduriTip` 185 ms și D406 2,9–3,0 s (contractul F28);
+- `RegistruTva` Server 805 ms (85, Privat).
+
+### EXPLAIN pe cifrele atribuite TPT
+
+- **`RegistruTva` `Server`**:
+  - A: 42 de JOIN-uri, Hash Join pe cele 338.594 de rânduri din
+    `DocumentDetalii`; planificare 15–18 ms, execuție 1,1–1,7 s.
+  - B: 4 JOIN-uri, top-N heapsort și Nested Loop pe PK; planificare 2 ms,
+    execuție 12 ms.
+- **`CoduriTip`**:
+  - A: materializare polimorfă, `= ANY` cu 77 de JOIN-uri; bind 41 +
+    execuție 25 ms, seq scan pe toate frunzele.
+  - B: `SELECT "ID","ClrType" … = ANY`, Index Scan pe PK; 0,46 + 0,2 ms.
+  - Pe toată cererea, SQL-ul scade de la 127 + 30 ms la 2,6 + 1,1 ms.
+- **D406**:
+  - În A, rezoluția tipului costa 20 de listări per tip, adică 60 de
+    instrucțiuni și 166,8 ms.
+  - SQL-ul total al proiecției scade de la 675 la 525 ms (12/2025) și de la
+    637 la 480 ms (09/2025).
+  - S3 cu `= ANY` pe istoric: 78.287 de id-uri costă 16,3 + 41,6 ms, 105.530
+    de id-uri 20 + 55 ms. Costul de 1,4–1,8 s din addendumul 6 NU revine.
+
+### Verdict
+
+Nicio cifră caldă nu e mai proastă peste zgomot. Câștigurile se concentrează
+exact pe cele trei cifre atribuite TPT și pe căile care citeau pe bază:
+- fișa de cont −57 %;
+- operarea −48 %;
+- `CoduriTip` ≈ 10× pe HTTP;
+- `RegistruTva` Server ≈ 60×.
+
+Singura cifră mai proastă e D406 S pe 12/2025 la RECE, +0,2 s. Cauza e
+demonstrată: un cost unic per proces.
+- În ACELAȘI proces, prima chemare costă 2509/2552 ms în A și 2621/2707 ms
+  în B.
+- Medianele chemărilor calde sunt 1553/1706 ms în A și 1621/1659 ms în B,
+  adică egale; SQL-ul e mai mic în B.
+- Cauza probabilă e JIT-ul sau compilarea EF a formei noi de interogare, dar
+  nu e izolată prin profil. Conform F28-D8 cifra nu blochează felia și rămâne
+  restanță cu nume: F28-r5.
+- Ieșirea D406 e identică între A și B după normalizarea GUID-urilor.
+
+### Reproducere (felia 28)
+
+- A: clona înghețată `Atlas.Conta.Import1C.Flax.TPT`, servită de codul
+  `ba20faa`.
+- B: `Atlas.Conta.Import1C.Flax.TPH`, servită de `14bc649`.
+- Ambele au fost aduse la aceeași stare a lanțului și au primit
+  `VACUUM ANALYZE`. Pornirea hosturilor și reperele urmează §Reproducere
+  (felia 27); id-urile reper se rezolvă pe fiecare bază, fiindcă bazele
+  recreate nu păstrează GUID-urile.
+- Artefactele pasului 3 sunt în `run-f28/pas3/`, necomise.

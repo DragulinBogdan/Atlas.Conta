@@ -104,7 +104,8 @@ Citate verificate pe surse, nu deduse:
   `[ConcurrencyCheck, NotMapped]`, reintrodus în model de
   `modelBuilder.UseOptimisticLock()` — apelat în Conta la
   `BackOfficeDbContext.cs:173`, materializat în migrație
-  (`InitialCreate.Designer.cs:50-54`, `.IsConcurrencyToken()`). Incrementat de
+  (`Migrations/BackOfficeEFCoreDbContextModelSnapshot.cs:54-55`,
+  `.IsConcurrencyToken()`; lanțul resetat la 2026-09-18, decizia 89). Incrementat de
   `EFCoreOptimisticLockInterceptor.SavingChanges`
   (`DataLocking/EFCoreOptimisticLockInterceptor.cs:49-84`) pe entitățile
   `Modified`/`Deleted`.

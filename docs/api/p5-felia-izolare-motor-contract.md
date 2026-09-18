@@ -6,6 +6,34 @@ contractul ăsta, nu pe discuție). Pleacă din analiza de arhitectură din
 extern GPT-6, cu corecturile de context). Decizia rezultată se scrie la
 închidere (numărul următor liber).
 
+> **Amendament 2026-09-18 (felia 28, decizia 89).** Contractul a fost scris pe
+> maparea TPT; felia 28 a trecut cele trei ierarhii pe TPH cu discriminatorul
+> mapat `ClrType`. Consecințele pentru felia asta:
+> - **IM-D10** e amendat: „ZERO schimbare de schemă” a devenit „schimbările de
+>   schemă intră doar prin decizie proprie, reanalizată la momentul ei”;
+>   cifrele de ModelCheck de la deschidere sunt cele de la închiderea feliei 28.
+> - **IM-D4 „Relații” și „Politici”** se scriu și se MĂSOARĂ pe maparea finală:
+>   o interogare pe `Document` nu mai plătește 20 de LEFT JOIN-uri + `CASE`,
+>   iar „tipul documentului (ancora)” se citește ca dată
+>   (`Api/CititorTipDocument`: proiecția `{ID, ClrType}`, `Clasa` =
+>   discriminator → tip concret, cache static), fără materializare polimorfă.
+>   Adaptorul peste `IObjectSpace` reutilizează cititorul; nu inventează un
+>   al doilea.
+> - **Regula de citire a coloanelor de frunză** (89b) se aplică și
+>   adaptorului: o coloană de frunză se citește doar pe o mulțime restrânsă
+>   pe tip sau prin `is ? :`; `as`/cast pe frunză nu filtrează pe tip.
+> - **Căutarea după cheie** (89i): adaptorul și contractele de citire caută un
+>   rând al unui tip ne-rădăcină prin `Motor/RandDupaCheie` (pe rădăcina
+>   ierarhiei, cu tipul verificat după), niciodată prin
+>   `GetObjectByKey<Frunza>`. Identity map-ul EF e per rădăcină, iar F28-N
+>   scanează sursa.
+> - **Tabelul „Scop”, rândul `GenereazaConex`**: rezoluția
+>   `TipDocument.ClrType → Type` există deja o dată, în
+>   `CititorTipDocument.Clasa`; IM-D9 o poate consuma în loc de
+>   `Assembly.GetTypes()` repetat.
+> - Cifrele din „Scop” (numărul de apeluri `GetObjectsQuery` etc.) sunt de la
+>   2026-09-10 și nu au fost re-măsurate după feliile 27–28.
+
 ## Scop
 
 Motorul (`Module/Motor/`, 13 servicii, ~3.950 de linii) lucrează pe
@@ -170,15 +198,18 @@ motor.
 Felia e închisă când, pe codul final:
 
 - ModelCheck e verde pe AMBELE profiluri cu TOATE probele existente
-  neschimbate în text (cifrele ≥ cele de la deschidere: privat 978 /
-  bugetar 927) plus probele pure noi;
+  neschimbate în text (cifrele ≥ cele de la deschidere: bugetar 1294 /
+  privat 1450, la închiderea feliei 28 — amendament 89; cifrele inițiale
+  ale contractului erau privat 978 / bugetar 927) plus probele pure noi;
 - raportul de reconciliere Import1C pe Flax e IDENTIC byte-cu-byte cu
   baseline-ul (precedentul DIM-4; 12 luni / 0 FAIL, DUK ok);
-- `refuzuri.ps1` 80/80 (nicio schimbare de comportament pe securitate);
+- `refuzuri.ps1` 294/294 (nicio schimbare de comportament pe securitate; cifra inițială a contractului era 80/80, actualizată la închiderea feliei 28);
 - perf pe HTTP ≤ cifrele din `p5-perf-masuratori.md` (59) — niciun contract
   de citire nu introduce o interogare per linie;
-- ZERO schimbare de schemă, ZERO schimbare de sârmă în DTO-urile existente;
-  explicația din plan intră ADITIV în răspunsul lui `valideaza`;
+- schimbările de schemă intră doar prin decizie proprie, reanalizată la
+  momentul ei (amendament 89; textul inițial: „ZERO schimbare de schemă”);
+  ZERO schimbare de sârmă în DTO-urile existente; explicația din plan intră
+  ADITIV în răspunsul lui `valideaza`;
 - `openapi.json`/`api-types.ts` regenerate fără drift, `metadata.json` la zi.
 
 ## Pașii (un agent per pas, regulă de oprire per pas, verificare independentă)

@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-17.** [Index](README.md)
+**Actualizat: 2026-09-18.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -10,6 +10,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Serializarea operațiilor concurente și reluarea idempotentă generală a
   comenzilor nu sunt acoperite complet. Validarea într-o singură operație
   nu dovedește protecția față de două comenzi simultane. (25f, 42f)
+- Baza nu verifică tipul unui rând: discriminatorul `ClrType` al documentelor
+  nu are FK spre `TipDocument.ClrType`, iar un FK spre o frunză (de exemplu
+  `Lot.GestiuneId`) acceptă în schemă id-ul oricărui repartitor. Pe ușa
+  securizată tipul îl verifică gardianul; pe ușa de sistem (Import1C, seed,
+  Migrare) nimic nu-l verifică la scriere, iar abaterile le găsesc doar
+  probele ModelCheck și SQL-ul din `--dump-integritate-tph` rulat după
+  import. (89a, 89e)
 - Închiderea unei perioade și operarea unui document în ea sunt serializate
   numai pe căile care trec prin adaptorul de operare și prin comenzile de
   generare ale închiderii de TVA și ale amortizării. Uneltele standalone —
@@ -283,8 +290,9 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Mărimea paginii grilelor nu este calibrată; `RegulaStoc_ListView` poartă un
   override `Server` redundant cu opțiunea aplicației. (85-r3, 85-r4, 85-r5)
 - În modul `Server`, referințele coloanelor ascunse rămân în interogarea
-  paginii (FCT: 33 de join-uri); scoaterea lor din modelul view-ului nu e
-  făcută. Gruparea încarcă primele rânduri ale fiecărui grup, iar `Refresh`
+  paginii (FCT: 33 de join-uri măsurate pe maparea TPT; pe TPH join-urile
+  moștenirii au dispărut, iar navigațiile coloanelor ascunse rămân — 89);
+  scoaterea lor din modelul view-ului nu e făcută. Gruparea încarcă primele rânduri ale fiecărui grup, iar `Refresh`
   execută pagina de două ori. (85-r6, 85-r7, 85-r8)
 - Un layout salvat de utilizator poate ascunde toate coloanele unui view; pe
   `ServerView` celulele rămân goale până la Refresh după re-bifarea

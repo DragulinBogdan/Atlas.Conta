@@ -1,5 +1,11 @@
 # Felia 28 — TPH cu discriminator pe cele trei ierarhii; tipul ca dată (contract)
 
+> **Stare: executat (2026-09-18).** Tranșările de pe parcurs (coliziunile pe
+> tipul de stocare, FK-ul discriminator căzut și fallback-ul ratificat,
+> indexul compus respins) și **corecția regulii `as`** din F28-D2 sunt în
+> decizia 89 (`docs/decizii/089-tph-discriminator-tipul-ca-data.md`). Textul
+> de mai jos e contractul așa cum a fost aprobat; nu se rescrie.
+
 Data: 2026-09-18. Stare: **deschisă, aprobată de owner** (decizie tehnică +
 preferință declarată). Decizia rezultată se scrie la închidere ca **089**
 (amendează 3 și 16; amendează IM-D10 din contractul de izolare). Execuția
@@ -55,7 +61,8 @@ Ce NU e motivul: schimbarea ierarhiei CLR (identică), a hook-urilor, a
   `TipDocument.ClrType` (IM-D9). Coloanele partajate fizic pe tabela bazei NU
   devin contract al bazei: decizia 54c rămâne literal („motorul are nevoie
   de valoare, nu de coloană"); o coloană de frunză se citește DOAR prin tipul
-  frunzei (`as`/`OfType`/`GetObjectsQuery<Frunza>`), niciodată prin
+  frunzei (`as`/`OfType`/`GetObjectsQuery<Frunza>`) **[`as` — FALS, vezi
+  089(b)]**, niciodată prin
   entitatea de bază și niciodată în SQL brut fără filtru pe discriminator.
 - **III** (registrele = adevărul agregării): întărit — „nicio interogare
   polimorfă pe `Document` în fluxuri calde" nu mai are nevoie de excepția
@@ -138,7 +145,8 @@ dacă EF le dublează sau refuză, se configurează explicit numele constraint-u
 
 Capcana din docs EF (cast fără filtru pe discriminator citește valoarea
 fratelui) devine REGULĂ: `(x as Frunza).Prop` în LINQ e sigur (EF emite
-`CASE WHEN ClrType IN (…)`); SQL-ul brut care citește o coloană de frunză de
+`CASE WHEN ClrType IN (…)`) **[FALS — vezi 089(b): `as`/cast nu filtrează pe
+tip; doar `x is F ? ((F)x).P : null` emite `CASE`]**; SQL-ul brut care citește o coloană de frunză de
 pe `Documente`/`DocumentDetalii`/`Repartitori` filtrează pe `ClrType` sau nu
 există. Pe schema de azi nu există SQL brut pe coloane de frunză (verificat).
 

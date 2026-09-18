@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-17.** [Index](README.md)
+**Actualizat: 2026-09-18.** [Index](README.md)
 
 ## Modelul comun
 
@@ -9,9 +9,39 @@ antet și o colecție de linii. Sensul laturilor este stabilit de tipul concret.
 `TipDocument` este ancora persistentă a tipului CLR pentru politici și UI;
 nu permite inventarea unui tip de document prin configurare. (20, 81e)
 
-Header-ele și liniile folosesc moștenire EF Core TPT. Derivata liniei este
-declarată pe document prin `[TipDetaliu]`. Crearea și clonarea liniilor
-respectă această declarație. (3, 40a, 54e)
+`Document`, `DocumentDetaliu` și `Repartitor` folosesc moștenire EF Core TPH:
+fiecare ierarhie stă pe tabela rădăcinii (`Documente`, `DocumentDetalii`,
+`Repartitori`), iar tipul concret al rândului e discriminatorul `ClrType`,
+numele scurt al clasei CLR. Pe document valoarea lui este ancora
+`TipDocument.ClrType`. `ClrType` îl scrie doar EF, la creare; e read-only
+și poartă caption-ul „Tip”. Discriminatorul este o etichetă citită ca dată,
+nu un comutator: motorul nu decide nimic pe valoarea lui. Derivata liniei
+este declarată pe document prin `[TipDetaliu]`. Crearea și clonarea liniilor
+respectă această declarație. Liniile unui document sunt frunza declarată de
+el, un subtip al ei sau baza. (3, 16, 40a, 54e, 89a, 89h)
+
+Proprietățile cu același nume de pe frunze-surori împart aceeași coloană,
+numită ca proprietatea, fără prefix de tip. O coloană de frunză se citește
+numai pe o mulțime deja restrânsă la tipul frunzei (`GetObjectsQuery<Frunza>`,
+`OfType<Frunza>`, liniile unui document al cărui `[TipDetaliu]` e frunza) sau
+prin `x is Frunza ? ((Frunza)x).Prop : null`. `as` și cast-ul pe frunză nu
+filtrează pe tip: citesc și valoarea fratelui care împarte coloana. SQL-ul
+brut pe o coloană de frunză filtrează pe `ClrType`. Coloanele frunzelor sunt
+nullable în tabelă; pe rândurile altui tip sunt NULL. (54c, 89b, 89c, 89d)
+
+Tipul documentelor se citește ca dată, dintr-o proiecție `{ID, ClrType}`, prin
+`CititorTipDocument`: codul tipului, clasa concretă, `null` pentru un id
+inexistent sau invizibil. Un document nu se materializează doar ca să i se
+afle clasa. (20, 89f)
+
+Un FK spre un tip ne-rădăcină al unei ierarhii (de exemplu `Lot.GestiuneId`
+spre `Gestiune`, `DviFactura.FacturaId` spre `FacturaIntrare`) ține în bază
+doar id-ul rădăcinii. Pe ușa securizată, `GardianEditare` verifică, la obiect
+nou sau la FK schimbat, că ținta are tipul cerut sau un subtip al lui: altfel
+refuză cu 422 („rândul ales e X, nu Y”), iar o țintă invizibilă sau ștearsă
+logic e refuzată ca referință invizibilă. FK-urile sunt descoperite din
+metadata EF, nu dintr-o listă. Pe ușa de sistem integritatea o probează
+ModelCheck. (89e)
 
 | Element | Contract comun |
 |---|---|
@@ -147,11 +177,12 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
 - Documentul nou păstrează `Numar` și `Data` ale documentului fizic (seria nu
   se consumă din nou) și primește `DataInregistrare` = data corecției.
 - Culegerea se copiază generic, prin metadata EF: toate proprietățile scalare
-  și FK-urile mapate ale lanțului TPT, pe antet și pe linii. Nu se copiază
-  identitatea (`ID`), câmpurile motorului (`Stare`, `DataOperare`,
-  `Autogenerat`, `DocumentSursaId`), datele proprii corecției
-  (`DataInregistrare`, `CorecteazaId`, `MotivCorectie`) și câmpurile de
-  infrastructură ale lui `BaseObject`.
+  și FK-urile mapate ale tipului concret (baza și frunza), pe antet și pe
+  linii. Nu se copiază identitatea (`ID`), discriminatorul (`ClrType`, scris
+  de EF), câmpurile motorului (`Stare`, `DataOperare`, `Autogenerat`,
+  `DocumentSursaId`), datele proprii corecției (`DataInregistrare`,
+  `CorecteazaId`, `MotivCorectie`) și câmpurile de infrastructură ale lui
+  `BaseObject`. (89f)
 - Lotul: linia care a NĂSCUT un lot (`Lot.LinieIntrareId == linia`) primește
   pe copie un lot PROPRIU, nou și nefinalizat, pe care motorul îl finalizează
   la operare (preț, dată). Linia care doar CONSUMĂ un lot îl păstrează prin
