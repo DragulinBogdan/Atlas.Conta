@@ -84,6 +84,10 @@ public readonly record struct PlafonStingere(decimal Datorie, decimal Creanta) {
     TargetItems = nameof(Corecteaza) + ";" + nameof(MotivCorectie),
     Visibility = DevExpress.ExpressApp.Editors.ViewItemVisibility.Hide)]
 public abstract class Document : BaseObject {
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Tip")]
+    public virtual string ClrType { get; protected set; }
+
     [XafDisplayName("Număr")]
     public virtual string Numar { get; set; }
     [XafDisplayName("Dată")]
@@ -322,6 +326,10 @@ public abstract class Document : BaseObject {
 // Bază concretă: NIR/BonConsum/NotaTransfer o folosesc direct (testul bazei §6);
 // derivate de detaliu există doar unde schema diferă.
 public class DocumentDetaliu : BaseObject {
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Tip")]
+    public virtual string ClrType { get; protected set; }
+
     [Browsable(false)]
     public virtual Guid DocumentId { get; set; }
     public virtual Document Document { get; set; }

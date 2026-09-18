@@ -28,6 +28,7 @@ public class TipDocument : BaseObject, ICuCautare, ICuProvenienta {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     // Numele CLR al clasei derivate corespunzătoare (ex. "FacturaIntrare").
+    [ModelDefault("AllowEdit", "False")]
     public virtual string ClrType { get; set; }
 
     // Datoria P1 (design §8): default TipTva per tip de document, aplicat la

@@ -13,6 +13,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
 public abstract class Repartitor : BaseObject, ICuCautare {
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Tip")]
+    public virtual string ClrType { get; protected set; }
+
     // 77-r2: obligatorii pe toate ușile. Regula de fond e a lui `ICuCautare`
     // (schema din `AplicaColoanaCautare` + `GardianEditare`); cele două
     // atribute de aici sunt jumătățile de PREZENTARE — `[Required]` ajunge în

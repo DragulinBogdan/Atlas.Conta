@@ -5,6 +5,7 @@ using DevExpress.Persistent.BaseImpl.EF.PermissionPolicy;
 using DevExpress.Persistent.BaseImpl.EF.StateMachine;
 using DevExpress.Persistent.BaseImpl.EFCore.AuditTrail;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 // Numele DbSet-ului `RegistruContabil` umbrește tipul în interiorul contextului —
@@ -77,7 +78,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // formularului 300 din OPANAF 174/2026, seed-uit în NUCLEU (e lege, nu profil).
         public DbSet<RandD300> RanduriD300 { get; set; }
 
-        // Documente (TPT)
+        // Documente
         public DbSet<Document> Documente { get; set; }
         public DbSet<DocumentDetaliu> DocumentDetalii { get; set; }
         public DbSet<FacturaIntrare> FacturiIntrare { get; set; }
@@ -205,18 +206,19 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .WithOne(t => t.Owner)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Deciziile 1/3/16: TPT pe cele trei ierarhii.
-            modelBuilder.Entity<Document>().UseTptMappingStrategy();
-            modelBuilder.Entity<DocumentDetaliu>().UseTptMappingStrategy();
-            modelBuilder.Entity<Repartitor>().UseTptMappingStrategy();
-
-            // Nivelul abstract intermediar al trezoreriei se declară EXPLICIT:
-            // până la decizia 48b el intra în model doar fiindcă navigația
-            // `Imperechere.DocumentTrezorerie` îl referea; odată relaxată la
-            // `Document`, EF nu-l mai descoperea, iar Plata/Incasare ar fi
-            // moștenit direct din Document — cu tabela `DocumentTrezorerie`
-            // ștearsă și coloanele ei (TipInstrument/NumarExtras/DataExtras)
-            // recreate goale pe frunze. Declarația ține schema neatinsă.
+            // 89: TPH cu discriminatorul mapat `ClrType` = numele scurt al clasei (valoarea implicită EF).
+            modelBuilder.Entity<Document>(b => {
+                b.UseTphMappingStrategy();
+                b.HasDiscriminator(d => d.ClrType);
+            });
+            modelBuilder.Entity<DocumentDetaliu>(b => {
+                b.UseTphMappingStrategy();
+                b.HasDiscriminator(d => d.ClrType);
+            });
+            modelBuilder.Entity<Repartitor>(b => {
+                b.UseTphMappingStrategy();
+                b.HasDiscriminator(r => r.ClrType);
+            });
             modelBuilder.Entity<DocumentTrezorerie>();
 
             // F8-D6: latura pereche a viramentului — FK REAL self-referencing pe
@@ -546,6 +548,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<TipTva>().Property(t => t.Activ).HasDefaultValue(true);
 
             AplicaScaraNumerica(modelBuilder);
+            AplicaColoanePartajate(modelBuilder);
             AplicaColoanaCautare(modelBuilder);
             AplicaFunctiaFaraDiacritice(modelBuilder);
         }
@@ -724,6 +727,46 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     entitate.ToTable(t => t.HasCheckConstraint(
                         Cautare.NumeRegulaNeGol(tabel, coloana), Cautare.SqlNeGol(coloana)));
                 }
+            }
+        }
+
+        // 89: pe ierarhiile TPH proprietățile omonime ale frunzelor-surori împart coloana, numită ca
+        // proprietatea; două omonime cu tip de stocare sau facete diferite nu se împacă tăcut.
+        private static void AplicaColoanePartajate(ModelBuilder modelBuilder) {
+            var coliziuni = new List<string>();
+            foreach (var radacina in modelBuilder.Model.GetEntityTypes()) {
+                if (radacina.BaseType != null || radacina.GetMappingStrategy() != RelationalAnnotationNames.TphMappingStrategy
+                    || radacina.ClrType?.Namespace?.StartsWith("Atlas.Conta.") != true)
+                    continue;
+                var coloane = new Dictionary<string, IMutableProperty>();
+                foreach (var derivat in radacina.GetDerivedTypes())
+                    foreach (var proprietate in derivat.GetDeclaredProperties()) {
+                        proprietate.SetColumnName(proprietate.Name);
+                        if (coloane.TryAdd(proprietate.Name, proprietate))
+                            continue;
+                        var prima = coloane[proprietate.Name];
+                        if (Fateta(prima) != Fateta(proprietate))
+                            coliziuni.Add($"{radacina.ClrType.Name}.{proprietate.Name}: " +
+                                $"{prima.DeclaringType.ClrType.Name} {Fateta(prima)} ≠ " +
+                                $"{proprietate.DeclaringType.ClrType.Name} {Fateta(proprietate)}");
+                    }
+                var discriminator = radacina.FindDiscriminatorProperty();
+                if (discriminator != null && !radacina.GetIndexes().Any(i => i.Properties[0] == discriminator))
+                    radacina.AddIndex(discriminator);
+            }
+            if (coliziuni.Count > 0)
+                throw new InvalidOperationException(
+                    "Omonimele frunzelor-surori împart coloana doar cu tip de stocare și facete identice:" +
+                    string.Concat(coliziuni.Select(c => Environment.NewLine + "  " + c)));
+
+            static (Type, bool, int?, int?, int?, string, bool?, bool?) Fateta(IMutableProperty p) =>
+                (TipStocare(p), p.IsNullable, p.GetMaxLength(), p.GetPrecision(), p.GetScale(), p.GetColumnType(),
+                    p.IsUnicode(), p.IsFixedLength());
+
+            static Type TipStocare(IMutableProperty p) {
+                var tip = p.GetValueConverter()?.ProviderClrType ?? p.GetProviderClrType() ?? p.ClrType;
+                tip = Nullable.GetUnderlyingType(tip) ?? tip;
+                return tip.IsEnum ? Enum.GetUnderlyingType(tip) : tip;
             }
         }
 
