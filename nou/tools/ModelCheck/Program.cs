@@ -421,7 +421,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
         Console.WriteLine($"     MĂSURAT (77-r2/bază): Denumire null → „{mesajNull ?? "<A TRECUT>"}”; Cod „  ” → "
             + $"„{mesajBlank ?? "<A TRECUT>"}”; Produs cu Denumire „” → „{mesajProdus ?? "<A TRECUT>"}”.");
         Check("77-r2 baza (ușa fără gardian): NULL pică pe NOT NULL, „  ”/„” pică pe CHECK-ul `btrim <> ''` "
-            + "(pe `Repartitori` — tabelul BAZEI TPT — și pe `Produse`), iar refuzul iese ca mesaj de domeniu "
+            + "(pe `Repartitori` — tabela ierarhiei TPH — și pe `Produse`), iar refuzul iese ca mesaj de domeniu "
             + "tradus (39a: „este obligatoriu” / numele regulii `CK_…_negol`), nu ca 23502/23514 brut",
             mesajNull != null && mesajNull.Contains("obligatori")
             && mesajBlank != null && mesajBlank.Contains(Cautare.NumeRegulaNeGol("Repartitori", "Cod"))
@@ -2578,11 +2578,14 @@ if (profil == ProfilContabil.Privat) {
             var idsNtc = NotaContabilaApply.Lista(os).Select(x => x.Id).ToList();
             var idsItv = InchidereTvaApply.Lista(os).Select(x => x.Id).ToList();
             var sqlNtc = NotaContabilaApply.Lista(os).ToQueryString();
+            Console.WriteLine("     MĂSURAT (F21-D5/filtrul NTC): " + string.Join(" | ", sqlNtc.Split('\n')
+                .Where(l => l.Contains("ClrType", StringComparison.Ordinal)).Select(l => l.Trim())));
             Check("F21-D5 — `NotaContabilaApply.Lista` NU mai conține închiderile de TVA, dar conține nota de "
                 + "control (anti-vacuitate: un filtru care ar fi golit lista ar fi trecut și el). Filtrul e "
-                + "SERVER-SIDE: `is` pe TPT ajunge în SQL, nu în memorie",
+                + "SERVER-SIDE: `is` ajunge în SQL ca filtru pe discriminatorul `ClrType` cu valoarea `InchidereTva`, "
+                + "nu în memorie",
                 !idsNtc.Contains(idItvFinal) && idsNtc.Contains(idNtcControl)
-                && sqlNtc.Contains("InchideriTva"));
+                && sqlNtc.Contains("\"ClrType\"") && sqlNtc.Contains("'InchidereTva'"));
             Check("F21-D5 — `InchidereTvaApply.Lista` conține DOAR închideri: nota de control lipsește, "
                 + "închiderea e acolo cu An/Luna DERIVATE din `Data` în SQL, iar fiecare rând e chiar o "
                 + "`InchidereTva`",
@@ -2592,7 +2595,7 @@ if (profil == ProfilContabil.Privat) {
                         && x.UnitateDenumire == unitate.Denumire)
                 && os.GetObjectsQuery<InchidereTva>().Count(d => idsItv.Contains(d.ID)) == idsItv.Count);
             Check("F21-D5 — `NotaContabilaApply.Citeste` pe un id de închidere întoarce null (⇒ 404 pe "
-                + "`GET api/ntc/{id}`), deși documentul EXISTĂ ca notă sub TPT",
+                + "`GET api/ntc/{id}`), deși documentul EXISTĂ ca notă (`InchidereTva : NotaContabila`)",
                 NotaContabilaApply.Citeste(os, idItvFinal) == null
                 && os.GetObjectsQuery<NotaContabila>().Any(d => d.ID == idItvFinal));
             Check("F21-D5 — `NotaContabilaApply.Candidati` pe un id de închidere întoarce null (⇒ 404 pe "
@@ -4173,6 +4176,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaD85(privat: true);
     // Review advers felia 27, pasul 8b (F27-R*).
     VerificaReviewF27(privat: true);
+    // Felia 28 — TPH cu discriminatorul `ClrType` (F28-A…G).
+    VerificaF28(privat: true);
 
     Rezumat();
     return;
@@ -6151,7 +6156,7 @@ using (var os = provider.CreateObjectSpace()) {
         Linii = { new TrezorerieLinieWriteDto {
             TipMaterialId = tipTrz.ID, Valoare = 80m, CodEconomicId = codEc.ID } }
     });
-    Check("Genericul filtrează pe TIP sub TPT: Citeste<Plata> pe un id de încasare → null (o rută nu adoptă documentele celeilalte)",
+    Check("Genericul filtrează pe TIP (discriminatorul `ClrType`): Citeste<Plata> pe un id de încasare → null (o rută nu adoptă documentele celeilalte)",
         TrezorerieApply.Citeste<Plata>(os, idInc) == null
         && TrezorerieApply.Citeste<Incasare>(os, idInc) != null
         && !TrezorerieApply.Lista<Plata>(os).Any(x => x.Id == idInc)
@@ -9344,6 +9349,8 @@ VerificaD85(privat: false);
 VerificaPotrivire();
 // Review advers felia 27, pasul 8b (F27-R*).
 VerificaReviewF27(privat: false);
+// Felia 28 — TPH cu discriminatorul `ClrType` (F28-A…G).
+VerificaF28(privat: false);
 
 Rezumat();
 
@@ -10014,8 +10021,8 @@ void VerificaFisaJurnal() {
     var repF = os.CreateObject<UnitateInterna>();
     repF.Cod = MarcajFsa + "-R";
     repF.Denumire = "Repartitor probă fișă";
-    // Document REAL, doar ca ținta linkului: codul de tip nu e o coloană sub TPT,
-    // se rezolvă prin ancora `TipDocument` după numele clasei CLR (R-D8/60b).
+    // Document REAL, doar ca ținta linkului: codul de tip se rezolvă prin ancora
+    // `TipDocument` după numele clasei CLR (R-D8/60b).
     // Rămâne Draft — nu se operează nimic; rândurile de registru sunt scrise de
     // mână, exact ca în blocul de balanță.
     var doc = os.CreateObject<NotaTransfer>();
@@ -10069,7 +10076,7 @@ void VerificaFisaJurnal() {
         && legat.DocumentId == doc.ID);
 
     // -- R-D8: codul de tip, în memorie, peste pagină -------------------------
-    Check("R-D8: `DocumentTip` iese NULL din SQL (sub TPT nu e o coloană) — se completează abia în memorie, peste pagină",
+    Check("R-D8: `DocumentTip` iese NULL din SQL (codul e al ancorei `TipDocument`, nu al registrului) — se completează abia în memorie, peste pagină",
         fisa.All(r => r.DocumentTip == null));
     ContabilProiectii.CompleteazaTipDocument(os, fisa);
     Check("R-D8 (după completare): rândul legat poartă „BTR”, rândurile fără document rămân goale (nu pică pe nicio navigație presupusă nenulă)",
@@ -11568,7 +11575,7 @@ void VerificaAdresaPartener(bool privat) {
             .SqlQuery<string>($@"
                 SELECT column_name || '=' || data_type || '(' || COALESCE(character_maximum_length::text, '?') || ')'
                 FROM information_schema.columns
-                WHERE table_name = 'Parteneri'
+                WHERE table_name = 'Repartitori'
                   AND column_name IN ('Strada', 'Numar', 'DetaliiAdresa', 'Localitate', 'CodPostal')
                 ORDER BY column_name")
             .ToList();
@@ -12223,23 +12230,22 @@ void VerificaSaft(bool privat) {
 
     // ══════════ D16-V2 (c): bugetarul — `Neaplicabil`, fără nicio interogare ══════════
     if (!privat) {
+        var premisa = FctBugetaraOperata(os, Marcaj + "-BUG", new DateOnly(an, luna, 12));
         var gol = SaftProiectii.Saft(os, an, luna, dataCreare);
-        var documenteTrecute = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
-            .Count(d => d.Data >= new DateOnly(an, 1, 1) && d.Data <= new DateOnly(an, 12, 31));
         Console.WriteLine($"     MĂSURAT (D16-V2 bugetar): „{gol.Neaplicabil}”; "
-            + $"{documenteTrecute} documente au trecut prin bază în {an}; societate completată: "
+            + $"documentul scenei {premisa.Numar} {premisa.Stare} pe {premisa.Data}; societate completată: "
             + $"{!string.IsNullOrWhiteSpace(os.GetObjectsQuery<Societate>().First().CodFiscal)}.");
         Check("D16-V2 (bugetar) SAF-T e NEAPLICABIL: planul instituțiilor publice nu e printre cele 12 "
             + "`TaxAccountingBasis`, deci proiecția întoarce un DTO GOL cu MOTIV — fără antet, fără secțiuni, "
-            + "fără avertismente — și se oprește ÎNAINTE de orice interogare pe registre (rulează și pe o bază "
-            + "cu societatea necompletată)",
+            + "fără avertismente — și se oprește ÎNAINTE de orice interogare pe registre, deși luna are o FCT "
+            + "OPERATĂ de scenă (rulează și pe o bază cu societatea necompletată)",
             gol.Neaplicabil != null && gol.Neaplicabil.Contains("bugetar")
             && gol.Header == null && gol.Conturi.Count == 0 && gol.Clienti.Count == 0 && gol.Furnizori.Count == 0
             && gol.Jurnale.Count == 0 && gol.FacturiEmise.Count == 0 && gol.FacturiPrimite.Count == 0
             && gol.Plati.Count == 0 && gol.Produse.Count == 0 && gol.Taxe.Count == 0 && gol.Unitati.Count == 0
             && gol.Neincluse.Count == 0 && gol.Avertismente.Count == 0
             && gol.Rezumat.Tranzactii == 0 && gol.Rezumat.RanduriRegistru == 0
-            && documenteTrecute > 0);
+            && premisa.Stare == StareDocument.Operat && premisa.Data.Year == an && premisa.Data.Month == luna);
         // Refuzul trebuie să fie AL SCRIITORULUI, nu doar al ecranului: un fișier
         // gol semnat cu CUI-ul cuiva ar fi o declarație falsă, nu o listă goală.
         string mesajScriere = null;
@@ -12258,6 +12264,7 @@ void VerificaSaft(bool privat) {
         // 422, dar forma trebuie să fie scriibilă oricum — un `Neaplicabil` care
         // ar arunca la serializare ar da 500 în loc de refuzul motivat.
         VerificaSaftJson(gol, "bugetar, Neaplicabil");
+        PurjaFctBugetara(os, Marcaj + "-BUG");
         return;
     }
 
@@ -16451,6 +16458,47 @@ void VerificaD300(bool cuTva) {
 // tăia în două fără să iasă din lună.
 //
 // Local function, apelată din AMBELE căi de profil, ca `VerificaD300`.
+// Premisa probelor de neaplicabilitate bugetară (D4-V2, D16-V2): o FCT operată prin motor, cu linie pe TipTva.
+FacturaIntrare FctBugetaraOperata(IObjectSpace os, string marcaj, DateOnly data) {
+    PurjaFctBugetara(os, marcaj);
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = marcaj + "-FURN";
+    furnizor.Denumire = "Furnizor premisă " + marcaj;
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = marcaj + "-CE";
+    codEc.Denumire = "Cod economic premisă " + marcaj;
+    var fct = os.CreateObject<FacturaIntrare>();
+    fct.Numar = marcaj + "-FCT";
+    fct.Data = data;
+    fct.Predator = furnizor;
+    fct.Primitor = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var linie = os.CreateObject<FacturaIntrareDetaliu>();
+    linie.Document = fct;
+    linie.TipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628.00.00");
+    linie.Cantitate = 1m;
+    linie.PretUnitar = 100m;
+    linie.TipTva = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP21");
+    linie.CodEconomicId = codEc.ID;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fct);
+    os.CommitChanges();
+    return fct;
+}
+
+void PurjaFctBugetara(IObjectSpace os, string marcaj) {
+    var ids = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+        .Where(d => d.Numar == marcaj + "-FCT").Select(d => d.ID).ToList();
+    new Purja(os)
+        .Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)))
+        .Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)))
+        .Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)))
+        .Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)))
+        .Adauga(os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)))
+        .Adauga(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod == marcaj + "-FURN"))
+        .Adauga(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == marcaj + "-CE"))
+        .Executa();
+}
+
 void VerificaD394(bool cuTva) {
     const string MarcajD4 = "E2E-D394";
     using var os = provider.CreateObjectSpace();
@@ -16545,22 +16593,25 @@ void VerificaD394(bool cuTva) {
 
     // ---------------- Bugetarul: liste goale, și atât ----------------
     if (!cuTva) {
+        var premisa = FctBugetaraOperata(os, MarcajD4 + "-BUG", new DateOnly(2026, 8, 12));
         var anIntreg = D394Proiectii.D394(os, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31));
-        // Scenele bugetare își purjează documentele, deci „un an cu documente" se
-        // MĂSOARĂ pe tot ce a trecut vreodată prin bază (inclusiv ștersele logic),
-        // nu se presupune; ce contează e că registrul fiscal e gol de FOND.
-        var documenteTrecute = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
-            .Count(d => d.Data >= new DateOnly(2026, 1, 1) && d.Data <= new DateOnly(2026, 12, 31));
+        var fiscalePremisa = os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters().Count(r => r.DocumentId == premisa.ID);
         var randuriFiscale = os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters().Count();
-        Console.WriteLine($"     MĂSURAT (D4-V2 bugetar): {documenteTrecute} documente au trecut prin bază în 2026, {randuriFiscale} rânduri fiscale.");
+        Console.WriteLine($"     MĂSURAT (D4-V2 bugetar): documentul scenei {premisa.Numar} {premisa.Stare} pe {premisa.Data}, "
+            + $"{premisa.Detalii.Count(l => l.TipTvaId != null)} linii cu TipTva; {fiscalePremisa} rânduri fiscale ale lui, "
+            + $"{randuriFiscale} în total.");
         Check("D4-V2 (bugetar): profilul neplătitor n-are `PoliticaTva` ⇒ `RegistruTva` gol ⇒ proiecția întoarce "
-            + "liste GOALE (operațiuni, rezumate, neincluse), zero avertismente și nrCui 0, pe un an prin care AU "
-            + "trecut documente — un neplătitor nu depune 394, iar proiecția nu inventează nimic",
-            documenteTrecute > 0 && randuriFiscale == 0
+            + "liste GOALE (operațiuni, rezumate, neincluse), zero avertismente și nrCui 0, pe un an în care scena a "
+            + "OPERAT prin motor o FCT cu linie purtând TipTva (CAP21) — un neplătitor nu depune 394, iar proiecția nu "
+            + "inventează nimic",
+            premisa.Stare == StareDocument.Operat && premisa.Data.Year == 2026
+            && premisa.Detalii.Any(l => l.TipTvaId != null)
+            && fiscalePremisa == 0 && randuriFiscale == 0
             && anIntreg.Operatiuni.Count == 0 && anIntreg.Rezumat.Count == 0 && anIntreg.RezumatCote.Count == 0
             && anIntreg.Neincluse.Count == 0 && anIntreg.Avertismente.Count == 0
             && anIntreg.NrCui1 + anIntreg.NrCui2 + anIntreg.NrCui3 + anIntreg.NrCui4 == 0
             && os.GetObjectsQuery<MapareD394>().Count() == 0);
+        PurjaFctBugetara(os, MarcajD4 + "-BUG");
         CurataD4();
         return;
     }
@@ -30760,4 +30811,136 @@ void VerificaReviewF27(bool privat) {
                 && d.Data <= new DateOnly(An, 12, 31))
             && !CuSnapshot(os).Any(x => x.An == An));
     }
+}
+
+// ---------------------------------------------------------------------------
+// F28 — TPH pe Document/DocumentDetaliu/Repartitor, discriminatorul `ClrType` (89)
+// ---------------------------------------------------------------------------
+void VerificaF28(bool privat) {
+    var eticheta = privat ? "privat" : "bugetar";
+    Type[] ierarhii = [typeof(Document), typeof(DocumentDetaliu), typeof(Repartitor)];
+    using var os = provider.CreateObjectSpace();
+    var ctxF28 = ((EFCoreObjectSpace)os).DbContext;
+    var model = Microsoft.EntityFrameworkCore.Infrastructure.AccessorExtensions
+        .GetService<Microsoft.EntityFrameworkCore.Metadata.IDesignTimeModel>(ctxF28).Model;
+    var radacini = ierarhii.Select(t => model.FindEntityType(t)).ToList();
+    var tipuri = radacini.ToDictionary(r => r.ClrType, r => r.GetDerivedTypesInclusive().ToList());
+    var concrete = tipuri.ToDictionary(p => p.Key, p => p.Value.Where(t => !t.ClrType.IsAbstract).ToList());
+    List<string> Valori(FormattableString sql) => ctxF28.Database.SqlQuery<string>(sql).ToList();
+
+    // ---- F28-A: 1:1 între clasele concrete ale ierarhiei `Document` și seed-ul `TipDocument` ----
+    var seed = os.GetObjectsQuery<TipDocument>().Select(t => new { t.Cod, t.ClrType }).ToList();
+    var documenteConcrete = concrete[typeof(Document)];
+    var faraClasa = seed.Where(s => !documenteConcrete.Any(t => t.ClrType.Name == s.ClrType
+        && (string)t.GetDiscriminatorValue() == s.ClrType)).Select(s => $"{s.Cod}={s.ClrType}").ToList();
+    var faraAncora = documenteConcrete.Where(t => !seed.Any(s => s.ClrType == (string)t.GetDiscriminatorValue()))
+        .Select(t => $"{t.ClrType.Name}={t.GetDiscriminatorValue()}").ToList();
+    var discriminatorAltNume = tipuri.Values.SelectMany(v => v).Where(t => !t.ClrType.IsAbstract)
+        .Where(t => (string)t.GetDiscriminatorValue() != t.ClrType.Name).Select(t => t.ClrType.Name).ToList();
+    Console.WriteLine($"     MĂSURAT (F28-A/{eticheta}): {seed.Count} rânduri TipDocument, {documenteConcrete.Count} clase "
+        + $"concrete de document; fără clasă: [{string.Join(", ", faraClasa)}]; fără ancoră: "
+        + $"[{string.Join(", ", faraAncora)}]; discriminator ≠ numele clasei: [{string.Join(", ", discriminatorAltNume)}].");
+    Check($"F28-A ({eticheta}) fiecare `TipDocument` din seed are clasa concretă mapată în ierarhia `Document` cu "
+        + "discriminatorul == `ClrType`, fiecare clasă concretă are ancoră în seed, iar pe toate cele trei ierarhii "
+        + "discriminatorul e numele scurt al clasei (tipurile abstracte se sar: n-au rânduri)",
+        seed.Count > 0 && seed.Count == documenteConcrete.Count
+        && faraClasa.Count == 0 && faraAncora.Count == 0 && discriminatorAltNume.Count == 0);
+
+    // ---- F28-B: fără prefix de tip — coloana = numele proprietății, o singură tabelă per ierarhie ----
+    var abateri = new List<string>();
+    foreach (var r in radacini) {
+        var tabela = r.GetTableName();
+        var lista = tipuri[r.ClrType];
+        foreach (var et in lista) {
+            if (et.GetTableName() != tabela)
+                abateri.Add($"{et.ClrType.Name} → tabela {et.GetTableName()}");
+            foreach (var p in et.GetDeclaredProperties())
+                if (p.GetColumnName() != p.Name)
+                    abateri.Add($"{et.ClrType.Name}.{p.Name} → {p.GetColumnName()}");
+        }
+        var coloaneModel = lista.SelectMany(et => et.GetDeclaredProperties()).Select(p => p.GetColumnName())
+            .ToHashSet(StringComparer.Ordinal);
+        var coloaneBaza = Valori($"SELECT column_name::text AS \"Value\" FROM information_schema.columns WHERE table_name = {tabela}")
+            .ToHashSet(StringComparer.Ordinal);
+        if (!coloaneBaza.SetEquals(coloaneModel))
+            abateri.Add($"{tabela}: bază ≠ model (doar în bază: {string.Join(",", coloaneBaza.Except(coloaneModel))}; "
+                + $"doar în model: {string.Join(",", coloaneModel.Except(coloaneBaza))})");
+        Console.WriteLine($"     MĂSURAT (F28-B/{eticheta}): {tabela} — {lista.Count} tipuri, {coloaneBaza.Count} coloane în bază.");
+    }
+    Check($"F28-B ({eticheta}) pe `Documente`, `DocumentDetalii` și `Repartitori` fiecare proprietate a ierarhiei "
+        + "are coloana numită ca ea (niciun prefix de tip), toate tipurile stau pe tabela rădăcinii, iar coloanele "
+        + "bazei (`information_schema`) sunt exact cele ale modelului"
+        + (abateri.Count > 0 ? $" — abateri: {string.Join("; ", abateri)}" : ""),
+        abateri.Count == 0);
+
+    // ---- F28-C: indexul pe discriminator, în model și în bază ----
+    var faraIndex = new List<string>();
+    foreach (var r in radacini) {
+        var tabela = r.GetTableName();
+        if (!r.GetIndexes().Any(i => i.Properties.Count == 1 && i.Properties[0].Name == nameof(Document.ClrType)))
+            faraIndex.Add($"{tabela} (model)");
+        if (!Valori($"SELECT indexdef::text AS \"Value\" FROM pg_indexes WHERE tablename = {tabela}")
+                .Any(d => d.EndsWith("(\"ClrType\")", StringComparison.Ordinal)))
+            faraIndex.Add($"{tabela} (pg_indexes)");
+    }
+    Check($"F28-C ({eticheta}) indexul pe `ClrType` există pe cele trei tabele, în modelul EF și în `pg_indexes`"
+        + (faraIndex.Count > 0 ? $" — lipsă: {string.Join(", ", faraIndex)}" : ""),
+        faraIndex.Count == 0);
+
+    // ---- F28-F: `ClrType` e al EF — setter ne-public, completat la `Add`, fără gol în bază ----
+    var setterePublice = tipuri.Values.SelectMany(v => v)
+        .Where(et => et.ClrType.GetProperty(nameof(Document.ClrType))?.GetSetMethod(false) != null)
+        .Select(et => et.ClrType.Name).ToList();
+    var laAdd = new List<string>();
+    using (var osNou = provider.CreateObjectSpace())
+        foreach (var et in concrete.Values.SelectMany(v => v)) {
+            var obiect = osNou.CreateObject(et.ClrType);
+            var valoare = (string)et.ClrType.GetProperty(nameof(Document.ClrType)).GetValue(obiect);
+            if (valoare != et.ClrType.Name)
+                laAdd.Add($"{et.ClrType.Name}={valoare ?? "null"}");
+        }
+    var straine = new List<string>();
+    foreach (var r in radacini) {
+        var tabela = r.GetTableName();
+        var numeConcrete = concrete[r.ClrType].Select(t => t.ClrType.Name).ToHashSet(StringComparer.Ordinal);
+        var sql = "SELECT DISTINCT COALESCE(\"ClrType\", '<null>')::text AS \"Value\" FROM \"" + tabela + "\"";
+        straine.AddRange(ctxF28.Database.SqlQueryRaw<string>(sql).ToList().Where(v => !numeConcrete.Contains(v)).Select(v => $"{tabela}: „{v}”"));
+    }
+    Console.WriteLine($"     MĂSURAT (F28-F/{eticheta}): {concrete.Values.Sum(v => v.Count)} tipuri concrete create prin "
+        + $"ObjectSpace; setter public: [{string.Join(", ", setterePublice)}]; greșit la Add: [{string.Join(", ", laAdd)}]; "
+        + $"valori în bază fără clasă concretă: [{string.Join(", ", straine)}].");
+    Check($"F28-F ({eticheta}) `ClrType` nu se poate scrie din cod (niciun setter public pe nicio clasă a celor trei "
+        + "ierarhii), EF îl completează la `CreateObject` cu numele clasei pe fiecare tip concret, iar în bază nu există "
+        + "valoare NULL, goală sau fără clasă concretă. Fără FK spre `TipDocument.ClrType` (fallback-ul din F28-D1), "
+        + "ancora în seed o ține doar F28-A",
+        setterePublice.Count == 0 && laAdd.Count == 0 && straine.Count == 0);
+
+    // ---- F28-G: `ClrType` în modelul XAF — persistent, read-only, cu caption „Tip” ----
+    IModelApplication modelXaf = null;
+    try {
+        modelXaf = ModelAplicatie.Incarca(connectionString, profil);
+    }
+    catch (Exception ex) {
+        Console.WriteLine($"     F28-G: modelul aplicației nu s-a construit — {ex.GetType().Name}: {ex.Message}");
+    }
+    var probleme = new List<string>();
+    foreach (var baza in ierarhii) {
+        var clasa = modelXaf?.BOModel.GetClass(baza);
+        var membru = clasa?.FindMember(nameof(Document.ClrType));
+        var info = clasa?.TypeInfo.FindMember(nameof(Document.ClrType));
+        if (membru == null || info == null) {
+            probleme.Add($"{baza.Name}: lipsește din model");
+            continue;
+        }
+        if (!info.IsPersistent)
+            probleme.Add($"{baza.Name}: nepersistent");
+        if (membru.AllowEdit)
+            probleme.Add($"{baza.Name}: editabil");
+        if (membru.Caption != "Tip")
+            probleme.Add($"{baza.Name}: caption „{membru.Caption}”");
+    }
+    Check($"F28-G ({eticheta}) `ClrType` e membru PERSISTENT în modelul aplicației pe `Document`, `DocumentDetaliu` și "
+        + "`Repartitor` (deci trece precondițiile D85-M2 pe ServerView), read-only (`AllowEdit` = false) și cu caption „Tip”"
+        + (probleme.Count > 0 ? $" — {string.Join("; ", probleme)}" : ""),
+        modelXaf != null && probleme.Count == 0);
 }
