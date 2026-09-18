@@ -69,6 +69,22 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         Dvi(registry);
         Imobilizari(registry);
         Perioade(registry);
+        ColoanaTip(registry);
+    }
+
+    // 89 — „Tip” doar pe listele care amestecă tipuri; pe frunze e constant.
+    static void ColoanaTip(UiBaselineRegistry registry) {
+        registry.For<Document>()
+            .ListView(nameof(Document) + ListView)
+            .Column(d => d.ClrType, c => c.Index = 1);
+        registry.For<DocumentTrezorerie>()
+            .ListView(nameof(DocumentTrezorerie) + ListView)
+            .Column(d => d.ClrType, c => c.Index = 1);
+        registry.For<Repartitor>()
+            .ListView(nameof(Repartitor) + ListView)
+            .Column(r => r.ClrType, c => c.Index = 1)
+            .ListView(nameof(Repartitor) + "_LookupListView")
+            .Column(r => r.ClrType, c => c.Index = 1);
     }
 
     // F27-D1: lanțul se citește în ordine cronologică, nu în ordinea inserării;

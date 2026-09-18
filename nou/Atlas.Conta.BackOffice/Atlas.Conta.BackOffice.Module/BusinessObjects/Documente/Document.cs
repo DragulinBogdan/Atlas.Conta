@@ -86,6 +86,7 @@ public readonly record struct PlafonStingere(decimal Datorie, decimal Creanta) {
 public abstract class Document : BaseObject {
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Tip")]
+    [VisibleInListView(false), VisibleInDetailView(false)]
     public virtual string ClrType { get; protected set; }
 
     [XafDisplayName("Număr")]
@@ -328,6 +329,7 @@ public abstract class Document : BaseObject {
 public class DocumentDetaliu : BaseObject {
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Tip")]
+    [VisibleInListView(false), VisibleInDetailView(false)]
     public virtual string ClrType { get; protected set; }
 
     [Browsable(false)]

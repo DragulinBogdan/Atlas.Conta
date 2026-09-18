@@ -30949,8 +30949,37 @@ void VerificaF28(bool privat) {
         if (membru.Caption != "Tip")
             probleme.Add($"{baza.Name}: caption „{membru.Caption}”");
     }
+    static bool InLayout(IModelNode nod) {
+        for (var i = 0; i < nod.NodeCount; i++) {
+            var copil = nod.GetNode(i);
+            if (copil is IModelLayoutViewItem li && li.ViewItem?.Id == nameof(Document.ClrType) || InLayout(copil))
+                return true;
+        }
+        return false;
+    }
+    static bool ColoanaTip(IModelListView lv)
+        => lv?.Columns[nameof(Document.ClrType)] is { } c && (!c.Index.HasValue || c.Index > -1);
+    bool DinIerarhii(IModelObjectView v) => v.ModelClass?.TypeInfo?.Type is { } t && ierarhii.Any(b => b.IsAssignableFrom(t));
+    var detailViews = (modelXaf?.Views.OfType<IModelDetailView>() ?? []).Where(DinIerarhii).ToList();
+    var dvCuTip = detailViews.Where(v => v.Layout != null && InLayout(v.Layout)).Select(v => v.Id).ToList();
+    var listeIerarhii = (modelXaf?.Views.OfType<IModelListView>() ?? []).Where(DinIerarhii).ToList();
+    var listeCuTip = listeIerarhii.Where(ColoanaTip).Select(v => v.Id).OrderBy(id => id, StringComparer.Ordinal).ToList();
+    string[] cuTipCerut = [nameof(Document) + "_ListView", nameof(DocumentTrezorerie) + "_ListView", nameof(Repartitor) + "_ListView", nameof(Repartitor) + "_LookupListView",
+        nameof(DocumentDetaliu) + "_LookupListView"];
+    Console.WriteLine($"     MĂSURAT (F28-G/{eticheta}): {detailViews.Count} DetailView-uri și {listeIerarhii.Count} ListView-uri "
+        + $"pe cele trei ierarhii; „Tip” în layout: [{string.Join(", ", dvCuTip)}]; coloana „Tip” vizibilă: "
+        + $"[{string.Join(", ", listeCuTip)}]");
+    if (detailViews.Count == 0 || listeIerarhii.Count <= cuTipCerut.Length)
+        probleme.Add("prea puține view-uri pe ierarhii");
+    if (dvCuTip.Count > 0)
+        probleme.Add($"„Tip” în layout-ul: {string.Join(", ", dvCuTip)}");
+    if (!listeCuTip.SequenceEqual(cuTipCerut.OrderBy(id => id, StringComparer.Ordinal)))
+        probleme.Add($"coloana „Tip” vizibilă pe [{string.Join(", ", listeCuTip)}]");
     Check($"F28-G ({eticheta}) `ClrType` e membru PERSISTENT în modelul aplicației pe `Document`, `DocumentDetaliu` și "
-        + "`Repartitor` (deci trece precondițiile D85-M2 pe ServerView), read-only (`AllowEdit` = false) și cu caption „Tip”"
+        + "`Repartitor` (deci trece precondițiile D85-M2 pe ServerView), read-only (`AllowEdit` = false) și cu caption „Tip”; "
+        + "lipsește din layout-ul oricărui DetailView al celor trei ierarhii și e coloană vizibilă EXACT pe listele care "
+        + "amestecă tipuri: `Document_ListView`, `DocumentTrezorerie_ListView`, `Repartitor_ListView`, `Repartitor_LookupListView` și "
+        + "`DocumentDetaliu_LookupListView` (fără DefaultProperty, XAF îi generează coloanele scurte)"
         + (probleme.Count > 0 ? $" — {string.Join("; ", probleme)}" : ""),
         modelXaf != null && probleme.Count == 0);
 

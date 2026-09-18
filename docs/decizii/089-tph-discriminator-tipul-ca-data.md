@@ -16,8 +16,13 @@ discriminatorul MAPAT `ClrType`.** `UseTphMappingStrategy()` +
 `HasDiscriminator(x => x.ClrType)` pe fiecare rădăcină, cu valorile IMPLICITE
 ale EF (numele scurt al clasei CLR), fără nicio `HasValue` scrisă de mână.
 Proprietatea e `string` cu setter protejat, read-only în XAF, cu caption
-„Tip”: vizibilă în grile, filtrabilă și folosibilă în criterii, fără să poată
-fi scrisă din cod de aplicație. Pe `Document` valoarea e exact ancora
+„Tip”: filtrabilă și folosibilă în criterii, fără să poată fi scrisă din
+cod de aplicație. În XAF e coloană DOAR pe listele care amestecă tipuri
+(`Document_ListView`, `DocumentTrezorerie_ListView`, `Repartitor_ListView`, `Repartitor_LookupListView`,
+`DocumentDetaliu_LookupListView`) și lipsește din orice DetailView:
+`[VisibleInListView(false), VisibleInDetailView(false)]` pe proprietate +
+coloanele bazelor declarate în `ContaUiBaseline` (layout-ul autoritar nu
+poate ascunde un membru — nedeclarat, îl mătură în grupul de coadă). Pe `Document` valoarea e exact ancora
 `TipDocument.ClrType` (20). **Discriminatorul nu are FK spre
 `TipDocument.ClrType` și nu are navigație**: cheia alternativă cere valoare
 nenulă la `Add`, iar calea XAF (`CreateObject`: seed, „New”, OData) face
@@ -122,7 +127,8 @@ rădăcinii, coloanele din `information_schema` == modelul), F28-C (indexul pe
 (cititorul == `ClasaReala` pe toate cele 20 de tipuri concrete; `null` pe id
 inexistent), F28-F (setter ne-public; `CreateObject` completează `ClrType` pe
 cele 38 de tipuri concrete; nicio valoare NULL, goală sau fără clasă în bază),
-F28-G (`ClrType` persistent, read-only, caption „Tip”, precondițiile D85-M2),
+F28-G (`ClrType` persistent, read-only, caption „Tip”, precondițiile D85-M2;
+absent din layout-ul DetailView-urilor, coloană exact pe listele care amestecă tipuri),
 F28-H (liniile unui document sunt frunza lui, un subtip sau baza), F28-I
 (ținta fiecărui FK spre frunză are discriminatorul corect; 9 FK-uri), F28-J
 (coloanele derivate NULL pe rândurile altor tipuri; 74 de coloane), F28-K

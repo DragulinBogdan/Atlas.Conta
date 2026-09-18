@@ -138,7 +138,9 @@ pure pe funcțiile de potrivire și de seed. Probele mapării TPH (`F28-A…K`)
 tip și schema bazei egală cu modelul; indexul pe `ClrType`; refuzul
 gardianului pe un FK spre frunză cu ținta de alt tip; cititorul de tip egal
 cu clasa reală pe toate tipurile; `ClrType` completat de EF și nescriibil
-din cod; `ClrType` read-only în modelul aplicației; liniile unui document
+din cod; `ClrType` read-only în modelul aplicației, absent din layout-ul
+oricărui DetailView și coloană vizibilă exact pe listele care amestecă
+tipuri; liniile unui document
 de tipul declarat de el; ținta fiecărui FK spre frunză de tipul corect;
 coloanele frunzelor NULL pe rândurile altor tipuri. Ultimele trei rulează
 SQL generat din metadata EF (`IntegritateTph.cs`), iar

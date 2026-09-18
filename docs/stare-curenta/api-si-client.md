@@ -300,7 +300,17 @@ de clientul React pe OData este o compunere separată, cu aceeași semantică.
 Tipul concret al unui document, al unei linii sau al unui repartitor este
 membrul mapat `ClrType` („Tip”), read-only. Ca orice coloană mapată, se
 poate afișa, sorta și filtra pe `Server` și `ServerView`, fără join de
-moștenire. (89a)
+moștenire. În XAF Blazor „Tip” apare doar pe listele care amestecă tipuri:
+`Document_ListView`, `DocumentTrezorerie_ListView` (plăți și încasări) și
+`Repartitor_ListView` (a doua coloană), lookup-ul
+`Repartitor_LookupListView` (Predator/Primitor, repartitorii postării
+explicite: coloanele Denumire și Tip) și `DocumentDetaliu_LookupListView`
+(liniile-sursă, generat de XAF). Lipsește din listele și lookup-urile
+frunzelor, unde e constant, din grilele de linii și din orice DetailView.
+Mecanismul: `[VisibleInListView(false), VisibleInDetailView(false)]` pe
+proprietate (acoperă toate derivatele, inclusiv grupul-mătură al
+layout-ului autoritar), iar coloanele de pe cele trei liste ale bazelor se
+declară în `ContaUiBaseline.ColoanaTip`. (89a)
 
 ## Ecranele disponibile
 

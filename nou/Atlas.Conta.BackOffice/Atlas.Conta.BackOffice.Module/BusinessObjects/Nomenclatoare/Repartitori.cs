@@ -15,6 +15,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 public abstract class Repartitor : BaseObject, ICuCautare {
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Tip")]
+    [VisibleInListView(false), VisibleInDetailView(false)]
     public virtual string ClrType { get; protected set; }
 
     // 77-r2: obligatorii pe toate ușile. Regula de fond e a lui `ICuCautare`
