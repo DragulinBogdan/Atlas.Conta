@@ -4,7 +4,8 @@ Stare: **PROBAT (2026-09-19), cu review advers aplicat** (agent separat, 6
 MAJOR / 9 MEDIU / 5 MINOR; toate acceptate — unde au schimbat o concluzie, e
 spus; raportul și SQL-ul lui în `run-nucleu/transfer/review/`). TR-D5 = decizia 090
 (2026-09-20, `docs/decizii/090-nucleu-cub-de-postari.md`), care preia §1–§4.1
-ca regulă durabilă; propunerea de execuție (§4.1) e ACCEPTATĂ 2026-09-20. Întrebarea din `nucleu-cub-design.md` §11: ce se
+ca regulă durabilă; propunerea de execuție (§4.1) e ACCEPTATĂ 2026-09-20;
+TR-D6a ÎNCHISĂ 2026-09-20 (`tr-d6a-nucleu-pur-contract.md`). Întrebarea din `nucleu-cub-design.md` §11: ce se
 transferă din implementarea curentă (documente tipate, politici, gardieni,
 ModelCheck, Import1C ca probă supremă), în ce ordine, cu contract și regulă
 de oprire — și tranșările de modelare amânate de pașii 1–2: ce e o partidă,

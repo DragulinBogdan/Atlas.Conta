@@ -654,10 +654,60 @@ Doar suma pozitivă intră în validările comune de creare a împerecherii,
 cu marcajul autogenerat. Serviciul nu comite. Apelul este după materializarea
 registrelor și starea Operat, înainte de commit-ul motorului. (82b, 82c)
 
+## Nucleul pur (fără consumator încă)
+
+`nou/Atlas.Conta.Nucleu` ține tipurile cubului și regulile pure ale deciziei
+90, fără nicio referință la EF/XAF/HTTP și fără niciun consumator până la
+TR-D6b; motorul de azi (`Motor/MotorOperare`) rămâne singurul care scrie.
+Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
+
+- **Cubul**: `Coordonate` (cont, latură OBLIGATORIE, dată, partener,
+  gestiune, produs, unitate, cod TVA compus, perioadă de declarare, valută,
+  carte, analiză ×6), `Postare` cu trei măsuri la scară apărată în
+  constructor și în `with`, `Tranzactie` cu felul `Operare | Storno |
+  Transfer | Deschidere`; spațiul (`Stoc` = unitate de tip lot, restul
+  `Contabil`) e funcție, nu câmp. Jurnalul TVA e proiecție pe `CodTva`, nu
+  spațiu separat. (N-D2)
+- **Conservarea**, structurală: valoarea per `Carte`, cantitatea per produs
+  peste TOATE postările (capătul virtual al cantității stă pe postarea de
+  terț, cu gestiune virtuală Furnizor/Client — de confirmat la TR-D6b,
+  N-r2), transferul cu Σ = 0 per (cont, latură), valoarea negativă doar în
+  `Storno`/`Transfer`, formele (cantitate ⇒ gestiune, produs și unitate;
+  lot ⇒ produs și gestiune; partidă ⇒ partener; unitatea pe contul, produsul
+  și partenerul postării; postările datate ca tranzacția; deschiderea fără
+  document, scutită de Σ). (N-D3, N-D4)
+- **Unitatea** (lot = partidă = fișă): raportul = cost / curs / valoare
+  rămasă ca citire; partida deschisă de un document are id determinist din
+  (document, cont). **FIFO**: unitatea numită pe linie se consumă întâi,
+  fără cădere pe FIFO, apoi (data deschiderii, id), tolerant cu rest
+  întors. **Evaluarea ieșirii** pe raportul CURENT al unității, ultima
+  ieșire ia restul ⇒ cantitate zero ⇒ valoare zero; față de motorul de azi
+  (preț înghețat pe lot, substituit doar la golire) diferența e declarată
+  și măsurată în teste (378 din 491 goliri lasă valoare pe cantitate zero
+  sub regula veche, pe istorii generate). (N-D6, N-D7, N-r3)
+- **Repartizarea** = Hamilton ierarhic, Σ = total exact, singura primitivă
+  de distribuție. **TVA**: taxa se decide și se rotunjește pe document ×
+  cotă, se postează per linie prin Hamilton peste |net|, pe fiecare semn
+  separat; taxa dată pe facturile primite se validează cu toleranță, nu se
+  recalculează. Azi rotunjirea e per linie: diferența o măsoară pilotul
+  FCT (N-r4). (N-D8, 090j)
+- **Sold** = Σ pe orice cheie, pe tranzacții, cu `Transfer` exclus ca
+  parametru al citirii; snapshot-ul e lema `Sold(≤t) = Sold(≤t0) +
+  Sold(t0<d≤t)`. **Stornoul** = inversul cauzat ∪ atribuit, fără schimb de
+  latură, tranzacție distinctă; contrapartida unei postări atribuite
+  inversate rămâne nedefinită până la TR-D9 (N-r5). (N-D9, N-D10)
+- **Motorul**: `Declaratie` (mișcări pe coordonate rezolvate + decizii +
+  ipoteze) → exact o tranzacție `Operare` (sau `Transfer` din mutări pe
+  același cont) → `Contract` acceptat/refuzat, determinist, cu contorul de
+  jumătăți de ban al instanței `Rotunjire` primite. `Decizie`/`Ipoteza` sunt
+  ierarhii închise cu cazurile pilotului. (N-D11)
+
 ## Locurile regulilor în cod
 
 - [Document și contracte](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Document.cs)
 - [Motorul operării](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/MotorOperare.cs)
+- [Nucleul pur: conservarea](../../nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu/Conservare.cs)
+- [Nucleul pur: motorul pe declarație](../../nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu/Motor/Motor.cs)
 - [Serviciul de împerechere](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/ImperechereService.cs)
 - [Documentele de trezorerie](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Trezorerie.cs)
 - [Documentele imobilizărilor](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Imobilizari.cs)

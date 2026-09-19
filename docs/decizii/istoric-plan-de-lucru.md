@@ -663,3 +663,24 @@ detaliat în jurnal):
   IM-r re-evaluate, TR-r/FZ-r în restanțe. Fără cod. Următorul pas: TR-D6a
   (nucleul pur, `nou/Atlas.Conta.Nucleu`), cu contract propriu în
   `docs/nucleu/`.
+- **Felia 29 — TR-D6a, nucleul pur** (2026-09-20, branch
+  `tr-d6a-nucleu-pur`, contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`
+  cu N-D1…N-D12; `main` adus fast-forward la 090 înainte). Patru pași cu un
+  agent per pas și verificare independentă: **1** scheletul BCL-only
+  (xunit.v3), cubul, `Scara`/`Rotunjire` cu instanță și contor,
+  `Conservare` C1–C6, testul de arhitectură; **2** `Repartizare` (Hamilton
+  ierarhic) și `Tva` (per document × cotă, Hamilton per linie, toleranță);
+  **3** `Unitate` (partida cu id determinist), `Fifo` (pin-uri întâi),
+  `Evaluare` (raportul curent, ultima ia restul), `Sold`/`Cub`, `Storno`,
+  invarianții 3–5 cu contra-proba prețului înghețat; **4** `Declaratie`/
+  `Motor`/`Contract`, `Decizie`/`Ipoteza` închise, invarianții 2 și 6.
+  Amendamente ale main-ului la pași: `Sold` cu gardian de scară, cauza
+  străină permisă în storno doar pe postarea cu `Atribuit`. Review advers
+  (agent separat): 1 MAJOR (semnul taxei per linie pe grupuri cu semne
+  mixte — Hamilton pe fiecare semn), 2 MEDII (unitatea pe contul postării;
+  postările datate ca tranzacția), minore (fără aliasing al listelor, pin
+  ≤ 0 refuzat, tranzacția fără postări, C1 per `Carte`, cantitate ⇒
+  produs) — toate aplicate. Închidere: `dotnet test` 152/152, 0
+  avertismente; diff pe BackOffice/tools/Client gol; ModelCheck nerulat
+  (nimic atins din ce probează). N-r1…N-r9 în restanțe; invariantul 7 e al
+  lui TR-D7/D10. Următorul pas: TR-D6b (declarația fluxului BCS/PLT/FCT).

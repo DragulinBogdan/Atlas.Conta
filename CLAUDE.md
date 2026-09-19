@@ -128,16 +128,25 @@ nominalizată numită pe linie, împerecherea ca nominalizare + document
 `Împerechere`, FCT postează recepția, o singură postare de stoc, stornoul ca
 tranzacție distinctă); pașii TR-D6a…D10 sunt felii cu contract propriu,
 regimul dual e per `TipDocument` ca dată, iar XAF și React sunt ÎNGHEȚATE pe
-funcții (90m). Fără cod încă. Cronologia integrală:
+funcții (90m). **Felia 29 = TR-D6a ÎNCHISĂ** (2026-09-20,
+`docs/nucleu/tr-d6a-nucleu-pur-contract.md`): `nou/Atlas.Conta.Nucleu` e
+nucleul pur (BCL, zero pachete, fără consumator încă) cu cubul, conservarea
+structurală, unitatea/FIFO/evaluarea pe raportul curent, Hamilton, TVA per
+document × cotă, `Sold`, stornoul și motorul pe declarație; invarianții
+1–6 sunt proprietăți în `Atlas.Conta.Nucleu.Teste`, al 7-lea e al lui
+TR-D7/D10 (N-r1). Cronologia integrală:
 `docs/decizii/istoric-plan-de-lucru.md`.
 
-**Următorul pas**: TR-D6a, nucleul pur (`nou/Atlas.Conta.Nucleu` fără niciun
-pachet în afara BCL + `Atlas.Conta.Nucleu.Teste`; cei 7 invarianți din
-`docs/nucleu/nucleu-cub-design.md` §10 ca teste pe proprietăți; doar
-regulile pure cerute de pilotul BCS/PLT/FCT), cu contract propriu în
-`docs/nucleu/` pe precedentul `docs/api/p5-*-contract.md`; apoi TR-D6b
-(declarația fluxului, singurul pas care poate întoarce decizia), TR-D7…D9
-(90l). Contractul IM e depășit de 90. Cererile de produs apărute între timp
+**Următorul pas**: TR-D6b, declarația fluxului per tip (pilot BCS, PLT,
+FCT; singurul pas care poate întoarce decizia): un declarant per frunză în
+`Module` (primul și singurul consumator al nucleului) care construiește
+operandul închis prin adaptorul `Fapte` și produce, din nucleu, exact
+postările pe care motorul vechi le scrie azi în registre — probă pe scenele
+ModelCheck ale celor trei tipuri, transformate în cub cu maparea fizicii
+portată în C# ca helper de test; contract propriu în `docs/nucleu/`. De
+confirmat sau întors acolo: N-r2 (capătul virtual al cantității), N-r3
+(evaluarea pe raportul curent), N-r4 (TVA per document × cotă). Apoi
+TR-D7…D9 (90l). Contractul IM e depășit de 90. Cererile de produs apărute între timp
 (F26-r1/r8/r9/r13, F27-r11/r13/r1, 84-r5, 86-r11, 86-r13, 80-r1, 77-r1/r6)
 intră în `restante.md` cu decizia lor, nu în felie (90m).
 
@@ -145,7 +154,9 @@ intră în `restante.md` cu decizia lor, nu în felie (90m).
 ACEEAȘI bază (A/B prin schimbarea stării, nu între baze — altfel diferența de
 date trece drept efect), iar o grilă paginată ascunde costul căii care consumă
 TOT (`LIMIT` oprește execuția devreme, `ToList` nu); `genereaza` SCRIE ori de
-câte ori luna e liberă (79);
+câte ori luna e liberă (79); `dotnet test` pe nucleu rulează 500 de cazuri
+per proprietate cu sămânța fixă `Gen.Samanta + index` — un caz picat se
+reproduce izolat cu sămânța din mesaj, nu prin re-rularea suitei;
 probele de securitate se rulează prin `nou/tools/ProbeHttp/refuzuri.ps1` pe
 host viu (Privat, după re-seed pentru `Cititor`/`Configurator`), nu se refac
 de mână; două ModelCheck-uri în paralel cer worktree + `MODELCHECK_BAZA_SUFIX`

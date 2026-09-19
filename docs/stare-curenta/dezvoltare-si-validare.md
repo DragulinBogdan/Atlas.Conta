@@ -10,6 +10,8 @@
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.WebApi` | Contracte HTTP, securizarea comenzilor, OData și integrarea hostului (42f) |
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server` | Host XAF, administrare și actualizarea explicită a bazei (23a) |
 | `nou/Atlas.Conta.Client` | React, formulare, raportare și contractele generate (43e) |
+| `nou/Atlas.Conta.Nucleu` | Nucleul pur al cubului de postări: tipuri, conservare, unitate, FIFO, evaluare, repartizare, TVA, storno, motor — fără niciun pachet, fără consumator până la TR-D6b (90b, 90l) |
+| `nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.Teste` | Invarianții nucleului ca proprietăți pe generatoare proprii și testul de arhitectură (90l) |
 | `nou/tools/ModelCheck` | Verificarea modelului și scenarii de domeniu pe PostgreSQL (23) |
 | `nou/tools/ProbeHttp` | Probe ale contractului HTTP și ale permisiunilor reale (80i, 81j) |
 | `nou/tools/Import1C` | Import operațional și reconcilierea sursei (45f) |
@@ -113,6 +115,7 @@ dotnet build nou/tools/ModelCheck/ModelCheck.csproj
 dotnet build nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.WebApi/Atlas.Conta.BackOffice.WebApi.csproj
 pnpm --dir nou/Atlas.Conta.Client build
 pnpm --dir nou/Atlas.Conta.Client verifica:drift
+dotnet test nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.slnx
 ```
 
 Verificarea de drift regenerează contractele și refuză diferențele față de
@@ -130,6 +133,7 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | Mod de acces al unui ListView XAF, proprietate nouă afișată în liste | ModelCheck (`D85-M1`, `D85-M2`, `D85-R1…R3`) și deschiderea listei în browser pe baza de import: sort, filtru, grupare, detaliu din listă, culegere pe document nou (85h) |
 | Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
 | Tip derivat nou, proprietate nouă pe frunză, FK spre o frunză | ModelCheck pe ambele profiluri (`F28-*`); după un import, `--dump-integritate-tph` rulat pe baza de import (89e, 89h) |
+| Nucleul pur (`Atlas.Conta.Nucleu`) | `dotnet test` pe soluția nucleului: testul de arhitectură și invarianții 1–6 ca proprietăți (≥ 500 de cazuri fiecare); ModelCheck doar dacă e atins `Module` (90l) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
 ModelCheck verifică modelul și execută scenarii de integrare, inclusiv probe
@@ -146,6 +150,19 @@ coloanele frunzelor NULL pe rândurile altor tipuri. Ultimele trei rulează
 SQL generat din metadata EF (`IntegritateTph.cs`), iar
 `ModelCheck --dump-integritate-tph <cale.sql>` scrie același SQL pentru a fi
 rulat pe o bază de import, pe care ModelCheck nu o atinge. (89e, 89h)
+
+Nucleul pur se probează exclusiv prin `Atlas.Conta.Nucleu.Teste` (xunit.v3,
+152 teste): testul de arhitectură ține referințele assembly-ului la
+`System.*`/`netstandard` și `.csproj`-ul fără `PackageReference`/
+`ProjectReference`; invarianții 2–6 din `docs/nucleu/nucleu-cub-design.md`
+§10 rulează ca proprietăți pe generatoare proprii (`Gen`, `Proprietate`:
+sămânță fixă per caz, cazul picat se reproduce izolat), cu perturbări pe o
+singură postare și cu contra-proba regulii vechi acolo unde regula nouă
+diferă declarat (evaluarea pe raportul curent contra prețului înghețat).
+Invariantul 7 (baseline-ul Import1C) nu e testabil în nucleu și rămâne
+proba supremă a lui TR-D7/D10 (N-r1). Reflecția probează că niciun record
+public n-are setter ne-`init`; egalitatea `Tranzactie`/`Declaratie`/
+`Contract` e structurală. (N-D12)
 
 Căutarea după cheie a unui tip ne-rădăcină trece prin `RandDupaCheie`
 (rădăcina ierarhiei, apoi tipul verificat), niciodată prin

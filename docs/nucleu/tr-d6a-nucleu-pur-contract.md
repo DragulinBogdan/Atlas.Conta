@@ -1,6 +1,16 @@
 # TR-D6a — Nucleul pur (contract)
 
-Stare: **DESCHISĂ (2026-09-20)**, felia 29; branch `tr-d6a-nucleu-pur`.
+Stare: **ÎNCHISĂ (2026-09-20)**, felia 29; branch `tr-d6a-nucleu-pur`;
+`dotnet test` 152/152, review advers aplicat (1 MAJOR, 2 MEDII, 7 MINORE).
+Amendamentele față de textul de mai jos, toate consemnate în `restante.md`
+(N-r1…N-r9) și în cod: C1 se verifică per `Carte`; C5 cere și unitatea pe
+contul postării, `Cantitate ≠ 0 ⇒ Produs ≠ null`, postările datate ca
+tranzacția (`DATA_STRAINA`), tranzacția cu cel puțin o postare
+(`POSTARI_LIPSA`); în `Storno` cauza altui document e permisă DOAR pe
+postarea cu `Atribuit` (090i); `Sold` apără scara ca `Postare`; TVA per
+linie se repartizează pe fiecare semn al taxei separat; cazurile `Decizie`
+poartă `Linie`; `Motor.Transfera` ia `Mutare`; un pin FIFO cu măsură ≤ 0 e
+eroare de apelant; listele primite se copiază (fără aliasing).
 Decizia-mamă: 090 (`docs/decizii/090-nucleu-cub-de-postari.md`, regula
 durabilă (a)–(l)); designul: `nucleu-cub-design.md` §2–§7, §10; ordinea și
 regula de oprire: `nucleu-transfer.md` §4 („TR-D6a") și §4.1.
