@@ -146,6 +146,80 @@ public static class Gen {
         return new Tranzactie(FelTranzactie.Deschidere, data, null, postari);
     }
 
+    public static Declaratie Declaratie(Random aleator, bool? cuCantitate = null, Guid? peDocument = null) {
+        var document = peDocument ?? Unul(aleator, Documente);
+        var miscari = new List<Miscare>();
+        var cate = 1 + aleator.Next(4);
+        for (var i = 0; i < cate; i++)
+            miscari.Add(Miscare(aleator, document, cuCantitate ?? aleator.Next(2) == 0));
+        return new Nucleu.Declaratie(document, Data(aleator), miscari, Decizii(aleator), Ipoteze(aleator));
+    }
+
+    public static IReadOnlyList<Decizie> Decizii(Random aleator) {
+        var decizii = new List<Decizie>();
+        var cate = aleator.Next(4);
+        for (var i = 0; i < cate; i++) {
+            var linie = Unul(aleator, Linii);
+            var cont = Unul(aleator, Conturi);
+            var produs = Unul(aleator, Produse);
+            decizii.Add(aleator.Next(4) switch {
+                0 => new AlocareFifo(
+                    linie,
+                    Lot(aleator, cont, produs),
+                    Zecimal(aleator, 0.001m, 999.999m, Scara.Cantitate)),
+                1 => new ValoareIesire(
+                    linie,
+                    Lot(aleator, cont, produs),
+                    Zecimal(aleator, 0.001m, 999.999m, Scara.Cantitate),
+                    Zecimal(aleator, 0.01m, 9999.99m, Scara.Bani)),
+                2 => new PartidaDeschisa(linie, Partida(aleator, cont, Unul(aleator, Parteneri))),
+                _ => new ContRezolvat(linie, cont, "politica"),
+            });
+        }
+        return decizii;
+    }
+
+    public static IReadOnlyList<Ipoteza> Ipoteze(Random aleator) {
+        var ipoteze = new List<Ipoteza>();
+        var cate = aleator.Next(3);
+        for (var i = 0; i < cate; i++)
+            ipoteze.Add(aleator.Next(3) switch {
+                0 => new SoldUnitateCitit(
+                    Lot(aleator, Unul(aleator, Conturi), Unul(aleator, Produse)),
+                    new Sold(
+                        Zecimal(aleator, 0m, 9999.99m, Scara.Bani),
+                        Zecimal(aleator, 0m, 9999.99m, Scara.Bani),
+                        Zecimal(aleator, 0m, 999.999m, Scara.Cantitate),
+                        0m)),
+                1 => new PerioadaDeschisa(2026, 1 + aleator.Next(12)),
+                _ => new VersiunePolitica("politica", Data(aleator)),
+            });
+        return ipoteze;
+    }
+
+    public static IReadOnlyList<Mutare> Mutari(Random aleator, Guid document, bool? cuCantitate = null) {
+        var mutari = new List<Mutare>();
+        var cate = 1 + aleator.Next(3);
+        for (var i = 0; i < cate; i++) {
+            var cont = Unul(aleator, Conturi);
+            var produs = Unul(aleator, Produse);
+            var cuMasura = cuCantitate ?? aleator.Next(2) == 0;
+            mutari.Add(new Mutare(
+                CapatDeMutare(aleator, cont, produs, cuMasura),
+                CapatDeMutare(aleator, cont, produs, cuMasura),
+                aleator.Next(2) == 0 ? Latura.Debit : Latura.Credit,
+                cuMasura ? Zecimal(aleator, 0.001m, 999.999m, Scara.Cantitate) : 0m,
+                0m,
+                Zecimal(aleator, 0.01m, 9999.99m, Scara.Bani),
+                new Cauza(document, Unul(aleator, Linii))));
+        }
+        return mutari;
+    }
+
+    static Capat CapatDeMutare(Random aleator, Guid cont, Guid produs, bool cuCantitate) =>
+        (cuCantitate ? CapatCuCantitate(aleator, produs, FelUnitate.Lot) : CapatContabil(aleator))
+        with { Cont = cont };
+
     static Postare DeTransfer(
         Random aleator,
         Guid cont,
