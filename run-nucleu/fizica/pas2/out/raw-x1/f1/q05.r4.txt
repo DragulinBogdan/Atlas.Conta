@@ -1,0 +1,42 @@
+                                                                                          QUERY PLAN                                                                                          
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=33913.69..34316.13 rows=9388 width=230) (actual time=65.912..79.522 rows=2517.00 loops=1)
+   Hash Cond: (p."Partener" = rp."ID")
+   Buffers: shared hit=14323, temp read=340 written=693
+   ->  Hash Left Join  (cost=32879.59..33093.10 rows=9388 width=147) (actual time=61.664..74.163 rows=2517.00 loops=1)
+         Hash Cond: (p."Cont" = c."ID")
+         Buffers: shared hit=13799, temp read=340 written=693
+         ->  HashAggregate  (cost=32847.49..33036.19 rows=9388 width=96) (actual time=61.487..73.776 rows=2517.00 loops=1)
+               Group Key: p."Partener"
+               Filter: ((COALESCE(sum(CASE WHEN (p."Latura" = 1) THEN p."Valoare" ELSE 0.0 END), 0.0) - COALESCE(sum(CASE WHEN (p."Latura" = 2) THEN p."Valoare" ELSE 0.0 END), 0.0)) <> 0.0)
+               Batches: 5  Memory Usage: 8241kB  Disk Usage: 3552kB
+               Rows Removed by Filter: 17267
+               Buffers: shared hit=13783, temp read=340 written=693
+               ->  Bitmap Heap Scan on "Postare" p  (cost=2196.55..31489.46 rows=108642 width=40) (actual time=3.742..30.351 rows=144241.00 loops=1)
+                     Recheck Cond: ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                     Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                     Rows Removed by Filter: 54936
+                     Heap Blocks: exact=13610
+                     Buffers: shared hit=13783
+                     ->  Bitmap Index Scan on ix_f1_cont  (cost=0.00..2169.39 rows=197995 width=0) (actual time=2.787..2.788 rows=199177.00 loops=1)
+                           Index Cond: ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                           Index Searches: 1
+                           Buffers: shared hit=173
+         ->  Hash  (cost=24.05..24.05 rows=644 width=67) (actual time=0.161..0.162 rows=644.00 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 71kB
+               Buffers: shared hit=16
+               ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.015..0.082 rows=644.00 loops=1)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=16
+   ->  Hash  (cost=779.05..779.05 rows=20404 width=35) (actual time=4.123..4.124 rows=20404.00 loops=1)
+         Buckets: 32768  Batches: 1  Memory Usage: 1610kB
+         Buffers: shared hit=524
+         ->  Seq Scan on "Repartitori" rp  (cost=0.00..779.05 rows=20404 width=35) (actual time=0.007..2.108 rows=20404.00 loops=1)
+               Filter: ("GCRecord" = 0)
+               Buffers: shared hit=524
+ Planning:
+   Buffers: shared hit=586
+ Planning Time: 0.852 ms
+ Execution Time: 80.281 ms
+(38 rows)
+

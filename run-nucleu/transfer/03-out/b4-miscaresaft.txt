@@ -1,0 +1,81 @@
+== B4.1 randurile de politica (seed privat) ==
+ tip | TipStoc | Semn | CodMiscare | RolTert |                       Motiv                        | DinSeed 
+-----+---------+------+------------+---------+----------------------------------------------------+---------
+ ASM |       1 |   -1 | 70         |       0 |                                                    | t
+ ASM |       1 |    1 | 20         |       0 |                                                    | t
+ ASM |       5 |   -1 | 70         |       0 |                                                    | t
+ ASM |       5 |    1 | 20         |       0 |                                                    | t
+ BCS |       1 |   -1 | 70         |       0 |                                                    | t
+ BCS |       2 |    1 |            |       0 | Consumul pe responsabil nu e stoc în magazie (27a) | t
+ BCS |       5 |   -1 | 70         |       0 |                                                    | t
+ BTR |       1 |      | 80         |       0 |                                                    | t
+ BTR |       5 |      | 80         |       0 |                                                    | t
+ DSC |       1 |   -1 | 30         |       1 |                                                    | t
+ DSC |       5 |   -1 | 30         |       1 |                                                    | t
+ LDI |       1 |   -1 | 120        |       0 |                                                    | t
+ LDI |       1 |    1 | 110        |       0 |                                                    | t
+ LDI |       5 |   -1 | 120        |       0 |                                                    | t
+ LDI |       5 |    1 | 110        |       0 |                                                    | t
+ NIR |       1 |      | 10         |       2 |                                                    | t
+ NIR |       5 |      | 10         |       2 |                                                    | t
+ RDC |       1 |    1 | 40         |       1 |                                                    | t
+ RDC |       5 |    1 | 40         |       1 |                                                    | t
+ RLF |       1 |   -1 | 50         |       2 |                                                    | t
+ RLF |       5 |   -1 | 50         |       2 |                                                    | t
+(21 rows)
+
+== B4.2 randurile REALE de stoc pe cheia de azi -> cod, si pe cheia noua ==
+          clr           | TipStoc | semn_regula | cont |    cod     | rol | randuri 
+------------------------+---------+-------------+------+------------+-----+---------
+ Asamblare              |       1 |          -1 | 3021 | 70         | 0   |       1
+ Asamblare              |       1 |          -1 | 3028 | 70         | 0   |       6
+ Asamblare              |       1 |          -1 | 381  | 70         | 0   |      34
+ Asamblare              |       1 |           1 | 3021 | 20         | 0   |       1
+ Asamblare              |       1 |           1 | 3028 | 20         | 0   |     479
+ Asamblare              |       1 |           1 | 303  | 20         | 0   |      12
+ Asamblare              |       1 |           1 | 381  | 20         | 0   |      19
+ Asamblare              |       5 |          -1 | 371  | 70         | 0   |    3181
+ Asamblare              |       5 |           1 | 371  | 20         | 0   |     961
+ BonConsum              |       1 |          -1 | 3024 | 70         | 0   |      64
+ BonConsum              |       1 |          -1 | 3028 | 70         | 0   |     863
+ BonConsum              |       1 |          -1 | 303  | 70         | 0   |      33
+ BonConsum              |       1 |          -1 | 381  | 70         | 0   |      30
+ BonConsum              |       2 |           1 | 3024 | (fara cod) | 0   |      64
+ BonConsum              |       2 |           1 | 3028 | (fara cod) | 0   |     863
+ BonConsum              |       2 |           1 | 303  | (fara cod) | 0   |      33
+ BonConsum              |       2 |           1 | 371  | (fara cod) | 0   |     481
+ BonConsum              |       2 |           1 | 381  | (fara cod) | 0   |      30
+ BonConsum              |       5 |          -1 | 371  | 70         | 0   |     481
+ DescarcareGestiune     |       5 |          -1 | 371  | 30         | 1   |   62063
+ ListaDiferenteInventar |       5 |           1 | 371  | 110        | 0   |      22
+ NIR                    |       1 |           1 | 3024 | 10         | 2   |      59
+ NIR                    |       1 |           1 | 3028 | 10         | 2   |     399
+ NIR                    |       1 |           1 | 303  | 10         | 2   |       9
+ NIR                    |       1 |           1 | 381  | 10         | 2   |      29
+ NIR                    |       5 |           1 | 371  | 10         | 2   |   33793
+ NotaTransfer           |       1 |          -1 | 3021 | 80         | 0   |       1
+ NotaTransfer           |       1 |          -1 | 3028 | 80         | 0   |     321
+ NotaTransfer           |       1 |          -1 | 303  | 80         | 0   |      14
+ NotaTransfer           |       1 |          -1 | 381  | 80         | 0   |       3
+ NotaTransfer           |       1 |           1 | 3021 | 80         | 0   |       1
+ NotaTransfer           |       1 |           1 | 3028 | 80         | 0   |     321
+ NotaTransfer           |       1 |           1 | 303  | 80         | 0   |      14
+ NotaTransfer           |       1 |           1 | 381  | 80         | 0   |       3
+ NotaTransfer           |       5 |          -1 | 371  | 80         | 0   |   84688
+ NotaTransfer           |       5 |           1 | 371  | 80         | 0   |   84688
+ ReturClient            |       5 |           1 | 371  | 40         | 1   |    2010
+ ReturFurnizor          |       1 |          -1 | 3028 | 50         | 2   |       2
+ ReturFurnizor          |       5 |          -1 | 371  | 50         | 2   |     475
+(39 rows)
+
+== B4.3 INJECTIVITATE: cheia noua (tip document x cont x semn) -> cate coduri distincte ==
+ clr | cont | semn_regula | coduri_distincte | coduri | roluri_distincte | roluri | tipstoc | randuri 
+-----+------+-------------+------------------+--------+------------------+--------+---------+---------
+(0 rows)
+
+== B4.4 acoperirea cheii noi: cate chei noi, cate chei vechi ==
+ chei_azi | chei_noi 
+----------+----------
+       18 |       39
+(1 row)
+

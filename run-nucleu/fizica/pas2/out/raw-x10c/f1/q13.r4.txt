@@ -1,0 +1,16 @@
+                                                           QUERY PLAN                                                            
+---------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on "Postare" p  (cost=49.30..15314.87 rows=4241 width=304) (actual time=0.052..0.388 rows=4560.00 loops=1)
+   Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   Heap Blocks: exact=111
+   Buffers: shared hit=118
+   ->  Bitmap Index Scan on ix_f1_document  (cost=0.00..48.24 rows=4241 width=0) (actual time=0.039..0.039 rows=4560.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=7
+ Planning:
+   Buffers: shared hit=420
+ Planning Time: 0.480 ms
+ Execution Time: 0.498 ms
+(12 rows)
+

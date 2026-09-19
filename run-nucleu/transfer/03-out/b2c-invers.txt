@@ -1,0 +1,106 @@
+== B2.6 conturile de stoc (TipMaterial.ContImplicit) ==
+ Simbol |                                                     Denumire                                                     
+--------+------------------------------------------------------------------------------------------------------------------
+ 205    | "Concesiuni, brevete, licenţe, mărci comerciale, drepturi şi active similare"
+ 208    | Alte imobilizări necorporale
+ 211    | Terenuri şi amenajări de terenuri
+ 212    | Construcţii
+ 2131   | "Echipamente tehnologice (maşini, utilaje şi instalaţii de lucru,"
+ 2132   | "Aparate şi instalaţii de măsurare, control şi reglare"
+ 2133   | Mijloace de transport
+ 214    | "Mobilier, aparatură birotică, echipamente de protecţie a valorilor umane şi materiale şi alte active corporale"
+ 301    | Materii prime
+ 302    | Materiale consumabile
+ 3021   | Materiale auxiliare
+ 3024   | Piese de schimb
+ 3028   | Alte materiale consumabile
+ 303    | Materiale de natura obiectelor de inventar
+ 345    | Produse finite
+ 371    | Mărfuri
+ 381    | Ambalaje
+ 408    | Furnizori - facturi nesosite
+ 4091   | Furnizori-debitori pentru cumpărări de bunuri de natura stocurilor
+ 4092   | Furnizori-debitori pentru prestări de servicii
+ 419    | Clienţi – creditori
+ 447    | Fonduri speciale - taxe şi vărsăminte asimilate
+ 473    | Decontări din operaţii în curs de clarificare
+ 5328   | Alte valori
+ 581    | Viramente interne
+ 6021   | Cheltuieli cu materialele auxiliare
+ 6022   | Cheltuieli privind combustibilii
+ 6028   | Cheltuieli privind alte materiale consumabile
+ 604    | Cheltuieli privind materialele nestocate
+ 605    | Cheltuieli privind utilitatile
+ 6051   | Cheltuieli privind consumul de energie
+ 6052   | Cheltuieli privind consumul de apă
+ 6053   | Cheltulieli privind consumul de gaze naturale
+ 611    | Cheltuieli cu întreţinerea şi reparaţiile
+ 612    | "Cheltuieli cu redevenţele, locaţiile de gestiune şi chiriile"
+ 613    | Cheltuieli cu primele de asigurare
+ 614    | Cheltuieli cu studiile şi cercetările
+ 622    | Cheltuieli privind comisioanele şi onorariile
+ 623    | "Cheltuieli de protocol, reclamă şi publicitate"
+ 6231   | Cheltuieli de protocol
+ 6232   | Cheltuieli de reclamă şi publicitate
+ 624    | Cheltuieli cu transportul de bunuri şi personal
+ 625    | "Cheltuieli cu deplasări, detaşări şi transferări"
+ 626    | Cheltuieli poştale şi taxe de telecomunicaţii
+ 627    | Cheltuieli cu serviciile bancare şi asimilate
+ 628    | Alte cheltuieli cu serviciile executate de terţi
+ 635    | "Cheltuieli cu alte impozite, taxe şi vărsăminte asimilate"
+ 6422   | Cheltuieli cu tichetele acordate salariaților
+ 6458   | Alte cheltuieli privind asigurările și protecția socială
+ 6581   | "Despăgubiri, amenzi şi penalităţi"
+ 6651   | Diferenţe nefavorabile de curs valutar legate de elementele monetare exprimate în valută
+ 667    | Cheltuieli privind sconturile acordate
+ 704    | Venituri din servicii prestate
+ 706    | "Venituri din redevenţe, locaţii de gestiune şi chirii"
+ 707    | Venituri din vânzarea mărfurilor
+ 708    | Venituri din activităţi diverse
+ 7581   | "Venituri din despăgubiri, amenzi şi penalităţi"
+ 7583   | Venituri din vânzarea activelor şi alte operaţiuni de capital
+ 7588   | Alte venituri din exploatare
+ 767    | Venituri din sconturi obţinute
+(60 rows)
+
+== B2.7 randuri contabile care ating un cont 3xx, pe tip x cont x latura x are rand de stoc pe acelasi DetaliuId ==
+          tip           | simbol | latura | randuri | cu_rand_stoc | fara_rand_stoc |    suma     
+------------------------+--------+--------+---------+--------------+----------------+-------------
+ DescarcareGestiune     | 371    | C      |   62063 |        62063 |              0 | 79199898.27
+ NIR                    | 371    | D      |   33793 |        33793 |              0 | 83507010.00
+ NotaContabila          | 371    | C      |    2776 |            0 |           2776 |   296122.34
+ ReturClient            | 371    | C      |    2010 |         2010 |              0 | -3616498.74
+ BonConsum              | 3028   | C      |     863 |          863 |              0 |   136316.24
+ BonConsum              | 371    | C      |     481 |          481 |              0 |   157781.34
+ ReturFurnizor          | 371    | D      |     475 |          475 |              0 | -2614827.91
+ NIR                    | 3028   | D      |     399 |          399 |              0 |    58069.87
+ NotaContabila          | 3028   | D      |     348 |            0 |            348 |    85083.86
+ NotaContabila          | 371    | D      |     210 |            0 |            210 |   -34006.62
+ BonConsum              | 3024   | C      |      64 |           64 |              0 |    17539.80
+ NIR                    | 3024   | D      |      59 |           59 |              0 |    17539.80
+ BonConsum              | 303    | C      |      33 |           33 |              0 |    26236.26
+ BonConsum              | 381    | C      |      30 |           30 |              0 |     2744.74
+ NIR                    | 381    | D      |      29 |           29 |              0 |     2874.93
+ ListaDiferenteInventar | 371    | D      |      22 |           22 |              0 |   773417.09
+ NotaContabila          | 303    | D      |      12 |            0 |             12 |    12388.01
+ NotaContabila          | 3028   | C      |      12 |            0 |             12 |     4677.00
+ NIR                    | 303    | D      |       9 |            9 |              0 |     7809.88
+ NotaContabila          | 381    | D      |       3 |            0 |              3 |     2180.00
+ NotaContabila          | 381    | C      |       2 |            0 |              2 |     4800.00
+ ReturFurnizor          | 3028   | D      |       2 |            2 |              0 |     -657.84
+ (deschidere)           | 381    | D      |       1 |            0 |              1 |     2489.81
+ FacturaIntrare         | 371    | D      |       1 |            0 |              1 |       20.00
+ NotaContabila          | 3021   | C      |       1 |            0 |              1 |        8.74
+ NotaContabila          | 3021   | D      |       1 |            0 |              1 |        8.74
+ (deschidere)           | 371    | D      |       1 |            0 |              1 |  9502451.21
+ (deschidere)           | 303    | D      |       1 |            0 |              1 |     9054.22
+ (deschidere)           | 3028   | D      |       1 |            0 |              1 |     2024.59
+(29 rows)
+
+== B2.8 perechea 1:2 detaliata (tip, conturile celor doua note) ==
+      tip      | TipStoc | linii | are_nota_egala |                 conturi                  
+---------------+---------+-------+----------------+------------------------------------------
+ ReturFurnizor |       1 |     2 |              2 | 3028/401 + 4426/401
+ ReturFurnizor |       5 |   474 |            474 | 371/401 + 4426/401 | 371/401 + 4426/4427
+(2 rows)
+

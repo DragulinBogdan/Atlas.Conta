@@ -1,0 +1,79 @@
+                                                                                                                                                                                                                                                                                                                                                                                   QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                   
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Subquery Scan on g  (cost=271092.86..290969.54 rows=62784 width=80) (actual time=519.321..618.342 rows=114680.00 loops=1)
+   Buffers: shared hit=14804 read=138052, temp read=18900 written=29120
+   ->  Finalize GroupAggregate  (cost=271092.86..290812.58 rows=62784 width=48) (actual time=519.318..613.438 rows=114680.00 loops=1)
+         Group Key: p."Unitate"
+         Filter: (COALESCE(sum(CASE WHEN (p."Latura" = 1) THEN p."Valoare" ELSE (- p."Valoare") END), 0.0) <> 0.0)
+         Rows Removed by Filter: 2725
+         Buffers: shared hit=14804 read=138052, temp read=18900 written=29120
+         ->  Gather Merge  (cost=271092.86..288730.31 rows=151438 width=48) (actual time=519.274..560.374 rows=352215.00 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=14804 read=138052, temp read=18900 written=29120
+               ->  Sort  (cost=270092.83..270250.58 rows=63099 width=48) (actual time=504.097..512.226 rows=117405.00 loops=3)
+                     Sort Key: p."Unitate"
+                     Sort Method: external merge  Disk: 10416kB
+                     Buffers: shared hit=14804 read=138052, temp read=18900 written=29120
+                     Worker 0:  Sort Method: external merge  Disk: 10320kB
+                     Worker 1:  Sort Method: external merge  Disk: 10328kB
+                     ->  Partial HashAggregate  (cost=255807.48..263119.66 rows=63099 width=48) (actual time=362.217..478.859 rows=117405.00 loops=3)
+                           Group Key: p."Unitate"
+                           Planned Partitions: 4  Batches: 21  Memory Usage: 8249kB  Disk Usage: 36616kB
+                           Buffers: shared hit=14790 read=138052, temp read=15017 written=25228
+                           Worker 0:  Batches: 21  Memory Usage: 8249kB  Disk Usage: 36304kB
+                           Worker 1:  Batches: 21  Memory Usage: 8249kB  Disk Usage: 36472kB
+                           ->  Parallel Append  (cost=0.04..213013.71 rows=556667 width=24) (actual time=18.317..215.036 rows=1009408.00 loops=3)
+                                 Buffers: shared hit=14790 read=138052
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2025" p_10  (cost=0.04..21278.81 rows=57065 width=24) (actual time=16.681..65.339 rows=311712.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 385820
+                                       Buffers: shared hit=1330 read=14136
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2024" p_9  (cost=0.04..21276.87 rows=57832 width=24) (actual time=16.333..67.167 rows=311712.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 385948
+                                       Buffers: shared hit=1305 read=14158
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2017" p_2  (cost=0.04..21273.81 rows=58014 width=24) (actual time=0.135..48.386 rows=311712.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 385820
+                                       Buffers: shared hit=1705 read=13756
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2018" p_3  (cost=0.04..21273.81 rows=57796 width=24) (actual time=0.110..47.402 rows=311712.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 385820
+                                       Buffers: shared hit=1670 read=13791
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2019" p_4  (cost=0.04..21273.81 rows=58088 width=24) (actual time=0.385..49.668 rows=311712.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 385820
+                                       Buffers: shared hit=1360 read=14101
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2020" p_5  (cost=0.04..21273.81 rows=58211 width=24) (actual time=0.103..44.941 rows=311712.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 385820
+                                       Buffers: shared hit=1638 read=13823
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2021" p_6  (cost=0.04..21273.81 rows=58548 width=24) (actual time=0.081..16.108 rows=103904.00 loops=3)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 128607
+                                       Buffers: shared hit=2338 read=13123
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2022" p_7  (cost=0.04..21273.81 rows=58803 width=24) (actual time=0.083..44.945 rows=311712.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 385820
+                                       Buffers: shared hit=1638 read=13823
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2023" p_8  (cost=0.04..21273.81 rows=57969 width=24) (actual time=0.128..49.015 rows=311712.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 385820
+                                       Buffers: shared hit=1094 read=14367
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2016" p_1  (cost=0.04..18758.01 rows=34340 width=24) (actual time=21.918..61.245 rows=222816.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                       Rows Removed by Filter: 385820
+                                       Buffers: shared hit=712 read=12974
+                                 ->  Parallel Seq Scan on "Postare_Contabil_rest" p_11  (cost=0.04..0.04 rows=1 width=38) (actual time=0.016..0.016 rows=0.00 loops=1)
+                                       Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+ Planning:
+   Buffers: shared hit=2324
+ Planning Time: 2.206 ms
+ JIT:
+   Functions: 167
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 7.393 ms (Deform 4.968 ms), Inlining 0.000 ms, Optimization 9.237 ms, Emission 51.381 ms, Total 68.011 ms
+ Execution Time: 635.693 ms
+(75 rows)
+

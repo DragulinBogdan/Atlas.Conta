@@ -1,0 +1,25 @@
+Timing is on.
+DO
+Time: 48300.995 ms (00:48.301)
+ANALYZE
+Time: 15540.367 ms (00:15.540)
+       k        |        s         |    v    
+----------------+------------------+---------
+ x10_F0         | RegistruContabil | 3043244
+ x10_F0         | RegistruStoc     | 2772457
+ x10_F0         | RegistruTva      | 907320
+ x10_f2         | 1                | 6975448
+ x10_f2         | 2                | 2772457
+ x10_f2         | 3                | 1814640
+ x10_f3         | 1                | 6975448
+ x10_f3         | 2                | 2772457
+ x10_f3         | 3                | 1814640
+ x10_postari    | 1                | 6975448
+ x10_postari    | 2                | 2772457
+ x10_postari    | 3                | 1814640
+ x10_tranzactii | 1                | 2051730
+ x10_tranzactii | 3                | 1
+ x10_tranzactii | 4                | 444480
+(15 rows)
+
+Time: 1658.236 ms (00:01.658)

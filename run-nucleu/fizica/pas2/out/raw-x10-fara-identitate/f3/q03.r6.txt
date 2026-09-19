@@ -1,0 +1,83 @@
+                                                                                       QUERY PLAN                                                                                       
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=359239.76..685200.43 rows=208796 width=205) (actual time=1127.899..1245.043 rows=199175.00 loops=1)
+   Hash Cond: (f."DocumentId" = doc."ID")
+   Buffers: shared hit=14361 read=142794, temp read=31855 written=31903
+   ->  Subquery Scan on f  (cost=348085.11..661089.68 rows=208796 width=180) (actual time=1085.142..1151.687 rows=199175.00 loops=1)
+         Filter: (f."Data" >= '2025-01-01'::date)
+         Rows Removed by Filter: 1737641
+         Buffers: shared hit=13891 read=139043, temp read=28984 written=29032
+         ->  WindowAgg  (cost=348085.11..636858.28 rows=1938512 width=180) (actual time=534.956..1104.391 rows=1936816.00 loops=1)
+               Window: w1 AS (ORDER BY p."Data", p."TranzactieId", p."ID" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+               Storage: Memory  Maximum Storage: 17kB
+               Buffers: shared hit=13891 read=139043, temp read=28984 written=29032
+               ->  Gather Merge  (cost=348084.96..573856.64 rows=1938512 width=60) (actual time=534.887..700.789 rows=1936816.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=13891 read=139043, temp read=28984 written=29032
+                     ->  Sort  (cost=347084.94..349104.23 rows=807715 width=60) (actual time=511.330..547.901 rows=645605.33 loops=3)
+                           Sort Key: p."Data", p."TranzactieId", p."ID"
+                           Sort Method: external merge  Disk: 36576kB
+                           Buffers: shared hit=13891 read=139043, temp read=28984 written=29032
+                           Worker 0:  Sort Method: external merge  Disk: 46536kB
+                           Worker 1:  Sort Method: external merge  Disk: 51168kB
+                           ->  Parallel Append  (cost=0.00..207095.02 rows=807715 width=60) (actual time=242.299..366.483 rows=645605.33 loops=3)
+                                 Buffers: shared hit=13799 read=139043
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2025" p_10  (cost=0.00..20552.17 rows=83065 width=60) (actual time=209.451..240.686 rows=199175.00 loops=1)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 498357
+                                       Buffers: shared hit=1033 read=14433
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2024" p_9  (cost=0.00..20550.10 rows=82983 width=60) (actual time=220.153..251.031 rows=199177.00 loops=1)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 498483
+                                       Buffers: shared hit=984 read=14479
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2017" p_2  (cost=0.00..20547.17 rows=82919 width=60) (actual time=0.209..32.347 rows=199175.00 loops=1)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 498357
+                                       Buffers: shared hit=1009 read=14452
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2018" p_3  (cost=0.00..20547.17 rows=81941 width=60) (actual time=0.289..29.550 rows=199175.00 loops=1)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 498357
+                                       Buffers: shared hit=908 read=14553
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2019" p_4  (cost=0.00..20547.17 rows=83878 width=60) (actual time=0.125..27.902 rows=199175.00 loops=1)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 498357
+                                       Buffers: shared hit=940 read=14521
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2020" p_5  (cost=0.00..20547.17 rows=83578 width=60) (actual time=0.086..28.120 rows=199175.00 loops=1)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 498357
+                                       Buffers: shared hit=940 read=14521
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2021" p_6  (cost=0.00..20547.17 rows=84886 width=60) (actual time=0.095..10.282 rows=66391.67 loops=3)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 166119
+                                       Buffers: shared hit=4343 read=11118
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2022" p_7  (cost=0.00..20547.17 rows=81912 width=60) (actual time=0.153..16.043 rows=99587.50 loops=2)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 249178
+                                       Buffers: shared hit=1668 read=13793
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2023" p_8  (cost=0.00..20547.17 rows=82745 width=60) (actual time=0.086..28.456 rows=199175.00 loops=1)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 498357
+                                       Buffers: shared hit=1034 read=14427
+                                 ->  Parallel Seq Scan on "Postare_Contabil_2016" p_1  (cost=0.00..18123.97 rows=59807 width=60) (actual time=297.287..323.664 rows=144239.00 loops=1)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 464397
+                                       Buffers: shared hit=940 read=12746
+                                 ->  Parallel Seq Scan on "Postare_Contabil_rest" p_11  (cost=0.00..0.00 rows=1 width=74) (actual time=0.002..0.002 rows=0.00 loops=1)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+   ->  Hash  (cost=6785.83..6785.83 rows=205186 width=41) (actual time=42.491..42.491 rows=205186.00 loops=1)
+         Buckets: 131072  Batches: 4  Memory Usage: 4777kB
+         Buffers: shared hit=470 read=3751, temp written=1180
+         ->  Seq Scan on "Documente" doc  (cost=0.00..6785.83 rows=205186 width=41) (actual time=0.146..13.999 rows=205186.00 loops=1)
+               Filter: ("GCRecord" = 0)
+               Buffers: shared hit=470 read=3751
+ Planning:
+   Buffers: shared hit=2113
+ Planning Time: 2.221 ms
+ JIT:
+   Functions: 149
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 6.097 ms (Deform 4.093 ms), Inlining 81.303 ms, Optimization 384.871 ms, Emission 260.666 ms, Total 732.937 ms
+ Execution Time: 1263.239 ms
+(79 rows)
+

@@ -1,0 +1,55 @@
+                                                                                          QUERY PLAN                                                                                          
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=222481.32..225708.98 rows=9119 width=230) (actual time=285.373..317.054 rows=2517.00 loops=1)
+   Hash Cond: (p."Partener" = rp."ID")
+   Buffers: shared hit=14921 read=140250, temp read=3279 written=6611
+   ->  Hash Left Join  (cost=221447.22..224491.36 rows=9119 width=147) (actual time=280.817..311.397 rows=2517.00 loops=1)
+         Hash Cond: (p."Cont" = c."ID")
+         Buffers: shared hit=14397 read=140250, temp read=3279 written=6611
+         ->  Finalize GroupAggregate  (cost=221415.12..224435.17 rows=9119 width=96) (actual time=280.639..310.965 rows=2517.00 loops=1)
+               Group Key: p."Partener"
+               Filter: ((COALESCE(sum(CASE WHEN (p."Latura" = 1) THEN p."Valoare" ELSE 0.0 END), 0.0) - COALESCE(sum(CASE WHEN (p."Latura" = 2) THEN p."Valoare" ELSE 0.0 END), 0.0)) <> 0.0)
+               Rows Removed by Filter: 17267
+               Buffers: shared hit=14381 read=140250, temp read=3279 written=6611
+               ->  Gather Merge  (cost=221415.12..223976.92 rows=21996 width=96) (actual time=280.596..294.235 rows=59312.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=14381 read=140250, temp read=3279 written=6611
+                     ->  Sort  (cost=220415.10..220438.01 rows=9165 width=96) (actual time=270.985..273.660 rows=19770.67 loops=3)
+                           Sort Key: p."Partener"
+                           Sort Method: quicksort  Memory: 3968kB
+                           Buffers: shared hit=14381 read=140250, temp read=3279 written=6611
+                           Worker 0:  Sort Method: quicksort  Memory: 3972kB
+                           Worker 1:  Sort Method: quicksort  Memory: 3973kB
+                           ->  Partial HashAggregate  (cost=219674.48..219811.96 rows=9165 width=96) (actual time=243.494..267.290 rows=19770.67 loops=3)
+                                 Group Key: p."Partener"
+                                 Batches: 5  Memory Usage: 8241kB  Disk Usage: 11200kB
+                                 Buffers: shared hit=14367 read=140250, temp read=3279 written=6611
+                                 Worker 0:  Batches: 5  Memory Usage: 8241kB  Disk Usage: 11072kB
+                                 Worker 1:  Batches: 5  Memory Usage: 8241kB  Disk Usage: 11120kB
+                                 ->  Parallel Seq Scan on "Postare_Contabil" p  (cost=0.00..205480.02 rows=811112 width=40) (actual time=5.394..134.242 rows=645605.33 loops=3)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 1679544
+                                       Buffers: shared hit=14367 read=140250
+         ->  Hash  (cost=24.05..24.05 rows=644 width=67) (actual time=0.168..0.170 rows=644.00 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 71kB
+               Buffers: shared hit=16
+               ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.025..0.104 rows=644.00 loops=1)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=16
+   ->  Hash  (cost=779.05..779.05 rows=20404 width=35) (actual time=4.422..4.422 rows=20404.00 loops=1)
+         Buckets: 32768  Batches: 1  Memory Usage: 1610kB
+         Buffers: shared hit=524
+         ->  Seq Scan on "Repartitori" rp  (cost=0.00..779.05 rows=20404 width=35) (actual time=0.012..2.463 rows=20404.00 loops=1)
+               Filter: ("GCRecord" = 0)
+               Buffers: shared hit=524
+ Planning:
+   Buffers: shared hit=562
+ Planning Time: 1.108 ms
+ JIT:
+   Functions: 66
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 2.997 ms (Deform 1.019 ms), Inlining 0.000 ms, Optimization 2.005 ms, Emission 22.092 ms, Total 27.094 ms
+ Execution Time: 330.016 ms
+(51 rows)
+

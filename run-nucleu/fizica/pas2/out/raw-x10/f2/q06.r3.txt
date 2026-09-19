@@ -1,0 +1,39 @@
+                                                                                                                                                                                                                                                                                                                                                                                QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Subquery Scan on g  (cost=272551.35..293068.03 rows=64805 width=80) (actual time=539.830..659.122 rows=114680.00 loops=1)
+   Buffers: shared hit=15293 read=139338, temp read=18163 written=28388
+   ->  Finalize GroupAggregate  (cost=272551.35..292906.01 rows=64805 width=48) (actual time=539.828..652.862 rows=114680.00 loops=1)
+         Group Key: p."Unitate"
+         Filter: (COALESCE(sum(CASE WHEN (p."Latura" = 1) THEN p."Valoare" ELSE (- p."Valoare") END), 0.0) <> 0.0)
+         Rows Removed by Filter: 2725
+         Buffers: shared hit=15293 read=139338, temp read=18163 written=28388
+         ->  Gather Merge  (cost=272551.35..290756.69 rows=156314 width=48) (actual time=539.784..585.242 rows=350479.00 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=15293 read=139338, temp read=18163 written=28388
+               ->  Sort  (cost=271551.33..271714.16 rows=65131 width=48) (actual time=527.020..536.731 rows=116826.33 loops=3)
+                     Sort Key: p."Unitate"
+                     Sort Method: external merge  Disk: 10336kB
+                     Buffers: shared hit=15293 read=139338, temp read=18163 written=28388
+                     Worker 0:  Sort Method: external merge  Disk: 10368kB
+                     Worker 1:  Sort Method: external merge  Disk: 10336kB
+                     ->  Partial HashAggregate  (cost=256806.85..264338.26 rows=65131 width=48) (actual time=332.954..496.514 rows=116826.33 loops=3)
+                           Group Key: p."Unitate"
+                           Planned Partitions: 4  Batches: 21  Memory Usage: 8249kB  Disk Usage: 36344kB
+                           Buffers: shared hit=15279 read=139338, temp read=14283 written=24499
+                           Worker 0:  Batches: 21  Memory Usage: 8249kB  Disk Usage: 35944kB
+                           Worker 1:  Batches: 21  Memory Usage: 8249kB  Disk Usage: 35896kB
+                           ->  Parallel Seq Scan on "Postare_Contabil" p  (cost=0.04..212741.57 rows=573207 width=24) (actual time=4.169..168.950 rows=1009408.00 loops=3)
+                                 Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                 Rows Removed by Filter: 1315741
+                                 Buffers: shared hit=15279 read=139338
+ Planning:
+   Buffers: shared hit=426
+ Planning Time: 0.635 ms
+ JIT:
+   Functions: 47
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 2.178 ms (Deform 0.781 ms), Inlining 0.000 ms, Optimization 1.479 ms, Emission 17.476 ms, Total 21.133 ms
+ Execution Time: 676.004 ms
+(35 rows)
+

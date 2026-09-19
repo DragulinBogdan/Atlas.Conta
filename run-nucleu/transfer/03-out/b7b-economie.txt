@@ -1,0 +1,44 @@
+== B7.1 clasificarea randurilor de stoc ==
+                     clasa                     | randuri | pct_stoc | pct_cub 
+-----------------------------------------------+---------+----------+---------
+ A. deschidere (fara DetaliuId)                |    6947 |     2.45 |    0.60
+ B. nicio nota pe linie                        |  174748 |    61.64 |   15.03
+ C. picior 3xx cu |valoare| egala (unificabil) |  101803 |    35.91 |    8.76
+(3 rows)
+
+== B7.2 pe tip de document ==
+          tip           | TipStoc |      clasa       | randuri 
+------------------------+---------+------------------+---------
+ Asamblare              |       1 | B fara nota      |     552
+ Asamblare              |       5 | B fara nota      |    4142
+ BonConsum              |       1 | C unificabil 3xx |     990
+ BonConsum              |       2 | C unificabil 3xx |    1471
+ BonConsum              |       5 | C unificabil 3xx |     481
+ DescarcareGestiune     |       5 | C unificabil 3xx |   62063
+ (deschidere)           |       1 | A deschidere     |      40
+ (deschidere)           |       5 | A deschidere     |    6907
+ ListaDiferenteInventar |       5 | C unificabil 3xx |      22
+ NIR                    |       1 | C unificabil 3xx |     496
+ NIR                    |       5 | C unificabil 3xx |   33793
+ NotaTransfer           |       1 | B fara nota      |     678
+ NotaTransfer           |       5 | B fara nota      |  169376
+ ReturClient            |       5 | C unificabil 3xx |    2010
+ ReturFurnizor          |       1 | C unificabil 3xx |       2
+ ReturFurnizor          |       5 | C unificabil 3xx |     475
+(16 rows)
+
+== B7.3 contentie: per DetaliuId, cate randuri de stoc contra cate PICIOARE 3xx disponibile ==
+ randuri_stoc | picioare_3xx | linii | potriviri_posibile 
+--------------+--------------+-------+--------------------
+            1 |            0 |  4694 |                  0
+            1 |            1 | 98861 |              98861
+            2 |            0 | 85027 |                  0
+            2 |            1 |  1471 |               1471
+(4 rows)
+
+== B7.4 total: cate postari dispar din cub ==
+ postari_care_dispar | postari_de_stoc_ramase | pct_din_cub 
+---------------------+------------------------+-------------
+              100332 |                 183166 |        8.63
+(1 row)
+

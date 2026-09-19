@@ -1,0 +1,1124 @@
+{
+ "q01": {
+  "f0": {
+   "n": 6,
+   "mediana": 58.715,
+   "min": 57.032,
+   "max": 67.214,
+   "plan": 0.711,
+   "hit": 1291,
+   "read": 12758,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 56.517,
+   "min": 52.119,
+   "max": 67.421,
+   "plan": 0.742,
+   "hit": 312,
+   "read": 25546,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 45.696,
+   "min": 45.501,
+   "max": 46.312,
+   "plan": 0.705,
+   "hit": 312,
+   "read": 15187,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 53.188,
+   "min": 52.672,
+   "max": 53.85,
+   "plan": 2.245,
+   "hit": 314,
+   "read": 13409,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2s": {
+   "n": 6,
+   "mediana": 51.76,
+   "min": 50.8,
+   "max": 54.141,
+   "plan": 0.896,
+   "hit": 320,
+   "read": 15187,
+   "idx": [
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3s": {
+   "n": 6,
+   "mediana": 52.903,
+   "min": 52.023,
+   "max": 53.92,
+   "plan": 1.266,
+   "hit": 1392,
+   "read": 12337,
+   "idx": [
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q02": {
+  "f0": {
+   "n": 6,
+   "mediana": 105.942,
+   "min": 103.629,
+   "max": 109.221,
+   "plan": 0.873,
+   "hit": 13181,
+   "read": 6868,
+   "idx": [
+    "IX_Conturi_Simbol",
+    "PK_Repartitori"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 172.704,
+   "min": 170.199,
+   "max": 174.799,
+   "plan": 0.854,
+   "hit": 62618,
+   "read": 23854,
+   "idx": [
+    "IX_Conturi_Simbol",
+    "PK_Repartitori"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 141.423,
+   "min": 140.983,
+   "max": 142.87,
+   "plan": 0.895,
+   "hit": 62127,
+   "read": 13986,
+   "idx": [
+    "IX_Conturi_Simbol",
+    "PK_Repartitori"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 151.622,
+   "min": 149.313,
+   "max": 166.514,
+   "plan": 2.557,
+   "hit": 62620,
+   "read": 11717,
+   "idx": [
+    "IX_Conturi_Simbol",
+    "PK_Repartitori"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2s": {
+   "n": 6,
+   "mediana": 157.097,
+   "min": 155.231,
+   "max": 161.884,
+   "plan": 1.082,
+   "hit": 62564,
+   "read": 13495,
+   "idx": [
+    "IX_Conturi_Simbol",
+    "PK_Repartitori",
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3s": {
+   "n": 6,
+   "mediana": 155.785,
+   "min": 153.494,
+   "max": 180.461,
+   "plan": 1.302,
+   "hit": 63636,
+   "read": 10645,
+   "idx": [
+    "IX_Conturi_Simbol",
+    "PK_Repartitori",
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q02b": {
+  "f0": {
+   "n": 6,
+   "mediana": 219.949,
+   "min": 213.345,
+   "max": 227.868,
+   "plan": 1.342,
+   "hit": 77743,
+   "read": 2099,
+   "idx": [
+    "IX_Conturi_Simbol",
+    "PK_Repartitori"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q03": {
+  "f0": {
+   "n": 6,
+   "mediana": 206.4,
+   "min": 200.77,
+   "max": 206.909,
+   "plan": 0.996,
+   "hit": 11545,
+   "read": 4127,
+   "idx": [
+    "IX_RegistruContabil_ContCreditId",
+    "IX_RegistruContabil_ContDebitId"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 187.677,
+   "min": 184.818,
+   "max": 191.843,
+   "plan": 0.752,
+   "hit": 13011,
+   "read": 4999,
+   "idx": [
+    "ix_f1_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 200.882,
+   "min": 191.556,
+   "max": 203.311,
+   "plan": 0.897,
+   "hit": 14608,
+   "read": 4127,
+   "idx": [
+    "ix_f2c_data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 201.805,
+   "min": 194.346,
+   "max": 228.622,
+   "plan": 2.378,
+   "hit": 356,
+   "read": 18300,
+   "idx": [
+    "Postare_Contabil_2016_Data_idx",
+    "Postare_Contabil_2017_Data_idx",
+    "Postare_Contabil_2018_Data_idx",
+    "Postare_Contabil_2019_Data_idx",
+    "Postare_Contabil_2020_Data_idx",
+    "Postare_Contabil_2021_Data_idx",
+    "Postare_Contabil_2022_Data_idx",
+    "Postare_Contabil_2023_Data_idx",
+    "Postare_Contabil_2024_Cont_Data_Latura_Valoare_Partener_Uni_idx",
+    "Postare_Contabil_2025_Data_idx",
+    "Postare_Contabil_rest_Data_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q04": {
+  "f0": {
+   "n": 6,
+   "mediana": 171.801,
+   "min": 167.501,
+   "max": 184.75,
+   "plan": 1.106,
+   "hit": 16300,
+   "read": 0,
+   "idx": [
+    "IX_RegistruContabil_ContCreditId",
+    "IX_RegistruContabil_ContDebitId",
+    "IX_RegistruContabil_DimensiuniCredit_RepartitorId",
+    "PK_Documente"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 8.765,
+   "min": 8.604,
+   "max": 9.696,
+   "plan": 0.707,
+   "hit": 13191,
+   "read": 0,
+   "idx": [
+    "PK_Documente",
+    "ix_f1_cont",
+    "ix_f1_partener"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 6.053,
+   "min": 5.842,
+   "max": 6.688,
+   "plan": 0.845,
+   "hit": 13016,
+   "read": 0,
+   "idx": [
+    "PK_Documente",
+    "ix_f2c_partener"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 6.75,
+   "min": 6.285,
+   "max": 7.283,
+   "plan": 2.411,
+   "hit": 13018,
+   "read": 0,
+   "idx": [
+    "PK_Documente",
+    "Postare_Contabil_2025_Partener_Cont_Data_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q04b": {
+  "f0": {
+   "n": 6,
+   "mediana": 41.975,
+   "min": 40.827,
+   "max": 43.817,
+   "plan": 1.393,
+   "hit": 37405,
+   "read": 0,
+   "idx": [
+    "IX_RegistruContabil_ContCreditId",
+    "IX_RegistruContabil_ContDebitId",
+    "PK_Documente",
+    "PK_Repartitori"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q05": {
+  "f0": {
+   "n": 6,
+   "mediana": 6.242,
+   "min": 5.939,
+   "max": 6.293,
+   "plan": 1.074,
+   "hit": 2151,
+   "read": 0,
+   "idx": [
+    "IX_RegistruContabil_Data",
+    "IX_SolduriPerioadaContabil_An_Luna_ContId_RepartitorId_Materia"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 82.719,
+   "min": 76.001,
+   "max": 85.309,
+   "plan": 0.758,
+   "hit": 14323,
+   "read": 0,
+   "idx": [
+    "ix_f1_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 70.822,
+   "min": 65.86,
+   "max": 79.175,
+   "plan": 0.764,
+   "hit": 14698,
+   "read": 1311,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 67.636,
+   "min": 65.26,
+   "max": 71.096,
+   "plan": 2.248,
+   "hit": 13678,
+   "read": 555,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2s": {
+   "n": 6,
+   "mediana": 36.095,
+   "min": 33.282,
+   "max": 36.469,
+   "plan": 0.634,
+   "hit": 1393,
+   "read": 0,
+   "idx": [
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3s": {
+   "n": 6,
+   "mediana": 35.867,
+   "min": 33.969,
+   "max": 37.071,
+   "plan": 0.668,
+   "hit": 1393,
+   "read": 0,
+   "idx": [
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q06": {
+  "f0": {
+   "n": 6,
+   "mediana": 76.341,
+   "min": 73.728,
+   "max": 81.648,
+   "plan": 1.808,
+   "hit": 18323,
+   "read": 3883,
+   "idx": [
+    "IX_Documente_ClrType",
+    "IX_Imperecheri_Data",
+    "PK_Repartitori"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 154.68,
+   "min": 147.621,
+   "max": 190.904,
+   "plan": 0.461,
+   "hit": 13783,
+   "read": 1741,
+   "idx": [
+    "ix_f1_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 154.734,
+   "min": 141.178,
+   "max": 170.28,
+   "plan": 0.6,
+   "hit": 14706,
+   "read": 763,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 89.17,
+   "min": 87.35,
+   "max": 91.654,
+   "plan": 2.293,
+   "hit": 13769,
+   "read": 0,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2s": {
+   "n": 6,
+   "mediana": 85.468,
+   "min": 84.419,
+   "max": 91.903,
+   "plan": 0.327,
+   "hit": 1674,
+   "read": 0,
+   "idx": [
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3s": {
+   "n": 6,
+   "mediana": 89.096,
+   "min": 86.537,
+   "max": 92.401,
+   "plan": 0.336,
+   "hit": 1674,
+   "read": 0,
+   "idx": [
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q07": {
+  "f0": {
+   "n": 6,
+   "mediana": 9.721,
+   "min": 9.304,
+   "max": 12.287,
+   "plan": 0.89,
+   "hit": 8688,
+   "read": 0,
+   "idx": [
+    "PK_Documente"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 6.555,
+   "min": 5.724,
+   "max": 8.419,
+   "plan": 0.966,
+   "hit": 6177,
+   "read": 449,
+   "idx": [
+    "CodTva_pkey",
+    "PK_Documente",
+    "ix_f1_codtva",
+    "ix_f1_perioada"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 5.762,
+   "min": 5.681,
+   "max": 6.533,
+   "plan": 0.959,
+   "hit": 6801,
+   "read": 0,
+   "idx": [
+    "CodTva_pkey",
+    "PK_Documente",
+    "ix_f2f_perioada_codtva"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 7.689,
+   "min": 7.222,
+   "max": 8.095,
+   "plan": 2.562,
+   "hit": 6823,
+   "read": 0,
+   "idx": [
+    "CodTva_pkey",
+    "PK_Documente",
+    "Postare_Fiscal_2016_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2017_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2018_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2019_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2020_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2021_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2022_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2023_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2024_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2025_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_2026_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx",
+    "Postare_Fiscal_rest_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q08": {
+  "f0": {
+   "n": 6,
+   "mediana": 7.892,
+   "min": 7.718,
+   "max": 9.543,
+   "plan": 0.407,
+   "hit": 1945,
+   "read": 0,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 6.661,
+   "min": 6.542,
+   "max": 7.852,
+   "plan": 0.54,
+   "hit": 452,
+   "read": 0,
+   "idx": [
+    "ix_f1_perioada"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 6.901,
+   "min": 6.874,
+   "max": 6.977,
+   "plan": 0.502,
+   "hit": 625,
+   "read": 0,
+   "idx": [
+    "ix_f2f_perioada_codtva"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 8.505,
+   "min": 8.099,
+   "max": 10.626,
+   "plan": 1.856,
+   "hit": 625,
+   "read": 0,
+   "idx": [
+    "Postare_Fiscal_2025_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q09": {
+  "f0": {
+   "n": 6,
+   "mediana": 0.291,
+   "min": 0.261,
+   "max": 0.365,
+   "plan": 0.565,
+   "hit": 346,
+   "read": 0,
+   "idx": [
+    "IX_Loturi_ProdusId",
+    "IX_RegistruStoc_LotId"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 33.441,
+   "min": 30.931,
+   "max": 34.363,
+   "plan": 0.431,
+   "hit": 12603,
+   "read": 0,
+   "idx": [
+    "ix_f1_gestiune"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 15.406,
+   "min": 15.301,
+   "max": 15.618,
+   "plan": 0.497,
+   "hit": 3535,
+   "read": 0,
+   "idx": [
+    "ix_f2s_gest_unit_data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 17.204,
+   "min": 15.976,
+   "max": 18.127,
+   "plan": 1.914,
+   "hit": 3531,
+   "read": 0,
+   "idx": [
+    "Postare_Stoc_2024_Gestiune_Unitate_Data_Cantitate_Valoare_idx",
+    "Postare_Stoc_2025_Gestiune_Unitate_Data_Cantitate_Valoare_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q10": {
+  "f0": {
+   "n": 6,
+   "mediana": 170.16,
+   "min": 162.25,
+   "max": 171.587,
+   "plan": 0.396,
+   "hit": 172984,
+   "read": 0,
+   "idx": [
+    "IX_RegistruStoc_LotId"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 218.144,
+   "min": 213.442,
+   "max": 244.45,
+   "plan": 0.453,
+   "hit": 15457,
+   "read": 10371,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 138.519,
+   "min": 132.118,
+   "max": 150.242,
+   "plan": 0.533,
+   "hit": 3131,
+   "read": 3736,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 150.737,
+   "min": 146.226,
+   "max": 157.697,
+   "plan": 2.162,
+   "hit": 3226,
+   "read": 3653,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q11": {
+  "f0": {
+   "n": 6,
+   "mediana": 84.468,
+   "min": 79.957,
+   "max": 86.193,
+   "plan": 0.617,
+   "hit": 3689,
+   "read": 0,
+   "idx": [
+    "IX_RegistruContabil_Data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 74.979,
+   "min": 71.496,
+   "max": 76.155,
+   "plan": 0.564,
+   "hit": 15524,
+   "read": 0,
+   "idx": [
+    "ix_f1_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 65.998,
+   "min": 63.268,
+   "max": 66.704,
+   "plan": 0.566,
+   "hit": 7326,
+   "read": 0,
+   "idx": [
+    "ix_f2c_data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 70.383,
+   "min": 69.599,
+   "max": 74.506,
+   "plan": 2.173,
+   "hit": 7241,
+   "read": 0,
+   "idx": [
+    "Postare_Contabil_2025_Data_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2s": {
+   "n": 6,
+   "mediana": 68.245,
+   "min": 67.348,
+   "max": 76.522,
+   "plan": 0.706,
+   "hit": 4238,
+   "read": 3008,
+   "idx": [
+    "ix_f2c_data",
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3s": {
+   "n": 6,
+   "mediana": 71.732,
+   "min": 67.05,
+   "max": 75.699,
+   "plan": 1.048,
+   "hit": 5132,
+   "read": 2114,
+   "idx": [
+    "Postare_Contabil_2025_Data_idx",
+    "ix_sold_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q12": {
+  "f0": {
+   "n": 6,
+   "mediana": 3.129,
+   "min": 2.896,
+   "max": 3.771,
+   "plan": 0.545,
+   "hit": 577,
+   "read": 0,
+   "idx": [
+    "IX_RegistruContabil_Data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 59.212,
+   "min": 54.775,
+   "max": 65.359,
+   "plan": 1.004,
+   "hit": 3529,
+   "read": 5122,
+   "idx": [
+    "ix_f1_data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 76.927,
+   "min": 75.736,
+   "max": 78.206,
+   "plan": 0.994,
+   "hit": 3973,
+   "read": 3739,
+   "idx": [
+    "ix_f2c_data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 80.212,
+   "min": 79.208,
+   "max": 83.812,
+   "plan": 1.342,
+   "hit": 2983,
+   "read": 4726,
+   "idx": [
+    "Postare_Contabil_2025_Data_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q12b": {
+  "f0": {
+   "n": 6,
+   "mediana": 5.267,
+   "min": 4.712,
+   "max": 6.174,
+   "plan": 0.36,
+   "hit": 1931,
+   "read": 0,
+   "idx": [],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 115.195,
+   "min": 110.851,
+   "max": 117.575,
+   "plan": 0.872,
+   "hit": 918034,
+   "read": 13371,
+   "idx": [
+    "ix_f1_linie"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 20.155,
+   "min": 19.228,
+   "max": 21.16,
+   "plan": 0.99,
+   "hit": 2524,
+   "read": 2126,
+   "idx": [
+    "ix_f2c_data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 23.263,
+   "min": 22.603,
+   "max": 24.446,
+   "plan": 2.493,
+   "hit": 4645,
+   "read": 0,
+   "idx": [
+    "Postare_Contabil_2025_Data_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q13": {
+  "f0": {
+   "n": 6,
+   "mediana": 0.096,
+   "min": 0.091,
+   "max": 0.109,
+   "plan": 0.9129999999999999,
+   "hit": 226,
+   "read": 0,
+   "idx": [
+    "IX_RegistruContabil_DocumentId",
+    "IX_RegistruStoc_DocumentId",
+    "IX_RegistruTva_DocumentId"
+   ],
+   "stmt": 3,
+   "o_rulare": false
+  },
+  "f1": {
+   "n": 6,
+   "mediana": 0.077,
+   "min": 0.076,
+   "max": 0.079,
+   "plan": 0.454,
+   "hit": 15,
+   "read": 0,
+   "idx": [
+    "ix_f1_document"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 0.108,
+   "min": 0.105,
+   "max": 0.112,
+   "plan": 0.847,
+   "hit": 20,
+   "read": 0,
+   "idx": [
+    "Postare_Contabil_DocumentId_idx",
+    "Postare_Fiscal_DocumentId_idx",
+    "Postare_Stoc_DocumentId_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 0.35,
+   "min": 0.348,
+   "max": 0.386,
+   "plan": 5.449,
+   "hit": 26,
+   "read": 0,
+   "idx": [
+    "Postare_Contabil_2025_DocumentId_idx",
+    "Postare_Contabil_2026_DocumentId_idx",
+    "Postare_Fiscal_2025_DocumentId_idx",
+    "Postare_Stoc_2024_DocumentId_idx",
+    "Postare_Stoc_2025_DocumentId_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q03c": {
+  "f1": {
+   "n": 6,
+   "mediana": 509.005,
+   "min": 500.497,
+   "max": 518.332,
+   "plan": 1.001,
+   "hit": 41953,
+   "read": 15687,
+   "idx": [
+    "ix_f1_cont"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 471.997,
+   "min": 456.339,
+   "max": 477.559,
+   "plan": 1.114,
+   "hit": 40559,
+   "read": 7127,
+   "idx": [
+    "ix_f2c_cont_data",
+    "ix_f2c_data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 543.104,
+   "min": 516.338,
+   "max": 558.043,
+   "plan": 3.611,
+   "hit": 38877,
+   "read": 8731,
+   "idx": [
+    "Postare_Contabil_2016_Data_idx",
+    "Postare_Contabil_2017_Data_idx",
+    "Postare_Contabil_2018_Data_idx",
+    "Postare_Contabil_2019_Data_idx",
+    "Postare_Contabil_2020_Data_idx",
+    "Postare_Contabil_2021_Data_idx",
+    "Postare_Contabil_2022_Data_idx",
+    "Postare_Contabil_2023_Data_idx",
+    "Postare_Contabil_2024_Cont_Data_Latura_Valoare_Partener_Uni_idx",
+    "Postare_Contabil_2025_Cont_Data_Latura_Valoare_Partener_Uni_idx",
+    "Postare_Contabil_2025_Data_idx",
+    "Postare_Contabil_rest_Data_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ },
+ "q09b": {
+  "f1": {
+   "n": 6,
+   "mediana": 0.325,
+   "min": 0.318,
+   "max": 0.373,
+   "plan": 0.481,
+   "hit": 92,
+   "read": 0,
+   "idx": [
+    "ix_f1_produs"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f2": {
+   "n": 6,
+   "mediana": 0.19,
+   "min": 0.16,
+   "max": 0.21,
+   "plan": 0.528,
+   "hit": 37,
+   "read": 0,
+   "idx": [
+    "ix_f2s_produs_data"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  },
+  "f3": {
+   "n": 6,
+   "mediana": 0.207,
+   "min": 0.195,
+   "max": 0.303,
+   "plan": 1.862,
+   "hit": 39,
+   "read": 0,
+   "idx": [
+    "Postare_Stoc_2024_Produs_Data_Cantitate_Valoare_Gestiune_Un_idx",
+    "Postare_Stoc_2025_Produs_Data_Cantitate_Valoare_Gestiune_Un_idx"
+   ],
+   "stmt": 1,
+   "o_rulare": false
+  }
+ }
+}

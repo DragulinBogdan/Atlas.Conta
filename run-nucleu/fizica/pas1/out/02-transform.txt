@@ -1,0 +1,78 @@
+Timing is on.
+TRUNCATE TABLE
+Time: 3.984 ms
+INSERT 0 8
+Time: 13.723 ms
+        k        | v 
+-----------------+---
+ codtva_versiuni | 8
+(1 row)
+
+Time: 0.303 ms
+TRUNCATE TABLE
+Time: 2.802 ms
+INSERT 0 205173
+Time: 447.457 ms
+INSERT 0 1
+Time: 1.382 ms
+CREATE VIEW
+Time: 1.627 ms
+TRUNCATE TABLE
+Time: 1.425 ms
+DROP TABLE
+Time: 0.121 ms
+psql:/tmp/02-transform.sql:38: NOTICE:  table "_C" does not exist, skipping
+SELECT 608764
+Time: 684.806 ms
+CREATE INDEX
+Time: 102.996 ms
+ANALYZE
+Time: 81.362 ms
+INSERT 0 608764
+Time: 976.924 ms
+DROP TABLE
+Time: 0.146 ms
+psql:/tmp/02-transform.sql:94: NOTICE:  table "_TertDoc" does not exist, skipping
+SELECT 116320
+Time: 190.098 ms
+ALTER TABLE
+Time: 28.704 ms
+ANALYZE
+Time: 30.591 ms
+psql:/tmp/02-transform.sql:105: NOTICE:  table "_TranzactieImperechere" does not exist, skipping
+DROP TABLE
+Time: 0.269 ms
+SELECT 44448
+Time: 31.822 ms
+ALTER TABLE
+Time: 8.474 ms
+ANALYZE
+Time: 21.526 ms
+INSERT 0 44448
+Time: 74.649 ms
+INSERT 0 88896
+Time: 173.341 ms
+INSERT 0 283498
+Time: 595.363 ms
+INSERT 0 181464
+Time: 340.082 ms
+ANALYZE
+Time: 140.614 ms
+ANALYZE
+Time: 21.061 ms
+ Fel | count  
+-----+--------
+   1 | 205173
+   3 |      1
+   4 |  44448
+(3 rows)
+
+Time: 17.495 ms
+ Spatiu | count  
+--------+--------
+      1 | 697660
+      2 | 283498
+      3 | 181464
+(3 rows)
+
+Time: 42.825 ms

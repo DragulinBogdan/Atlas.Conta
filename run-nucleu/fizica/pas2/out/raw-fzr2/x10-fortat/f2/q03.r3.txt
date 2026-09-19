@@ -1,0 +1,43 @@
+                                                                                QUERY PLAN                                                                                 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=360668.56..693731.31 rows=220751 width=205) (actual time=930.979..1045.429 rows=199175.00 loops=1)
+   Hash Cond: (f."DocumentId" = doc."ID")
+   Buffers: shared hit=14606 read=144346, temp read=31876 written=31924
+   ->  Subquery Scan on f  (cost=349513.91..668981.17 rows=220751 width=180) (actual time=891.086..957.143 rows=199175.00 loops=1)
+         Filter: (f."Data" >= '2025-01-01'::date)
+         Rows Removed by Filter: 1737641
+         Buffers: shared hit=14418 read=140313, temp read=29005 written=29053
+         ->  WindowAgg  (cost=349513.91..644249.46 rows=1978537 width=180) (actual time=333.289..912.143 rows=1936816.00 loops=1)
+               Window: w1 AS (ORDER BY p."Data", p."TranzactieId", p."ID" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+               Storage: Memory  Maximum Storage: 17kB
+               Buffers: shared hit=14418 read=140313, temp read=29005 written=29053
+               ->  Gather Merge  (cost=349513.77..579947.01 rows=1978537 width=60) (actual time=333.231..513.727 rows=1936816.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=14418 read=140313, temp read=29005 written=29053
+                     ->  Sort  (cost=348513.75..350574.72 rows=824390 width=60) (actual time=314.252..349.908 rows=645605.33 loops=3)
+                           Sort Key: p."Data", p."TranzactieId", p."ID"
+                           Sort Method: external merge  Disk: 36288kB
+                           Buffers: shared hit=14418 read=140313, temp read=29005 written=29053
+                           Worker 0:  Sort Method: external merge  Disk: 48232kB
+                           Worker 1:  Sort Method: external merge  Disk: 49680kB
+                           ->  Parallel Seq Scan on "Postare_Contabil" p  (cost=0.00..205513.20 rows=824390 width=60) (actual time=73.406..174.342 rows=645605.33 loops=3)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                 Rows Removed by Filter: 1679544
+                                 Buffers: shared hit=14326 read=140313
+   ->  Hash  (cost=6785.83..6785.83 rows=205186 width=41) (actual time=39.682..39.683 rows=205186.00 loops=1)
+         Buckets: 131072  Batches: 4  Memory Usage: 4777kB
+         Buffers: shared hit=188 read=4033, temp written=1180
+         ->  Seq Scan on "Documente" doc  (cost=0.00..6785.83 rows=205186 width=41) (actual time=0.294..13.363 rows=205186.00 loops=1)
+               Filter: ("GCRecord" = 0)
+               Buffers: shared hit=188 read=4033
+ Planning:
+   Buffers: shared hit=572
+ Planning Time: 0.814 ms
+ JIT:
+   Functions: 29
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 1.232 ms (Deform 0.658 ms), Inlining 83.547 ms, Optimization 78.377 ms, Emission 57.933 ms, Total 221.089 ms
+ Execution Time: 1062.992 ms
+(39 rows)
+

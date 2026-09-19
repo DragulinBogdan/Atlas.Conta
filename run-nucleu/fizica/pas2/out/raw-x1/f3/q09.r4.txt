@@ -1,0 +1,59 @@
+                                                                                                  QUERY PLAN                                                                                                  
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=13745.00..13766.32 rows=8529 width=84) (actual time=17.007..17.019 rows=309.00 loops=1)
+   Sort Key: (min(p."Data")), p."Unitate"
+   Sort Method: quicksort  Memory: 39kB
+   Buffers: shared hit=3531
+   ->  GroupAggregate  (cost=12365.04..13188.13 rows=8529 width=84) (actual time=12.113..16.963 rows=309.00 loops=1)
+         Group Key: p."Unitate"
+         Filter: (COALESCE(sum(p."Cantitate"), 0.0) > 0.0)
+         Rows Removed by Filter: 12792
+         Buffers: shared hit=3525
+         ->  Sort  (cost=12365.04..12440.11 rows=30027 width=31) (actual time=12.097..12.691 rows=27460.00 loops=1)
+               Sort Key: p."Unitate"
+               Sort Method: quicksort  Memory: 2066kB
+               Buffers: shared hit=3525
+               ->  Append  (cost=0.00..10131.94 rows=30027 width=31) (actual time=0.066..8.388 rows=27460.00 loops=1)
+                     Buffers: shared hit=3525
+                     ->  Seq Scan on "Postare_Stoc_2016" p_1  (cost=0.00..0.00 rows=1 width=60) (actual time=0.003..0.003 rows=0.00 loops=1)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+                     ->  Seq Scan on "Postare_Stoc_2017" p_2  (cost=0.00..0.00 rows=1 width=60) (actual time=0.002..0.002 rows=0.00 loops=1)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+                     ->  Seq Scan on "Postare_Stoc_2018" p_3  (cost=0.00..0.00 rows=1 width=60) (actual time=0.002..0.002 rows=0.00 loops=1)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+                     ->  Seq Scan on "Postare_Stoc_2019" p_4  (cost=0.00..0.00 rows=1 width=60) (actual time=0.003..0.003 rows=0.00 loops=1)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+                     ->  Seq Scan on "Postare_Stoc_2020" p_5  (cost=0.00..0.00 rows=1 width=60) (actual time=0.002..0.002 rows=0.00 loops=1)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+                     ->  Seq Scan on "Postare_Stoc_2021" p_6  (cost=0.00..0.00 rows=1 width=60) (actual time=0.002..0.002 rows=0.00 loops=1)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+                     ->  Seq Scan on "Postare_Stoc_2022" p_7  (cost=0.00..0.00 rows=1 width=60) (actual time=0.010..0.010 rows=0.00 loops=1)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+                     ->  Seq Scan on "Postare_Stoc_2023" p_8  (cost=0.00..0.00 rows=1 width=60) (actual time=0.004..0.004 rows=0.00 loops=1)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+                     ->  Bitmap Heap Scan on "Postare_Stoc_2024" p_9  (cost=10.50..160.61 rows=216 width=30) (actual time=0.038..0.089 rows=216.00 loops=1)
+                           Recheck Cond: (("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid) AND ("Data" <= '2025-06-30'::date))
+                           Filter: ("Spatiu" = 2)
+                           Heap Blocks: exact=40
+                           Buffers: shared hit=46
+                           ->  Bitmap Index Scan on "Postare_Stoc_2024_Gestiune_Unitate_Data_Cantitate_Valoare_idx"  (cost=0.00..10.44 rows=216 width=0) (actual time=0.027..0.027 rows=216.00 loops=1)
+                                 Index Cond: (("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid) AND ("Data" <= '2025-06-30'::date))
+                                 Index Searches: 1
+                                 Buffers: shared hit=6
+                     ->  Bitmap Heap Scan on "Postare_Stoc_2025" p_10  (cost=2560.65..9821.19 rows=29802 width=31) (actual time=1.644..7.260 rows=27244.00 loops=1)
+                           Recheck Cond: (("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid) AND ("Data" <= '2025-06-30'::date))
+                           Filter: ("Spatiu" = 2)
+                           Heap Blocks: exact=2992
+                           Buffers: shared hit=3479
+                           ->  Bitmap Index Scan on "Postare_Stoc_2025_Gestiune_Unitate_Data_Cantitate_Valoare_idx"  (cost=0.00..2553.20 rows=29802 width=0) (actual time=1.457..1.457 rows=27244.00 loops=1)
+                                 Index Cond: (("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid) AND ("Data" <= '2025-06-30'::date))
+                                 Index Searches: 1
+                                 Buffers: shared hit=487
+                     ->  Seq Scan on "Postare_Stoc_rest" p_11  (cost=0.00..0.00 rows=1 width=60) (actual time=0.009..0.009 rows=0.00 loops=1)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+ Planning:
+   Buffers: shared hit=2130
+ Planning Time: 1.914 ms
+ Execution Time: 17.204 ms
+(55 rows)
+

@@ -1,0 +1,54 @@
+===== B6c.1 soldul REAL al conturilor de tert la 31.12.2025 =====
+ ContSimbol | rol | sold_natural 
+------------+-----+--------------
+ 401        |   2 |   4656583.59
+ 404        |   2 |     -7976.02
+ 408        |   2 |    -64870.24
+ 4091       |   2 |     18185.34
+ 4092       |   2 |         0.00
+ 4111       |   1 |    649613.03
+ 4118       |   1 |     -9644.59
+ 418        |   1 |       925.87
+ 419        |   1 |   -141017.71
+
+
+===== B6c.2 total pe rol =====
+ rol_grup |    sold    
+----------+------------
+        1 |  499876.60
+        2 | 4601922.67
+
+ sold_total_tert 
+-----------------
+      5101799.27
+
+
+===== B6c.3 Sigma partide contra sold, pe fiecare definitie =====
+                      ce                       |     suma      
+-----------------------------------------------+---------------
+ C: Sigma rest                                 |   30687174.39
+ A: Sigma rest                                 |   30687174.39
+ B: Sigma rest                                 |    5101799.27
+ F0 onest (TotalStingere - Asignat)            |  699711205.35
+ F0 (PartideDeschise 12/2025)                  | 1034831116.87
+ sold real (Sigma postari de tert)             |    5101799.27
+ F0 onest, doar documentele cu postare de tert |  183963334.15
+
+
+===== B6c.4 F0 onest pe documentele FARA nicio postare de tert =====
+        ClrType         | partide |     suma     
+------------------------+---------+--------------
+ NotaContabila          |    3457 | 278442471.60
+ NotaTransfer           |   45542 | 121094304.67
+ DescarcareGestiune     |   36689 |  79199898.27
+ InchidereTva           |      12 |  23154222.11
+ FacturaIntrare         |    1215 |  12742939.08
+ ListaDiferenteInventar |      18 |    773417.09
+ BonConsum              |     545 |    340618.38
+
+
+===== B6c.5 dubla partida a lantului: NIR + FCT in F0 onest =====
+ lanturi | ambele_cu_rest |  rest_nir   |  rest_fct   | rest_lant_f0 | rest_lant_cub 
+---------+----------------+-------------+-------------+--------------+---------------
+   17814 |           4144 | 83593304.48 | 25968105.96 | 109561410.44 |   43701583.53
+

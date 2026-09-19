@@ -1,0 +1,381 @@
+== B3.1 (a) TipStoc x cont produs x clasa repartitor x repartitor ==
+ TipStoc | cont_produs |    rep_clr     |  rep_cod  | randuri 
+---------+-------------+----------------+-----------+---------
+       1 | 3028        | Gestiune       | SERSER001 |     872
+       1 | 3028        | Gestiune       | SED000081 |     287
+       1 | 3028        | Gestiune       | SED000028 |     194
+       1 | 3028        | Gestiune       | 000000003 |     194
+       1 | 3028        | Gestiune       | SED000004 |     190
+       1 | 3028        | Gestiune       | 000000001 |     177
+       1 | 3028        | Gestiune       | 000000002 |     145
+       1 | 381         | Gestiune       | SED000073 |     119
+       1 | 3024        | Gestiune       | SED000081 |     106
+       1 | 3028        | Gestiune       | SED000073 |      67
+       1 | 3028        | Gestiune       | SED000046 |      34
+       1 | 3028        | Gestiune       | SED000067 |      30
+       1 | 303         | Gestiune       | SED000078 |      28
+       1 | 3028        | Gestiune       | SED000002 |      24
+       1 | 3028        | Gestiune       | SED000030 |      20
+       1 | 3028        | Gestiune       | SED000016 |      20
+       1 | 3028        | Gestiune       | 000000004 |      16
+       1 | 3028        | Gestiune       | SED000010 |      16
+       1 | 3024        | Gestiune       | SERSER001 |      15
+       1 | 303         | Gestiune       | SED000081 |      14
+       1 | 303         | Gestiune       | SERSER001 |      14
+       1 | 303         | Gestiune       | 000000001 |      12
+       1 | 3028        | Gestiune       | SED000056 |      12
+       1 | 3028        | Gestiune       | SED000025 |      12
+       1 | 303         | Gestiune       | SED000073 |      12
+       1 | 3028        | Gestiune       | SED000061 |      10
+       1 | 381         | Gestiune       | SED000081 |      10
+       1 | 3028        | Gestiune       | SED000001 |      10
+       1 | 3028        | Gestiune       | SED000057 |       8
+       1 | 3028        | Gestiune       | SED000076 |       6
+       1 | 303         | Gestiune       | SED000016 |       6
+       1 | 3028        | Gestiune       | SED000045 |       6
+       1 | 3028        | Gestiune       | SED000054 |       6
+       1 | 3028        | Gestiune       | SED000038 |       4
+       1 | 3028        | Gestiune       | SERSER003 |       4
+       1 | 3028        | Gestiune       | SED000040 |       4
+       1 | 3028        | Gestiune       | SED000033 |       4
+       1 | 3028        | Gestiune       | SED000093 |       4
+       1 | 381         | Gestiune       | 000000001 |       4
+       1 | 3028        | Gestiune       | SED000064 |       4
+       1 | 3028        | Gestiune       | SED000084 |       4
+       1 | 303         | Gestiune       | 000000003 |       4
+       1 | 303         | Gestiune       | SED000046 |       2
+       1 | 3024        | Gestiune       | SED000004 |       2
+       1 | 3028        | Gestiune       | SED000013 |       2
+       1 | 3028        | Gestiune       | SED000011 |       2
+       1 | 303         | Gestiune       | SED000001 |       2
+       1 | 3028        | Gestiune       | SED000031 |       2
+       1 | 303         | Gestiune       | SED000066 |       2
+       1 | 3028        | Gestiune       | SED000037 |       2
+       1 | 3028        | Gestiune       | SED000089 |       2
+       1 | 3021        | Gestiune       | SERSER001 |       2
+       1 | 3028        | Gestiune       | SED000006 |       2
+       1 | 3028        | Gestiune       | SED000008 |       2
+       1 | 3028        | Gestiune       | SED000020 |       2
+       1 | 3028        | Gestiune       | SED000068 |       2
+       1 | 3021        | Gestiune       | SED000028 |       2
+       2 | 3028        | UnitateInterna | SEDIU     |     863
+       2 | 371         | UnitateInterna | SEDIU     |     481
+       2 | 3024        | UnitateInterna | SEDIU     |      64
+       2 | 303         | UnitateInterna | SEDIU     |      33
+       2 | 381         | UnitateInterna | SEDIU     |      30
+       5 | 371         | Gestiune       | SED000073 |   58505
+       5 | 371         | Gestiune       | SED000001 |   53804
+       5 | 371         | Gestiune       | SED000081 |   27729
+       5 | 371         | Gestiune       | 000000001 |   25933
+       5 | 371         | Gestiune       | 000000003 |   25374
+       5 | 371         | Gestiune       | SED000046 |   16868
+       5 | 371         | Gestiune       | SED000004 |   15686
+       5 | 371         | Gestiune       | SED000066 |   10757
+       5 | 371         | Gestiune       | SERSER003 |    9495
+       5 | 371         | Gestiune       | SED000065 |    7051
+       5 | 371         | Gestiune       | SERSER001 |    6805
+       5 | 371         | Gestiune       | SED000028 |    4139
+       5 | 371         | Gestiune       | SED000068 |    3537
+       5 | 371         | Gestiune       | SED000079 |    1765
+       5 | 371         | Gestiune       | SED000067 |    1545
+       5 | 371         | Gestiune       | SED000037 |    1142
+       5 | 371         | Gestiune       | SED000026 |     853
+       5 | 371         | Gestiune       | SED000061 |     615
+       5 | 371         | Gestiune       | SED000030 |     606
+       5 | 371         | Gestiune       | SED000013 |     599
+       5 | 371         | Gestiune       | 000000004 |     529
+       5 | 371         | Gestiune       | SED000057 |     435
+       5 | 371         | Gestiune       | SED000064 |     426
+       5 | 371         | Gestiune       | SED000092 |     381
+       5 | 371         | Gestiune       | SED000086 |     372
+       5 | 371         | Gestiune       | SED000031 |     349
+       5 | 371         | Gestiune       | SED000002 |     331
+       5 | 371         | Gestiune       | SED000089 |     276
+       5 | 371         | Gestiune       | SED000054 |     273
+       5 | 371         | Gestiune       | SED000010 |     261
+       5 | 371         | Gestiune       | SED000043 |     252
+       5 | 371         | Gestiune       | SED000020 |     237
+       5 | 371         | Gestiune       | SED000069 |     232
+       5 | 371         | Gestiune       | SED000088 |     205
+       5 | 371         | Gestiune       | SED000033 |     203
+       5 | 371         | Gestiune       | SED000016 |     181
+       5 | 371         | Gestiune       | SED000091 |     149
+       5 | 371         | Gestiune       | SED000011 |     126
+       5 | 371         | Gestiune       | SED000040 |     109
+       5 | 371         | Gestiune       | SED000084 |     109
+       5 | 371         | Gestiune       | SED000045 |     106
+       5 | 371         | Gestiune       | SED000049 |     105
+       5 | 371         | Gestiune       | SED000076 |      98
+       5 | 371         | Gestiune       | SED000094 |      93
+       5 | 371         | Gestiune       | SED000015 |      82
+       5 | 371         | Gestiune       | SED000008 |      79
+       5 | 371         | Gestiune       | SED000077 |      61
+       5 | 371         | Gestiune       | SED000090 |      42
+       5 | 371         | Gestiune       | SED000087 |      36
+       5 | 371         | Gestiune       | 000000002 |      36
+       5 | 371         | Gestiune       | SED000056 |      35
+       5 | 371         | Gestiune       | SED000025 |      30
+       5 | 371         | Gestiune       | SED000038 |      30
+       5 | 371         | Gestiune       | SED000093 |      29
+       5 | 371         | Gestiune       | SED000071 |      28
+       5 | 371         | Gestiune       | SERSER002 |      28
+       5 | 371         | Gestiune       | SED000075 |      28
+       5 | 371         | Gestiune       | SED000035 |      28
+       5 | 371         | Gestiune       | SED000023 |      15
+       5 | 371         | Gestiune       | SED000051 |       9
+       5 | 371         | Gestiune       | SED000006 |       9
+       5 | 371         | Gestiune       | SED000017 |       6
+       5 | 371         | Gestiune       | SED000021 |       3
+       5 | 371         | Gestiune       | SED000070 |       2
+       5 | 371         | Gestiune       | SED000095 |       2
+       5 | 371         | Gestiune       | SED000062 |       2
+       5 | 371         | Gestiune       | SED000085 |       2
+       5 | 371         | Gestiune       | SED000078 |       1
+(130 rows)
+
+== B3.2 (a) exista doua TipStoc pe ACEEASI (cont produs, repartitor)? ==
+ cont_produs | rep_clr | rep_cod | nr_tipstoc | tipstoc | randuri 
+-------------+---------+---------+------------+---------+---------
+(0 rows)
+
+== B3.3 (b) contul POSTAT pe latura semnului, pe TipStoc ==
+ TipStoc |          cont_postat           |    rep_clr     |  rep_cod  | randuri 
+---------+--------------------------------+----------------+-----------+---------
+       1 | 3028                           | Gestiune       | SERSER001 |     647
+       1 | (fara rand contabil pe latura) | Gestiune       | SERSER001 |     232
+       1 | 3028                           | Gestiune       | SED000081 |     228
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000028 |     180
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000073 |     132
+       1 | (fara rand contabil pe latura) | Gestiune       | 000000003 |     116
+       1 | 3024                           | Gestiune       | SED000081 |     106
+       1 | 3028                           | Gestiune       | SED000004 |     103
+       1 | 3028                           | Gestiune       | 000000001 |      98
+       1 | (fara rand contabil pe latura) | Gestiune       | 000000001 |      93
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000004 |      87
+       1 | (fara rand contabil pe latura) | Gestiune       | 000000002 |      81
+       1 | 3028                           | Gestiune       | 000000003 |      80
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000081 |      67
+       1 | 3028                           | Gestiune       | 000000002 |      64
+       1 | 381                            | Gestiune       | SED000073 |      51
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000046 |      36
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000067 |      30
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000002 |      24
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000030 |      20
+       1 | 3028                           | Gestiune       | SED000028 |      16
+       1 | (fara rand contabil pe latura) | Gestiune       | 000000004 |      16
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000010 |      15
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000078 |      15
+       1 | 3024                           | Gestiune       | SERSER001 |      15
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000016 |      14
+       1 | 303                            | Gestiune       | SED000078 |      13
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000025 |      12
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000056 |      12
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000061 |      10
+       1 | 303                            | Gestiune       | SED000081 |      10
+       1 | 3028                           | Gestiune       | SED000073 |      10
+       1 | 3028                           | Gestiune       | SED000016 |       9
+       1 | 303                            | Gestiune       | SERSER001 |       9
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000001 |       8
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000057 |       8
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000054 |       6
+       1 | 381                            | Gestiune       | SED000081 |       6
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000045 |       6
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000076 |       6
+       1 | 303                            | Gestiune       | SED000073 |       5
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000064 |       4
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000033 |       4
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000038 |       4
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000040 |       4
+       1 | (fara rand contabil pe latura) | Gestiune       | SERSER003 |       4
+       1 | 3028                           | Gestiune       | SED000001 |       4
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000084 |       4
+       1 | 303                            | Gestiune       | SED000016 |       3
+       1 | 303                            | Gestiune       | 000000003 |       2
+       1 | 3028                           | Gestiune       | SED000093 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000013 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000031 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000037 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000008 |       2
+       1 | 3024                           | Gestiune       | SED000004 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000006 |       2
+       1 | 381                            | Gestiune       | 000000001 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000066 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000068 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000011 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000089 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000093 |       2
+       1 | (fara rand contabil pe latura) | Gestiune       | SED000020 |       2
+       1 | 3028                           | Gestiune       | SED000010 |       1
+       2 | (fara rand contabil pe latura) | UnitateInterna | SEDIU     |    1471
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000073 |   30973
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000001 |   29233
+       5 | 371                            | Gestiune       | SED000073 |   27532
+       5 | (fara rand contabil pe latura) | Gestiune       | 000000001 |   25577
+       5 | 371                            | Gestiune       | SED000001 |   24571
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000046 |   16868
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000081 |   15359
+       5 | (fara rand contabil pe latura) | Gestiune       | 000000003 |   14451
+       5 | 371                            | Gestiune       | SED000081 |   12370
+       5 | 371                            | Gestiune       | SED000004 |   11693
+       5 | 371                            | Gestiune       | 000000003 |   10923
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000066 |   10751
+       5 | (fara rand contabil pe latura) | Gestiune       | SERSER003 |    9495
+       5 | 371                            | Gestiune       | SED000065 |    4140
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000004 |    3993
+       5 | (fara rand contabil pe latura) | Gestiune       | SERSER001 |    3732
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000068 |    3537
+       5 | 371                            | Gestiune       | SERSER001 |    3073
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000065 |    2911
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000028 |    2633
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000079 |    1765
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000067 |    1545
+       5 | 371                            | Gestiune       | SED000028 |    1506
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000037 |    1142
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000026 |     851
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000061 |     615
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000030 |     606
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000013 |     599
+       5 | (fara rand contabil pe latura) | Gestiune       | 000000004 |     527
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000057 |     435
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000064 |     426
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000092 |     381
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000086 |     372
+       5 | 371                            | Gestiune       | 000000001 |     356
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000031 |     349
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000002 |     331
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000054 |     273
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000010 |     257
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000043 |     252
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000020 |     237
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000069 |     232
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000088 |     204
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000033 |     203
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000089 |     193
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000016 |     162
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000091 |     133
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000011 |     126
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000040 |     109
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000045 |     106
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000049 |     105
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000094 |      93
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000084 |      87
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000076 |      84
+       5 | 371                            | Gestiune       | SED000089 |      83
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000015 |      82
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000008 |      79
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000077 |      61
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000090 |      42
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000087 |      36
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000056 |      35
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000025 |      30
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000038 |      30
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000075 |      28
+       5 | (fara rand contabil pe latura) | Gestiune       | SERSER002 |      28
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000035 |      28
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000071 |      28
+       5 | (fara rand contabil pe latura) | Gestiune       | 000000002 |      25
+       5 | 371                            | Gestiune       | SED000084 |      22
+       5 | 371                            | Gestiune       | SED000016 |      19
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000093 |      18
+       5 | 371                            | Gestiune       | SED000091 |      16
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000023 |      15
+       5 | 371                            | Gestiune       | SED000076 |      14
+       5 | 371                            | Gestiune       | SED000093 |      11
+       5 | 371                            | Gestiune       | 000000002 |      11
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000051 |       9
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000006 |       9
+       5 | 371                            | Gestiune       | SED000066 |       6
+       5 | 371                            | Gestiune       | SED000010 |       4
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000021 |       3
+       5 | 371                            | Gestiune       | SED000017 |       3
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000017 |       3
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000070 |       2
+       5 | 371                            | Gestiune       | SED000026 |       2
+       5 | 371                            | Gestiune       | 000000004 |       2
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000095 |       2
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000085 |       2
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000078 |       1
+       5 | 371                            | Gestiune       | SED000088 |       1
+       5 | (fara rand contabil pe latura) | Gestiune       | SED000062 |       1
+       5 | 371                            | Gestiune       | SED000062 |       1
+(157 rows)
+
+== B3.4 (b) coliziuni: doua TipStoc pe aceeasi (cont postat, repartitor) ==
+ cont_postat | rep_clr | rep_cod | nr | tipstoc | randuri 
+-------------+---------+---------+----+---------+---------
+(0 rows)
+
+== B3.5 repartitorii care apar in RegistruStoc ==
+    rep_clr     |  rep_cod  |             rep_den              | tipstoc | randuri 
+----------------+-----------+----------------------------------+---------+---------
+ Gestiune       | SED000073 | TRANZIT                          | 1,5     |   58703
+ Gestiune       | SED000001 | ONLINE                           | 1,5     |   53816
+ Gestiune       | SED000081 | CORPORATE                        | 1,5     |   28146
+ Gestiune       | 000000001 | DEPOZIT                          | 1,5     |   26126
+ Gestiune       | 000000003 | MAGAZIN                          | 1,5     |   25572
+ Gestiune       | SED000046 | BUCUR VASILE                     | 1,5     |   16904
+ Gestiune       | SED000004 | CONSUMABILE                      | 1,5     |   15878
+ Gestiune       | SED000066 | REZERVARI MAGAZIN                | 1,5     |   10759
+ Gestiune       | SERSER003 | REZERVARI DEPOZIT                | 1,5     |    9499
+ Gestiune       | SERSER001 | SERVICE                          | 1,5     |    7708
+ Gestiune       | SED000065 | ASUS RO                          | 5       |    7051
+ Gestiune       | SED000028 | STOC SERVICE                     | 1,5     |    4335
+ Gestiune       | SED000068 | REZERVARI CONSUMABILE            | 1,5     |    3539
+ Gestiune       | SED000079 | NICA ALIN                        | 5       |    1765
+ Gestiune       | SED000067 | REZERVARI STOC SERVICE           | 1,5     |    1575
+ UnitateInterna | SEDIU     | Sediul central                   | 2       |    1471
+ Gestiune       | SED000037 | POPESCU DANIEL                   | 1,5     |    1144
+ Gestiune       | SED000026 | RIZEA MARIAN                     | 5       |     853
+ Gestiune       | SED000030 | BARBIERU PAVEL                   | 1,5     |     626
+ Gestiune       | SED000061 | ROBERT CATRINA                   | 1,5     |     625
+ Gestiune       | SED000013 | BANICA CATALIN                   | 1,5     |     601
+ Gestiune       | 000000004 | GARANTII                         | 1,5     |     545
+ Gestiune       | SED000057 | CAPLESCU MIHAIL                  | 1,5     |     443
+ Gestiune       | SED000064 | NAE CATALIN                      | 1,5     |     430
+ Gestiune       | SED000092 | MARFA NESOSITA                   | 5       |     381
+ Gestiune       | SED000086 | FERARIU CIPRIAN                  | 5       |     372
+ Gestiune       | SED000002 | Piese Schimb                     | 1,5     |     355
+ Gestiune       | SED000031 | RADU CRISTIAN                    | 1,5     |     351
+ Gestiune       | SED000054 | VOINEA FLORIN                    | 1,5     |     279
+ Gestiune       | SED000089 | Marfa Lipsa                      | 1,5     |     278
+ Gestiune       | SED000010 | DIMULESCU BOGDAN                 | 1,5     |     277
+ Gestiune       | SED000043 | FURTUNA MARIUS                   | 5       |     252
+ Gestiune       | SED000020 | PANA ANDREEA                     | 1,5     |     239
+ Gestiune       | SED000069 | PARDOS MARIUS                    | 5       |     232
+ Gestiune       | SED000033 | BUTCA CRISTI                     | 1,5     |     207
+ Gestiune       | SED000016 | FLORESCU ADRIAN                  | 1,5     |     207
+ Gestiune       | SED000088 | MARFA STORNO                     | 5       |     205
+ Gestiune       | 000000002 | BON CONSUM                       | 1,5     |     181
+ Gestiune       | SED000091 | LORIN                            | 5       |     149
+ Gestiune       | SED000011 | ENACHE GABRIEL                   | 1,5     |     128
+ Gestiune       | SED000084 | Marfa Deteriorata                | 1,5     |     113
+ Gestiune       | SED000040 | IRIMIA VALENTIN                  | 1,5     |     113
+ Gestiune       | SED000045 | Produse Testare Service          | 1,5     |     112
+ Gestiune       | SED000049 | Inventar Magazin                 | 5       |     105
+ Gestiune       | SED000076 | Inventar Service                 | 1,5     |     104
+ Gestiune       | SED000094 | BANU ORTENSIUS                   | 5       |      93
+ Gestiune       | SED000015 | BERZOI ROBERT                    | 5       |      82
+ Gestiune       | SED000008 | ENACHE MIRCEA                    | 1,5     |      81
+ Gestiune       | SED000077 | SAVU MIHAI                       | 5       |      61
+ Gestiune       | SED000056 | STANCESCU CRISTINA               | 1,5     |      47
+ Gestiune       | SED000025 | FLORESCU CRISTINA                | 1,5     |      42
+ Gestiune       | SED000090 | DRAGOS DANIEL                    | 5       |      42
+ Gestiune       | SED000087 | RAZVAN VESELINA                  | 5       |      36
+ Gestiune       | SED000038 | PAVEL ANDREEA                    | 1,5     |      34
+ Gestiune       | SED000093 | PRODUSE BONUS                    | 1,5     |      33
+ Gestiune       | SED000078 | OBIECTE INVENTAR DEPOZIT         | 1,5     |      29
+ Gestiune       | SED000075 | VASILE IANCU-GEORGEL             | 5       |      28
+ Gestiune       | SED000071 | MIHALACHIOIU CONSTANTIN - DANIEL | 5       |      28
+ Gestiune       | SED000035 | Finantare Grenke                 | 5       |      28
+ Gestiune       | SERSER002 | Rezervari PROIECTE               | 5       |      28
+ Gestiune       | SED000023 | DIMULESCU ANDRA                  | 5       |      15
+ Gestiune       | SED000006 | POPA LUMINITA                    | 1,5     |      11
+ Gestiune       | SED000051 | ENACHE ANDRA                     | 5       |       9
+ Gestiune       | SED000017 | STANCIU DIANA                    | 5       |       6
+ Gestiune       | SED000021 | PETRONELA NICA                   | 5       |       3
+ Gestiune       | SED000085 | BARBOI GABRIEL                   | 5       |       2
+ Gestiune       | SED000062 | Deteriorate Service              | 5       |       2
+ Gestiune       | SED000070 | BRATU VASILE                     | 5       |       2
+ Gestiune       | SED000095 | KONICA MINOLTA                   | 5       |       2
+(69 rows)
+

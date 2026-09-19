@@ -1,0 +1,22 @@
+                                                            QUERY PLAN                                                             
+-----------------------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=702509.23..769059.97 rows=1071499 width=96) (actual time=1212.603..1463.670 rows=12839.00 loops=1)
+   Group Key: "Gestiune", "Unitate"
+   Filter: (COALESCE(sum("Cantitate"), 0.0) <> 0.0)
+   Planned Partitions: 128  Batches: 129  Memory Usage: 8209kB  Disk Usage: 253160kB
+   Rows Removed by Filter: 97947
+   Buffers: shared hit=15693 read=241078, temp read=21543 written=52843
+   ->  Seq Scan on "Postare" p  (cost=0.00..430271.04 rows=2713901 width=41) (actual time=93.539..483.213 rows=2772457.00 loops=1)
+         Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+         Rows Removed by Filter: 8790088
+         Buffers: shared hit=15693 read=241078
+ Planning:
+   Buffers: shared hit=414
+ Planning Time: 0.596 ms
+ JIT:
+   Functions: 16
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 1.093 ms (Deform 0.606 ms), Inlining 35.302 ms, Optimization 68.206 ms, Emission 47.754 ms, Total 152.355 ms
+ Execution Time: 1487.763 ms
+(18 rows)
+

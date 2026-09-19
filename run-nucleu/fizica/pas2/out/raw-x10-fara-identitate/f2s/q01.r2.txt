@@ -1,0 +1,48 @@
+                                                                                               QUERY PLAN                                                                                                
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Right Join  (cost=89103.63..89140.38 rows=200 width=387) (actual time=106.445..109.097 rows=119.00 loops=1)
+   Hash Cond: (c."ID" = s."Cont")
+   Buffers: shared hit=3995 read=17181
+   ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.113..0.311 rows=644.00 loops=1)
+         Filter: ("GCRecord" = 0)
+         Buffers: shared read=16
+   ->  Hash  (cost=89101.13..89101.13 rows=200 width=144) (actual time=106.258..108.657 rows=119.00 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 18kB
+         Buffers: shared hit=3995 read=17165
+         ->  Finalize GroupAggregate  (cost=89030.43..89101.13 rows=200 width=144) (actual time=106.035..108.624 rows=119.00 loops=1)
+               Group Key: s."Cont"
+               Buffers: shared hit=3995 read=17165
+               ->  Gather Merge  (cost=89030.43..89086.33 rows=480 width=144) (actual time=106.022..108.452 rows=323.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=3995 read=17165
+                     ->  Sort  (cost=88030.40..88030.90 rows=200 width=144) (actual time=104.355..104.360 rows=107.67 loops=3)
+                           Sort Key: s."Cont"
+                           Sort Method: quicksort  Memory: 53kB
+                           Buffers: shared hit=3995 read=17165
+                           Worker 0:  Sort Method: quicksort  Memory: 53kB
+                           Worker 1:  Sort Method: quicksort  Memory: 59kB
+                           ->  Partial HashAggregate  (cost=88018.76..88022.76 rows=200 width=144) (actual time=104.259..104.311 rows=107.67 loops=3)
+                                 Group Key: s."Cont"
+                                 Batches: 1  Memory Usage: 160kB
+                                 Buffers: shared hit=3981 read=17165
+                                 Worker 0:  Batches: 1  Memory Usage: 160kB
+                                 Worker 1:  Batches: 1  Memory Usage: 288kB
+                                 ->  Parallel Append  (cost=0.43..82515.24 rows=440282 width=144) (actual time=0.034..68.048 rows=362415.00 loops=3)
+                                       Buffers: shared hit=3981 read=17165
+                                       ->  Parallel Index Only Scan using ix_sold_cont on "Sold" s  (cost=0.56..21718.10 rows=159322 width=144) (actual time=0.045..37.407 rows=389713.00 loops=1)
+                                             Index Cond: (("Spatiu" = 1) AND ("Granita" = '2024-12-31'::date))
+                                             Heap Fetches: 0
+                                             Index Searches: 1
+                                             Buffers: shared hit=2581 read=1726
+                                       ->  Parallel Index Scan using ix_f2c_data on "Postare_Contabil" p  (cost=0.43..57190.92 rows=280960 width=144) (actual time=0.031..42.442 rows=232510.67 loops=3)
+                                             Index Cond: (("Data" >= '2025-01-01'::date) AND ("Data" <= '2025-12-31'::date))
+                                             Filter: ("Spatiu" = 1)
+                                             Index Searches: 1
+                                             Buffers: shared hit=1400 read=15439
+ Planning:
+   Buffers: shared hit=519 read=37
+ Planning Time: 1.213 ms
+ Execution Time: 109.188 ms
+(44 rows)
+

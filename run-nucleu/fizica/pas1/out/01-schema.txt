@@ -1,0 +1,33 @@
+psql:/tmp/01-schema.sql:3: NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to table f1."Postare"
+drop cascades to view cub."_RestCub"
+DROP SCHEMA
+psql:/tmp/01-schema.sql:4: NOTICE:  drop cascades to table f2."Postare"
+DROP SCHEMA
+psql:/tmp/01-schema.sql:5: NOTICE:  drop cascades to table f3."Postare"
+DROP SCHEMA
+psql:/tmp/01-schema.sql:6: NOTICE:  drop cascades to 6 other objects
+DETAIL:  drop cascades to table cub."Tranzactie"
+drop cascades to table cub."CodTva"
+drop cascades to view cub."_TranzactiePeDocument"
+drop cascades to table cub."_C"
+drop cascades to table cub."_TertDoc"
+drop cascades to table cub."_TranzactieImperechere"
+DROP SCHEMA
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+DO

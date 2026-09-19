@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-18.** [Index](README.md)
+**Actualizat: 2026-09-20.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -21,7 +21,7 @@ văzută de utilizator, sunt în
 | 36f | TVA la încasare, facturi nesosite 408/4428, rotunjirea per document×cotă, prorata/ajustări | deschisă |
 | 37g | comenzi, regenerarea DSC la recepția NIR, multi-gestiune per factură, rezervarea de stoc | deschisă |
 | 46f | imperecherea returului, toleranța ASM, disciplina de apelant ITV | deschisă |
-| 51e | `PoliticaEvaluare` (CMP) | deschisă |
+| 51e | `PoliticaEvaluare` (CMP) — sub 90c devine parametrul „unitatea de evaluare” al unității nominalizate | deschisă |
 | 52h | consumul ASM pe proveniență, reziduul TRANZIT | deschisă |
 | 53i | culegerea de produs pe ASM, localizarea shell-ului, perioadele fiscale manuale (≠ 2026 se adaugă de mână — continuată ca F27-r13), `Data` pe conexe | parțial: ASM închis de 76b |
 | DIM-4 | curatoria grilei registrului, vizibilitatea dimensiunilor per profil (`SetareProfil`) | deschisă |
@@ -102,7 +102,7 @@ văzută de utilizator, sunt în
 | 75-r5 | stornoul fără timbru propriu în oracolul golirii | deschisă |
 | 76-r1 | netarea plafonului e per (repartitor × LATURĂ), nu per CONT (55 chei / 36 note amestecă conturi de clasă 4 pe aceeași latură; expunere reală 3 chei) | deschisă |
 | 76-r2 | `caStins` se scade din AMBELE sensuri — inatacabil azi, **devine real când un tip cu partener pe latură capătă capacitate bidirecțională** | deschisă |
-| 76-r3 | perf `AsignatFataDe` (entități polimorfe, chemat de 2 × nr. contrapartide) | deschisă |
+| 76-r3 | perf `AsignatFataDe` (entități polimorfe, chemat de 2 × nr. contrapartide); hook-urile de stingere dispar sub 90e | deschisă (se închide la TR-D9) |
 | 76-r4 | gate-ul comenzilor e pe `Document`, nu pe tipul feliei (422 vs 404 pe aceeași cauză; închisă de 80b) | închisă de 80b |
 | 76-r5 | `Candidati` sub-raportează pe ușa secured, iar `User` pe ușa de scriere e refuzat de primul FK invizibil, nu de o permisiune (familia 72-r10; închisă de 80b/80f) | închisă de 80b/80f |
 | 76-r6 | patru itemi de client în `lista-react.md`: căutarea sensibilă la diacritice în TOATE lookup-urile remote (colație `unaccent`/ICU sau coloană shadow — decizie de bază de date), `Lookup` care refetchează eticheta per instanță, limita convenției 61b pe valorile din PRECOMPLETARE, `window.confirm` moștenit pe ștergere (toți patru închiși de 77) | închisă de 77 |
@@ -207,7 +207,7 @@ văzută de utilizator, sunt în
 | F26-r20 | `Clasificare` căutabilă în lookup-ul XAF doar pe denumire; `Valoare` a regulii de deductibilitate formatată monetar la `Procent` (87) | deschisă |
 | F26-r21 | filtrele `FilterRow` pe coloanele cu `Lookup` de enum (`Cauza`) neverificate în browser (87) | deschisă |
 | F26-r22 | două `genereaza` concurente pe aceeași lună creează două drafturi care se blochează reciproc (ca ITV) (87) | deschisă |
-| F27-r1 | reclasificarea pe 1174 a erorilor semnificative din exerciții anterioare; pragul de semnificație ca politică (decizia 88) | deschisă |
+| F27-r1 | reclasificarea pe 1174 a erorilor semnificative din exerciții anterioare; pragul de semnificație ca politică (decizia 88); sub 90k devine rând de politică (sink pe an închis → 1174) | deschisă (TR-D9) |
 | F27-r2 | scadențar/aging pe partidele deschise (aceeași listă + scadența + bucket-uri) (88) | deschisă |
 | F27-r3 | cursa închidere ↔ operare prin blocarea verigii perioadei (88) | închisă la pasul 0 — F1 probat pe ambele capete, restanța nu s-a activat |
 | F27-r4 | închiderea de an ca operație distinctă (121 → 1174/117, soldurile de deschidere ale anului nou) (88) | deschisă |
@@ -217,7 +217,7 @@ văzută de utilizator, sunt în
 | F27-r8 | concurența între operatori (25f) rămâne parcată; felia rezolvă doar cursa perioadei (88) | deschisă |
 | F27-r9 | editabilitatea datei de înregistrare pe documentele GENERATE (o primesc la creare, din sursă sau din lună) (88) | deschisă |
 | F27-r10 | SAF-T: inițialul de stoc rămâne pe registrul integral (mutarea pe referință cere schimbarea semanticii lui `Randuri` din `SoldPeTipStocNeraportat` — decizie de raportare) (88) | deschisă |
-| F27-r11 | dimensionarea conturilor de terț pe PARTENER: azi `Repartitor` urmează laturile documentului, deci `sold-parteneri` nu e creanța per partener (familia 64h/73-r12/86-r13) (88) | deschisă |
+| F27-r11 | dimensionarea conturilor de terț pe PARTENER: azi `Repartitor` urmează laturile documentului, deci `sold-parteneri` nu e creanța per partener (familia 64h/73-r12/86-r13) (88); rezolvată STRUCTURAL de 90c (partenerul se scrie din unitate) | deschisă (TR-D9) |
 | F27-r12 | integritatea snapshot-ului memorată în istoric (rânduri + sume la închidere, constatare + probă, referința fără rânduri refuzată); azi un rând șters direct din bază dă o balanță tăcut greșită (88, review 8b) | deschisă |
 | F27-r13 | perioadele fiscale ale unei baze noi: seed-ul scrie 12 luni ale unui AN HARDCODAT (2026), iar crearea se poate face doar din XAF — nu din React și nu prin OData (lipsă de ergonomie, nu funcțională; continuă 53i) (88) | deschisă |
 | F27-r14 | costul de CADRU al unei cereri (58 de instrucțiuni SQL de bootstrap de securitate per ObjectSpace + hidratare + serializare): motivul pentru care fișa de cont ratează ținta end-to-end deși calea ei de date costă 7 ms (88) | deschisă |
@@ -225,8 +225,34 @@ văzută de utilizator, sunt în
 | F27-r16 | forma proiecției `DocumenteCuRest`: candidații de la 59 (uniunea tuturor documentelor operate) și forma legăturilor se rezolvă ÎMPREUNĂ — corelarea legăturii duce panoul filtrat la 82 ms, dar calea neplafonată a constatării de rest scadent de la 220 ms la 1,02 s (respinsă motivat, cu cifre; niciun index nu lipsește) (88) | deschisă |
 | F27-r17 | ordinea totală a listei `op1` din D394: cheia de ordonare nu e totală pentru persoanele fizice fără cod cu aceeași denumire, deci două generări ale aceleiași luni pot diferi la rând (familia 72-r7) (88) | deschisă |
 | F27-r18 | coloana cu data înregistrării în LISTELE React de documente (câmpul e cules și afișat pe formulare; coloana ar fi trecut pragul de atingeri al pasului 3) (88) | deschisă |
-| F28-r1 | simplificarea `CandidatiPereche<T, TOpus>` și a uniunii per tip din `ImperecheriProiectii` (jumătatea „tip” rezolvată de discriminator, „contrapartida per tip” e semantică); împreună cu F27-r16 (89) | deschisă |
+| F28-r1 | simplificarea `CandidatiPereche<T, TOpus>` și a uniunii per tip din `ImperecheriProiectii` (jumătatea „tip” rezolvată de discriminator, „contrapartida per tip” e semantică); împreună cu F27-r16 (89); `ImperecheriProiectii` dispare sub 90e | deschisă (TR-D8/D9) |
 | F28-r2 | index unic pe `Repartitor.Cod` (81-r4): mecanismul trivial sub TPH, blocat de coliziunile legitime între familii din import (89) | deschisă |
 | F28-r3 | partiționarea sau `CLUSTER` pe `ClrType` — fără cifră care s-o ceară (89) | deschisă |
 | F28-r4 | dezproxarea tipului în patru copii (`ClasaReala`, `TipReal`, `VerificaCodDenumire` inline, `TipDomeniu`); de redus la cele două semantici la atingerea gardianului (89) | deschisă |
 | F28-r5 | D406 S la rece +0,2 s (+7 %) pe 12/2025: cost per proces (SQL-ul mai mic în TPH, chemările calde egale); cauza (JIT/compilarea EF a formei noi) neizolată prin profil (89) | deschisă |
+| TR-r2 | notele pe conturi de stoc fără lot (2.997 pe Flax, cinci corespondențe): conectorul decide per corespondență — postare de valoare pe lot sau divergență declarată (90, TR-D7) | deschisă |
+| TR-r3 | fizica re-măsurată cu postarea de stoc unificată și felul `Transfer` exclus: `Spatiu` re-definit, FK per partiție, indexul `(Unitate, Data)` (90) | deschisă |
+| TR-r4 | recepția fără factură (NIR pe aviz, 408): cerință de produs de confirmat; NIR rămâne tip până atunci (90) | deschisă |
+| TR-r5 | DSC din FCL trece testul documentului-copil azi; de re-judecat dacă descărcarea devine clonă fără alegere de loturi (90) | deschisă |
+| TR-r6 | conectorul 1C: data reală a împerecherii (artefact 2026-09-18) și deschiderea de terți per partener / per factură deschisă (65,5 % din soldul de terț) (90) | deschisă |
+| TR-r7 | sink-urile bugetare (Gratuit/Folosință/Custodie) ca gestiuni virtuale / cont 803x: fără cifre, probate la primul seed bugetar pe cub cu injectivitatea (90) | deschisă |
+| TR-r8 | rulajul brut per partidă nu e sumă sub tranzacția de transfer; fișa partidei se randează ca fereastră (90) | deschisă |
+| TR-r9 | probele de formă din ModelCheck (≈300): inventar rescrie/șterge la TR-D8/D9, nu înainte (90) | deschisă |
+| TR-r10 | deschiderea ca tranzacție de fel `Deschidere` fără document, dar CU unitate și partener pe terți; `Deschidere.cs` scrie tranzacția, nu rânduri bloc (90) | deschisă |
+| TR-r11 | `Numar`, `DataScadenta`, `Autogenerat`, `DocumentSursa` rămân atribute ale documentului scrise la operare, sub gardianul (a) (90) | deschisă |
+| TR-r12 | Δ de sold 3xx (+585.404,66 pe Flax) între registrul de stoc și cel contabil de azi: tranșată prin contractul 1 al reconcilierii 1C la TR-D7; constatare, nu consecință acceptată (90) | deschisă |
+| FZ-r1 | granul lui `Sold` contra snapshot-urile de azi (și dacă un read model mai grosier merită ca al doilea): gate la TR-D8, nu condiție prealabilă; FZ-r2 măsurată 2026-09-19 (fișa 348 contra 248 ms) și absorbită (90) | deschisă |
+| FZ-r3 | lookup-ul per partidă (SAF-T Payments, fișa partidei): index `(Unitate, Data)` pe Contabil probat pe o interogare reală (90, TR-D8) | deschisă |
+| FZ-r4 | creșterea reală a coordonatelor pe un istoric lung: `Sold` la 1,2 GB și cifrele +S sunt limite inferioare (90) | deschisă |
+| FZ-r5 | rândul de stoc unificat cu postarea 3xx: economie ≤ 9 % — tranșat de 90g (o singură postare); re-măsurarea rămâne TR-r3 | închisă prin 90g |
+| FZ-r6 | partiționarea pe an: redeschisă doar când citirile integrale de istoric trec pragul pe baza reală; rămâne PhysicalStock (90) | deschisă |
+| FZ-r7 | reperul `TaxInformation` din GLE (`LinieId` contra `PerioadaDeclarare`): întrebare de design SAF-T (90) | deschisă |
+| FZ-r8 | costul FK la scară, încărcarea în bloc, `VACUUM`/bloat sub scrieri reale, interogări concurente cu operarea serializată (90) | deschisă |
+| FZ-r9 | BRIN pe `Data` reevaluat pe forma cu `Sold` (90) | deschisă |
+| FZ-r10 | împerecherea ca tranzacție pe date cu împerecheri datate real (90, TR-r6) | deschisă |
+| IM-r1 | nivelul specific per tip ca serviciu — absorbită de declarantul per frunză (90, TR-D6b) | închisă la TR-D9 |
+| IM-r2 | adaptorul EF direct și hostul fără XAF: nucleul e pur, singurul consumator e `Module`; decizie proprie după TR-D9 (90) | deschisă |
+| IM-r3 | `IDocument`/`ILinie` peste bază — absorbită: operandul închis e DTO (90) | închisă la TR-D9 |
+| IM-r4 | identificatorul semantic al tipului + fabrici — depășită de 89 (`CititorTipDocument.Clasa`) și de regimul dual ca dată (90) | închisă |
+| IM-r5 | async efectiv în host-uri: felie proprie cu cifră, după TR-D9 (90) | deschisă |
+| IM-r7 | extensia per client a modelului (`DbContext` de extensie / migrații per client): spike separat înaintea oricărei decizii de produs (90) | deschisă |

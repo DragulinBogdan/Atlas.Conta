@@ -1,0 +1,41 @@
+== B5.0 politica de conex (seed) ==
+ sursa | tinta | InverseazaLaturi | NaturaFiltru | DinSeed 
+-------+-------+------------------+--------------+---------
+ FCT   | NIR   | f                |            1 | t
+(1 row)
+
+== B5.1 LinieSursaId: pe ce tipuri de linie exista si spre ce ==
+ linie | linie_sursa | n 
+-------+-------------+---
+(0 rows)
+
+== B5.2 legatura FCT <-> NIR la nivel de DOCUMENT (DocumentSursaId) ==
+                k                |   v   
+---------------------------------+-------
+ NIR total                       |     0
+ NIR fara DocumentSursa (manual) |     0
+ NIR cu DocumentSursa FCT        |     0
+ FCT total                       | 19035
+ FCT fara niciun NIR conex       | 19035
+ FCT operate/stornate            | 19035
+(6 rows)
+
+== B5.2b ClrType-urile reale ale documentelor (ancora numelor) ==
+        ClrType         | count 
+------------------------+-------
+ NotaTransfer           | 45552
+ FacturaIesire          | 40535
+ DescarcareGestiune     | 36696
+ Incasare               | 31381
+ FacturaIntrare         | 19035
+ NIR                    | 17814
+ NotaContabila          |  7818
+ Plata                  |  2486
+ ReturClient            |  1666
+ Asamblare              |  1228
+ BonConsum              |   547
+ ReturFurnizor          |   398
+ ListaDiferenteInventar |    18
+ InchidereTva           |    12
+(14 rows)
+

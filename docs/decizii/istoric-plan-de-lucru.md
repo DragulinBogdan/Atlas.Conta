@@ -641,3 +641,25 @@ detaliat în jurnal):
   unică `RandDeAltTip`, F28-L/M/N, 9 probe noi în `refuzuri.ps1`; docs.
   Închidere: ModelCheck bugetar 1294/0, privat 1450/0. Amendează 3, 16 și
   IM-D10; închide 75-r2.
+- **Nucleul cub** (2026-09-19/20, decizia 90, `docs/nucleu/`) — sesiune de
+  arhitectură fără constrângerile proiectului, convergentă pe un singur cub
+  de postări în locul celor patru registre (`nucleu-cub-design.md`), apoi
+  trei pași probați, câte unul per sesiune, fiecare cu review advers de
+  agent separat: **1** coordonatele contra rapoartelor reale
+  (`nucleu-coordonate-rapoarte.md`, patru inventare cu `fișier:linie`;
+  patru amendamente structurale: `Latura` D/C, stornoul ca tranzacție
+  distinctă, taxa per linie, partenerul pe postarea de terț); **2** fizica
+  măsurată pe clonele `Atlas.Conta.Nucleu.Fizica.x1/.x10`
+  (`nucleu-fizica.md`, FZ-D1…D9: LIST pe `Spatiu` ales pe structură, 9 FK
+  în loc de 24, scrierea 1,7 contra 5,3 ms, 8/13 rapoarte identice, `Sold`
+  4–9× cub contra cub dar 2,1× snapshot-ul; FZ-r2 măsurată: fișa 348 contra
+  248 ms); **3** transferul (`nucleu-transfer.md`, TR-D1…D4 pe cifre:
+  partida = unitate pe cont de terț, împerecherea = nominalizare +
+  `Împerechere` cu `Transfer`, FCT postează recepția, o singură postare de
+  stoc; §3 transferă / rescrie / dispare; §4 ordinea TR-D5…D10; §4.1
+  propunerea de execuție acceptată de owner 2026-09-20), `nucleu-bilant.md`
+  ca sinteză. **Decizia 90** scrisă 2026-09-20 (pasul 0, TR-D5): regula
+  durabilă (a)–(m), invarianții I/III/VI amendați, contractul IM depășit,
+  IM-r re-evaluate, TR-r/FZ-r în restanțe. Fără cod. Următorul pas: TR-D6a
+  (nucleul pur, `nou/Atlas.Conta.Nucleu`), cu contract propriu în
+  `docs/nucleu/`.

@@ -121,18 +121,25 @@ rând invers. Cele trei ierarhii sunt TPH cu discriminatorul mapat `ClrType`
 (89, 2026-09-18): tipul e dată pe rând, citit printr-un singur cititor, tipul
 țintei unui FK spre frunză îl ține gardianul și îl probează ModelCheck, iar
 lanțul de migrații a fost resetat la un singur `InitialCreate`. Ultima felie
-închisă: 28 (89). Cronologia integrală:
+închisă: 28 (89). **Decizia 90** (2026-09-20,
+`docs/decizii/090-nucleu-cub-de-postari.md`, docs în `docs/nucleu/`): nucleul
+devine un singur cub de postări (motor pur pe operand închis, unitatea
+nominalizată numită pe linie, împerecherea ca nominalizare + document
+`Împerechere`, FCT postează recepția, o singură postare de stoc, stornoul ca
+tranzacție distinctă); pașii TR-D6a…D10 sunt felii cu contract propriu,
+regimul dual e per `TipDocument` ca dată, iar XAF și React sunt ÎNGHEȚATE pe
+funcții (90m). Fără cod încă. Cronologia integrală:
 `docs/decizii/istoric-plan-de-lucru.md`.
 
-**Următorul pas**: izolarea motorului de `IObjectSpace`
-(`docs/api/p5-felia-izolare-motor-contract.md`, IM-D1…D10, amendat de 89) —
-felia 27 i-a făcut implementabil contractul de citire (`SolduriService` e
-primul adaptor al lui IM-D4), iar felia 28 i-a dat maparea finală: contractele
-„Relații”/„Politici” se scriu și se măsoară pe TPH. Candidații rămași după: restanțele imobilizărilor cu cerere de produs
-(F26-r1, F26-r8, F26-r9, F26-r13), restanțele feliei 27 cu cerere de produs
-(F27-r11 dimensionarea conturilor de terț pe partener, F27-r13 perioadele unei
-baze noi, F27-r1 reclasificarea pe 1174), 84-r5, 86-r11, 86-r13, 80-r1;
-`lista-react.md` mai ține doar itemii structurali și 77-r1/r6.
+**Următorul pas**: TR-D6a, nucleul pur (`nou/Atlas.Conta.Nucleu` fără niciun
+pachet în afara BCL + `Atlas.Conta.Nucleu.Teste`; cei 7 invarianți din
+`docs/nucleu/nucleu-cub-design.md` §10 ca teste pe proprietăți; doar
+regulile pure cerute de pilotul BCS/PLT/FCT), cu contract propriu în
+`docs/nucleu/` pe precedentul `docs/api/p5-*-contract.md`; apoi TR-D6b
+(declarația fluxului, singurul pas care poate întoarce decizia), TR-D7…D9
+(90l). Contractul IM e depășit de 90. Cererile de produs apărute între timp
+(F26-r1/r8/r9/r13, F27-r11/r13/r1, 84-r5, 86-r11, 86-r13, 80-r1, 77-r1/r6)
+intră în `restante.md` cu decizia lor, nu în felie (90m).
 
 **Capcane de probare**: o cifră de perf se compară DOAR cu ea însăși pe
 ACEEAȘI bază (A/B prin schimbarea stării, nu între baze — altfel diferența de

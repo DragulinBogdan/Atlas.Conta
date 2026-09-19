@@ -1,0 +1,34 @@
+                                                                           QUERY PLAN                                                                           
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize GroupAggregate  (cost=297700.63..403758.00 rows=277260 width=172) (actual time=593.117..786.751 rows=110786.00 loops=1)
+   Group Key: "RepartitorId", "LotId", "TipStoc"
+   Buffers: shared hit=393 read=47416, temp read=38010 written=82755
+   ->  Gather Merge  (cost=297700.63..375200.22 rows=665424 width=180) (actual time=593.079..662.108 rows=327059.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=393 read=47416, temp read=38010 written=82755
+         ->  Sort  (cost=296700.60..297393.75 rows=277260 width=180) (actual time=572.273..593.422 rows=109019.67 loops=3)
+               Sort Key: "RepartitorId", "LotId", "TipStoc"
+               Sort Method: external merge  Disk: 33640kB
+               Buffers: shared hit=393 read=47416, temp read=38010 written=82755
+               Worker 0:  Sort Method: external merge  Disk: 33080kB
+               Worker 1:  Sort Method: external merge  Disk: 32784kB
+               ->  Partial HashAggregate  (cost=218888.45..246995.08 rows=277260 width=180) (actual time=356.865..511.277 rows=109019.67 loops=3)
+                     Group Key: "RepartitorId", "LotId", "TipStoc"
+                     Planned Partitions: 64  Batches: 65  Memory Usage: 8337kB  Disk Usage: 126080kB
+                     Buffers: shared hit=365 read=47416, temp read=25572 written=70291
+                     Worker 0:  Batches: 65  Memory Usage: 8337kB  Disk Usage: 117768kB
+                     Worker 1:  Batches: 65  Memory Usage: 8337kB  Disk Usage: 119816kB
+                     ->  Parallel Seq Scan on "RegistruStoc" r  (cost=0.00..65109.78 rows=1155145 width=50) (actual time=6.224..113.694 rows=924152.33 loops=3)
+                           Filter: (("Data" <= '2025-12-31'::date) AND ("GCRecord" = 0))
+                           Buffers: shared hit=365 read=47416
+ Planning:
+   Buffers: shared hit=256
+ Planning Time: 0.413 ms
+ JIT:
+   Functions: 48
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 3.037 ms (Deform 0.967 ms), Inlining 0.000 ms, Optimization 1.628 ms, Emission 28.396 ms, Total 33.062 ms
+ Execution Time: 807.023 ms
+(30 rows)
+

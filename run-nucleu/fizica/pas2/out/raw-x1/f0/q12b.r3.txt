@@ -1,0 +1,12 @@
+                                                                  QUERY PLAN                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on "RegistruTva" r  (cost=0.00..4426.13 rows=454 width=90) (actual time=1.943..5.042 rows=6980.00 loops=1)
+   Filter: (("GCRecord" = 0) AND ((("PerioadaAn" * 100) + "PerioadaLuna") >= 202506) AND ((("PerioadaAn" * 100) + "PerioadaLuna") <= 202506))
+   Rows Removed by Filter: 83752
+   Buffers: shared hit=1931
+ Planning:
+   Buffers: shared hit=199
+ Planning Time: 0.955 ms
+ Execution Time: 5.201 ms
+(8 rows)
+

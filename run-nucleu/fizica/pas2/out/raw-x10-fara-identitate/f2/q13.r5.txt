@@ -1,0 +1,30 @@
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..318523.02 rows=2647 width=304) (actual time=85.935..162.785 rows=4560.00 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=14203 read=242829
+   ->  Parallel Append  (cost=0.00..317258.32 rows=1103 width=304) (actual time=60.892..123.087 rows=1520.00 loops=3)
+         Buffers: shared hit=14203 read=242829
+         ->  Parallel Seq Scan on "Postare_Contabil" p_1  (cost=0.00..190947.73 rows=1066 width=304) (actual time=18.028..80.155 rows=1520.00 loops=3)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 2323629
+               Buffers: shared hit=10571 read=144046
+         ->  Parallel Seq Scan on "Postare_Stoc" p_2  (cost=0.00..81956.83 rows=21 width=306) (actual time=40.964..40.964 rows=0.00 loops=2)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 1386228
+               Buffers: shared hit=1134 read=66384
+         ->  Parallel Seq Scan on "Postare_Fiscal" p_3  (cost=0.00..44348.24 rows=16 width=304) (actual time=46.655..46.655 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 1814640
+               Buffers: shared hit=2498 read=32399
+ Planning:
+   Buffers: shared hit=726
+ Planning Time: 0.752 ms
+ JIT:
+   Functions: 18
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 0.531 ms (Deform 0.210 ms), Inlining 0.000 ms, Optimization 0.467 ms, Emission 6.373 ms, Total 7.370 ms
+ Execution Time: 173.077 ms
+(26 rows)
+

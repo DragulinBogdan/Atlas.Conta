@@ -1,0 +1,39 @@
+                                                                        QUERY PLAN                                                                         
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=55819.62..68551.53 rows=107974 width=205) (actual time=99.050..181.262 rows=144239.00 loops=1)
+   Hash Cond: (f."DocumentId" = doc."ID")
+   Buffers: shared hit=14165 read=3845, temp read=3663 written=3666
+   ->  Subquery Scan on f  (cost=44664.97..49825.44 rows=107974 width=180) (actual time=54.050..100.739 rows=144239.00 loops=1)
+         Filter: (f."Data" >= '2025-01-01'::date)
+         Rows Removed by Filter: 2
+         Buffers: shared hit=13789, temp read=1253 written=1256
+         ->  WindowAgg  (cost=44664.97..48467.41 rows=108642 width=180) (actual time=54.045..93.329 rows=144241.00 loops=1)
+               Window: w1 AS (ORDER BY p."Data", p."TranzactieId", p."ID" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+               Storage: Memory  Maximum Storage: 17kB
+               Buffers: shared hit=13789, temp read=1253 written=1256
+               ->  Sort  (cost=44664.94..44936.55 rows=108642 width=60) (actual time=54.027..60.797 rows=144241.00 loops=1)
+                     Sort Key: p."Data", p."TranzactieId", p."ID"
+                     Sort Method: external merge  Disk: 10024kB
+                     Buffers: shared hit=13789, temp read=1253 written=1256
+                     ->  Bitmap Heap Scan on "Postare" p  (cost=2196.55..31489.46 rows=108642 width=60) (actual time=3.589..32.297 rows=144241.00 loops=1)
+                           Recheck Cond: ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                           Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                           Rows Removed by Filter: 54936
+                           Heap Blocks: exact=13610
+                           Buffers: shared hit=13783
+                           ->  Bitmap Index Scan on ix_f1_cont  (cost=0.00..2169.39 rows=197995 width=0) (actual time=2.647..2.648 rows=199177.00 loops=1)
+                                 Index Cond: ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                                 Index Searches: 1
+                                 Buffers: shared hit=173
+   ->  Hash  (cost=6785.83..6785.83 rows=205186 width=41) (actual time=44.461..44.461 rows=205186.00 loops=1)
+         Buckets: 131072  Batches: 4  Memory Usage: 4777kB
+         Buffers: shared hit=376 read=3845, temp written=1180
+         ->  Seq Scan on "Documente" doc  (cost=0.00..6785.83 rows=205186 width=41) (actual time=0.190..18.320 rows=205186.00 loops=1)
+               Filter: ("GCRecord" = 0)
+               Buffers: shared hit=376 read=3845
+ Planning:
+   Buffers: shared hit=588
+ Planning Time: 0.699 ms
+ Execution Time: 184.818 ms
+(35 rows)
+

@@ -1,0 +1,94 @@
+                                                                                                QUERY PLAN                                                                                                 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=129557.64..191516.65 rows=174189 width=237) (actual time=288.529..466.800 rows=144239.00 loops=1)
+   Buffers: shared hit=41603 read=6071, temp read=3679 written=3681
+   ->  Aggregate  (cost=54.80..54.81 rows=1 width=32) (actual time=12.600..12.602 rows=1.00 loops=1)
+         Buffers: shared hit=4
+         ->  Index Only Scan using ix_sold_cont on "Sold" s  (cost=0.42..49.21 rows=746 width=7) (actual time=0.048..0.055 rows=1.00 loops=1)
+               Index Cond: (("Spatiu" = 1) AND ("Granita" = '2024-12-31'::date) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+               Heap Fetches: 0
+               Index Searches: 1
+               Buffers: shared hit=4
+   ->  Hash Left Join  (cost=129502.83..189284.48 rows=174189 width=237) (actual time=275.917..439.958 rows=144239.00 loops=1)
+         Hash Cond: (f."TranzactieId" = cp."TranzactieId")
+         Buffers: shared hit=41599 read=6071, temp read=3679 written=3681
+         ->  Hash Left Join  (cost=11267.31..70591.68 rows=174189 width=205) (actual time=45.085..187.826 rows=144239.00 loops=1)
+               Hash Cond: (f."DocumentId" = doc."ID")
+               Buffers: shared hit=14477 read=4181, temp read=2410 written=2410
+               ->  Subquery Scan on f  (cost=112.66..48329.77 rows=174189 width=180) (actual time=0.154..101.183 rows=144239.00 loops=1)
+                     Buffers: shared hit=14437
+                     ->  WindowAgg  (cost=112.66..46587.88 rows=174189 width=180) (actual time=0.153..94.669 rows=144239.00 loops=1)
+                           Window: w1 AS (ORDER BY p."Data", p."TranzactieId", p."ID" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                           Storage: Memory  Maximum Storage: 17kB
+                           Buffers: shared hit=14437
+                           ->  Incremental Sort  (cost=112.40..40926.74 rows=174189 width=60) (actual time=0.144..62.061 rows=144239.00 loops=1)
+                                 Sort Key: p."Data", p."TranzactieId", p."ID"
+                                 Presorted Key: p."Data"
+                                 Full-sort Groups: 281  Sort Method: quicksort  Average Memory: 30kB  Peak Memory: 30kB
+                                 Pre-sorted Groups: 344  Sort Method: quicksort  Average Memory: 72kB  Peak Memory: 75kB
+                                 Buffers: shared hit=14437
+                                 ->  Index Scan using ix_f2c_data on "Postare_Contabil" p  (cost=0.42..30925.15 rows=174189 width=60) (actual time=0.017..46.869 rows=144239.00 loops=1)
+                                       Index Cond: (("Data" >= '2025-01-01'::date) AND ("Data" <= '2025-12-31'::date))
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 464397
+                                       Index Searches: 1
+                                       Buffers: shared hit=14431
+               ->  Hash  (cost=6785.83..6785.83 rows=205186 width=41) (actual time=44.316..44.317 rows=205186.00 loops=1)
+                     Buckets: 131072  Batches: 4  Memory Usage: 4777kB
+                     Buffers: shared hit=40 read=4181, temp written=1180
+                     ->  Seq Scan on "Documente" doc  (cost=0.00..6785.83 rows=205186 width=41) (actual time=0.421..18.485 rows=205186.00 loops=1)
+                           Filter: ("GCRecord" = 0)
+                           Buffers: shared hit=40 read=4181
+         ->  Hash  (cost=117326.30..117326.30 rows=72738 width=48) (actual time=230.376..230.381 rows=76280.00 loops=1)
+               Buckets: 131072  Batches: 1  Memory Usage: 5204kB
+               Buffers: shared hit=27122 read=1890, temp read=1269 written=1271
+               ->  Subquery Scan on cp  (cost=112445.84..117326.30 rows=72738 width=48) (actual time=195.594..224.093 rows=76280.00 loops=1)
+                     Buffers: shared hit=27122 read=1890, temp read=1269 written=1271
+                     ->  GroupAggregate  (cost=112445.84..116598.92 rows=72738 width=48) (actual time=195.591..220.702 rows=76280.00 loops=1)
+                           Group Key: q."TranzactieId"
+                           Buffers: shared hit=27122 read=1890, temp read=1269 written=1271
+                           ->  Sort  (cost=112445.84..113527.13 rows=432514 width=20) (actual time=195.517..200.898 rows=149755.00 loops=1)
+                                 Sort Key: q."TranzactieId", c2."Simbol"
+                                 Sort Method: external sort  Disk: 5080kB
+                                 Buffers: shared hit=27122 read=1890, temp read=1269 written=1271
+                                 ->  Hash Join  (cost=29781.42..63084.87 rows=432514 width=20) (actual time=54.502..168.413 rows=149755.00 loops=1)
+                                       Hash Cond: (q."TranzactieId" = p2."TranzactieId")
+                                       Buffers: shared hit=27119 read=1890
+                                       ->  Hash Join  (cost=30.49..27386.88 rows=432514 width=20) (actual time=0.116..67.612 rows=498483.00 loops=1)
+                                             Hash Cond: (q."Cont" = c2."ID")
+                                             Buffers: shared hit=13797 read=1749
+                                             ->  Seq Scan on "Postare_Contabil" q  (cost=0.00..26036.17 rows=500093 width=32) (actual time=0.013..37.474 rows=498483.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                                   Rows Removed by Filter: 199177
+                                                   Buffers: shared hit=13781 read=1749
+                                             ->  Hash  (cost=22.44..22.44 rows=644 width=20) (actual time=0.096..0.096 rows=644.00 loops=1)
+                                                   Buckets: 1024  Batches: 1  Memory Usage: 41kB
+                                                   Buffers: shared hit=16
+                                                   ->  Seq Scan on "Conturi" c2  (cost=0.00..22.44 rows=644 width=20) (actual time=0.008..0.057 rows=644.00 loops=1)
+                                                         Buffers: shared hit=16
+                                       ->  Hash  (cost=28899.63..28899.63 rows=68104 width=16) (actual time=53.944..53.946 rows=76291.00 loops=1)
+                                             Buckets: 131072  Batches: 1  Memory Usage: 4601kB
+                                             Buffers: shared hit=13322 read=141
+                                             ->  HashAggregate  (cost=28218.59..28899.63 rows=68104 width=16) (actual time=42.208..47.238 rows=76291.00 loops=1)
+                                                   Group Key: p2."TranzactieId"
+                                                   Batches: 1  Memory Usage: 4633kB
+                                                   Buffers: shared hit=13322 read=141
+                                                   ->  Bitmap Heap Scan on "Postare_Contabil" p2  (cost=8769.33..27783.11 rows=174189 width=16) (actual time=6.196..26.794 rows=144239.00 loops=1)
+                                                         Recheck Cond: (("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date) AND ("Data" >= '2025-01-01'::date))
+                                                         Filter: ("Spatiu" = 1)
+                                                         Heap Blocks: exact=11960
+                                                         Buffers: shared hit=13322 read=141
+                                                         ->  Bitmap Index Scan on ix_f2c_cont_data  (cost=0.00..8725.79 rows=174189 width=0) (actual time=5.304..5.304 rows=144239.00 loops=1)
+                                                               Index Cond: (("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date) AND ("Data" >= '2025-01-01'::date))
+                                                               Index Searches: 1
+                                                               Buffers: shared hit=1362 read=141
+ Planning:
+   Buffers: shared hit=810
+ Planning Time: 1.270 ms
+ JIT:
+   Functions: 69
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 2.425 ms (Deform 1.425 ms), Inlining 0.000 ms, Optimization 1.102 ms, Emission 11.595 ms, Total 15.121 ms
+ Execution Time: 484.101 ms
+(90 rows)
+

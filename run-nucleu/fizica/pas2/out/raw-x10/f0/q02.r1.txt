@@ -1,0 +1,65 @@
+                                                                                           QUERY PLAN                                                                                           
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Left Join  (cost=660280.91..674815.11 rows=124 width=358) (actual time=999.099..1014.965 rows=1985.00 loops=1)
+   Buffers: shared hit=15280 read=130806, temp read=15034 written=30433
+   ->  Merge Join  (cost=660280.62..674762.65 rows=124 width=211) (actual time=999.057..1009.617 rows=1985.00 loops=1)
+         Merge Cond: ("*SELECT* 1"."ContId" = c."ID")
+         Buffers: shared hit=9900 read=130237, temp read=15034 written=30433
+         ->  Finalize GroupAggregate  (cost=660266.14..674646.92 rows=40000 width=160) (actual time=998.418..1009.356 rows=2318.00 loops=1)
+               Group Key: "*SELECT* 1"."ContId", "*SELECT* 1"."RepartitorId"
+               Buffers: shared hit=9898 read=130235, temp read=15034 written=30433
+               ->  Gather Merge  (cost=660266.14..671446.92 rows=96000 width=160) (actual time=998.375..1006.163 rows=6003.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=9898 read=130235, temp read=15034 written=30433
+                     ->  Sort  (cost=659266.11..659366.11 rows=40000 width=160) (actual time=947.709..948.028 rows=2116.33 loops=3)
+                           Sort Key: "*SELECT* 1"."ContId", "*SELECT* 1"."RepartitorId"
+                           Sort Method: external merge  Disk: 19728kB
+                           Buffers: shared hit=9898 read=130235, temp read=15034 written=30433
+                           Worker 0:  Sort Method: external merge  Disk: 19736kB
+                           Worker 1:  Sort Method: external merge  Disk: 6464kB
+                           ->  Partial HashAggregate  (cost=587878.81..653062.07 rows=40000 width=160) (actual time=794.585..903.055 rows=53552.33 loops=3)
+                                 Group Key: "*SELECT* 1"."ContId", "*SELECT* 1"."RepartitorId"
+                                 Planned Partitions: 8  Batches: 41  Memory Usage: 8401kB  Disk Usage: 42504kB
+                                 Buffers: shared hit=9884 read=130235, temp read=13556 written=24681
+                                 Worker 0:  Batches: 41  Memory Usage: 8657kB  Disk Usage: 45584kB
+                                 Worker 1:  Batches: 9  Memory Usage: 8401kB  Disk Usage: 15264kB
+                                 ->  Parallel Append  (cost=0.00..216238.81 rows=2535710 width=74) (actual time=148.651..474.980 rows=2028829.33 loops=3)
+                                       Buffers: shared hit=9884 read=130235
+                                       ->  Subquery Scan on "*SELECT* 1"  (cost=0.00..101780.13 rows=1267855 width=74) (actual time=37.109..154.189 rows=1014414.67 loops=3)
+                                             Buffers: shared hit=6843 read=63224
+                                             ->  Parallel Seq Scan on "RegistruContabil" r  (cost=0.00..89101.58 rows=1267855 width=74) (actual time=37.106..104.654 rows=1014414.67 loops=3)
+                                                   Filter: (("Data" <= '2025-12-31'::date) AND ("GCRecord" = 0))
+                                                   Buffers: shared hit=6843 read=63224
+                                       ->  Subquery Scan on "*SELECT* 2"  (cost=0.00..101780.13 rows=1267855 width=74) (actual time=167.397..347.139 rows=1521622.00 loops=2)
+                                             Buffers: shared hit=3041 read=67011
+                                             ->  Parallel Seq Scan on "RegistruContabil" r0  (cost=0.00..89101.58 rows=1267855 width=74) (actual time=167.394..271.798 rows=1521622.00 loops=2)
+                                                   Filter: (("Data" <= '2025-12-31'::date) AND ("GCRecord" = 0))
+                                                   Buffers: shared hit=3041 read=67011
+         ->  Sort  (cost=14.48..14.49 rows=2 width=67) (actual time=0.077..0.079 rows=2.00 loops=1)
+               Sort Key: c."ID"
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=2 read=2
+               ->  Bitmap Heap Scan on "Conturi" c  (cost=8.57..14.47 rows=2 width=67) (actual time=0.067..0.068 rows=2.00 loops=1)
+                     Recheck Cond: (("Simbol" = ANY ('{4111,401}'::text[])) AND ("GCRecord" = 0))
+                     Heap Blocks: exact=2
+                     Buffers: shared hit=2 read=2
+                     ->  Bitmap Index Scan on "IX_Conturi_Simbol"  (cost=0.00..8.57 rows=2 width=0) (actual time=0.048..0.049 rows=2.00 loops=1)
+                           Index Cond: ("Simbol" = ANY ('{4111,401}'::text[]))
+                           Index Searches: 1
+                           Buffers: shared read=2
+   ->  Index Scan using "PK_Repartitori" on "Repartitori" rp  (cost=0.29..0.37 rows=1 width=35) (actual time=0.002..0.002 rows=1.00 loops=1985)
+         Index Cond: ("ID" = "*SELECT* 1"."RepartitorId")
+         Filter: ("GCRecord" = 0)
+         Index Searches: 1983
+         Buffers: shared hit=5380 read=569
+ Planning:
+   Buffers: shared hit=653 read=16
+ Planning Time: 12.824 ms
+ JIT:
+   Functions: 79
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 4.429 ms (Deform 1.749 ms), Inlining 142.051 ms, Optimization 217.989 ms, Emission 179.241 ms, Total 543.711 ms
+ Execution Time: 1030.875 ms
+(61 rows)
+

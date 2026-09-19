@@ -1,0 +1,54 @@
+                                                                             QUERY PLAN                                                                              
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Left Join  (cost=66238.11..120455.75 rows=361 width=358) (actual time=106.758..171.398 rows=20190.00 loops=1)
+   Buffers: shared hit=61734 read=24738, temp read=2530 written=3788
+   ->  Merge Join  (cost=66237.83..120317.37 rows=361 width=211) (actual time=106.703..150.082 rows=20190.00 loops=1)
+         Merge Cond: (p."Cont" = c."ID")
+         Buffers: shared hit=1770 read=24138, temp read=2530 written=3788
+         ->  Finalize GroupAggregate  (cost=66223.34..120008.71 rows=116221 width=160) (actual time=95.484..148.418 rows=21911.00 loops=1)
+               Group Key: p."Cont", p."Partener"
+               Buffers: shared hit=1768 read=24136, temp read=2530 written=3788
+               ->  Gather Merge  (cost=66223.34..110711.04 rows=278930 width=160) (actual time=95.471..130.371 rows=32827.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=1768 read=24136, temp read=2530 written=3788
+                     ->  Partial GroupAggregate  (cost=65223.32..77515.58 rows=116221 width=160) (actual time=84.325..106.673 rows=11071.67 loops=3)
+                           Group Key: p."Cont", p."Partener"
+                           Buffers: shared hit=1768 read=24136, temp read=2530 written=3788
+                           ->  Sort  (cost=65223.32..65887.84 rows=265809 width=44) (actual time=84.253..90.363 rows=108117.67 loops=3)
+                                 Sort Key: p."Cont", p."Partener"
+                                 Sort Method: external merge  Disk: 10504kB
+                                 Buffers: shared hit=1768 read=24136, temp read=2530 written=3788
+                                 Worker 0:  Sort Method: external merge  Disk: 9848kB
+                                 Worker 1:  Sort Method: external merge  Disk: 9856kB
+                                 ->  Parallel Seq Scan on "Postare" p  (cost=0.00..33094.39 rows=265809 width=44) (actual time=7.478..33.132 rows=202921.33 loops=3)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       Rows Removed by Filter: 184619
+                                       Buffers: shared hit=1692 read=24136
+         ->  Sort  (cost=14.48..14.49 rows=2 width=67) (actual time=0.074..0.076 rows=2.00 loops=1)
+               Sort Key: c."ID"
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=2 read=2
+               ->  Bitmap Heap Scan on "Conturi" c  (cost=8.57..14.47 rows=2 width=67) (actual time=0.064..0.065 rows=2.00 loops=1)
+                     Recheck Cond: (("Simbol" = ANY ('{4111,401}'::text[])) AND ("GCRecord" = 0))
+                     Heap Blocks: exact=2
+                     Buffers: shared hit=2 read=2
+                     ->  Bitmap Index Scan on "IX_Conturi_Simbol"  (cost=0.00..8.57 rows=2 width=0) (actual time=0.047..0.048 rows=2.00 loops=1)
+                           Index Cond: ("Simbol" = ANY ('{4111,401}'::text[]))
+                           Index Searches: 1
+                           Buffers: shared read=2
+   ->  Index Scan using "PK_Repartitori" on "Repartitori" rp  (cost=0.29..0.33 rows=1 width=35) (actual time=0.001..0.001 rows=1.00 loops=20190)
+         Index Cond: ("ID" = p."Partener")
+         Filter: ("GCRecord" = 0)
+         Index Searches: 20188
+         Buffers: shared hit=59964 read=600
+ Planning:
+   Buffers: shared hit=636 read=1
+ Planning Time: 0.837 ms
+ JIT:
+   Functions: 46
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 2.639 ms (Deform 1.143 ms), Inlining 0.000 ms, Optimization 1.535 ms, Emission 20.689 ms, Total 24.863 ms
+ Execution Time: 186.060 ms
+(50 rows)
+

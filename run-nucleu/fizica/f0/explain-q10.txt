@@ -1,0 +1,28 @@
+Finalize GroupAggregate  (cost=1000.98..35546.65 rows=30449 width=172) (actual time=5.825..236.040 rows=110786.00 loops=1)
+  Group Key: "LotId", "RepartitorId", "TipStoc"
+  Buffers: shared hit=170212 read=2772
+  ->  Gather Merge  (cost=1000.98..32410.39 rows=73078 width=180) (actual time=5.810..177.995 rows=110786.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=170212 read=2772
+        ->  Partial GroupAggregate  (cost=0.95..22975.36 rows=30449 width=180) (actual time=0.647..100.867 rows=36928.67 loops=3)
+              Group Key: "LotId", "RepartitorId", "TipStoc"
+              Buffers: shared hit=170212 read=2772
+              ->  Incremental Sort  (cost=0.95..18231.86 rows=118129 width=50) (actual time=0.637..75.063 rows=94499.33 loops=3)
+                    Sort Key: "LotId", "RepartitorId", "TipStoc"
+                    Presorted Key: "LotId"
+                    Full-sort Groups: 1985  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                    Pre-sorted Groups: 216  Sort Method: quicksort  Average Memory: 25kB  Peak Memory: 25kB
+                    Buffers: shared hit=170212 read=2772
+                    Worker 0:  Full-sort Groups: 2671  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                      Pre-sorted Groups: 293  Sort Method: quicksort  Average Memory: 25kB  Peak Memory: 25kB
+                    Worker 1:  Full-sort Groups: 2705  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                      Pre-sorted Groups: 284  Sort Method: quicksort  Average Memory: 80kB  Peak Memory: 111kB
+                    ->  Parallel Index Scan using "IX_RegistruStoc_LotId" on "RegistruStoc" r  (cost=0.42..14991.03 rows=118129 width=50) (actual time=0.191..61.091 rows=94499.33 loops=3)
+                          Filter: (("Data" <= '2025-12-31'::date) AND ("GCRecord" = 0))
+                          Index Searches: 1
+                          Buffers: shared hit=170030 read=2772
+Planning:
+  Buffers: shared hit=252 read=1
+Planning Time: 1.516 ms
+Execution Time: 238.600 ms

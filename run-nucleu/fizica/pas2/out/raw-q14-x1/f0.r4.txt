@@ -1,0 +1,69 @@
+                                                                        QUERY PLAN                                                                        
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "RegistruStoc"  (cost=0.42..8.55 rows=0 width=0) (actual time=0.007..0.007 rows=0.00 loops=1)
+   Buffers: shared hit=3
+   ->  Index Scan using "IX_RegistruStoc_DocumentId" on "RegistruStoc" r  (cost=0.42..8.55 rows=5 width=107) (actual time=0.006..0.007 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+         Filter: (("Data" >= '2025-01-01'::date) AND ("GCRecord" = 0))
+         Index Searches: 1
+         Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=216
+ Planning Time: 0.361 ms
+ Execution Time: 0.038 ms
+(11 rows)
+
+                                                                             QUERY PLAN                                                                              
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "RegistruContabil"  (cost=0.42..10.95 rows=0 width=0) (actual time=0.843..0.843 rows=0.00 loops=1)
+   Buffers: shared hit=2729 dirtied=1 written=1
+   ->  Index Scan using "IX_RegistruContabil_DocumentId" on "RegistruContabil" r  (cost=0.42..10.95 rows=61 width=366) (actual time=0.023..0.081 rows=50.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+         Filter: (("Data" >= '2025-01-01'::date) AND ("GCRecord" = 0))
+         Index Searches: 1
+         Buffers: shared hit=18
+ Planning:
+   Buffers: shared hit=381
+ Planning Time: 0.292 ms
+ Trigger for constraint FK_RegistruContabil_CoduriEconomice_DimensiuniCredit_CodEconom~: time=0.092 calls=50
+ Trigger for constraint FK_RegistruContabil_CoduriEconomice_DimensiuniDebit_CodEconomi~: time=0.016 calls=50
+ Trigger for constraint FK_RegistruContabil_CoduriFunctionale_DimensiuniCredit_CodFunc~: time=0.035 calls=50
+ Trigger for constraint FK_RegistruContabil_CoduriFunctionale_DimensiuniDebit_CodFunct~: time=0.015 calls=50
+ Trigger for constraint FK_RegistruContabil_Conturi_ContCreditId: time=0.323 calls=50
+ Trigger for constraint FK_RegistruContabil_Conturi_ContDebitId: time=0.153 calls=50
+ Trigger for constraint FK_RegistruContabil_DocumentDetalii_DetaliuId: time=0.472 calls=50
+ Trigger for constraint FK_RegistruContabil_Documente_DocumentId: time=0.343 calls=50
+ Trigger for constraint FK_RegistruContabil_Produse_DimensiuniCredit_MaterialId: time=0.314 calls=50
+ Trigger for constraint FK_RegistruContabil_Produse_DimensiuniDebit_MaterialId: time=0.138 calls=50
+ Trigger for constraint FK_RegistruContabil_Proiecte_DimensiuniCredit_ProiectId: time=0.042 calls=50
+ Trigger for constraint FK_RegistruContabil_Proiecte_DimensiuniDebit_ProiectId: time=0.016 calls=50
+ Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniCredit_CentruCostId: time=0.036 calls=50
+ Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniCredit_RepartitorId: time=0.223 calls=50
+ Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniDebit_CentruCostId: time=0.014 calls=50
+ Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniDebit_RepartitorId: time=0.153 calls=50
+ Trigger for constraint FK_RegistruContabil_SurseFinantare_DimensiuniCredit_SursaFinan~: time=0.038 calls=50
+ Trigger for constraint FK_RegistruContabil_SurseFinantare_DimensiuniDebit_SursaFinant~: time=0.016 calls=50
+ Trigger for constraint FK_RegistruContabil_Unitati_DimensiuniCredit_UnitateId: time=0.029 calls=50
+ Trigger for constraint FK_RegistruContabil_Unitati_DimensiuniDebit_UnitateId: time=0.015 calls=50
+ Execution Time: 3.376 ms
+(31 rows)
+
+                                                                        QUERY PLAN                                                                        
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "RegistruTva"  (cost=0.29..9.56 rows=0 width=0) (actual time=0.466..0.466 rows=0.00 loops=1)
+   Buffers: shared hit=758 read=2 dirtied=2 written=1
+   ->  Index Scan using "IX_RegistruTva_DocumentId" on "RegistruTva" r  (cost=0.29..9.56 rows=46 width=134) (actual time=0.014..0.073 rows=49.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+         Filter: (("Data" >= '2025-01-01'::date) AND ("GCRecord" = 0))
+         Index Searches: 1
+         Buffers: shared hit=15
+ Planning:
+   Buffers: shared hit=138
+ Planning Time: 0.149 ms
+ Trigger for constraint FK_RegistruTva_DocumentDetalii_DetaliuId: time=0.241 calls=49
+ Trigger for constraint FK_RegistruTva_Documente_DocumentId: time=0.183 calls=49
+ Trigger for constraint FK_RegistruTva_Repartitori_PartenerId: time=0.153 calls=49
+ Trigger for constraint FK_RegistruTva_TipuriTva_TipTvaId: time=0.243 calls=49
+ Execution Time: 1.300 ms
+(15 rows)
+

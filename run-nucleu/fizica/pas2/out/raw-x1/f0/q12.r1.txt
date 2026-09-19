@@ -1,0 +1,13 @@
+                                                                           QUERY PLAN                                                                            
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using "IX_RegistruContabil_Data" on "RegistruContabil" r  (cost=0.30..1181.44 rows=24953 width=326) (actual time=0.020..2.864 rows=23563.00 loops=1)
+   Index Cond: (("Data" >= '2025-06-01'::date) AND ("Data" <= '2025-06-30'::date))
+   Filter: ("DocumentId" IS NOT NULL)
+   Index Searches: 1
+   Buffers: shared hit=577
+ Planning:
+   Buffers: shared hit=466 read=4
+ Planning Time: 1.231 ms
+ Execution Time: 3.398 ms
+(9 rows)
+

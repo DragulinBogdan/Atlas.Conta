@@ -1,0 +1,32 @@
+                                                                    QUERY PLAN                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1001.61..47039.88 rows=3566 width=73) (actual time=59.578..123.928 rows=13960.00 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=907402 read=24003
+   ->  Nested Loop Semi Join  (cost=1.61..45683.28 rows=1486 width=73) (actual time=69.975..120.137 rows=4653.33 loops=3)
+         Buffers: shared hit=907402 read=24003
+         ->  Hash Join  (cost=1.18..32101.70 rows=12037 width=73) (actual time=16.486..26.601 rows=60488.00 loops=3)
+               Hash Cond: (p."CodTvaId" = ct."ID")
+               Buffers: shared hit=11747 read=14084
+               ->  Parallel Seq Scan on "Postare" p  (cost=0.00..31883.32 rows=76362 width=64) (actual time=16.422..20.082 rows=60488.00 loops=3)
+                     Filter: ("Spatiu" = 3)
+                     Rows Removed by Filter: 327053
+                     Buffers: shared hit=11745 read=14083
+               ->  Hash  (cost=1.08..1.08 rows=8 width=13) (actual time=0.044..0.045 rows=8.00 loops=3)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=2 read=1
+                     ->  Seq Scan on "CodTva" ct  (cost=0.00..1.08 rows=8 width=13) (actual time=0.034..0.035 rows=8.00 loops=3)
+                           Buffers: shared hit=2 read=1
+         ->  Index Scan using ix_f1_linie on "Postare" c  (cost=0.43..1.13 rows=1 width=16) (actual time=0.001..0.001 rows=0.08 loops=181464)
+               Index Cond: (("LinieId" = p."LinieId") AND ("LinieId" IS NOT NULL))
+               Filter: (("Data" >= '2025-06-01'::date) AND ("Data" <= '2025-06-30'::date) AND ("Spatiu" = 1))
+               Rows Removed by Filter: 5
+               Index Searches: 181464
+               Buffers: shared hit=895655 read=9919
+ Planning:
+   Buffers: shared hit=616 read=9
+ Planning Time: 1.599 ms
+ Execution Time: 124.258 ms
+(28 rows)
+

@@ -1,0 +1,22 @@
+                                                                                QUERY PLAN                                                                                 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Append  (cost=0.42..636.32 rows=428 width=304) (actual time=4.026..4.672 rows=456.00 loops=1)
+   Buffers: shared hit=11 read=9
+   ->  Index Scan using "Postare_Contabil_DocumentId_idx" on "Postare_Contabil" p_1  (cost=0.42..612.48 rows=419 width=304) (actual time=4.026..4.056 rows=456.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=11 read=3
+   ->  Index Scan using "Postare_Stoc_DocumentId_idx" on "Postare_Stoc" p_2  (cost=0.42..8.51 rows=5 width=305) (actual time=0.335..0.335 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using "Postare_Fiscal_DocumentId_idx" on "Postare_Fiscal" p_3  (cost=0.42..13.19 rows=4 width=304) (actual time=0.262..0.262 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared read=3
+ Planning:
+   Buffers: shared hit=826 read=18
+ Planning Time: 0.843 ms
+ Execution Time: 4.718 ms
+(18 rows)
+

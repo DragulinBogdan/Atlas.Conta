@@ -1,0 +1,94 @@
+                                                                                     QUERY PLAN                                                                                      
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Append  (cost=0.00..72.96 rows=512 width=307) (actual time=0.042..0.161 rows=456.00 loops=1)
+   Buffers: shared hit=26
+   ->  Seq Scan on "Postare_Contabil_2016" p_1  (cost=0.00..0.00 rows=1 width=352) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Contabil_2017" p_2  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Contabil_2018" p_3  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Contabil_2019" p_4  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Contabil_2020" p_5  (cost=0.00..0.00 rows=1 width=352) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Contabil_2021" p_6  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Contabil_2022" p_7  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Contabil_2023" p_8  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Contabil_2024" p_9  (cost=0.00..3.60 rows=1 width=305) (actual time=0.011..0.011 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Rows Removed by Filter: 128
+         Buffers: shared hit=2
+   ->  Index Scan using "Postare_Contabil_2025_DocumentId_idx" on "Postare_Contabil_2025" p_10  (cost=0.42..26.60 rows=467 width=304) (actual time=0.010..0.044 rows=456.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=14
+   ->  Index Scan using "Postare_Contabil_2026_DocumentId_idx" on "Postare_Contabil_2026" p_11  (cost=0.29..10.19 rows=4 width=304) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=2
+   ->  Seq Scan on "Postare_Contabil_rest" p_12  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_2016" p_13  (cost=0.00..0.00 rows=1 width=352) (actual time=0.001..0.001 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_2017" p_14  (cost=0.00..0.00 rows=1 width=352) (actual time=0.003..0.003 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_2018" p_15  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_2019" p_16  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_2020" p_17  (cost=0.00..0.00 rows=1 width=352) (actual time=0.004..0.004 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_2021" p_18  (cost=0.00..0.00 rows=1 width=352) (actual time=0.003..0.003 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_2022" p_19  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_2023" p_20  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Index Scan using "Postare_Stoc_2024_DocumentId_idx" on "Postare_Stoc_2024" p_21  (cost=0.28..8.30 rows=1 width=305) (actual time=0.006..0.006 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=2
+   ->  Index Scan using "Postare_Stoc_2025_DocumentId_idx" on "Postare_Stoc_2025" p_22  (cost=0.42..8.51 rows=5 width=306) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Seq Scan on "Postare_Stoc_2026" p_23  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_rest" p_24  (cost=0.00..0.00 rows=1 width=352) (actual time=0.003..0.003 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_2016" p_25  (cost=0.00..0.00 rows=1 width=352) (actual time=0.001..0.001 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_2017" p_26  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_2018" p_27  (cost=0.00..0.00 rows=1 width=352) (actual time=0.003..0.003 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_2019" p_28  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_2020" p_29  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_2021" p_30  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_2022" p_31  (cost=0.00..0.00 rows=1 width=352) (actual time=0.003..0.003 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_2023" p_32  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_2024" p_33  (cost=0.00..0.00 rows=1 width=352) (actual time=0.001..0.001 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Index Scan using "Postare_Fiscal_2025_DocumentId_idx" on "Postare_Fiscal_2025" p_34  (cost=0.42..13.21 rows=4 width=304) (actual time=0.006..0.006 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Seq Scan on "Postare_Fiscal_2026" p_35  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_rest" p_36  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+ Planning:
+   Buffers: shared hit=7701
+ Planning Time: 5.188 ms
+ Execution Time: 0.350 ms
+(90 rows)
+

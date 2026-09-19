@@ -1,0 +1,44 @@
+===== x1 =====
+?column?|f|tabela|indexi|total|randuri
+forma|F0|187 MB|293 MB|480 MB|1072352
+forma|F1|202 MB|199 MB|401 MB|1162622
+forma|F2|202 MB|240 MB|442 MB|1162622
+forma|F3|202 MB|242 MB|444 MB|1162622
+forma|Sold|52 MB|57 MB|109 MB|483005
+forma|Tranzactie+CodTva|18 MB|16 MB|34 MB|249630
+(6 rows)
+?column?|?column?|pg_size_pretty|pg_size_pretty|reltuples|?column?
+partitie|f2.Postare_Contabil|121 MB|132 MB|697660|
+partitie|f2.Postare_Fiscal|27 MB|38 MB|181464|
+partitie|f2.Postare_Stoc|54 MB|70 MB|283498|
+(3 rows)
+?column?|relname|pg_size_pretty|pg_size_pretty|reltuples|?column?
+F0-detaliu|PartideDeschise|33 MB|59 MB|201046|
+F0-detaliu|RegistruContabil|55 MB|70 MB|304382|
+F0-detaliu|RegistruStoc|38 MB|39 MB|283498|
+F0-detaliu|RegistruTva|15 MB|11 MB|90732|
+F0-detaliu|SolduriPerioadaContabil|45 MB|110 MB|184780|
+F0-detaliu|SolduriPerioadaStoc|1656 kB|4152 kB|7914|
+(6 rows)
+===== x10 =====
+?column?|f|tabela|indexi|total|randuri
+forma|F0|1152 MB|953 MB|2105 MB|7116797
+forma|F1|2006 MB|1752 MB|3758 MB|11566669
+forma|F2|2008 MB|2132 MB|4140 MB|11561972
+forma|F3|2008 MB|2644 MB|4652 MB|11562545
+forma|Sold|577 MB|656 MB|1233 MB|5365168
+forma|Tranzactie+CodTva|182 MB|100 MB|283 MB|2496219
+(6 rows)
+?column?|?column?|pg_size_pretty|pg_size_pretty|reltuples|?column?
+partitie|f2.Postare_Contabil|1208 MB|1198 MB|6974943|
+partitie|f2.Postare_Fiscal|273 MB|325 MB|1814639|
+partitie|f2.Postare_Stoc|527 MB|609 MB|2772390|
+(3 rows)
+?column?|relname|pg_size_pretty|pg_size_pretty|reltuples|?column?
+F0-detaliu|PartideDeschise|33 MB|59 MB|201046|
+F0-detaliu|RegistruContabil|548 MB|532 MB|3043133|
+F0-detaliu|RegistruStoc|373 MB|186 MB|2772604|
+F0-detaliu|RegistruTva|151 MB|63 MB|907320|
+F0-detaliu|SolduriPerioadaContabil|45 MB|110 MB|184780|
+F0-detaliu|SolduriPerioadaStoc|1656 kB|4152 kB|7914|
+(6 rows)

@@ -1,0 +1,57 @@
+                                                                          QUERY PLAN                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Tranzactie"  (cost=0.42..10.33 rows=0 width=0) (actual time=0.052..0.053 rows=0.00 loops=1)
+   Buffers: shared hit=13
+   ->  Subquery Scan on "*SELECT*"  (cost=0.42..10.33 rows=1 width=46) (actual time=0.015..0.016 rows=1.00 loops=1)
+         Buffers: shared hit=4
+         ->  Limit  (cost=0.42..10.32 rows=1 width=62) (actual time=0.015..0.015 rows=1.00 loops=1)
+               Buffers: shared hit=4
+               ->  Index Scan using ix_tranzactie_document on "Tranzactie" t  (cost=0.42..10.32 rows=1 width=62) (actual time=0.014..0.014 rows=1.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: (("Data" >= '2025-01-01'::date) AND ("Fel" = 1))
+                     Index Searches: 1
+                     Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=135
+ Planning Time: 0.325 ms
+ Execution Time: 0.071 ms
+(15 rows)
+
+                                                                                     QUERY PLAN                                                                                     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Postare"  (cost=0.42..179.35 rows=0 width=0) (actual time=1.392..1.393 rows=0.00 loops=1)
+   Buffers: shared hit=3453 read=1 dirtied=12 written=10
+   ->  Subquery Scan on "*SELECT*"  (cost=0.42..179.35 rows=104 width=304) (actual time=0.025..0.276 rows=198.00 loops=1)
+         Buffers: shared hit=43
+         ->  Append  (cost=0.42..178.31 rows=104 width=320) (actual time=0.025..0.257 rows=198.00 loops=1)
+               Buffers: shared hit=43
+               ->  Index Scan using "Postare_Contabil_DocumentId_idx" on "Postare_Contabil" p_1  (cost=0.42..17.17 rows=7 width=320) (actual time=0.024..0.141 rows=100.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: ("Data" >= '2025-01-01'::date)
+                     Index Searches: 1
+                     Buffers: shared hit=22
+               ->  Index Scan using "Postare_Stoc_DocumentId_idx" on "Postare_Stoc" p_2  (cost=0.42..8.53 rows=5 width=320) (actual time=0.007..0.007 rows=0.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: ("Data" >= '2025-01-01'::date)
+                     Index Searches: 1
+                     Buffers: shared hit=3
+               ->  Index Scan using "Postare_Fiscal_DocumentId_idx" on "Postare_Fiscal" p_3  (cost=0.42..152.09 rows=92 width=320) (actual time=0.018..0.099 rows=98.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: ("Data" >= '2025-01-01'::date)
+                     Index Searches: 1
+                     Buffers: shared hit=18
+ Planning:
+   Buffers: shared hit=762
+ Planning Time: 0.692 ms
+ Trigger for constraint fk_c_cont on Postare_Contabil: time=0.513 calls=100
+ Trigger for constraint fk_c_partener on Postare_Contabil: time=0.429 calls=100
+ Trigger for constraint fk_c_gestiune on Postare_Contabil: time=0.178 calls=100
+ Trigger for constraint fk_c_produs on Postare_Contabil: time=0.435 calls=100
+ Trigger for constraint fk_c_unitate on Postare_Contabil: time=0.213 calls=100
+ Trigger for constraint fk_c_tranzactie on Postare_Contabil: time=0.279 calls=100
+ Trigger for constraint fk_f_partener on Postare_Fiscal: time=0.262 calls=98
+ Trigger for constraint fk_f_codtva on Postare_Fiscal: time=0.260 calls=98
+ Trigger for constraint fk_f_tranzactie on Postare_Fiscal: time=0.241 calls=98
+ Execution Time: 4.279 ms
+(34 rows)
+

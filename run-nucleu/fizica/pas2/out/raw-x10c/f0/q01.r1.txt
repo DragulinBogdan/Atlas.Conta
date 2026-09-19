@@ -1,0 +1,52 @@
+                                                                                          QUERY PLAN                                                                                          
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Right Join  (cost=274377.16..274413.91 rows=200 width=387) (actual time=598.991..602.051 rows=119.00 loops=1)
+   Hash Cond: (c."ID" = "*SELECT* 1"."ContId")
+   Buffers: shared hit=204 read=139989
+   ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.097..0.246 rows=644.00 loops=1)
+         Filter: ("GCRecord" = 0)
+         Buffers: shared read=16
+   ->  Hash  (cost=274374.66..274374.66 rows=200 width=144) (actual time=598.862..601.639 rows=119.00 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 18kB
+         Buffers: shared hit=204 read=139973
+         ->  Finalize GroupAggregate  (cost=274303.96..274374.66 rows=200 width=144) (actual time=598.589..601.609 rows=119.00 loops=1)
+               Group Key: "*SELECT* 1"."ContId"
+               Buffers: shared hit=204 read=139973
+               ->  Gather Merge  (cost=274303.96..274359.86 rows=480 width=144) (actual time=598.565..601.376 rows=338.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=204 read=139973
+                     ->  Sort  (cost=273303.93..273304.43 rows=200 width=144) (actual time=587.551..587.557 rows=112.67 loops=3)
+                           Sort Key: "*SELECT* 1"."ContId"
+                           Sort Method: quicksort  Memory: 58kB
+                           Buffers: shared hit=204 read=139973
+                           Worker 0:  Sort Method: quicksort  Memory: 56kB
+                           Worker 1:  Sort Method: quicksort  Memory: 56kB
+                           ->  Partial HashAggregate  (cost=273292.29..273296.29 rows=200 width=144) (actual time=587.456..587.513 rows=112.67 loops=3)
+                                 Group Key: "*SELECT* 1"."ContId"
+                                 Batches: 1  Memory Usage: 296kB
+                                 Buffers: shared hit=190 read=139973
+                                 Worker 0:  Batches: 1  Memory Usage: 296kB
+                                 Worker 1:  Batches: 1  Memory Usage: 296kB
+                                 ->  Parallel Append  (cost=0.00..216238.81 rows=2535710 width=58) (actual time=8.580..366.558 rows=2028829.33 loops=3)
+                                       Buffers: shared hit=190 read=139973
+                                       ->  Subquery Scan on "*SELECT* 1"  (cost=0.00..101780.13 rows=1267855 width=58) (actual time=2.996..137.725 rows=1014414.67 loops=3)
+                                             Buffers: shared hit=188 read=69894
+                                             ->  Parallel Seq Scan on "RegistruContabil" r  (cost=0.00..89101.58 rows=1267855 width=58) (actual time=2.994..87.868 rows=1014414.67 loops=3)
+                                                   Filter: (("Data" <= '2025-12-31'::date) AND ("GCRecord" = 0))
+                                                   Buffers: shared hit=188 read=69894
+                                       ->  Subquery Scan on "*SELECT* 2"  (cost=0.00..101780.13 rows=1267855 width=58) (actual time=8.495..210.230 rows=1521622.00 loops=2)
+                                             Buffers: shared hit=2 read=70079
+                                             ->  Parallel Seq Scan on "RegistruContabil" r0  (cost=0.00..89101.58 rows=1267855 width=58) (actual time=8.492..137.308 rows=1521622.00 loops=2)
+                                                   Filter: (("Data" <= '2025-12-31'::date) AND ("GCRecord" = 0))
+                                                   Buffers: shared hit=2 read=70079
+ Planning:
+   Buffers: shared hit=442 read=75
+ Planning Time: 1.315 ms
+ JIT:
+   Functions: 65
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 3.198 ms (Deform 1.544 ms), Inlining 0.000 ms, Optimization 1.803 ms, Emission 23.416 ms, Total 28.417 ms
+ Execution Time: 617.304 ms
+(48 rows)
+

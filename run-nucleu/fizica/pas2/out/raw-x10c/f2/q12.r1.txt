@@ -1,0 +1,34 @@
+                                                                                  QUERY PLAN                                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=61952.76..91939.83 rows=57489 width=291) (actual time=269.833..295.009 rows=47126.00 loops=1)
+   Workers Planned: 1
+   Workers Launched: 1
+   Buffers: shared hit=420 read=28294, temp read=18515 written=18736
+   ->  Parallel Hash Left Join  (cost=60952.76..85190.93 rows=33817 width=291) (actual time=269.697..275.953 rows=23563.00 loops=2)
+         Hash Cond: (p."DocumentId" = dd."ID")
+         Buffers: shared hit=420 read=28294, temp read=18515 written=18736
+         ->  Parallel Hash Join  (cost=53842.41..74795.81 rows=33817 width=266) (actual time=194.464..237.118 rows=23563.00 loops=2)
+               Hash Cond: (p."TranzactieId" = t."ID")
+               Buffers: shared hit=125 read=24368, temp read=16317 written=16524
+               ->  Parallel Index Scan using ix_f2c_data on "Postare_Contabil" p  (cost=0.43..11443.06 rows=33817 width=252) (actual time=0.066..4.545 rows=23563.00 loops=2)
+                     Index Cond: (("Data" >= '2025-06-01'::date) AND ("Data" <= '2025-06-30'::date))
+                     Filter: (("DocumentId" IS NOT NULL) AND ("Spatiu" = 1))
+                     Index Searches: 1
+                     Buffers: shared hit=124 read=1039
+               ->  Parallel Hash  (cost=33730.88..33730.88 rows=1040088 width=30) (actual time=167.493..167.494 rows=1248105.50 loops=2)
+                     Buckets: 131072  Batches: 32  Memory Usage: 5952kB
+                     Buffers: shared hit=1 read=23329, temp written=15484
+                     ->  Parallel Seq Scan on "Tranzactie" t  (cost=0.00..33730.88 rows=1040088 width=30) (actual time=0.223..50.926 rows=1248105.50 loops=2)
+                           Buffers: shared hit=1 read=23329
+         ->  Parallel Hash  (cost=5289.68..5289.68 rows=85494 width=41) (actual time=26.513..26.515 rows=102593.00 loops=2)
+               Buckets: 131072  Batches: 4  Memory Usage: 4928kB
+               Buffers: shared hit=295 read=3926, temp written=1188
+               ->  Parallel Seq Scan on "Documente" dd  (cost=0.00..5289.68 rows=85494 width=41) (actual time=0.087..11.015 rows=102593.00 loops=2)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=295 read=3926
+ Planning:
+   Buffers: shared hit=768 read=25
+ Planning Time: 1.205 ms
+ Execution Time: 296.050 ms
+(30 rows)
+

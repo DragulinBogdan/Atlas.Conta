@@ -1,0 +1,21 @@
+                                                                                                                                                                                                                                                                                                                             QUERY PLAN                                                                                                                                                                                                                                                                                                                             
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Subquery Scan on g  (cost=0.60..16516.97 rows=64360 width=80) (actual time=0.036..60.218 rows=114680.00 loops=1)
+   Buffers: shared hit=1981
+   ->  GroupAggregate  (cost=0.60..16356.07 rows=64360 width=48) (actual time=0.036..54.419 rows=114680.00 loops=1)
+         Group Key: s."Unitate"
+         Filter: (COALESCE(sum(CASE WHEN (s."Latura" = 1) THEN s."Valoare" ELSE (- s."Valoare") END), 0.0) <> 0.0)
+         Rows Removed by Filter: 2725
+         Buffers: shared hit=1981
+         ->  Index Only Scan using ix_sold_unitate on "Sold" s  (cost=0.60..14456.02 rows=92980 width=24) (actual time=0.029..17.087 rows=217056.00 loops=1)
+               Index Cond: (("Spatiu" = 1) AND ("Granita" = '2025-12-31'::date))
+               Filter: ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[]))
+               Heap Fetches: 0
+               Index Searches: 1
+               Buffers: shared hit=1981
+ Planning:
+   Buffers: shared hit=198
+ Planning Time: 0.403 ms
+ Execution Time: 62.466 ms
+(17 rows)
+

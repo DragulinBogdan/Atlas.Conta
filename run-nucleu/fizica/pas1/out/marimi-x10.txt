@@ -1,0 +1,166 @@
+ sectiune |             obiect             | randuri  |   tabela   | indexi  |  total  
+----------+--------------------------------+----------+------------+---------+---------
+ rezumat  | cub.CodTva                     |        8 | 8192 bytes | 16 kB   | 24 kB
+ rezumat  | cub.Tranzactie                 |  2496211 | 182 MB     | 100 MB  | 283 MB
+ rezumat  | f1.Postare                     | 11557253 | 2007 MB    | 1752 MB | 3758 MB
+ rezumat  | f2.Postare                     | 11561913 | 0 bytes    | 0 bytes | 0 bytes
+ rezumat  | f3.Postare                     | 11562386 | 0 bytes    | 0 bytes | 0 bytes
+ rezumat  | public.PartideDeschise         |   201046 | 33 MB      | 59 MB   | 92 MB
+ rezumat  | public.RegistruContabil        |  3043420 | 548 MB     | 531 MB  | 1078 MB
+ rezumat  | public.RegistruStoc            |  2772494 | 373 MB     | 186 MB  | 559 MB
+ rezumat  | public.RegistruTva             |   907320 | 151 MB     | 63 MB   | 214 MB
+ rezumat  | public.SolduriPerioadaContabil |   184780 | 45 MB      | 110 MB  | 155 MB
+ rezumat  | public.SolduriPerioadaStoc     |     7914 | 1712 kB    | 4152 kB | 5864 kB
+
+      sectiune       |       obiect        | randuri  | tabela  | indexi |  total  
+---------------------+---------------------+----------+---------+--------+---------
+ agregat_partitionat | f2.Postare          | 11564018 | 2009 MB | 448 MB | 2457 MB
+ agregat_partitionat | f3.Postare (frunze) | 11578829 | 2010 MB | 710 MB | 2720 MB
+ agregat_partitionat | F0 (3 registre)     |  6723234 | 1072 MB | 779 MB | 1851 MB
+
+ sectiune |          obiect          | randuri | tabela  |   indexi   
+----------+--------------------------+---------+---------+------------
+ partitii | f2.Postare_Contabil      | 6976644 | 1208 MB | 270 MB
+ partitii | f2.Postare_Fiscal        | 1814639 | 273 MB  | 70 MB
+ partitii | f2.Postare_Stoc          | 2772735 | 528 MB  | 107 MB
+ partitii | f3.Postare_Contabil_2016 |  608636 | 107 MB  | 38 MB
+ partitii | f3.Postare_Contabil_2017 |  702140 | 121 MB  | 44 MB
+ partitii | f3.Postare_Contabil_2018 |  706376 | 121 MB  | 44 MB
+ partitii | f3.Postare_Contabil_2019 |  700447 | 121 MB  | 44 MB
+ partitii | f3.Postare_Contabil_2020 |  697532 | 121 MB  | 44 MB
+ partitii | f3.Postare_Contabil_2021 |  697532 | 121 MB  | 44 MB
+ partitii | f3.Postare_Contabil_2022 |  697532 | 121 MB  | 44 MB
+ partitii | f3.Postare_Contabil_2023 |  697532 | 121 MB  | 44 MB
+ partitii | f3.Postare_Contabil_2024 |  697660 | 121 MB  | 47 MB
+ partitii | f3.Postare_Contabil_2025 |  697532 | 121 MB  | 30 MB
+ partitii | f3.Postare_Contabil_2026 |   88896 | 14 MB   | 3544 kB
+ partitii | f3.Postare_Contabil_rest |       0 | 0 bytes | 8192 bytes
+ partitii | f3.Postare_Fiscal_2016   |  181464 | 27 MB   | 12 MB
+ partitii | f3.Postare_Fiscal_2017   |  181451 | 27 MB   | 12 MB
+ partitii | f3.Postare_Fiscal_2018   |  181464 | 27 MB   | 12 MB
+ partitii | f3.Postare_Fiscal_2019   |  181464 | 27 MB   | 12 MB
+ partitii | f3.Postare_Fiscal_2020   |  181464 | 27 MB   | 12 MB
+ partitii | f3.Postare_Fiscal_2021   |  181464 | 27 MB   | 12 MB
+ partitii | f3.Postare_Fiscal_2022   |  181464 | 27 MB   | 12 MB
+ partitii | f3.Postare_Fiscal_2023   |  181464 | 27 MB   | 12 MB
+ partitii | f3.Postare_Fiscal_2024   |  181464 | 27 MB   | 12 MB
+ partitii | f3.Postare_Fiscal_2025   |  181464 | 27 MB   | 7216 kB
+ partitii | f3.Postare_Fiscal_2026   |       0 | 0 bytes | 8192 bytes
+ partitii | f3.Postare_Fiscal_rest   |       0 | 0 bytes | 8192 bytes
+ partitii | f3.Postare_Stoc_2016     |  276527 | 53 MB   | 18 MB
+ partitii | f3.Postare_Stoc_2017     |  276528 | 53 MB   | 18 MB
+ partitii | f3.Postare_Stoc_2018     |  276551 | 53 MB   | 18 MB
+ partitii | f3.Postare_Stoc_2019     |  276528 | 53 MB   | 18 MB
+ partitii | f3.Postare_Stoc_2020     |  276551 | 53 MB   | 18 MB
+ partitii | f3.Postare_Stoc_2021     |  276551 | 53 MB   | 18 MB
+ partitii | f3.Postare_Stoc_2022     |  276551 | 53 MB   | 18 MB
+ partitii | f3.Postare_Stoc_2023     |  276551 | 53 MB   | 18 MB
+ partitii | f3.Postare_Stoc_2024     |  283498 | 54 MB   | 18 MB
+ partitii | f3.Postare_Stoc_2025     |  276551 | 53 MB   | 11 MB
+ partitii | f3.Postare_Stoc_2026     |       0 | 0 bytes | 8192 bytes
+ partitii | f3.Postare_Stoc_rest     |       0 | 0 bytes | 8192 bytes
+
+  sectiune   |          obiect          | randuri  | octeti_pe_rand 
+-------------+--------------------------+----------+----------------
+ latime_rand | f1.Postare               | 11557253 |          182.0
+ latime_rand | f2.Postare_Contabil      |  6976644 |          181.6
+ latime_rand | f2.Postare_Fiscal        |  1814639 |          157.5
+ latime_rand | f2.Postare_Stoc          |  2772735 |          199.5
+ latime_rand | f3.Postare_Contabil_2016 |   608636 |          184.2
+ latime_rand | f3.Postare_Contabil_2017 |   702140 |          180.4
+ latime_rand | f3.Postare_Contabil_2018 |   706376 |          179.3
+ latime_rand | f3.Postare_Contabil_2019 |   700447 |          180.8
+ latime_rand | f3.Postare_Contabil_2020 |   697532 |          181.6
+ latime_rand | f3.Postare_Contabil_2021 |   697532 |          181.6
+ latime_rand | f3.Postare_Contabil_2022 |   697532 |          181.6
+ latime_rand | f3.Postare_Contabil_2023 |   697532 |          181.6
+ latime_rand | f3.Postare_Contabil_2024 |   697660 |          181.6
+ latime_rand | f3.Postare_Contabil_2025 |   697532 |          181.6
+ latime_rand | f3.Postare_Contabil_2026 |    88896 |          163.8
+ latime_rand | f3.Postare_Contabil_rest |        0 |               
+ latime_rand | f3.Postare_Fiscal_2016   |   181464 |          157.6
+ latime_rand | f3.Postare_Fiscal_2017   |   181451 |          157.6
+ latime_rand | f3.Postare_Fiscal_2018   |   181464 |          157.6
+ latime_rand | f3.Postare_Fiscal_2019   |   181464 |          157.6
+ latime_rand | f3.Postare_Fiscal_2020   |   181464 |          157.6
+ latime_rand | f3.Postare_Fiscal_2021   |   181464 |          157.6
+ latime_rand | f3.Postare_Fiscal_2022   |   181464 |          157.6
+ latime_rand | f3.Postare_Fiscal_2023   |   181464 |          157.6
+ latime_rand | f3.Postare_Fiscal_2024   |   181464 |          157.6
+ latime_rand | f3.Postare_Fiscal_2025   |   181464 |          157.6
+ latime_rand | f3.Postare_Fiscal_2026   |        0 |               
+ latime_rand | f3.Postare_Fiscal_rest   |        0 |               
+ latime_rand | f3.Postare_Stoc_2016     |   276527 |          199.7
+ latime_rand | f3.Postare_Stoc_2017     |   276528 |          199.7
+ latime_rand | f3.Postare_Stoc_2018     |   276551 |          199.7
+ latime_rand | f3.Postare_Stoc_2019     |   276528 |          199.7
+ latime_rand | f3.Postare_Stoc_2020     |   276551 |          199.7
+ latime_rand | f3.Postare_Stoc_2021     |   276551 |          199.7
+ latime_rand | f3.Postare_Stoc_2022     |   276551 |          199.7
+ latime_rand | f3.Postare_Stoc_2023     |   276551 |          199.7
+ latime_rand | f3.Postare_Stoc_2024     |   283498 |          198.8
+ latime_rand | f3.Postare_Stoc_2025     |   276551 |          199.6
+ latime_rand | f3.Postare_Stoc_2026     |        0 |               
+ latime_rand | f3.Postare_Stoc_rest     |        0 |               
+ latime_rand | public.RegistruContabil  |  3043420 |          188.6
+ latime_rand | public.RegistruStoc      |  2772494 |          141.2
+ latime_rand | public.RegistruTva       |   907320 |          174.3
+
+ sectiune  |       obiect        | marime 
+-----------+---------------------+--------
+ indexi_f1 | pk_f1_postare       | 348 MB
+ indexi_f1 | ix_f1_tranzactie    | 159 MB
+ indexi_f1 | ix_f1_linie         | 84 MB
+ indexi_f1 | ix_f1_document      | 81 MB
+ indexi_f1 | ix_f1_unitate       | 80 MB
+ indexi_f1 | ix_f1_produs        | 78 MB
+ indexi_f1 | ix_f1_partener      | 78 MB
+ indexi_f1 | ix_f1_data          | 78 MB
+ indexi_f1 | ix_f1_cont          | 78 MB
+ indexi_f1 | ix_f1_gestiune      | 77 MB
+ indexi_f1 | ix_f1_perioada      | 76 MB
+ indexi_f1 | ix_f1_codtva        | 76 MB
+ indexi_f1 | ix_f1_unitateorg    | 76 MB
+ indexi_f1 | ix_f1_codeconomic   | 76 MB
+ indexi_f1 | ix_f1_centrucost    | 76 MB
+ indexi_f1 | ix_f1_proiect       | 76 MB
+ indexi_f1 | ix_f1_sursafin      | 76 MB
+ indexi_f1 | ix_f1_codfunctional | 76 MB
+
+ sectiune  |                                  obiect                                  | marime  
+-----------+--------------------------------------------------------------------------+---------
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_ContCreditId                      | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_ContDebitId                       | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_Data                              | 21 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DetaliuId                         | 28 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniCredit_CentruCostId     | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniCredit_CodEconomicId    | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniCredit_CodFunctionalId  | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniCredit_MaterialId       | 21 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniCredit_ProiectId        | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniCredit_RepartitorId     | 21 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniCredit_SursaFinantareId | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniCredit_UnitateId        | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniDebit_CentruCostId      | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniDebit_CodEconomicId     | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniDebit_CodFunctionalId   | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniDebit_MaterialId        | 21 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniDebit_ProiectId         | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniDebit_RepartitorId      | 21 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniDebit_SursaFinantareId  | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DimensiuniDebit_UnitateId         | 20 MB
+ indexi_F0 | RegistruContabil / IX_RegistruContabil_DocumentId                        | 25 MB
+ indexi_F0 | RegistruContabil / PK_RegistruContabil                                   | 92 MB
+ indexi_F0 | RegistruStoc / IX_RegistruStoc_Data                                      | 19 MB
+ indexi_F0 | RegistruStoc / IX_RegistruStoc_DetaliuId                                 | 24 MB
+ indexi_F0 | RegistruStoc / IX_RegistruStoc_DocumentId                                | 21 MB
+ indexi_F0 | RegistruStoc / IX_RegistruStoc_LotId                                     | 19 MB
+ indexi_F0 | RegistruStoc / IX_RegistruStoc_RepartitorId                              | 19 MB
+ indexi_F0 | RegistruStoc / PK_RegistruStoc                                           | 83 MB
+ indexi_F0 | RegistruTva / IX_RegistruTva_DetaliuId                                   | 9144 kB
+ indexi_F0 | RegistruTva / IX_RegistruTva_DocumentId                                  | 8040 kB
+ indexi_F0 | RegistruTva / IX_RegistruTva_PartenerId                                  | 6784 kB
+ indexi_F0 | RegistruTva / IX_RegistruTva_PerioadaAn_PerioadaLuna                     | 6208 kB
+ indexi_F0 | RegistruTva / IX_RegistruTva_TipTvaId                                    | 6264 kB
+ indexi_F0 | RegistruTva / PK_RegistruTva                                             | 27 MB
+

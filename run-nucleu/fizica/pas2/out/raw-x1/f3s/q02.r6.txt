@@ -1,0 +1,56 @@
+                                                                                        QUERY PLAN                                                                                        
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Left Join  (cost=66316.17..86022.82 rows=124 width=358) (actual time=91.443..154.270 rows=20190.00 loops=1)
+   Buffers: shared hit=64764 read=9517, temp read=2550 written=4010
+   ->  Merge Join  (cost=66315.88..85970.37 rows=124 width=211) (actual time=91.408..136.313 rows=20190.00 loops=1)
+         Merge Cond: (s."Cont" = c."ID")
+         Buffers: shared hit=4200 read=9517, temp read=2550 written=4010
+         ->  Finalize GroupAggregate  (cost=66301.40..85854.64 rows=40000 width=160) (actual time=80.927..134.662 rows=21911.00 loops=1)
+               Group Key: s."Cont", s."Partener"
+               Buffers: shared hit=4196 read=9517, temp read=2550 written=4010
+               ->  Gather Merge  (cost=66301.40..82654.64 rows=96000 width=160) (actual time=80.921..115.715 rows=37239.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=4196 read=9517, temp read=2550 written=4010
+                     ->  Partial GroupAggregate  (cost=65301.37..70573.83 rows=40000 width=160) (actual time=77.929..99.626 rows=12541.33 loops=3)
+                           Group Key: s."Cont", s."Partener"
+                           Buffers: shared hit=4196 read=9517, temp read=2550 written=4010
+                           ->  Sort  (cost=65301.37..65940.30 rows=255569 width=160) (actual time=77.916..83.903 rows=108219.00 loops=3)
+                                 Sort Key: s."Cont", s."Partener"
+                                 Sort Method: external merge  Disk: 11056kB
+                                 Buffers: shared hit=4196 read=9517, temp read=2550 written=4010
+                                 Worker 0:  Sort Method: external merge  Disk: 10288kB
+                                 Worker 1:  Sort Method: external merge  Disk: 10640kB
+                                 ->  Parallel Append  (cost=0.00..22253.49 rows=255569 width=160) (actual time=0.048..30.181 rows=202897.67 loops=3)
+                                       Buffers: shared hit=4182 read=9517
+                                       ->  Index Only Scan using ix_sold_cont on "Sold" s  (cost=0.42..310.70 rows=4731 width=160) (actual time=0.025..0.029 rows=57.00 loops=1)
+                                             Index Cond: (("Spatiu" = 1) AND ("Granita" = '2024-12-31'::date))
+                                             Heap Fetches: 0
+                                             Index Searches: 1
+                                             Buffers: shared hit=8
+                                       ->  Parallel Seq Scan on "Postare_Contabil_2025" p  (cost=0.00..19396.96 rows=253598 width=160) (actual time=0.047..22.034 rows=202878.67 loops=3)
+                                             Filter: (("Data" >= '2025-01-01'::date) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                             Buffers: shared hit=4174 read=9517
+         ->  Sort  (cost=14.48..14.49 rows=2 width=67) (actual time=0.054..0.055 rows=2.00 loops=1)
+               Sort Key: c."ID"
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=4
+               ->  Bitmap Heap Scan on "Conturi" c  (cost=8.57..14.47 rows=2 width=67) (actual time=0.046..0.047 rows=2.00 loops=1)
+                     Recheck Cond: (("Simbol" = ANY ('{4111,401}'::text[])) AND ("GCRecord" = 0))
+                     Heap Blocks: exact=2
+                     Buffers: shared hit=4
+                     ->  Bitmap Index Scan on "IX_Conturi_Simbol"  (cost=0.00..8.57 rows=2 width=0) (actual time=0.029..0.029 rows=2.00 loops=1)
+                           Index Cond: ("Simbol" = ANY ('{4111,401}'::text[]))
+                           Index Searches: 1
+                           Buffers: shared hit=2
+   ->  Index Scan using "PK_Repartitori" on "Repartitori" rp  (cost=0.29..0.37 rows=1 width=35) (actual time=0.001..0.001 rows=1.00 loops=20190)
+         Index Cond: ("ID" = s."Partener")
+         Filter: ("GCRecord" = 0)
+         Index Searches: 20188
+         Buffers: shared hit=60564
+ Planning:
+   Buffers: shared hit=985
+ Planning Time: 1.527 ms
+ Execution Time: 155.659 ms
+(52 rows)
+

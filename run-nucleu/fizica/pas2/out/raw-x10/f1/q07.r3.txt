@@ -1,0 +1,54 @@
+                                                                                  QUERY PLAN                                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Left Join  (cost=1647.56..1750.88 rows=12 width=148) (actual time=3.021..5.755 rows=1543.00 loops=1)
+   Buffers: shared hit=6627
+   ->  Hash Left Join  (cost=1647.14..1658.07 rows=12 width=119) (actual time=3.010..4.345 rows=1543.00 loops=1)
+         Hash Cond: (ct."TipTvaId" = tt."ID")
+         Buffers: shared hit=455
+         ->  Hash Join  (cost=1645.77..1656.65 rows=12 width=123) (actual time=2.993..4.198 rows=1543.00 loops=1)
+               Hash Cond: (p."CodTvaId" = ct."ID")
+               Buffers: shared hit=454
+               ->  GroupAggregate  (cost=1644.59..1654.70 rows=289 width=100) (actual time=2.975..4.054 rows=1543.00 loops=1)
+                     Group Key: p."DocumentId", p."TranzactieId", p."CodTvaId"
+                     Buffers: shared hit=453
+                     ->  Sort  (cost=1644.59..1645.31 rows=289 width=44) (actual time=2.964..3.122 rows=5864.00 loops=1)
+                           Sort Key: p."DocumentId", p."TranzactieId", p."CodTvaId"
+                           Sort Method: quicksort  Memory: 559kB
+                           Buffers: shared hit=453
+                           ->  Hash Join  (cost=1.61..1632.78 rows=289 width=44) (actual time=0.023..2.180 rows=5864.00 loops=1)
+                                 Hash Cond: (p."CodTvaId" = k."ID")
+                                 Buffers: shared hit=447
+                                 ->  Index Scan using ix_f1_perioada on "Postare" p  (cost=0.43..1624.75 rows=2406 width=44) (actual time=0.009..1.351 rows=13960.00 loops=1)
+                                       Index Cond: ("PerioadaDeclarare" = 202506)
+                                       Filter: ("Spatiu" = 3)
+                                       Index Searches: 1
+                                       Buffers: shared hit=446
+                                 ->  Hash  (cost=1.10..1.10 rows=6 width=4) (actual time=0.004..0.005 rows=6.00 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                       Buffers: shared hit=1
+                                       ->  Seq Scan on "CodTva" k  (cost=0.00..1.10 rows=6 width=4) (actual time=0.002..0.003 rows=6.00 loops=1)
+                                             Filter: ("Sens" = 1)
+                                             Rows Removed by Filter: 2
+                                             Buffers: shared hit=1
+               ->  Hash  (cost=1.08..1.08 rows=8 width=27) (actual time=0.009..0.009 rows=8.00 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=1
+                     ->  Seq Scan on "CodTva" ct  (cost=0.00..1.08 rows=8 width=27) (actual time=0.004..0.005 rows=8.00 loops=1)
+                           Buffers: shared hit=1
+         ->  Hash  (cost=1.19..1.19 rows=15 width=28) (actual time=0.010..0.010 rows=15.00 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 9kB
+               Buffers: shared hit=1
+               ->  Seq Scan on "TipuriTva" tt  (cost=0.00..1.19 rows=15 width=28) (actual time=0.005..0.007 rows=15.00 loops=1)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=1
+   ->  Index Scan using "PK_Documente" on "Documente" dd  (cost=0.42..7.73 rows=1 width=45) (actual time=0.001..0.001 rows=1.00 loops=1543)
+         Index Cond: ("ID" = p."DocumentId")
+         Filter: ("GCRecord" = 0)
+         Index Searches: 1543
+         Buffers: shared hit=6172
+ Planning:
+   Buffers: shared hit=747
+ Planning Time: 1.231 ms
+ Execution Time: 5.909 ms
+(50 rows)
+

@@ -1,0 +1,9 @@
+Timing is on.
+TRUNCATE TABLE
+Time: 6.531 ms
+TRUNCATE TABLE
+Time: 15.888 ms
+INSERT 0 1162622
+Time: 819.194 ms
+INSERT 0 1162622
+Time: 953.585 ms

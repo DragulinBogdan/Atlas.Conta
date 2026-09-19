@@ -1,0 +1,152 @@
+                                                                        QUERY PLAN                                                                        
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..318949.64 rows=4696 width=304) (actual time=156.560..254.301 rows=4560.00 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared read=257058
+   ->  Parallel Append  (cost=0.00..317480.04 rows=1963 width=304) (actual time=60.563..131.049 rows=1520.00 loops=3)
+         Buffers: shared read=257058
+         ->  Seq Scan on "Postare_Stoc_2026" p_23  (cost=0.00..0.00 rows=1 width=352) (actual time=0.019..0.019 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         ->  Seq Scan on "Postare_Stoc_rest" p_24  (cost=0.00..0.00 rows=1 width=352) (actual time=0.016..0.016 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         ->  Seq Scan on "Postare_Fiscal_2026" p_35  (cost=0.00..0.00 rows=1 width=352) (actual time=0.004..0.004 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         ->  Seq Scan on "Postare_Fiscal_rest" p_36  (cost=0.00..0.00 rows=1 width=352) (actual time=0.004..0.004 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         ->  Parallel Seq Scan on "Postare_Contabil_2025" p_10  (cost=0.00..19098.98 rows=175 width=304) (actual time=13.700..33.376 rows=456.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 697076
+               Buffers: shared read=15466
+         ->  Parallel Seq Scan on "Postare_Contabil_2024" p_9  (cost=0.00..19096.65 rows=223 width=304) (actual time=12.424..33.000 rows=456.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 697204
+               Buffers: shared read=15463
+         ->  Parallel Seq Scan on "Postare_Contabil_2017" p_2  (cost=0.00..19093.98 rows=184 width=304) (actual time=0.621..22.613 rows=456.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 697076
+               Buffers: shared read=15461
+         ->  Parallel Seq Scan on "Postare_Contabil_2018" p_3  (cost=0.00..19093.98 rows=165 width=304) (actual time=0.802..21.713 rows=456.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 697076
+               Buffers: shared read=15461
+         ->  Parallel Seq Scan on "Postare_Contabil_2019" p_4  (cost=0.00..19093.98 rows=194 width=304) (actual time=0.930..20.436 rows=456.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 697076
+               Buffers: shared read=15461
+         ->  Parallel Seq Scan on "Postare_Contabil_2020" p_5  (cost=0.00..19093.98 rows=175 width=304) (actual time=7.635..7.702 rows=152.00 loops=3)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 232359
+               Buffers: shared read=15461
+         ->  Parallel Seq Scan on "Postare_Contabil_2021" p_6  (cost=0.00..19093.98 rows=203 width=304) (actual time=0.475..10.291 rows=228.00 loops=2)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 348538
+               Buffers: shared read=15461
+         ->  Parallel Seq Scan on "Postare_Contabil_2022" p_7  (cost=0.00..19093.98 rows=165 width=304) (actual time=0.867..22.382 rows=456.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 697076
+               Buffers: shared read=15461
+         ->  Parallel Seq Scan on "Postare_Contabil_2023" p_8  (cost=0.00..19093.98 rows=213 width=304) (actual time=0.707..22.490 rows=456.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 697076
+               Buffers: shared read=15461
+         ->  Parallel Seq Scan on "Postare_Contabil_2016" p_1  (cost=0.00..16855.98 rows=220 width=304) (actual time=0.617..18.266 rows=456.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 608180
+               Buffers: shared read=13686
+         ->  Parallel Seq Scan on "Postare_Stoc_2024" p_21  (cost=0.00..8355.55 rows=2 width=305) (actual time=8.435..8.435 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 283498
+               Buffers: shared read=6879
+         ->  Parallel Seq Scan on "Postare_Stoc_2016" p_13  (cost=0.00..8180.37 rows=2 width=306) (actual time=7.632..7.632 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 276551
+               Buffers: shared read=6740
+         ->  Parallel Seq Scan on "Postare_Stoc_2017" p_14  (cost=0.00..8180.37 rows=2 width=306) (actual time=8.284..8.284 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 276551
+               Buffers: shared read=6740
+         ->  Parallel Seq Scan on "Postare_Stoc_2018" p_15  (cost=0.00..8180.37 rows=2 width=306) (actual time=8.680..8.680 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 276551
+               Buffers: shared read=6740
+         ->  Parallel Seq Scan on "Postare_Stoc_2019" p_16  (cost=0.00..8180.37 rows=2 width=306) (actual time=7.644..7.645 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 276551
+               Buffers: shared read=6740
+         ->  Parallel Seq Scan on "Postare_Stoc_2020" p_17  (cost=0.00..8180.37 rows=2 width=306) (actual time=8.035..8.035 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 276551
+               Buffers: shared read=6740
+         ->  Parallel Seq Scan on "Postare_Stoc_2021" p_18  (cost=0.00..8180.37 rows=2 width=306) (actual time=7.904..7.904 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 276551
+               Buffers: shared read=6740
+         ->  Parallel Seq Scan on "Postare_Stoc_2022" p_19  (cost=0.00..8180.37 rows=2 width=306) (actual time=10.615..10.616 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 276551
+               Buffers: shared read=6740
+         ->  Parallel Seq Scan on "Postare_Stoc_2023" p_20  (cost=0.00..8180.37 rows=2 width=306) (actual time=7.236..7.236 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 276551
+               Buffers: shared read=6740
+         ->  Parallel Seq Scan on "Postare_Stoc_2025" p_22  (cost=0.00..8179.37 rows=2 width=306) (actual time=8.414..8.414 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 276551
+               Buffers: shared read=6739
+         ->  Parallel Seq Scan on "Postare_Fiscal_2016" p_25  (cost=0.00..4435.12 rows=2 width=304) (actual time=5.196..5.196 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Fiscal_2017" p_26  (cost=0.00..4435.12 rows=2 width=304) (actual time=6.281..6.281 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Fiscal_2018" p_27  (cost=0.00..4435.12 rows=2 width=304) (actual time=5.957..5.957 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Fiscal_2019" p_28  (cost=0.00..4435.12 rows=2 width=304) (actual time=5.202..5.202 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Fiscal_2020" p_29  (cost=0.00..4435.12 rows=2 width=304) (actual time=5.171..5.171 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Fiscal_2021" p_30  (cost=0.00..4435.12 rows=2 width=304) (actual time=5.008..5.009 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Fiscal_2022" p_31  (cost=0.00..4435.12 rows=2 width=304) (actual time=5.712..5.712 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Fiscal_2023" p_32  (cost=0.00..4435.12 rows=2 width=304) (actual time=5.660..5.660 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Fiscal_2024" p_33  (cost=0.00..4435.12 rows=2 width=304) (actual time=7.978..7.978 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Fiscal_2025" p_34  (cost=0.00..4435.12 rows=2 width=304) (actual time=5.393..5.393 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 181464
+               Buffers: shared read=3490
+         ->  Parallel Seq Scan on "Postare_Contabil_2026" p_11  (cost=0.00..2431.65 rows=2 width=304) (actual time=14.424..14.424 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Rows Removed by Filter: 88896
+               Buffers: shared read=1778
+         ->  Parallel Seq Scan on "Postare_Contabil_rest" p_12  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+               Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+ Planning:
+   Buffers: shared hit=6757 read=334
+ Planning Time: 6.173 ms
+ JIT:
+   Functions: 216
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 3.898 ms (Deform 1.889 ms), Inlining 0.000 ms, Optimization 2.434 ms, Emission 31.640 ms, Total 37.971 ms
+ Execution Time: 267.477 ms
+(148 rows)
+

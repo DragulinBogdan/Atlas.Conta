@@ -1,0 +1,90 @@
+                                                                                                                                  QUERY PLAN                                                                                                                                   
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=43241.96..69431.39 rows=48308 width=234) (actual time=169.043..299.999 rows=144239.00 loops=1)
+   Hash Cond: (f."RepartitorId" = rep."ID")
+   Buffers: shared hit=12924 read=4335, temp read=3413 written=3417
+   ->  Hash Left Join  (cost=42207.86..68270.46 rows=48308 width=199) (actual time=164.815..284.312 rows=144239.00 loops=1)
+         Hash Cond: (f."ContrapartidaId" = cp."ID")
+         Buffers: shared hit=12400 read=4335, temp read=3413 written=3417
+         ->  Hash Left Join  (cost=42175.76..68110.71 rows=48308 width=195) (actual time=164.692..273.172 rows=144239.00 loops=1)
+               Hash Cond: (f."DocumentId" = doc."ID")
+               Buffers: shared hit=12384 read=4335, temp read=3413 written=3417
+               ->  Subquery Scan on f  (cost=31422.11..53373.26 rows=48308 width=182) (actual time=124.144..189.342 rows=144239.00 loops=1)
+                     Filter: (f."Data" >= '2025-01-01'::date)
+                     Rows Removed by Filter: 1
+                     Buffers: shared hit=11446 read=1052, temp read=1746 written=1750
+                     ->  WindowAgg  (cost=31422.11..51561.69 rows=144925 width=294) (actual time=124.139..181.310 rows=144240.00 loops=1)
+                           Window: w1 AS (ORDER BY "*SELECT* 3"."Data", "*SELECT* 3"."Id", "*SELECT* 3"."Sens" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                           Storage: Memory  Maximum Storage: 17kB
+                           Buffers: shared hit=11446 read=1052, temp read=1746 written=1750
+                           ->  Gather Merge  (cost=31421.97..48300.88 rows=144925 width=150) (actual time=124.126..140.239 rows=144240.00 loops=1)
+                                 Workers Planned: 2
+                                 Workers Launched: 2
+                                 Buffers: shared hit=11446 read=1052, temp read=1746 written=1750
+                                 ->  Sort  (cost=30421.95..30572.92 rows=60386 width=150) (actual time=71.683..74.848 rows=48080.00 loops=3)
+                                       Sort Key: "*SELECT* 3"."Data", "*SELECT* 3"."Id", "*SELECT* 3"."Sens" DESC
+                                       Sort Method: external merge  Disk: 6992kB
+                                       Buffers: shared hit=11446 read=1052, temp read=1746 written=1750
+                                       Worker 0:  Sort Method: external merge  Disk: 6976kB
+                                       Worker 1:  Sort Method: quicksort  Memory: 25kB
+                                       ->  Result  (cost=1235.34..21083.72 rows=60386 width=150) (actual time=41.679..60.791 rows=48080.00 loops=3)
+                                             Buffers: shared hit=11400 read=1052
+                                             ->  Parallel Append  (cost=1235.34..20479.86 rows=60386 width=150) (actual time=41.678..58.354 rows=48080.00 loops=3)
+                                                   Buffers: shared hit=11400 read=1052
+                                                   ->  Subquery Scan on "*SELECT* 3"  (cost=2687.41..2687.44 rows=1 width=197) (actual time=121.394..121.395 rows=1.00 loops=1)
+                                                         Buffers: shared hit=556 read=1052
+                                                         ->  Aggregate  (cost=2687.41..2687.43 rows=1 width=309) (actual time=121.394..121.394 rows=1.00 loops=1)
+                                                               Buffers: shared hit=556 read=1052
+                                                               ->  Index Scan using "IX_SolduriPerioadaContabil_An_Luna_ContId_RepartitorId_Materia~" on "SolduriPerioadaContabil" s  (cost=0.42..2679.49 rows=1583 width=9) (actual time=0.687..120.800 rows=1591.00 loops=1)
+                                                                     Index Cond: (("An" = 2025) AND ("Luna" = 12) AND ("ContId" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                                                     Filter: ("GCRecord" = 0)
+                                                                     Index Searches: 1
+                                                                     Buffers: shared hit=556 read=1052
+                                                   ->  Subquery Scan on "*SELECT* 1"  (cost=1235.34..9638.36 rows=45868 width=150) (actual time=1.211..16.057 rows=54452.00 loops=2)
+                                                         Buffers: shared hit=6253
+                                                         ->  Parallel Bitmap Heap Scan on "RegistruContabil" r  (cost=1235.34..9179.68 rows=45868 width=250) (actual time=1.210..13.297 rows=54452.00 loops=2)
+                                                               Recheck Cond: ("ContDebitId" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                                                               Filter: (("Data" <= '2025-12-31'::date) AND ("Data" > '2024-12-31'::date) AND ("GCRecord" = 0))
+                                                               Rows Removed by Filter: 1
+                                                               Heap Blocks: exact=2150
+                                                               Buffers: shared hit=6253
+                                                               Worker 0:  Heap Blocks: exact=3993
+                                                               ->  Bitmap Index Scan on "IX_RegistruContabil_ContDebitId"  (cost=0.00..1207.82 rows=110320 width=0) (actual time=1.905..1.905 rows=108906.00 loops=1)
+                                                                     Index Cond: ("ContDebitId" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                                                                     Index Searches: 1
+                                                                     Buffers: shared hit=89
+                                                   ->  Subquery Scan on "*SELECT* 2"  (cost=391.00..7852.14 rows=14517 width=150) (actual time=1.257..15.732 rows=35335.00 loops=1)
+                                                         Buffers: shared hit=4591
+                                                         ->  Parallel Bitmap Heap Scan on "RegistruContabil" r_1  (cost=391.00..7706.97 rows=14517 width=250) (actual time=1.256..11.612 rows=35335.00 loops=1)
+                                                               Recheck Cond: ("ContCreditId" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                                                               Filter: (("Data" <= '2025-12-31'::date) AND ("Data" > '2024-12-31'::date) AND ("GCRecord" = 0))
+                                                               Heap Blocks: exact=4561
+                                                               Buffers: shared hit=4591
+                                                               ->  Bitmap Index Scan on "IX_RegistruContabil_ContCreditId"  (cost=0.00..382.29 rows=34916 width=0) (actual time=0.948..0.948 rows=35335.00 loops=1)
+                                                                     Index Cond: ("ContCreditId" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                                                                     Index Searches: 1
+                                                                     Buffers: shared hit=30
+               ->  Hash  (cost=6785.83..6785.83 rows=205186 width=29) (actual time=40.084..40.085 rows=205186.00 loops=1)
+                     Buckets: 131072  Batches: 2  Memory Usage: 7231kB
+                     Buffers: shared hit=938 read=3283, temp written=624
+                     ->  Seq Scan on "Documente" doc  (cost=0.00..6785.83 rows=205186 width=29) (actual time=0.113..17.241 rows=205186.00 loops=1)
+                           Filter: ("GCRecord" = 0)
+                           Buffers: shared hit=938 read=3283
+         ->  Hash  (cost=24.05..24.05 rows=644 width=20) (actual time=0.111..0.111 rows=644.00 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 41kB
+               Buffers: shared hit=16
+               ->  Seq Scan on "Conturi" cp  (cost=0.00..24.05 rows=644 width=20) (actual time=0.011..0.065 rows=644.00 loops=1)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=16
+   ->  Hash  (cost=779.05..779.05 rows=20404 width=35) (actual time=4.114..4.115 rows=20404.00 loops=1)
+         Buckets: 32768  Batches: 1  Memory Usage: 1610kB
+         Buffers: shared hit=524
+         ->  Seq Scan on "Repartitori" rep  (cost=0.00..779.05 rows=20404 width=35) (actual time=0.005..2.195 rows=20404.00 loops=1)
+               Filter: ("GCRecord" = 0)
+               Buffers: shared hit=524
+ Planning:
+   Buffers: shared hit=980 read=20 dirtied=1
+ Planning Time: 6.367 ms
+ Execution Time: 303.494 ms
+(86 rows)
+

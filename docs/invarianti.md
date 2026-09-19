@@ -21,6 +21,13 @@ există tip de document fără semantica ambelor laturi definită — dacă o ce
 e operație — e **relație între documente** (imperecherea) sau **proiecție
 peste registre** (solduri, balanțe).
 
+*Reconciliere* (**decizia 90**, 2026-09-20; starea-țintă, codul rămâne pe
+litera veche până la TR-D9): împerecherea DEVINE operație — document tipat
+`Împerechere` cu tranzacție de fel `Transfer`, iar stingerea la operare e
+nominalizarea partidei de pe postarea de terț a stingătorului. Excepția
+deschiderii rămâne unică, ca tranzacție de fel `Deschidere` fără document,
+dar CU unitate (lot / partidă) și cu partener pe conturile de terț.
+
 ## II. Baza poartă identitatea operației; frunza poartă culegerea; motorul nu cunoaște frunzele
 
 Nucleul generic (operare, stoc, rezolvarea dimensiunilor, gardienii) consumă
@@ -54,6 +61,11 @@ nucleului nu decide pe valoarea lui; comportamentul per tip rămâne în hook-ur
 faptul că stă fizic pe tabela bazei nu o face câmp al bazei. Testul celor două
 condiții de mai sus rămâne singura cale spre bază.
 
+*Întărire* (**decizia 90**): motorul nu cunoaște frunzele fiindcă nu
+cunoaște documente, ci operanzi închiși (DTO); regimul dual al tranziției
+e DATĂ pe tip (`PosteazaInCub`), nu `is` pe frunză; `RolTert` e atribut al
+contului, nu al frunzei.
+
 ## III. Registrele sunt singurul adevăr al agregării: append-only, complete, scrise doar de motor
 
 Orice sold, balanță, fișă sau raport e o **sumă peste registre** (+
@@ -69,6 +81,14 @@ Demarcația: *agregatul scanează registre; starea unui document se citește de
 pe document* (restul de stins al imperecherii e calcul operațional
 per-document, nu agregare). Soldul lui 401 nu se calculează niciodată din
 facturi.
+
+*Reconciliere* (**decizia 90**; starea-țintă până la TR-D9): „registrele”
+devin UN SINGUR cub de postări — append-only, complet rezolvat, scris doar
+de motor, cu stornoul ca tranzacție distinctă. Restul de stins NU mai e
+stare a documentului: e `Σ[Unitate]` pe partidă, sumă pe cub. Demarcația
+rămâne pentru ATRIBUTELE documentului (număr, dată fizică, instrument),
+citite prin `Cauza`; tranzacțiile de fel `Transfer` (Σ per cont și latură
+= 0) sunt excluse din rapoartele pe cont și incluse în cele pe unitate.
 
 ## IV. Structura e cod; politica e date; politica nu inventează comportament
 
@@ -120,6 +140,14 @@ descărcările, gardianul de sold, storno), nu un parametru de afișare;
 rotunjirea — supapa `PoliticaEvaluare` (CMP periodic, decizia 51e) e parcată
 *cu nume*: când va veni, schimbă funcția de evaluare în punctele de
 descărcare, nu structura, și intră tot sub gheața per bază.
+
+*Reconciliere* (**decizia 90**; starea-țintă până la TR-D9): lotul e o
+UNITATE nominalizată (același concept cu partida și cu fișa de imobilizare);
+prețul lui e raportul `ΣValoare / ΣCantitate` al postărilor unității,
+fiecare postare e fapt, iar corecția de preț e postare de valoare cu
+`Atribuit`, nu rescriere. Interdicțiile rămân: valoarea ieșirii e fapt
+scris la operare, o singură metodă per bază; supapa 51e devine parametrul
+„unitatea de evaluare” (lot = FIFO; gestiune × produs sau produs = medie).
 
 ---
 

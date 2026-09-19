@@ -1,0 +1,82 @@
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "RegistruStoc"  (cost=4.81..200.84 rows=0 width=0) (actual time=0.010..0.010 rows=0.00 loops=1)
+   Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "RegistruStoc" r  (cost=4.81..200.84 rows=5 width=107) (actual time=0.009..0.010 rows=0.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+         Filter: (("Data" >= '2025-01-01'::date) AND ("GCRecord" = 0))
+         Buffers: shared hit=3
+         ->  Bitmap Index Scan on "IX_RegistruStoc_DocumentId"  (cost=0.00..4.80 rows=50 width=0) (actual time=0.006..0.007 rows=0.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=218
+ Planning Time: 0.398 ms
+ Execution Time: 0.044 ms
+(14 rows)
+
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "RegistruContabil"  (cost=9.78..2641.04 rows=0 width=0) (actual time=0.966..0.966 rows=0.00 loops=1)
+   Buffers: shared hit=2293 dirtied=1 written=1
+   ->  Bitmap Heap Scan on "RegistruContabil" r  (cost=9.78..2641.04 rows=71 width=387) (actual time=0.060..0.245 rows=50.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+         Filter: (("Data" >= '2025-01-01'::date) AND ("GCRecord" = 0))
+         Rows Removed by Filter: 450
+         Heap Blocks: exact=102
+         Buffers: shared hit=108
+         ->  Bitmap Index Scan on "IX_RegistruContabil_DocumentId"  (cost=0.00..9.76 rows=711 width=0) (actual time=0.039..0.039 rows=3750.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=6
+ Planning:
+   Buffers: shared hit=386
+ Planning Time: 0.353 ms
+ Trigger for constraint FK_RegistruContabil_CoduriEconomice_DimensiuniCredit_CodEconom~: time=0.077 calls=50
+ Trigger for constraint FK_RegistruContabil_CoduriEconomice_DimensiuniDebit_CodEconomi~: time=0.016 calls=50
+ Trigger for constraint FK_RegistruContabil_CoduriFunctionale_DimensiuniCredit_CodFunc~: time=0.035 calls=50
+ Trigger for constraint FK_RegistruContabil_CoduriFunctionale_DimensiuniDebit_CodFunct~: time=0.016 calls=50
+ Trigger for constraint FK_RegistruContabil_Conturi_ContCreditId: time=0.378 calls=50
+ Trigger for constraint FK_RegistruContabil_Conturi_ContDebitId: time=0.154 calls=50
+ Trigger for constraint FK_RegistruContabil_DocumentDetalii_DetaliuId: time=0.460 calls=50
+ Trigger for constraint FK_RegistruContabil_Documente_DocumentId: time=0.342 calls=50
+ Trigger for constraint FK_RegistruContabil_Produse_DimensiuniCredit_MaterialId: time=0.285 calls=50
+ Trigger for constraint FK_RegistruContabil_Produse_DimensiuniDebit_MaterialId: time=0.139 calls=50
+ Trigger for constraint FK_RegistruContabil_Proiecte_DimensiuniCredit_ProiectId: time=0.050 calls=50
+ Trigger for constraint FK_RegistruContabil_Proiecte_DimensiuniDebit_ProiectId: time=0.016 calls=50
+ Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniCredit_CentruCostId: time=0.035 calls=50
+ Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniCredit_RepartitorId: time=0.243 calls=50
+ Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniDebit_CentruCostId: time=0.013 calls=50
+ Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniDebit_RepartitorId: time=0.154 calls=50
+ Trigger for constraint FK_RegistruContabil_SurseFinantare_DimensiuniCredit_SursaFinan~: time=0.040 calls=50
+ Trigger for constraint FK_RegistruContabil_SurseFinantare_DimensiuniDebit_SursaFinant~: time=0.016 calls=50
+ Trigger for constraint FK_RegistruContabil_Unitati_DimensiuniCredit_UnitateId: time=0.027 calls=50
+ Trigger for constraint FK_RegistruContabil_Unitati_DimensiuniDebit_UnitateId: time=0.015 calls=50
+ Execution Time: 3.540 ms
+(36 rows)
+
+                                                                    QUERY PLAN                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "RegistruTva"  (cost=8.53..1904.64 rows=0 width=0) (actual time=0.515..0.515 rows=0.00 loops=1)
+   Buffers: shared hit=1033 dirtied=3 written=3
+   ->  Bitmap Heap Scan on "RegistruTva" r  (cost=8.53..1904.64 rows=54 width=134) (actual time=0.051..0.188 rows=49.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+         Filter: (("Data" >= '2025-01-01'::date) AND ("GCRecord" = 0))
+         Rows Removed by Filter: 441
+         Heap Blocks: exact=89
+         Buffers: shared hit=95
+         ->  Bitmap Index Scan on "IX_RegistruTva_DocumentId"  (cost=0.00..8.52 rows=546 width=0) (actual time=0.030..0.030 rows=3675.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=6
+ Planning:
+   Buffers: shared hit=142
+ Planning Time: 0.155 ms
+ Trigger for constraint FK_RegistruTva_DocumentDetalii_DetaliuId: time=0.315 calls=49
+ Trigger for constraint FK_RegistruTva_Documente_DocumentId: time=0.207 calls=49
+ Trigger for constraint FK_RegistruTva_Repartitori_PartenerId: time=0.189 calls=49
+ Trigger for constraint FK_RegistruTva_TipuriTva_TipTvaId: time=0.480 calls=49
+ Execution Time: 1.724 ms
+(20 rows)
+

@@ -1,0 +1,121 @@
+                                                                                                       QUERY PLAN                                                                                                        
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Left Join  (cost=50411.02..61297.41 rows=1799 width=205) (actual time=56.607..63.034 rows=3034.00 loops=1)
+   Buffers: shared hit=11482 read=12958
+   ->  Subquery Scan on f  (cost=50410.60..51209.85 rows=1799 width=180) (actual time=56.539..57.724 rows=3034.00 loops=1)
+         Filter: (f."Data" >= '2025-01-01'::date)
+         Rows Removed by Filter: 27306
+         Buffers: shared hit=168 read=12136
+         ->  WindowAgg  (cost=50410.60..50999.51 rows=16827 width=180) (actual time=49.278..56.921 rows=30340.00 loops=1)
+               Window: w1 AS (ORDER BY p."Data", p."TranzactieId", p."ID" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+               Storage: Memory  Maximum Storage: 17kB
+               Buffers: shared hit=168 read=12136
+               ->  Sort  (cost=50410.57..50452.64 rows=16827 width=60) (actual time=49.262..49.973 rows=30340.00 loops=1)
+                     Sort Key: p."Data", p."TranzactieId", p."ID"
+                     Sort Method: quicksort  Memory: 3139kB
+                     Buffers: shared hit=168 read=12136
+                     ->  Append  (cost=41.06..49229.44 rows=16827 width=60) (actual time=0.468..42.758 rows=30340.00 loops=1)
+                           Buffers: shared hit=162 read=12136
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2016" p_1  (cost=41.06..3923.29 rows=1305 width=60) (actual time=0.467..5.041 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=1262
+                                 Buffers: shared hit=84 read=1185
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2016_Partener_Cont_Data_idx"  (cost=0.00..40.73 rows=1305 width=0) (actual time=0.255..0.256 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2017" p_2  (cost=49.76..4908.43 rows=1673 width=60) (actual time=0.399..4.353 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=1262
+                                 Buffers: shared read=1269
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2017_Partener_Cont_Data_idx"  (cost=0.00..49.34 rows=1673 width=0) (actual time=0.223..0.223 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2018" p_3  (cost=43.59..4499.48 rows=1503 width=60) (actual time=0.288..3.457 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=1262
+                                 Buffers: shared read=1269
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2018_Partener_Cont_Data_idx"  (cost=0.00..43.21 rows=1503 width=0) (actual time=0.156..0.156 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2019" p_4  (cost=51.34..5193.64 rows=1797 width=60) (actual time=0.347..5.173 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=1262
+                                 Buffers: shared read=1269
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2019_Partener_Cont_Data_idx"  (cost=0.00..50.89 rows=1797 width=0) (actual time=0.202..0.202 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2020" p_5  (cost=51.63..5244.47 rows=1820 width=60) (actual time=0.996..6.067 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=1262
+                                 Buffers: shared read=1269
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2020_Partener_Cont_Data_idx"  (cost=0.00..51.17 rows=1820 width=0) (actual time=0.566..0.567 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2021" p_6  (cost=50.84..5104.31 rows=1758 width=60) (actual time=0.700..4.664 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=1262
+                                 Buffers: shared hit=12 read=1257
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2021_Partener_Cont_Data_idx"  (cost=0.00..50.40 rows=1758 width=0) (actual time=0.470..0.471 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2022" p_7  (cost=50.02..4957.63 rows=1694 width=60) (actual time=0.419..3.260 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=1262
+                                 Buffers: shared read=1269
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2022_Partener_Cont_Data_idx"  (cost=0.00..49.60 rows=1694 width=0) (actual time=0.181..0.181 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2023" p_8  (cost=50.55..5050.46 rows=1735 width=60) (actual time=0.614..4.069 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=1262
+                                 Buffers: shared hit=4 read=1265
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2023_Partener_Cont_Data_idx"  (cost=0.00..50.11 rows=1735 width=0) (actual time=0.433..0.433 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2024" p_9  (cost=49.92..4937.06 rows=1686 width=60) (actual time=0.323..2.427 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=1265
+                                 Buffers: shared read=1272
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2024_Partener_Cont_Data_idx"  (cost=0.00..49.50 rows=1686 width=0) (actual time=0.195..0.195 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Bitmap Heap Scan on "Postare_Contabil_2025" p_10  (cost=52.08..5326.52 rows=1855 width=60) (actual time=0.800..2.827 rows=3034.00 loops=1)
+                                 Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Filter: ("Spatiu" = 1)
+                                 Heap Blocks: exact=867
+                                 Buffers: shared hit=62 read=812
+                                 ->  Bitmap Index Scan on "Postare_Contabil_2025_Partener_Cont_Data_idx"  (cost=0.00..51.61 rows=1855 width=0) (actual time=0.665..0.665 rows=3034.00 loops=1)
+                                       Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Index Searches: 1
+                                       Buffers: shared read=7
+                           ->  Seq Scan on "Postare_Contabil_rest" p_11  (cost=0.00..0.00 rows=1 width=74) (actual time=0.008..0.008 rows=0.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid))
+   ->  Index Scan using "PK_Documente" on "Documente" doc  (cost=0.42..5.61 rows=1 width=41) (actual time=0.002..0.002 rows=1.00 loops=3034)
+         Index Cond: ("ID" = f."DocumentId")
+         Filter: ("GCRecord" = 0)
+         Index Searches: 3034
+         Buffers: shared hit=11314 read=822
+ Planning:
+   Buffers: shared hit=2337 read=1
+ Planning Time: 3.205 ms
+ Execution Time: 63.452 ms
+(117 rows)
+

@@ -1,0 +1,186 @@
+Gather  (cost=7717.67..41086.68 rows=31708 width=228) (actual time=46.270..100.512 rows=91139.00 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  Buffers: shared hit=17654 read=4588
+  ->  Parallel Hash Left Join  (cost=6717.67..36915.88 rows=13212 width=228) (actual time=38.519..83.543 rows=30379.67 loops=3)
+        Hash Cond: ("*SELECT* 5"."ID" = pd."DocumentId")
+        Filter: (((pd."Rest" IS NOT NULL) OR (s."Suma" IS NOT NULL) OR ("*SELECT* 5"."DataInregistrare" > '2025-12-31'::date)) AND ((COALESCE(pd."Rest", CASE WHEN ("*SELECT* 5"."DataInregistrare" > '2025-12-31'::date) THEN "*SELECT* 5"."coalesce" ELSE 0.0 END) - COALESCE(s."Suma", 0.0)) > 0.0))
+        Rows Removed by Filter: 1321
+        Buffers: shared hit=17654 read=4588
+        ->  Hash Left Join  (cost=21.60..29950.61 rows=39635 width=200) (actual time=10.294..45.501 rows=31701.00 loops=3)
+              Hash Cond: ("*SELECT* 5"."ID" = s."DocumentId")
+              Buffers: shared hit=17654 read=405
+              ->  Parallel Append  (cost=4.87..29827.64 rows=39636 width=168) (actual time=10.198..43.232 rows=31701.00 loops=3)
+                    Buffers: shared hit=17625 read=403
+                    ->  Subquery Scan on "*SELECT* 5"  (cost=4.87..251.23 rows=21 width=168) (actual time=0.572..0.574 rows=0.00 loops=1)
+                          Buffers: shared hit=1 read=3
+                          ->  Nested Loop Left Join  (cost=4.87..251.02 rows=21 width=168) (actual time=0.570..0.572 rows=0.00 loops=1)
+                                Buffers: shared hit=1 read=3
+                                ->  Bitmap Heap Scan on "Documente" d  (cost=4.58..84.56 rows=21 width=59) (actual time=0.570..0.570 rows=0.00 loops=1)
+                                      Recheck Cond: (("ClrType")::text = 'Decont'::text)
+                                      Filter: (("DataInregistrare" <= '2025-12-31'::date) AND ("GCRecord" = 0) AND ("Stare" = 1))
+                                      Buffers: shared hit=1 read=3
+                                      ->  Bitmap Index Scan on "IX_Documente_ClrType"  (cost=0.00..4.58 rows=21 width=0) (actual time=0.537..0.537 rows=0.00 loops=1)
+                                            Index Cond: (("ClrType")::text = 'Decont'::text)
+                                            Index Searches: 1
+                                            Buffers: shared hit=1 read=3
+                                ->  Index Scan using "PK_Repartitori" on "Repartitori" rp  (cost=0.29..7.93 rows=1 width=35) (never executed)
+                                      Index Cond: ("ID" = d."PredatorId")
+                                      Filter: ("GCRecord" = 0)
+                                      Index Searches: 0
+                    ->  Subquery Scan on "*SELECT* 4"  (cost=2479.34..7162.90 rows=13121 width=168) (actual time=15.288..34.666 rows=31381.00 loops=1)
+                          Buffers: shared hit=4399 read=44
+                          ->  Hash Left Join  (cost=2479.34..7031.69 rows=13121 width=168) (actual time=15.287..32.953 rows=31381.00 loops=1)
+                                Hash Cond: (d_1."PrimitorId" = rp_1."ID")
+                                Filter: (((rpd."ClrType")::text <> 'ContPropriu'::text) OR ((rp_1."ClrType")::text <> 'ContPropriu'::text))
+                                Buffers: shared hit=4399 read=44
+                                ->  Hash Left Join  (cost=1443.92..5961.81 rows=13121 width=103) (actual time=11.821..26.562 rows=31381.00 loops=1)
+                                      Hash Cond: (d_1."PredatorId" = rpd."ID")
+                                      Buffers: shared hit=3875 read=44
+                                      ->  Parallel Bitmap Heap Scan on "Documente" d_1  (cost=408.49..4891.93 rows=13121 width=75) (actual time=7.369..15.995 rows=31381.00 loops=1)
+                                            Recheck Cond: (("ClrType")::text = 'Incasare'::text)
+                                            Filter: (("DataInregistrare" <= '2025-12-31'::date) AND ("GCRecord" = 0) AND ("Stare" = 1))
+                                            Buffers: shared hit=3351 read=44
+                                            Worker 1:  Heap Blocks: exact=3353
+                                            ->  Bitmap Index Scan on "IX_Documente_ClrType"  (cost=0.00..400.62 rows=31493 width=0) (actual time=7.130..7.130 rows=33473.00 loops=1)
+                                                  Index Cond: (("ClrType")::text = 'Incasare'::text)
+                                                  Index Searches: 1
+                                                  Buffers: shared hit=3 read=39
+                                      ->  Hash  (cost=779.71..779.71 rows=20457 width=44) (actual time=4.317..4.318 rows=20404.00 loops=1)
+                                            Buckets: 32768  Batches: 1  Memory Usage: 1790kB
+                                            Buffers: shared hit=524
+                                            ->  Seq Scan on "Repartitori" rpd  (cost=0.00..779.71 rows=20457 width=44) (actual time=0.011..2.013 rows=20404.00 loops=1)
+                                                  Filter: ("GCRecord" = 0)
+                                                  Buffers: shared hit=524
+                                ->  Hash  (cost=779.71..779.71 rows=20457 width=25) (actual time=3.346..3.346 rows=20404.00 loops=1)
+                                      Buckets: 32768  Batches: 1  Memory Usage: 1392kB
+                                      Buffers: shared hit=524
+                                      ->  Seq Scan on "Repartitori" rp_1  (cost=0.00..779.71 rows=20457 width=25) (actual time=0.005..1.668 rows=20404.00 loops=1)
+                                            Filter: ("GCRecord" = 0)
+                                            Buffers: shared hit=524
+                    ->  Subquery Scan on "*SELECT* 3"  (cost=2106.32..5936.98 rows=1446 width=168) (actual time=9.163..14.899 rows=2486.00 loops=1)
+                          Buffers: shared hit=2114 read=56
+                          ->  Hash Left Join  (cost=2106.32..5922.52 rows=1446 width=168) (actual time=9.162..14.747 rows=2486.00 loops=1)
+                                Hash Cond: (d_2."PredatorId" = rpd_1."ID")
+                                Filter: (((rpd_1."ClrType")::text <> 'ContPropriu'::text) OR ((rp_2."ClrType")::text <> 'ContPropriu'::text))
+                                Buffers: shared hit=2114 read=56
+                                ->  Hash Left Join  (cost=1070.89..4883.30 rows=1446 width=103) (actual time=5.615..10.836 rows=2486.00 loops=1)
+                                      Hash Cond: (d_2."PrimitorId" = rp_2."ID")
+                                      Buffers: shared hit=1590 read=56
+                                      ->  Parallel Bitmap Heap Scan on "Documente" d_2  (cost=35.47..3844.07 rows=1446 width=75) (actual time=0.760..5.434 rows=2486.00 loops=1)
+                                            Recheck Cond: (("ClrType")::text = 'Plata'::text)
+                                            Filter: (("DataInregistrare" <= '2025-12-31'::date) AND ("GCRecord" = 0) AND ("Stare" = 1))
+                                            Buffers: shared hit=1066 read=56
+                                            Worker 0:  Heap Blocks: exact=1117
+                                            ->  Bitmap Index Scan on "IX_Documente_ClrType"  (cost=0.00..34.86 rows=2458 width=0) (actual time=0.676..0.677 rows=2730.00 loops=1)
+                                                  Index Cond: (("ClrType")::text = 'Plata'::text)
+                                                  Index Searches: 1
+                                                  Buffers: shared hit=2 read=3
+                                      ->  Hash  (cost=779.71..779.71 rows=20457 width=44) (actual time=4.706..4.707 rows=20404.00 loops=1)
+                                            Buckets: 32768  Batches: 1  Memory Usage: 1790kB
+                                            Buffers: shared hit=524
+                                            ->  Seq Scan on "Repartitori" rp_2  (cost=0.00..779.71 rows=20457 width=44) (actual time=0.015..2.238 rows=20404.00 loops=1)
+                                                  Filter: ("GCRecord" = 0)
+                                                  Buffers: shared hit=524
+                                ->  Hash  (cost=779.71..779.71 rows=20457 width=25) (actual time=3.410..3.411 rows=20404.00 loops=1)
+                                      Buckets: 32768  Batches: 1  Memory Usage: 1392kB
+                                      Buffers: shared hit=524
+                                      ->  Seq Scan on "Repartitori" rpd_1  (cost=0.00..779.71 rows=20457 width=25) (actual time=0.010..1.796 rows=20404.00 loops=1)
+                                            Filter: ("GCRecord" = 0)
+                                            Buffers: shared hit=524
+                    ->  Subquery Scan on "*SELECT* 2"  (cost=1561.63..6333.04 rows=16870 width=168) (actual time=6.988..14.018 rows=13511.67 loops=3)
+                          Buffers: shared hit=5549 read=52
+                          ->  Hash Left Join  (cost=1561.63..6164.34 rows=16870 width=168) (actual time=6.987..13.292 rows=13511.67 loops=3)
+                                Hash Cond: (d_3."PrimitorId" = rp_3."ID")
+                                Buffers: shared hit=5549 read=52
+                                ->  Parallel Bitmap Heap Scan on "Documente" d_3  (cost=526.21..5084.62 rows=16870 width=59) (actual time=2.439..6.005 rows=13511.67 loops=3)
+                                      Recheck Cond: (("ClrType")::text = 'FacturaIesire'::text)
+                                      Filter: (("DataInregistrare" <= '2025-12-31'::date) AND ("GCRecord" = 0) AND ("Stare" = 1))
+                                      Heap Blocks: exact=1473
+                                      Buffers: shared hit=3977 read=52
+                                      Worker 0:  Heap Blocks: exact=2182
+                                      Worker 1:  Heap Blocks: exact=320
+                                      ->  Bitmap Index Scan on "IX_Documente_ClrType"  (cost=0.00..516.09 rows=40489 width=0) (actual time=6.989..6.989 rows=43299.00 loops=1)
+                                            Index Cond: (("ClrType")::text = 'FacturaIesire'::text)
+                                            Index Searches: 1
+                                            Buffers: shared hit=2 read=52
+                                ->  Hash  (cost=779.71..779.71 rows=20457 width=35) (actual time=4.412..4.412 rows=20404.00 loops=3)
+                                      Buckets: 32768  Batches: 1  Memory Usage: 1610kB
+                                      Buffers: shared hit=1572
+                                      ->  Seq Scan on "Repartitori" rp_3  (cost=0.00..779.71 rows=20457 width=35) (actual time=0.006..2.129 rows=20404.00 loops=3)
+                                            Filter: ("GCRecord" = 0)
+                                            Buffers: shared hit=1572
+                    ->  Subquery Scan on "*SELECT* 1"  (cost=1283.72..5764.10 rows=7950 width=168) (actual time=7.485..22.578 rows=19035.00 loops=1)
+                          Buffers: shared hit=3959 read=171
+                          ->  Hash Left Join  (cost=1283.72..5684.60 rows=7950 width=168) (actual time=7.483..21.535 rows=19035.00 loops=1)
+                                Hash Cond: (d_4."PredatorId" = rp_4."ID")
+                                Buffers: shared hit=3959 read=171
+                                ->  Parallel Bitmap Heap Scan on "Documente" d_4  (cost=248.30..4628.31 rows=7950 width=59) (actual time=3.208..14.871 rows=19035.00 loops=1)
+                                      Recheck Cond: (("ClrType")::text = 'FacturaIntrare'::text)
+                                      Filter: (("DataInregistrare" <= '2025-12-31'::date) AND ("GCRecord" = 0) AND ("Stare" = 1))
+                                      Heap Blocks: exact=3580
+                                      Buffers: shared hit=3435 read=171
+                                      ->  Bitmap Index Scan on "IX_Documente_ClrType"  (cost=0.00..243.53 rows=19081 width=0) (actual time=2.983..2.983 rows=20190.00 loops=1)
+                                            Index Cond: (("ClrType")::text = 'FacturaIntrare'::text)
+                                            Index Searches: 1
+                                            Buffers: shared hit=2 read=24
+                                ->  Hash  (cost=779.71..779.71 rows=20457 width=35) (actual time=4.150..4.151 rows=20404.00 loops=1)
+                                      Buckets: 32768  Batches: 1  Memory Usage: 1610kB
+                                      Buffers: shared hit=524
+                                      ->  Seq Scan on "Repartitori" rp_4  (cost=0.00..779.71 rows=20457 width=35) (actual time=0.005..2.012 rows=20404.00 loops=1)
+                                            Filter: ("GCRecord" = 0)
+                                            Buffers: shared hit=524
+                    ->  Subquery Scan on "*SELECT* 6"  (cost=1060.15..4181.21 rows=934 width=168) (actual time=5.564..11.066 rows=1666.00 loops=1)
+                          Buffers: shared hit=1603 read=77
+                          ->  Hash Left Join  (cost=1060.15..4171.87 rows=934 width=168) (actual time=5.562..10.955 rows=1666.00 loops=1)
+                                Hash Cond: (d_5."PredatorId" = rp_5."ID")
+                                Buffers: shared hit=1603 read=77
+                                ->  Parallel Bitmap Heap Scan on "Documente" d_5  (cost=24.73..3134.00 rows=934 width=59) (actual time=1.287..6.010 rows=1666.00 loops=1)
+                                      Recheck Cond: (("ClrType")::text = 'ReturClient'::text)
+                                      Filter: (("DataInregistrare" <= '2025-12-31'::date) AND ("GCRecord" = 0) AND ("Stare" = 1))
+                                      Heap Blocks: exact=1152
+                                      Buffers: shared hit=1079 read=77
+                                      ->  Bitmap Index Scan on "IX_Documente_ClrType"  (cost=0.00..24.33 rows=1588 width=0) (actual time=1.186..1.186 rows=1850.00 loops=1)
+                                            Index Cond: (("ClrType")::text = 'ReturClient'::text)
+                                            Index Searches: 1
+                                            Buffers: shared hit=1 read=3
+                                ->  Hash  (cost=779.71..779.71 rows=20457 width=35) (actual time=4.121..4.122 rows=20404.00 loops=1)
+                                      Buckets: 32768  Batches: 1  Memory Usage: 1610kB
+                                      Buffers: shared hit=524
+                                      ->  Seq Scan on "Repartitori" rp_5  (cost=0.00..779.71 rows=20457 width=35) (actual time=0.008..2.275 rows=20404.00 loops=1)
+                                            Filter: ("GCRecord" = 0)
+                                            Buffers: shared hit=524
+              ->  Hash  (cost=16.70..16.70 rows=2 width=48) (actual time=0.078..0.081 rows=0.00 loops=3)
+                    Buckets: 1024  Batches: 1  Memory Usage: 8kB
+                    Buffers: shared hit=29 read=2
+                    ->  Subquery Scan on s  (cost=16.64..16.70 rows=2 width=48) (actual time=0.078..0.080 rows=0.00 loops=3)
+                          Buffers: shared hit=29 read=2
+                          ->  GroupAggregate  (cost=16.64..16.68 rows=2 width=48) (actual time=0.077..0.079 rows=0.00 loops=3)
+                                Group Key: i."DocumentStingatorId"
+                                Buffers: shared hit=29 read=2
+                                ->  Sort  (cost=16.64..16.64 rows=2 width=22) (actual time=0.076..0.077 rows=0.00 loops=3)
+                                      Sort Key: i."DocumentStingatorId"
+                                      Sort Method: quicksort  Memory: 25kB
+                                      Buffers: shared hit=29 read=2
+                                      Worker 0:  Sort Method: quicksort  Memory: 25kB
+                                      Worker 1:  Sort Method: quicksort  Memory: 25kB
+                                      ->  Append  (cost=0.29..16.63 rows=2 width=22) (actual time=0.037..0.038 rows=0.00 loops=3)
+                                            Buffers: shared hit=12 read=2
+                                            ->  Index Scan using "IX_Imperecheri_Data" on "Imperecheri" i  (cost=0.29..8.31 rows=1 width=22) (actual time=0.032..0.032 rows=0.00 loops=3)
+                                                  Index Cond: (("Data" > '2025-12-31'::date) AND ("Data" <= '2025-12-31'::date))
+                                                  Index Searches: 3
+                                                  Buffers: shared hit=6 read=2
+                                            ->  Index Scan using "IX_Imperecheri_Data" on "Imperecheri" i_1  (cost=0.29..8.31 rows=1 width=22) (actual time=0.004..0.004 rows=0.00 loops=3)
+                                                  Index Cond: (("Data" > '2025-12-31'::date) AND ("Data" <= '2025-12-31'::date))
+                                                  Index Searches: 3
+                                                  Buffers: shared hit=6
+        ->  Parallel Hash  (cost=5648.96..5648.96 rows=83769 width=22) (actual time=22.696..22.697 rows=67015.33 loops=3)
+              Buckets: 262144  Batches: 1  Memory Usage: 13216kB
+              Buffers: shared read=4183
+              ->  Parallel Seq Scan on "PartideDeschise" pd  (cost=0.00..5648.96 rows=83769 width=22) (actual time=0.227..10.785 rows=67015.33 loops=3)
+                    Filter: (("GCRecord" = 0) AND ("An" = 2025) AND ("Luna" = 12))
+                    Buffers: shared read=4183
+Planning:
+  Buffers: shared hit=774 read=26 dirtied=3
+Planning Time: 10.745 ms
+Execution Time: 102.929 ms

@@ -1,0 +1,50 @@
+                                                                                            QUERY PLAN                                                                                            
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=241812.00..291733.11 rows=213975 width=205) (actual time=233.686..398.002 rows=199175.00 loops=1)
+   Buffers: shared hit=15855 read=144524, temp read=5318 written=5321
+   ->  Aggregate  (cost=6192.82..6192.83 rows=1 width=32) (actual time=23.379..23.381 rows=1.00 loops=1)
+         Buffers: shared hit=1427
+         ->  Index Only Scan using ix_sold_cont on "Sold" s  (cost=0.56..5534.75 rows=87742 width=8) (actual time=0.034..9.425 rows=126263.00 loops=1)
+               Index Cond: (("Spatiu" = 1) AND ("Granita" = '2024-12-31'::date) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+               Heap Fetches: 0
+               Index Searches: 1
+               Buffers: shared hit=1427
+   ->  Hash Left Join  (cost=235619.18..282865.59 rows=213975 width=205) (actual time=210.297..355.182 rows=199175.00 loops=1)
+         Hash Cond: (f."DocumentId" = doc."ID")
+         Buffers: shared hit=14428 read=144524, temp read=5318 written=5321
+         ->  Subquery Scan on f  (cost=224464.53..258479.24 rows=213975 width=180) (actual time=158.144..239.530 rows=199175.00 loops=1)
+               Buffers: shared hit=14064 read=140667, temp read=2447 written=2450
+               ->  WindowAgg  (cost=224464.53..256339.49 rows=213975 width=180) (actual time=158.142..230.171 rows=199175.00 loops=1)
+                     Window: w1 AS (ORDER BY p."Data", p."TranzactieId", p."ID" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                     Storage: Memory  Maximum Storage: 17kB
+                     Buffers: shared hit=14064 read=140667, temp read=2447 written=2450
+                     ->  Gather Merge  (cost=224464.39..249385.31 rows=213975 width=60) (actual time=158.089..179.530 rows=199175.00 loops=1)
+                           Workers Planned: 2
+                           Workers Launched: 2
+                           Buffers: shared hit=14064 read=140667, temp read=2447 written=2450
+                           ->  Sort  (cost=223464.37..223687.26 rows=89156 width=60) (actual time=143.625..147.305 rows=66391.67 loops=3)
+                                 Sort Key: p."Data", p."TranzactieId", p."ID"
+                                 Sort Method: external sort  Disk: 5472kB
+                                 Buffers: shared hit=14064 read=140667, temp read=2447 written=2450
+                                 Worker 0:  Sort Method: external merge  Disk: 4656kB
+                                 Worker 1:  Sort Method: external merge  Disk: 3984kB
+                                 ->  Parallel Seq Scan on "Postare_Contabil" p  (cost=0.00..212780.94 rows=89156 width=60) (actual time=5.128..126.775 rows=66391.67 loops=3)
+                                       Filter: (("Data" >= '2025-01-01'::date) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 2258758
+                                       Buffers: shared hit=13972 read=140667
+         ->  Hash  (cost=6785.83..6785.83 rows=205186 width=41) (actual time=51.996..51.996 rows=205186.00 loops=1)
+               Buckets: 131072  Batches: 4  Memory Usage: 4777kB
+               Buffers: shared hit=364 read=3857, temp written=1180
+               ->  Seq Scan on "Documente" doc  (cost=0.00..6785.83 rows=205186 width=41) (actual time=0.357..21.539 rows=205186.00 loops=1)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=364 read=3857
+ Planning:
+   Buffers: shared hit=688
+ Planning Time: 0.921 ms
+ JIT:
+   Functions: 32
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 1.524 ms (Deform 0.695 ms), Inlining 0.000 ms, Optimization 0.932 ms, Emission 12.628 ms, Total 15.084 ms
+ Execution Time: 414.076 ms
+(46 rows)
+

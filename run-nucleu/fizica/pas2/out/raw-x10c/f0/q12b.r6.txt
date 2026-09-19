@@ -1,0 +1,16 @@
+                                                                     QUERY PLAN                                                                     
+----------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..31155.08 rows=4537 width=90) (actual time=2.134..16.629 rows=6980.00 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=4551 read=14754
+   ->  Parallel Seq Scan on "RegistruTva" r  (cost=0.00..29701.38 rows=1890 width=90) (actual time=0.702..13.317 rows=2326.67 loops=3)
+         Filter: (("GCRecord" = 0) AND ((("PerioadaAn" * 100) + "PerioadaLuna") >= 202506) AND ((("PerioadaAn" * 100) + "PerioadaLuna") <= 202506))
+         Rows Removed by Filter: 300113
+         Buffers: shared hit=4551 read=14754
+ Planning:
+   Buffers: shared hit=201
+ Planning Time: 0.309 ms
+ Execution Time: 16.805 ms
+(12 rows)
+

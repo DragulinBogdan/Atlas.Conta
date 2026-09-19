@@ -1,0 +1,36 @@
+===== B4.1 documente cu postare pe 419/409x, pe tip =====
+    ClrType     | ContSimbol | documente |   debit    |   credit   
+----------------+------------+-----------+------------+------------
+ FacturaIesire  | 419        |      2036 |          0 | 8392226.59
+ FacturaIntrare | 4091       |         7 |    3249.59 |          0
+ FacturaIntrare | 4092       |         1 |    8264.46 |          0
+ NotaContabila  | 4091       |         6 |    8264.46 |   29699.39
+ NotaContabila  | 4092       |         1 |          0 |    8264.46
+ NotaContabila  | 419        |      1998 | 8252374.26 |    1165.38
+
+
+===== B4.2 un exemplu de FCL cu 419: toate picioarele =====
+      Numar      | TotalStingere | ContSimbol | Latura | valoare 
+-----------------+---------------+------------+--------+---------
+ FLXONL000094802 |        104.02 | 4111       |      1 |  104.02
+ FLXONL000094802 |        104.02 | 419        |      2 |   87.41
+ FLXONL000094802 |        104.02 | 4427       |      2 |   16.61
+
+
+===== B4.3 FCL cu imperechere al carei STINGATOR posteaza pe 419 =====
+ fcl_stinse_de_avans | imperecheri | suma | stingatori | tipuri_stingator 
+---------------------+-------------+------+------------+------------------
+                   1 |           1 | 0.45 |          1 | NotaContabila
+
+
+===== B4.4 rest brut (F0) contra rest compensat (cub) pe FCL cu 419 propriu =====
+ facturi |    total    | rest_brut_f0 | rest_compensat_cub | cu_rest_f0 | cu_rest_cub 
+---------+-------------+--------------+--------------------+------------+-------------
+    2036 | 10155740.84 |    241502.69 |         1763514.25 |        265 |        2035
+
+
+===== B4.5 acelasi, la 31.12.2025 si numai pe cele cu rest =====
+ facturi_cu_rest_f0 | suma_rest_f0 |    medie_rest_f0     | facturi_cu_rest_cub | suma_rest_cub |    medie_rest_cub    
+--------------------+--------------+----------------------+---------------------+---------------+----------------------
+                265 |    241502.69 | 911.3309056603773585 |                2035 |    1763514.25 | 866.5917690417690418
+

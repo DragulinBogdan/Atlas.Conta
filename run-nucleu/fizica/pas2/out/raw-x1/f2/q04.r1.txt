@@ -1,0 +1,35 @@
+                                                                                                QUERY PLAN                                                                                                
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Left Join  (cost=4796.63..14150.52 rows=1579 width=205) (actual time=6.446..13.170 rows=3034.00 loops=1)
+   Buffers: shared hit=12189 read=827
+   ->  Subquery Scan on f  (cost=4796.21..4871.76 rows=1579 width=180) (actual time=6.401..7.518 rows=3034.00 loops=1)
+         Filter: (f."Data" >= '2025-01-01'::date)
+         Buffers: shared hit=873 read=7
+         ->  WindowAgg  (cost=4796.21..4851.87 rows=1591 width=180) (actual time=6.400..7.380 rows=3034.00 loops=1)
+               Window: w1 AS (ORDER BY p."Data", p."TranzactieId", p."ID" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+               Storage: Memory  Maximum Storage: 17kB
+               Buffers: shared hit=873 read=7
+               ->  Sort  (cost=4796.19..4800.16 rows=1591 width=60) (actual time=6.390..6.466 rows=3034.00 loops=1)
+                     Sort Key: p."Data", p."TranzactieId", p."ID"
+                     Sort Method: quicksort  Memory: 334kB
+                     Buffers: shared hit=873 read=7
+                     ->  Bitmap Heap Scan on "Postare_Contabil" p  (cost=44.71..4711.58 rows=1591 width=60) (actual time=4.271..6.002 rows=3034.00 loops=1)
+                           Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                           Filter: ("Spatiu" = 1)
+                           Heap Blocks: exact=867
+                           Buffers: shared hit=867 read=7
+                           ->  Bitmap Index Scan on ix_f2c_partener  (cost=0.00..44.31 rows=1591 width=0) (actual time=4.210..4.211 rows=3034.00 loops=1)
+                                 Index Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                 Index Searches: 1
+                                 Buffers: shared read=7
+   ->  Index Scan using "PK_Documente" on "Documente" doc  (cost=0.42..5.88 rows=1 width=41) (actual time=0.002..0.002 rows=1.00 loops=3034)
+         Index Cond: ("ID" = f."DocumentId")
+         Filter: ("GCRecord" = 0)
+         Index Searches: 3034
+         Buffers: shared hit=11316 read=820
+ Planning:
+   Buffers: shared hit=617
+ Planning Time: 0.778 ms
+ Execution Time: 13.311 ms
+(31 rows)
+

@@ -1,0 +1,26 @@
+                                                                                                                                                                                                                                                                                                                                  QUERY PLAN                                                                                                                                                                                                                                                                                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Subquery Scan on g  (cost=42120.18..44062.92 rows=52191 width=80) (actual time=133.381..187.476 rows=113555.00 loops=1)
+   Buffers: shared hit=13783 read=1741, temp read=1345 written=2458
+   ->  HashAggregate  (cost=42120.18..43932.45 rows=52191 width=48) (actual time=133.379..182.022 rows=113555.00 loops=1)
+         Group Key: p."Unitate"
+         Filter: (COALESCE(sum(CASE WHEN (p."Latura" = 1) THEN p."Valoare" ELSE (- p."Valoare") END), 0.0) <> 0.0)
+         Planned Partitions: 4  Batches: 21  Memory Usage: 8249kB  Disk Usage: 11352kB
+         Rows Removed by Filter: 2765
+         Buffers: shared hit=13783 read=1741, temp read=1345 written=2458
+         ->  Bitmap Heap Scan on "Postare" p  (cost=3327.80..35393.08 rows=87507 width=24) (actual time=5.945..78.697 rows=222816.00 loops=1)
+               Recheck Cond: ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[]))
+               Filter: (("Unitate" IS NOT NULL) AND ("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+               Rows Removed by Filter: 88906
+               Heap Blocks: exact=15254
+               Buffers: shared hit=13783 read=1741
+               ->  Bitmap Index Scan on ix_f1_cont  (cost=0.00..3305.88 rows=311864 width=0) (actual time=4.778..4.778 rows=311722.00 loops=1)
+                     Index Cond: ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[]))
+                     Index Searches: 1
+                     Buffers: shared hit=173 read=97
+ Planning:
+   Buffers: shared hit=385 read=1
+ Planning Time: 0.559 ms
+ Execution Time: 190.904 ms
+(22 rows)
+

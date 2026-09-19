@@ -1,0 +1,61 @@
+== B5.2 legatura la nivel de DOCUMENT ==
+              k               |   v   
+------------------------------+-------
+ NIR total                    | 17814
+ FCT total                    | 19035
+ NIR cu DocumentSursa (orice) | 17814
+ NIR Autogenerat              | 17814
+ NIR fara sursa (manual)      | 0
+ NIR cu DocumentSursa = FCT   | 17814
+ NIR pe FCT: max NIR per FCT  | 1
+ FCT fara niciun NIR conex    | 1221
+(8 rows)
+
+== B5.3 distributia NIR per FCT ==
+ nir_per_fct | facturi 
+-------------+---------
+           0 |    1221
+           1 |   17814
+(2 rows)
+
+== B5.4 FCT fara NIR: au linii de stoc? (natura clasei liniei) ==
+ Natura | linii | facturi 
+--------+-------+---------
+      2 |  1111 |     888
+      3 |   362 |     351
+(2 rows)
+
+== B5.5 legatura la nivel de LINIE prin lot: Lot.LinieIntrareId ==
+    linie_care_naste_lotul     | loturi 
+-------------------------------+--------
+ FacturaIntrareDetaliu         |  34289
+ AsamblareDetaliu              |   1472
+ ListaDiferenteInventarDetaliu |     22
+(3 rows)
+
+             k              |   v   
+----------------------------+-------
+ Loturi total               | 47154
+ Loturi fara LinieIntrareId | 11371
+(2 rows)
+
+== B5.6 perechea linie FCT -> linie NIR prin lot: cantitate si pret ==
+ perechi | cantitate_egala | valoare_egala | pret_egal | nir_fara_pret 
+---------+-----------------+---------------+-----------+---------------
+   34289 |           34289 |         34289 |        23 |             0
+(1 row)
+
+== B5.7 linii FCT de stoc fara linie NIR pe acelasi lot ==
+ linii_fct_cu_lot | cu_linie_nir | fara_linie_nir 
+------------------+--------------+----------------
+            34289 |        34289 |              0
+(1 row)
+
+== B5.8 DVI: legatura n->m cu facturile ==
+         k          | v 
+--------------------+---
+ DviFacturi randuri | 0
+ DVI distincte      | 0
+ Facturi distincte  | 0
+(3 rows)
+

@@ -1,0 +1,21 @@
+                                                                    QUERY PLAN                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=4888.75..5092.39 rows=13576 width=124) (actual time=5.210..6.762 rows=4725.00 loops=1)
+   Group Key: p."DocumentId", p."TranzactieId", p."Partener", p."CodTvaId"
+   Batches: 1  Memory Usage: 4113kB
+   Buffers: shared hit=625
+   ->  Bitmap Heap Scan on "Postare_Fiscal" p  (cost=876.38..4575.33 rows=13930 width=60) (actual time=0.529..1.934 rows=13960.00 loops=1)
+         Recheck Cond: ("PerioadaDeclarare" = 202506)
+         Filter: ("Spatiu" = 3)
+         Heap Blocks: exact=430
+         Buffers: shared hit=625
+         ->  Bitmap Index Scan on ix_f2f_perioada_codtva  (cost=0.00..872.89 rows=13930 width=0) (actual time=0.497..0.498 rows=13960.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Index Searches: 1
+               Buffers: shared hit=195
+ Planning:
+   Buffers: shared hit=392 read=4
+ Planning Time: 0.607 ms
+ Execution Time: 7.307 ms
+(17 rows)
+

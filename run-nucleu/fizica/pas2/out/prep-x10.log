@@ -1,0 +1,118 @@
+=== START 2026-09-19T17:07:33+00:00 ===
+Timing is on.
+CREATE INDEX
+Time: 3771.892 ms (00:03.772)
+CREATE INDEX
+Time: 1707.004 ms (00:01.707)
+CREATE INDEX
+Time: 981.873 ms
+CREATE INDEX
+Time: 1406.017 ms (00:01.406)
+CREATE INDEX
+Time: 1134.990 ms (00:01.135)
+CREATE INDEX
+Time: 815.439 ms
+CREATE INDEX
+Time: 3189.620 ms (00:03.190)
+CREATE INDEX
+Time: 1551.115 ms (00:01.551)
+CREATE INDEX
+Time: 827.365 ms
+CREATE INDEX
+Time: 1163.658 ms (00:01.164)
+CREATE INDEX
+Time: 998.161 ms
+CREATE INDEX
+Time: 862.138 ms
+=== INDEXI GATA 2026-09-19T17:07:55+00:00 ===
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+=== VACUUM GATA 2026-09-19T17:08:02+00:00 ===
+Timing is on.
+psql:/tmp/snapshot.sql:6: NOTICE:  table "Sold" does not exist, skipping
+DROP TABLE
+Time: 0.217 ms
+CREATE TABLE
+Time: 6.865 ms
+SET
+Time: 0.077 ms
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2016-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2017-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2018-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2019-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2020-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2021-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2022-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2023-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2024-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2025-12-31 gata
+DO
+Time: 32416.557 ms (00:32.417)
+CREATE INDEX
+Time: 3715.014 ms (00:03.715)
+CREATE INDEX
+Time: 1862.093 ms (00:01.862)
+VACUUM
+Time: 1408.390 ms (00:01.408)
+  Granita   | Spatiu | randuri 
+------------+--------+---------
+ 2016-12-31 |      1 |  321142
+ 2016-12-31 |      2 |  109391
+ 2016-12-31 |      3 |   44016
+ 2017-12-31 |      1 |  389656
+ 2017-12-31 |      2 |  109391
+ 2017-12-31 |      3 |   44016
+ 2018-12-31 |      1 |  389656
+ 2018-12-31 |      2 |  109391
+ 2018-12-31 |      3 |   44016
+ 2019-12-31 |      1 |  389656
+ 2019-12-31 |      2 |  109391
+ 2019-12-31 |      3 |   44016
+ 2020-12-31 |      1 |  389656
+ 2020-12-31 |      2 |  109391
+ 2020-12-31 |      3 |   44016
+ 2021-12-31 |      1 |  389656
+ 2021-12-31 |      2 |  109391
+ 2021-12-31 |      3 |   44016
+ 2022-12-31 |      1 |  389656
+ 2022-12-31 |      2 |  109391
+ 2022-12-31 |      3 |   44016
+ 2023-12-31 |      1 |  389656
+ 2023-12-31 |      2 |  109391
+ 2023-12-31 |      3 |   44016
+ 2024-12-31 |      1 |  389713
+ 2024-12-31 |      2 |  110786
+ 2024-12-31 |      3 |   44016
+ 2025-12-31 |      1 |  389713
+ 2025-12-31 |      2 |  110786
+ 2025-12-31 |      3 |   44016
+(30 rows)
+
+Time: 115.374 ms
+  total  | tabela | indexi 
+---------+--------+--------
+ 1233 MB | 577 MB | 656 MB
+(1 row)
+
+Time: 2.551 ms
+         proba         | valoare 
+-----------------------+---------
+ sold_abateri_20251231 |       0
+(1 row)
+
+Time: 3387.989 ms (00:03.388)
+=== SNAPSHOT GATA 2026-09-19T17:08:52+00:00 ===

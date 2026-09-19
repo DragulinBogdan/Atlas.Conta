@@ -1,0 +1,36 @@
+                                                                          QUERY PLAN                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Tranzactie"  (cost=0.42..10.33 rows=0 width=0) (actual time=0.053..0.054 rows=0.00 loops=1)
+   Buffers: shared hit=13
+   ->  Subquery Scan on "*SELECT*"  (cost=0.42..10.33 rows=1 width=46) (actual time=0.017..0.017 rows=1.00 loops=1)
+         Buffers: shared hit=4
+         ->  Limit  (cost=0.42..10.32 rows=1 width=62) (actual time=0.016..0.016 rows=1.00 loops=1)
+               Buffers: shared hit=4
+               ->  Index Scan using ix_tranzactie_document on "Tranzactie" t  (cost=0.42..10.32 rows=1 width=62) (actual time=0.015..0.016 rows=1.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: (("Data" >= '2025-01-01'::date) AND ("Fel" = 1))
+                     Index Searches: 1
+                     Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=135
+ Planning Time: 0.310 ms
+ Execution Time: 0.073 ms
+(15 rows)
+
+                                                                    QUERY PLAN                                                                     
+---------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Postare"  (cost=0.43..988.27 rows=0 width=0) (actual time=19.033..19.034 rows=0.00 loops=1)
+   Buffers: shared hit=8076 read=641 dirtied=203 written=8
+   ->  Subquery Scan on "*SELECT*"  (cost=0.43..988.27 rows=270 width=304) (actual time=0.182..8.815 rows=198.00 loops=1)
+         Buffers: shared hit=7 read=398 dirtied=1
+         ->  Index Scan using ix_f1_document on "Postare" p  (cost=0.43..985.57 rows=270 width=320) (actual time=0.182..8.781 rows=198.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+               Filter: ("Data" >= '2025-01-01'::date)
+               Index Searches: 1
+               Buffers: shared hit=7 read=398 dirtied=1
+ Planning:
+   Buffers: shared hit=307 read=30
+ Planning Time: 1.521 ms
+ Execution Time: 19.056 ms
+(13 rows)
+

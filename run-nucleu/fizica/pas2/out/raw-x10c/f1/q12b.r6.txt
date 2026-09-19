@@ -1,0 +1,44 @@
+                                                                                QUERY PLAN                                                                                 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=14322.64..205093.63 rows=53135 width=73) (actual time=107.226..548.054 rows=139600.00 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=9909 read=279846
+   ->  Parallel Hash Semi Join  (cost=13322.64..198780.13 rows=22140 width=73) (actual time=92.282..520.866 rows=46533.33 loops=3)
+         Hash Cond: (p."LinieId" = c."LinieId")
+         Buffers: shared hit=9909 read=279846
+         ->  Merge Join  (cost=1.64..184057.60 rows=123797 width=73) (actual time=0.138..465.262 rows=604880.00 loops=3)
+               Merge Cond: (p."CodTvaId" = ct."ID")
+               Buffers: shared hit=9701 read=277748
+               ->  Parallel Index Scan using ix_f1_codtva on "Postare" p  (cost=0.43..1138782.09 rows=772445 width=64) (actual time=0.067..408.991 rows=604880.00 loops=3)
+                     Filter: ("Spatiu" = 3)
+                     Rows Removed by Filter: 3249302
+                     Index Searches: 1
+                     Buffers: shared hit=9648 read=277748
+               ->  Sort  (cost=1.20..1.22 rows=8 width=13) (actual time=0.064..0.071 rows=8.00 loops=3)
+                     Sort Key: ct."ID"
+                     Sort Method: quicksort  Memory: 25kB
+                     Buffers: shared hit=53
+                     Worker 0:  Sort Method: quicksort  Memory: 25kB
+                     Worker 1:  Sort Method: quicksort  Memory: 25kB
+                     ->  Seq Scan on "CodTva" ct  (cost=0.00..1.08 rows=8 width=13) (actual time=0.046..0.047 rows=8.00 loops=3)
+                           Buffers: shared hit=45
+         ->  Parallel Hash  (cost=12984.23..12984.23 rows=26942 width=16) (actual time=12.310..12.311 rows=15708.67 loops=3)
+               Buckets: 65536  Batches: 1  Memory Usage: 2784kB
+               Buffers: shared hit=208 read=2098
+               ->  Parallel Index Scan using ix_f1_data on "Postare" c  (cost=0.43..12984.23 rows=26942 width=16) (actual time=6.209..10.411 rows=15708.67 loops=3)
+                     Index Cond: (("Data" >= '2025-06-01'::date) AND ("Data" <= '2025-06-30'::date))
+                     Filter: (("LinieId" IS NOT NULL) AND ("Spatiu" = 1))
+                     Rows Removed by Filter: 11901
+                     Index Searches: 1
+                     Buffers: shared hit=208 read=2098
+ Planning:
+   Buffers: shared hit=554 read=89
+ Planning Time: 1.205 ms
+ JIT:
+   Functions: 66
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 1.886 ms (Deform 1.127 ms), Inlining 0.000 ms, Optimization 1.421 ms, Emission 16.786 ms, Total 20.094 ms
+ Execution Time: 565.170 ms
+(40 rows)
+

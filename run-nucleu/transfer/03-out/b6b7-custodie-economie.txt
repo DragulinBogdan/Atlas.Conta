@@ -1,0 +1,167 @@
+== B5.9 pretul liniei NIR (clona conexa nu copiaza PretUnitar) ==
+              k              |   v   
+-----------------------------+-------
+ NIR: linii cu PretUnitar=0  | 34289
+ NIR: linii cu PretUnitar<>0 | 0
+ FCT: linii cu PretUnitar=0  | 31
+(3 rows)
+
+== B5.10 ce posteaza FCT si ce posteaza NIR (conturi, pe rand contabil) ==
+      tip       | corespondenta | randuri |    suma     
+----------------+---------------+---------+-------------
+ FacturaIntrare | 4426 = 401    |   28504 |  8836201.16
+ FacturaIntrare | 4426 = 4427   |    8284 |  8120612.12
+ FacturaIntrare | 624 = 401     |     839 |   127884.83
+ FacturaIntrare | 628 = 401     |     727 |  1942078.09
+ FacturaIntrare | 613 = 401     |     265 |    29676.60
+ FacturaIntrare | 667 = 401     |     204 | -1336563.20
+ FacturaIntrare | 6051 = 401    |      85 |    12348.37
+ FacturaIntrare | 626 = 401     |      66 |    20724.73
+ FacturaIntrare | 6022 = 401    |      64 |    88913.66
+ FacturaIntrare | 6232 = 401    |      63 |   864575.08
+ FacturaIntrare | 473 = 401     |      60 |  -960264.20
+ FacturaIntrare | 604 = 401     |      51 |    16981.68
+ FacturaIntrare | 6231 = 401    |      44 |    29226.82
+ FacturaIntrare | 635 = 401     |      39 |     3172.64
+ FacturaIntrare | 6053 = 401    |      37 |    22857.21
+ FacturaIntrare | 611 = 401     |      30 |    17157.32
+ FacturaIntrare | 6651 = 401    |      24 |     2082.32
+ FacturaIntrare | 408 = 401     |      19 |   835488.22
+ FacturaIntrare | 625 = 401     |      18 |     6338.95
+ FacturaIntrare | 6581 = 401    |      14 |       29.49
+ FacturaIntrare | 627 = 401     |      13 |    23665.87
+ FacturaIntrare | 6052 = 401    |      11 |     1906.78
+ FacturaIntrare | 5328 = 401    |       8 |   243120.00
+ FacturaIntrare | 4091 = 401    |       7 |     3249.59
+ FacturaIntrare | 447 = 401     |       4 |    20143.29
+ FacturaIntrare | 622 = 401     |       3 |     3101.22
+ FacturaIntrare | 6028 = 401    |       3 |     1626.38
+ FacturaIntrare | 6021 = 401    |       2 |      -39.52
+ FacturaIntrare | 6422 = 401    |       2 |     4400.00
+ FacturaIntrare | 6458 = 401    |       2 |     4150.00
+ FacturaIntrare | 612 = 401     |       1 |    46200.00
+ FacturaIntrare | 371 = 401     |       1 |       20.00
+ FacturaIntrare | 4092 = 401    |       1 |     8264.46
+ NIR            | 371 = 401     |   33793 | 83507010.00
+ NIR            | 3028 = 401    |     399 |    58069.87
+ NIR            | 3024 = 401    |      59 |    17539.80
+ NIR            | 381 = 401     |      29 |     2874.93
+ NIR            | 303 = 401     |       9 |     7809.88
+(38 rows)
+
+== B5.11 regulile de contare pe FCT si NIR ==
+ tip | tip_material | NaturaFiltru | SemnFiltru | PastreazaSemn | SursaContDebit | cont_d | SursaContCredit | cont_c 
+-----+--------------+--------------+------------+---------------+----------------+--------+-----------------+--------
+ BCS | 301          |              |            | f             |              0 | 601    |               1 | 
+ BCS | 302          |              |            | f             |              0 | 602    |               1 | 
+ BCS | 3021         |              |            | f             |              0 | 6021   |               1 | 
+ BCS | 3024         |              |            | f             |              0 | 6024   |               1 | 
+ BCS | 3028         |              |            | f             |              0 | 6028   |               1 | 
+ BCS | 303          |              |            | f             |              0 | 603    |               1 | 
+ BCS | 345          |              |            | f             |              0 | 711    |               1 | 
+ BCS | 371          |              |            | f             |              0 | 607    |               1 | 
+ BCS | 381          |              |            | f             |              0 | 608    |               1 | 
+ DSC | 301          |              |            | f             |              0 | 601    |               1 | 
+ DSC | 302          |              |            | f             |              0 | 602    |               1 | 
+ DSC | 3021         |              |            | f             |              0 | 6021   |               1 | 
+ DSC | 3024         |              |            | f             |              0 | 6024   |               1 | 
+ DSC | 3028         |              |            | f             |              0 | 6028   |               1 | 
+ DSC | 303          |              |            | f             |              0 | 603    |               1 | 
+ DSC | 345          |              |            | f             |              0 | 711    |               1 | 
+ DSC | 371          |              |            | f             |              0 | 607    |               1 | 
+ DSC | 381          |              |            | f             |              0 | 608    |               1 | 
+ FCT |              |            4 |            | f             |              1 |        |               2 | 404
+ FCT |              |            2 |            | f             |              1 |        |               2 | 401
+ FCT |              |            3 |            | f             |              1 |        |               2 | 401
+ LDI | 301          |              |         -1 | f             |              0 | 601    |               1 | 
+ LDI | 302          |              |         -1 | f             |              0 | 602    |               1 | 
+ LDI | 3021         |              |         -1 | f             |              0 | 6021   |               1 | 
+ LDI | 3024         |              |         -1 | f             |              0 | 6024   |               1 | 
+ LDI | 3028         |              |         -1 | f             |              0 | 6028   |               1 | 
+ LDI | 303          |              |         -1 | f             |              0 | 603    |               1 | 
+ LDI | 345          |              |         -1 | f             |              0 | 711    |               1 | 
+ LDI | 371          |              |         -1 | f             |              0 | 607    |               1 | 
+ LDI | 381          |              |         -1 | f             |              0 | 608    |               1 | 
+ LDI |              |            1 |          1 | f             |              1 |        |               0 | 7588
+ NIR |              |            1 |            | f             |              1 |        |               2 | 401
+ RDC | 301          |              |            | t             |              0 | 601    |               1 | 
+ RDC | 302          |              |            | t             |              0 | 602    |               1 | 
+ RDC | 3021         |              |            | t             |              0 | 6021   |               1 | 
+ RDC | 3024         |              |            | t             |              0 | 6024   |               1 | 
+ RDC | 3028         |              |            | t             |              0 | 6028   |               1 | 
+ RDC | 303          |              |            | t             |              0 | 603    |               1 | 
+ RDC | 345          |              |            | t             |              0 | 711    |               1 | 
+ RDC | 371          |              |            | t             |              0 | 607    |               1 | 
+ RDC | 381          |              |            | t             |              0 | 608    |               1 | 
+ RDC |              |            2 |            | t             |              2 | 4111   |               1 | 
+ RLF |              |            1 |            | t             |              1 |        |               3 | 401
+(43 rows)
+
+== B6 custodie / 803x ==
+                         k                         | v  
+---------------------------------------------------+----
+ Conturi 80xx in plan                              | 25
+ RegistruStoc TipStoc=4 (Custodie)                 | 0
+ RegistruStoc TipStoc 3/6/7 (Folosinta/Gratuit/PN) | 0
+ RegistruContabil pe cont 80xx                     | 0
+(4 rows)
+
+ Simbol |                                           Denumire                                            
+--------+-----------------------------------------------------------------------------------------------
+ 80     | Conturi în afara bilanţului
+ 801    | Angajamente acordate
+ 8011   | Giruri şi garanţii acordate
+ 8018   | Alte angajamente acordate
+ 802    | Angajamente primite
+ 8021   | Giruri şi garanţii primite
+ 8028   | Alte angajamente primite
+ 803    | Alte conturi în afara bilanţului
+ 8031   | Imobilizări corporale luate cu chirie
+ 8032   | Valori materiale primite spre prelucrare sau reparare
+ 8033   | Valori materiale primite în păstrare sau custodie
+ 8034   | "Debitori scoşi din activ, urmăriţi în continuare"
+ 8035   | Stocuri de natura obiectelor de inventar date în folosinţă
+ 8036   | "Redevenţe, locaţii de gestiune, chirii şi alte datorii asimilate"
+ 8037   | Efecte scontate neajunse la scadenţă
+ 8038   | "Bunuri primite în administrare, concesiune şi cu chirie"
+ 8039   | Alte valori în afara bilanţului
+ 804    | Certificate verzi
+ 805    | "Dobânzi aferente contractelor de leasing şi altor contracte asimilate, neajunse la scadenţă"
+ 8051   | Dobânzi de plătit
+ 8052   | Dobânzi de încasat
+ 806    | Certificate de emisii de gaze cu efect de seră
+ 807    | Active contingente
+ 808    | Datorii contingente
+ 809    | Creanţe preluate prin cesionare
+(25 rows)
+
+== B7 economia unificarii: randuri de stoc cu / fara postare 3xx pereche 1:1 ==
+                           clasa                            | randuri | pct_din_stoc 
+------------------------------------------------------------+---------+--------------
+ fara nicio nota                                            |  174748 |        61.64
+ nota 3xx pe latura semnului, aceeasi valoare (unificabila) |   97845 |        34.51
+ deschidere (fara detaliu)                                  |    6947 |         2.45
+ nota exista dar nu se potriveste (ramane separata)         |    3958 |         1.40
+(4 rows)
+
+== B7b detaliat pe tip ==
+          tip           |    clasa    | randuri 
+------------------------+-------------+---------
+ Asamblare              | fara nota   |    4694
+ BonConsum              | separata    |    1471
+ BonConsum              | unificabila |    1471
+ DescarcareGestiune     | unificabila |   62063
+ (deschidere)           | deschidere  |    6947
+ ListaDiferenteInventar | unificabila |      22
+ NIR                    | unificabila |   34289
+ NotaTransfer           | fara nota   |  170054
+ ReturClient            | separata    |    2010
+ ReturFurnizor          | separata    |     477
+(10 rows)
+
+== B7c cubul: cate postari ar disparea, procent din f2.Postare ==
+ postari_cub | postari_stoc | postari_contabil | postari_fiscal 
+-------------+--------------+------------------+----------------
+     1162622 |       283498 |           697660 |         181464
+(1 row)
+

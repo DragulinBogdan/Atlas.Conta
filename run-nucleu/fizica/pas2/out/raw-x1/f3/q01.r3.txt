@@ -1,0 +1,62 @@
+                                                                                         QUERY PLAN                                                                                         
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Right Join  (cost=28039.87..28069.53 rows=71 width=387) (actual time=52.296..53.700 rows=119.00 loops=1)
+   Hash Cond: (c."ID" = p_1."Cont")
+   Buffers: shared hit=596 read=13127
+   ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.013..0.063 rows=644.00 loops=1)
+         Filter: ("GCRecord" = 0)
+         Buffers: shared hit=16
+   ->  Hash  (cost=28038.99..28038.99 rows=71 width=144) (actual time=52.258..53.539 rows=119.00 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 17kB
+         Buffers: shared hit=580 read=13127
+         ->  Finalize GroupAggregate  (cost=28013.94..28038.99 rows=71 width=144) (actual time=52.058..53.520 rows=119.00 loops=1)
+               Group Key: p_1."Cont"
+               Buffers: shared hit=580 read=13127
+               ->  Gather Merge  (cost=28013.94..28033.74 rows=170 width=144) (actual time=52.051..53.374 rows=312.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=580 read=13127
+                     ->  Sort  (cost=27013.92..27014.10 rows=71 width=144) (actual time=50.302..50.307 rows=104.00 loops=3)
+                           Sort Key: p_1."Cont"
+                           Sort Method: quicksort  Memory: 57kB
+                           Buffers: shared hit=580 read=13127
+                           Worker 0:  Sort Method: quicksort  Memory: 53kB
+                           Worker 1:  Sort Method: quicksort  Memory: 52kB
+                           ->  Partial HashAggregate  (cost=27010.31..27011.73 rows=71 width=144) (actual time=50.231..50.269 rows=104.00 loops=3)
+                                 Group Key: p_1."Cont"
+                                 Batches: 1  Memory Usage: 296kB
+                                 Buffers: shared hit=566 read=13127
+                                 Worker 0:  Batches: 1  Memory Usage: 160kB
+                                 Worker 1:  Batches: 1  Memory Usage: 160kB
+                                 ->  Parallel Append  (cost=0.00..18766.36 rows=253660 width=28) (actual time=0.060..25.998 rows=202921.33 loops=3)
+                                       Buffers: shared hit=566 read=13127
+                                       ->  Seq Scan on "Postare_Contabil_2016" p_1  (cost=0.00..0.00 rows=1 width=42) (actual time=0.009..0.009 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2017" p_2  (cost=0.00..0.00 rows=1 width=42) (actual time=0.002..0.002 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2018" p_3  (cost=0.00..0.00 rows=1 width=42) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2019" p_4  (cost=0.00..0.00 rows=1 width=42) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2020" p_5  (cost=0.00..0.00 rows=1 width=42) (actual time=0.004..0.004 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2021" p_6  (cost=0.00..0.00 rows=1 width=42) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2022" p_7  (cost=0.00..0.00 rows=1 width=42) (actual time=0.002..0.003 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2023" p_8  (cost=0.00..0.00 rows=1 width=42) (actual time=0.002..0.003 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_rest" p_11  (cost=0.00..0.00 rows=1 width=42) (actual time=0.002..0.002 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Parallel Seq Scan on "Postare_Contabil_2025" p_10  (cost=0.00..17494.97 rows=253598 width=28) (actual time=0.081..18.509 rows=202878.67 loops=3)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                             Buffers: shared hit=564 read=13127
+                                       ->  Parallel Seq Scan on "Postare_Contabil_2024" p_9  (cost=0.00..3.13 rows=75 width=29) (actual time=0.003..0.015 rows=128.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                             Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=2343
+ Planning Time: 2.319 ms
+ Execution Time: 53.817 ms
+(58 rows)
+

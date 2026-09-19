@@ -1,0 +1,26 @@
+Timing is on.
+psql:/tmp/06b-x10-replica.sql:8: NOTICE:  table "_Map" does not exist, skipping
+DROP TABLE
+Time: 0.244 ms
+SELECT 249621
+Time: 147.145 ms
+CREATE INDEX
+Time: 34.199 ms
+ANALYZE
+Time: 16.442 ms
+INSERT 0 249621
+Time: 247.334 ms
+INSERT 0 1155547
+Time: 3189.258 ms (00:03.189)
+INSERT 0 1155547
+Time: 3149.414 ms (00:03.149)
+INSERT 0 1155547
+Time: 3739.261 ms (00:03.739)
+INSERT 0 304318
+Time: 6912.914 ms (00:06.913)
+INSERT 0 276551
+Time: 3156.800 ms (00:03.157)
+INSERT 0 90732
+Time: 1101.081 ms (00:01.101)
+DROP TABLE
+Time: 344.549 ms

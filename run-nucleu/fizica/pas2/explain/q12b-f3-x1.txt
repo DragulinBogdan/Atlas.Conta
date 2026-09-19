@@ -1,0 +1,58 @@
+                                                                                              QUERY PLAN                                                                                              
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=3511.61..9286.00 rows=6863 width=73) (actual time=11.377..23.068 rows=13960.00 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=4646
+   ->  Parallel Hash Semi Join  (cost=2511.61..7599.70 rows=2860 width=73) (actual time=10.140..18.438 rows=4653.33 loops=3)
+         Hash Cond: (p_1."LinieId" = c."LinieId")
+         Buffers: shared hit=4646
+         ->  Hash Join  (cost=1.18..5027.07 rows=10213 width=73) (actual time=0.054..11.472 rows=60488.00 loops=3)
+               Hash Cond: (p_1."CodTvaId" = ct."ID")
+               Buffers: shared hit=3493
+               ->  Parallel Append  (cost=0.00..4813.18 rows=75621 width=64) (actual time=0.028..7.373 rows=60488.00 loops=3)
+                     Buffers: shared hit=3490
+                     ->  Seq Scan on "Postare_Fiscal_2016" p_1  (cost=0.00..0.00 rows=1 width=78) (actual time=0.012..0.013 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_2017" p_2  (cost=0.00..0.00 rows=1 width=78) (actual time=0.006..0.006 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_2018" p_3  (cost=0.00..0.00 rows=1 width=78) (actual time=0.004..0.004 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_2019" p_4  (cost=0.00..0.00 rows=1 width=78) (actual time=0.003..0.003 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_2020" p_5  (cost=0.00..0.00 rows=1 width=78) (actual time=0.003..0.003 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_2021" p_6  (cost=0.00..0.00 rows=1 width=78) (actual time=0.009..0.009 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_2022" p_7  (cost=0.00..0.00 rows=1 width=78) (actual time=0.007..0.007 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_2023" p_8  (cost=0.00..0.00 rows=1 width=78) (actual time=0.006..0.006 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_2024" p_9  (cost=0.00..0.00 rows=1 width=78) (actual time=0.004..0.004 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_2026" p_11  (cost=0.00..0.00 rows=1 width=78) (actual time=0.003..0.003 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Seq Scan on "Postare_Fiscal_rest" p_12  (cost=0.00..0.00 rows=1 width=78) (actual time=0.004..0.004 rows=0.00 loops=1)
+                           Filter: ("Spatiu" = 3)
+                     ->  Parallel Seq Scan on "Postare_Fiscal_2025" p_10  (cost=0.00..4435.12 rows=75610 width=64) (actual time=0.007..5.218 rows=60488.00 loops=3)
+                           Filter: ("Spatiu" = 3)
+                           Buffers: shared hit=3490
+               ->  Hash  (cost=1.08..1.08 rows=8 width=13) (actual time=0.013..0.014 rows=8.00 loops=3)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=3
+                     ->  Seq Scan on "CodTva" ct  (cost=0.00..1.08 rows=8 width=13) (actual time=0.007..0.007 rows=8.00 loops=3)
+                           Buffers: shared hit=3
+         ->  Parallel Hash  (cost=2147.33..2147.33 rows=29048 width=16) (actual time=3.334..3.334 rows=15708.67 loops=3)
+               Buckets: 65536  Batches: 1  Memory Usage: 2784kB
+               Buffers: shared hit=1153
+               ->  Parallel Index Scan using "Postare_Contabil_2025_Data_idx" on "Postare_Contabil_2025" c  (cost=0.42..2147.33 rows=29048 width=16) (actual time=0.019..1.536 rows=15708.67 loops=3)
+                     Index Cond: (("Data" >= '2025-06-01'::date) AND ("Data" <= '2025-06-30'::date))
+                     Filter: (("LinieId" IS NOT NULL) AND ("Spatiu" = 1))
+                     Index Searches: 1
+                     Buffers: shared hit=1153
+ Planning:
+   Buffers: shared hit=2620
+ Planning Time: 2.338 ms
+ Execution Time: 23.431 ms
+(54 rows)
+

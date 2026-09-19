@@ -1,0 +1,48 @@
+                                                                          QUERY PLAN                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Tranzactie"  (cost=0.42..10.33 rows=0 width=0) (actual time=0.048..0.049 rows=0.00 loops=1)
+   Buffers: shared hit=13
+   ->  Subquery Scan on "*SELECT*"  (cost=0.42..10.33 rows=1 width=46) (actual time=0.015..0.015 rows=1.00 loops=1)
+         Buffers: shared hit=4
+         ->  Limit  (cost=0.42..10.32 rows=1 width=62) (actual time=0.014..0.014 rows=1.00 loops=1)
+               Buffers: shared hit=4
+               ->  Index Scan using ix_tranzactie_document on "Tranzactie" t  (cost=0.42..10.32 rows=1 width=62) (actual time=0.013..0.014 rows=1.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: (("Data" >= '2025-01-01'::date) AND ("Fel" = 1))
+                     Index Searches: 1
+                     Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=135
+ Planning Time: 0.333 ms
+ Execution Time: 0.069 ms
+(15 rows)
+
+                                                                                     QUERY PLAN                                                                                     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Postare"  (cost=0.42..179.35 rows=0 width=0) (actual time=1.401..1.402 rows=0.00 loops=1)
+   Buffers: shared hit=3449 dirtied=8 written=8
+   ->  Subquery Scan on "*SELECT*"  (cost=0.42..179.35 rows=104 width=304) (actual time=0.023..0.292 rows=198.00 loops=1)
+         Buffers: shared hit=42
+         ->  Append  (cost=0.42..178.31 rows=104 width=320) (actual time=0.023..0.273 rows=198.00 loops=1)
+               Buffers: shared hit=42
+               ->  Index Scan using "Postare_Contabil_DocumentId_idx" on "Postare_Contabil" p_1  (cost=0.42..17.17 rows=7 width=320) (actual time=0.022..0.127 rows=100.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: ("Data" >= '2025-01-01'::date)
+                     Index Searches: 1
+                     Buffers: shared hit=21
+               ->  Index Scan using "Postare_Stoc_DocumentId_idx" on "Postare_Stoc" p_2  (cost=0.42..8.53 rows=5 width=320) (actual time=0.009..0.009 rows=0.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: ("Data" >= '2025-01-01'::date)
+                     Index Searches: 1
+                     Buffers: shared hit=3
+               ->  Index Scan using "Postare_Fiscal_DocumentId_idx" on "Postare_Fiscal" p_3  (cost=0.42..152.09 rows=92 width=320) (actual time=0.017..0.127 rows=98.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: ("Data" >= '2025-01-01'::date)
+                     Index Searches: 1
+                     Buffers: shared hit=18
+ Planning:
+   Buffers: shared hit=755
+ Planning Time: 0.722 ms
+ Execution Time: 1.436 ms
+(25 rows)
+

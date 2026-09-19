@@ -1,0 +1,41 @@
+DROP TABLE
+psql:/tmp/04-b3-rupturi.sql:8: NOTICE:  table "TertRef" does not exist, skipping
+SELECT 116320
+ALTER TABLE
+ANALYZE
+===== B3.1 rezumat (oglinda probei M5) =====
+ total | cont_diferit | latura_diferita | fara_tert_pe_stins | fara_tert_pe_stingator | partener_diferit 
+-------+--------------+-----------------+--------------------+------------------------+------------------
+ 44448 |         1179 |           44416 |               1179 |                      0 |             1193
+
+
+===== B3.2 contul stins <> contul stingatorului: (tip stins, tip stingator, cont, cont) =====
+ tip_stins | tip_stingator | cont_stins | cont_stingator | numar | suma 
+-----------+---------------+------------+----------------+-------+------
+
+
+===== B3.3 documente STINSE fara nicio postare de tert: pe tip =====
+   tip_stins    | imperecheri | documente |    suma     
+----------------+-------------+-----------+-------------
+ FacturaIntrare |        1179 |      1085 | 25585375.12
+
+
+===== B3.4 trei exemple de document stins fara postare de tert + ce posteaza =====
+    ClrType     |   Numar    |    Data    | TotalStingere | ContSimbol | Latura | valoare 
+----------------+------------+------------+---------------+------------+--------+---------
+ FacturaIntrare | ACH1006003 | 2025-01-03 |        779.92 | 4426       |      1 |  124.49
+ FacturaIntrare | ACH1006003 | 2025-01-03 |        779.92 | 4427       |      2 |  124.49
+ FacturaIntrare | ACZ1000302 | 2025-01-03 |        232.79 | 4426       |      1 |   37.19
+ FacturaIntrare | ACZ1000302 | 2025-01-03 |        232.79 | 4427       |      2 |   37.19
+ FacturaIntrare | ACZ1005882 | 2025-01-03 |         15.35 | 4426       |      1 |    2.44
+ FacturaIntrare | ACZ1005882 | 2025-01-03 |         15.35 | 4427       |      2 |    2.44
+
+
+===== B3.5 latura: cum se distribuie (stins x stingator) =====
+ cont_stins | latura_stins | cont_stingator | latura_stingator | numar 
+------------+--------------+----------------+------------------+-------
+ 4111       |            1 | 4111           |                2 | 27445
+ 401        |            2 | 401            |                1 | 15792
+ 4111       |            1 | 4111           |                1 |    24
+ 401        |            1 | 401            |                1 |     8
+
