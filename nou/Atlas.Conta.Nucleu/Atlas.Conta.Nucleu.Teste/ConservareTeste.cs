@@ -140,6 +140,38 @@ public class ConservareTeste {
             AreCodul(Conservare.Verifica(perturbata), Coduri.PartenerLipsa);
         });
 
+    [Fact]
+    public void ProdusulStrainFataDeLotPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var perturbata = Perturba(
+                tranzactie,
+                aleator,
+                p => p with {
+                    Coordonate = p.Coordonate with {
+                        Produs = Gen.AltulDecat(aleator, Gen.Produse, p.Coordonate.Produs!.Value),
+                    },
+                },
+                p => p.Coordonate.Unitate?.Fel == FelUnitate.Lot);
+            AreCodul(Conservare.Verifica(perturbata), Coduri.UnitateNepotrivita);
+        });
+
+    [Fact]
+    public void PartenerulStrainFataDePartidaPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var perturbata = Perturba(
+                tranzactie,
+                aleator,
+                p => p with {
+                    Coordonate = p.Coordonate with {
+                        Partener = Gen.AltulDecat(aleator, Gen.Parteneri, p.Coordonate.Partener!.Value),
+                    },
+                },
+                p => p.Coordonate.Unitate?.Fel == FelUnitate.Partida);
+            AreCodul(Conservare.Verifica(perturbata), Coduri.UnitateNepotrivita);
+        });
+
     static decimal SumaPeLaturi(Tranzactie tranzactie) =>
         tranzactie.Postari.Sum(p => p.Coordonate.Latura == Latura.Debit ? p.Valoare : -p.Valoare);
 

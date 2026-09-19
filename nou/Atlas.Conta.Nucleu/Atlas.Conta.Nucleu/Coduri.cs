@@ -12,5 +12,7 @@ public static class Coduri {
     public const string DocumentLipsa = "DOCUMENT_LIPSA";
     public const string DocumentNeasteptat = "DOCUMENT_NEASTEPTAT";
     public const string CauzaStraina = "CAUZA_STRAINA";
+    public const string UnitateNepotrivita = "UNITATE_NEPOTRIVITA";
+    public const string StocInsuficient = "STOC_INSUFICIENT";
     public const string TvaInAfaraTolerantei = "TVA_IN_AFARA_TOLERANTEI";
 }

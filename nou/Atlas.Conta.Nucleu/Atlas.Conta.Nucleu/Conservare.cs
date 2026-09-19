@@ -32,8 +32,10 @@ public static class Conservare {
                 null));
             return;
         }
+        // 090i: stornoul inversează și postările ATRIBUITE, care poartă cauza altui document.
+        var atribuitulEPermis = tranzactie.Fel == FelTranzactie.Storno;
         foreach (var postare in tranzactie.Postari)
-            if (postare.Cauza.Document != document)
+            if (postare.Cauza.Document != document && !(atribuitulEPermis && postare.Atribuit is not null))
                 refuzuri.Add(new Refuz(
                     Coduri.CauzaStraina,
                     $"postarea are cauza pe documentul {postare.Cauza.Document}, nu pe {document}",
@@ -112,16 +114,28 @@ public static class Conservare {
                         $"cantitatea {postare.Cantitate} nu are unitate",
                         linie));
             }
-            switch (coordonate.Unitate?.Fel) {
+            if (coordonate.Unitate is not { } unitate)
+                continue;
+            switch (unitate.Fel) {
                 case FelUnitate.Lot:
                     if (coordonate.Produs is null)
                         refuzuri.Add(new Refuz(Coduri.ProdusLipsa, "lotul nu are produs", linie));
                     if (coordonate.Gestiune is null)
                         refuzuri.Add(new Refuz(Coduri.GestiuneLipsa, "lotul nu are gestiune", linie));
+                    if (coordonate.Produs != unitate.Produs)
+                        refuzuri.Add(new Refuz(
+                            Coduri.UnitateNepotrivita,
+                            $"lotul {unitate.Id} e pe produsul {Nume(unitate.Produs)}, postarea pe {Nume(coordonate.Produs)}",
+                            linie));
                     break;
                 case FelUnitate.Partida:
                     if (coordonate.Partener is null)
                         refuzuri.Add(new Refuz(Coduri.PartenerLipsa, "partida nu are partener", linie));
+                    if (coordonate.Partener != unitate.Partener)
+                        refuzuri.Add(new Refuz(
+                            Coduri.UnitateNepotrivita,
+                            $"partida {unitate.Id} e pe partenerul {Nume(unitate.Partener)}, postarea pe {Nume(coordonate.Partener)}",
+                            linie));
                     break;
             }
         }
@@ -147,5 +161,5 @@ public static class Conservare {
         return chei.Select((k, i) => (k, sume[i])).ToList();
     }
 
-    static string Nume(Guid? id) => id?.ToString() ?? "(fără produs)";
+    static string Nume(Guid? id) => id?.ToString() ?? "(fără)";
 }

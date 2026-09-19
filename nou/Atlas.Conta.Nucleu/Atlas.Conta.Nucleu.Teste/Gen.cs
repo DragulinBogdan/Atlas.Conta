@@ -93,8 +93,12 @@ public static class Gen {
             cauza);
     }
 
-    public static Tranzactie Operare(Random aleator, int? cateMiscari = null, bool? cuCantitate = null) {
-        var document = Unul(aleator, Documente);
+    public static Tranzactie Operare(
+        Random aleator,
+        int? cateMiscari = null,
+        bool? cuCantitate = null,
+        Guid? peDocument = null) {
+        var document = peDocument ?? Unul(aleator, Documente);
         var data = Data(aleator);
         var postari = new List<Postare>();
         var cate = cateMiscari ?? 1 + aleator.Next(4);
@@ -107,8 +111,8 @@ public static class Gen {
         return new Tranzactie(FelTranzactie.Operare, data, document, postari);
     }
 
-    public static Tranzactie Transfer(Random aleator) {
-        var document = Unul(aleator, Documente);
+    public static Tranzactie Transfer(Random aleator, Guid? peDocument = null) {
+        var document = peDocument ?? Unul(aleator, Documente);
         var data = Data(aleator);
         var postari = new List<Postare>();
         var perechi = 1 + aleator.Next(3);
@@ -125,9 +129,9 @@ public static class Gen {
         return new Tranzactie(FelTranzactie.Transfer, data, document, postari);
     }
 
-    public static Tranzactie Deschidere(Random aleator) {
+    public static Tranzactie Deschidere(Random aleator, Guid? peDocument = null) {
         var data = Data(aleator);
-        var document = Unul(aleator, Documente);
+        var document = peDocument ?? Unul(aleator, Documente);
         var postari = new List<Postare>();
         var cate = 1 + aleator.Next(4);
         for (var i = 0; i < cate; i++) {
