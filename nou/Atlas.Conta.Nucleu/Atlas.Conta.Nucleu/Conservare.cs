@@ -2,7 +2,13 @@ namespace Atlas.Conta.Nucleu;
 
 public static class Conservare {
     public static IReadOnlyList<Refuz> Verifica(Tranzactie tranzactie) {
+        ArgumentNullException.ThrowIfNull(tranzactie);
         var refuzuri = new List<Refuz>();
+        if (tranzactie.Postari.Count == 0)
+            refuzuri.Add(new Refuz(
+                Coduri.PostariLipsa,
+                $"tranzacția de fel {tranzactie.Fel} nu are nicio postare",
+                null));
         VerificaDocumentul(tranzactie, refuzuri);
         // C6 (N-D3)
         if (tranzactie.Fel != FelTranzactie.Deschidere) {
@@ -42,15 +48,17 @@ public static class Conservare {
                     postare.Cauza.Linie));
     }
 
+    // 090k: cartea fiscală se balansează între postările ei, nu contra celei contabile.
     static void VerificaValoarea(Tranzactie tranzactie, List<Refuz> refuzuri) {
-        var suma = 0m;
-        foreach (var postare in tranzactie.Postari)
-            suma += postare.Coordonate.Latura == Latura.Debit ? postare.Valoare : -postare.Valoare;
-        if (suma != 0m)
-            refuzuri.Add(new Refuz(
-                Coduri.ConservareValoare,
-                $"Σ debit − Σ credit = {suma}, nu 0",
-                null));
+        foreach (var (carte, suma) in Aduna(
+                     tranzactie.Postari,
+                     p => p.Coordonate.Carte,
+                     p => p.Coordonate.Latura == Latura.Debit ? p.Valoare : -p.Valoare))
+            if (suma != 0m)
+                refuzuri.Add(new Refuz(
+                    Coduri.ConservareValoare,
+                    $"Σ debit − Σ credit pe cartea {carte} = {suma}, nu 0",
+                    null));
     }
 
     static void VerificaCantitatea(Tranzactie tranzactie, List<Refuz> refuzuri) {
@@ -102,11 +110,21 @@ public static class Conservare {
         foreach (var postare in tranzactie.Postari) {
             var coordonate = postare.Coordonate;
             var linie = postare.Cauza.Linie;
+            if (coordonate.Data != tranzactie.Data)
+                refuzuri.Add(new Refuz(
+                    Coduri.DataStraina,
+                    $"postarea e datată {coordonate.Data}, tranzacția {tranzactie.Data}",
+                    linie));
             if (postare.Cantitate != 0m) {
                 if (coordonate.Gestiune is null)
                     refuzuri.Add(new Refuz(
                         Coduri.GestiuneLipsa,
                         $"cantitatea {postare.Cantitate} nu are gestiune",
+                        linie));
+                if (coordonate.Produs is null)
+                    refuzuri.Add(new Refuz(
+                        Coduri.ProdusLipsa,
+                        $"cantitatea {postare.Cantitate} nu are produs",
                         linie));
                 if (coordonate.Unitate is null)
                     refuzuri.Add(new Refuz(
@@ -116,6 +134,11 @@ public static class Conservare {
             }
             if (coordonate.Unitate is not { } unitate)
                 continue;
+            if (unitate.Cont != coordonate.Cont)
+                refuzuri.Add(new Refuz(
+                    Coduri.UnitateNepotrivita,
+                    $"unitatea e a contului {unitate.Cont}, postarea e pe {coordonate.Cont}",
+                    linie));
             switch (unitate.Fel) {
                 case FelUnitate.Lot:
                     if (coordonate.Produs is null)

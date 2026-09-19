@@ -172,6 +172,98 @@ public class ConservareTeste {
             AreCodul(Conservare.Verifica(perturbata), Coduri.UnitateNepotrivita);
         });
 
+    [Fact]
+    public void UnitateaPeAltContPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var perturbata = Perturba(
+                tranzactie,
+                aleator,
+                p => p with {
+                    Coordonate = p.Coordonate with {
+                        Unitate = p.Coordonate.Unitate! with {
+                            Cont = Gen.AltulDecat(aleator, Gen.Conturi, p.Coordonate.Unitate!.Cont),
+                        },
+                    },
+                },
+                p => p.Coordonate.Unitate?.Fel == FelUnitate.Lot);
+            AreCodul(Conservare.Verifica(perturbata), Coduri.UnitateNepotrivita);
+        });
+
+    [Fact]
+    public void DataMutataPeOSinguraPostarePica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator);
+            var perturbata = Perturba(tranzactie, aleator, p => p with {
+                Coordonate = p.Coordonate with { Data = p.Coordonate.Data.AddDays(1) },
+            });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.DataStraina);
+        });
+
+    [Theory]
+    [InlineData(FelTranzactie.Operare)]
+    [InlineData(FelTranzactie.Storno)]
+    [InlineData(FelTranzactie.Transfer)]
+    [InlineData(FelTranzactie.Deschidere)]
+    public void TranzactiaFaraPostariPica(FelTranzactie fel) {
+        var tranzactie = new Tranzactie(
+            fel,
+            new DateOnly(2026, 1, 1),
+            fel == FelTranzactie.Deschidere ? null : Gen.Documente[0],
+            []);
+        var refuzuri = Conservare.Verifica(tranzactie);
+        AreCodul(refuzuri, Coduri.PostariLipsa);
+        Assert.Null(refuzuri.First(r => r.Cod == Coduri.PostariLipsa).Linie);
+    }
+
+    [Fact]
+    public void CartileNuSeBalanseazaUnaPrinAlta() {
+        var document = Gen.Documente[0];
+        var data = new DateOnly(2026, 1, 1);
+        var cauza = new Cauza(document, Gen.Linii[0]);
+        var tranzactie = new Tranzactie(FelTranzactie.Operare, data, document, [
+            new Postare(
+                new Coordonate {
+                    Cont = Gen.Conturi[0],
+                    Latura = Latura.Debit,
+                    Data = data,
+                    Carte = Carte.Contabil,
+                },
+                0m,
+                0m,
+                10m,
+                cauza),
+            new Postare(
+                new Coordonate {
+                    Cont = Gen.Conturi[1],
+                    Latura = Latura.Credit,
+                    Data = data,
+                    Carte = Carte.Fiscal,
+                },
+                0m,
+                0m,
+                10m,
+                cauza),
+        ]);
+        AreCodul(Conservare.Verifica(tranzactie), Coduri.ConservareValoare);
+        var doarContabil = tranzactie with {
+            Postari = tranzactie.Postari
+                .Select(p => p with { Coordonate = p.Coordonate with { Carte = Carte.Contabil } })
+                .ToList(),
+        };
+        FaraRefuz(Conservare.Verifica(doarContabil));
+    }
+
+    [Fact]
+    public void CantitateaFaraProdusPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var perturbata = Perturba(tranzactie, aleator, p => p with {
+                Coordonate = p.Coordonate with { Produs = null, Unitate = null },
+            });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.ProdusLipsa);
+        });
+
     static decimal SumaPeLaturi(Tranzactie tranzactie) =>
         tranzactie.Postari.Sum(p => p.Coordonate.Latura == Latura.Debit ? p.Valoare : -p.Valoare);
 

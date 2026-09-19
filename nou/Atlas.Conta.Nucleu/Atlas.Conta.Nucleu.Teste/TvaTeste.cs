@@ -99,6 +99,41 @@ public class TvaTeste {
                     .Bani(Tva.Linie(linie.Net, linie.Regim, linie.Cota, DirectieTva.Deductibil).Taxa));
     }
 
+    // Grup mixt: latura de semn se repartizează separat, altfel linia își pierde semnul (F1).
+    [Theory]
+    [InlineData("100", "-10", "19.00", "-1.90", "17.10")]
+    [InlineData("100", "-100", "19.00", "-19.00", "0")]
+    public void GrupulCuSemneMixteTinePeFiecareLinieSemnulEi(
+        string unu,
+        string doi,
+        string asteptatUnu,
+        string asteptatDoi,
+        string peCota) {
+        var linii = new List<LinieTva> {
+            new(Id(0), Numar(unu), RegimTva.Normal, 19m),
+            new(Id(1), Numar(doi), RegimTva.Normal, 19m),
+        };
+        var taxe = Tva.PeDocument(linii, DirectieTva.Deductibil, new Rotunjire(MidpointRounding.AwayFromZero));
+        Assert.Equal(Numar(peCota), taxe.PerCota[(RegimTva.Normal, 19m)]);
+        Assert.Equal(Numar(asteptatUnu), taxe.PerLinie[Id(0)]);
+        Assert.Equal(Numar(asteptatDoi), taxe.PerLinie[Id(1)]);
+    }
+
+    [Fact]
+    public void SemnulPeLinieEAlTaxeiEi() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var directie = aleator.Next(2) == 0 ? DirectieTva.Deductibil : DirectieTva.Colectat;
+            var linii = Linii(aleator);
+            var taxe = Tva.PeDocument(linii, directie, new Rotunjire(MidpointRounding.AwayFromZero));
+            foreach (var linie in linii) {
+                var semn = Math.Sign(Tva.Linie(linie.Net, linie.Regim, linie.Cota, directie).Taxa);
+                var cota = taxe.PerLinie[linie.Linie];
+                Assert.True(
+                    Math.Sign(cota) == 0 || Math.Sign(cota) == semn,
+                    $"linia {linie.Linie} a primit {cota} pentru o taxă de semn {semn}");
+            }
+        });
+
     [Fact]
     public void GrupulCuBazeZeroNuCereRepartizare() {
         var linii = new List<LinieTva> {

@@ -85,6 +85,17 @@ public class FifoTeste {
             [new Pin(Unitatea(7, new DateOnly(2026, 1, 1)).Id, 1.000m)]));
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-2)]
+    public void PinulCuMasuraNepozitivaERefuzat(int masura) {
+        var unul = Unitatea(1, new DateOnly(2026, 1, 1));
+        Assert.Throws<ArgumentException>(() => Fifo.Nominalizeaza(
+            1.000m,
+            [new Disponibil(unul, 5.000m)],
+            [new Pin(unul.Id, masura)]));
+    }
+
     [Fact]
     public void CandidatulDublatERefuzat() {
         var unul = Unitatea(1, new DateOnly(2026, 1, 1));

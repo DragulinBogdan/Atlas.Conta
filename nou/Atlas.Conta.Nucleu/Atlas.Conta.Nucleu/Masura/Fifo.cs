@@ -31,11 +31,17 @@ public static class Fifo {
             ordine.Add(candidat.Unitate);
         }
         var numite = pinuri ?? [];
-        foreach (var pin in numite)
+        foreach (var pin in numite) {
+            ArgumentNullException.ThrowIfNull(pin, nameof(pinuri));
             if (!unitati.ContainsKey(pin.Unitate))
                 throw new ArgumentException(
                     $"pin-ul numește unitatea {pin.Unitate}, care nu e între candidați.",
                     nameof(pinuri));
+            if (pin.Masura <= 0m)
+                throw new ArgumentException(
+                    $"pin-ul pe unitatea {pin.Unitate} are măsura {pin.Masura}, se cere > 0.",
+                    nameof(pinuri));
+        }
         var alocari = new List<Alocare>();
         var alocat = new Dictionary<Guid, decimal>();
         var ramas = cerere;

@@ -11,7 +11,7 @@ public static class Motor {
             postari.Add(credit);
         }
         return Incheie(
-            new Tranzactie(FelTranzactie.Operare, declaratie.Data, declaratie.Document, postari),
+            new Tranzactie(FelTranzactie.Operare, declaratie.Data, declaratie.Document, postari.ToArray()),
             declaratie.Decizii,
             declaratie.Ipoteze,
             rotunjire);
@@ -38,7 +38,7 @@ public static class Motor {
             postari.Add(intrare);
         }
         return Incheie(
-            new Tranzactie(FelTranzactie.Transfer, data, document, postari),
+            new Tranzactie(FelTranzactie.Transfer, data, document, postari.ToArray()),
             [],
             [],
             rotunjire);

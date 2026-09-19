@@ -14,8 +14,8 @@ public class MotorTeste {
             Assert.Equal(declaratie.Data, tranzactie.Data);
             Assert.Equal(2 * declaratie.Miscari.Count, tranzactie.Postari.Count);
             Assert.Empty(Conservare.Verifica(tranzactie));
-            Assert.Same(declaratie.Decizii, contract.Decizii);
-            Assert.Same(declaratie.Ipoteze, contract.Ipoteze);
+            Assert.Equal(declaratie.Decizii, contract.Decizii);
+            Assert.Equal(declaratie.Ipoteze, contract.Ipoteze);
             Assert.Equal(0, contract.JumatatiDeBan);
         });
 
@@ -75,6 +75,55 @@ public class MotorTeste {
             Coduri.CauzaStraina);
 
     [Fact]
+    public void DataMutataPeOSinguraPostarePica() =>
+        Perturbarea(
+            aleator => Gen.Declaratie(aleator),
+            p => p with { Coordonate = p.Coordonate with { Data = p.Coordonate.Data.AddDays(1) } },
+            Coduri.DataStraina);
+
+    [Fact]
+    public void ListaApelantuluiNuMaiAtingeDeclaratia() {
+        var document = Gen.Documente[0];
+        var miscare = new Miscare(
+            new Capat { Cont = Gen.Conturi[0] },
+            new Capat { Cont = Gen.Conturi[1] },
+            0m,
+            0m,
+            10m,
+            new Cauza(document, null));
+        var miscari = new List<Miscare> { miscare };
+        var decizii = new List<Decizie> { new ContRezolvat(Gen.Linii[0], Gen.Conturi[0], "politica") };
+        var declaratie = new Declaratie(document, new DateOnly(2026, 1, 1), miscari, decizii, []);
+        var contract = Motor.Opereaza(declaratie, Rotunjire());
+        miscari.Add(miscare);
+        decizii.Clear();
+        Assert.Single(declaratie.Miscari);
+        Assert.Single(declaratie.Decizii);
+        Assert.Single(contract.Decizii);
+        Assert.Equal(2, Acceptata(contract).Postari.Count);
+    }
+
+    [Fact]
+    public void ListeleApelantuluiNuMaiAtingContractul() {
+        var document = Gen.Documente[0];
+        var data = new DateOnly(2026, 1, 1);
+        var tranzactie = new Tranzactie(FelTranzactie.Operare, data, document, []);
+        var decizii = new List<Decizie> { new ContRezolvat(Gen.Linii[0], Gen.Conturi[0], "politica") };
+        var ipoteze = new List<Ipoteza> { new PerioadaDeschisa(2026, 1) };
+        var refuzuri = new List<Refuz> { new(Coduri.PostariLipsa, "fără postări", null) };
+        var acceptat = Contract.Accepta(tranzactie, decizii, ipoteze, 0);
+        var refuzat = Contract.Refuza(refuzuri, decizii, ipoteze, 0);
+        decizii.Clear();
+        ipoteze.Clear();
+        refuzuri.Clear();
+        Assert.Single(acceptat.Decizii);
+        Assert.Single(acceptat.Ipoteze);
+        Assert.Single(refuzat.Decizii);
+        Assert.Single(refuzat.Ipoteze);
+        Assert.Single(refuzat.Refuzuri);
+    }
+
+    [Fact]
     public void DeclaratiaCuCantitateFaraGestiuneERefuzata() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var declaratie = Gen.Declaratie(aleator, cuCantitate: true);
@@ -86,7 +135,7 @@ public class MotorTeste {
             Assert.False(contract.EsteAcceptat);
             Assert.Null(contract.Tranzactie);
             Assert.Contains(contract.Refuzuri, refuz => refuz.Cod == Coduri.GestiuneLipsa);
-            Assert.Same(fara.Decizii, contract.Decizii);
+            Assert.Equal(fara.Decizii, contract.Decizii);
         });
 
     [Fact]

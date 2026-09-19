@@ -25,8 +25,8 @@ public sealed record Contract {
         ArgumentNullException.ThrowIfNull(ipoteze);
         return new Contract {
             Tranzactie = tranzactie,
-            Decizii = decizii,
-            Ipoteze = ipoteze,
+            Decizii = decizii.ToArray(),
+            Ipoteze = ipoteze.ToArray(),
             JumatatiDeBan = jumatatiDeBan,
             Refuzuri = [],
         };
@@ -45,10 +45,10 @@ public sealed record Contract {
         // Tranzacția lipsește: un contract refuzat nu lasă nimic de materializat (N-D11).
         return new Contract {
             Tranzactie = null,
-            Decizii = decizii,
-            Ipoteze = ipoteze,
+            Decizii = decizii.ToArray(),
+            Ipoteze = ipoteze.ToArray(),
             JumatatiDeBan = jumatatiDeBan,
-            Refuzuri = refuzuri,
+            Refuzuri = refuzuri.ToArray(),
         };
     }
 

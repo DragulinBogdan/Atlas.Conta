@@ -11,8 +11,8 @@ public static class Storno {
                 ValoareValuta = -postare.ValoareValuta,
                 Valoare = -postare.Valoare,
             })
-            .ToList();
-        if (postari.Count == 0)
+            .ToArray();
+        if (postari.Length == 0)
             throw new ArgumentException("nu există nicio postare de stornat.", nameof(cauzateSiAtribuite));
         return new Tranzactie(FelTranzactie.Storno, data, document, postari);
     }

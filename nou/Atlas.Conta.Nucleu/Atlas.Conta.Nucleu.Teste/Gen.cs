@@ -48,8 +48,8 @@ public static class Gen {
     public static Unitate Fisa(Random aleator, Guid cont) =>
         new(Unul(aleator, Unitati), FelUnitate.Fisa, cont, null, null, Data(aleator));
 
-    public static Capat CapatContabil(Random aleator) {
-        var cont = Unul(aleator, Conturi);
+    public static Capat CapatContabil(Random aleator, Guid? peCont = null) {
+        var cont = peCont ?? Unul(aleator, Conturi);
         var partener = aleator.Next(2) == 0 ? Unul(aleator, Parteneri) : (Guid?)null;
         Unitate? unitate = aleator.Next(3) switch {
             0 => Fisa(aleator, cont),
@@ -64,8 +64,8 @@ public static class Gen {
         };
     }
 
-    public static Capat CapatCuCantitate(Random aleator, Guid produs, FelUnitate fel) {
-        var cont = Unul(aleator, Conturi);
+    public static Capat CapatCuCantitate(Random aleator, Guid produs, FelUnitate fel, Guid? peCont = null) {
+        var cont = peCont ?? Unul(aleator, Conturi);
         var partener = Unul(aleator, Parteneri);
         return new Capat {
             Cont = cont,
@@ -217,8 +217,9 @@ public static class Gen {
     }
 
     static Capat CapatDeMutare(Random aleator, Guid cont, Guid produs, bool cuCantitate) =>
-        (cuCantitate ? CapatCuCantitate(aleator, produs, FelUnitate.Lot) : CapatContabil(aleator))
-        with { Cont = cont };
+        cuCantitate
+            ? CapatCuCantitate(aleator, produs, FelUnitate.Lot, cont)
+            : CapatContabil(aleator, cont);
 
     static Postare DeTransfer(
         Random aleator,
@@ -230,8 +231,8 @@ public static class Gen {
         decimal valoare,
         Cauza cauza) {
         var capat = cantitate != 0m
-            ? CapatCuCantitate(aleator, produs, FelUnitate.Lot)
-            : CapatContabil(aleator);
-        return new Postare((capat with { Cont = cont }).Pe(latura, data), cantitate, 0m, valoare, cauza);
+            ? CapatCuCantitate(aleator, produs, FelUnitate.Lot, cont)
+            : CapatContabil(aleator, cont);
+        return new Postare(capat.Pe(latura, data), cantitate, 0m, valoare, cauza);
     }
 }

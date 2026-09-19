@@ -17,7 +17,7 @@ public sealed record Declaratie(
         get => document;
         init {
             document = value;
-            Cauzate(value, miscari, nameof(Miscari));
+            Verifica(value, miscari, nameof(Miscari));
         }
     }
 
@@ -55,6 +55,11 @@ public sealed record Declaratie(
     }
 
     static IReadOnlyList<Miscare> Cauzate(Guid document, IReadOnlyList<Miscare> miscari, string nume) {
+        Verifica(document, miscari, nume);
+        return [.. miscari];
+    }
+
+    static void Verifica(Guid document, IReadOnlyList<Miscare> miscari, string nume) {
         ArgumentNullException.ThrowIfNull(miscari, nume);
         if (miscari.Count == 0)
             throw new ArgumentException("declarația se cere cu cel puțin o mișcare.", nume);
@@ -65,11 +70,10 @@ public sealed record Declaratie(
                     $"mișcarea are cauza pe documentul {miscare.Cauza.Document}, nu pe {document}.",
                     nume);
         }
-        return miscari;
     }
 
     static IReadOnlyList<T> Ceruta<T>(IReadOnlyList<T> lista, string nume) {
         ArgumentNullException.ThrowIfNull(lista, nume);
-        return lista;
+        return [.. lista];
     }
 }

@@ -20,16 +20,17 @@ public static class Tva {
         var perLinie = new Dictionary<Guid, decimal>();
         foreach (var grup in linii.GroupBy(linie => (linie.Regim, linie.Cota))) {
             var membri = grup.ToList();
-            var nerotunjita = 0m;
-            foreach (var membru in membri)
-                nerotunjita += Linie(membru.Net, membru.Regim, membru.Cota, directie).Taxa;
-            var taxa = rotunjire.Bani(nerotunjita);
+            var taxe = membri
+                .Select(membru => Linie(membru.Net, membru.Regim, membru.Cota, directie).Taxa)
+                .ToList();
+            var taxa = rotunjire.Bani(taxe.Sum());
+            var negativa = rotunjire.Bani(taxe.Where(t => t < 0m).Sum());
             perCota.Add(grup.Key, taxa);
-            var ponderi = membri.Select(membru => Math.Abs(membru.Net)).ToList();
-            // Taxa se decide pe document × cotă, apoi se POSTEAZĂ per linie (090j).
-            var cote = ponderi.Sum() == 0m
-                ? new decimal[membri.Count]
-                : Repartizare.Hamilton(taxa, ponderi, Scara.Bani);
+            // Taxa se decide pe document × cotă, apoi se POSTEAZĂ per linie (090j); laturile de semn
+            // se repartizează separat, ca o linie să nu-și piardă semnul într-un grup mixt.
+            var cote = new decimal[membri.Count];
+            Repartizeaza(membri, taxe, 1, taxa - negativa, cote);
+            Repartizeaza(membri, taxe, -1, negativa, cote);
             for (var i = 0; i < membri.Count; i++)
                 perLinie.Add(membri[i].Linie, cote[i]);
         }
@@ -46,5 +47,29 @@ public static class Tva {
                 Coduri.TvaInAfaraTolerantei,
                 $"taxa dată {taxaData} se abate cu {abatere} de la {taxaCalculata}, peste toleranța {toleranta}",
                 null);
+    }
+
+    static void Repartizeaza(
+        IReadOnlyList<LinieTva> membri,
+        IReadOnlyList<decimal> taxe,
+        int semn,
+        decimal total,
+        decimal[] cote) {
+        var indici = new List<int>();
+        var ponderi = new List<decimal>();
+        for (var i = 0; i < membri.Count; i++)
+            if (Math.Sign(taxe[i]) == semn) {
+                indici.Add(i);
+                ponderi.Add(Math.Abs(membri[i].Net));
+            }
+        if (ponderi.Sum() == 0m) {
+            if (total != 0m)
+                throw new InvalidOperationException(
+                    $"latura de semn {semn} n-are pondere, dar îi revine taxa {total}.");
+            return;
+        }
+        var parti = Repartizare.Hamilton(total, ponderi, Scara.Bani);
+        for (var i = 0; i < indici.Count; i++)
+            cote[indici[i]] = parti[i];
     }
 }
