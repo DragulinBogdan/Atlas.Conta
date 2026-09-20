@@ -62,6 +62,7 @@ public sealed record LinieOperand(
     Guid? TipTvaId,
     decimal? PretUnitar,
     Guid? ProdusId,
+    Guid? TipProdusCulesId,
     Guid? ContDebitId,
     Guid? ContCreditId,
     Guid? RepartitorDebitId,

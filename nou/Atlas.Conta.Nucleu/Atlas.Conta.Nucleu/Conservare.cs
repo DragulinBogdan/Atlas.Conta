@@ -126,7 +126,9 @@ public static class Conservare {
                         Coduri.ProdusLipsa,
                         $"cantitatea {postare.Cantitate} nu are produs",
                         linie));
-                if (coordonate.Unitate is null)
+                // N-D4: capătul virtual poartă cantitatea în afara evidenței, unde
+                // nu există unitate de nominalizat.
+                if (coordonate.Unitate is null && !GestiuniVirtuale.Este(coordonate.Gestiune))
                     refuzuri.Add(new Refuz(
                         Coduri.UnitateLipsa,
                         $"cantitatea {postare.Cantitate} nu are unitate",

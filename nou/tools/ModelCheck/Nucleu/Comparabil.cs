@@ -55,8 +55,9 @@ sealed class RaportComparatie {
 
 static class Comparabil {
     /// <summary>
-    /// N-D4: cantitatea se compară DOAR pe postările cu unitate de fel lot; capătul
-    /// virtual al declarantului (−q pe postarea de terț) nu există în oracol.
+    /// N-D4: cantitatea se compară DOAR pe postările cu unitate de fel lot, iar
+    /// gestiunea VIRTUALĂ se citește ca lipsă — capătul virtual al declarantului
+    /// (−q pe postarea de terț, pe gestiunea structurală) nu există în oracol.
     /// </summary>
     public static PostareComparabila Proiecteaza(N.Postare postare) {
         ArgumentNullException.ThrowIfNull(postare);
@@ -64,7 +65,7 @@ static class Comparabil {
         return new PostareComparabila(
             coordonate.Cont,
             coordonate.Latura,
-            coordonate.Gestiune,
+            N.GestiuniVirtuale.Este(coordonate.Gestiune) ? null : coordonate.Gestiune,
             coordonate.Produs,
             coordonate.Unitate?.Id,
             coordonate.Partener,

@@ -122,7 +122,7 @@ internal static class Fapte {
 
         return new Declaratii.Operand(
             Document(doc, tipDoc, repartitori),
-            [.. linii.Select(d => Linie(d, claseTip, loturi))],
+            [.. linii.Select(d => Linie(d, claseTip, loturi, tipPerProdus))],
             reguliContare,
             reguliStoc,
             politicaTva,
@@ -176,9 +176,11 @@ internal static class Fapte {
 
     static Declaratii.LinieOperand Linie(DocumentDetaliu d,
             IReadOnlyDictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
-            IReadOnlyDictionary<Guid, Declaratii.LotFapt> loturi) {
+            IReadOnlyDictionary<Guid, Declaratii.LotFapt> loturi,
+            IReadOnlyDictionary<Guid, Guid?> tipPerProdus) {
         var gasit = claseTip.TryGetValue(d.TipMaterialId, out var info);
         var explicita = d as ILinieCuPostareExplicita;
+        var produs = d.ProdusCules();
         return new Declaratii.LinieOperand(
             d.ID,
             d.TipMaterialId,
@@ -192,7 +194,8 @@ internal static class Fapte {
             d.ValoareTva,
             d.TipTvaId,
             d is ILinieCuPretUnitar pret ? pret.PretUnitar : null,
-            d.ProdusCules(),
+            produs,
+            produs != null ? tipPerProdus.GetValueOrDefault(produs.Value) : null,
             explicita?.ContDebitId,
             explicita?.ContCreditId,
             explicita?.RepartitorDebitId,

@@ -271,17 +271,26 @@ Per linie:
 - Partida: UNA, pe 401, cu datoria integrală (090h); `PartidaDeschisa(linie
   primă, partida)`. Refuzuri: `Numar` gol; predatorul nu e partener;
   primitorul nu e gestiune; `q ≤ 0`; linie de stoc fără lot; produs de alt
-  tip decât linia; `TAXA_IN_AFARA_TOLERANTEI`.
+  tip decât linia; `TVA_IN_AFARA_TOLERANTEI` (codul nucleului).
 - Copiii: NIR-ul conex NU se declară (TR-D3: dispare; la pilot motorul
   vechi îl generează în continuare și oracolul îl ABSOARBE în tranzacția
   FCT, B-D8); plata autogenerată rămâne document propriu.
 
-`GestiuniVirtuale` (`Declaratii/GestiuniVirtuale.cs`): `Furnizor`, `Client`,
-`Consum` ca `Guid` DETERMINISTE (SHA-256 din numele calificat, ca
-`DeschidePartida`), structurale, fără rând de nomenclator; la TR-D7 devin
-rânduri `DinSeed` cu aceleași id-uri dacă rapoartele le cer nume.
-`Consum` există pentru simetrie, dar BCS folosește repartitorul real al
-locului de consum (B-D4).
+`GestiuniVirtuale` stă în NUCLEU (`Atlas.Conta.Nucleu.GestiuniVirtuale`;
+amendat la pasul 5 — sink-urile sunt structurale, 090g): `Furnizor`,
+`Client`, `Consum` ca `Guid` DETERMINISTE (SHA-256 din numele calificat, ca
+`DeschidePartida`), fără rând de nomenclator; la TR-D7 devin rânduri
+`DinSeed` cu aceleași id-uri dacă rapoartele le cer nume. C5 se amendează:
+pe o postare cu gestiune VIRTUALĂ, `Cantitate ≠ 0` nu cere `Unitate` (cere
+`Produs` și `Gestiune`) — altfel pe profilul fără `RolTert` (bugetar)
+capătul virtual al recepției n-ar avea partidă și ar fi refuzat. `Consum`
+există pentru simetrie, dar BCS folosește repartitorul real al locului de
+consum (B-D4). **Capitalizat** (pin al pasului 5): netul se declară ca DOUĂ
+mișcări pe același cont de cost — baza (`v/(1+c)`, ca `Cifre` de azi) cu
+`CodTva` rol Bază și taxa (`v − baza`) cu rol Taxă — ca jurnalul să rămână
+proiecție pe `CodTva` (090a) și Σ pe cont să rămână brutul. `TaxareInversa`:
+piciorul 4427 nu poartă `CodTva` (azi nu există rând fiscal colectat pe TI —
+limită declarată).
 
 ### B-D7 — Oracolul: maparea fizicii ca helper de test în ModelCheck
 
@@ -353,6 +362,8 @@ sau propunere de normalizare nouă raportată main-ului (nu aplicată tăcut):
    documentului, citit din document, nu coordonată a postării — toate
    postările sunt datate ca tranzacția, `DATA_STRAINA`); rândul de taxă
    `0,00` nu produce postare.
+   Pe regimul Capitalizat postarea brută de cost (121) se sparge în oracol
+   în bază (100, rol Bază) + taxă (21, rol Taxă) pe același cont (B-D6).
 6. **N-D4** — capătul virtual `−q` pe postarea de terț cu
    `Gestiune = Furnizor` NU există în oracol: comparația pe `Cantitate` se
    face DOAR pe postările cu `Unitate.Fel == Lot` (`Spatiu == Stoc`); pe

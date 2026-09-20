@@ -22,13 +22,15 @@ static class Normalizari {
     /// <param name="SursaConexului">documentul conex autogenerat → documentul sursă.</param>
     /// <param name="LiniaSursa">linia conexului → linia sursei care i-a născut lotul.</param>
     /// <param name="ConturiTva">4426/4427 ale tipurilor de TVA atinse.</param>
+    /// <param name="Capitalizate">tipurile de TVA atinse al căror regim capitalizează taxa în cost.</param>
     public sealed record Context(
         IReadOnlyDictionary<Guid, Guid> SursaConexului,
         IReadOnlyDictionary<Guid, Guid> LiniaSursa,
-        IReadOnlySet<Guid> ConturiTva) {
+        IReadOnlySet<Guid> ConturiTva,
+        IReadOnlySet<Guid> Capitalizate) {
 
-        public static readonly Context Gol =
-            new(new Dictionary<Guid, Guid>(), new Dictionary<Guid, Guid>(), new HashSet<Guid>());
+        public static readonly Context Gol = new(
+            new Dictionary<Guid, Guid>(), new Dictionary<Guid, Guid>(), new HashSet<Guid>(), new HashSet<Guid>());
     }
 
     public static IReadOnlyList<N.Tranzactie> Toate(IReadOnlyList<N.Tranzactie> tranzactii, Context context) {
@@ -39,6 +41,7 @@ static class Normalizari {
         rezultat = TrD4UnificaStocCuContabil(rezultat);
         rezultat = TrD2NominalizeazaPrinImperechere(rezultat);
         rezultat = TrD2DesparteContrapartida(rezultat);
+        rezultat = FiscalCapitalizatulSeDesface(rezultat, context);
         rezultat = FiscalCaAtribute(rezultat, context);
         return M6PartenerDoarPeTert(rezultat);
     }
@@ -111,7 +114,9 @@ static class Normalizari {
         var grupuri = postari
             .Where(p => p.Coordonate.Unitate?.Fel == N.FelUnitate.Partida)
             .GroupBy(p => (p.Cauza.Linie, p.Coordonate.Cont, p.Coordonate.Latura))
-            .Where(g => g.Count() > 1)
+            // Spargerea e a NOMINALIZĂRII: două postări pe ACEEAȘI partidă (netul și
+            // taxa aceleiași linii de factură) n-au de ce să spargă contrapartida.
+            .Where(g => g.Select(p => p.Coordonate.Unitate!.Id).Distinct().Count() > 1)
             .ToList();
         if (grupuri.Count == 0)
             return tranzactie;
@@ -352,6 +357,97 @@ static class Normalizari {
         return true;
     }
 
+    // ── B-D8 pct. 5, amendat la pasul 5 — capitalizatul se desface în bază + taxă ──
+    //
+    // Pe regimul Capitalizat `Valoare` e BRUTĂ, iar `RegistruTvaService.Cifre` o
+    // desface înapoi: jurnalul are DOUĂ cifre acolo unde registrul contabil are
+    // una. Jurnalul fiind proiecția pe `CodTva` (090a), postarea de cost se sparge
+    // în cele două cifre pe ACELAȘI cont, cu Σ și cantitatea neschimbate.
+    public static IReadOnlyList<N.Tranzactie> FiscalCapitalizatulSeDesface(
+            IReadOnlyList<N.Tranzactie> tranzactii, Context context) {
+        ArgumentNullException.ThrowIfNull(tranzactii);
+        ArgumentNullException.ThrowIfNull(context);
+        return context.Capitalizate.Count == 0
+            ? [.. tranzactii]
+            : [.. tranzactii.Select(t => Capitalizatul(t, context))];
+    }
+
+    static N.Tranzactie Capitalizatul(N.Tranzactie tranzactie, Context context) {
+        var initiale = tranzactie.Postari;
+        var fiscale = initiale
+            .Select((postare, indice) => (Postare: postare, Indice: indice))
+            .Where(x => x.Postare.Coordonate.Cont == CubDinRegistre.ContFiscal
+                && context.Capitalizate.Contains(x.Postare.Coordonate.CodTva!.TipTva))
+            .GroupBy(x => (x.Postare.Cauza.Linie, x.Postare.Coordonate.CodTva!.TipTva))
+            .ToList();
+        if (fiscale.Count == 0)
+            return tranzactie;
+
+        var eliminata = new bool[initiale.Count];
+        var sparta = new Dictionary<int, List<N.Postare>>();
+        foreach (var pereche in fiscale) {
+            var baza = pereche.FirstOrDefault(x => x.Postare.Coordonate.CodTva!.Rol == N.RolTva.Baza);
+            var taxa = pereche.FirstOrDefault(x => x.Postare.Coordonate.CodTva!.Rol == N.RolTva.Taxa);
+            // Taxa zero (cotă 0 capitalizată) nu sparge nimic: rândul de taxă cade
+            // pe regula generică, iar baza e chiar valoarea postării.
+            if (baza.Postare is null || taxa.Postare is null || taxa.Postare.Valoare == 0m)
+                continue;
+            var brut = baza.Postare.Valoare + taxa.Postare.Valoare;
+            var laturaBazei = baza.Postare.Coordonate.CodTva!.Sens == N.SensTva.Achizitie
+                ? N.Latura.Debit
+                : N.Latura.Credit;
+            var tinte = new List<int>();
+            for (var t = 0; t < initiale.Count; t++) {
+                var tinta = initiale[t];
+                if (!sparta.ContainsKey(t)
+                    && tinta.Coordonate.Cont != CubDinRegistre.ContFiscal
+                    && tinta.Cauza.Linie == pereche.Key.Linie
+                    && tinta.Valoare == brut)
+                    tinte.Add(t);
+            }
+            if (tinte.Count != 2) {
+                Avertizeaza($"Fiscal capitalizat: linia {pereche.Key.Linie} are {tinte.Count} postări de "
+                    + $"{brut} în loc de două — brutul rămâne o singură postare.");
+                continue;
+            }
+            foreach (var t in tinte) {
+                var postare = initiale[t];
+                sparta[t] = postare.Coordonate.Latura == laturaBazei
+                    ? [
+                        Fiscala(postare, baza.Postare),
+                        Fiscala(postare, taxa.Postare) with { Cantitate = 0m },
+                    ]
+                    : [
+                        postare with { Valoare = baza.Postare.Valoare },
+                        postare with { Valoare = taxa.Postare.Valoare, Cantitate = 0m },
+                    ];
+            }
+            eliminata[baza.Indice] = true;
+            eliminata[taxa.Indice] = true;
+        }
+        if (sparta.Count == 0)
+            return tranzactie;
+        var rezultat = new List<N.Postare>(initiale.Count);
+        for (var i = 0; i < initiale.Count; i++) {
+            if (eliminata[i])
+                continue;
+            if (sparta.TryGetValue(i, out var bucati))
+                rezultat.AddRange(bucati);
+            else
+                rezultat.Add(initiale[i]);
+        }
+        return tranzactie with { Postari = rezultat };
+    }
+
+    static N.Postare Fiscala(N.Postare postare, N.Postare fiscala) => postare with {
+        Coordonate = postare.Coordonate with {
+            CodTva = fiscala.Coordonate.CodTva,
+            PerioadaDeclarare = fiscala.Coordonate.PerioadaDeclarare,
+            Partener = fiscala.Coordonate.Partener,
+        },
+        Valoare = fiscala.Valoare,
+    };
+
     // ── B-D8 pct. 5 — faptul fiscal devine atribut al postării liniei ────────
     public static IReadOnlyList<N.Tranzactie> FiscalCaAtribute(
             IReadOnlyList<N.Tranzactie> tranzactii, Context context) {
@@ -383,8 +479,10 @@ static class Normalizari {
                     || tinta.Coordonate.Cont == CubDinRegistre.ContFiscal
                     || tinta.Cauza.Linie != fiscala.Cauza.Linie)
                     continue;
+                // Taxarea inversă are AMBELE picioare pe conturi de TVA (4426 = 4427):
+                // rândul fiscal e al celui de pe latura bazei, celălalt n-are fapt (B-D6).
                 var eTaxa = context.ConturiTva.Contains(tinta.Coordonate.Cont);
-                if (cod.Rol == N.RolTva.Taxa ? eTaxa : !eTaxa && tinta.Coordonate.Latura == laturaBazei)
+                if ((cod.Rol == N.RolTva.Taxa ? eTaxa : !eTaxa) && tinta.Coordonate.Latura == laturaBazei)
                     tinte.Add(t);
             }
             if (tinte.Count != 1) {
@@ -428,10 +526,12 @@ static class Normalizari {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(documente);
         var ids = documente.Distinct().ToList();
+        var tipuri = TipuriTva(os, ids);
         return new Context(
             conexe ?? new Dictionary<Guid, Guid>(),
             conexe is null || conexe.Count == 0 ? new Dictionary<Guid, Guid>() : LiniiSursa(os, conexe),
-            ConturiTva(os, ids));
+            tipuri.Conturi,
+            tipuri.Capitalizate);
     }
 
     // Cheia liniei la TR-D3: `Lot.LinieIntrareId` (lotul e născut de linia sursei);
@@ -469,7 +569,8 @@ static class Normalizari {
         return rezultat;
     }
 
-    static HashSet<Guid> ConturiTva(IObjectSpace os, IReadOnlyList<Guid> documente) {
+    static (HashSet<Guid> Conturi, HashSet<Guid> Capitalizate) TipuriTva(
+            IObjectSpace os, IReadOnlyList<Guid> documente) {
         var idsTip = documente.Count == 0
             ? []
             : os.GetObjectsQuery<RegistruTva>()
@@ -478,13 +579,14 @@ static class Normalizari {
                 .Distinct()
                 .ToList();
         if (idsTip.Count == 0)
-            return [];
-        return [.. os.GetObjectsQuery<TipTva>()
+            return ([], []);
+        var tipuri = os.GetObjectsQuery<TipTva>()
             .Where(t => idsTip.Contains(t.ID))
-            .Select(t => new { t.ContTvaDeductibilId, t.ContTvaColectatId })
-            .ToList()
-            .SelectMany(t => new[] { t.ContTvaDeductibilId, t.ContTvaColectatId })
-            .OfType<Guid>()];
+            .Select(t => new { t.ID, t.Regim, t.ContTvaDeductibilId, t.ContTvaColectatId })
+            .ToList();
+        return (
+            [.. tipuri.SelectMany(t => new[] { t.ContTvaDeductibilId, t.ContTvaColectatId }).OfType<Guid>()],
+            [.. tipuri.Where(t => t.Regim == RegimTva.Capitalizat).Select(t => t.ID)]);
     }
 
     static void Avertizeaza(string mesaj) {

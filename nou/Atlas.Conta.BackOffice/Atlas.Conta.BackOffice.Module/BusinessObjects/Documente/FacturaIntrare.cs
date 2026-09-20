@@ -23,6 +23,8 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
     public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
         SensStingere.Datorie;
 
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantFacturaIntrare.Instanta;
+
     [XafDisplayName("Scadență")]
     public virtual DateOnly? DataScadenta { get; set; }
     [XafDisplayName("Număr PV")]

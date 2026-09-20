@@ -43,7 +43,7 @@ static class Contari {
 
     // B-D8 pct. 8: același coalesce ca motorul vechi, pe funcția pură existentă —
     // repartitorul și materialul nu sunt axe de `Analiza` (sunt `Gestiune`/`Produs`).
-    public static N.Analiza Analiza(N.Analiza aLiniei, Dimensiuni overrideLatura, Dimensiuni comun) {
+    public static N.Analiza Analiza(N.Analiza aLiniei, Dimensiuni? overrideLatura, Dimensiuni? comun) {
         var rezolvate = DimensiuniResolver.Rezolva(
             new Dimensiuni {
                 CodFunctionalId = aLiniei.CodFunctional,

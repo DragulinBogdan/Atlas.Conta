@@ -1,8 +1,7 @@
-#nullable enable
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Atlas.Conta.BackOffice.Module.Declaratii;
+namespace Atlas.Conta.Nucleu;
 
 /// <summary>
 /// Gestiunile STRUCTURALE ale capetelor din afara evidenței (090g): id-uri
@@ -14,6 +13,9 @@ public static class GestiuniVirtuale {
     public static Guid Client { get; } = Identitate("Atlas.Conta.GestiuneVirtuala:Client");
 
     public static Guid Consum { get; } = Identitate("Atlas.Conta.GestiuneVirtuala:Consum");
+
+    public static bool Este(Guid? gestiune) =>
+        gestiune == Furnizor || gestiune == Client || gestiune == Consum;
 
     // Aceeași amprentă ca `Unitate.DeschidePartida` (N-D6): SHA-256, primii 16
     // octeți, nibble-ul de versiune (octetul 7) pus pe 8.

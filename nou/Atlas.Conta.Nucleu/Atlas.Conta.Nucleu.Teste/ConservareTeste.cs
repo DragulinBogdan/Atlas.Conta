@@ -117,6 +117,26 @@ public class ConservareTeste {
         });
 
     [Fact]
+    public void CantitateaFaraUnitatePeGestiuneVirtualaTrece() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var perturbata = Perturba(tranzactie, aleator, p => p with {
+                Coordonate = p.Coordonate with { Gestiune = GestiuniVirtuale.Furnizor, Unitate = null },
+            });
+            FaraRefuz(Conservare.Verifica(perturbata));
+        });
+
+    [Fact]
+    public void CantitateaFaraUnitatePeGestiuneRealaPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var perturbata = Perturba(tranzactie, aleator, p => p with {
+                Coordonate = p.Coordonate with { Gestiune = Gen.Unul(aleator, Gen.Gestiuni), Unitate = null },
+            });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.UnitateLipsa);
+        });
+
+    [Fact]
     public void ProdusulLipsaPeUnLotPica() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactie = Gen.Operare(aleator, cuCantitate: true);
