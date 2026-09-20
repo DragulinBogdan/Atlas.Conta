@@ -88,7 +88,9 @@ public interface IDeclarant {
   Primitivele nucleului care aruncă `RefuzException` (`Evaluare`,
   `Fifo`) se prind în driver (B-D3), nu în declarant.
 - Frunza își numește declarantul printr-un singur membru polimorf pe
-  `Document`: `public virtual IDeclarant? Declarant => null;` (null = tipul
+  `Document`: `public virtual IDeclarant? Declarant() => null;` (METODĂ, nu
+  proprietate — o proprietate ar intra în metadata clientului, 43d; constatare
+  a pasului 1) (null = tipul
   nu declară încă — regimul dual al pilotului; la TR-D7 gardul devine
   DATĂ `PosteazaInCub` pe `TipDocument`, iar `null` devine eroare de
   configurare). Cele trei frunze îl suprascriu într-o linie
@@ -360,6 +362,22 @@ sau propunere de normalizare nouă raportată main-ului (nu aplicată tăcut):
    (coalesce-ul de azi: explicit → linie → override → comun → implicit);
    declarantul reproduce ACELAȘI coalesce prin `DimensiuniResolver` pe fapte
    (funcție pură existentă), nu-l reinventează.
+9. **Repartitorul laturii pereche** (constatare a pasului 2, oracolul FCT):
+   azi piciorul de terț (401 pe FCT, 401 sub 4426) poartă ca dimensiune
+   repartitorul CONTRAPARTIDEI (gestiunea primitoare, MAG1), pe același
+   principiu „contrapartida pe fiecare latură" pe care design §3 l-a respins
+   pentru partener. Normalizare: `Gestiune` se șterge de pe postările de terț
+   ale oracolului (contul cu `RolTert`, sau contul de contrapartidă al
+   regulii/politicii de TVA când profilul n-are `RolTert` — bugetarul, D16-V1);
+   în comparație gestiunile VIRTUALE ale nucleului (`GestiuniVirtuale.*`) se
+   proiectează ca `null` (sunt sink-uri structurale, nu coordonate ale
+   registrelor de azi). Se implementează la pasul 5, când FCT o cere.
+10. **Partida DOAR pe cont cu `RolTert`** (090d, constatare a pasului 2):
+   pe profilul bugetar niciun cont n-are `RolTert` (`SeedRolTert` e privat;
+   D16-V1), deci nici oracolul, nici declaranții nu deschid partidă pe 401
+   acolo — postarea de terț rămâne fără unitate și fără partener. Declaranții
+   PLT/FCT verifică `Conturi[cont].RolTert != Niciunul` înainte de
+   `DeschidePartida`; nu presupun rolul din simbol.
 
 ### B-D9 — Ce NU intră (amânări cu nume)
 

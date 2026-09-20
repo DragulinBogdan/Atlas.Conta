@@ -12,7 +12,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 public static class Contractare {
     public static N.Contract Contracteaza(IObjectSpace os, Document doc) {
         ArgumentNullException.ThrowIfNull(doc);
-        var declarant = doc.Declarant
+        var declarant = doc.Declarant()
             ?? throw new InvalidOperationException(
                 $"Documentul {doc.ID} e de un tip care nu declară încă — driverul nu se cheamă pe el.");
         var operand = Motor.Fapte.Operand(os, doc);

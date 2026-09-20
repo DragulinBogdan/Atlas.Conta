@@ -43,6 +43,7 @@ using DevExtreme.AspNet.Data;
 using Microsoft.EntityFrameworkCore;
 using SecurityPermissionPolicy = DevExpress.Persistent.Base.SecurityPermissionPolicy;
 using SecurityPermissionState = DevExpress.Persistent.Base.SecurityPermissionState;
+using N = Atlas.Conta.Nucleu;
 
 // Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
 // end-to-end ale motorului de operare pe un IObjectSpace real — aceeași
@@ -4736,6 +4737,84 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Sold lot după recepție: 5 pe MAG1",
         StocService.Sold(os, new CheieStoc(lot.ID, mag1.ID, TipStoc.Magazie)) == 5m);
 
+    // --- NUC-ORACOL (B-D7, pas 2): oracolul lanțului FCT → NIR ---
+    // TR-D3 (B-D8 pct. 1): registrele NIR-ului conex intră în tranzacția facturii,
+    // cu cauza pe linia FCT care a născut lotul; TR-D4 (pct. 2) unifică rândul de
+    // stoc cu piciorul 3xx al aceleiași linii. Capătul virtual `−q` al lui N-D4 NU
+    // există în oracol, deci cantitatea nu se conservă — diferență DECLARATĂ.
+    {
+        var documente = new[] { fct.ID, nir.ID };
+        var dimFctDebit = noteFct[0].DimensiuniDebit();
+        var dimFctCredit = noteFct[0].DimensiuniCredit();
+        var dimNirDebit = noteNir[0].DimensiuniDebit();
+        var dimNirCredit = noteNir[0].DimensiuniCredit();
+        // Partida se deschide DOAR pe conturile cu `RolTert` (§B.3). `SeedRolTert`
+        // rulează exclusiv pe profilul privat, deci pe bugetar 401 n-are rol și
+        // oracolul nu are partidă — iar M6 îi ia și partenerul.
+        var cu401Tert = cont401.RolTert != RolTertCont.Niciunul;
+        Guid? partidaFct = cu401Tert
+            ? N.Unitate.DeschidePartida(cont401.ID, furnizor.ID, fct.ID, fct.DataInregistrare).Id
+            : null;
+        Guid? tertulFct = cu401Tert ? furnizor.ID : null;
+        N.Analiza AnalizaDin(Dimensiuni d) => new(d.CodFunctionalId, d.CodEconomicId, d.SursaFinantareId,
+            d.UnitateId, d.ProiectId, d.CentruCostId);
+        PostareComparabila Post(Guid cont, N.Latura latura, Guid? gestiune, Guid? produs, Guid? unitate,
+                Guid? partener, N.Analiza analiza, decimal cantitate, decimal valoare, Guid linie) =>
+            new(cont, latura, gestiune, produs, unitate, partener, null, null, analiza, cantitate,
+                latura == N.Latura.Debit ? valoare : -valoare, linie);
+
+        Normalizari.Reseteaza();
+        var cub = CubDinRegistre.Transforma(os, documente);
+        Check("NUC-ORACOL-5 (FCT→NIR): cubul brut = două tranzacții — 2 postări contabile pe factură, "
+            + "2 contabile + 1 de stoc pe NIR; bugetarul n-are PoliticaTva, deci nicio postare fiscală",
+            cub.Count == 2
+            && cub.Single(t => t.Document == fct.ID).Postari.Count == 2
+            && cub.Single(t => t.Document == nir.ID).Postari.Count == 3
+            && !cub.SelectMany(t => t.Postari).Any(p => p.Coordonate.CodTva != null));
+
+        var normalizat = Normalizari.Toate(
+            cub,
+            Normalizari.Citeste(os, documente, new Dictionary<Guid, Guid> { [nir.ID] = fct.ID }));
+        var raport = Comparabil.Compara(
+            [
+                Post(tipServicii.ContImplicitId.Value, N.Latura.Debit, null, dimFctDebit.MaterialId, null,
+                    null, AnalizaDin(dimFctDebit), 0m, 100m, linieServiciu.ID),
+                Post(cont401.ID, N.Latura.Credit, mag1.ID, dimFctCredit.MaterialId, partidaFct,
+                    tertulFct, AnalizaDin(dimFctCredit), 0m, 100m, linieServiciu.ID),
+                Post(tipMateriale.ContImplicitId.Value, N.Latura.Debit, mag1.ID, produs.ID, lot.ID,
+                    null, AnalizaDin(dimNirDebit), 5m, 59.5m, linieStoc.ID),
+                Post(cont401.ID, N.Latura.Credit, mag1.ID, dimNirCredit.MaterialId, partidaFct,
+                    tertulFct, AnalizaDin(dimNirCredit), 0m, 59.5m, linieStoc.ID),
+            ],
+            Comparabil.Proiecteaza(normalizat));
+        if (!raport.Egal)
+            Console.WriteLine(raport.ToString());
+        Check("NUC-ORACOL-6 (FCT→NIR): după TR-D3 + TR-D4 + fiscal + M6 rămâne O tranzacție pe factură, cu "
+            + "patru postări — D 628 la 100, D 302 (MAG1, +5, lot) la 59,5 și două C 401 pe partida facturii",
+            normalizat.Count == 1 && normalizat[0].Document == fct.ID && raport.Egal);
+
+        Check("NUC-ORACOL-7 (FCT→NIR): absorbția rescrie cauzele pe factură, linia NIR-ului devine linia de "
+            + "stoc a facturii (Lot.LinieIntrareId), și nicio normalizare nu lasă reziduu",
+            normalizat[0].Postari.All(p => p.Cauza.Document == fct.ID)
+            && normalizat[0].Postari.Count(p => p.Cauza.Linie == linieStoc.ID) == 2
+            && Normalizari.Avertismente.Count == 0);
+
+        // Constatare a pasului 2, nu efect al oracolului: `SeedRolTert` e apelat DOAR
+        // din `ProfilPrivat`, deci pe bugetar niciun cont de terț nu poartă rol și
+        // oracolul nu deschide nicio partidă. Declarantul FCT (B-D6) deschide una
+        // necondiționat — diferența se tranșează înainte de pasul 5.
+        Check("NUC-ORACOL-9 (FCT→NIR): pe bugetar 401 n-are RolTert (SeedRolTert e doar privat), deci oracolul "
+            + "nu deschide partidă pe el — postările de 401 rămân fără unitate și, prin M6, fără partener",
+            cu401Tert == normalizat[0].Postari.Any(p => p.Coordonate.Unitate?.Fel == N.FelUnitate.Partida));
+
+        var refuzuri = N.Conservare.Verifica(normalizat[0]);
+        foreach (var refuz in refuzuri)
+            Console.WriteLine($"     conservare {refuz.Cod}: {refuz.Mesaj}");
+        Check("NUC-ORACOL-8 (FCT→NIR): valoarea se conservă, cantitatea NU — singurul refuz e "
+            + "CONSERVARE_CANTITATE, capătul virtual `−q` al lui N-D4 lipsind din oracol (B-D8 pct. 6)",
+            refuzuri.Count == 1 && refuzuri[0].Cod == N.Coduri.ConservareCantitate);
+    }
+
     // --- Grupul conex la anulare/storno ---
     CheckRefuza("Anularea FCT cu NIR operat → refuzată", () => MotorOperare.AnuleazaOperarea(os, fct));
     MotorOperare.AnuleazaOperarea(os, nir);
@@ -5283,6 +5362,66 @@ using (var os = provider.CreateObjectSpace()) {
         && note[0].ContCreditId == tipMaterial.ContImplicitId && note[0].Valoare == 40m);
     Check("Nota BCS: repartitori din laturi (debit←predator, credit←primitor — 00 §5)",
         note[0].DimensiuniDebit().RepartitorId == mag1.ID && note[0].DimensiuniCredit().RepartitorId == loc.ID);
+
+    // --- NUC-ORACOL (B-D7, pas 2): maparea fizicii portată ca helper de test ---
+    // Oracolul feliei 30: rândurile de registru ale documentului devin cub, iar
+    // normalizările DECLARATE (B-D8) îl aduc la forma pe care o va produce
+    // declarantul. Aici se probează ORACOLUL, nu declarantul — el vine la pasul 3.
+    {
+        var linieBcs = bcs1.Detalii.Single().ID;
+        var dimDebit = note[0].DimensiuniDebit();
+        var dimCredit = note[0].DimensiuniCredit();
+        var contStoc = tipMaterial.ContImplicitId.Value;
+        var cont6xx = regulaMat.ContDebitId.Value;
+        N.Analiza AnalizaDin(Dimensiuni d) => new(d.CodFunctionalId, d.CodEconomicId, d.SursaFinantareId,
+            d.UnitateId, d.ProiectId, d.CentruCostId);
+        PostareComparabila Post(Guid cont, N.Latura latura, Guid? gestiune, Guid? produs, Guid? unitate,
+                N.Analiza analiza, decimal cantitate, decimal valoare) =>
+            new(cont, latura, gestiune, produs, unitate, null, null, null, analiza, cantitate,
+                latura == N.Latura.Debit ? valoare : -valoare, linieBcs);
+
+        Normalizari.Reseteaza();
+        var cub = CubDinRegistre.Transforma(os, [bcs1.ID]);
+        Check("NUC-ORACOL-1 (BCS): cubul brut = o tranzacție Operare a documentului, datată ca înregistrarea, "
+            + "cu 4 postări (2 de stoc + 2 contabile)",
+            cub.Count == 1 && cub[0].Fel == N.FelTranzactie.Operare && cub[0].Document == bcs1.ID
+            && cub[0].Data == bcs1.DataInregistrare && cub[0].Postari.Count == 4);
+
+        var brut = Comparabil.Compara(
+            [
+                // stoc: contul din lanțul lot → produs → TipMaterial, gestiunea din rând,
+                // unitatea = lotul, semnul măsurii trecut pe latură
+                Post(contStoc, N.Latura.Credit, mag1.ID, produs.ID, lot.ID, N.Analiza.Fara, -4m, 40m),
+                Post(contStoc, N.Latura.Debit, loc.ID, produs.ID, lot.ID, N.Analiza.Fara, 4m, 40m),
+                // contabil: repartitorul laturii e Gestiune/UnitateInterna ⇒ coordonata Gestiune;
+                // niciun cont nu are RolTert ⇒ fără partidă; niciun repartitor nu e Partener ⇒ fără partener
+                Post(cont6xx, N.Latura.Debit, mag1.ID, dimDebit.MaterialId, null, AnalizaDin(dimDebit), 0m, 40m),
+                Post(contStoc, N.Latura.Credit, loc.ID, dimCredit.MaterialId, null, AnalizaDin(dimCredit), 0m, 40m),
+            ],
+            Comparabil.Proiecteaza(cub));
+        if (!brut.Egal)
+            Console.WriteLine(brut.ToString());
+        Check("NUC-ORACOL-2 (BCS): coordonatele cubului brut (§B.3) — cont de stoc din TipMaterial, gestiune "
+            + "din ClrType, fără partener și fără partidă pe 6xx/3xx", brut.Egal);
+
+        var normalizat = Normalizari.M6PartenerDoarPeTert(Normalizari.TrD4UnificaStocCuContabil(cub));
+        var dupa = Comparabil.Compara(
+            [
+                Post(cont6xx, N.Latura.Debit, loc.ID, produs.ID, lot.ID, AnalizaDin(dimDebit), 4m, 40m),
+                Post(contStoc, N.Latura.Credit, mag1.ID, produs.ID, lot.ID, AnalizaDin(dimCredit), -4m, 40m),
+            ],
+            Comparabil.Proiecteaza(normalizat));
+        if (!dupa.Egal)
+            Console.WriteLine(dupa.ToString());
+        Check("NUC-ORACOL-3 (BCS): după TR-D4 + M6 rămân EXACT două postări — D 6xx (locul de consum, +4, lot) "
+            + "și C 3xx (MAG1, −4, lot), fiecare la 40", dupa.Egal);
+
+        var refuzuri = N.Conservare.Verifica(normalizat.Single());
+        foreach (var refuz in refuzuri)
+            Console.WriteLine($"     conservare {refuz.Cod}: {refuz.Mesaj}");
+        Check("NUC-ORACOL-4 (BCS): tranzacția normalizată trece Conservare.Verifica și nicio normalizare "
+            + "n-a lăsat reziduu", refuzuri.Count == 0 && Normalizari.Avertismente.Count == 0);
+    }
 
     // --- Gardianul de sold: consum peste disponibil ---
     var pesteDisponibil = Consum(mag1, loc, 100m, new DateOnly(2026, 3, 10));

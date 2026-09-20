@@ -15,6 +15,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Atlas.Conta.BackOffice\Atlas.Conta.BackOffice.Module\Atlas.Conta.BackOffice.Module.csproj" />
     <ProjectReference Include="..\..\Atlas.Conta.BackOffice\Atlas.Conta.BackOffice.Blazor.Server\Atlas.Conta.BackOffice.Blazor.Server.csproj" />
+    <!-- B-D7: oracolul e unealtă, nu consumator — helperul de test vede tipurile nucleului direct. -->
+    <ProjectReference Include="..\..\Atlas.Conta.Nucleu\Atlas.Conta.Nucleu\Atlas.Conta.Nucleu.csproj" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 </Project>
