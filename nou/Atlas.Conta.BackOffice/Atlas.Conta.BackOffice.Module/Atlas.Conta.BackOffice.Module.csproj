@@ -18,6 +18,10 @@
     <EmbeddedResource Include="DatabaseUpdate\SeedData\catalog-mf.csv" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Module e primul și singurul consumator de producție al nucleului (090l). -->
+    <ProjectReference Include="..\..\Atlas.Conta.Nucleu\Atlas.Conta.Nucleu\Atlas.Conta.Nucleu.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Atlas.DXF.Core" />
     <PackageReference Include="Atlas.DXF.EfCore" />
     <PackageReference Include="DevExpress.ExpressApp" />

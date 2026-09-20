@@ -187,6 +187,13 @@ public abstract class Document : BaseObject {
     // suprascrie Total trebuie să țină cele două filtre în oglindă.
     public virtual IQueryable<DocumentDetaliu> LiniiCreanta(IQueryable<DocumentDetaliu> linii) => linii;
 
+    // Singurul membru prin care frunza își numește declarantul (090l): null =
+    // tipul nu declară încă. Ne-persistat și în afara modelului XAF — e cod,
+    // nu dată. La TR-D7 gardul devine `PosteazaInCub` pe `TipDocument`.
+    [NotMapped]
+    [Browsable(false)]
+    public virtual Declaratii.IDeclarant Declarant => null;
+
     // Hooks polimorfe consumate DOAR de motorul de operare (decizia 14).
     // Primesc IObjectSpace și lucrează pe FK-uri, nu pe navigații — contextul
     // apelant (UI, harness, viitorul Web API) nu garantează lazy loading.

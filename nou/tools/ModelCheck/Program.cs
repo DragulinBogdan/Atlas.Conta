@@ -21778,10 +21778,10 @@ void VerificaPotrivire() {
         + "nici fallback, rezolvarea e `Nerezolvat` (refuzul cu mesaj al motorului)");
 
     // ── F24-P6: implicitul de TVA ────────────────────────────────────────────
-    var tvaN21 = new TipTvaFapt(Guid.NewGuid(), "N21", RegimTva.Normal, true);
-    var tvaN11 = new TipTvaFapt(Guid.NewGuid(), "N11", RegimTva.Normal, true);
-    var tvaSdd = new TipTvaFapt(Guid.NewGuid(), "SDD", RegimTva.Scutit, true);
-    var tvaMort = new TipTvaFapt(Guid.NewGuid(), "N19", RegimTva.Normal, false);
+    var tvaN21 = new TipTvaFapt(Guid.NewGuid(), "N21", RegimTva.Normal, true, 21m, null, null);
+    var tvaN11 = new TipTvaFapt(Guid.NewGuid(), "N11", RegimTva.Normal, true, 11m, null, null);
+    var tvaSdd = new TipTvaFapt(Guid.NewGuid(), "SDD", RegimTva.Scutit, true, 0m, null, null);
+    var tvaMort = new TipTvaFapt(Guid.NewGuid(), "N19", RegimTva.Normal, false, 19m, null, null);
     var tipuriTva = new[] { tvaN21, tvaN11, tvaSdd, tvaMort }.ToDictionary(t => t.Id);
     var ziDoc = new DateOnly(2026, 6, 15);
     PoliticaTvaImplicitFapt Rt(ClasaFiscalaPartener? clasaFiscala, DateOnly? deLa, Guid tipTvaId) =>
