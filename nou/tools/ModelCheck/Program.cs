@@ -4196,6 +4196,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaReviewF27(privat: true);
     // Felia 28 — TPH cu discriminatorul `ClrType` (F28-A…G).
     VerificaF28(privat: true);
+    // Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
+    VerificaNucleuBcs(privat: true);
 
     Rezumat();
     return;
@@ -5422,6 +5424,9 @@ using (var os = provider.CreateObjectSpace()) {
         Check("NUC-ORACOL-4 (BCS): tranzacția normalizată trece Conservare.Verifica și nicio normalizare "
             + "n-a lăsat reziduu", refuzuri.Count == 0 && Normalizari.Avertismente.Count == 0);
     }
+
+    // --- NUC-BCS (B-D4, pas 3): declarantul frunzei contra oracolului ---
+    ProbeNucleu.Proba(os, Check, "NUC-BCS", [bcs1]);
 
     // --- Gardianul de sold: consum peste disponibil ---
     var pesteDisponibil = Consum(mag1, loc, 100m, new DateOnly(2026, 3, 10));
@@ -8007,6 +8012,9 @@ using (var os = provider.CreateObjectSpace()) {
         SoldBcs(mag1, TipStoc.Magazie) == 14m && SoldBcs(loc, TipStoc.Consum) == 6m);
     Check("Valoarea culeasă e cea postată: hook-ul de operare rescrie aceeași formulă (geamăna F6-D6)",
         BonConsumApply.Citeste(os, idBcs).Linii.Single().Valoare == 60m);
+
+    // --- NUC-BCS-API (B-D4, pas 3): declarantul pe documentul operat prin ușa API ---
+    ProbeNucleu.Proba(os, Check, "NUC-BCS-API", [os.GetObjectByKey<BonConsum>(idBcs)]);
     CheckRefuza("Apply peste BCS Operat → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
         () => BonConsumApply.Aplica(os, idBcs, writeBcs));
     CheckRefuza("Sterge peste BCS Operat → același refuz de domeniu",
@@ -9507,6 +9515,8 @@ VerificaPotrivire();
 VerificaReviewF27(privat: false);
 // Felia 28 — TPH cu discriminatorul `ClrType` (F28-A…G).
 VerificaF28(privat: false);
+// Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
+VerificaNucleuBcs(privat: false);
 
 Rezumat();
 
@@ -31426,4 +31436,158 @@ void VerificaF28(bool privat) {
         Check($"F28 — curățenie finală ({eticheta}): niciun document și niciun repartitor de probă rămas",
             !osF.GetObjectsQuery<Document>().Any(d => d.Numar != null && d.Numar.StartsWith(MarcajF28))
             && !osF.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajF28)));
+}
+
+// ============ Felia 30, pasul 3: declarantul BCS pe scenă proprie ============
+// Scena e2e „3c: BonConsum" e BUGETARĂ (blocul privat se încheie cu `return`),
+// deci proba declarantului pe AMBELE profiluri cere o scenă proprie. Al doilea
+// lot al ei MĂSOARĂ N-r3: raportul valoric al unei chei de stoc se poate
+// depărta de `Lot.PretUnitar` (înghețat la prima intrare), iar motorul vechi
+// valorizează cu prețul, nucleul cu raportul curent.
+//
+// Mecanismul celei de-a doua intrări: rând de DESCHIDERE pe aceeași cheie de
+// stoc — același mecanism cu care scenele își deschid stocul, și singurul
+// disponibil azi: documentele nu pot da două prețuri pe același lot (lotul E
+// prețul, 13 — NIR-ul pe lot străin reia `Lot.PretUnitar`, LDI plus naște lot
+// nou, corecția renaște lotul, DVI nu postează valoare pe stoc).
+void VerificaNucleuBcs(bool privat) {
+    const string MarcajNucBcs = "E2E-NUC-BCS";
+    var eticheta = privat ? "PRIVAT" : "BUGETAR";
+
+    void CurataNucBcs(IObjectSpace os) {
+        var pj = new Purja(os);
+        var idsLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucBcs)).Select(l => l.ID).ToList();
+        var idsDoc = os.GetObjectsQuery<BonConsum>().IgnoreQueryFilters()
+            .Where(d => d.Predator.Cod.StartsWith(MarcajNucBcs) || d.Primitor.Cod.StartsWith(MarcajNucBcs))
+            .Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => idsLot.Contains(r.LotId)
+                || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => idsDoc.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => idsDoc.Contains(d.ID)).ToList());
+        os.CommitChanges();
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucBcs)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => p.Cod.StartsWith(MarcajNucBcs)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(MarcajNucBcs)).ToList());
+        pj.Executa();
+    }
+
+    using var os = provider.CreateObjectSpace();
+    CurataNucBcs(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "302" : "302.01.00"));
+    var loc = os.CreateObject<UnitateInterna>();
+    loc.Cod = MarcajNucBcs + "-LOC";
+    loc.Denumire = "Loc de consum probă felia 30";
+    loc.Calitati = CalitateRepartitor.LocConsum;
+
+    Lot Lotul(string sufix, decimal pretUnitar) {
+        var produs = os.CreateObject<Produs>();
+        produs.Cod = MarcajNucBcs + sufix;
+        produs.Denumire = "Produs probă felia 30" + sufix;
+        produs.UM = "BUC";
+        produs.TipMaterial = tipMaterial;
+        var lotNou = os.CreateObject<Lot>();
+        lotNou.Produs = produs;
+        lotNou.PretUnitar = pretUnitar;
+        lotNou.Gestiune = mag1;
+        lotNou.Data = new DateOnly(2026, 1, 10);
+        return lotNou;
+    }
+    void Intrare(Lot lot, DateOnly data, decimal cantitate, decimal valoare) {
+        var rand = os.CreateObject<RegistruStoc>();
+        rand.Data = data;
+        rand.TipStoc = TipStoc.Magazie;
+        rand.Lot = lot;
+        rand.Repartitor = mag1;
+        rand.Cantitate = cantitate;
+        rand.Valoare = valoare;
+    }
+    BonConsum Consum(Lot lot, decimal cantitate, DateOnly data) {
+        var doc = os.CreateObject<BonConsum>();
+        doc.Data = data;
+        doc.Predator = mag1;
+        doc.Primitor = loc;
+        var d = os.CreateObject<DocumentDetaliu>();
+        d.Document = doc;
+        d.TipMaterial = tipMaterial;
+        d.Lot = lot;
+        d.Cantitate = cantitate;
+        return doc;
+    }
+
+    // (A) lotul necorectat: raportul curent E prețul înghețat, deci declarantul
+    //     și registrele trebuie să coincidă EXACT.
+    var lotCurat = Lotul("-A", 10m);
+    Intrare(lotCurat, lotCurat.Data, 10m, 100m);
+    // (B) lotul corectat (N-r3): două intrări la prețuri diferite pe aceeași cheie.
+    var lotCorectat = Lotul("-B", 10m);
+    Intrare(lotCorectat, lotCorectat.Data, 10m, 100m);
+    Intrare(lotCorectat, new DateOnly(2026, 1, 20), 10m, 200m);
+    os.CommitChanges();
+
+    var bcs = Consum(lotCurat, 4m, new DateOnly(2026, 3, 5));
+    MotorOperare.Opereaza(os, bcs);
+    Check($"NUC-BCS-{eticheta} scenă: BCS operat pe lot necorectat — linia la 40 (4 × 10), "
+        + "două rânduri de stoc și o notă",
+        bcs.Detalii.Single().Valoare == 40m
+        && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == bcs.ID) == 2
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == bcs.ID) == 1);
+    ProbeNucleu.Proba(os, Check, $"NUC-BCS-{eticheta}", [bcs]);
+
+    // --- N-r3 MĂSURAT: prețul înghețat contra raportului curent ---
+    var soldCorectat = StocService.SolduriLaData(os, [lotCorectat.ID], new DateOnly(2026, 3, 6))
+        .GetValueOrDefault(new CheieStoc(lotCorectat.ID, mag1.ID, TipStoc.Magazie));
+    Check($"NUC-BCS-N-R3-1 ({eticheta}): cheia de stoc are 20 buc / 300 lei (raport 15), dar "
+        + $"`Lot.PretUnitar` a rămas înghețat la {lotCorectat.PretUnitar} — prețul ≠ raportul",
+        soldCorectat.Cantitate == 20m && soldCorectat.Valoare == 300m && lotCorectat.PretUnitar == 10m);
+
+    var bcsR3 = Consum(lotCorectat, 5m, new DateOnly(2026, 3, 6));
+    MotorOperare.Opereaza(os, bcsR3);
+    var valoareVeche = bcsR3.Detalii.Single().Valoare;
+    Check($"NUC-BCS-N-R3-2 ({eticheta}): motorul vechi valorizează cu prețul înghețat — X = {valoareVeche} "
+        + "(5 × 10), aceeași cifră în nota contabilă",
+        valoareVeche == 50m
+        && os.GetObjectsQuery<RegistruContabil>().Single(r => r.DocumentId == bcsR3.ID).Valoare == 50m);
+
+    var contractR3 = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, bcsR3);
+    var valoareNoua = contractR3.Decizii.OfType<N.ValoareIesire>().Single().Valoare;
+    Console.WriteLine($"     MĂSURAT (N-r3/{eticheta}): lot cu două intrări (10 × 10 lei + 10 × 20 lei) = "
+        + $"20 buc / 300 lei, `Lot.PretUnitar` = {lotCorectat.PretUnitar}; consum de 5 buc → "
+        + $"motorul vechi X = {valoareVeche}, nucleul Y = {valoareNoua}, "
+        + $"Δ = Y − X = {valoareNoua - valoareVeche}.");
+    Check($"NUC-BCS-N-R3-3 ({eticheta}): nucleul evaluează pe raportul CURENT — Y = {valoareNoua} "
+        + $"(5 × 300/20), deci Δ = Y − X = {valoareNoua - valoareVeche}",
+        contractR3.EsteAcceptat && valoareNoua == 75m && valoareNoua - valoareVeche == 25m);
+
+    Normalizari.Reseteaza();
+    var oracolR3 = Normalizari.Toate(
+        CubDinRegistre.Transforma(os, [bcsR3.ID]), Normalizari.Citeste(os, [bcsR3.ID]));
+    var raportR3 = Comparabil.Compara(
+        Comparabil.Proiecteaza(oracolR3),
+        Comparabil.Proiecteaza(contractR3.Tranzactie),
+        ProbeNucleu.Nume(os, oracolR3, contractR3.Tranzactie));
+    Console.WriteLine(raportR3.ToString());
+    var doarValoarea = raportR3.InPlus.Count == 2 && raportR3.Lipsa.Count == 2
+        && raportR3.InPlus.All(p => raportR3.Lipsa.Any(l => (l with { ValoareSemnata = p.ValoareSemnata }) == p));
+    Check($"NUC-BCS-N-R3-4 ({eticheta}): comparația cu oracolul pică EXACT pe valoare — două postări în plus "
+        + "(±75) contra două lipsă (±50), identice pe toate celelalte coordonate; N-r3 e diferență "
+        + "CONSEMNATĂ, nu normalizare (B-D8 pct. 7)",
+        doarValoarea && Normalizari.Avertismente.Count == 0);
+    Check($"NUC-BCS-N-R3-5 ({eticheta}): tranzacția declarantului se conservă pe cifra nouă "
+        + "(valoarea nu se pierde între capete)",
+        N.Conservare.Verifica(contractR3.Tranzactie).Count == 0);
+
+    CurataNucBcs(os);
+    Check($"NUC-BCS-{eticheta} — curățenie finală (fără reziduuri de scenă)",
+        !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajNucBcs))
+        && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajNucBcs)));
 }
