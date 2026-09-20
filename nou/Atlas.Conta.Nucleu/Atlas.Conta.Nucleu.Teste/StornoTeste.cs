@@ -62,6 +62,44 @@ public class StornoTeste {
         });
 
     [Fact]
+    public void StornoulReStampileazaDoarPostarileCuPerioada() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator);
+            var data = Gen.Data(aleator);
+            var perioada = 202601 + aleator.Next(12);
+            var stornata = Storno.Inverseaza(tranzactie.Postari, tranzactie.Document!.Value, data, perioada);
+            for (var i = 0; i < tranzactie.Postari.Count; i++) {
+                var inainte = tranzactie.Postari[i];
+                var dupa = stornata.Postari[i];
+                Assert.Equal(
+                    inainte.Coordonate.PerioadaDeclarare is null ? null : perioada,
+                    dupa.Coordonate.PerioadaDeclarare);
+                Assert.Equal(-inainte.Valoare, dupa.Valoare);
+                Assert.Equal(-inainte.Cantitate, dupa.Cantitate);
+                Assert.Equal(-inainte.ValoareValuta, dupa.ValoareValuta);
+                Assert.Equal(
+                    inainte.Coordonate with { Data = data, PerioadaDeclarare = dupa.Coordonate.PerioadaDeclarare },
+                    dupa.Coordonate);
+                Assert.Equal(inainte.Cauza, dupa.Cauza);
+                Assert.Equal(inainte.Atribuit, dupa.Atribuit);
+            }
+        });
+
+    [Fact]
+    public void StornoulFaraPerioadaDataLasaReperulFiscalNeatins() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator);
+            var data = Gen.Data(aleator);
+            var cuNull = Storno.Inverseaza(tranzactie.Postari, tranzactie.Document!.Value, data, null);
+            var faraArgument = Storno.Inverseaza(tranzactie.Postari, tranzactie.Document!.Value, data);
+            Assert.Equal(faraArgument.Postari, cuNull.Postari);
+            for (var i = 0; i < tranzactie.Postari.Count; i++)
+                Assert.Equal(
+                    tranzactie.Postari[i].Coordonate.PerioadaDeclarare,
+                    cuNull.Postari[i].Coordonate.PerioadaDeclarare);
+        });
+
+    [Fact]
     public void StornoulStornouluiEOriginalulMaiPutinData() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactie = Gen.Operare(aleator);

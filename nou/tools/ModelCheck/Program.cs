@@ -31754,6 +31754,7 @@ void VerificaNucleuTrezorerie(bool privat) {
         var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
             .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
         var docIds = docs.Select(d => d.ID).ToList();
+        ProbeCub.Purjeaza(pj, os, docIds);                                             // S-D8
         pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
             .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
         pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
@@ -31942,6 +31943,22 @@ void VerificaNucleuTrezorerie(bool privat) {
         && contractVir.Tranzactie.Postari.All(p => p.Coordonate.Gestiune == casaVir.ID
             && p.Coordonate.Unitate == null && p.Coordonate.Partener == null));
 
+    // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe PLT/INC ---
+    ProbeCub.FaraRanduri(os, Check,
+        $"STR-NEMIGRAT ({eticheta}): plata operată cu `PosteazaInCub` fals n-a atins cubul", plt.ID);
+
+    var pltCub = Trezorerie<Plata>(casa, furnizor, tipTrz, 40m, new DateOnly(2026, 3, 13));
+    var incCub = Trezorerie<Incasare>(client, casa, tipTrz, 30m, new DateOnly(2026, 3, 13));
+    var dataStornoTrz = new DateOnly(2026, 7, 22);
+    using (ProbeCub.Migrat(os, pltCub, incCub)) {
+        MotorOperare.Opereaza(os, pltCub);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-PLT-{eticheta}", pltCub);
+        MotorOperare.Opereaza(os, incCub);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-INC-{eticheta}", incCub);
+        MotorOperare.Storneaza(os, pltCub, dataStornoTrz);
+        ProbeCub.ProbaStorno(os, Check, $"NUC-PLT-{eticheta}", pltCub, dataStornoTrz);
+    }
+
     CurataNucTrz(os);
     Check($"NUC-TRZ-{eticheta} — curățenie finală (fără reziduuri de scenă)",
         !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajNucTrz))
@@ -31971,6 +31988,7 @@ void VerificaNucleuBcs(bool privat) {
         var idsDoc = os.GetObjectsQuery<BonConsum>().IgnoreQueryFilters()
             .Where(d => d.Predator.Cod.StartsWith(MarcajNucBcs) || d.Primitor.Cod.StartsWith(MarcajNucBcs))
             .Select(d => d.ID).ToList();
+        ProbeCub.Purjeaza(pj, os, idsDoc);                                             // S-D8
         pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
             .Where(r => idsLot.Contains(r.LotId)
                 || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
@@ -32118,6 +32136,34 @@ void VerificaNucleuBcs(bool privat) {
         && contractRefuzat.Refuzuri.Select(r => r.Linie).Distinct().Count() == 2
         && contractRefuzat.Refuzuri.All(r => bcsRefuzat.Detalii.Any(d => d.ID == r.Linie)));
 
+    // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe BCS ---
+    ProbeCub.FaraRanduri(os, Check,
+        $"STR-NEMIGRAT ({eticheta}): BCS-ul operat cu `PosteazaInCub` fals n-a atins cubul", bcs.ID);
+
+    var lotCub = Lotul("-E", 10m);
+    Intrare(lotCub, lotCub.Data, 10m, 100m);
+    os.CommitChanges();
+    var bcsCub = Consum(lotCub, 3m, new DateOnly(2026, 3, 8));
+    var bcsAnulat = Consum(lotCub, 2m, new DateOnly(2026, 3, 9));
+    os.CommitChanges();
+    var dataStornoBcs = new DateOnly(2026, 7, 22);
+    using (ProbeCub.Migrat(os, bcsCub)) {
+        MotorOperare.Opereaza(os, bcsCub);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-BCS-{eticheta}", bcsCub);
+
+        MotorOperare.Storneaza(os, bcsCub, dataStornoBcs);
+        ProbeCub.ProbaStorno(os, Check, $"NUC-BCS-{eticheta}", bcsCub, dataStornoBcs);
+
+        MotorOperare.Opereaza(os, bcsAnulat);
+        Check($"STR-ANULARE ({eticheta}) premisă: documentul are tranzacție și postări în cub după operare",
+            ProbeCub.Tranzactii(os, bcsAnulat.ID).Count == 1 && ProbeCub.Postari(os, bcsAnulat.ID).Count > 0);
+        MotorOperare.AnuleazaOperarea(os, bcsAnulat);
+        ProbeCub.FaraRanduri(os, Check,
+            $"STR-ANULARE ({eticheta}): anularea operării șterge FIZIC tranzacția `Operare` și postările ei, "
+            + "simetric cu registrele",
+            bcsAnulat.ID);
+    }
+
     CurataNucBcs(os);
     Check($"NUC-BCS-{eticheta} — curățenie finală (fără reziduuri de scenă)",
         !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajNucBcs))
@@ -32147,6 +32193,7 @@ void VerificaNucleuFct(bool privat) {
         var docIds = docs.Select(d => d.ID).ToList();
         var idsLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
             .Where(l => l.Produs.Cod.StartsWith(MarcajNucFct)).Select(l => l.ID).ToList();
+        ProbeCub.Purjeaza(pj, os, docIds);                                             // S-D8
         pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
             .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
         pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
@@ -32390,6 +32437,97 @@ void VerificaNucleuFct(bool privat) {
         && raportR4.InPlus.All(p => Math.Abs(p.ValoareSemnata) == 0.01m)
         && raportR4.InPlus.Any(p => p.Cont == cont4426.ID)
         && Normalizari.Avertismente.Count == 0);
+
+    // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe FCT ---
+    ProbeCub.FaraRanduri(os, Check,
+        $"STR-NEMIGRAT ({eticheta}): FCT operată cu `PosteazaInCub` fals n-a atins cubul", fct.ID);
+
+    // (a) factura cu RECEPȚIE: partiția Stoc, capătul virtual N-D4, NIR-ul conex nemigrat.
+    var fctCub = Factura("-F6", new DateOnly(2026, 3, 9));
+    var linieCubStoc = Linie(fctCub, tipStoc, 4m, 25m, n21);
+    Linie(fctCub, tipServicii, 1m, 60m, n21);
+    linieCubStoc.CreeazaLot(os, produs, mag1);
+    os.CommitChanges();
+    using (ProbeCub.Migrat(os, fctCub)) {
+        var nirCub = MotorOperare.Opereaza(os, fctCub);
+
+        // STR-CONFIG: NIR-ul n-are declarant, deci `PosteazaInCub` pe el e eroare de configurare.
+        using (ProbeCub.MigratPeClasa(os, nameof(NIR))) {
+            string mesajConfig = null;
+            using (var osConfig = provider.CreateObjectSpace())
+                try { OperareApi.Opereaza(osConfig, nirCub.ID); }
+                catch (OperareException e) { mesajConfig = e.Message; }
+            using var osDupaConfig = provider.CreateObjectSpace();
+            Check($"STR-CONFIG ({eticheta}): `PosteazaInCub` pe un tip FĂRĂ declarant (NIR) refuză operarea "
+                + $"ca eroare de configurare — „{mesajConfig?.Split('\n')[0]}” — și nu scrie nimic (S-D3)",
+                mesajConfig != null && mesajConfig.Contains("PosteazaInCub") && mesajConfig.Contains("nu declară")
+                && osDupaConfig.GetObjectByKey<Document>(nirCub.ID).Stare == StareDocument.Draft
+                && !osDupaConfig.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == nirCub.ID));
+            ProbeCub.FaraRanduri(osDupaConfig, Check,
+                $"STR-CONFIG ({eticheta}): zero rânduri în cub după refuzul de configurare", nirCub.ID);
+        }
+
+        MotorOperare.Opereaza(os, nirCub);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-FCT-CUB-{eticheta}", fctCub,
+            new Dictionary<Guid, Guid> { [nirCub.ID] = fctCub.ID });
+        var peStoc = ProbeCub.Postari(os, fctCub.ID, N.FelTranzactie.Operare)
+            .Where(p => p.Spatiu == N.Spatiu.Stoc).ToList();
+        var virtuale = ProbeCub.Postari(os, fctCub.ID, N.FelTranzactie.Operare)
+            .Where(p => N.GestiuniVirtuale.Este(p.Gestiune)).ToList();
+        Check($"STR-OPERARE {eticheta} (FCT/recepție): recepția scrie pe partiția Stoc (o postare, pe lotul "
+            + "născut de linie), iar capătul virtual N-D4 stă pe partiția Contabil, cu gestiunea structurală",
+            peStoc.Count == 1 && peStoc[0].Cantitate == 4m && peStoc[0].Unitate != null
+            && virtuale.Count == 1 && virtuale[0].Spatiu == N.Spatiu.Contabil
+            && virtuale[0].Gestiune == N.GestiuniVirtuale.Furnizor && virtuale[0].Cantitate == -4m);
+    }
+
+    // (b) STR-STORNO pe o factură de SERVICII (fără conex operat), unde postările poartă reper fiscal.
+    var fctStorno = Factura("-F7", new DateOnly(2026, 3, 10));
+    Linie(fctStorno, tipServicii, 1m, 90m, n21);
+    os.CommitChanges();
+    var dataStornoFct = new DateOnly(2026, 7, 22);
+    using (ProbeCub.Migrat(os, fctStorno)) {
+        MotorOperare.Opereaza(os, fctStorno);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-FCT-STORNO-{eticheta}", fctStorno);
+        MotorOperare.Storneaza(os, fctStorno, dataStornoFct);
+        ProbeCub.ProbaStorno(os, Check, $"NUC-FCT-{eticheta}", fctStorno, dataStornoFct);
+    }
+
+    // (c) STR-REFUZ / STR-VALIDEAZA: gardul de toleranță al declarantului e mai STRICT decât
+    //     motorul vechi (B-r1) — exact documentul pe care motorul vechi îl operează.
+    var fctRefuz = Factura("-F8", new DateOnly(2026, 3, 11));
+    var linieRefuz = Linie(fctRefuz, tipServicii, 1m, 100m, n21);
+    linieRefuz.ValoareTva = 21.5m;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctRefuz);
+    Check($"STR-REFUZ ({eticheta}) premisă: motorul VECHI operează factura cu TVA cules 21,50 pe o bază de "
+        + "100 la 21% (abatere 0,50, peste toleranța de pilot de 0,01 × liniile cotei)",
+        fctRefuz.Stare == StareDocument.Operat && linieRefuz.ValoareTva == 21.5m);
+    ProbeCub.FaraRanduri(os, Check,
+        $"STR-NEMIGRAT ({eticheta}): aceeași factură, cu tipul nemigrat, n-a atins cubul", fctRefuz.ID);
+    MotorOperare.AnuleazaOperarea(os, fctRefuz);
+
+    using (ProbeCub.Migrat(os, fctRefuz)) {
+        string mesajRefuz = null;
+        using (var osRefuz = provider.CreateObjectSpace())
+            try { OperareApi.Opereaza(osRefuz, fctRefuz.ID); }
+            catch (OperareException e) { mesajRefuz = e.Message; }
+        using var osDupaRefuz = provider.CreateObjectSpace();
+        Check($"STR-REFUZ ({eticheta}): refuzul declarației e refuzul operației — „{mesajRefuz?.Split('\n')[0]}”; "
+            + "documentul rămâne Draft, iar tranzacția comenzii nu lasă niciun rând în registre",
+            mesajRefuz != null && mesajRefuz.Contains(N.Coduri.TvaInAfaraTolerantei)
+            && osDupaRefuz.GetObjectByKey<Document>(fctRefuz.ID).Stare == StareDocument.Draft
+            && !osDupaRefuz.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == fctRefuz.ID)
+            && !osDupaRefuz.GetObjectsQuery<RegistruTva>().Any(r => r.DocumentId == fctRefuz.ID));
+        ProbeCub.FaraRanduri(osDupaRefuz, Check,
+            $"STR-REFUZ ({eticheta}): zero rânduri în cub după refuz", fctRefuz.ID);
+
+        using var osDry = provider.CreateObjectSpace();
+        var eroriDry = OperareApi.Valideaza(osDry, fctRefuz.ID);
+        Check($"STR-VALIDEAZA ({eticheta}): dry-run-ul pe tipul migrat arată refuzul declarației "
+            + $"([{string.Join("; ", eroriDry)}]), fără să scrie ceva",
+            eroriDry.Any(e => e.Contains(N.Coduri.TvaInAfaraTolerantei)));
+    }
 
     CurataNucFct(os);
     Check($"NUC-FCT-{eticheta} — curățenie finală (fără reziduuri de scenă)",

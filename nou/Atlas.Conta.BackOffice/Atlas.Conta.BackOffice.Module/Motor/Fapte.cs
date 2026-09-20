@@ -77,9 +77,9 @@ internal static class Fapte {
     // primește tot ce influențează rezultatul și nu mai atinge ObjectSpace-ul.
     public static Declaratii.Operand Operand(IObjectSpace os, Document doc) {
         var tipDoc = MotorOperare.GasesteTipDocument(os, doc);
-        // MEDIU-3: `Detalii` vine fără ORDER BY, iar secvența liniilor decide
-        // evaluarea (N-D7) și nominalizarea; `Pozitie` pe linie e restanță la TR-D7.
-        var linii = doc.Detalii.OrderBy(d => d.ID).ToList();
+        // S-D6: `Detalii` vine fără ORDER BY, iar secvența liniilor decide evaluarea
+        // (N-D7) și nominalizarea — aceeași ordine ca în motorul vechi.
+        var linii = doc.Detalii.OrderBy(d => d.Pozitie).ThenBy(d => d.ID).ToList();
 
         var idsLot = linii.Where(d => d.LotId != null).Select(d => d.LotId.Value).Distinct().ToList();
         var dateLot = DateLot(os, idsLot);
@@ -294,13 +294,16 @@ internal static class Fapte {
         return ids.Where(id => id != null).Select(id => id.Value).Distinct().ToList();
     }
 
+    // Singura citire a operandului care se face pe ENTITATE, nu pe proiecție (S-D4):
+    // materializarea declarației e înaintea commit-ului, iar motorul tocmai a pus
+    // prețul și data pe lotul născut de document — o proiecție ar citi rândul din
+    // bază, adică starea dinaintea operării.
     static List<(Guid Id, Guid ProdusId, DateOnly Data, decimal PretUnitar)> DateLot(
             IObjectSpace os, IReadOnlyList<Guid> ids) =>
         ids.Count == 0
             ? []
             : os.GetObjectsQuery<Lot>()
                 .Where(l => ids.Contains(l.ID))
-                .Select(l => new { l.ID, l.ProdusId, l.Data, l.PretUnitar })
                 .ToList()
                 .Select(l => (l.ID, l.ProdusId, l.Data, l.PretUnitar))
                 .ToList();

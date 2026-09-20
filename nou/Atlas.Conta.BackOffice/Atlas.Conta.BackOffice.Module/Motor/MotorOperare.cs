@@ -48,8 +48,8 @@ public static class MotorOperare {
     // (calea vie: OS non-secured creat de adaptorul `OperareApi`).
     public static IReadOnlyList<string> Valideaza(IObjectSpace os, Document doc) {
         try {
-            CalculeazaSiValideaza(os, doc);
-            return Array.Empty<string>();
+            var plan = CalculeazaSiValideaza(os, doc);
+            return Cub.Materializare.Refuzuri(os, doc, plan.TipDoc);                  // S-D4
         }
         catch (OperareException ex) {
             return ex.Message
@@ -75,7 +75,7 @@ public static class MotorOperare {
         // tăcea exact acolo unde 62f cere să strige. Se capturează aici, se
         // judecă mai jos, după ce pregătirea a putut să schimbe (sau să
         // golească) tipul de TVA al liniei.
-        var tvaCulesInainte = doc.Detalii
+        var tvaCulesInainte = Liniile(doc)
             .Select((d, i) => (Linie: d, Pozitie: i + 1, TvaCules: d.ValoareTva))
             .ToList();
 
@@ -147,7 +147,7 @@ public static class MotorOperare {
             .ToDictionary(l => l.ID, l => l.ProdusId);
         var note = new List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
             decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)>();
-        foreach (var d in doc.Detalii) {
+        foreach (var d in Liniile(doc)) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
             var linie = Fapte.Linie(d, claseTip);
             var regula = Potrivire.Contare(reguliContare, linie).Castigator;
@@ -225,7 +225,7 @@ public static class MotorOperare {
                 .Where(t => idsTipTva.Contains(t.ID))
                 .Select(t => new { t.ID, t.Cod, t.Regim, t.ContTvaDeductibilId, t.ContTvaColectatId })
                 .ToDictionary(t => t.ID, t => (t.Cod, t.Regim, t.ContTvaDeductibilId, t.ContTvaColectatId));
-            foreach (var d in doc.Detalii) {
+            foreach (var d in Liniile(doc)) {
                 if (d.TipTvaId == null || d.ValoareTva == 0m)
                     continue;
                 // Geamănul gardului din `RegistruTvaService` (review advers D4):
@@ -330,7 +330,7 @@ public static class MotorOperare {
         //    producție): lotul e creat la culegere de linia de intrare (baza nu
         //    poartă ProdusId — testul bazei §2); motorul îi fixează prețul
         //    (= Valoare/Cantitate, decizia 13), data și atributele culese.
-        var idsDetalii = doc.Detalii.Select(d => d.ID).ToList();
+        var idsDetalii = Liniile(doc).Select(d => d.ID).ToList();
         foreach (var lot in os.GetObjectsQuery<Lot>().Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
             var linie = doc.Detalii.First(d => d.ID == lot.LinieIntrareId);
             if (linie.Cantitate <= 0)
@@ -424,6 +424,9 @@ public static class MotorOperare {
         //    serviciul materializează relația în aceeași tranzacție.
         ImperechereService.CreeazaAutomataLaOperare(os, doc);
 
+        // 7. Regimul dual (S-D4): declarația frunzei, în aceeași tranzacție.
+        Cub.Materializare.Opereaza(os, doc, tipDoc);
+
         os.CommitChanges();
         return conex ?? secundar;
     }
@@ -456,7 +459,7 @@ public static class MotorOperare {
         Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
         List<RegulaStocFapt> reguliStoc, bool strict) {
         var miscari = new List<(DocumentDetaliu Detaliu, RegulaStocFapt Regula, MiscareStoc Miscare)>();
-        foreach (var d in doc.Detalii) {
+        foreach (var d in Liniile(doc)) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
             foreach (var potrivit in Potrivire.Stoc(reguliStoc, Fapte.Linie(d, claseTip)))
                 foreach (var regula in potrivit.Reguli) {
@@ -615,6 +618,7 @@ public static class MotorOperare {
         os.Delete(randuriTva);
         if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
             cuRegistruPropriu.EliminaRegistrul(os);
+        Cub.Materializare.Anuleaza(os, doc);                                          // S-D5
         doc.Stare = StareDocument.Draft;
         doc.DataOperare = null;
         doc.TotalStingere = null;                                                    // F27-D7
@@ -700,6 +704,8 @@ public static class MotorOperare {
         if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
             cuRegistruPropriu.StorneazaRegistrul(os, dataStorno);
 
+        Cub.Materializare.Storneaza(os, doc, dataStorno);                             // S-D5
+
         doc.Stare = StareDocument.Stornat;
         os.CommitChanges();
     }
@@ -761,6 +767,10 @@ public static class MotorOperare {
         if (stersi)
             LoturiCulegereService.CurataOrfane(os);
     }
+
+    // S-D6: aceeași secvență a liniilor în ambele motoare (`Fapte.Operand`).
+    static IEnumerable<DocumentDetaliu> Liniile(Document doc) =>
+        doc.Detalii.OrderBy(d => d.Pozitie).ThenBy(d => d.ID);
 
     // Ancora TipDocument după numele CLR al clasei — reutilizabilă (motor,
     // DescarcareService, TvaService): totul se cheiază pe TipDocument.ID.

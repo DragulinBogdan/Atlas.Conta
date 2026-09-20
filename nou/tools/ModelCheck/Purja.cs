@@ -59,6 +59,14 @@ sealed class Purja(IObjectSpace os) {
 
     public Purja Adauga<T>(T obiect) where T : BaseObject => Adauga([obiect]);
 
+    // Cubul (S-D1) nu derivă din `BaseObject`: aceeași purjă fizică, cu cheile date.
+    public Purja AdaugaCheie<T>(IEnumerable<Guid> ids) where T : class {
+        var distincte = ids.Distinct().ToList();
+        if (distincte.Count > 0)
+            pasi.Add((typeof(T), distincte));
+        return this;
+    }
+
     // Regulă de folosire (review F13, defect 6): purja detașează DOAR tipurile
     // purjate explicit; dependenții luați de CASCADE în bază (`RegistruTva`,
     // `Imperecheri`) rămân în tracker dacă scena i-a încărcat
@@ -73,9 +81,10 @@ sealed class Purja(IObjectSpace os) {
         // spatele lui EF ar lăsa în tracker rânduri fantomă. Detașarea e înainte de
         // SQL, ca identity map-ul să fie liber pentru Id-urile care se recreează.
         foreach (var (tip, ids) in pasi)
-            foreach (var intrare in ctx.ChangeTracker.Entries().Where(e =>
-                         tip.IsInstanceOfType(e.Entity) && e.Entity is BaseObject b && ids.Contains(b.ID)).ToList())
-                intrare.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+            foreach (var intrare in ctx.ChangeTracker.Entries()
+                         .Where(e => tip.IsInstanceOfType(e.Entity)).ToList())
+                if (Cheia(intrare) is Guid id && ids.Contains(id))
+                    intrare.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
         foreach (var (tip, ids) in pasi) {
             var (tabela, coloanaId) = TabelaRadacina(ctx, tip);
             // Numele de tabelă/coloană vin din modelul EF (nu din date), Id-urile
@@ -111,6 +120,14 @@ sealed class Purja(IObjectSpace os) {
         }
         pasi.Clear();
     }
+
+    static Guid? Cheia(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry intrare) =>
+        intrare.Entity is BaseObject aplicatie
+            ? aplicatie.ID
+            : intrare.Metadata.FindPrimaryKey()?.Properties is [{ } cheie]
+                && intrare.Property(cheie.Name).CurrentValue is Guid id
+                ? id
+                : null;
 
     static bool EsteViolareFk(Exception e) {
         for (var x = e; x != null; x = x.InnerException)

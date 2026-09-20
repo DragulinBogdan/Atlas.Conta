@@ -83,6 +83,28 @@ seed-ul rămâne `false` și scenele îl comută local (S-D8).
 - `Materializare.Anuleaza(os, doc)` din `AnuleazaOperarea`: șterge fizic tranzacția `Operare` a documentului și postările ei (simetric cu ștergerea registrelor; fără `GCRecord`). Declarat; TR-D9 decide soarta anulării.
 - `Corecteaza` (storno legat + document nou) trece prin cele două de mai sus, fără cod propriu.
 
+**Amendamente de literă din pasul 2 (măsurate, acceptate de main):**
+(1) `Fapte.DateLot` citește ENTITATEA `Lot`, nu o proiecție — materializarea
+e înaintea commit-ului, iar prețul și data lotului născut de document stau pe
+instanța urmărită; o proiecție citea rândul din bază (`Unitate.Deschisa` =
+01.01.0001 în cub contra 09.03.2026 în oracol, `STR-OPERARE NUC-FCT`); după
+commit cele două coincid, deci `--declaratie-pe-baza` și Import1C nu sunt
+afectate. (2) Unitatea se reconstruiește din rând pe FEL: `Partida ⇒ Partener
+de pe rând, Produs null`; `Lot ⇒ Produs de pe rând, Partener null` (capătul
+de terț al recepției poartă `Produs` pe postare, dar partida n-are produs);
+`Randuri.Scrie` REFUZĂ o unitate care nu s-ar reconstrui exact. (3) Perioada
+de declarare a stornoului = `an × 100 + luna` a datei stornării, ca motorul
+vechi (`MotorOperare.cs:684-686`), nu prin `RegistruTvaService` (ramura
+`CorecteazaId` ar întoarce perioada originalului). (4) Enumerările ordonate
+în motorul vechi sunt CINCI: captura TVA culese, notele, TVA, loturile
+născute și `PotrivesteReguliStoc` (mișcările de stoc — ordinea de evaluare
+N-D7), printr-un singur helper `Liniile(doc)`; validarea declarativă rămâne neordonată (doar ordinea
+mesajelor). (5) Oracolul `CubDinRegistre` citește registrele ORDONAT pe
+secvența liniilor sursei — ordinea heap se schimbă cu autovacuum-ul între
+rulări și `NUC-PLT-FCT` alterna OK/FAIL din felia 30 (investigație
+`run-nucleu/tr-d7a/pas1/baseline/`, cauza în `Normalizari.Nominalizeaza` care
+ia „primul candidat").
+
 ### S-D6 — `Pozitie` pe `DocumentDetaliu`, citită de AMBELE motoare (B-r11)
 
 `Pozitie` (int) se atribuie o singură dată, la salvarea unei linii noi cu

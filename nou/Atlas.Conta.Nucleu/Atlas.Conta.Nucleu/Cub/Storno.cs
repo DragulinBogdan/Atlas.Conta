@@ -1,12 +1,22 @@
 namespace Atlas.Conta.Nucleu;
 
 public static class Storno {
-    public static Tranzactie Inverseaza(IEnumerable<Postare> cauzateSiAtribuite, Guid document, DateOnly data) {
+    public static Tranzactie Inverseaza(IEnumerable<Postare> cauzateSiAtribuite, Guid document, DateOnly data) =>
+        Inverseaza(cauzateSiAtribuite, document, data, null);
+
+    // N-D10 amendat (TR-D7a S-D5): reperul fiscal al stornoului e perioada stornării.
+    public static Tranzactie Inverseaza(
+            IEnumerable<Postare> cauzateSiAtribuite, Guid document, DateOnly data, int? perioadaDeclarare) {
         ArgumentNullException.ThrowIfNull(cauzateSiAtribuite);
         // N-D10: fără schimb de latură; cauza și atribuirea rămân ale postării stornate.
         var postari = cauzateSiAtribuite
             .Select(postare => postare with {
-                Coordonate = postare.Coordonate with { Data = data },
+                Coordonate = postare.Coordonate with {
+                    Data = data,
+                    PerioadaDeclarare = perioadaDeclarare is { } noua && postare.Coordonate.PerioadaDeclarare is not null
+                        ? noua
+                        : postare.Coordonate.PerioadaDeclarare,
+                },
                 Cantitate = -postare.Cantitate,
                 ValoareValuta = -postare.ValoareValuta,
                 Valoare = -postare.Valoare,

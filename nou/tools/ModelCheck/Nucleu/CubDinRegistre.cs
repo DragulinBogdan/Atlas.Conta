@@ -17,6 +17,21 @@ static class CubDinRegistre {
 
     sealed record TertDoc(Guid Cont, N.Latura Latura, Guid? Partener, DateOnly Data);
 
+    // Postgres nu garantează nicio ordine fără `ORDER BY`, iar normalizările aleg
+    // „primul candidat" din listă: oracolul se citește pe secvența LINIILOR sursei,
+    // aceeași pe care o folosesc ambele motoare (S-D6/B-r11).
+    static List<T> Ordonate<T>(
+            List<T> randuri,
+            Func<T, (Guid? Document, Guid? Linie, Guid Id)> cheie,
+            IReadOnlyDictionary<Guid, int> pozitii) =>
+        [.. randuri.OrderBy(rand => {
+            var (document, linie, id) = cheie(rand);
+            return (document ?? Guid.Empty,
+                linie is Guid alLiniei ? pozitii.GetValueOrDefault(alLiniei) : 0,
+                linie ?? Guid.Empty,
+                id);
+        })];
+
     public static IReadOnlyList<N.Tranzactie> Transforma(IObjectSpace os, IReadOnlyCollection<Guid> documente) {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(documente);
@@ -26,7 +41,9 @@ static class CubDinRegistre {
 
         var imperecheri = os.GetObjectsQuery<Imperechere>()
             .Where(i => ids.Contains(i.DocumentStingatorId))
-            .Select(i => new { i.DocumentStingatorId, i.DocumentId, i.Suma, i.Data })
+            .Select(i => new { i.ID, i.DocumentStingatorId, i.DocumentId, i.Suma, i.Data })
+            .ToList()
+            .OrderBy(i => (i.Data, i.ID))
             .ToList();
         // `_TertDoc` al SQL-ului se calculează peste TOATE rândurile contabile: partida
         // documentului stins e nevoie chiar dacă el nu e în setul cerut.
@@ -38,15 +55,27 @@ static class CubDinRegistre {
             .ToList()
             .ToDictionary(d => d.ID, d => d.DataInregistrare);
 
-        var contabile = os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => r.DocumentId != null && idsTot.Contains(r.DocumentId.Value))
-            .ToList();
-        var stoc = os.GetObjectsQuery<RegistruStoc>()
-            .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value))
-            .ToList();
-        var fiscale = os.GetObjectsQuery<RegistruTva>()
-            .Where(r => ids.Contains(r.DocumentId))
-            .ToList();
+        var pozitii = os.GetObjectsQuery<DocumentDetaliu>()
+            .Where(d => idsTot.Contains(d.DocumentId))
+            .Select(d => new { d.ID, d.Pozitie })
+            .ToList()
+            .ToDictionary(d => d.ID, d => d.Pozitie);
+
+        var contabile = Ordonate(
+            os.GetObjectsQuery<RegistruContabil>()
+                .Where(r => r.DocumentId != null && idsTot.Contains(r.DocumentId.Value))
+                .ToList(),
+            r => (r.DocumentId, r.DetaliuId, r.ID), pozitii);
+        var stoc = Ordonate(
+            os.GetObjectsQuery<RegistruStoc>()
+                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value))
+                .ToList(),
+            r => (r.DocumentId, r.DetaliuId, r.ID), pozitii);
+        var fiscale = Ordonate(
+            os.GetObjectsQuery<RegistruTva>()
+                .Where(r => ids.Contains(r.DocumentId))
+                .ToList(),
+            r => (r.DocumentId, r.DetaliuId, r.ID), pozitii);
 
         var stornate = contabile.Count(r => r.Storno) + stoc.Count(r => r.Storno) + fiscale.Count(r => r.Storno);
         if (stornate > 0)
