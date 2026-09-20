@@ -87,6 +87,15 @@ sealed class Purja(IObjectSpace os) {
                     intrare.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
         foreach (var (tip, ids) in pasi) {
             var (tabela, coloanaId) = TabelaRadacina(ctx, tip);
+            // Cubul (S-D1) atârnă de `Documente` prin FK, iar din pasul 4 al feliei
+            // 31 tipurile migrate îl scriu la fiecare operare: purja unui document
+            // ia cu ea rândurile lui de cub, altfel orice scenă cu BCS/FCT ar pica
+            // pe violare de FK. Infrastructură, nu probă.
+            if (tabela == "Documente")
+                foreach (var alCubului in new[] { "Postare", "Tranzactie" }) {
+                    var alCubuluiSql = $"DELETE FROM \"{alCubului}\" WHERE \"DocumentId\" = ANY(@p0)";
+                    ctx.Database.ExecuteSqlRaw(alCubuluiSql, [ids.ToArray()]);
+                }
             // Numele de tabelă/coloană vin din modelul EF (nu din date), Id-urile
             // rămân PARAMETRU (`uuid[]`) — SQL brut, dar nu concatenare de valori.
             var sql = $"DELETE FROM \"{tabela}\" WHERE \"{coloanaId}\" = ANY(@p0)";

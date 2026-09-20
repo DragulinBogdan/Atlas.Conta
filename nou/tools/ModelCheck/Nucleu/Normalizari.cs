@@ -180,6 +180,8 @@ static class Normalizari {
             var alSursei = tranzactii.FirstOrDefault(
                 t => t.Fel == N.FelTranzactie.Operare && t.Document == sursa);
             if (alSursei is null) {
+                // Excepție DECLARATĂ a gate-ului, nu normalizare: sursa fără rânduri
+                // contabile proprii n-are tranzacție în care conexul să fie absorbit. // S-D16
                 Avertizeaza($"TR-D3: conexul {conex} n-are tranzacția sursei {sursa} în set — neabsorbit.");
                 continue;
             }

@@ -51,10 +51,14 @@ static class Partide {
         decizii.Add(new N.PartidaDeschisa(linie, partida));
     }
 
+    /// <summary>
+    /// Partida se pune pe capătul care n-are deja unitate: pe un cont nominalizat
+    /// altfel (lotul recepției) partida n-ar avea ce nominaliza.
+    /// </summary>
     public static N.Capat CuPartida(
             N.Capat tert, Guid partener, IReadOnlyDictionary<Guid, N.Unitate> partide) {
         ArgumentNullException.ThrowIfNull(tert);
-        return partide.TryGetValue(tert.Cont, out var partida)
+        return tert.Unitate is null && partide.TryGetValue(tert.Cont, out var partida)
             ? tert with { Partener = partener, Unitate = partida }
             : tert;
     }

@@ -26,6 +26,8 @@ static class GatePeBaza {
         public int Refuzate;
         public int Diferite;
         public int Exceptii;
+        public int Declarate;
+        public readonly List<Guid> IdsDeclarate = [];
         public readonly Dictionary<string, (int Cate, HashSet<Guid> Documente, List<string> Exemple)> Refuzuri = [];
         public readonly Dictionary<string, (int Cate, List<string> Exemple, string Diff)> Feluri = [];
         public readonly Dictionary<string, int> Avertismente = [];
@@ -147,7 +149,8 @@ static class GatePeBaza {
                 if ((inceput / Lot) % 25 == 0 || inceput + Lot >= ids.Count)
                     Console.WriteLine($"   … {Math.Min(inceput + Lot, ids.Count)}/{ids.Count} "
                         + $"({cronometru.Elapsed:hh\\:mm\\:ss}; egale {contor.Egale}, refuzate {contor.Refuzate}, "
-                        + $"diferite {contor.Diferite}, excepții {contor.Exceptii})");
+                        + $"diferite {contor.Diferite}, declarate {contor.Declarate}, "
+                        + $"excepții {contor.Exceptii})");
             }
             Raporteaza(Scrie, cod, contor);
         }
@@ -159,10 +162,13 @@ static class GatePeBaza {
             + $"memorie de vârf a procesului: {Process.GetCurrentProcess().PeakWorkingSet64 / 1024 / 1024} MB; "
             + $"read-only: {(nescris ? "DA" : "NU — vezi avertismentele de mai sus")}.");
 
+        var declarate = contori.Values.Sum(c => c.Declarate);
         var total = contori.Values.Sum(c => c.Diferite + c.Refuzate + c.Exceptii);
         Scrie(total == 0
-            ? "\nVERDICT: 100 % egal pe tipurile cerute."
-            : $"\nVERDICT: {total} documente NU sunt egale (refuzate + diferite + excepții) — S-D12 (d).");
+            ? "\nVERDICT: 100 % egal pe tipurile cerute"
+                + (declarate == 0 ? "." : $", în afara a {declarate} documente cu EXCEPȚIE DECLARATĂ (S-D16).")
+            : $"\nVERDICT: {total} documente NU sunt egale (refuzate + diferite + excepții) — S-D12 (d)"
+                + (declarate == 0 ? "." : $"; plus {declarate} cu EXCEPȚIE DECLARATĂ (S-D16)."));
 
         Directory.CreateDirectory(Path.GetDirectoryName(caleRaport)!);
         await File.WriteAllTextAsync(caleRaport, jurnal.ToString(), new UTF8Encoding(false));
@@ -247,6 +253,16 @@ static class GatePeBaza {
                 contor.Egale++;
                 return;
             }
+            // S-D16 — excepția DECLARATĂ a gate-ului: documentul n-are rânduri
+            // contabile proprii, deci oracolul n-are tranzacție-sursă în care să
+            // absoarbă conexul (B-D8 pct. 1, TR-D3). Limită a ORACOLULUI, nu a
+            // declarantului: se contorizează separat, nu ca diferență.
+            if (Normalizari.Avertismente.Any(a => a.Contains($"n-are tranzacția sursei {doc.ID}"))) {
+                contor.Declarate++;
+                if (contor.IdsDeclarate.Count < 50)
+                    contor.IdsDeclarate.Add(doc.ID);
+                return;
+            }
             contor.Diferite++;
             var fel = Felul(raport, nume);
             var (cateFel, exempleFel, diff) = contor.Feluri.GetValueOrDefault(fel, (0, new List<string>(), ""));
@@ -325,7 +341,14 @@ static class GatePeBaza {
 
     static void Raporteaza(Action<string> scrie, string cod, Contor contor) {
         scrie($"{cod}: {contor.Documente} documente — EGALE {contor.Egale}, REFUZATE {contor.Refuzate}, "
-            + $"DIFERITE {contor.Diferite}, EXCEPȚII {contor.Exceptii}, fără declarant {contor.FaraDeclarant}");
+            + $"DIFERITE {contor.Diferite}, EXCEPȚIE DECLARATĂ {contor.Declarate}, "
+            + $"EXCEPȚII {contor.Exceptii}, fără declarant {contor.FaraDeclarant}");
+        if (contor.Declarate > 0) {
+            scrie($"   EXCEPȚIE DECLARATĂ (B-D8 TR-D3: FCT fără rânduri proprii): {contor.Declarate} documente");
+            scrie($"       id-uri: {string.Join(", ", contor.IdsDeclarate.Select(d => d.ToString()))}"
+                + (contor.Declarate > contor.IdsDeclarate.Count
+                    ? $" … încă {contor.Declarate - contor.IdsDeclarate.Count}" : ""));
+        }
         foreach (var (codRefuz, (cate, documente, exemple)) in contor.Refuzuri.OrderByDescending(r => r.Value.Cate)) {
             scrie($"   refuz {codRefuz}: {cate} refuzuri pe {documente.Count} documente");
             foreach (var exemplu in exemple)

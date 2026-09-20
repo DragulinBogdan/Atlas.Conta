@@ -102,7 +102,8 @@ internal static class Fapte {
 
         var reguliContare = ReguliContare(os, tipDoc.ID);
         var reguliStoc = ReguliStoc(os, tipDoc.ID);
-        var politicaTva = Tva(os, tipDoc.ID);
+        var politicaTvaEntitate = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipDoc.ID);
+        var politicaTva = Tva(politicaTvaEntitate);
         var tipuriTva = TipuriTva(os,
             linii.Where(d => d.TipTvaId != null).Select(d => d.TipTvaId.Value).Distinct().ToList());
         var repartitori = Repartitori(os, [doc.PredatorId, doc.PrimitorId]);
@@ -140,9 +141,7 @@ internal static class Fapte {
             partideSursa,
             sursa.Data,
             perioadaDeclarare,
-            // Deriva maximă explicabilă prin rotunjirea PER LINIE de azi; declarantul o
-            // înmulțește cu liniile cotei. Devine rând de politică la TR-D7 (B-D6).
-            0.01m,
+            politicaTvaEntitate?.TolerantaTaxa,
             new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
             new N.VersiunePolitica("seed", doc.DataInregistrare));
     }
@@ -343,11 +342,9 @@ internal static class Fapte {
                 .Select(c => new Declaratii.ContFapt(c.ID, c.Simbol, c.RolTert))
                 .ToDictionary(c => c.Id);
 
-    static Declaratii.PoliticaTvaFapt Tva(IObjectSpace os, Guid tipDocumentId) {
-        var politica = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipDocumentId);
-        return politica == null
+    static Declaratii.PoliticaTvaFapt Tva(PoliticaTva politica) =>
+        politica == null
             ? null
             : new Declaratii.PoliticaTvaFapt(politica.Directie, politica.SursaContrapartida,
                 politica.ContrapartidaFallbackId, politica.DeclarareIntarziata);
-    }
 }

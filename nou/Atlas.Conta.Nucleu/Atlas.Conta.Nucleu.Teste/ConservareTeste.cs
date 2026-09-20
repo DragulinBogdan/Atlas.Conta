@@ -71,14 +71,24 @@ public class ConservareTeste {
         });
 
     [Fact]
-    public void ValoareaNegativaPicaLaOperareSiTreceLaStorno() =>
+    public void ValoareaNegativaTreceLaOperareSiLaStorno() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactie = Gen.Operare(aleator);
             var negata = tranzactie with {
                 Postari = tranzactie.Postari.Select(p => p with { Valoare = -p.Valoare }).ToList(),
             };
-            AreCodul(Conservare.Verifica(negata), Coduri.SemnNegativ);
+            FaraRefuz(Conservare.Verifica(negata));
             FaraRefuz(Conservare.Verifica(negata with { Fel = FelTranzactie.Storno }));
+        });
+
+    [Fact]
+    public void ValoareaNegativaPicaDoarLaDeschidere() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var deschidere = Gen.Deschidere(aleator);
+            var negata = deschidere with {
+                Postari = deschidere.Postari.Select(p => p with { Valoare = -Math.Abs(p.Valoare) }).ToList(),
+            };
+            AreCodul(Conservare.Verifica(negata), Coduri.SemnNegativ);
         });
 
     [Fact]

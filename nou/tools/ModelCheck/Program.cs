@@ -278,8 +278,7 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         .UseDeferredDeletion());
 
 // S-D9.2 pe scenă: aceeași funcție de reconciliere pe care o cheamă
-// `--reconciliere-cub`, restrânsă la documentele scenei — pe baza de harness
-// restul documentelor tipului sunt operate cu `PosteazaInCub` fals.
+// `--reconciliere-cub`, restrânsă la documentele scenei.
 void ProbaReconciliere(string prefix, params Guid[] documente) {
     using var ctxReconciliere = new BackOfficeEFCoreDbContext(opts);
     var randuri = ReconciliereCub.Ruleaza(ctxReconciliere, documente);
@@ -1100,14 +1099,25 @@ if (profil == ProfilContabil.Privat) {
         //     cotă; 20,9 se abate cu 0,10 de la 21,00, peste toleranța de 0,01 × o
         //     linie cu TVA, deci declarantul REFUZĂ un document pe care motorul vechi
         //     îl operează. Diferența e CONSEMNATĂ, nu normalizată (B-D8 pct. 7).
-        var contractOverride = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctManual);
-        Console.WriteLine("     MĂSURAT (090j/PRIVAT): taxa culeasă 20,90, taxa pe document × cotă 21,00, "
-            + "toleranța 0,01 ⇒ " + string.Join(" | ", contractOverride.Refuzuri.Select(r => $"{r.Cod}: {r.Mesaj}")));
-        Check("NUC-FCT-OVERRIDE: taxa culeasă peste toleranță → refuz TVA_IN_AFARA_TOLERANTEI, "
-            + "singurul refuz al contractului",
-            !contractOverride.EsteAcceptat
-            && contractOverride.Refuzuri.Count == 1
-            && contractOverride.Refuzuri[0].Cod == N.Coduri.TvaInAfaraTolerantei);
+        // S-D15: seed-ul nu mai pune toleranță (taxa culeasă e autoritară, ca motorul
+        // vechi); gardul se probează cu valoarea pusă LOCAL pe politica tipului.
+        var contractFaraGard = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctManual);
+        Check("NUC-FCT-TOLERANTA-NULL: fără toleranță pe politică, taxa culeasă (20,90) rămâne autoritară "
+            + "și documentul trece, ca în motorul vechi (S-D15)",
+            contractFaraGard.EsteAcceptat
+            && contractFaraGard.Tranzactie.Postari.Any(p => p.Coordonate.Cont == cont4426.ID && p.Valoare == 20.9m));
+        using (ProbeCub.CuToleranta(os, fctManual, 0.01m)) {
+            var contractOverride =
+                Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctManual);
+            Console.WriteLine("     MĂSURAT (090j/PRIVAT): taxa culeasă 20,90, taxa pe document × cotă 21,00, "
+                + "toleranța 0,01 ⇒ "
+                + string.Join(" | ", contractOverride.Refuzuri.Select(r => $"{r.Cod}: {r.Mesaj}")));
+            Check("NUC-FCT-OVERRIDE: taxa culeasă peste toleranță → refuz TVA_IN_AFARA_TOLERANTEI, "
+                + "singurul refuz al contractului",
+                !contractOverride.EsteAcceptat
+                && contractOverride.Refuzuri.Count == 1
+                && contractOverride.Refuzuri[0].Cod == N.Coduri.TvaInAfaraTolerantei);
+        }
 
         // --- Aceeași regulă pe FCL și DEC (36a uniformizat — decizia 48b) ---
         // Recalculul din cotă ar da 21,00; documentul real poartă 20,99, iar
@@ -29358,13 +29368,13 @@ void VerificaApiDvi() {
     var impTi21 = os.FirstOrDefault<TipTva>(t => t.Cod == "IMPTI21");
     var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
     var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
-    var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+    var tip626 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "626");
     var cont446 = os.FirstOrDefault<Cont>(c => c.Simbol == "446");
     Check("Api DVI — precondiție: tipurile de import ale profilului există, iar FEBRUARIE 2026 e liberă "
         + "(blocul `E2E-DVI` de dinainte tocmai a purjat-o). Dacă proba asta pică, blocul a fost mutat "
         + "înaintea lui, iar cifrele de mai jos ar fi măsurate peste conținut străin",
         imp != null && imp21 != null && impTi21 != null && n21 != null
-        && tip628 != null && tipTrz != null && cont446 != null
+        && tip628 != null && tip626 != null && cont446 != null
         && !os.GetObjectsQuery<Dvi>().Any()
         && !os.GetObjectsQuery<Document>().Any(d => d.Data >= febStart && d.Data <= febEnd));
 
@@ -29419,9 +29429,11 @@ void VerificaApiDvi() {
 
     var idFf1 = FacturaOperata("-FF1", extern1, new DateOnly(2026, 2, 5), imp, (tip628, 1000m));
     // Două tipuri pe aceeași factură, cu dominant CLAR: `TipMaterialSugeratId` e
-    // tipul cu Σ `Valoare` maximă, nu primul rând.
+    // tipul cu Σ `Valoare` maximă, nu primul rând. Amândouă sunt Servicii, deci
+    // amândouă au regulă de contare pe FCT: o linie care n-ar posta nimic e
+    // pierdere tăcută de valoare, iar declarantul o refuză (B-r10).
     var idFf2 = FacturaOperata("-FF2", extern1, new DateOnly(2026, 2, 6), imp,
-        (tipTrz, 100m), (tip628, 600m));
+        (tip626, 100m), (tip628, 600m));
     // Tot pe `IMP` (cotă 0), inclusiv furnizorii RO/UE: scena n-are nevoie de
     // TVA ca să probeze filtrul de CLASĂ FISCALĂ, iar o mișcare pe 4426 în
     // februarie ar polua soldurile CUMULATE ale blocurilor de închidere dacă o
@@ -29512,7 +29524,7 @@ void VerificaApiDvi() {
         && !candidatiImplicit.Any(c => c.FacturaId == idFf1 || c.FacturaId == idFf3
             || c.FacturaId == idFf4 || c.FacturaId == idFf5));
     Check("Api DVI: candidatul poartă furnizorul, totalul brut al facturii și TIPUL DOMINANT al liniilor "
-        + "ei (Σ `Valoare` maximă — 628 cu 600 bate TRZ cu 100), ca linia nouă a declarației să nu ceară "
+        + "ei (Σ `Valoare` maximă — 628 cu 600 bate 626 cu 100), ca linia nouă a declarației să nu ceară "
         + "un lookup pe care serverul îl poate răspunde",
         ff2.Numar == Marcaj + "-FF2" && ff2.PartenerId == extern1.ID
         && ff2.PartenerDenumire == extern1.Denumire
@@ -32131,7 +32143,9 @@ void VerificaNucleuBcs(bool privat) {
     os.CommitChanges();
 
     var bcs = Consum(lotCurat, 4m, new DateOnly(2026, 3, 5));
-    MotorOperare.Opereaza(os, bcs);
+    // Seed-ul migrează BCS (pasul 4): bonul ăsta rămâne proba tipului NEMIGRAT.
+    using (ProbeCub.Nemigrat(os, bcs))
+        MotorOperare.Opereaza(os, bcs);
     Check($"NUC-BCS-{eticheta} scenă: BCS operat pe lot necorectat — linia la 40 (4 × 10), "
         + "două rânduri de stoc și o notă",
         bcs.Detalii.Single().Valoare == 40m
@@ -32345,8 +32359,12 @@ void VerificaNucleuFct(bool privat) {
     var linieCapitalizata = Linie(fct, tipServicii, 1m, 82.644628m, ned21);
     var lot = linieStoc.CreeazaLot(os, produs, mag1);
     os.CommitChanges();
-    var nir = MotorOperare.Opereaza(os, fct);
-    MotorOperare.Opereaza(os, nir);
+    // Seed-ul migrează FCT (pasul 4): factura asta rămâne proba tipului NEMIGRAT.
+    Document nir;
+    using (ProbeCub.Nemigrat(os, fct)) {
+        nir = MotorOperare.Opereaza(os, fct);
+        MotorOperare.Opereaza(os, nir);
+    }
     Check($"NUC-FCT-P4-1 ({eticheta}) scenă: patru regimuri pe același document — 50/10,5 (stoc, normal), "
         + "100/21 (serviciu, normal), 70/0 (scutit), 100 brut (capitalizat)",
         linieStoc.Valoare == 50m && linieStoc.ValoareTva == 10.5m
@@ -32569,15 +32587,19 @@ void VerificaNucleuFct(bool privat) {
     var linieRefuz = Linie(fctRefuz, tipServicii, 1m, 100m, n21);
     linieRefuz.ValoareTva = 21.5m;
     os.CommitChanges();
-    MotorOperare.Opereaza(os, fctRefuz);
-    Check($"STR-REFUZ ({eticheta}) premisă: motorul VECHI operează factura cu TVA cules 21,50 pe o bază de "
-        + "100 la 21% (abatere 0,50, peste toleranța de pilot de 0,01 × liniile cotei)",
-        fctRefuz.Stare == StareDocument.Operat && linieRefuz.ValoareTva == 21.5m);
-    ProbeCub.FaraRanduri(os, Check,
-        $"STR-NEMIGRAT ({eticheta}): aceeași factură, cu tipul nemigrat, n-a atins cubul", fctRefuz.ID);
-    MotorOperare.AnuleazaOperarea(os, fctRefuz);
+    using (ProbeCub.Nemigrat(os, fctRefuz)) {
+        MotorOperare.Opereaza(os, fctRefuz);
+        Check($"STR-REFUZ ({eticheta}) premisă: motorul VECHI operează factura cu TVA cules 21,50 pe o bază "
+            + "de 100 la 21% (abatere 0,50, peste toleranța de 0,01 × liniile cotei)",
+            fctRefuz.Stare == StareDocument.Operat && linieRefuz.ValoareTva == 21.5m);
+        ProbeCub.FaraRanduri(os, Check,
+            $"STR-NEMIGRAT ({eticheta}): aceeași factură, cu tipul nemigrat, n-a atins cubul", fctRefuz.ID);
+        MotorOperare.AnuleazaOperarea(os, fctRefuz);
+    }
 
-    using (ProbeCub.Migrat(os, fctRefuz)) {
+    // S-D15: gardul nu mai vine din seed — scena îl pune LOCAL pe politica tipului.
+    using (ProbeCub.Migrat(os, fctRefuz))
+    using (ProbeCub.CuToleranta(os, fctRefuz, 0.01m)) {
         string mesajRefuz = null;
         using (var osRefuz = provider.CreateObjectSpace())
             try { OperareApi.Opereaza(osRefuz, fctRefuz.ID); }
@@ -32597,6 +32619,62 @@ void VerificaNucleuFct(bool privat) {
         Check($"STR-VALIDEAZA ({eticheta}): dry-run-ul pe tipul migrat arată refuzul declarației "
             + $"([{string.Join("; ", eroriDry)}]), fără să scrie ceva",
             eroriDry.Any(e => e.Contains(N.Coduri.TvaInAfaraTolerantei)));
+    }
+
+    // (d) STR-FCT-NEGATIV (S-D14): linia „în roșu" pe aceeași factură (retur/discount),
+    //     pe care motorul vechi o operează — semnul trece prin postări, nenormalizat.
+    var fctNegativ = Factura("-F9", new DateOnly(2026, 3, 13));
+    Linie(fctNegativ, tipServicii, 1m, 100m, n21);
+    var linieRosie = Linie(fctNegativ, tipServicii, 1m, -40m, n21);
+    os.CommitChanges();
+    using (ProbeCub.Migrat(os, fctNegativ)) {
+        MotorOperare.Opereaza(os, fctNegativ);
+        Check($"STR-FCT-NEGATIV ({eticheta}) premisă: linia negativă e culeasă ca atare (−40 net, −8,40 "
+            + "taxă) și motorul vechi operează documentul",
+            linieRosie.Valoare == -40m && linieRosie.ValoareTva == -8.4m
+            && fctNegativ.Stare == StareDocument.Operat);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-FCT-NEGATIV-{eticheta}", fctNegativ);
+        var aleRosii = ProbeCub.Postari(os, fctNegativ.ID, N.FelTranzactie.Operare);
+        Check($"STR-FCT-NEGATIV ({eticheta}): semnul liniei trece NEnormalizat în postări (net −40 și taxă "
+            + "−8,40, câte două capete) și tranzacția rămâne balansată: Σ D = Σ C",
+            aleRosii.Count(p => p.Valoare == -40m) == 2
+            && aleRosii.Count(p => p.Valoare == -8.4m) == 2
+            && aleRosii.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare)
+                == aleRosii.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare));
+        ProbaReconciliere($"NUC-FCT-NEGATIV-{eticheta}", fctNegativ.ID);
+    }
+
+    // (e) STR-FCT-DOUA-PARTIDE (S-D16): linia ne-stoc pe TipMaterial-ul contului 408,
+    //     cum o naște reclasificarea importului (`HandlerFactura.cs:143-160`) — DOUĂ
+    //     conturi cu `RolTert` pe aceeași linie (B-r7). Numai pe profilul care le are.
+    var tip408 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "408");
+    var cont408 = ContSimbolFct("408");
+    if (tip408 != null && cont408 != null && cont408.RolTert != RolTertCont.Niciunul) {
+        var fctDoua = Factura("-FA", new DateOnly(2026, 3, 14));
+        Linie(fctDoua, tip408, 1m, 100m, n21);
+        os.CommitChanges();
+        using (ProbeCub.Migrat(os, fctDoua)) {
+            MotorOperare.Opereaza(os, fctDoua);
+            var noteDoua = os.GetObjectsQuery<RegistruContabil>()
+                .Where(r => r.DocumentId == fctDoua.ID).ToList();
+            Check($"STR-FCT-DOUA-PARTIDE ({eticheta}) premisă: linia postează 408 = 401, două conturi cu "
+                + "`RolTert` pe ACELAȘI rând (B-r7)",
+                noteDoua.Any(r => r.ContDebitId == cont408.ID && r.ContCreditId == cont401.ID
+                    && r.Valoare == 100m));
+            ProbeCub.ProbaOperare(os, Check, $"NUC-FCT-DOUA-PARTIDE-{eticheta}", fctDoua);
+            var partida408 = N.Unitate.DeschidePartida(
+                cont408.ID, furnizor.ID, fctDoua.ID, fctDoua.DataInregistrare).Id;
+            var partida401 = N.Unitate.DeschidePartida(
+                cont401.ID, furnizor.ID, fctDoua.ID, fctDoua.DataInregistrare).Id;
+            var aleDouaPartide = ProbeCub.Postari(os, fctDoua.ID, N.FelTranzactie.Operare);
+            Check($"STR-FCT-DOUA-PARTIDE ({eticheta}): AMBELE conturi cu `RolTert` ale liniei poartă "
+                + "partida partenerului pe contul LOR (S-D16), nu doar piciorul de terț",
+                aleDouaPartide.Any(p => p.Cont == cont408.ID && p.Unitate == partida408
+                    && p.Partener == furnizor.ID)
+                && aleDouaPartide.Any(p => p.Cont == cont401.ID && p.Unitate == partida401
+                    && p.Partener == furnizor.ID));
+            ProbaReconciliere($"NUC-FCT-DOUA-PARTIDE-{eticheta}", fctDoua.ID);
+        }
     }
 
     CurataNucFct(os);

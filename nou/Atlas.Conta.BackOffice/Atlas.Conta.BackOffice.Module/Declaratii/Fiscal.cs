@@ -12,9 +12,10 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// </summary>
 static class Fiscal {
     /// <summary>
-    /// Taxa nucleului per document × cotă, validată contra celei culese: Σ per cotă
-    /// a valorii ALESE pe fiecare linie, cu toleranța per linie înmulțită cu liniile
-    /// cotei (MEDIU-4). <c>null</c> = documentul n-are nicio linie cu tip de TVA.
+    /// Taxa nucleului per document × cotă, validată contra celei culese CÂND politica
+    /// declară o toleranță: Σ per cotă a valorii ALESE pe fiecare linie, cu toleranța
+    /// per linie înmulțită cu liniile cotei (MEDIU-4). Fără toleranță (S-D15) taxa
+    /// culeasă e autoritară fără gard. <c>null</c> = documentul n-are linie cu TVA.
     /// </summary>
     public static N.TaxaDocument? Taxa(Operand operand, IReadOnlyList<TipTvaFapt?> tipuri,
             N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
@@ -37,12 +38,14 @@ static class Fiscal {
         if (linii.Count == 0)
             return null;
         var taxa = N.Tva.PeDocument(linii, (N.DirectieTva)(int)operand.PoliticaTva!.Directie, rotunjire);
+        if (operand.TolerantaTaxa is not decimal toleranta)
+            return taxa;
         foreach (var cheie in chei) {
             var aleCheii = aleLor.Where(a => a.Cheie == cheie).ToList();
             var refuz = N.Tva.ValideazaData(
                 aleCheii.Sum(a => Valoarea(a.Linie, taxa)),
                 taxa.PerCota[cheie],
-                operand.TolerantaTaxa * aleCheii.Count);
+                toleranta * aleCheii.Count);
             if (refuz is not null)
                 refuzuri.Add(refuz);
         }

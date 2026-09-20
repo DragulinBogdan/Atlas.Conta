@@ -95,8 +95,10 @@ public static class Conservare {
                     null));
     }
 
+    // S-D14: în `Operare` valoarea negativă e linia culeasă „în roșu" (retur/discount
+    // pe același document), pe care conservarea, cantitatea și `Sold` o poartă aditiv.
     static void VerificaSemnul(Tranzactie tranzactie, List<Refuz> refuzuri) {
-        if (tranzactie.Fel is not (FelTranzactie.Operare or FelTranzactie.Deschidere))
+        if (tranzactie.Fel != FelTranzactie.Deschidere)
             return;
         foreach (var postare in tranzactie.Postari)
             if (postare.Valoare < 0m)

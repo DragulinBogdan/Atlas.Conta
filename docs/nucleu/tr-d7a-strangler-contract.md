@@ -186,14 +186,82 @@ raportul diferă de baseline; (i) forma cere `is`/`switch` pe frunză;
 generate. Nu comite; nu atinge directoarele altor pași; raportul e cu
 `path:line` și cifre.
 
+## Deciziile după pasul 3 (S-D13…S-D16) — constatările gate-ului read-only pe Flax
+
+Măsurătoarea (`run-nucleu/tr-d7a/pas3/`): 53.449 documente ale pilotului,
+25.488 neegale, cu PATRU cauze, toate ale formei, niciuna a materializării.
+
+### S-D13 — Împerecherea ulterioară operării scrie o tranzacție `Transfer` (mecanica TR-D2, fără document)
+
+Pe Flax NICIUN document de trezorerie n-are `DocumentSursaId` (2.486 PLT,
+31.381 INC); stingerea trăiește DOAR în `Imperecheri`, create DUPĂ operare
+(bucla lunii Import1C, stingerea manuală din UI). Declarantul nominalizează
+la operare doar ce știe (sursa) și lasă restul pe partida proprie — corect
+la momentul lui. Regula: **o împerechere creată după operare (`ImperechereService.Creeaza`
+în afara operării; `Desfa`; inversul la storno) scrie în cub o tranzacție
+de fel `Transfer` prin `N.Motor.Transfera`**, care mută suma împerecherii de pe
+partida proprie a stingătorului pe partida stinsului, pe contul comun cu
+`RolTert` (aceeași `Mutare` = ieșire + intrare pe același cont, valoare
+conservată), cu `DocumentId` = stingătorul și `Data` =
+`max(DataInregistrare stins, DataInregistrare stingător)` — `Imperecheri.Data`
+e artefact pe Flax (TR-r6) și rămâne al conectorului. Împerecherea AUTOMATĂ
+la operare (`CreeazaAutomataLaOperare`, sursa documentului) e deja
+nominalizarea din `Operare` și NU produce transfer. Se scrie doar când ambele
+documente au tranzacție `Operare` în cub (altfel nimic, declarat: regimul
+dual e al momentului operării). Documentul `Împerechere`, ecranul de stingere
+și desfacerea ca document rămân la TR-D8/D9 (090m). Gate-ul read-only compară
+`contract ⊕ transferurile împerecherilor documentului` (aceeași funcție pură
+aplicată în memorie) cu oracolul, care le pliază în `Operare` (TR-D2a).
+`--reconciliere-cub` (a) e neatins (Σ pe cont); primește (f): per partidă
+(cont cu `RolTert` × unitate), Σ cub (Operare ⊕ Transfer) = Σ registre
+nominalizate prin `Imperecheri` — toleranță 0. N-r8 (stornoul unui `Transfer`
+în citirile cu `includeTransfer = false`) rămâne al lui TR-D8.
+
+### S-D14 — Linia negativă culesă = postare cu valoare negativă în `Operare` (amendament N-D al semnului)
+
+312 FCT pe Flax au linii negative (retur/discount pe aceeași factură), pe
+care motorul vechi le operează și 1C le poartă „în roșu". Nucleul refuza
+orice valoare negativă în `Operare` (`Conservare.VerificaSemnul`,
+`SEMN_NEGATIV`). Regula: **`SEMN_NEGATIV` se păstrează DOAR pentru
+`Deschidere`; în `Operare` valoarea negativă e admisă și înseamnă
+reprezentarea „în roșu" a liniei culese** (conservarea, cantitatea și `Sold`
+sunt aditive și nu depind de semn); stornoul rămâne inversul exact.
+Proprietate nouă în `ConservareTeste`: `Operare` cu valori negative trece,
+`Deschidere` cu valori negative e refuzată. Declaranții trec semnul liniei
+prin postări fără normalizare.
+
+### S-D15 — Toleranța taxei culese e OPȚIONALĂ (null = fără gard, taxa culeasă autoritară, ca azi)
+
+Măsurat pe Flax: 275 FCT refuzate la 0,01/linie, 17 la 0,10, maxim 55,87 —
+abateri REALE ale datelor (culese ≠ bază × cotă), nu rotunjire; motorul vechi
+nu validează taxa culeasă. Regula: `PoliticaTva.TolerantaTaxa` devine
+`decimal?`; `null` ⇒ nicio validare (comportamentul de azi), valoare ⇒ refuz
+`TVA_IN_AFARA_TOLERANTEI` peste `valoare × liniile cotei`. Seed-ul privat =
+`null`; scenele care probează refuzul pun valoarea local. Migrația a doua
+`TolerantaTaxaOptionala`. S-r1 rămâne a owner-ului: ce valoare de produs și
+dacă abaterile > 0,50 (15 perechi) sunt de raportat conectorului.
+
+### S-D16 — Partidă pe FIECARE cont cu `RolTert` al liniei (B-r7 închisă ca regulă, nu ca refuz)
+
+0 cazuri pe BCS/PLT/INC, 25 FCT pe Flax (`408 = 401`, `4091 = 401`,
+`4092 = 401`). Regula: o linie cu două conturi cu `RolTert` numește partidă
+pe AMBELE (contul cu unitatea = partida partenerului pe acel cont), exact ca
+oracolul; fără cod de refuz. Consecințe consemnate: B-r10 ÎNCHISĂ (0 linii
+fără regulă pe pilot); B-r5 rămâne DESCHISĂ (fluxul `408 = 401` nu există în
+motor; `408` apare doar ca reclasificare la import); cele 13 FCT cu valori 0
+(fără rânduri contabile proprii) sunt limită a ORACOLULUI (TR-D3 nu are
+tranzacție sursă) — intră în B-D8 ca excepție declarată a gate-ului, nu ca
+diferență; cele 3 BCS refuzate `STOC_INSUFICIENT` se explică la pasul 4 (nu
+se normalizează).
+
 ## Pașii (un agent per pas; main verifică independent și comite per pas)
 
 0. **Contractul** (main): fișierul de față; commit.
 1. **Schema și entitățile** (S-D1, S-D2, coloanele de politică, `Scara`, seed-ul cu `PosteazaInCub = false` + `LaturaContPropriu` PLT/INC + `TolerantaTaxa` provizoriu 0,01; `STR-SCHEMA-*`; `STR-POZITIE` cu atribuirea din S-D6; `has-pending-model-changes` curat; `--dump-metadata` cu diff-ul raportat; ModelCheck verde pe AMBELE profiluri). Oprire: S-D12 (a), (b), (g), (j).
 2. **Materializarea** (S-D3, S-D4, S-D5, S-D6 ordinea în ambele motoare, amendamentul N-D10 în nucleu cu test; `STR-OPERARE/ROUNDTRIP/STORNO/ANULARE/REFUZ/CONFIG/NEMIGRAT` pe scenele BCS/PLT/INC/FCT cu comutare locală; nucleu `dotnet test` verde; ModelCheck verde pe ambele profiluri). Oprire: (c), (e), (f), (g), (i).
 3. **Gate-ul read-only pe Flax** (S-D9.1 ca unealtă ModelCheck; rulat pe clona `Atlas.Conta.Import1C.Flax` pentru BCS, PLT, INC, FCT; raportul în `run-nucleu/tr-d7a/pas3/`; constatările B-r1 (distribuția abaterii), B-r5 (există fluxul 408?), B-r7, B-r10; `--reconciliere-cub` scris (S-D9.2) și probat pe scenele ModelCheck). Oprire: (d) — raportul e livrabilul, deciziile sunt ale main-ului.
-4. **BCS și PLT/INC pe cub** (seed `true` pe ambele profiluri; B-r2, B-r7; fix-urile decise de main din pasul 3; toate scenele existente ale celor trei tipuri materializează; ModelCheck verde pe ambele profiluri, `--declaratie-pe-baza` re-rulat pe cele trei tipuri = 100 % egal). Oprire: (c), (d), (g).
-5. **FCT pe cub** (seed `true`; B-r1 ca politică cu valoarea măsurată; B-r5 dacă pasul 3 a găsit fluxul; ModelCheck verde; `--declaratie-pe-baza` FCT = 100 % egal sau diferențele declarate). Oprire: (c), (d), (g).
+4. **BCS și FCT pe cub** (re-tăiat după pasul 3): seed `true` pe BCS și FCT pe ambele profiluri; S-D14 în nucleu (semnul, cu proprietatea); S-D15 (`TolerantaTaxa` opțională, migrația a doua, seed null, scenele cu valoare locală); S-D16 (partidă pe fiecare cont cu `RolTert`); excepția declarată a gate-ului pentru FCT fără rânduri proprii; explicația celor 3 BCS `STOC_INSUFICIENT`; toate scenele existente ale celor două tipuri materializează; ModelCheck verde pe ambele profiluri; `--declaratie-pe-baza` re-rulat pe clona Flax pentru BCS și FCT = 100 % egal sau fiecare diferență declarată aici. Oprire: (c), (d), (g).
+5. **PLT/INC pe cub cu împerecherea ca `Transfer`** (S-D13): `Materializare.Imperecheaza/Desface` din `ImperechereService` (creare în afara operării, desfacere, inversul la storno), funcția pură a mutării refolosită de gate; B-r2 (`LaturaContPropriu`); seed `true` pe PLT/INC; probele `STR-TRANSFER-*` (împerechere manuală după operare ⇒ tranzacție `Transfer` balansată, partida stinsului stinsă în cub, desfacerea ⇒ inversul; storno-ul stinsului ⇒ inversul); `--reconciliere-cub` (f); ModelCheck verde; `--declaratie-pe-baza` PLT/INC pe clonă = 100 % egal sau declarat. Oprire: (c), (d), (g).
 6. **Proba supremă** (main lansează procesul detașat; agentul pregătește rețeta `run-nucleu/tr-d7a/import/run.sh` cu Import1C integral → `--reconciliere-cub` → diff sortat cu baseline-ul → `--dump-integritate-tph` → clona `BackOffice.Privat` + updater → `refuzuri.ps1`; sumar cu cifrele). Oprire: (h).
 7. **Review advers** (agent separat, read-only, tier-ul main-ului; zone: tranzacția comenzii și rollback-ul parțial, ordinea Pozitie contra ordinea veche pe Import1C, stornoul cross-perioadă, anularea cu dependenți, gestiuni virtuale fără FK, snapshot-ul EF divergent de PK, concurența serializată a operării cu partiția, `Valideaza` pe tip migrat, seed-ul `DinSeed` care forțează `PosteazaInCub` la re-seed pe o bază unde owner-ul l-a oprit). Fix-urile le aplică main-ul.
 8. **Docs și închidere** (main): `stare-curenta/domeniu-si-operare.md` (secțiune „Cubul persistat și regimul dual"), `dezvoltare-si-validare.md` (probele `STR-*`, cele două unelte, rețeta importului, capcanele), `restante.md` (B-r1/2/5/7/9/10/11 închise sau amendate; S-r*), `istoric-plan-de-lucru.md` (felia 31), `nucleu-transfer.md` Stare, `invarianti.md` dacă I cere reconciliere pe anulare, CLAUDE.md §Stare/§Următorul pas (TR-D7b), memorie.

@@ -218,7 +218,8 @@ static class ReconciliereCub {
             from cap),
         straine as (
             select t."ID" as id from "Tranzactie" t
-            where t."Fel" = 1 and (t."DocumentId" is null or t."DocumentId" not in (select id from cap)))
+            where t."Fel" = 1 and (t."DocumentId" is null
+                                   or t."DocumentId" not in (select id from cap)) {2})
         select 'document ' || id::text || ': tranzacții `Operare`', cate::numeric, 1::numeric
         from peDocument where cate <> 1
         union all
@@ -239,7 +240,10 @@ static class ReconciliereCub {
                 CultureInfo.InvariantCulture,
                 sql,
                 set is null ? "" : "and d.\"ID\" = any(@doc)",
-                set is null ? "" : "and c.\"ID\" = any(@doc)");
+                set is null ? "" : "and c.\"ID\" = any(@doc)",
+                // Scena măsoară DOAR documentele ei: de la comutarea BCS/FCT prin seed,
+                // restul bazei are legitim tranzacții de cub ale altor scene.
+                set is null ? "" : "and t.\"DocumentId\" = any(@doc)");
             if (set is not null) {
                 var p = cmd.CreateParameter();
                 p.ParameterName = "doc";

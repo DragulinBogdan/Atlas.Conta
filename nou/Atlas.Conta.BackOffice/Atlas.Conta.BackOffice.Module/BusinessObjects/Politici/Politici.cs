@@ -329,10 +329,11 @@ public class PoliticaTva : BaseObject, ICuProvenienta {
     [XafDisplayName("Declararea faptului întârziat")]
     public virtual DeclarareIntarziata DeclarareIntarziata { get; set; }
 
-    // B-r1 — pragul abaterii dintre taxa CULEASĂ și taxa calculată de nucleu,
-    // per linie a cotei; peste el linia se refuză (TVA_IN_AFARA_TOLERANTEI).
+    // B-r1/S-D15 — pragul abaterii dintre taxa CULEASĂ și taxa calculată de
+    // nucleu, per linie a cotei; peste el linia se refuză
+    // (TVA_IN_AFARA_TOLERANTEI). `null` = taxa culeasă rămâne autoritară fără gard.
     [XafDisplayName("Toleranța taxei culese")]
-    public virtual decimal TolerantaTaxa { get; set; }
+    public virtual decimal? TolerantaTaxa { get; set; }
 }
 
 // Conturile închiderii lunare de TVA (FAZA 1C §6) — DATE per profil, nu

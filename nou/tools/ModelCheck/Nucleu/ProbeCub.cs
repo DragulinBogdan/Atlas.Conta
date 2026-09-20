@@ -15,16 +15,38 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 static class ProbeCub {
     /// <summary>
     /// Comută `PosteazaInCub` pe tipurile documentelor date și îl RESTAUREAZĂ la
-    /// ieșire (S-D8): seed-ul rămâne `false` până la pașii 4–5.
+    /// ieșire (S-D8): tipurile pe care seed-ul nu le-a migrat încă.
     /// </summary>
     public static IDisposable Migrat(IObjectSpace os, params Document[] documente) {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(documente);
-        return new Comutator(os, [.. documente.Select(d => MotorOperare.ClasaReala(d).Name).Distinct()]);
+        return new Comutator(os, [.. documente.Select(d => MotorOperare.ClasaReala(d).Name).Distinct()], true);
+    }
+
+    /// <summary>Inversul: tipul migrat prin seed se probează ca NEMIGRAT (STR-NEMIGRAT).</summary>
+    public static IDisposable Nemigrat(IObjectSpace os, params Document[] documente) {
+        ArgumentNullException.ThrowIfNull(os);
+        ArgumentNullException.ThrowIfNull(documente);
+        return new Comutator(os, [.. documente.Select(d => MotorOperare.ClasaReala(d).Name).Distinct()], false);
     }
 
     public static IDisposable MigratPeClasa(IObjectSpace os, params string[] clrTypes) =>
-        new Comutator(os, clrTypes);
+        new Comutator(os, clrTypes, true);
+
+    /// <summary>
+    /// S-D15: seed-ul lasă `PoliticaTva.TolerantaTaxa` pe `null` (taxa culeasă
+    /// autoritară); scena care probează gardul o pune LOCAL și o restaurează.
+    /// </summary>
+    public static IDisposable CuToleranta(IObjectSpace os, Document doc, decimal? valoare) {
+        ArgumentNullException.ThrowIfNull(os);
+        ArgumentNullException.ThrowIfNull(doc);
+        var clrType = MotorOperare.ClasaReala(doc).Name;
+        var tip = os.FirstOrDefault<TipDocument>(t => t.ClrType == clrType)
+            ?? throw new InvalidOperationException($"Lipsește ancora TipDocument pentru {clrType}.");
+        var politica = os.FirstOrDefault<PoliticaTva>(x => x.TipDocumentId == tip.ID)
+            ?? throw new InvalidOperationException($"Tipul {clrType} n-are politică de TVA pe baza asta.");
+        return new ComutatorToleranta(os, politica, valoare);
+    }
 
     public static List<C.Tranzactie> Tranzactii(IObjectSpace os, Guid document) =>
         os.GetObjectsQuery<C.Tranzactie>().Where(t => t.DocumentId == document).ToList();
@@ -178,17 +200,36 @@ static class ProbeCub {
             nume).ToString());
     }
 
+    sealed class ComutatorToleranta : IDisposable {
+        readonly IObjectSpace os;
+        readonly PoliticaTva politica;
+        readonly decimal? vechi;
+
+        public ComutatorToleranta(IObjectSpace os, PoliticaTva politica, decimal? valoare) {
+            this.os = os;
+            this.politica = politica;
+            vechi = politica.TolerantaTaxa;
+            politica.TolerantaTaxa = valoare;
+            os.CommitChanges();
+        }
+
+        public void Dispose() {
+            politica.TolerantaTaxa = vechi;
+            os.CommitChanges();
+        }
+    }
+
     sealed class Comutator : IDisposable {
         readonly IObjectSpace os;
         readonly List<(TipDocument Tip, bool Vechi)> stari = [];
 
-        public Comutator(IObjectSpace os, IReadOnlyList<string> clrTypes) {
+        public Comutator(IObjectSpace os, IReadOnlyList<string> clrTypes, bool valoare) {
             this.os = os;
             foreach (var clrType in clrTypes.Distinct()) {
                 var tip = os.FirstOrDefault<TipDocument>(t => t.ClrType == clrType)
                     ?? throw new InvalidOperationException($"Lipsește ancora TipDocument pentru {clrType}.");
                 stari.Add((tip, tip.PosteazaInCub));
-                tip.PosteazaInCub = true;
+                tip.PosteazaInCub = valoare;
             }
             os.CommitChanges();
         }

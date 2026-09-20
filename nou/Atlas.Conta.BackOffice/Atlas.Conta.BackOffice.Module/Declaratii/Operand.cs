@@ -91,7 +91,7 @@ public sealed record Operand(
     IReadOnlyList<(Guid Cont, decimal Sold)> PartideSursa,
     DateOnly? DataInregistrareSursa,
     int? PerioadaDeclarare,
-    decimal TolerantaTaxa,
+    decimal? TolerantaTaxa,
     N.PerioadaDeschisa PerioadaDeschisa,
     N.VersiunePolitica VersiunePolitica) {
 
