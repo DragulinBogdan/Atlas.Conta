@@ -84,6 +84,61 @@ using N = Atlas.Conta.Nucleu;
         return;
     }
 }
+// S-D9.1 — gate-ul READ-ONLY de dinaintea comutării unui tip pe cub, pe o bază
+// dată (o clonă a lui Flax): `ModelCheck --declaratie-pe-baza <bază> <COD> [COD…]`.
+{
+    var indexGate = Array.FindIndex(args,
+        a => a.Equals("--declaratie-pe-baza", StringComparison.OrdinalIgnoreCase));
+    if (indexGate >= 0) {
+        var argumente = args.Skip(indexGate + 1).TakeWhile(a => !a.StartsWith('-')).ToList();
+        if (argumente.Count < 2) {
+            Console.WriteLine("Folosire: ModelCheck --declaratie-pe-baza <numeBaza> <COD> [COD…]");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var caleGate = Path.GetFullPath(Path.Combine(MetadataDump.DirectorProiect(),
+            "..", "..", "..", "run-nucleu", "tr-d7a", "pas3",
+            $"declaratie-{argumente[0]}-{DateTime.Now:yyyyMMdd-HHmmss}.txt"));
+        Environment.ExitCode = await GatePeBaza.Ruleaza(argumente[0], argumente.Skip(1).ToList(), caleGate);
+        return;
+    }
+}
+// S-D9.2 — reconcilierea cubului PERSISTAT cu registrele, pe tipurile migrate:
+// `ModelCheck --reconciliere-cub <bază>`. Toleranță 0, exit 1 la orice Δ.
+{
+    var indexRec = Array.FindIndex(args,
+        a => a.Equals("--reconciliere-cub", StringComparison.OrdinalIgnoreCase));
+    if (indexRec >= 0) {
+        if (args.Length <= indexRec + 1 || args[indexRec + 1].StartsWith('-')) {
+            Console.WriteLine("Folosire: ModelCheck --reconciliere-cub <numeBaza>");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var bazaRec = args[indexRec + 1];
+        using var ctxRec = new BackOfficeEFCoreDbContext(new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
+            .UseNpgsql("Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=" + bazaRec)
+            .UseChangeTrackingProxies().Options);
+        if (!await ctxRec.Database.CanConnectAsync()) {
+            Console.WriteLine($"Baza „{bazaRec}” nu există sau nu răspunde.");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var migrateRec = ReconciliereCub.TipuriMigrate(ctxRec);
+        Console.WriteLine($"Baza: {bazaRec}; tipuri cu `PosteazaInCub`: "
+            + (migrateRec.Count == 0 ? "NICIUNUL" : string.Join(", ", migrateRec)));
+        if (migrateRec.Count == 0) {
+            Console.WriteLine("Nimic de reconciliat.");
+            return;
+        }
+        var randuriRec = ReconciliereCub.Ruleaza(ctxRec);
+        Console.WriteLine(ReconciliereCub.Raport(randuriRec));
+        Console.WriteLine(randuriRec.Count == 0
+            ? "\nReconciliere: 0 rânduri cu Δ ≠ 0."
+            : $"\nReconciliere: {randuriRec.Count} rânduri cu Δ ≠ 0.");
+        Environment.ExitCode = randuriRec.Count == 0 ? 0 : 1;
+        return;
+    }
+}
 
 var profil = args.Any(a => a.Contains("privat", StringComparison.OrdinalIgnoreCase))
     ? ProfilContabil.Privat : ProfilContabil.Bugetar;
@@ -221,6 +276,19 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         // builder-ul de care atârnă TOATE ObjectSpace-urile scenelor, deci fără
         // ea `os.Delete` ar rămâne ștergere fizică tocmai pe calea probelor.
         .UseDeferredDeletion());
+
+// S-D9.2 pe scenă: aceeași funcție de reconciliere pe care o cheamă
+// `--reconciliere-cub`, restrânsă la documentele scenei — pe baza de harness
+// restul documentelor tipului sunt operate cu `PosteazaInCub` fals.
+void ProbaReconciliere(string prefix, params Guid[] documente) {
+    using var ctxReconciliere = new BackOfficeEFCoreDbContext(opts);
+    var randuri = ReconciliereCub.Ruleaza(ctxReconciliere, documente);
+    if (randuri.Count > 0)
+        Console.WriteLine(ReconciliereCub.Raport(randuri));
+    Check($"STR-RECONCILIERE {prefix}: gate-ul fizicii (Σ contabil per cont × latură × lună, Σ cantitate "
+        + "per lot, Σ fiscal per cod × perioadă, balanța pe carte, numărul tranzacțiilor) — 0 rânduri Δ",
+        randuri.Count == 0);
+}
 
 // Scenele suitei nu fac decontul de TVA — subiectul lor e altul (corecția,
 // partidele, snapshot-urile), iar a genera o ITV în fiecare ar schimba chiar
@@ -32150,6 +32218,7 @@ void VerificaNucleuBcs(bool privat) {
     using (ProbeCub.Migrat(os, bcsCub)) {
         MotorOperare.Opereaza(os, bcsCub);
         ProbeCub.ProbaOperare(os, Check, $"NUC-BCS-{eticheta}", bcsCub);
+        ProbaReconciliere($"NUC-BCS-{eticheta}", bcsCub.ID);
 
         MotorOperare.Storneaza(os, bcsCub, dataStornoBcs);
         ProbeCub.ProbaStorno(os, Check, $"NUC-BCS-{eticheta}", bcsCub, dataStornoBcs);
@@ -32470,6 +32539,7 @@ void VerificaNucleuFct(bool privat) {
         MotorOperare.Opereaza(os, nirCub);
         ProbeCub.ProbaOperare(os, Check, $"NUC-FCT-CUB-{eticheta}", fctCub,
             new Dictionary<Guid, Guid> { [nirCub.ID] = fctCub.ID });
+        ProbaReconciliere($"NUC-FCT-CUB-{eticheta}", fctCub.ID, nirCub.ID);
         var peStoc = ProbeCub.Postari(os, fctCub.ID, N.FelTranzactie.Operare)
             .Where(p => p.Spatiu == N.Spatiu.Stoc).ToList();
         var virtuale = ProbeCub.Postari(os, fctCub.ID, N.FelTranzactie.Operare)
