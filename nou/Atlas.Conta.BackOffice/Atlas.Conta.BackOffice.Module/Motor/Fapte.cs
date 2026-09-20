@@ -109,9 +109,7 @@ internal static class Fapte {
 
         var solduriLoturi = SolduriLoturi(os, doc, linii, claseTip, reguliStoc, idsLot);
 
-        var restPartidaSursa = doc.Autogenerat && doc.DocumentSursaId != null
-            ? ImperechereService.Ramas(os, doc.DocumentSursaId.Value)
-            : (decimal?)null;
+        var (restPartidaSursa, dataSursa) = Sursa(os, doc);
 
         // F27-D5: aceeași regulă pe tot documentul (`dataFapt` = `doc.Data`), deci
         // un singur fapt, nu unul per linie.
@@ -132,12 +130,34 @@ internal static class Fapte {
             conturi,
             solduriLoturi,
             restPartidaSursa,
+            dataSursa,
             perioadaDeclarare,
             // Deriva maximă explicabilă prin rotunjirea per linie de azi; devine
             // rând de politică la TR-D7 (B-D6).
             0.01m * linii.Count(d => d.TipTvaId != null),
             new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
             new N.VersiunePolitica("seed", doc.DataInregistrare));
+    }
+
+    // Restul documentului-sursă FĂRĂ stingerile documentului curent: ca soldurile de
+    // lot, starea se citește dinaintea documentului care o schimbă — la probă
+    // împerecherea automată e deja scrisă, iar `Ramas` ar întoarce 0 (B-D5).
+    static (decimal? Ramas, DateOnly? Data) Sursa(IObjectSpace os, Document doc) {
+        if (!doc.Autogenerat || doc.DocumentSursaId is not Guid sursaId)
+            return (null, null);
+        var sursa = os.GetObjectsQuery<Document>()
+            .Where(d => d.ID == sursaId)
+            .Select(d => new { d.TotalStingere, d.DataInregistrare })
+            .ToList()
+            .FirstOrDefault();
+        if (sursa == null)
+            return (null, null);
+        var asignat = os.GetObjectsQuery<Imperechere>()
+            .Where(i => (i.DocumentStingatorId == sursaId || i.DocumentId == sursaId)
+                && i.DocumentStingatorId != doc.ID)
+            .Select(i => (decimal?)i.Suma)
+            .Sum() ?? 0m;
+        return ((sursa.TotalStingere ?? 0m) - asignat, sursa.DataInregistrare);
     }
 
     static Declaratii.DocumentFapt Document(Document doc, TipDocument tipDoc,

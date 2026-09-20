@@ -559,6 +559,8 @@ public abstract class DocumentTrezorerie : Document {
 [GardContare(NaturaClasa.Virament, NivelContare.Natura,
     "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Plata : DocumentTrezorerie {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantTrezorerie.Instanta;
+
     public override Guid GetContrapartidaId() => PrimitorId;
 
     // Plata debitează contul contrapartidei ⇒ stinge DATORII (FCT, DEC, avansul
@@ -586,6 +588,8 @@ public class Plata : DocumentTrezorerie {
 [GardContare(NaturaClasa.Virament, NivelContare.Natura,
     "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Incasare : DocumentTrezorerie {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantTrezorerie.Instanta;
+
     public override Guid GetContrapartidaId() => PredatorId;
 
     // Oglinda plății: încasarea creditează contrapartida ⇒ stinge CREANȚE (FCL,

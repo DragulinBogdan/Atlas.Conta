@@ -87,6 +87,7 @@ public sealed record Operand(
     IReadOnlyDictionary<Guid, ContFapt> Conturi,
     IReadOnlyDictionary<Guid, N.Sold> SolduriLoturi,
     decimal? RestPartidaSursa,
+    DateOnly? DataInregistrareSursa,
     int? PerioadaDeclarare,
     decimal TolerantaTaxa,
     N.PerioadaDeschisa PerioadaDeschisa,

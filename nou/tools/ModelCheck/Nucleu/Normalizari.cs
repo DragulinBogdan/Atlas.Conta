@@ -32,11 +32,124 @@ static class Normalizari {
     }
 
     public static IReadOnlyList<N.Tranzactie> Toate(IReadOnlyList<N.Tranzactie> tranzactii, Context context) {
-        var rezultat = TrD3AbsoarbeNirConex(tranzactii, context);
+        // Pct. 9 stă PRIMUL: TR-D4 rescrie gestiunea piciorului contabil din rândul
+        // de stoc, iar perechea D/C a rândului n-ar mai putea fi citită.
+        var rezultat = RepartitorPePiciorulPropriu(tranzactii);
+        rezultat = TrD3AbsoarbeNirConex(rezultat, context);
         rezultat = TrD4UnificaStocCuContabil(rezultat);
         rezultat = TrD2NominalizeazaPrinImperechere(rezultat);
+        rezultat = TrD2DesparteContrapartida(rezultat);
         rezultat = FiscalCaAtribute(rezultat, context);
         return M6PartenerDoarPeTert(rezultat);
+    }
+
+    // ── B-D8 pct. 9 — repartitorul stă pe piciorul PROPRIU, nu pe cel de terț ──
+    //
+    // Convenția 00 §5 dă fiecărei laturi repartitorul ei (debit ← predator, credit
+    // ← primitor), deci pe un rând cu EXACT un terț dimensiunea internă cade pe
+    // piciorul de TERȚ și cea de partener pe piciorul propriu. În cub gestiunea e a
+    // locului unde stă valoarea: se mută pe piciorul propriu, iar cel de terț rămâne
+    // fără ea. Rândurile fără partener (BCS, viramentul) nu se ating.
+    public static IReadOnlyList<N.Tranzactie> RepartitorPePiciorulPropriu(
+            IReadOnlyList<N.Tranzactie> tranzactii) {
+        ArgumentNullException.ThrowIfNull(tranzactii);
+        return [.. tranzactii.Select(Repartitorul)];
+    }
+
+    static N.Tranzactie Repartitorul(N.Tranzactie tranzactie) {
+        var postari = tranzactie.Postari;
+        var rezultat = postari.ToList();
+        var folosit = new bool[postari.Count];
+        var mutari = 0;
+        for (var d = 0; d < postari.Count; d++) {
+            var debit = postari[d];
+            if (folosit[d] || !EContabila(debit) || debit.Coordonate.Latura != N.Latura.Debit)
+                continue;
+            for (var c = 0; c < postari.Count; c++) {
+                var credit = postari[c];
+                if (folosit[c] || !EContabila(credit) || credit.Coordonate.Latura != N.Latura.Credit
+                    || credit.Cauza.Linie != debit.Cauza.Linie || credit.Valoare != debit.Valoare)
+                    continue;
+                // Rândul poartă exact o dimensiune de terț când UN picior are gestiune
+                // (repartitorul intern) și celălalt nu.
+                if (debit.Coordonate.Gestiune is { } aDebitului && credit.Coordonate.Gestiune is null)
+                    (rezultat[d], rezultat[c]) = (Fara(debit), Cu(credit, aDebitului));
+                else if (debit.Coordonate.Gestiune is null && credit.Coordonate.Gestiune is { } aCreditului)
+                    (rezultat[d], rezultat[c]) = (Cu(debit, aCreditului), Fara(credit));
+                else
+                    break;
+                folosit[d] = folosit[c] = true;
+                mutari++;
+                break;
+            }
+        }
+        return mutari == 0 ? tranzactie : tranzactie with { Postari = rezultat };
+    }
+
+    static bool EContabila(N.Postare postare) =>
+        postare.Coordonate.Cont != CubDinRegistre.ContFiscal && postare.Coordonate.Partener is not null;
+
+    static N.Postare Fara(N.Postare postare) =>
+        postare with { Coordonate = postare.Coordonate with { Gestiune = null } };
+
+    static N.Postare Cu(N.Postare postare, Guid gestiune) =>
+        postare with { Coordonate = postare.Coordonate with { Gestiune = gestiune } };
+
+    // ── B-D8 pct. 11 — contrapartida unei linii nominalizate PARȚIAL se sparge la fel ──
+    //
+    // Sub TR-D2 o linie stinsă doar în parte din sursă e DOUĂ mișcări, iar o mișcare
+    // are două capete; registrele de azi sparg doar piciorul cu partidă. Piciorul
+    // fără partidă al aceleiași linii se sparge în aceleași sume, în ordinea lor.
+    public static IReadOnlyList<N.Tranzactie> TrD2DesparteContrapartida(
+            IReadOnlyList<N.Tranzactie> tranzactii) {
+        ArgumentNullException.ThrowIfNull(tranzactii);
+        return [.. tranzactii.Select(Desparte)];
+    }
+
+    static N.Tranzactie Desparte(N.Tranzactie tranzactie) {
+        var postari = tranzactie.Postari;
+        var grupuri = postari
+            .Where(p => p.Coordonate.Unitate?.Fel == N.FelUnitate.Partida)
+            .GroupBy(p => (p.Cauza.Linie, p.Coordonate.Cont, p.Coordonate.Latura))
+            .Where(g => g.Count() > 1)
+            .ToList();
+        if (grupuri.Count == 0)
+            return tranzactie;
+        var bucati = new Dictionary<int, List<decimal>>();
+        foreach (var grup in grupuri) {
+            var sume = grup.Select(p => p.Valoare).ToList();
+            var total = sume.Sum();
+            var tinta = -1;
+            for (var i = 0; i < postari.Count && tinta < 0; i++) {
+                var postare = postari[i];
+                if (!bucati.ContainsKey(i)
+                    && postare.Coordonate.Unitate is null
+                    && postare.Coordonate.Cont != CubDinRegistre.ContFiscal
+                    && postare.Cantitate == 0m
+                    && postare.Cauza.Linie == grup.Key.Linie
+                    && postare.Coordonate.Latura != grup.Key.Latura
+                    && postare.Valoare == total)
+                    tinta = i;
+            }
+            if (tinta < 0) {
+                Avertizeaza($"TR-D2 pct. 11: linia {grup.Key.Linie} e nominalizată în {sume.Count} bucăți, "
+                    + $"dar n-are contrapartidă fără partidă de {total} care să se spargă la fel.");
+                continue;
+            }
+            bucati[tinta] = sume;
+        }
+        if (bucati.Count == 0)
+            return tranzactie;
+        var rezultat = new List<N.Postare>(postari.Count + bucati.Sum(b => b.Value.Count) - bucati.Count);
+        for (var i = 0; i < postari.Count; i++) {
+            if (!bucati.TryGetValue(i, out var sume)) {
+                rezultat.Add(postari[i]);
+                continue;
+            }
+            foreach (var suma in sume)
+                rezultat.Add(postari[i] with { Valoare = suma });
+        }
+        return tranzactie with { Postari = rezultat };
     }
 
     // ── B-D8 pct. 1 — TR-D3: NIR-ul conex n-are tranzacție proprie ───────────

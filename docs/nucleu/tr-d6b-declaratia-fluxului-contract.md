@@ -221,8 +221,13 @@ Per linie de defalcare (`Valoare > 0`), O mișcare:
   suma)` pentru partea nominalizată, `PartidaDeschisa(linie, partidaNoua)`
   pentru excedent/avans; ipoteze: `SoldUnitateCitit(partidaSursa,
   Sold(rest))`, `PerioadaDeschisa`, `VersiunePolitica`.
-- Refuzuri: predatorul nu e cont propriu; primitorul nu e partener/angajat/
-  cont propriu; `v ≤ 0`; predator = primitor.
+- Refuzuri: laturile ∈ {ContPropriu, Partener, Angajat} și cel puțin una
+  `ContPropriu` (`CONT_PROPRIU_LIPSA`); `v ≤ 0`; predator = primitor;
+  `VIRAMENT_MIXT`. Gard DECLARAT mai slab decât azi: o plată culeasă cu
+  laturile inversate (predator partener, primitor cont propriu) trece prin
+  declarant (dă postările încasării) și e refuzată azi — sensul laturilor e
+  tip-dependent și devine DATĂ pe `TipDocument` la TR-D7 (restanță), nu
+  cod în declarant.
 
 `TotalStingere`, `Imperecheri`, `CapacitateStingere`, `SensDeStins`,
 `PoateFiStins`, `SursaStingeriiAutomate` NU se folosesc și NU se ating: sub
@@ -362,16 +367,30 @@ sau propunere de normalizare nouă raportată main-ului (nu aplicată tăcut):
    (coalesce-ul de azi: explicit → linie → override → comun → implicit);
    declarantul reproduce ACELAȘI coalesce prin `DimensiuniResolver` pe fapte
    (funcție pură existentă), nu-l reinventează.
-9. **Repartitorul laturii pereche** (constatare a pasului 2, oracolul FCT):
-   azi piciorul de terț (401 pe FCT, 401 sub 4426) poartă ca dimensiune
-   repartitorul CONTRAPARTIDEI (gestiunea primitoare, MAG1), pe același
-   principiu „contrapartida pe fiecare latură" pe care design §3 l-a respins
-   pentru partener. Normalizare: `Gestiune` se șterge de pe postările de terț
-   ale oracolului (contul cu `RolTert`, sau contul de contrapartidă al
-   regulii/politicii de TVA când profilul n-are `RolTert` — bugetarul, D16-V1);
-   în comparație gestiunile VIRTUALE ale nucleului (`GestiuniVirtuale.*`) se
-   proiectează ca `null` (sunt sink-uri structurale, nu coordonate ale
-   registrelor de azi). Se implementează la pasul 5, când FCT o cere.
+9. **Repartitorul pe piciorul propriu** (constatare a pașilor 2 și 4; amendat
+   la pasul 4): azi nota contabilă pune pe FIECARE picior repartitorul
+   CONTRAPARTIDEI (debit ← predator, credit ← primitor, convenția 00 §5): pe
+   plată `D 401` poartă gestiunea casei și `C 5121` partenerul; pe factură
+   `C 401` poartă gestiunea MAG1 și `D 628` partenerul. Design §3 a respins
+   convenția pentru partener; regula se aplică simetric și gestiunii.
+   Normalizarea oracolului `RepartitorPePiciorulPropriu`: pe un rând contabil
+   cu EXACT o dimensiune de repartitor de fel Partener/Angajat, piciorul care
+   o poartă e piciorul INTERN și primește `Gestiune` = repartitorul intern
+   (Gestiune/ContPropriu/UnitateInterna) găsit pe oricare dintre cele două
+   dimensiuni; celălalt picior e piciorul de TERȚ și rămâne fără `Gestiune`
+   (partenerul lui vine doar din partidă — M6). Rândurile fără dimensiune de
+   partener (BCS, virament) rămân neatinse. În declaranți: capătul intern
+   poartă `Gestiune` = repartitorul intern al documentului; capătul de terț
+   poartă `Partener` + `Unitate` DOAR când contul are `RolTert` (pct. 10) și
+   nicio gestiune (excepția: gestiunea VIRTUALĂ a lui N-D4 pe mișcările cu
+   cantitate, care în comparație se proiectează ca `null`).
+11. **Linia nominalizată parțial** (constatare a pasului 4): când plata e mai
+   mare decât restul partidei sursă, linia devine DOUĂ mișcări (partea pe
+   partida sursă, restul pe partida proprie), deci și piciorul de bani se
+   sparge în două postări cu aceleași coordonate. Normalizarea
+   `TrD2DesparteContrapartida`: piciorul fără partidă al unei linii
+   nominalizate parțial se sparge în oracol în aceleași sume. Numărul de
+   postări nu e un raport; Σ pe orice proiecție e neschimbată.
 10. **Partida DOAR pe cont cu `RolTert`** (090d, constatare a pasului 2):
    pe profilul bugetar niciun cont n-are `RolTert` (`SeedRolTert` e privat;
    D16-V1), deci nici oracolul, nici declaranții nu deschid partidă pe 401

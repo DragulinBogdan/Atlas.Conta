@@ -1,6 +1,5 @@
 #nullable enable
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using Atlas.Conta.BackOffice.Module.Motor;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
@@ -13,21 +12,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 public sealed class DeclarantBonConsum : IDeclarant {
     public static readonly DeclarantBonConsum Instanta = new();
 
-    const string PredatorNepotrivit = "PREDATOR_NEPOTRIVIT";
-    const string PrimitorNepotrivit = "PRIMITOR_NEPOTRIVIT";
-    const string LiniiLipsa = "LINII_LIPSA";
-    const string LotLipsa = "LOT_LIPSA";
-    const string CantitateNepozitiva = "CANTITATE_NEPOZITIVA";
-    const string RegulaContareLipsa = "REGULA_CONTARE_LIPSA";
-
     DeclarantBonConsum() { }
-
-    readonly record struct Contare(
-        RegulaContareFapt Regula,
-        Guid ContDebit,
-        Guid ContCredit,
-        SursaRezolvata SursaDebit,
-        SursaRezolvata SursaCredit);
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -36,26 +21,26 @@ public sealed class DeclarantBonConsum : IDeclarant {
 
         var doc = operand.Document;
         if (doc.Predator.Fel != FelRepartitor.Gestiune)
-            refuzuri.Add(new N.Refuz(PredatorNepotrivit,
+            refuzuri.Add(new N.Refuz(CoduriRefuz.PredatorNepotrivit,
                 "Predatorul bonului de consum trebuie să fie o gestiune.", null));
         if (doc.Primitor.Fel == FelRepartitor.Partener
                 || !doc.Primitor.Calitati.HasFlag(CalitateRepartitor.LocConsum))
-            refuzuri.Add(new N.Refuz(PrimitorNepotrivit,
+            refuzuri.Add(new N.Refuz(CoduriRefuz.PrimitorNepotrivit,
                 "Primitorul trebuie să fie un loc de consum intern (calitatea LocConsum).", null));
         if (operand.Linii.Count == 0)
-            refuzuri.Add(new N.Refuz(LiniiLipsa,
+            refuzuri.Add(new N.Refuz(CoduriRefuz.LiniiLipsa,
                 "Bonul de consum se cere cu cel puțin o linie.", null));
 
-        var contari = new Contare?[operand.Linii.Count];
+        var contari = new ContareLinie?[operand.Linii.Count];
         for (var i = 0; i < operand.Linii.Count; i++) {
             var linie = operand.Linii[i];
             if (linie.Lot is null)
-                refuzuri.Add(new N.Refuz(LotLipsa,
+                refuzuri.Add(new N.Refuz(CoduriRefuz.LotLipsa,
                     "Fiecare linie de consum referă un lot.", linie.Id));
             if (linie.Cantitate <= 0m)
-                refuzuri.Add(new N.Refuz(CantitateNepozitiva,
+                refuzuri.Add(new N.Refuz(CoduriRefuz.CantitateNepozitiva,
                     "Cantitatea consumată trebuie să fie pozitivă.", linie.Id));
-            contari[i] = Conturi(operand, linie, refuzuri);
+            contari[i] = Contari.Rezolva(operand, linie, refuzuri);
         }
         if (refuzuri.Count > 0)
             return null;
@@ -90,7 +75,7 @@ public sealed class DeclarantBonConsum : IDeclarant {
                     Gestiune = doc.Predator.Id,
                     Produs = lot.ProdusId,
                     Unitate = iesit,
-                    Analiza = Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
+                    Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
                 },
                 new N.Capat {
                     Cont = contare.ContDebit,
@@ -98,7 +83,7 @@ public sealed class DeclarantBonConsum : IDeclarant {
                     Produs = lot.ProdusId,
                     // C5 cere unitatea pe contul postării.
                     Unitate = iesit with { Cont = contare.ContDebit },
-                    Analiza = Analiza(linie.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
+                    Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
                 },
                 linie.Cantitate,
                 0m,
@@ -108,46 +93,5 @@ public sealed class DeclarantBonConsum : IDeclarant {
         ipoteze.Add(operand.PerioadaDeschisa);
         ipoteze.Add(operand.VersiunePolitica);
         return new N.Declaratie(doc.Id, doc.DataInregistrare, miscari, decizii, ipoteze);
-    }
-
-    static Contare? Conturi(Operand operand, LinieOperand linie, ICollection<N.Refuz> refuzuri) {
-        if (Potrivire.Contare(operand.ReguliContare, linie.Fapt).Castigator is not { } regula) {
-            refuzuri.Add(new N.Refuz(RegulaContareLipsa,
-                "Linia nu are regulă de contare pe acest tip de document.", linie.Id));
-            return null;
-        }
-        var debit = Potrivire.Cont(
-            regula.SursaContDebit, regula.ContDebitId, linie.ContImplicitTipId, operand.Laturi);
-        var credit = Potrivire.Cont(
-            regula.SursaContCredit, regula.ContCreditId, linie.ContImplicitTipId, operand.Laturi);
-        if (debit.ContId is not Guid contDebit) {
-            refuzuri.Add(new N.Refuz(RegulaContareLipsa,
-                $"Contul debitor nu se poate rezolva (sursă {regula.SursaContDebit}).", linie.Id));
-            return null;
-        }
-        if (credit.ContId is not Guid contCredit) {
-            refuzuri.Add(new N.Refuz(RegulaContareLipsa,
-                $"Contul creditor nu se poate rezolva (sursă {regula.SursaContCredit}).", linie.Id));
-            return null;
-        }
-        return new Contare(regula, contDebit, contCredit, debit.Sursa, credit.Sursa);
-    }
-
-    // B-D8 pct. 8: același coalesce ca motorul vechi, pe funcția pură existentă —
-    // repartitorul și materialul nu sunt axe de `Analiza` (sunt `Gestiune`/`Produs`).
-    static N.Analiza Analiza(N.Analiza aLiniei, Dimensiuni overrideLatura, Dimensiuni comun) {
-        var rezolvate = DimensiuniResolver.Rezolva(
-            new Dimensiuni {
-                CodFunctionalId = aLiniei.CodFunctional,
-                CodEconomicId = aLiniei.CodEconomic,
-                SursaFinantareId = aLiniei.SursaFinantare,
-                UnitateId = aLiniei.UnitateOrganizatorica,
-                ProiectId = aLiniei.Proiect,
-                CentruCostId = aLiniei.CentruCost,
-            },
-            overrideLatura,
-            comun);
-        return new N.Analiza(rezolvate.CodFunctionalId, rezolvate.CodEconomicId, rezolvate.SursaFinantareId,
-            rezolvate.UnitateId, rezolvate.ProiectId, rezolvate.CentruCostId);
     }
 }

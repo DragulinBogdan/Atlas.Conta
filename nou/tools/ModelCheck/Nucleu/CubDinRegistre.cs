@@ -87,8 +87,9 @@ static class CubDinRegistre {
         if (imperecheri.Count > 0) {
             var tertDoc = TertPeDocument(contabile, dateDocument, rolTert, felRepartitor);
             foreach (var imp in imperecheri)
-                tranzactii.Add(DeImperechere(
-                    imp.DocumentStingatorId, imp.DocumentId, imp.Suma, imp.Data, tertDoc, dateDocument));
+                if (DeImperechere(imp.DocumentStingatorId, imp.DocumentId, imp.Suma, imp.Data,
+                        tertDoc, dateDocument) is { } tranzactie)
+                    tranzactii.Add(tranzactie);
         }
         return tranzactii;
     }
@@ -178,17 +179,20 @@ static class CubDinRegistre {
 
     // Amendamentul 3 al transformării: împerecherea e tranzacție datată, pe contul și
     // latura postării de terț de referință a STINGĂTORULUI, cu partenerul STINSULUI.
-    static N.Tranzactie DeImperechere(
+    static N.Tranzactie? DeImperechere(
             Guid stingator,
             Guid stins,
             decimal suma,
             DateOnly data,
             IReadOnlyDictionary<Guid, TertDoc> tertDoc,
             IReadOnlyDictionary<Guid, DateOnly> dateDocument) {
-        if (!tertDoc.TryGetValue(stingator, out var referinta))
-            throw new InvalidOperationException(
-                $"Împerecherea {stingator} → {stins} n-are postare de terț pe stingător: "
-                + "partida de referință nu se poate alege. B-D10, oprire.");
+        // B-D8 pct. 10: fără cont cu `RolTert` (profilul bugetar) stingerea n-are partidă
+        // pe care s-o mute, deci împerecherea n-are corespondent în cub.
+        if (!tertDoc.TryGetValue(stingator, out var referinta)) {
+            Console.WriteLine($"     CubDinRegistre: împerecherea {stingator} → {stins} n-are postare de "
+                + "terț cu partidă (profil fără RolTert) — tranzacția de împerechere nu intră în oracol.");
+            return null;
+        }
         var partener = tertDoc.GetValueOrDefault(stins)?.Partener ?? referinta.Partener;
         if (partener is not Guid tert)
             throw new InvalidOperationException(
