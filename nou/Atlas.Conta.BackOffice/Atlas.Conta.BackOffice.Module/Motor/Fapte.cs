@@ -190,7 +190,8 @@ internal static class Fapte {
             // Valuta/Cursul sunt câmpuri de FRUNZĂ (FacturaIntrare), fără interfață
             // declarată: pilotul nu le citește (B-D2, raportat main-ului).
             null, null,
-            doc is IDocumentCuScadenta scadenta ? scadenta.DataScadenta : null);
+            doc is IDocumentCuScadenta scadenta ? scadenta.DataScadenta : null,
+            tipDoc.LaturaContPropriu);
 
     static Declaratii.RepartitorFapt Repartitor(
             IReadOnlyDictionary<Guid, Declaratii.RepartitorFapt> repartitori, Guid id) =>

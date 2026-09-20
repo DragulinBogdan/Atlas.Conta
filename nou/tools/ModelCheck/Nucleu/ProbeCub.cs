@@ -71,6 +71,49 @@ static class ProbeCub {
             .Select(t => t.ID).ToList());
     }
 
+    public static List<C.Tranzactie> Transferuri(IObjectSpace os, Guid document) =>
+        os.GetObjectsQuery<C.Tranzactie>()
+            .Where(t => t.DocumentId == document && t.Fel == N.FelTranzactie.Transfer)
+            .ToList();
+
+    /// <summary>Σ semnat (D − C) al unei partide, peste TOATE tranzacțiile cubului.</summary>
+    public static decimal SoldPartida(IObjectSpace os, Guid unitate) =>
+        os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Unitate == unitate)
+            .ToList()
+            .Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
+
+    /// <summary>
+    /// STR-TRANSFER-3: cubul PERSISTAT al stingătorului (`Operare` ⊕ `Transfer`), pliat
+    /// de aceeași normalizare ca oracolul (TR-D2a), = registrele normalizate.
+    /// </summary>
+    public static void ProbaTransferPliat(
+            IObjectSpace os, Action<string, bool> check, string prefix, Document doc) {
+        ArgumentNullException.ThrowIfNull(os);
+        ArgumentNullException.ThrowIfNull(check);
+        ArgumentNullException.ThrowIfNull(doc);
+        var randuri = Postari(os, doc.ID);
+        var persistate = Tranzactii(os, doc.ID)
+            .OrderBy(t => t.Fel == N.FelTranzactie.Operare ? 0 : 1)
+            .ThenBy(t => t.ScrisLa)
+            .Select(t => new N.Tranzactie(t.Fel, t.Data, doc.ID,
+                [.. randuri.Where(r => r.TranzactieId == t.ID).Select(C.Randuri.Citeste)]))
+            .ToList();
+        Normalizari.Reseteaza();
+        var pliate = Normalizari.TrD2NominalizeazaPrinImperechere(persistate);
+        var aleDeclaratiei = Normalizari.Avertismente.Count;
+        Normalizari.Reseteaza();
+        var oracol = Normalizari.Toate(
+            CubDinRegistre.Transforma(os, [doc.ID]), Normalizari.Citeste(os, [doc.ID]));
+        var raport = Comparabil.Compara(
+            Comparabil.Proiecteaza(oracol), Comparabil.Proiecteaza(pliate), ProbeNucleu.Nume(os, oracol));
+        if (!raport.Egal)
+            Console.WriteLine(raport.ToString());
+        check($"STR-TRANSFER-3 {prefix}: cubul persistat `Operare` ⊕ `Transfer`, pliat ca oracolul "
+            + "(TR-D2a), = registrele normalizate (B-D8)",
+            raport.Egal && aleDeclaratiei == 0 && Normalizari.Avertismente.Count == 0);
+    }
+
     public static void FaraRanduri(IObjectSpace os, Action<string, bool> check, string nume, Guid document) {
         ArgumentNullException.ThrowIfNull(check);
         check(nume, Tranzactii(os, document).Count == 0 && Postari(os, document).Count == 0);

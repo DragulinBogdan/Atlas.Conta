@@ -17,7 +17,16 @@ static class Normalizari {
 
     public static IReadOnlyList<string> Avertismente => avertismente.ToArray();
 
-    public static void Reseteaza() => avertismente.Clear();
+    // S-D13 (amendament B-D8 pct. 11): grupurile (linie, cont, latură) nominalizate de o
+    // împerechere ULTERIOARă operării. Acolo `Operare` ține piciorul de bani întreg și doar
+    // `Transfer` mută partida, deci contrapartida NU se sparge; la nominalizarea din
+    // `Operare` (împerecherea autogenerată a sursei) se sparge mai departe.
+    static readonly HashSet<(Guid? Linie, Guid Cont, N.Latura Latura)> faraSpargere = [];
+
+    public static void Reseteaza() {
+        avertismente.Clear();
+        faraSpargere.Clear();
+    }
 
     /// <param name="SursaConexului">documentul conex autogenerat → documentul sursă.</param>
     /// <param name="LiniaSursa">linia conexului → linia sursei care i-a născut lotul.</param>
@@ -117,6 +126,7 @@ static class Normalizari {
             // Spargerea e a NOMINALIZĂRII: două postări pe ACEEAȘI partidă (netul și
             // taxa aceleiași linii de factură) n-au de ce să spargă contrapartida.
             .Where(g => g.Select(p => p.Coordonate.Unitate!.Id).Distinct().Count() > 1)
+            .Where(g => !faraSpargere.Contains(g.Key))                                // S-D13
             .ToList();
         if (grupuri.Count == 0)
             return tranzactie;
@@ -290,6 +300,12 @@ static class Normalizari {
     }
 
     // ── B-D8 pct. 3 — TR-D2a: stingerea e postarea care numește partida ──────
+    //
+    // Amendat la TR-D7a pasul 5 (S-D13): `Imperecheri` e ALGEBRIC (F27-D8),
+    // deci rândul INVERS al unei desfaceri se pliază la fel, în sens opus: `DeImperechere`
+    // îl construiește cu semn, iar `Nominalizeaza` îl duce înapoi pe partida proprie a
+    // stingătorului. Fără el oracolul ar ține partida stinsă pentru totdeauna, iar cubul
+    // (care scrie transferul invers) ar apărea ca diferență.
     public static IReadOnlyList<N.Tranzactie> TrD2NominalizeazaPrinImperechere(
             IReadOnlyList<N.Tranzactie> tranzactii) {
         ArgumentNullException.ThrowIfNull(tranzactii);
@@ -319,7 +335,8 @@ static class Normalizari {
                     + "(lipsesc partidele sau tranzacția stingătorului) — rămâne transfer.");
                 continue;
             }
-            if (Nominalizeaza(postari[alStingatorului]!, proprie, stinsa, intrare.Coordonate.Partener, -iesire.Valoare))
+            if (Nominalizeaza(postari[alStingatorului]!, proprie, stinsa, intrare.Coordonate.Partener,
+                    -iesire.Valoare, transfer.Postari[0].Cauza.Linie is not null))
                 consumat[i] = true;
         }
 
@@ -333,7 +350,8 @@ static class Normalizari {
     }
 
     static bool Nominalizeaza(
-            List<N.Postare> postari, N.Unitate proprie, N.Unitate stinsa, Guid? partener, decimal suma) {
+            List<N.Postare> postari, N.Unitate proprie, N.Unitate stinsa, Guid? partener, decimal suma,
+            bool ulterioara) {
         var ramas = suma;
         for (var i = 0; i < postari.Count && ramas > 0m; i++) {
             var postare = postari[i];
@@ -348,6 +366,9 @@ static class Normalizari {
                 },
                 Valoare = luat,
             };
+            if (ulterioara)
+                faraSpargere.Add(
+                    (postare.Cauza.Linie, postare.Coordonate.Cont, postare.Coordonate.Latura));
             if (rest > 0m)
                 postari.Insert(++i, postare with { Valoare = rest });
             ramas -= luat;

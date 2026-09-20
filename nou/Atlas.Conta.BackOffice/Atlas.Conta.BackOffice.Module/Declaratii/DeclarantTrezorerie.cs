@@ -138,6 +138,13 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         if (!EContPropriu(doc.Predator.Fel) && !EContPropriu(doc.Primitor.Fel))
             refuzuri.Add(new N.Refuz(CoduriRefuz.ContPropriuLipsa,
                 "Una dintre laturi e contul propriu (casă/bancă) din care sau în care se mișcă banii.", null));
+        // B-r2: tipul declară pe CARE latură stă contul propriu (plata predător,
+        // încasarea primitor); tipul care nu declară lasă alegerea deschisă.
+        else if (doc.LaturaContPropriu is LaturaDocument latura
+                && !EContPropriu(latura == LaturaDocument.Predator ? doc.Predator.Fel : doc.Primitor.Fel))
+            refuzuri.Add(new N.Refuz(CoduriRefuz.LaturaContPropriuNepotrivita,
+                $"Tipul cere contul propriu pe latura {latura}, dar acolo stă "
+                + $"{(latura == LaturaDocument.Predator ? doc.Predator.Fel : doc.Primitor.Fel)}.", null));
         if (doc.Predator.Id == doc.Primitor.Id)
             refuzuri.Add(new N.Refuz(CoduriRefuz.LaturiIdentice,
                 "Predatorul și primitorul sunt același repartitor.", null));

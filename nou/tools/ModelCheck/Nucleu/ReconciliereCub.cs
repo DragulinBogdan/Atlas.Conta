@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
@@ -57,7 +58,12 @@ static class ReconciliereCub {
     /// setul pe care se reconciliază; <c>null</c> = toată baza. Scena ModelCheck îl
     /// dă ca să nu măsoare documentele operate de alte scene cu tipul nemigrat.
     /// </param>
-    public static List<Rand> Ruleaza(DbContext ctx, IReadOnlyCollection<Guid>? documente = null) {
+    /// <param name="note">
+    /// ce nu s-a putut măsura și de ce: litera (f) e vacuă pe conturile atinse și de
+    /// tipuri nemigrate — cubul n-are acolo decât jumătate din fapte.
+    /// </param>
+    public static List<Rand> Ruleaza(
+            DbContext ctx, IReadOnlyCollection<Guid>? documente = null, ICollection<string>? note = null) {
         ArgumentNullException.ThrowIfNull(ctx);
         var set = documente?.Distinct().ToArray();
         var randuri = new List<Rand>();
@@ -66,6 +72,129 @@ static class ReconciliereCub {
         randuri.AddRange(Fiscale(ctx, set));
         randuri.AddRange(Balanta(ctx, set));
         randuri.AddRange(Numarul(ctx, set));
+        randuri.AddRange(Partide(ctx, set, note));
+        return randuri;
+    }
+
+    sealed record RandPartida(Guid Document, Guid Cont, Guid Unitate, Guid? Partener, DateOnly Deschisa);
+
+    // (f) S-D13 — per PARTIDĂ, la ultima perioadă închisă: Σ cub (`Operare` ⊕ `Transfer`,
+    // `Data` ≤ sfârșitul perioadei) pe unitate = `PartideDeschise.Rest` al documentului
+    // care a deschis-o, iar id-ul unității e hash-ul (document, cont) recalculat în C#.
+    // Se măsoară DOAR pe conturile ale căror documente sunt toate de tipuri migrate.
+    static List<Rand> Partide(DbContext ctx, Guid[]? set, ICollection<string>? note) {
+        var perioade = Citeste(ctx,
+            "select max(\"An\" * 100 + \"Luna\") from \"PerioadeFiscale\" "
+            + "where \"GCRecord\" = 0 and \"Inchisa\"",
+            null,
+            cititor => cititor.IsDBNull(0) ? (int?)null : cititor.GetInt32(0));
+        if (perioade.Count == 0 || perioade[0] is not int perioada) {
+            note?.Add("(f) partide: baza n-are nicio perioadă închisă — măsurătoarea e vacuă.");
+            return [];
+        }
+        var an = perioada / 100;
+        var luna = perioada % 100;
+        var sfarsit = new DateOnly(an, luna, DateTime.DaysInMonth(an, luna));
+
+        var conturi = Citeste(ctx, """
+            with migrat as (
+                select t."ClrType" as clr from "TipuriDocument" t
+                where t."GCRecord" = 0 and t."PosteazaInCub" and t."ClrType" is not null)
+            select k."ID",
+                   bool_and(d."ClrType" in (select clr from migrat)) as toate,
+                   count(distinct d."ClrType") filter (
+                       where d."ClrType" not in (select clr from migrat)) as nemigrate
+            from "Conturi" k
+            join "RegistruContabil" r
+              on (r."ContDebitId" = k."ID" or r."ContCreditId" = k."ID")
+             and r."GCRecord" = 0 and r."DocumentId" is not null
+            join "Documente" d on d."ID" = r."DocumentId" and d."GCRecord" = 0
+            where k."GCRecord" = 0 and k."RolTert" <> 0
+            group by k."ID"
+            """, null, cititor => (Cont: cititor.GetGuid(0), Toate: cititor.GetBoolean(1)));
+        var eligibile = conturi.Where(c => c.Toate).Select(c => c.Cont).ToArray();
+        if (eligibile.Length == 0) {
+            note?.Add($"(f) partide: din {conturi.Count} conturi cu rol de terț, NICIUNUL nu e atins "
+                + "exclusiv de tipuri migrate — măsurătoarea e vacuă (se exercită când tipurile "
+                + "care mai postează pe ele intră în cub).");
+            return [];
+        }
+
+        var deschizatori = Citeste(ctx, $$"""
+            select distinct p."DocumentId", p."Cont", p."Unitate", p."Partener", d."DataInregistrare"
+            from "Postare" p
+            join "Tranzactie" t on t."ID" = p."TranzactieId"
+            join "Documente" d on d."ID" = p."DocumentId"
+            where t."Fel" = 1 and p."Spatiu" = 1 and p."Unitate" is not null
+              and p."Cont" = any(@cont) {{(set is null ? "" : "and p.\"DocumentId\" = any(@doc)")}}
+            """, set, cititor => new RandPartida(
+                cititor.GetGuid(0), cititor.GetGuid(1), cititor.GetGuid(2),
+                cititor.IsDBNull(3) ? null : cititor.GetGuid(3),
+                DateOnly.FromDateTime(cititor.GetDateTime(4))), eligibile);
+
+        var randuri = new List<Rand>();
+        var alUnitatii = new Dictionary<Guid, Guid>();
+        foreach (var rand in deschizatori) {
+            if (rand.Partener is not Guid partener)
+                continue;
+            var calculata = N.Unitate
+                .DeschidePartida(rand.Cont, partener, rand.Document, rand.Deschisa).Id;
+            if (calculata != rand.Unitate)
+                randuri.Add(new Rand("(f) partide",
+                    $"unitatea {rand.Unitate.ToString()[..8]} a documentului "
+                    + $"{rand.Document.ToString()[..8]} nu e hash-ul (document, cont)", 1m, 0m));
+            alUnitatii[rand.Unitate] = rand.Document;
+        }
+
+        var solduri = Citeste(ctx, """
+            select p."Unitate",
+                   sum(case when p."Latura" = 1 then p."Valoare" else -p."Valoare" end)
+            from "Postare" p
+            join "Tranzactie" t on t."ID" = p."TranzactieId"
+            where t."Fel" in (1, 3) and p."Spatiu" = 1 and p."Unitate" is not null
+              and p."Data" <= @sfarsit and p."Cont" = any(@cont)
+            group by 1
+            """, null, cititor => (Unitate: cititor.GetGuid(0), Net: cititor.GetDecimal(1)),
+            eligibile, sfarsit);
+
+        var alCubului = new Dictionary<Guid, decimal>();
+        foreach (var (unitate, net) in solduri) {
+            if (net == 0m)
+                continue;
+            if (!alUnitatii.TryGetValue(unitate, out var document)) {
+                randuri.Add(new Rand("(f) partide",
+                    $"unitatea {unitate.ToString()[..8]} are Σ ≠ 0 fără document deschizător în cub",
+                    net, 0m));
+                continue;
+            }
+            alCubului[document] = alCubului.GetValueOrDefault(document) + Math.Abs(net);
+        }
+
+        var alRegistrelor = Citeste(ctx, $$"""
+            select pd."DocumentId", pd."Rest" from "PartideDeschise" pd
+            join "Documente" d on d."ID" = pd."DocumentId"
+            join "TipuriDocument" t on t."ClrType" = d."ClrType"
+            where pd."GCRecord" = 0 and pd."An" = @an and pd."Luna" = @luna
+              and t."GCRecord" = 0 and t."PosteazaInCub"
+              and exists (select 1 from "Postare" p
+                          join "Tranzactie" tr on tr."ID" = p."TranzactieId"
+                          where p."DocumentId" = pd."DocumentId" and tr."Fel" = 1
+                            and p."Unitate" is not null and p."Cont" = any(@cont))
+              {{(set is null ? "" : "and pd.\"DocumentId\" = any(@doc)")}}
+            """, set, cititor => (Document: cititor.GetGuid(0), Ramas: cititor.GetDecimal(1)),
+            eligibile, null, an, luna)
+            .ToDictionary(x => x.Document, x => Math.Abs(x.Ramas));
+
+        foreach (var document in alCubului.Keys.Union(alRegistrelor.Keys)) {
+            var cub = alCubului.GetValueOrDefault(document);
+            var registre = alRegistrelor.GetValueOrDefault(document);
+            if (cub != registre)
+                randuri.Add(new Rand("(f) partide",
+                    $"documentul {document.ToString()[..8]} la {an}-{luna:00}", cub, registre));
+        }
+        note?.Add($"(f) partide: {eligibile.Length} conturi eligibile din {conturi.Count}, "
+            + $"perioada {an}-{luna:00}, {alUnitatii.Count} partide în cub, "
+            + $"{alRegistrelor.Count} rânduri `PartideDeschise` comparate.");
         return randuri;
     }
 
@@ -208,18 +337,22 @@ static class ReconciliereCub {
             cititor.GetDecimal(3),
             0m));
 
-    // (e) un document operat al unui tip migrat ⇔ EXACT o tranzacție `Operare`;
-    // și nicio tranzacție `Operare` pe un document care nu e al unui tip migrat.
+    // (e) un document operat al unui tip migrat ⇔ EXACT o tranzacție `Operare`; și nicio
+    // tranzacție `Operare` pe un document care nu e al unui tip migrat — STAREA nu contează
+    // acolo: un document STORNAT își păstrează `Operare`, cubul e append-only (S-D5).
     static List<Rand> Numarul(DbContext ctx, Guid[]? set) => Citeste(ctx, $$"""
         {{Grupul}},
         peDocument as (
             select cap.id, (select count(*) from "Tranzactie" t
                             where t."DocumentId" = cap.id and t."Fel" = 1) as cate
             from cap),
+        aleTipului as (
+            select d."ID" as id from "Documente" d join migrat m on m.clr = d."ClrType"
+            where d."GCRecord" = 0 and d."Stare" in (1, 2)),
         straine as (
             select t."ID" as id from "Tranzactie" t
             where t."Fel" = 1 and (t."DocumentId" is null
-                                   or t."DocumentId" not in (select id from cap)) {2})
+                                   or t."DocumentId" not in (select id from aleTipului)) {2})
         select 'document ' || id::text || ': tranzacții `Operare`', cate::numeric, 1::numeric
         from peDocument where cate <> 1
         union all
@@ -229,7 +362,8 @@ static class ReconciliereCub {
             "(e) număr", cititor.GetString(0), cititor.GetDecimal(1), cititor.GetDecimal(2)));
 
     static List<T> Citeste<T>(
-            DbContext ctx, string sql, Guid[]? set, Func<System.Data.Common.DbDataReader, T> proiectie) {
+            DbContext ctx, string sql, Guid[]? set, Func<System.Data.Common.DbDataReader, T> proiectie,
+            Guid[]? conturi = null, DateOnly? sfarsit = null, int? an = null, int? luna = null) {
         var conn = ctx.Database.GetDbConnection();
         var deschisEu = conn.State != System.Data.ConnectionState.Open;
         if (deschisEu)
@@ -244,10 +378,13 @@ static class ReconciliereCub {
                 // Scena măsoară DOAR documentele ei: de la comutarea BCS/FCT prin seed,
                 // restul bazei are legitim tranzacții de cub ale altor scene.
                 set is null ? "" : "and t.\"DocumentId\" = any(@doc)");
-            if (set is not null) {
+            foreach (var (nume, valoare) in new (string, object?)[] {
+                ("doc", set), ("cont", conturi), ("sfarsit", sfarsit), ("an", an), ("luna", luna) }) {
+                if (valoare is null)
+                    continue;
                 var p = cmd.CreateParameter();
-                p.ParameterName = "doc";
-                p.Value = set;
+                p.ParameterName = nume;
+                p.Value = valoare;
                 cmd.Parameters.Add(p);
             }
             cmd.CommandTimeout = 0;
@@ -266,7 +403,8 @@ static class ReconciliereCub {
     public static string Raport(IReadOnlyList<Rand> randuri) {
         ArgumentNullException.ThrowIfNull(randuri);
         var text = new StringBuilder();
-        foreach (var litera in new[] { "(a) contabil", "(b) stoc", "(c) fiscal", "(d) balanță", "(e) număr" }) {
+        foreach (var litera in new[] {
+                "(a) contabil", "(b) stoc", "(c) fiscal", "(d) balanță", "(e) număr", "(f) partide" }) {
             var aleLui = randuri.Where(r => r.Litera == litera).ToList();
             text.AppendLine($"{(aleLui.Count == 0 ? "OK  " : "FAIL")} {litera}: "
                 + $"{aleLui.Count} rânduri cu Δ ≠ 0 (toleranță 0)");

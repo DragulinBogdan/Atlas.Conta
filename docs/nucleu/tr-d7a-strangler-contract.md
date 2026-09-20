@@ -217,6 +217,25 @@ aplicată în memorie) cu oracolul, care le pliază în `Operare` (TR-D2a).
 nominalizate prin `Imperecheri` — toleranță 0. N-r8 (stornoul unui `Transfer`
 în citirile cu `includeTransfer = false`) rămâne al lui TR-D8.
 
+**Amendamente din pasul 5 (măsurate, acceptate de main):** (1) contul comun
+al transferului = contul partidei de REFERINȚĂ a stingătorului (postarea cu
+unitate `Partida` și |valoare| maximă, ca `CubDinRegistre.TertPeDocument`);
+plafonul = min(|suma|, |Σ D − Σ C al stinsului pe acel cont|) (MAJOR-1:
+împerecherea e pe document, partida pe cont) — plafon 0 ⇒ transferul se
+SARE, ca în oracol (pe Flax: 1.167 împerecheri PLT sărite, fapt de date al
+conectorului, raportat, nu ascuns); soldul partidei proprii sub plafon ⇒
+refuz `PARTIDA_PROPRIE_INSUFICIENTA`; rândul invers (`Suma < 0`,
+`InverseazaId`) ⇒ mutarea inversă cu același plafon. (2) B-D8 pct. 3
+amendat: oracolul citește ALGEBRIC rândul invers al împerecherii (F27-D8) —
+desfacerea eliberează partida; înainte îl arunca (`min(−suma, sold) ≤ 0`).
+(3) B-D8 pct. 11 amendat: `TrD2DesparteContrapartida` (spargerea piciorului
+de bani) se aplică DOAR nominalizărilor din împerecheri `Autogenerat`
+(la operare, sursa documentului); pentru împerecherile ULTERIOARE cubul ține
+banii întregi în `Operare` și mută doar partida prin `Transfer` — banii n-au
+unitate, spargerea era artefactul nominalizării la operare. (4) `--reconciliere-cub`
+(e) numără tranzacțiile `Operare` după TIPUL documentului, nu după stare
+(documentul stornat își păstrează tranzacția `Operare`).
+
 ### S-D14 — Linia negativă culesă = postare cu valoare negativă în `Operare` (amendament N-D al semnului)
 
 312 FCT pe Flax au linii negative (retur/discount pe aceeași factură), pe

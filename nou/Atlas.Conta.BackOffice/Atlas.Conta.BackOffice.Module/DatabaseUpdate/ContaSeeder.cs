@@ -274,8 +274,9 @@ public static class ContaSeeder {
 
     // Decizia 20: nomenclatorul de tipuri oglindește clasele 1:1 — doar ancoră FK + UI.
     static void SeedTipuriDocument(IObjectSpace os) {
-        // S-D3 — `PosteazaInCub` e dată de seed: pasul 4 al feliei 31 migrează BCS
-        // și FCT, restul tipurilor rămân pe registre; `LaturaContPropriu` (B-r2) e
+        // S-D3 — `PosteazaInCub` e dată de seed: felia 31 migrează BCS, FCT (pasul 4)
+        // și PLT/INC (pasul 5), restul tipurilor rămân pe registre;
+        // `LaturaContPropriu` (B-r2) e
         // latura pe care stă contul propriu al trezoreriei: plata îl are PREDATOR,
         // încasarea PRIMITOR.
         (string Cod, string Denumire, string ClrType, LaturaDocument? ContPropriu)[] tipuri = [
@@ -324,7 +325,7 @@ public static class ContaSeeder {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
-                tip.PosteazaInCub = t.Cod is "BCS" or "FCT";
+                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC";
                 tip.LaturaContPropriu = t.ContPropriu;
             });
     }

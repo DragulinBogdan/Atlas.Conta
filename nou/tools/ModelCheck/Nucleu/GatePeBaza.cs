@@ -7,6 +7,7 @@ using Atlas.Conta.BackOffice.Module.Declaratii;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
+using C = Atlas.Conta.BackOffice.Module.Cub;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
@@ -33,6 +34,11 @@ static class GatePeBaza {
         public readonly Dictionary<string, int> Avertismente = [];
         public readonly List<string> TextExceptii = [];
         public readonly List<string> Conservare = [];
+        public int Transferuri;
+        public int TransferuriDiferiteDeOracol;
+        public readonly Dictionary<string, int> TransferuriSarite = [];
+        public readonly Dictionary<string, int> TransferuriRefuzate = [];
+        public readonly List<string> ExempleSarite = [];
     }
 
     /// <summary>Abaterea taxei culese de cea decisă de nucleu, per document × cotă (B-r1).</summary>
@@ -234,13 +240,32 @@ static class GatePeBaza {
                     conexeAleLui[conex] = sursa;
                 }
 
+            // S-D13: declarația unui STINGATOR e `Operare` ⊕ transferurile
+            // împerecherilor lui, pliate de aceeași normalizare ca oracolul (TR-D2a).
+            var transferuri = Transferurile(os, doc, contract.Tranzactie!, contor);
             Normalizari.Reseteaza();
-            var oracol = Normalizari.Toate(
-                CubDinRegistre.Transforma(os, aleLui),
-                Normalizari.Citeste(os, aleLui, conexeAleLui));
+            var declaratie = transferuri.Count == 0
+                ? (IReadOnlyList<N.Tranzactie>)[contract.Tranzactie!]
+                : Normalizari.TrD2NominalizeazaPrinImperechere([contract.Tranzactie!, .. transferuri]);
+            var aleDeclaratiei = Normalizari.Avertismente.Distinct().ToList();
+            foreach (var avertisment in aleDeclaratiei)
+                contor.Avertismente["declarație: " + Sablon(avertisment)] =
+                    contor.Avertismente.GetValueOrDefault("declarație: " + Sablon(avertisment)) + 1;
+
+            Normalizari.Reseteaza();
+            var brut = CubDinRegistre.Transforma(os, aleLui);
+            var oracol = Normalizari.Toate(brut, Normalizari.Citeste(os, aleLui, conexeAleLui));
             foreach (var avertisment in Normalizari.Avertismente.Distinct())
                 contor.Avertismente[Sablon(avertisment)] =
                     contor.Avertismente.GetValueOrDefault(Sablon(avertisment)) + 1;
+            // Pe COORDONATE (`Comparabil`), nu pe `N.Postare`: `Data` transferului e
+            // `max(DataInregistrare)` la declarant și `Imperecheri.Data` în oracol (S-D13,
+            // TR-r6), deci o egalitate structurală ar fi fals roșie pe fiecare document.
+            if (transferuri.Count > 0 && !MultisetEgal(
+                    transferuri.SelectMany(t => t.Postari).Select(Comparabil.Proiecteaza),
+                    brut.Where(t => t.Fel == N.FelTranzactie.Transfer)
+                        .SelectMany(t => t.Postari).Select(Comparabil.Proiecteaza)))
+                contor.TransferuriDiferiteDeOracol++;
 
             var conservare = N.Conservare.Verifica(contract.Tranzactie!);
             if (conservare.Count > 0 && contor.Conservare.Count < 5)
@@ -248,8 +273,8 @@ static class GatePeBaza {
 
             var nume = ProbeNucleu.Nume(os, oracol, contract.Tranzactie!);
             var raport = Comparabil.Compara(
-                Comparabil.Proiecteaza(oracol), Comparabil.Proiecteaza(contract.Tranzactie!), nume);
-            if (raport.Egal && Normalizari.Avertismente.Count == 0) {
+                Comparabil.Proiecteaza(oracol), Comparabil.Proiecteaza(declaratie), nume);
+            if (raport.Egal && Normalizari.Avertismente.Count == 0 && aleDeclaratiei.Count == 0) {
                 contor.Egale++;
                 return;
             }
@@ -276,6 +301,80 @@ static class GatePeBaza {
             if (contor.TextExceptii.Count < 10)
                 contor.TextExceptii.Add($"{eticheta}: {e.GetType().Name}: {e.Message.Split('\n')[0]}");
         }
+    }
+
+    // S-D13: transferurile împerecherilor în care documentul e STINGĂTOR, calculate
+    // cu aceeași funcție pură pe care o folosește materializarea. `Operare` a
+    // stinsului vine din ORACOLUL lui — gate-ul n-are cub persistat (declarat).
+    static List<N.Tranzactie> Transferurile(
+            IObjectSpace os, Document doc, N.Tranzactie operare, Contor contor) {
+        var imperecheri = os.GetObjectsQuery<Imperechere>()
+            .Where(i => i.DocumentStingatorId == doc.ID)
+            .Select(i => new { i.ID, i.DocumentId, i.Suma, i.Data })
+            .ToList()
+            .OrderBy(i => (i.Data, i.ID))
+            .ToList();
+        if (imperecheri.Count == 0)
+            return [];
+        var stinseIds = imperecheri.Select(i => i.DocumentId).Distinct().ToList();
+        var dateStins = os.GetObjectsQuery<Document>()
+            .Where(d => stinseIds.Contains(d.ID))
+            .Select(d => new { d.ID, d.DataInregistrare })
+            .ToList()
+            .ToDictionary(d => d.ID, d => d.DataInregistrare);
+        var aleStinsului = CubDinRegistre.Transforma(os, stinseIds)
+            .Where(t => t.Fel == N.FelTranzactie.Operare && t.Document != null)
+            .ToDictionary(t => t.Document!.Value, t => t.Postari);
+
+        var transferuri = new List<N.Tranzactie>();
+        var postari = new List<N.Postare>();
+        foreach (var imp in imperecheri) {
+            var rezultat = C.Transferuri.Muta(new C.Transferuri.Cerere(
+                doc.ID,
+                doc.DataInregistrare,
+                operare.Postari,
+                postari,
+                imp.DocumentId,
+                dateStins.GetValueOrDefault(imp.DocumentId, doc.DataInregistrare),
+                aleStinsului.GetValueOrDefault(imp.DocumentId, []),
+                imp.Suma));
+            if (rezultat.Sarit is { } motiv) {
+                contor.TransferuriSarite[Sablon(motiv)] =
+                    contor.TransferuriSarite.GetValueOrDefault(Sablon(motiv)) + 1;
+                if (contor.ExempleSarite.Count < 3)
+                    contor.ExempleSarite.Add($"stingător {doc.Numar ?? doc.ID.ToString()[..8]} "
+                        + $"→ stins {imp.DocumentId.ToString()[..8]}, sumă {imp.Suma}: {motiv}");
+                continue;
+            }
+            if (rezultat.Refuz is { } refuz) {
+                contor.TransferuriRefuzate[refuz.Cod] =
+                    contor.TransferuriRefuzate.GetValueOrDefault(refuz.Cod) + 1;
+                continue;
+            }
+            var contract = N.Motor.Transfera(
+                doc.ID, rezultat.Data, [rezultat.Mutare!], new N.Rotunjire(Scara.ConventieBani));
+            if (!contract.EsteAcceptat) {
+                foreach (var alMotorului in contract.Refuzuri)
+                    contor.TransferuriRefuzate[alMotorului.Cod] =
+                        contor.TransferuriRefuzate.GetValueOrDefault(alMotorului.Cod) + 1;
+                continue;
+            }
+            contor.Transferuri++;
+            transferuri.Add(contract.Tranzactie!);
+            postari.AddRange(contract.Tranzactie!.Postari);
+        }
+        return transferuri;
+    }
+
+    static bool MultisetEgal<T>(IEnumerable<T> unele, IEnumerable<T> altele) where T : notnull {
+        var stanga = new Dictionary<T, int>();
+        foreach (var element in unele)
+            stanga[element] = stanga.GetValueOrDefault(element) + 1;
+        var dreapta = new Dictionary<T, int>();
+        foreach (var element in altele)
+            dreapta[element] = dreapta.GetValueOrDefault(element) + 1;
+        return stanga.Count == dreapta.Count
+            && stanga.All(pereche => dreapta.GetValueOrDefault(pereche.Key) == pereche.Value);
     }
 
     // Felul reziduului: ce coordonate lipsesc / sunt în plus, fără cifre — cheia
@@ -360,6 +459,20 @@ static class GatePeBaza {
             scrie($"   reziduu „{fel}”: {cate} documente; exemple: {string.Join(", ", exemple)}");
             if (diff.Length > 0)
                 scrie(diff.TrimEnd());
+        }
+        if (contor.Transferuri > 0 || contor.TransferuriSarite.Count > 0
+                || contor.TransferuriRefuzate.Count > 0) {
+            scrie($"   S-D13 transferuri: {contor.Transferuri} scrise, "
+                + $"{contor.TransferuriSarite.Values.Sum()} sărite, "
+                + $"{contor.TransferuriRefuzate.Values.Sum()} refuzate; "
+                + "documente ale căror transferuri, pe coordonate, diferă de ale oracolului: "
+                + $"{contor.TransferuriDiferiteDeOracol}");
+            foreach (var (motiv, cate) in contor.TransferuriSarite.OrderByDescending(x => x.Value))
+                scrie($"       sărite ×{cate}: {motiv}");
+            foreach (var exemplu in contor.ExempleSarite)
+                scrie($"           {exemplu}");
+            foreach (var (codTransfer, cate) in contor.TransferuriRefuzate.OrderByDescending(x => x.Value))
+                scrie($"       refuzate ×{cate}: {codTransfer}");
         }
         foreach (var (avertisment, cate) in contor.Avertismente.OrderByDescending(a => a.Value))
             scrie($"   Normalizari.Avertismente ×{cate}: {avertisment}");

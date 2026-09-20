@@ -41,7 +41,7 @@ static class CubDinRegistre {
 
         var imperecheri = os.GetObjectsQuery<Imperechere>()
             .Where(i => ids.Contains(i.DocumentStingatorId))
-            .Select(i => new { i.ID, i.DocumentStingatorId, i.DocumentId, i.Suma, i.Data })
+            .Select(i => new { i.ID, i.DocumentStingatorId, i.DocumentId, i.Suma, i.Data, i.Autogenerat })
             .ToList()
             .OrderBy(i => (i.Data, i.ID))
             .ToList();
@@ -118,6 +118,7 @@ static class CubDinRegistre {
             var soldPeCont = SoldPeCont(contabile);
             foreach (var imp in imperecheri)
                 if (DeImperechere(imp.DocumentStingatorId, imp.DocumentId, imp.Suma, imp.Data,
+                        imp.Autogenerat ? null : imp.ID,
                         tertDoc, soldPeCont, dateDocument) is { } tranzactie)
                     tranzactii.Add(tranzactie);
         }
@@ -218,6 +219,7 @@ static class CubDinRegistre {
             Guid stins,
             decimal suma,
             DateOnly data,
+            Guid? ulterioara,
             IReadOnlyDictionary<Guid, TertDoc> tertDoc,
             IReadOnlyDictionary<(Guid Document, Guid Cont), decimal> soldPeCont,
             IReadOnlyDictionary<Guid, DateOnly> dateDocument) {
@@ -236,7 +238,10 @@ static class CubDinRegistre {
         // cât ține partida stinsului pe contul de referință; restul rămâne pe a
         // stingătorului, ca la declarant.
         var alStinsului = Math.Abs(soldPeCont.GetValueOrDefault((stins, referinta.Cont)));
-        var mutata = Math.Min(suma, alStinsului);
+        // F27-D8: `Imperecheri` e ALGEBRIC — rândul INVERS al unei desfaceri poartă
+        // sumă negativă și mută înapoi, de pe partida stinsului pe a stingătorului.
+        var semn = suma < 0m ? -1m : 1m;
+        var mutata = Math.Min(Math.Abs(suma), alStinsului);
         if (mutata <= 0m) {
             Console.WriteLine($"     CubDinRegistre: împerecherea {stingator} → {stins} nu mută nimic — "
                 + $"stinsul n-are sold pe contul de referință {referinta.Cont} (MAJOR-1).");
@@ -254,9 +259,12 @@ static class CubDinRegistre {
             0m,
             0m,
             valoare,
-            new N.Cauza(stingator, null));
+            // S-D13: transferul ULTERIOAR operării se recunoaște după identitatea împerecherii
+            // pe cauză — piciorul lui de bani nu se sparge (amendament B-D8 pct. 11).
+            new N.Cauza(stingator, ulterioara));
         return new N.Tranzactie(
-            N.FelTranzactie.Transfer, data, stingator, [Pe(stingator, -mutata), Pe(stins, mutata)]);
+            N.FelTranzactie.Transfer, data, stingator,
+            [Pe(stingator, -semn * mutata), Pe(stins, semn * mutata)]);
     }
 
     // Soldul semnat (D − C) al fiecărui document pe fiecare cont atins: plafonul

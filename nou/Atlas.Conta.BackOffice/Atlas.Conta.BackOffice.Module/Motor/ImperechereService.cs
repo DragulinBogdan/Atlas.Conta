@@ -101,6 +101,10 @@ public static class ImperechereService {
         invers.Data = data;
         invers.InverseazaId = original.ID;
         invers.Autogenerat = false;
+        Cub.Materializare.Imperecheaza(os,                                            // S-D13
+            os.GetObjectByKey<Document>(invers.DocumentStingatorId),
+            os.GetObjectByKey<Document>(invers.DocumentId),
+            invers.Suma);
         return invers;
     }
 
@@ -178,6 +182,10 @@ public static class ImperechereService {
         imperechere.Suma = suma;
         imperechere.Data = zi;
         imperechere.Autogenerat = autogenerat;
+        // S-D13: împerecherea automată E nominalizarea din `Operare` a declarantului;
+        // doar cea de DUPĂ operare mută partida printr-o tranzacție `Transfer`.
+        if (!autogenerat)
+            Cub.Materializare.Imperecheaza(os, stingator, document, suma);
         return imperechere;
     }
 

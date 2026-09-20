@@ -46,7 +46,8 @@ public sealed record DocumentFapt(
     RepartitorFapt Primitor,
     string? Valuta,
     decimal? Curs,
-    DateOnly? DataScadenta);
+    DateOnly? DataScadenta,
+    LaturaDocument? LaturaContPropriu);
 
 public sealed record LinieOperand(
     Guid Id,

@@ -64,6 +64,46 @@ public static class Materializare {
         Scrie(os, doc.ID, tranzactie);
     }
 
+    /// <summary>
+    /// S-D13: împerecherea de după operare devine o tranzacție <c>Transfer</c> pe
+    /// stingător. Fără commit: e în tranzacția apelantului.
+    /// </summary>
+    public static void Imperecheaza(IObjectSpace os, Document stingator, Document stins, decimal suma) {
+        ArgumentNullException.ThrowIfNull(os);
+        ArgumentNullException.ThrowIfNull(stingator);
+        ArgumentNullException.ThrowIfNull(stins);
+        if (!MotorOperare.GasesteTipDocument(os, stingator).PosteazaInCub
+            || !MotorOperare.GasesteTipDocument(os, stins).PosteazaInCub)
+            return;
+        var aleStingatorului = os.GetObjectsQuery<Postare>()
+            .Where(p => p.DocumentId == stingator.ID)
+            .ToList();
+        var aleStinsului = os.GetObjectsQuery<Postare>()
+            .Where(p => p.DocumentId == stins.ID && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .ToList();
+        var rezultat = Transferuri.Muta(new Transferuri.Cerere(
+            stingator.ID,
+            stingator.DataInregistrare,
+            [.. Citeste(aleStingatorului, N.FelTranzactie.Operare)],
+            [.. Citeste(aleStingatorului, N.FelTranzactie.Transfer)],
+            stins.ID,
+            stins.DataInregistrare,
+            [.. aleStinsului.Select(Randuri.Citeste)],
+            suma));
+        if (rezultat.Refuz is { } refuz)
+            throw new OperareException(string.Join("\n", Mesaje([refuz])));
+        if (rezultat.Mutare is not { } mutare)
+            return;
+        var contract = N.Motor.Transfera(
+            stingator.ID, rezultat.Data, [mutare], new N.Rotunjire(Scara.ConventieBani));
+        if (!contract.EsteAcceptat)
+            throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
+        Scrie(os, stingator.ID, contract.Tranzactie!);
+    }
+
+    static IEnumerable<N.Postare> Citeste(IEnumerable<Postare> randuri, N.FelTranzactie fel) =>
+        randuri.Where(p => p.Tranzactie.Fel == fel).Select(Randuri.Citeste);
+
     public static void Anuleaza(IObjectSpace os, Document doc) {
         ArgumentNullException.ThrowIfNull(doc);
         if (!MotorOperare.GasesteTipDocument(os, doc).PosteazaInCub)
