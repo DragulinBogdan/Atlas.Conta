@@ -455,6 +455,9 @@ internal static class ProfilPrivat {
                 p.DeclarareIntarziata = directie == DirectieTva.Deductibil
                     ? DeclarareIntarziata.PerioadaInregistrarii
                     : DeclarareIntarziata.PerioadaFaptului;
+                // B-r1/S-r1 — toleranța de pilot (0,01 per linie a cotei), până
+                // la valoarea măsurată pe Flax la pasul 3 al feliei 31.
+                p.TolerantaTaxa = 0.01m;
             });
         }
         Politica("FCT", DirectieTva.Deductibil, SursaCont.RepartitorPredator, "401");

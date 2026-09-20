@@ -39,6 +39,16 @@ public class TipDocument : BaseObject, ICuCautare, ICuProvenienta {
     public virtual Guid? TipTvaImplicitId { get; set; }
     public virtual TipTva TipTvaImplicit { get; set; }
 
+    // S-D3 — regimul dual al strangler-ului: documentele acestui tip scriu ȘI
+    // cubul de postări, în aceeași tranzacție cu registrele.
+    [XafDisplayName("Postează în cub")]
+    public virtual bool PosteazaInCub { get; set; }
+
+    // B-r2 — latura pe care stă contul propriu al trezoreriei (plata: predator;
+    // încasarea: primitor); `null` pe tipurile care n-au cont propriu.
+    [XafDisplayName("Latura contului propriu")]
+    public virtual LaturaDocument? LaturaContPropriu { get; set; }
+
     // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
     // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
     [XafDisplayName("Căutare")]
@@ -318,6 +328,11 @@ public class PoliticaTva : BaseObject, ICuProvenienta {
     // deja închisă. Inert cât timp toate perioadele atinse sunt deschise.
     [XafDisplayName("Declararea faptului întârziat")]
     public virtual DeclarareIntarziata DeclarareIntarziata { get; set; }
+
+    // B-r1 — pragul abaterii dintre taxa CULEASĂ și taxa calculată de nucleu,
+    // per linie a cotei; peste el linia se refuză (TVA_IN_AFARA_TOLERANTEI).
+    [XafDisplayName("Toleranța taxei culese")]
+    public virtual decimal TolerantaTaxa { get; set; }
 }
 
 // Conturile închiderii lunare de TVA (FAZA 1C §6) — DATE per profil, nu

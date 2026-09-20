@@ -339,6 +339,13 @@ public class DocumentDetaliu : BaseObject {
     public virtual Guid DocumentId { get; set; }
     public virtual Document Document { get; set; }
 
+    // B-r11 — ordinea de CULEGERE a liniilor, atribuită o singură dată la
+    // salvarea liniei noi (S-D6, `BackOfficeEFCoreDbContext.AtribuiePozitii`).
+    [XafDisplayName("Poziție")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual int Pozitie { get; set; }
+
     // Cheia contării; Clasa (cheia regulilor de stoc) = TipMaterial.Clasa.
     // Validare de culegere pe NAVIGAȚIE (ca Predator/Primitor pe header —
     // vezi nota de acolo despre calea Operează): TipMaterialId e NOT NULL,

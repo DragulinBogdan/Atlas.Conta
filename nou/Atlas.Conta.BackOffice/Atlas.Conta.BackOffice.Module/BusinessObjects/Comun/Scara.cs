@@ -103,8 +103,10 @@ public static class Scara {
         // `TotalStingere` (F27-D7) e Σ valorilor de postare ale liniilor de
         // creanță, iar `Rest` al partidei deschise e diferența lui față de
         // stingeri — amândouă bani postați.
+        // `ValoareValuta` (a doua valoare a postării din cub) și `TolerantaTaxa`
+        // (pragul abaterii taxei culese, per linie a cotei) sunt tot bani (S-D1).
         "Valoare" or "ValoareTva" or "Suma" or "Baza" or "Tva" or "Debit" or "Credit"
-            or "TotalStingere" or "Rest"
+            or "TotalStingere" or "Rest" or "ValoareValuta" or "TolerantaTaxa"
             or "ValoareFiscala" or "ValoareDeductibila" or "ValoareReziduala"
             or "Amortizare" or "AmortizareFiscala" or "AmortizareDeductibila"
             or "AmortizareInitiala" or "AmortizareFiscalaInitiala" => Bani,

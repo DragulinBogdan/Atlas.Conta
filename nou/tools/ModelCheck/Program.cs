@@ -4240,6 +4240,9 @@ if (profil == ProfilContabil.Privat) {
     VerificaReviewF27(privat: true);
     // Felia 28 — TPH cu discriminatorul `ClrType` (F28-A…G).
     VerificaF28(privat: true);
+    // Felia 31 (TR-D7a), pasul 1 — schema cubului (STR-SCHEMA-*) și `Pozitie` (STR-POZITIE).
+    VerificaSchemaCub(privat: true);
+    VerificaPozitieLinii(privat: true);
     // Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
     VerificaNucleuBcs(privat: true);
     // Felia 30, pasul 4 — declarantul de trezorerie pe scenă privată (partide pe 401/4111).
@@ -9600,6 +9603,9 @@ VerificaPotrivire();
 VerificaReviewF27(privat: false);
 // Felia 28 — TPH cu discriminatorul `ClrType` (F28-A…G).
 VerificaF28(privat: false);
+// Felia 31 (TR-D7a), pasul 1 — schema cubului (STR-SCHEMA-*) și `Pozitie` (STR-POZITIE).
+VerificaSchemaCub(privat: false);
+VerificaPozitieLinii(privat: false);
 // Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
 VerificaNucleuBcs(privat: false);
 
@@ -31521,6 +31527,207 @@ void VerificaF28(bool privat) {
         Check($"F28 — curățenie finală ({eticheta}): niciun document și niciun repartitor de probă rămas",
             !osF.GetObjectsQuery<Document>().Any(d => d.Numar != null && d.Numar.StartsWith(MarcajF28))
             && !osF.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajF28)));
+}
+
+// ============ Felia 31 (TR-D7a): schema cubului și ordinea liniilor ============
+// S-D2 — forma fizică a lui `Postare` NU e în modelul EF (XAF EF Core n-are chei
+// compuse, iar Postgres cere cheia partiției în orice constrângere unică): ea
+// trăiește în SQL-ul migrației, deci proba ei e pe CATALOGUL bazei, nu pe model.
+void VerificaSchemaCub(bool privat) {
+    var eticheta = privat ? "privat" : "bugetar";
+    using var os = provider.CreateObjectSpace();
+    var ctxCub = ((EFCoreObjectSpace)os).DbContext;
+    List<string> Valori(FormattableString sql) => ctxCub.Database.SqlQuery<string>(sql).ToList();
+
+    // ---- STR-SCHEMA-1: părintele e partiționat LIST pe `Spatiu`, cu două partiții ----
+    // `partattrs` e `int2vector` (indexat de la 0), spre deosebire de `conkey` (`int2[]`).
+    var partitionare = Valori($@"
+        SELECT (p.partstrat::text || ':' || a.attname::text) AS ""Value""
+        FROM pg_partitioned_table p
+        JOIN pg_class c ON c.oid = p.partrelid
+        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = p.partattrs[0]
+        WHERE c.relname = 'Postare'");
+    var partitii = Valori($@"
+        SELECT (c.relname::text || ' ' || pg_get_expr(c.relpartbound, c.oid)) AS ""Value""
+        FROM pg_class c
+        JOIN pg_inherits i ON i.inhrelid = c.oid
+        JOIN pg_class parinte ON parinte.oid = i.inhparent
+        WHERE parinte.relname = 'Postare'
+        ORDER BY c.relname");
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-1/{eticheta}): partiționare [{string.Join(", ", partitionare)}]; "
+        + $"partiții [{string.Join("; ", partitii)}].");
+    Check($"STR-SCHEMA-1 ({eticheta}) `Postare` e PARTITION BY LIST (\"Spatiu\") cu exact două partiții — "
+        + "`Postare_Contabil` FOR VALUES IN (1) și `Postare_Stoc` FOR VALUES IN (2), adică `N.Spatiu` (N-D2)",
+        partitionare.SequenceEqual(["l:Spatiu"])
+        && partitii.SequenceEqual([
+            "Postare_Contabil FOR VALUES IN ('1')", "Postare_Stoc FOR VALUES IN ('2')"]));
+
+    // ---- STR-SCHEMA-2: cheia primară e `(Spatiu, ID)`, în ordinea asta ----
+    var cheie = Valori($@"
+        SELECT (con.conname::text || ':' || a.attname::text) AS ""Value""
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        CROSS JOIN LATERAL unnest(con.conkey) WITH ORDINALITY k(attnum, ord)
+        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = k.attnum
+        WHERE c.relname = 'Postare' AND con.contype = 'p'
+        ORDER BY k.ord");
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-2/{eticheta}): PK [{string.Join(", ", cheie)}].");
+    Check($"STR-SCHEMA-2 ({eticheta}) cheia primară a bazei e `(Spatiu, ID)` — divergență DECLARATĂ față de "
+        + "snapshot-ul EF, care poartă doar `ID` (S-r4)",
+        cheie.SequenceEqual(["PK_Postare:Spatiu", "PK_Postare:ID"]));
+
+    // ---- STR-SCHEMA-3: FK-urile stau pe PARTIȚII, exact setul din S-D2 ----
+    var chei = Valori($@"
+        SELECT (c.relname::text || '.' || a.attname::text || '→' || tinta.relname::text || ' [' || con.conname::text || ']') AS ""Value""
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        JOIN pg_class tinta ON tinta.oid = con.confrelid
+        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = con.conkey[1]
+        WHERE con.contype = 'f' AND c.relname IN ('Postare', 'Postare_Contabil', 'Postare_Stoc')
+        ORDER BY 1");
+    string[] cheiAsteptate = [
+        "Postare_Contabil.Cont→Conturi [FK_Postare_Contabil_Conturi_Cont]",
+        "Postare_Contabil.DocumentId→Documente [FK_Postare_Contabil_Documente_DocumentId]",
+        "Postare_Contabil.Partener→Repartitori [FK_Postare_Contabil_Repartitori_Partener]",
+        "Postare_Contabil.Produs→Produse [FK_Postare_Contabil_Produse_Produs]",
+        "Postare_Contabil.TranzactieId→Tranzactie [FK_Postare_Contabil_Tranzactie_TranzactieId]",
+        "Postare_Stoc.Cont→Conturi [FK_Postare_Stoc_Conturi_Cont]",
+        "Postare_Stoc.DocumentId→Documente [FK_Postare_Stoc_Documente_DocumentId]",
+        "Postare_Stoc.Partener→Repartitori [FK_Postare_Stoc_Repartitori_Partener]",
+        "Postare_Stoc.Produs→Produse [FK_Postare_Stoc_Produse_Produs]",
+        "Postare_Stoc.TranzactieId→Tranzactie [FK_Postare_Stoc_Tranzactie_TranzactieId]",
+        "Postare_Stoc.Unitate→Loturi [FK_Postare_Stoc_Loturi_Unitate]",
+    ];
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-3/{eticheta}): {chei.Count} FK-uri [{string.Join("; ", chei)}].");
+    Check($"STR-SCHEMA-3 ({eticheta}) fiecare FK din S-D2 există pe PARTIȚIA lui (părintele partiționat n-are "
+        + "niciunul), iar setul e ÎNCHIS: fără FK pe `Gestiune` (gestiunile virtuale sunt id-uri fără rând — S-r3), "
+        + "fără FK pe `Unitate` pe Contabil (partida e hash determinist, nu rând) și fără FK pe `Valuta` (B-r6)",
+        chei.OrderBy(x => x, StringComparer.Ordinal).SequenceEqual(cheiAsteptate.OrderBy(x => x, StringComparer.Ordinal)));
+
+    // ---- STR-SCHEMA-4: setul minim de indexi (TR-r3 îl re-măsoară la TR-D8) ----
+    var indexi = Valori($@"
+        SELECT (tablename::text || '.' || indexname::text) AS ""Value""
+        FROM pg_indexes WHERE tablename IN ('Postare', 'Postare_Contabil', 'Postare_Stoc', 'Tranzactie')
+        ORDER BY 1").ToHashSet(StringComparer.Ordinal);
+    string[] indexiAsteptati = [
+        "Postare.PK_Postare",
+        "Postare.IX_Postare_TranzactieId",
+        "Postare.IX_Postare_DocumentId",
+        "Postare_Stoc.IX_Postare_Stoc_Produs_Data",
+        "Postare_Contabil.IX_Postare_Contabil_Partener_Cont_Data",
+        "Postare_Contabil.IX_Postare_Contabil_Data",
+        "Postare_Contabil.IX_Postare_Contabil_PerioadaDeclarare_TipTvaId",
+        "Tranzactie.IX_Tranzactie_DocumentId",
+    ];
+    var indexiLipsa = indexiAsteptati.Where(i => !indexi.Contains(i)).ToList();
+    // Cei doi indexi PARȚIALI și cel cu `INCLUDE` nu pot sta pe tabela partiționată
+    // (Postgres îi refuză pe părinte), deci stau pe partițiile lor — exact S-D2.
+    var definitii = Valori($@"
+        SELECT indexdef::text AS ""Value"" FROM pg_indexes
+        WHERE indexname IN ('IX_Postare_Stoc_Produs_Data', 'IX_Postare_Contabil_Partener_Cont_Data',
+                            'IX_Postare_Contabil_PerioadaDeclarare_TipTvaId')
+        ORDER BY 1");
+    var formeGresite = new List<string>();
+    foreach (var d in definitii) {
+        if (d.Contains("IX_Postare_Stoc_Produs_Data") && !d.Contains("INCLUDE (\"Cantitate\", \"Valoare\", \"Gestiune\", \"Unitate\")"))
+            formeGresite.Add(d);
+        if (d.Contains("IX_Postare_Contabil_Partener_Cont_Data") && !d.Contains("WHERE (\"Partener\" IS NOT NULL)"))
+            formeGresite.Add(d);
+        if (d.Contains("IX_Postare_Contabil_PerioadaDeclarare_TipTvaId") && !d.Contains("WHERE (\"PerioadaDeclarare\" IS NOT NULL)"))
+            formeGresite.Add(d);
+    }
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-4/{eticheta}): {indexi.Count} indexi pe cele patru tabele; "
+        + $"lipsă [{string.Join(", ", indexiLipsa)}]; formă greșită [{string.Join("; ", formeGresite)}].");
+    Check($"STR-SCHEMA-4 ({eticheta}) indexii minimi din S-D2 există: PK + `(TranzactieId)`/`(DocumentId)` pe "
+        + "părinte, S2 `(Produs, Data) INCLUDE (…)` pe Stoc, C2 `(Partener, Cont, Data) WHERE …`, C3 `(Data)` și "
+        + "F1 `(PerioadaDeclarare, TipTvaId) WHERE …` pe Contabil, `Tranzactie(DocumentId)`",
+        indexiLipsa.Count == 0 && definitii.Count == 3 && formeGresite.Count == 0);
+
+    // ---- STR-SCHEMA-5: coloanele modelului EF = coloanele bazei, pe ambele entități ----
+    var modelCub = Microsoft.EntityFrameworkCore.Infrastructure.AccessorExtensions
+        .GetService<Microsoft.EntityFrameworkCore.Metadata.IDesignTimeModel>(ctxCub).Model;
+    var abateriCub = new List<string>();
+    foreach (var tip in new[] { typeof(Atlas.Conta.BackOffice.Module.Cub.Postare),
+                                typeof(Atlas.Conta.BackOffice.Module.Cub.Tranzactie) }) {
+        var entitate = modelCub.FindEntityType(tip);
+        if (entitate == null) {
+            abateriCub.Add($"{tip.Name}: lipsește din model");
+            continue;
+        }
+        var tabela = entitate.GetTableName();
+        var coloaneModel = entitate.GetProperties().Select(p => p.GetColumnName()).ToHashSet(StringComparer.Ordinal);
+        var coloaneBaza = Valori($"SELECT column_name::text AS \"Value\" FROM information_schema.columns WHERE table_name = {tabela}")
+            .ToHashSet(StringComparer.Ordinal);
+        if (!coloaneBaza.SetEquals(coloaneModel))
+            abateriCub.Add($"{tabela}: doar în bază [{string.Join(",", coloaneBaza.Except(coloaneModel))}]; "
+                + $"doar în model [{string.Join(",", coloaneModel.Except(coloaneBaza))}]");
+        // Fără `GCRecord`/`OptimisticLockField`: convențiile globale se aplică pe
+        // `IDeferredDeletion`/`IOptimisticLock`, pe care POCO-urile nu le implementează (S-D1).
+        if (coloaneBaza.Contains("GCRecord") || coloaneBaza.Contains("OptimisticLockField"))
+            abateriCub.Add($"{tabela}: are timbru de `BaseObject`");
+        if (entitate.GetDeclaredQueryFilters().Any())
+            abateriCub.Add($"{tabela}: are filtru global de interogare");
+    }
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-5/{eticheta}): abateri [{string.Join("; ", abateriCub)}].");
+    Check($"STR-SCHEMA-5 ({eticheta}) coloanele lui `Postare` și `Tranzactie` din bază sunt exact cele ale "
+        + "modelului EF, fără `GCRecord`/`OptimisticLockField` și fără filtru global — cubul e append-only (S-D1)",
+        abateriCub.Count == 0);
+}
+
+// S-D6 — `Pozitie` pe `DocumentDetaliu`: ordinea de CULEGERE, atribuită o
+// singură dată, în `SaveChanges`-ul contextului (o ușă pentru UI, WebApi,
+// Import1C și conexul clonat). Documentul rămâne Draft: proba e despre
+// SALVARE, nu despre motor.
+void VerificaPozitieLinii(bool privat) {
+    var eticheta = privat ? "privat" : "bugetar";
+    var idDoc = new Guid("57a00000-0000-0000-0000-000000000031");
+    using var os = provider.CreateObjectSpace();
+
+    void CurataPozitie() {
+        var pj = new Purja(os);
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == idDoc));
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => d.ID == idDoc));
+        pj.Executa();
+    }
+    CurataPozitie();
+
+    var gestiune = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "302" : "302.01.00"));
+    var doc = os.CreateObject<BonConsum>();
+    doc.ID = idDoc;
+    doc.Data = new DateOnly(2026, 3, 1);
+    doc.DataInregistrare = doc.Data;
+    doc.Predator = gestiune;
+    doc.Primitor = gestiune;
+    DocumentDetaliu Linie(decimal cantitate) {
+        var linie = os.CreateObject<DocumentDetaliu>();
+        linie.Document = doc;
+        linie.TipMaterial = tipMaterial;
+        linie.Cantitate = cantitate;
+        return linie;
+    }
+
+    var primele = new[] { Linie(1m), Linie(2m), Linie(3m) };
+    os.CommitChanges();
+    Console.WriteLine($"     MĂSURAT (STR-POZITIE/{eticheta}): prima salvare → "
+        + $"[{string.Join(", ", primele.Select(l => l.Pozitie))}].");
+    Check($"STR-POZITIE-1 ({eticheta}) cele trei linii noi primesc `Pozitie` 1, 2, 3 în ordinea adăugării, la "
+        + "salvare (B-r11)",
+        primele.Select(l => l.Pozitie).SequenceEqual([1, 2, 3]));
+
+    var aPatra = Linie(4m);
+    os.CommitChanges();
+    Console.WriteLine($"     MĂSURAT (STR-POZITIE/{eticheta}): a doua salvare → a patra linie {aPatra.Pozitie}, "
+        + $"primele [{string.Join(", ", primele.Select(l => l.Pozitie))}].");
+    Check($"STR-POZITIE-2 ({eticheta}) a patra linie, adăugată la a DOUA salvare, ia `Pozitie` 4 (max + 1 din "
+        + "bază), iar primele trei rămân neschimbate — poziția se atribuie o singură dată",
+        aPatra.Pozitie == 4 && primele.Select(l => l.Pozitie).SequenceEqual([1, 2, 3]));
+
+    CurataPozitie();
+    using var osFinal = provider.CreateObjectSpace();
+    Check($"STR-POZITIE — curățenie finală ({eticheta}): documentul de probă și liniile lui nu mai există",
+        !osFinal.GetObjectsQuery<Document>().IgnoreQueryFilters().Any(d => d.ID == idDoc)
+        && !osFinal.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Any(d => d.DocumentId == idDoc));
 }
 
 // ====== Felia 30, pasul 4: declarantul de trezorerie pe scenă privată ======

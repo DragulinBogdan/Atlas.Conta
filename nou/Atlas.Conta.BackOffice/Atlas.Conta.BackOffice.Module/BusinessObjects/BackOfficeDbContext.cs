@@ -175,6 +175,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Infrastructura migrării (pasul 4): corelare legacy → nou.
         public DbSet<MigrareLegatura> MigrareLegaturi { get; set; }
 
+        // Cubul de postări (S-D1): tabele proprii, în afara `BaseObject`.
+        public DbSet<Cub.Tranzactie> Tranzactii { get; set; }
+        public DbSet<Cub.Postare> Postari { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             base.OnModelCreating(modelBuilder);
             modelBuilder.UseDeferredDeletion(this);
@@ -547,6 +551,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // inițializatorul `= true` de pe proprietate, pentru rândurile noi.
             modelBuilder.Entity<TipTva>().Property(t => t.Activ).HasDefaultValue(true);
 
+            AplicaCub(modelBuilder);
             AplicaScaraNumerica(modelBuilder);
             AplicaColoanePartajate(modelBuilder);
             AplicaColoanaCautare(modelBuilder);
@@ -803,6 +808,80 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     proprietate.SetScale(scara);
                 }
             }
+        }
+
+        // CUBUL DE POSTĂRI (S-D1, S-D2). Cele două tipuri NU derivă din
+        // `BaseObject`: `UseDeferredDeletion`/`UseOptimisticLock` se aplică pe
+        // `IDeferredDeletion`/`IOptimisticLock`, pe care nu le implementează, deci
+        // nu primesc `GCRecord`/`OptimisticLockField` și n-au nevoie de excludere.
+        // Tabelele rămân la SINGULAR (numele din S-D2, pe care le folosesc SQL-ul
+        // partiționării și probele `STR-SCHEMA-*`).
+        //
+        // Ce NU se declară aici, deliberat: indexii și restul FK-urilor lui
+        // `Postare` (Cont, Partener, Produs, Unitate, DocumentId) — tabela e
+        // PARTIȚIONATĂ, iar constrângerile ei stau pe partiții, în SQL explicit
+        // (S-D2); snapshot-ul rămâne divergent DECLARAT (S-r4).
+        private static void AplicaCub(ModelBuilder modelBuilder) {
+            modelBuilder.Entity<Cub.Tranzactie>(b => {
+                b.ToTable("Tranzactie");
+                b.HasKey(t => t.ID);
+                b.Property(t => t.Fel).HasConversion<short>();
+                b.HasOne<Document>().WithMany().HasForeignKey(t => t.DocumentId)
+                    .OnDelete(DeleteBehavior.NoAction);
+                b.HasIndex(t => t.DocumentId);
+            });
+            modelBuilder.Entity<Cub.Postare>(b => {
+                b.ToTable("Postare");
+                b.HasKey(p => p.ID);
+                b.Property(p => p.Spatiu).HasConversion<short>();
+                b.Property(p => p.Latura).HasConversion<short>();
+                b.Property(p => p.Carte).HasConversion<short>();
+                b.Property(p => p.SensTva).HasConversion<short>();
+                b.Property(p => p.RolTva).HasConversion<short>();
+                b.HasOne(p => p.Tranzactie).WithMany(t => t.Postari).HasForeignKey(p => p.TranzactieId)
+                    .OnDelete(DeleteBehavior.NoAction);
+                b.HasIndex(p => p.DocumentId);
+            });
+        }
+
+        // S-D6 — `Pozitie` = ordinea de CULEGERE a liniilor, atribuită O SINGURĂ
+        // dată, la salvarea liniei noi: un singur loc pentru UI, WebApi, Import1C
+        // și conexul clonat. O interogare per salvare (grupată pe document), nu
+        // una per linie (invariantul VI).
+        private void AtribuiePozitii() {
+            var noi = ChangeTracker.Entries<DocumentDetaliu>()
+                .Where(e => e.State == EntityState.Added && e.Entity.Pozitie == 0)
+                .ToList();
+            if (noi.Count == 0)
+                return;
+            var documente = noi.Select(e => e.Entity.DocumentId).Distinct().ToList();
+            var maxime = Set<DocumentDetaliu>().IgnoreQueryFilters()
+                .Where(d => documente.Contains(d.DocumentId))
+                .GroupBy(d => d.DocumentId)
+                .Select(g => new { Document = g.Key, Maxim = g.Max(d => d.Pozitie) })
+                .ToDictionary(x => x.Document, x => x.Maxim);
+            // Liniile deja urmărite (salvate în aceeași sesiune, sau modificate)
+            // nu sunt neapărat în bază — maximul le include pe amândouă.
+            foreach (var urmarita in ChangeTracker.Entries<DocumentDetaliu>())
+                if (documente.Contains(urmarita.Entity.DocumentId))
+                    maxime[urmarita.Entity.DocumentId] =
+                        Math.Max(maxime.GetValueOrDefault(urmarita.Entity.DocumentId), urmarita.Entity.Pozitie);
+            foreach (var intrare in noi) {
+                var maxim = maxime.GetValueOrDefault(intrare.Entity.DocumentId) + 1;
+                intrare.Entity.Pozitie = maxim;
+                maxime[intrare.Entity.DocumentId] = maxim;
+            }
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess) {
+            AtribuiePozitii();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+                CancellationToken cancellationToken = default) {
+            AtribuiePozitii();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
 
     }
