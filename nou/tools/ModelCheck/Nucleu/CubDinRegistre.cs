@@ -86,9 +86,10 @@ static class CubDinRegistre {
 
         if (imperecheri.Count > 0) {
             var tertDoc = TertPeDocument(contabile, dateDocument, rolTert, felRepartitor);
+            var soldPeCont = SoldPeCont(contabile);
             foreach (var imp in imperecheri)
                 if (DeImperechere(imp.DocumentStingatorId, imp.DocumentId, imp.Suma, imp.Data,
-                        tertDoc, dateDocument) is { } tranzactie)
+                        tertDoc, soldPeCont, dateDocument) is { } tranzactie)
                     tranzactii.Add(tranzactie);
         }
         return tranzactii;
@@ -143,7 +144,11 @@ static class CubDinRegistre {
         return new N.Postare(
             new N.Coordonate {
                 Cont = lot.Cont,
-                Latura = r.Valoare >= 0m ? N.Latura.Debit : N.Latura.Credit,
+                // Semnul valorii dă latura; la valoare zero (lot primit gratuit) o dă
+                // semnul cantității, altfel TR-D4 ar căuta perechea pe latura greșită (MINOR-4).
+                Latura = (r.Valoare != 0m ? r.Valoare >= 0m : r.Cantitate >= 0m)
+                    ? N.Latura.Debit
+                    : N.Latura.Credit,
                 Data = data,
                 Gestiune = r.RepartitorId,
                 Produs = lot.ProdusId,
@@ -185,6 +190,7 @@ static class CubDinRegistre {
             decimal suma,
             DateOnly data,
             IReadOnlyDictionary<Guid, TertDoc> tertDoc,
+            IReadOnlyDictionary<(Guid Document, Guid Cont), decimal> soldPeCont,
             IReadOnlyDictionary<Guid, DateOnly> dateDocument) {
         // B-D8 pct. 10: fără cont cu `RolTert` (profilul bugetar) stingerea n-are partidă
         // pe care s-o mute, deci împerecherea n-are corespondent în cub.
@@ -197,6 +203,16 @@ static class CubDinRegistre {
         if (partener is not Guid tert)
             throw new InvalidOperationException(
                 $"Împerecherea {stingator} → {stins} n-are partener pe niciuna dintre partide. B-D10, oprire.");
+        // MAJOR-1: împerecherea e pe DOCUMENT, partida e pe CONT — se mută cel mult
+        // cât ține partida stinsului pe contul de referință; restul rămâne pe a
+        // stingătorului, ca la declarant.
+        var alStinsului = Math.Abs(soldPeCont.GetValueOrDefault((stins, referinta.Cont)));
+        var mutata = Math.Min(suma, alStinsului);
+        if (mutata <= 0m) {
+            Console.WriteLine($"     CubDinRegistre: împerecherea {stingator} → {stins} nu mută nimic — "
+                + $"stinsul n-are sold pe contul de referință {referinta.Cont} (MAJOR-1).");
+            return null;
+        }
         N.Postare Pe(Guid document, decimal valoare) => new(
             new N.Coordonate {
                 Cont = referinta.Cont,
@@ -211,7 +227,21 @@ static class CubDinRegistre {
             valoare,
             new N.Cauza(stingator, null));
         return new N.Tranzactie(
-            N.FelTranzactie.Transfer, data, stingator, [Pe(stingator, -suma), Pe(stins, suma)]);
+            N.FelTranzactie.Transfer, data, stingator, [Pe(stingator, -mutata), Pe(stins, mutata)]);
+    }
+
+    // Soldul semnat (D − C) al fiecărui document pe fiecare cont atins: plafonul
+    // nominalizării (MAJOR-1).
+    static Dictionary<(Guid Document, Guid Cont), decimal> SoldPeCont(
+            IReadOnlyList<RegistruContabil> contabile) {
+        var sume = new Dictionary<(Guid Document, Guid Cont), decimal>();
+        foreach (var r in contabile) {
+            if (r.DocumentId is not Guid document)
+                continue;
+            sume[(document, r.ContDebitId)] = sume.GetValueOrDefault((document, r.ContDebitId)) + r.Valoare;
+            sume[(document, r.ContCreditId)] = sume.GetValueOrDefault((document, r.ContCreditId)) - r.Valoare;
+        }
+        return sume;
     }
 
     // Partida de referință a unui document = postarea lui de terț cu |Valoare| maximă

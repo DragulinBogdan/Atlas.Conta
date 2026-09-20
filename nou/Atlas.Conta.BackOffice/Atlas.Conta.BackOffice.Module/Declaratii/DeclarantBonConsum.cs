@@ -60,8 +60,17 @@ public sealed class DeclarantBonConsum : IDeclarant {
                 solduri[lot.Id] = sold;
                 ipoteze.Add(new N.SoldUnitateCitit(iesit, sold));
             }
-            // N-D7/N-r3: raportul CURENT al lotului, în secvența liniilor.
-            var valoare = N.Evaluare.Iesire(sold, linie.Cantitate, rotunjire);
+            decimal valoare;
+            try {
+                // N-D7/N-r3: raportul CURENT al lotului, în secvența liniilor.
+                valoare = N.Evaluare.Iesire(sold, linie.Cantitate, rotunjire);
+            }
+            catch (N.RefuzException e) {
+                // Refuzul e al liniei, nu al documentului: iterarea continuă ca să
+                // iasă TOATE refuzurile, nu primul (B-D2, MINOR-1).
+                refuzuri.Add(new N.Refuz(e.Refuz.Cod, e.Refuz.Mesaj, linie.Id));
+                continue;
+            }
             solduri[lot.Id] = new N.Sold(
                 sold.Debit, sold.Credit + valoare, sold.Cantitate - linie.Cantitate, sold.ValoareValuta);
 
@@ -90,6 +99,8 @@ public sealed class DeclarantBonConsum : IDeclarant {
                 valoare,
                 new N.Cauza(doc.Id, linie.Id)));
         }
+        if (refuzuri.Count > 0)
+            return null;
         ipoteze.Add(operand.PerioadaDeschisa);
         ipoteze.Add(operand.VersiunePolitica);
         return new N.Declaratie(doc.Id, doc.DataInregistrare, miscari, decizii, ipoteze);

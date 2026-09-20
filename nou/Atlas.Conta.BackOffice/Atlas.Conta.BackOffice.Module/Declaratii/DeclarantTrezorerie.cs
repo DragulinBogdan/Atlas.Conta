@@ -40,7 +40,8 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza>();
         var rest = operand.RestPartidaSursa ?? 0m;
-        var sursaCitita = false;
+        var citite = new List<Guid>();
+        var alePartidelorSursei = new Dictionary<Guid, decimal>();
         var proprieDeclarata = false;
 
         for (var i = 0; i < operand.Linii.Count; i++) {
@@ -62,34 +63,49 @@ public sealed class DeclarantTrezorerie : IDeclarant {
             };
 
             // B-D8 pct. 10: partida se deschide DOAR pe contul cu `RolTert`.
-            var peDebit = tert is not null && ARolTert(operand, contare.ContDebit);
+            var peDebit = tert is not null && Partide.ARolTert(operand, contare.ContDebit);
             var contTert = peDebit ? contare.ContDebit
-                : tert is not null && ARolTert(operand, contare.ContCredit) ? contare.ContCredit
+                : tert is not null && Partide.ARolTert(operand, contare.ContCredit) ? contare.ContCredit
                 : (Guid?)null;
             if (contTert is not Guid cont || tert is not Guid partener) {
                 miscari.Add(new N.Miscare(credit, debit, 0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
                 continue;
             }
 
-            var proprie = N.Unitate.DeschidePartida(cont, partener, doc.Id, doc.DataInregistrare);
+            var proprie = Partide.Proprie(operand, cont, partener);
             var bucati = new List<(N.Unitate Partida, decimal Suma)>(2);
             // TR-D2a: stingerea E postarea care numește partida stinsă; restul liniei
-            // rămâne avans pe partida proprie, ca azi excedentul.
-            if (Sursa(operand, cont, partener) is { } sursa && rest > 0m) {
-                if (!sursaCitita) {
-                    ipoteze.Add(new N.SoldUnitateCitit(sursa, Restul(peDebit, rest)));
-                    sursaCitita = true;
+            // rămâne avans pe partida proprie, ca azi excedentul. Plafonul e ce ține
+            // partida sursei pe ACEST cont, nu restul documentului-sursă (MAJOR-1).
+            if (Partide.Sursa(operand, cont, partener) is { } sursa) {
+                if (!citite.Contains(cont)) {
+                    ipoteze.Add(new N.SoldUnitateCitit(sursa.Unitate, sursa.Sold));
+                    citite.Add(cont);
                 }
-                var nominalizare = N.Fifo.Nominalizeaza(linie.Valoare, [new N.Disponibil(sursa, rest)]);
-                foreach (var alocare in nominalizare.Alocari) {
-                    bucati.Add((alocare.Unitate, alocare.Masura));
-                    decizii.Add(new N.AlocareFifo(linie.Id, alocare.Unitate, alocare.Masura));
-                    rest -= alocare.Masura;
-                }
-                if (nominalizare.Ramas > 0m)
-                    bucati.Add((proprie, nominalizare.Ramas));
+                if (!alePartidelorSursei.TryGetValue(cont, out var alPartidei))
+                    alePartidelorSursei[cont] = alPartidei = Math.Abs(sursa.Sold.Net);
+                var plafon = Math.Min(rest, alPartidei);
+                if (plafon > 0m)
+                    try {
+                        var nominalizare = N.Fifo.Nominalizeaza(
+                            linie.Valoare, [new N.Disponibil(sursa.Unitate, plafon)]);
+                        foreach (var alocare in nominalizare.Alocari) {
+                            bucati.Add((alocare.Unitate, alocare.Masura));
+                            decizii.Add(new N.AlocareFifo(linie.Id, alocare.Unitate, alocare.Masura));
+                            rest -= alocare.Masura;
+                            alePartidelorSursei[cont] -= alocare.Masura;
+                        }
+                        if (nominalizare.Ramas > 0m)
+                            bucati.Add((proprie, nominalizare.Ramas));
+                    }
+                    catch (N.RefuzException e) {
+                        // Refuzul e al liniei, nu al documentului: iterarea continuă
+                        // ca să iasă TOATE refuzurile, nu primul (B-D2, MINOR-1).
+                        refuzuri.Add(new N.Refuz(e.Refuz.Cod, e.Refuz.Mesaj, linie.Id));
+                        continue;
+                    }
             }
-            else
+            if (bucati.Count == 0)
                 bucati.Add((proprie, linie.Valoare));
 
             if (!proprieDeclarata && bucati.Any(b => b.Partida.Id == proprie.Id)) {
@@ -105,6 +121,8 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                     suma,
                     new N.Cauza(doc.Id, linie.Id)));
         }
+        if (refuzuri.Count > 0)
+            return null;
         ipoteze.Add(operand.PerioadaDeschisa);
         ipoteze.Add(operand.VersiunePolitica);
         return new N.Declaratie(doc.Id, doc.DataInregistrare, miscari, decizii, ipoteze);
@@ -170,19 +188,6 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         SursaCont.RepartitorPrimitor => doc.Primitor.Id,
         _ => null,
     };
-
-    static N.Unitate? Sursa(Operand operand, Guid cont, Guid partener) =>
-        operand.Document is { Autogenerat: true, DocumentSursaId: Guid sursaId }
-            ? N.Unitate.DeschidePartida(cont, partener, sursaId,
-                operand.DataInregistrareSursa ?? operand.Document.DataInregistrare)
-            : null;
-
-    // Soldul partidei stinse stă pe latura OPUSĂ celei pe care o stinge documentul.
-    static N.Sold Restul(bool peDebit, decimal rest) =>
-        peDebit ? new N.Sold(0m, rest, 0m, 0m) : new N.Sold(rest, 0m, 0m, 0m);
-
-    static bool ARolTert(Operand operand, Guid cont) =>
-        operand.Conturi.GetValueOrDefault(cont)?.RolTert is not (null or RolTertCont.Niciunul);
 
     static bool EContPropriu(FelRepartitor? fel) => fel == FelRepartitor.ContPropriu;
 

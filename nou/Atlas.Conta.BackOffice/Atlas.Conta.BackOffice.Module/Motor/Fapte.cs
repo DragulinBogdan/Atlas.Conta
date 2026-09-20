@@ -77,7 +77,9 @@ internal static class Fapte {
     // primește tot ce influențează rezultatul și nu mai atinge ObjectSpace-ul.
     public static Declaratii.Operand Operand(IObjectSpace os, Document doc) {
         var tipDoc = MotorOperare.GasesteTipDocument(os, doc);
-        var linii = doc.Detalii.ToList();
+        // MEDIU-3: `Detalii` vine fără ORDER BY, iar secvența liniilor decide
+        // evaluarea (N-D7) și nominalizarea; `Pozitie` pe linie e restanță la TR-D7.
+        var linii = doc.Detalii.OrderBy(d => d.ID).ToList();
 
         var idsLot = linii.Where(d => d.LotId != null).Select(d => d.LotId.Value).Distinct().ToList();
         var dateLot = DateLot(os, idsLot);
@@ -104,12 +106,17 @@ internal static class Fapte {
         var tipuriTva = TipuriTva(os,
             linii.Where(d => d.TipTvaId != null).Select(d => d.TipTvaId.Value).Distinct().ToList());
         var repartitori = Repartitori(os, [doc.PredatorId, doc.PrimitorId]);
+        var sursa = Sursa(os, doc);
         var conturi = Conturi(os,
-            ConturiAtinse(linii, claseTip, repartitori, reguliContare, politicaTva, tipuriTva));
+            ConturiAtinse(linii, claseTip, repartitori, reguliContare, politicaTva, tipuriTva, sursa.Partide));
 
         var solduriLoturi = SolduriLoturi(os, doc, linii, claseTip, reguliStoc, idsLot);
 
-        var (restPartidaSursa, dataSursa) = Sursa(os, doc);
+        // MAJOR-1: partidele sursei sunt ale conturilor cu rol de terț; pe celelalte
+        // soldul e al contului, nu al unei partide de nominalizat.
+        var partideSursa = sursa.Partide
+            .Where(p => conturi.GetValueOrDefault(p.Cont)?.RolTert is not (null or RolTertCont.Niciunul))
+            .ToList();
 
         // F27-D5: aceeași regulă pe tot documentul (`dataFapt` = `doc.Data`), deci
         // un singur fapt, nu unul per linie.
@@ -129,12 +136,13 @@ internal static class Fapte {
             tipuriTva,
             conturi,
             solduriLoturi,
-            restPartidaSursa,
-            dataSursa,
+            sursa.Ramas,
+            partideSursa,
+            sursa.Data,
             perioadaDeclarare,
-            // Deriva maximă explicabilă prin rotunjirea per linie de azi; devine
-            // rând de politică la TR-D7 (B-D6).
-            0.01m * linii.Count(d => d.TipTvaId != null),
+            // Deriva maximă explicabilă prin rotunjirea PER LINIE de azi; declarantul o
+            // înmulțește cu liniile cotei. Devine rând de politică la TR-D7 (B-D6).
+            0.01m,
             new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
             new N.VersiunePolitica("seed", doc.DataInregistrare));
     }
@@ -142,22 +150,37 @@ internal static class Fapte {
     // Restul documentului-sursă FĂRĂ stingerile documentului curent: ca soldurile de
     // lot, starea se citește dinaintea documentului care o schimbă — la probă
     // împerecherea automată e deja scrisă, iar `Ramas` ar întoarce 0 (B-D5).
-    static (decimal? Ramas, DateOnly? Data) Sursa(IObjectSpace os, Document doc) {
+    // Soldul PER CONT al sursei e cel care spune ce poate ține fiecare partidă a ei
+    // (MAJOR-1): restul e o cifră a documentului, partida e a contului.
+    static (decimal? Ramas, DateOnly? Data, List<(Guid Cont, decimal Sold)> Partide) Sursa(
+            IObjectSpace os, Document doc) {
         if (!doc.Autogenerat || doc.DocumentSursaId is not Guid sursaId)
-            return (null, null);
+            return (null, null, []);
         var sursa = os.GetObjectsQuery<Document>()
             .Where(d => d.ID == sursaId)
             .Select(d => new { d.TotalStingere, d.DataInregistrare })
             .ToList()
             .FirstOrDefault();
         if (sursa == null)
-            return (null, null);
+            return (null, null, []);
         var asignat = os.GetObjectsQuery<Imperechere>()
             .Where(i => (i.DocumentStingatorId == sursaId || i.DocumentId == sursaId)
                 && i.DocumentStingatorId != doc.ID)
             .Select(i => (decimal?)i.Suma)
             .Sum() ?? 0m;
-        return ((sursa.TotalStingere ?? 0m) - asignat, sursa.DataInregistrare);
+        var note = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId == sursaId && !r.Storno)
+            .Select(r => new { r.ContDebitId, r.ContCreditId, r.Valoare })
+            .ToList();
+        var sume = new Dictionary<Guid, decimal>();
+        foreach (var n in note) {
+            sume[n.ContDebitId] = sume.GetValueOrDefault(n.ContDebitId) + n.Valoare;
+            sume[n.ContCreditId] = sume.GetValueOrDefault(n.ContCreditId) - n.Valoare;
+        }
+        return (
+            (sursa.TotalStingere ?? 0m) - asignat,
+            sursa.DataInregistrare,
+            [.. sume.Where(s => s.Value != 0m).OrderBy(s => s.Key).Select(s => (s.Key, s.Value))]);
     }
 
     static Declaratii.DocumentFapt Document(Document doc, TipDocument tipDoc,
@@ -218,9 +241,11 @@ internal static class Fapte {
         var solduri = new Dictionary<Guid, N.Sold>();
         if (idsLot.Count == 0)
             return solduri;
-        var peCheie = StocService.SolduriLaData(os, idsLot, doc.DataInregistrare, doc.ID);
+        // Cheia se află înaintea citirii: fără nicio latură predatoare (factura își
+        // naște loturile) nu e nimic de citit, deci nici interogare (MINOR-7).
+        var chei = new List<(Guid Lot, CheieStoc Cheie)>();
         foreach (var d in linii) {
-            if (d.LotId is not Guid lotId || solduri.ContainsKey(lotId))
+            if (d.LotId is not Guid lotId || chei.Any(c => c.Lot == lotId))
                 continue;
             var tipStoc = Potrivire.Stoc(reguliStoc, Linie(d, claseTip))
                 .Where(p => p.Latura == LaturaDocument.Predator)
@@ -228,8 +253,13 @@ internal static class Fapte {
                 .Select(r => (TipStoc?)r.TipStoc)
                 .FirstOrDefault();
             if (tipStoc is TipStoc tip)
-                solduri[lotId] = Sold(peCheie.GetValueOrDefault(new CheieStoc(lotId, doc.PredatorId, tip)));
+                chei.Add((lotId, new CheieStoc(lotId, doc.PredatorId, tip)));
         }
+        if (chei.Count == 0)
+            return solduri;
+        var peCheie = StocService.SolduriLaData(os, idsLot, doc.DataInregistrare, doc.ID);
+        foreach (var (lotId, cheie) in chei)
+            solduri[lotId] = Sold(peCheie.GetValueOrDefault(cheie));
         return solduri;
     }
 
@@ -241,8 +271,10 @@ internal static class Fapte {
             IReadOnlyDictionary<Guid, Declaratii.RepartitorFapt> repartitori,
             IReadOnlyList<RegulaContareFapt> reguliContare,
             Declaratii.PoliticaTvaFapt politicaTva,
-            IReadOnlyDictionary<Guid, TipTvaFapt> tipuriTva) {
+            IReadOnlyDictionary<Guid, TipTvaFapt> tipuriTva,
+            IReadOnlyList<(Guid Cont, decimal Sold)> partideSursa) {
         var ids = new List<Guid?>();
+        ids.AddRange(partideSursa.Select(p => (Guid?)p.Cont));
         ids.AddRange(claseTip.Values.Select(c => c.ContImplicitId));
         ids.AddRange(repartitori.Values.Select(r => r.ContImplicitId));
         foreach (var r in reguliContare) {

@@ -79,6 +79,81 @@ public class CubTeste {
             Sold.Din(new Postare(pe.Pe(Latura.Credit, data), 0m, 0m, -7.50m, cauza)));
     }
 
+    [Fact]
+    public void CantitateaSeAdunaDoarPeStoc() {
+        var (receptia, lot, partida) = Receptie();
+        var peProdus = Cub.Sold([receptia], p => p.Coordonate.Produs ?? Guid.Empty);
+        Assert.Equal(5m, peProdus.Values.Single().Cantitate);
+        var peUnitate = Cub.Sold([receptia], p => p.Coordonate.Unitate?.Id ?? Guid.Empty);
+        Assert.Equal(5m, peUnitate[lot.Id].Cantitate);
+        Assert.Equal(0m, peUnitate[partida.Id].Cantitate);
+    }
+
+    [Fact]
+    public void PartidaStinsaIntegralRamaneFaraSoldSiFaraCantitate() {
+        var (receptia, _, partida) = Receptie();
+        // Stingerea sub TR-D2 e postarea care numește partida: laturile se adună
+        // separat, deci proba e pe net.
+        var nominalizata = Stingere(Latura.Debit, 100m);
+        var dupaPlata = Cub.Sold(
+            [receptia, nominalizata], p => p.Coordonate.Unitate?.Id ?? Guid.Empty)[partida.Id];
+        Assert.Equal(0m, dupaPlata.Net);
+        Assert.Equal(0m, dupaPlata.Cantitate);
+        // Mutarea cu valoare SEMNATĂ (tranzacția de împerechere) golește chiar soldul:
+        // cu cantitatea capătului virtual încă adunată, `Sold.Zero` era de neatins.
+        var mutata = Stingere(Latura.Credit, -100m);
+        var dupaTransfer = Cub.Sold(
+            [receptia, mutata], p => p.Coordonate.Unitate?.Id ?? Guid.Empty)[partida.Id];
+        Assert.Equal(Sold.Zero, dupaTransfer);
+
+        Tranzactie Stingere(Latura latura, decimal valoare) {
+            var data = new DateOnly(2026, 1, 8);
+            return new Tranzactie(FelTranzactie.Transfer, data, Gen.Documente[1], [
+                new Postare(
+                    new Capat { Cont = partida.Cont, Partener = partida.Partener, Unitate = partida }
+                        .Pe(latura, data),
+                    0m,
+                    0m,
+                    valoare,
+                    new Cauza(Gen.Documente[1], Gen.Linii[1])),
+            ]);
+        }
+    }
+
+    // N-D4: recepția are capătul virtual (−q) pe partida furnizorului și +q pe lot.
+    static (Tranzactie Tranzactie, Unitate Lot, Unitate Partida) Receptie() {
+        var aleator = new Random(Gen.Samanta);
+        var produs = Gen.Produse[0];
+        var contStoc = Gen.Conturi[0];
+        var contTert = Gen.Conturi[1];
+        var partener = Gen.Parteneri[0];
+        var document = Gen.Documente[0];
+        var data = new DateOnly(2026, 1, 5);
+        var lot = Gen.Lot(aleator, contStoc, produs);
+        var partida = Unitate.DeschidePartida(contTert, partener, document, data);
+        var (debit, credit) = Miscare.Postari(
+            new Miscare(
+                new Capat {
+                    Cont = contTert,
+                    Partener = partener,
+                    Gestiune = GestiuniVirtuale.Furnizor,
+                    Produs = produs,
+                    Unitate = partida,
+                },
+                new Capat {
+                    Cont = contStoc,
+                    Gestiune = Gen.Gestiuni[0],
+                    Produs = produs,
+                    Unitate = lot,
+                },
+                5m,
+                0m,
+                100m,
+                new Cauza(document, Gen.Linii[0])),
+            data);
+        return (new Tranzactie(FelTranzactie.Operare, data, document, [debit, credit]), lot, partida);
+    }
+
     internal static List<Tranzactie> Istorie(Random aleator) {
         var tranzactii = new List<Tranzactie>();
         var cate = 1 + aleator.Next(6);

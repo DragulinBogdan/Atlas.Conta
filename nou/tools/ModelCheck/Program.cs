@@ -4802,13 +4802,17 @@ using (var os = provider.CreateObjectSpace()) {
         // rulează exclusiv pe profilul privat, deci pe bugetar 401 n-are rol și
         // oracolul nu are partidă — iar M6 îi ia și partenerul.
         var cu401Tert = cont401.RolTert != RolTertCont.Niciunul;
-        Guid? partidaFct = cu401Tert
-            ? N.Unitate.DeschidePartida(cont401.ID, furnizor.ID, fct.ID, fct.DataInregistrare).Id
+        var partidaFct = cu401Tert
+            ? UnitateComparabila.Din(
+                N.Unitate.DeschidePartida(cont401.ID, furnizor.ID, fct.ID, fct.DataInregistrare))
             : null;
         Guid? tertulFct = cu401Tert ? furnizor.ID : null;
+        var lotulFct = new UnitateComparabila(
+            lot.ID, N.FelUnitate.Lot, tipMateriale.ContImplicitId.Value, null, lot.Data);
         N.Analiza AnalizaDin(Dimensiuni d) => new(d.CodFunctionalId, d.CodEconomicId, d.SursaFinantareId,
             d.UnitateId, d.ProiectId, d.CentruCostId);
-        PostareComparabila Post(Guid cont, N.Latura latura, Guid? gestiune, Guid? produs, Guid? unitate,
+        PostareComparabila Post(Guid cont, N.Latura latura, Guid? gestiune, Guid? produs,
+                UnitateComparabila unitate,
                 Guid? partener, N.Analiza analiza, decimal cantitate, decimal valoare, Guid linie) =>
             new(cont, latura, gestiune, produs, unitate, partener, null, null, analiza, cantitate,
                 latura == N.Latura.Debit ? valoare : -valoare, linie);
@@ -4833,7 +4837,7 @@ using (var os = provider.CreateObjectSpace()) {
                     null, AnalizaDin(dimFctDebit), 0m, 100m, linieServiciu.ID),
                 Post(cont401.ID, N.Latura.Credit, null, dimFctCredit.MaterialId, partidaFct,
                     tertulFct, AnalizaDin(dimFctCredit), 0m, 100m, linieServiciu.ID),
-                Post(tipMateriale.ContImplicitId.Value, N.Latura.Debit, mag1.ID, produs.ID, lot.ID,
+                Post(tipMateriale.ContImplicitId.Value, N.Latura.Debit, mag1.ID, produs.ID, lotulFct,
                     null, AnalizaDin(dimNirDebit), 5m, 59.5m, linieStoc.ID),
                 Post(cont401.ID, N.Latura.Credit, null, dimNirCredit.MaterialId, partidaFct,
                     tertulFct, AnalizaDin(dimNirCredit), 0m, 59.5m, linieStoc.ID),
@@ -5435,7 +5439,10 @@ using (var os = provider.CreateObjectSpace()) {
         var cont6xx = regulaMat.ContDebitId.Value;
         N.Analiza AnalizaDin(Dimensiuni d) => new(d.CodFunctionalId, d.CodEconomicId, d.SursaFinantareId,
             d.UnitateId, d.ProiectId, d.CentruCostId);
-        PostareComparabila Post(Guid cont, N.Latura latura, Guid? gestiune, Guid? produs, Guid? unitate,
+        UnitateComparabila Lotul(Guid cont) =>
+            new(lot.ID, N.FelUnitate.Lot, cont, null, lot.Data);
+        PostareComparabila Post(Guid cont, N.Latura latura, Guid? gestiune, Guid? produs,
+                UnitateComparabila unitate,
                 N.Analiza analiza, decimal cantitate, decimal valoare) =>
             new(cont, latura, gestiune, produs, unitate, null, null, null, analiza, cantitate,
                 latura == N.Latura.Debit ? valoare : -valoare, linieBcs);
@@ -5451,8 +5458,8 @@ using (var os = provider.CreateObjectSpace()) {
             [
                 // stoc: contul din lanțul lot → produs → TipMaterial, gestiunea din rând,
                 // unitatea = lotul, semnul măsurii trecut pe latură
-                Post(contStoc, N.Latura.Credit, mag1.ID, produs.ID, lot.ID, N.Analiza.Fara, -4m, 40m),
-                Post(contStoc, N.Latura.Debit, loc.ID, produs.ID, lot.ID, N.Analiza.Fara, 4m, 40m),
+                Post(contStoc, N.Latura.Credit, mag1.ID, produs.ID, Lotul(contStoc), N.Analiza.Fara, -4m, 40m),
+                Post(contStoc, N.Latura.Debit, loc.ID, produs.ID, Lotul(contStoc), N.Analiza.Fara, 4m, 40m),
                 // contabil: repartitorul laturii e Gestiune/UnitateInterna ⇒ coordonata Gestiune;
                 // niciun cont nu are RolTert ⇒ fără partidă; niciun repartitor nu e Partener ⇒ fără partener
                 Post(cont6xx, N.Latura.Debit, mag1.ID, dimDebit.MaterialId, null, AnalizaDin(dimDebit), 0m, 40m),
@@ -5467,8 +5474,8 @@ using (var os = provider.CreateObjectSpace()) {
         var normalizat = Normalizari.M6PartenerDoarPeTert(Normalizari.TrD4UnificaStocCuContabil(cub));
         var dupa = Comparabil.Compara(
             [
-                Post(cont6xx, N.Latura.Debit, loc.ID, produs.ID, lot.ID, AnalizaDin(dimDebit), 4m, 40m),
-                Post(contStoc, N.Latura.Credit, mag1.ID, produs.ID, lot.ID, AnalizaDin(dimCredit), -4m, 40m),
+                Post(cont6xx, N.Latura.Debit, loc.ID, produs.ID, Lotul(cont6xx), AnalizaDin(dimDebit), 4m, 40m),
+                Post(contStoc, N.Latura.Credit, mag1.ID, produs.ID, Lotul(contStoc), AnalizaDin(dimCredit), -4m, 40m),
             ],
             Comparabil.Proiecteaza(normalizat));
         if (!dupa.Egal)
@@ -31685,12 +31692,14 @@ void VerificaNucleuTrezorerie(bool privat) {
     var partidaFct = PartidaDin(fct, cont401, furnizor);
     var partidaProprie = PartidaDin(plataAuto, cont401, furnizor);
     Check($"NUC-PLT-SPLIT-3 ({eticheta}): declarantul împarte linia — 61 pe partida FACTURII (nominalizare "
-        + "TR-D2a) + 60 pe partida PROPRIE a plății, în ordinea liniilor",
+        + "TR-D2a) + 60 pe partida PROPRIE a plății, în ordinea liniilor; ipoteza consemnează soldul REAL "
+        + "al partidei (121 credit pe 401), iar plafonul nominalizării e restul documentului (61) — MAJOR-1",
         contractSplit.EsteAcceptat
         && contractSplit.Tranzactie.Postari.Any(p => p.Coordonate.Unitate?.Id == partidaFct && p.Valoare == 61m)
         && contractSplit.Tranzactie.Postari.Any(p => p.Coordonate.Unitate?.Id == partidaProprie && p.Valoare == 60m)
         && contractSplit.Decizii.OfType<N.AlocareFifo>().Single().Masura == 61m
-        && contractSplit.Ipoteze.OfType<N.SoldUnitateCitit>().Single().Sold.Credit == 61m);
+        && contractSplit.Ipoteze.OfType<N.SoldUnitateCitit>().Single() is { } citit
+        && citit.Sold.Credit == 121m && citit.Unitate.Id == partidaFct);
 
     ProbeNucleu.Proba(os, Check, $"NUC-PLT-SPLIT", [plataAuto]);
 
@@ -31880,6 +31889,28 @@ void VerificaNucleuBcs(bool privat) {
         + "(valoarea nu se pierde între capete)",
         N.Conservare.Verifica(contractR3.Tranzactie).Count == 0);
 
+    // --- NUC-BCS-REFUZURI (MINOR-1): refuzul e al LINIEI, nu al documentului ---
+    // Două linii pe două loturi fără stoc: `Evaluare.Iesire` aruncă pe fiecare, iar
+    // declarantul le adună pe amândouă în loc să se oprească la prima (B-D2).
+    var lotGol1 = Lotul("-C", 10m);
+    var lotGol2 = Lotul("-D", 10m);
+    os.CommitChanges();
+    var bcsRefuzat = Consum(lotGol1, 1m, new DateOnly(2026, 3, 7));
+    var aDoua = os.CreateObject<DocumentDetaliu>();
+    aDoua.Document = bcsRefuzat;
+    aDoua.TipMaterial = tipMaterial;
+    aDoua.Lot = lotGol2;
+    aDoua.Cantitate = 2m;
+    os.CommitChanges();
+    var contractRefuzat = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, bcsRefuzat);
+    Check($"NUC-BCS-REFUZURI ({eticheta}): două linii pe loturi fără stoc ⇒ DOUĂ refuzuri "
+        + "STOC_INSUFICIENT, câte unul pe linia lui (nu primul și atât)",
+        !contractRefuzat.EsteAcceptat
+        && contractRefuzat.Refuzuri.Count == 2
+        && contractRefuzat.Refuzuri.All(r => r.Cod == N.Coduri.StocInsuficient)
+        && contractRefuzat.Refuzuri.Select(r => r.Linie).Distinct().Count() == 2
+        && contractRefuzat.Refuzuri.All(r => bcsRefuzat.Detalii.Any(d => d.ID == r.Linie)));
+
     CurataNucBcs(os);
     Check($"NUC-BCS-{eticheta} — curățenie finală (fără reziduuri de scenă)",
         !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajNucBcs))
@@ -32036,6 +32067,79 @@ void VerificaNucleuFct(bool privat) {
         contractImo.EsteAcceptat
         && contractImo.Decizii.OfType<N.PartidaDeschisa>().Select(d => d.Unitate.Cont).OrderBy(c => c)
             .SequenceEqual(new[] { cont401.ID, cont404.ID }.OrderBy(c => c)));
+
+    // --- (2b) MAJOR-1: plata autogenerată de o factură cu DOUĂ conturi de terț ---
+    // Împerecherea de azi e pe DOCUMENT (605 = tot brutul), dar partida e pe CONT:
+    // pe 401 factura ține doar taxa (105), restul stă pe 404. Nominalizarea se
+    // plafonează la ce ține partida, nu la restul documentului.
+    var casa = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
+    var fctPlata = Factura("-F4", new DateOnly(2026, 3, 6));
+    fctPlata.GenereazaPlata = true;
+    fctPlata.PlataContPropriu = casa;
+    fctPlata.PlataNumar = MarcajNucFct + "-OP";
+    fctPlata.PlataData = new DateOnly(2026, 3, 12);
+    Linie(fctPlata, tipImobilizare, 1m, 500m, n21);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctPlata);
+    var plataImo = os.GetObjectsQuery<Plata>().Single(p => p.DocumentSursaId == fctPlata.ID);
+    MotorOperare.Opereaza(os, plataImo);
+    var impImo = os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plataImo.ID);
+    Check($"NUC-PLT-IMO-1 ({eticheta}) scenă: factura de imobilizare cu plată generată — brutul 605 "
+        + "se împarte pe 404 (500) și 401 (105), iar plata autogenerată stinge 605 pe DOCUMENT, "
+        + "printr-o singură notă D 401 = C 5311",
+        fctPlata.Total == 605m && plataImo.Detalii.Single().Valoare == 605m && impImo.Suma == 605m
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == plataImo.ID) == 1);
+
+    var contractPlataImo = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, plataImo);
+    var partidaFctImo = N.Unitate.DeschidePartida(
+        cont401.ID, furnizor.ID, fctPlata.ID, fctPlata.DataInregistrare).Id;
+    var partidaProprieImo = N.Unitate.DeschidePartida(
+        cont401.ID, furnizor.ID, plataImo.ID, plataImo.DataInregistrare).Id;
+    Check($"NUC-PLT-IMO-2 ({eticheta}): declarantul nominalizează DOAR 105 pe partida facturii "
+        + "(cât ține ea pe 401) și lasă 500 pe partida proprie a plății; ipoteza consemnează soldul "
+        + "REAL al partidei (105 credit), nu restul documentului (605) — MAJOR-1",
+        contractPlataImo.EsteAcceptat
+        && contractPlataImo.Tranzactie.Postari
+            .Any(x => x.Coordonate.Unitate?.Id == partidaFctImo && x.Valoare == 105m)
+        && contractPlataImo.Tranzactie.Postari
+            .Any(x => x.Coordonate.Unitate?.Id == partidaProprieImo && x.Valoare == 500m)
+        && contractPlataImo.Decizii.OfType<N.AlocareFifo>().Single().Masura == 105m
+        && contractPlataImo.Ipoteze.OfType<N.SoldUnitateCitit>().Single() is { } cititImo
+        && cititImo.Unitate.Id == partidaFctImo && cititImo.Sold.Credit == 105m);
+    ProbeNucleu.Proba(os, Check, $"NUC-PLT-IMO-{eticheta}", [plataImo]);
+
+    // --- (2c) MEDIU-1: taxa culeasă e autoritară PER LINIE, ca `pastreazaTvaCules` ---
+    // Motorul vechi umple linia lăsată la zero în `PregatesteOperare`, deci cazul se
+    // vede doar pe un operand care o citește goală: același document, într-un
+    // ObjectSpace propriu, cu taxa liniei a doua ștearsă și NECOMISĂ.
+    var fctCulese = Factura("-F5", new DateOnly(2026, 3, 7));
+    var culeasa = Linie(fctCulese, tipServicii, 1m, 100m, n21);
+    var lasata = Linie(fctCulese, tipServicii, 1m, 50m, n21);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctCulese);
+    Check($"NUC-FCT-CULESE-1 ({eticheta}) scenă: două linii la ACEEAȘI cotă — 100/21 și 50/10,50",
+        culeasa.Valoare == 100m && culeasa.ValoareTva == 21m
+        && lasata.Valoare == 50m && lasata.ValoareTva == 10.5m);
+    using (var osCulese = provider.CreateObjectSpace()) {
+        var alDoilea = osCulese.GetObjectByKey<FacturaIntrare>(fctCulese.ID);
+        alDoilea.Detalii.Single(d => d.ID == lasata.ID).ValoareTva = 0m;
+        var contractCulese = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(
+            osCulese, alDoilea);
+        var taxePeLinie = contractCulese.Tranzactie is { } trCulese
+            ? trCulese.Postari
+                .Where(x => x.Coordonate.Cont == cont4426.ID)
+                .ToDictionary(x => x.Cauza.Linie, x => x.Valoare)
+            : [];
+        foreach (var refuz in contractCulese.Refuzuri)
+            Console.WriteLine($"       refuz {refuz.Cod}: {refuz.Mesaj}");
+        Check($"NUC-FCT-CULESE-2 ({eticheta}): taxa CULEASĂ e a liniei ei (21 pe prima), iar linia lăsată "
+            + "la zero o primește pe a nucleului (10,50) — validarea per cotă compară Σ valorilor ALESE "
+            + "(31,50) cu cea decisă pe document, deci documentul nu cade (MEDIU-1)",
+            contractCulese.EsteAcceptat
+            && taxePeLinie.Count == 2
+            && taxePeLinie.GetValueOrDefault(culeasa.ID) == 21m
+            && taxePeLinie.GetValueOrDefault(lasata.ID) == 10.5m);
+    }
 
     // --- (3) N-r4 MĂSURAT: taxa se decide pe DOCUMENT × cotă, nu pe linie ---
     var fctR4 = Factura("-F3", new DateOnly(2026, 3, 5));

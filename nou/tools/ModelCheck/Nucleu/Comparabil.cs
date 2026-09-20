@@ -9,12 +9,24 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 /// Proiecția pe care se compară oracolul cu declarația (B-D7): coordonatele care
 /// contează, măsurile semnate, egalitate structurală, diff pe MULTISET.
 /// </summary>
+/// <summary>
+/// Unitatea, cu tot ce o identifică: `Id` e derivat din (document, cont), dar
+/// `Deschisa` intră în FIFO și `Partener` în forma ei (MINOR-2).
+/// </summary>
+sealed record UnitateComparabila(Guid Id, N.FelUnitate Fel, Guid Cont, Guid? Partener, DateOnly Deschisa) {
+    public static UnitateComparabila? Din(N.Unitate? unitate) =>
+        unitate is null
+            ? null
+            : new UnitateComparabila(
+                unitate.Id, unitate.Fel, unitate.Cont, unitate.Partener, unitate.Deschisa);
+}
+
 sealed record PostareComparabila(
     Guid Cont,
     N.Latura Latura,
     Guid? Gestiune,
     Guid? Produs,
-    Guid? Unitate,
+    UnitateComparabila? Unitate,
     Guid? Partener,
     N.CodTva? CodTva,
     int? PerioadaDeclarare,
@@ -65,9 +77,13 @@ static class Comparabil {
         return new PostareComparabila(
             coordonate.Cont,
             coordonate.Latura,
-            N.GestiuniVirtuale.Este(coordonate.Gestiune) ? null : coordonate.Gestiune,
+            // Gestiunea virtuală se citește ca lipsă DOAR pe capătul cu cantitate (N-D4);
+            // pe restul rămâne, ca o postare pusă greșit pe ea să cadă (MINOR-3).
+            N.GestiuniVirtuale.Este(coordonate.Gestiune) && postare.Cantitate != 0m
+                ? null
+                : coordonate.Gestiune,
             coordonate.Produs,
-            coordonate.Unitate?.Id,
+            UnitateComparabila.Din(coordonate.Unitate),
             coordonate.Partener,
             coordonate.CodTva,
             coordonate.PerioadaDeclarare,
@@ -120,8 +136,9 @@ static class Comparabil {
             text.Append(" gest=").Append(simbol(gestiune));
         if (postare.Produs is Guid produs)
             text.Append(" prod=").Append(simbol(produs));
-        if (postare.Unitate is Guid unitate)
-            text.Append(" unit=").Append(Scurt(unitate));
+        if (postare.Unitate is { } unitate)
+            text.Append(" unit=").Append(Scurt(unitate.Id)).Append('/').Append(unitate.Fel)
+                .Append('/').Append(simbol(unitate.Cont)).Append('/').Append(unitate.Deschisa);
         if (postare.Partener is Guid partener)
             text.Append(" part=").Append(simbol(partener));
         if (postare.CodTva is { } cod)

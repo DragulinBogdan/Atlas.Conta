@@ -12,7 +12,10 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 /// scoate din registre, normalizate cu lista închisă B-D8.
 /// </summary>
 static class ProbeNucleu {
-    /// <summary>Invariantul VI: operandul se citește pe seturi, nu per linie.</summary>
+    /// <summary>
+    /// Invariantul VI: operandul se citește pe seturi, nu per linie. Pragul e un
+    /// NUMĂR DE TABELE, constant în numărul de linii ale documentului (MINOR-7).
+    /// </summary>
     public const int PragInterogari = 16;
 
     /// <param name="conexe">documentul conex autogenerat → documentul sursă (TR-D3).</param>
