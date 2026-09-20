@@ -1,6 +1,8 @@
 # Transferul: ce se mută din implementarea curentă în nucleu și în ce ordine (pasul 3 din §11)
 
-Stare: **PROBAT (2026-09-19), cu review advers aplicat** (agent separat, 6
+Stare: **PROBAT (2026-09-19), cu review advers aplicat**; TR-D5 (decizia 090),
+TR-D6a (felia 29) și TR-D6b (felia 30, pilotul BCS/PLT/FCT — forma ține,
+`tr-d6b-declaratia-fluxului-contract.md`) ÎNCHISE; următorul = TR-D7 (agent separat, 6
 MAJOR / 9 MEDIU / 5 MINOR; toate acceptate — unde au schimbat o concluzie, e
 spus; raportul și SQL-ul lui în `run-nucleu/transfer/review/`). TR-D5 = decizia 090
 (2026-09-20, `docs/decizii/090-nucleu-cub-de-postari.md`), care preia §1–§4.1

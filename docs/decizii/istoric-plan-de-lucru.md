@@ -684,3 +684,38 @@ detaliat în jurnal):
   avertismente; diff pe BackOffice/tools/Client gol; ModelCheck nerulat
   (nimic atins din ce probează). N-r1…N-r9 în restanțe; invariantul 7 e al
   lui TR-D7/D10. Următorul pas: TR-D6b (declarația fluxului BCS/PLT/FCT).
+- **Felia 30 — TR-D6b, declarația fluxului per tip (pilot BCS, PLT, FCT)**
+  (2026-09-20, branch `tr-d6b-declaratia-fluxului` tăiat din `main` după
+  fast-forward-ul feliei 29; contractul
+  `docs/nucleu/tr-d6b-declaratia-fluxului-contract.md` cu B-D1…B-D10).
+  Cinci pași cu un agent per pas și verificare independentă (ModelCheck pe
+  ambele profiluri după fiecare): **1** scheletul — Module referă nucleul,
+  `Declaratii/` (`IDeclarant`, `Operand` + faptele, `Contractare`),
+  `Fapte.Operand` pe seturi, `Document.Declarant()` (metodă: o proprietate
+  intra în metadata clientului); **2** oracolul în ModelCheck —
+  `CubDinRegistre` (portul mapării fizicii), `Normalizari` (lista închisă
+  B-D8), `Comparabil`, `ProbeNucleu`, auto-probele NUC-ORACOL; **3** BCS
+  (N-r3 măsurat: Δ = +25 pe lotul corectat); **4** PLT/INC într-o singură
+  clasă, nominalizarea partidei sursei prin `Fifo`, splitul liniei, scena
+  privată cu partide; **5** FCT — recepția TR-D3, taxa per document × cotă
+  (N-r4 măsurat: Δ = 0,01), capitalizatul ca bază + taxă, `GestiuniVirtuale`
+  mutate în nucleu cu C5 amendat (N-r2 confirmat). Constatările pilotului
+  au amendat contractul: partida doar pe cont cu `RolTert` (bugetarul n-are
+  niciunul), „repartitorul pe piciorul propriu" (azi nota pune pe fiecare
+  picior repartitorul contrapartidei), linia nominalizată parțial sparge și
+  piciorul de bani. Egalitate EXACTĂ cu registrele normalizate pe toate
+  documentele celor trei tipuri, pe ambele profiluri. Review advers (agent
+  separat, tier-ul main-ului): 1 MAJOR (nominalizarea PLT afirma restul
+  DOCUMENTULUI ca sold al partidei de pe contul liniei — pe o factură cu
+  404 + 401 nominaliza peste ce ține partida; oracolul avea același unghi
+  mort) — operandul poartă soldul sursei per cont, plafon = min(rest,
+  sold), oracolul plafonează la fel; 4 MEDII (taxa culeasă autoritară per
+  linie, nu per cotă; `Sold.Din` adună cantitatea doar pe spațiul Stoc —
+  capătul virtual conservă, nu se citește; ordinea liniilor `OrderBy(ID)`;
+  toleranța per cotă) și 7 minore, toate aplicate; verdictul 090l: forma
+  mai simplă în citire per tip, ≈2× mai lungă, echivalentă azi — condiția
+  (helperii `Fiscal`/`Partide` înainte de al patrulea declarant) îndeplinită
+  în felie. Închidere: ModelCheck privat 1573/0, bugetar 1389/0; nucleu
+  156/156; diff pe WebApi/Blazor.Server/Client gol; `MotorOperare` și
+  hook-urile neatinse. B-r1…B-r11 în restanțe. Următorul pas: TR-D7 (strangler per tip: `PosteazaInCub`,
+  entitatea `Postare`, materializarea).

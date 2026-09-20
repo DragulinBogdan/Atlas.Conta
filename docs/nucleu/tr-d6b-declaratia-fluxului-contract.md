@@ -1,7 +1,26 @@
 # TR-D6b — Declarația fluxului per tip (pilot BCS, PLT, FCT) — contract
 
-Stare: **ÎN LUCRU (2026-09-20)**, felia 30; branch `tr-d6b-declaratia-fluxului`
-(tăiat din `main` după fast-forward-ul feliei 29, `90d7be7`).
+Stare: **ÎNCHISĂ (2026-09-20)**, felia 30; branch `tr-d6b-declaratia-fluxului`
+(tăiat din `main` după fast-forward-ul feliei 29, `90d7be7`). **Forma ține:
+decizia 090 NU se întoarce.** Cele trei frunze produc din operand închis
+EXACT postările motorului vechi (registrele transformate în cub și
+normalizate doar prin lista închisă B-D8), pe ambele profiluri; ModelCheck
+privat 1573/0, bugetar 1389/0; nucleu 156/156; review advers aplicat
+(1 MAJOR — nominalizarea afirma restul documentului ca sold al partidei pe
+cont; 4 MEDII — taxa culeasă per linie, `Sold.Din` doar pe Stoc, ordinea
+liniilor, toleranța per cotă; 7 minore; B-D8bis). Verdictul 090l: forma e
+mai simplă pe criteriul real (citibilă de sus în jos per tip, fără
+`IObjectSpace`, fără cuplajul de ordine al hook-urilor, stingerea și faptul
+fiscal ca coordonate, nu mecanisme), dar nu mai scurtă (≈2× pe cele trei
+tipuri față de hook-uri + partea lor din motorul generic); condiția ca la 20
+de tipuri să nu devină mai complicată — helperii comuni `Fiscal`/`Partide`
+— e ÎNDEPLINITĂ în felie. Amendamentele față de textul inițial sunt în corp,
+marcate cu pasul care le-a adus: `Declarant()` metodă (pas 1), partida doar
+pe cont cu `RolTert` și repartitorul pe piciorul propriu (pașii 2, 4),
+linia nominalizată parțial (pas 4), gestiunile virtuale în nucleu cu C5
+amendat și capitalizatul ca bază + taxă (pas 5), B-D8bis (pas 6). N-r2
+confirmat, N-r3 (Δ = +25) și N-r4 (Δ = 0,01) măsurate; B-r1…B-r11 în
+`restante.md`. Următorul pas: TR-D7.
 Decizia-mamă: 090 (`docs/decizii/090-nucleu-cub-de-postari.md`, regula
 durabilă (b), (c), (d), (e), (g), (h), (j), (l), (m)); nucleul: contractul
 TR-D6a (`tr-d6a-nucleu-pur-contract.md`, N-D1…N-D12) și restanțele
@@ -202,7 +221,14 @@ Per linie de defalcare (`Valoare > 0`), O mișcare:
   liniei: `Unitate.DeschidePartida(cont, partener, DocumentSursaId, dataSursei)`
   — ACEEAȘI funcție deterministă pe care o va folosi și declarantul FCT când
   își deschide partida, deci id-urile coincid fără registru; plafonul =
-  `RestPartidaSursa`; suma peste plafon merge pe o partidă NOUĂ deschisă de
+  `min(RestPartidaSursa, soldul partidei sursei PE CONTUL liniei)` — restul
+  documentului NU e soldul unei partide când sursa are două conturi de terț
+  (imobilizare pe 404 + taxa pe 401; review advers MAJOR-1): operandul
+  poartă `PartideSursa` (Σ postărilor de terț ale sursei per cont cu
+  `RolTert`, o interogare pe set), `SoldUnitateCitit` afirmă soldul REAL al
+  partidei, iar fără partidă a sursei pe contul liniei totul merge pe
+  partida proprie (avans), cu ipoteza consemnată; oracolul plafonează la fel
+  (B-D8 pct. 3). Suma peste plafon merge pe o partidă NOUĂ deschisă de
   plată (`DeschidePartida(cont, partener, plata.Id, data)`), ca azi excedentul
   rămâne avans. Fără sursă: plata deschide propria partidă (avans dat). FIFO
   automat pe partidele deschise ale `(Cont, Partener)` NU intră în pilot
@@ -252,13 +278,14 @@ Per linie:
   recepția e întotdeauna a facturii — declarat, cu restanță la TR-D7.
 - **Taxa**: `Tva.PeDocument(linii (id, net, regim, cota), Deductibil,
   rotunjire)` decide taxa per cotă și o repartizează per linie (Hamilton pe
-  semn) — N-r4; pe factura primită taxa CULEASĂ (`ValoareTva ≠ 0`,
-  `pastreazaTvaCules`) e AUTORITARĂ: se validează cu `Tva.ValideazaData`
-  contra celei calculate per cotă cu toleranța `TolerantaTaxa`, niciodată
-  recalculată (090j). Valoarea toleranței la pilot: `0,01 × numărul liniilor
-  cotei` (deriva maximă explicabilă prin rotunjirea per linie de azi),
-  constantă în declarant, MARCATĂ ca rând de politică pentru TR-D7
-  (`PoliticaTva.TolerantaTaxa`). Taxa posteză per linie: `La` = `{ Cont =
+  semn) — N-r4; pe factura primită taxa CULEASĂ e AUTORITARĂ PER LINIE
+  (`ValoareTva ≠ 0` pe linie ⇒ linia postează cifra culeasă; linia cu 0 în
+  aceeași cotă primește cota nucleului, ca `pastreazaTvaCules` azi — review
+  MEDIU-1); Σ taxelor alese per cotă se validează cu `Tva.ValideazaData`
+  contra celei decise per cotă, cu toleranța `0,01 × liniile COTEI`
+  (`Operand.TolerantaTaxa` = 0,01 per linie; review MEDIU-4), niciodată
+  recalculată (090j). Valoarea e constantă de pilot, MARCATĂ ca rând de
+  politică pentru TR-D7 (`PoliticaTva.TolerantaTaxa`, B-r1). Taxa posteză per linie: `La` = `{ Cont =
   ContTvaDeductibil al tipului (4426), CodTva = (tip, Achizitie, Taxa),
   PerioadaDeclarare, Partener = partenerul fiscal }`, `DeLa` = 401/partida
   (ca la net); `TaxareInversa` ⇒ `DeLa` = `{ ContTvaColectat (4427), CodTva
@@ -352,6 +379,8 @@ sau propunere de normalizare nouă raportată main-ului (nu aplicată tăcut):
    propriu` plus tranzacția de împerechere `(−S pe stingător, +S pe stins)`
    se rescriu ca postări cu `Unitate = partida stinsă` pentru `S` și
    `Unitate = partida proprie` pentru rest; tranzacția de împerechere dispare.
+   `S` se PLAFONEAZĂ la soldul partidei stinse pe contul stingătorului
+   (împerecherea de azi e per document, partida e per cont — MAJOR-1).
 4. **M6 / design §3** — `Partener` rămâne DOAR pe postările de pe conturi cu
    `RolTert` (din unitate) și pe cele cu `CodTva` (partenerul fiscal); pe
    celelalte se șterge (azi: „contrapartida pe fiecare latură").
@@ -367,7 +396,13 @@ sau propunere de normalizare nouă raportată main-ului (nu aplicată tăcut):
 6. **N-D4** — capătul virtual `−q` pe postarea de terț cu
    `Gestiune = Furnizor` NU există în oracol: comparația pe `Cantitate` se
    face DOAR pe postările cu `Unitate.Fel == Lot` (`Spatiu == Stoc`); pe
-   restul `Cantitate` se compară ca 0. Confirmarea N-r2 = niciuna dintre
+   restul `Cantitate` se compară ca 0. Aceeași regulă e a NUCLEULUI (review
+   MEDIU-2): `Sold.Din` adună `Cantitate` DOAR pe `Spatiu == Stoc` —
+   cantitatea e mărime a spațiului de stoc, capătul virtual CONSERVĂ
+   (C2 pe `Postare.Cantitate` brut), nu se citește; altfel Σ pe produs fără
+   filtru dădea 0 după orice recepție, iar partida stinsă integral nu
+   ajungea niciodată la `Sold.Zero`. Gestiunea virtuală se proiectează
+   `null` DOAR pe postarea cu cantitate (review MINOR-3). Confirmarea N-r2 = niciuna dintre
    proiecțiile de citire ale fizicii (portate în `Comparabil` ca filtre:
    fișă de magazie, PhysicalStock, FIFO, terți SAF-T) nu vede capătul
    virtual; dacă una îl vede, agentul raportează și main întoarce N-D4.
@@ -408,6 +443,29 @@ sau propunere de normalizare nouă raportată main-ului (nu aplicată tăcut):
    acolo — postarea de terț rămâne fără unitate și fără partener. Declaranții
    PLT/FCT verifică `Conturi[cont].RolTert != Niciunul` înainte de
    `DeschidePartida`; nu presupun rolul din simbol.
+
+### B-D8bis — Amendamente din review-ul advers (pasul 6)
+
+- Ordinea liniilor în operand = `OrderBy(ID)` (review MEDIU-3): `Detalii`
+  n-are coloană de poziție, iar N-D7 (secvența liniilor pe același lot) și
+  splitul PLT depind de ordine; `Pozitie` pe `DocumentDetaliu` la TR-D7
+  (B-r11), când și motorul vechi o citește.
+- Helperii puri `Declaratii/Fiscal.cs` (taxa per document × cotă, culese
+  per linie, validarea, faptul fiscal ca atribut, mișcarea de taxă) și
+  `Declaratii/Partide.cs` (deschiderea partidei pe cont cu `RolTert`,
+  nominalizarea partidei sursei cu plafon) — condiția verdictului 090l:
+  generalitatea documentelor cu TVA și partidă stă într-o casă comună, nu se
+  copiază la al patrulea declarant.
+- Un `RefuzException` al primitivelor (`Evaluare`, `Fifo`) se prinde PER
+  LINIE în declarant și devine refuz în listă, ca restul (MINOR-1); driverul
+  rămâne plasa de siguranță.
+- `Comparabil` proiectează unitatea ca `(Id, Fel, Cont, Partener, Deschisa)`
+  (MINOR-2); `CubDinRegistre` ia latura rândului de stoc din semnul
+  cantității când valoarea e 0 (MINOR-4); contrapartida recepției se ia
+  ÎNTÂI din `PoliticaTva.SursaContrapartida`, regula de natură ca rezervă
+  (MINOR-5); ipoteza sursei se consemnează ori de câte ori există sursă
+  (MINOR-6); pragul interogărilor e „număr de tabele", constant în numărul
+  de linii (MINOR-7).
 
 ### B-D9 — Ce NU intră (amânări cu nume)
 

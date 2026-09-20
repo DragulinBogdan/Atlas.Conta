@@ -654,11 +654,13 @@ Doar suma pozitivă intră în validările comune de creare a împerecherii,
 cu marcajul autogenerat. Serviciul nu comite. Apelul este după materializarea
 registrelor și starea Operat, înainte de commit-ul motorului. (82b, 82c)
 
-## Nucleul pur (fără consumator încă)
+## Nucleul pur și declarația fluxului (pilot BCS, PLT, FCT)
 
 `nou/Atlas.Conta.Nucleu` ține tipurile cubului și regulile pure ale deciziei
-90, fără nicio referință la EF/XAF/HTTP și fără niciun consumator până la
-TR-D6b; motorul de azi (`Motor/MotorOperare`) rămâne singurul care scrie.
+90, fără nicio referință la EF/XAF/HTTP; singurul lui consumator e
+`Atlas.Conta.BackOffice.Module` (folderul `Declaratii/`, TR-D6b). Motorul de
+azi (`Motor/MotorOperare`) rămâne singurul care SCRIE: declaranții rulează
+alături de el, ca probă în ModelCheck, și nu persistă nimic până la TR-D7.
 Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
 
 - **Cubul**: `Coordonate` (cont, latură OBLIGATORIE, dată, partener,
@@ -670,9 +672,13 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   spațiu separat. (N-D2)
 - **Conservarea**, structurală: valoarea per `Carte`, cantitatea per produs
   peste TOATE postările (capătul virtual al cantității stă pe postarea de
-  terț, cu gestiune virtuală Furnizor/Client — de confirmat la TR-D6b,
-  N-r2), transferul cu Σ = 0 per (cont, latură), valoarea negativă doar în
-  `Storno`/`Transfer`, formele (cantitate ⇒ gestiune, produs și unitate;
+  terț, cu gestiune virtuală `GestiuniVirtuale.Furnizor/Client/Consum` —
+  constante deterministe ale nucleului, CONFIRMAT de pilotul FCT: invizibil
+  proiecțiilor pe gestiune reală și pe unitate-lot, N-r2), transferul cu
+  Σ = 0 per (cont, latură), valoarea negativă doar în `Storno`/`Transfer`,
+  formele (cantitate ⇒ gestiune, produs și unitate — cu excepția gestiunii
+  VIRTUALE, unde cantitatea nu cere unitate, fiindcă pe un profil fără
+  `RolTert` capătul virtual n-are partidă;
   lot ⇒ produs și gestiune; partidă ⇒ partener; unitatea pe contul, produsul
   și partenerul postării; postările datate ca tranzacția; deschiderea fără
   document, scutită de Σ). (N-D3, N-D4)
@@ -683,14 +689,21 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   întors. **Evaluarea ieșirii** pe raportul CURENT al unității, ultima
   ieșire ia restul ⇒ cantitate zero ⇒ valoare zero; față de motorul de azi
   (preț înghețat pe lot, substituit doar la golire) diferența e declarată
-  și măsurată în teste (378 din 491 goliri lasă valoare pe cantitate zero
-  sub regula veche, pe istorii generate). (N-D6, N-D7, N-r3)
+  și măsurată: în teste (378 din 491 goliri lasă valoare pe cantitate zero
+  sub regula veche) și pe pilotul BCS (lot cu 20 buc / 300 lei și preț
+  înghețat 10: consumul de 5 buc dă 50 azi și 75 în nucleu, Δ = +25;
+  documentele de azi nu pot produce două prețuri pe același lot — Δ apare
+  doar din deschideri/import). (N-D6, N-D7, N-r3)
 - **Repartizarea** = Hamilton ierarhic, Σ = total exact, singura primitivă
   de distribuție. **TVA**: taxa se decide și se rotunjește pe document ×
   cotă, se postează per linie prin Hamilton peste |net|, pe fiecare semn
   separat; taxa dată pe facturile primite se validează cu toleranță, nu se
-  recalculează. Azi rotunjirea e per linie: diferența o măsoară pilotul
-  FCT (N-r4). (N-D8, 090j)
+  recalculează. Azi rotunjirea e per linie; pilotul FCT a măsurat: 3 × 0,01
+  la 21 % ⇒ 0,00 azi, 0,01 în nucleu (Δ = 0,01, pe o singură linie prin
+  Hamilton). Toleranța de pilot e `0,01 × liniile cu TVA` (constantă în
+  adaptor) și REFUZĂ o taxă culeasă cu abatere mai mare (o factură a scenei
+  P1 cu abatere 0,10 e refuzată, unde motorul vechi operează) — devine rând
+  de politică la TR-D7. (N-D8, 090j, N-r4)
 - **Sold** = Σ pe orice cheie, pe tranzacții, cu `Transfer` exclus ca
   parametru al citirii; snapshot-ul e lema `Sold(≤t) = Sold(≤t0) +
   Sold(t0<d≤t)`. **Stornoul** = inversul cauzat ∪ atribuit, fără schimb de
@@ -702,12 +715,83 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   jumătăți de ban al instanței `Rotunjire` primite. `Decizie`/`Ipoteza` sunt
   ierarhii închise cu cazurile pilotului. (N-D11)
 
+### Declarația fluxului per tip (TR-D6b, felia 30)
+
+Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
+`docs/nucleu/tr-d6b-declaratia-fluxului-contract.md`, B-D1…B-D10):
+
+- **Operandul închis** (`Declaratii/Operand.cs`, DTO): documentul (laturile
+  ca `RepartitorFapt` cu felul din discriminatorul `ClrType`), liniile cu
+  lotul, prețul, produsul și dimensiunile culese, politica (regulile de
+  contare/stoc, politica de TVA, tipurile de TVA cu conturile lor, conturile
+  atinse cu `RolTert`), starea citită (soldurile loturilor la data
+  înregistrării fără documentul curent, restul partidei sursei, perioada
+  de declarare, perioada deschisă, versiunea politicii, toleranța taxei).
+  Îl construiește `Motor/Fapte.Operand(os, doc)` PE SETURI (o interogare
+  per tabelă, probat `≤ 16` cu `NumaratorSql`). Câmpurile de frunză fără
+  interfață declarată (`Valuta`/`Curs` pe FCT) NU intră.
+- **Declarantul** (`IDeclarant.Declara(Operand, Rotunjire, refuzuri) →
+  Declaratie?`): pur, fără `IObjectSpace`, fără entități; frunza îl numește
+  printr-o singură METODĂ polimorfă `Document.Declarant()` (`null` = tipul nu
+  declară încă; o proprietate ar intra în metadata clientului). Driverul
+  `Declaratii/Contractare.Contracteaza(os, doc)` = operand → declarant →
+  `Motor.Opereaza`; `RefuzException` a primitivelor devine refuz.
+  Rezolvările comune (`Contari`): contul fiecărei laturi prin
+  `Potrivire.Contare/Cont` și coalesce-ul dimensiunilor prin
+  `DimensiuniResolver` — aceleași funcții pure ca motorul vechi.
+- **Regula coordonatelor** (B-D8 pct. 9, 10): capătul intern poartă
+  `Gestiune` = repartitorul intern al documentului; capătul de terț poartă
+  `Partener` + partida DOAR pe un cont cu `RolTert` (pe profilul bugetar
+  niciun cont n-are, deci nici partidă) și nicio gestiune (azi nota pune pe
+  fiecare picior repartitorul CONTRAPARTIDEI — „contrapartida pe fiecare
+  latură", respinsă de design §3).
+- **BCS** (`DeclarantBonConsum`): o mișcare per linie — lotul iese de pe
+  contul creditor al regulii din gestiunea predatoare și intră pe contul de
+  cheltuială al locului de consum (repartitorul real, cu lotul ca unitate
+  re-cheiată pe contul postării), evaluat pe raportul curent în secvența
+  liniilor.
+- **PLT/INC** (`DeclarantTrezorerie`, O clasă pentru ambele: diferența e în
+  regula de contare și în contul cu `RolTert`): o mișcare per linie de
+  defalcare; plata născută din factură numește partida sursei prin
+  `Fifo.Nominalizeaza` cât ține restul ei, excedentul pe partida proprie
+  ca a doua mișcare (linia se sparge, inclusiv piciorul de bani); fără sursă,
+  partida proprie (avans); viramentul cu ambele capete pe contul propriu al
+  documentului. Gard declarat mai slab decât azi: laturile inversate
+  (predator partener, primitor cont propriu) trec — sensul laturilor e
+  tip-dependent și devine dată pe `TipDocument` la TR-D7.
+- **FCT** (`DeclarantFacturaIntrare`): linia de stoc e RECEPȚIA facturii
+  (TR-D3: `3xx` din contul implicit al tipului, gestiunea primitoare, lotul
+  născut de linie, `+q`; capătul virtual `Furnizor` cu `−q` pe postarea de
+  terț, N-D4); netul celorlalte naturi pe regula lor (imobilizări → 404);
+  taxa se DECIDE per document × cotă — culeasă = autoritară cu toleranță,
+  nedată = Hamilton per linie; faptul fiscal e atribut al postării interne
+  (`CodTva` tip × sens × rol, perioada declarării, partenerul fiscal);
+  `Normal` 4426 = 401, `TaxareInversa` 4426 = 4427 (4427 fără `CodTva`: azi
+  nu există fapt fiscal colectat pe TI), `Capitalizat` = bază + taxă pe
+  ACELAȘI cont de cost (jurnalul rămâne proiecție), `Scutit`/`Neimpozabil`
+  doar bază; o singură partidă per cont de terț. NIR-ul conex și plata
+  autogenerată rămân ale motorului vechi (documente proprii).
+- **Oracolul** (`nou/tools/ModelCheck/Nucleu/`): registrele documentului
+  transformate în cub prin portul fidel al mapării fizicii
+  (`CubDinRegistre`), normalizate DOAR prin lista închisă B-D8
+  (`Normalizari`: NIR-ul conex absorbit în tranzacția facturii, stoc +
+  contabil unificate, împerecherea ca partidă numită, repartitorul pe
+  piciorul propriu, faptul fiscal ca atribut, partenerul doar pe terț/fiscal,
+  linia nominalizată parțial) și comparate EXACT pe multiset
+  (`Comparabil`; cantitatea doar pe unități-lot, gestiunile virtuale ca
+  `null`). Egalitate exactă pe toate documentele celor trei tipuri ale
+  scenelor ModelCheck, pe ambele profiluri; singurele diferențe sunt cele
+  două cifre consemnate (N-r3, N-r4) și refuzul de toleranță.
+
 ## Locurile regulilor în cod
 
 - [Document și contracte](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Document.cs)
 - [Motorul operării](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/MotorOperare.cs)
 - [Nucleul pur: conservarea](../../nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu/Conservare.cs)
 - [Nucleul pur: motorul pe declarație](../../nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu/Motor/Motor.cs)
+- [Declarația fluxului: operandul, driverul, declaranții BCS/PLT/FCT](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Declaratii/)
+- [Adaptorul operandului închis (`Fapte.Operand`)](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/Fapte.cs)
+- [Oracolul pilotului: maparea fizicii și normalizările declarate](../../nou/tools/ModelCheck/Nucleu/)
 - [Serviciul de împerechere](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/ImperechereService.cs)
 - [Documentele de trezorerie](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Trezorerie.cs)
 - [Documentele imobilizărilor](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Imobilizari.cs)

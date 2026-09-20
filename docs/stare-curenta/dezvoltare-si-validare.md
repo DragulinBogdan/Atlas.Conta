@@ -10,7 +10,7 @@
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.WebApi` | Contracte HTTP, securizarea comenzilor, OData și integrarea hostului (42f) |
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server` | Host XAF, administrare și actualizarea explicită a bazei (23a) |
 | `nou/Atlas.Conta.Client` | React, formulare, raportare și contractele generate (43e) |
-| `nou/Atlas.Conta.Nucleu` | Nucleul pur al cubului de postări: tipuri, conservare, unitate, FIFO, evaluare, repartizare, TVA, storno, motor — fără niciun pachet, fără consumator până la TR-D6b (90b, 90l) |
+| `nou/Atlas.Conta.Nucleu` | Nucleul pur al cubului de postări: tipuri, conservare, unitate, FIFO, evaluare, repartizare, TVA, storno, motor, gestiunile virtuale — fără niciun pachet; consumat DOAR de `Module` (`Declaratii/`), referit direct și de ModelCheck ca unealtă (90b, 90l) |
 | `nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.Teste` | Invarianții nucleului ca proprietăți pe generatoare proprii și testul de arhitectură (90l) |
 | `nou/tools/ModelCheck` | Verificarea modelului și scenarii de domeniu pe PostgreSQL (23) |
 | `nou/tools/ProbeHttp` | Probe ale contractului HTTP și ale permisiunilor reale (80i, 81j) |
@@ -134,6 +134,7 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
 | Tip derivat nou, proprietate nouă pe frunză, FK spre o frunză | ModelCheck pe ambele profiluri (`F28-*`); după un import, `--dump-integritate-tph` rulat pe baza de import (89e, 89h) |
 | Nucleul pur (`Atlas.Conta.Nucleu`) | `dotnet test` pe soluția nucleului: testul de arhitectură și invarianții 1–6 ca proprietăți (≥ 500 de cazuri fiecare); ModelCheck doar dacă e atins `Module` (90l) |
+| Declarant, operand, `Fapte.Operand`, oracolul pilotului | ModelCheck pe AMBELE profiluri: probele `NUC-*` (egalitate exactă cu registrele normalizate, conservare, determinism, `≤ 16` interogări per operand) plus `Metadata clientului e la zi` (o proprietate nouă pe `Document` intră în metadata clientului — de aceea `Declarant()` e metodă) (TR-D6b) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
 ModelCheck verifică modelul și execută scenarii de integrare, inclusiv probe
@@ -151,8 +152,8 @@ SQL generat din metadata EF (`IntegritateTph.cs`), iar
 `ModelCheck --dump-integritate-tph <cale.sql>` scrie același SQL pentru a fi
 rulat pe o bază de import, pe care ModelCheck nu o atinge. (89e, 89h)
 
-Nucleul pur se probează exclusiv prin `Atlas.Conta.Nucleu.Teste` (xunit.v3,
-152 teste): testul de arhitectură ține referințele assembly-ului la
+Nucleul pur se probează prin `Atlas.Conta.Nucleu.Teste` (xunit.v3,
+154 teste): testul de arhitectură ține referințele assembly-ului la
 `System.*`/`netstandard` și `.csproj`-ul fără `PackageReference`/
 `ProjectReference`; invarianții 2–6 din `docs/nucleu/nucleu-cub-design.md`
 §10 rulează ca proprietăți pe generatoare proprii (`Gen`, `Proprietate`:
@@ -163,6 +164,24 @@ Invariantul 7 (baseline-ul Import1C) nu e testabil în nucleu și rămâne
 proba supremă a lui TR-D7/D10 (N-r1). Reflecția probează că niciun record
 public n-are setter ne-`init`; egalitatea `Tranzactie`/`Declaratie`/
 `Contract` e structurală. (N-D12)
+
+Declaranții pilotului (BCS, PLT/INC, FCT) se probează în ModelCheck, pe
+ambele profiluri, prin `ProbeNucleu.Proba` (`nou/tools/ModelCheck/Nucleu/`):
+după operarea prin motorul vechi, documentul se contractează prin
+`Contractare.Contracteaza` și postările lui se compară EXACT (multiset) cu
+registrele scrise de motorul vechi, transformate în cub prin `CubDinRegistre`
+(portul mapării fizicii) și normalizate DOAR prin funcțiile numite ale
+diferențelor declarate (`Normalizari`, contractul TR-D6b B-D8); orice reziduu
+al unei normalizări e avertisment tipărit și pică proba. Scenele proprii
+(`VerificaNucleuBcs`, `VerificaNucleuTrezorerie`) își purjează documentele
+(altfel `PAR-V*` văd partide în plus). Cifrele consemnate, nu normalizate:
+`NUC-BCS-N-R3-*` (Δ = +25 pe lotul corectat) și `NUC-FCT-N-R4-*` (Δ = 0,01
+pe taxa per document). Capcane: două ModelCheck-uri (sau un ModelCheck și un
+`dotnet build`) concurente își blochează DLL-urile — o singură rulare o
+dată, construită ÎNAINTE (`--no-build` pe un binar vechi probează codul
+vechi); redirectarea `*>` din PowerShell scrie log-ul UTF-16 — rețeta
+`run-nucleu/tr-d6b/pas4-final/run.sh` (bash) scrie UTF-8 și numără
+`OK`/`FAIL`. (TR-D6b)
 
 Căutarea după cheie a unui tip ne-rădăcină trece prin `RandDupaCheie`
 (rădăcina ierarhiei, apoi tipul verificat), niciodată prin
