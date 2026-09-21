@@ -31,6 +31,8 @@ bld/
 /anaf/
 /1C/
 
+/run*/
+
 # .NET Core
 project.lock.json
 project.fragment.lock.json
