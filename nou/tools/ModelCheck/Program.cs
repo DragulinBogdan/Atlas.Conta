@@ -45,6 +45,10 @@ using SecurityPermissionPolicy = DevExpress.Persistent.Base.SecurityPermissionPo
 using SecurityPermissionState = DevExpress.Persistent.Base.SecurityPermissionState;
 using N = Atlas.Conta.Nucleu;
 
+// Șablonul de conexiune al uneltei: o singură definiție pentru toate comenzile.
+static string Conexiunea(string baza) =>
+    "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=" + baza;
+
 // Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
 // end-to-end ale motorului de operare pe un IObjectSpace real — aceeași
 // infrastructură XAF pe care o folosește și UI-ul (docs 113709).
@@ -92,12 +96,16 @@ using N = Atlas.Conta.Nucleu;
     if (indexGate >= 0) {
         var argumente = args.Skip(indexGate + 1).TakeWhile(a => !a.StartsWith('-')).ToList();
         if (argumente.Count < 2) {
-            Console.WriteLine("Folosire: ModelCheck --declaratie-pe-baza <numeBaza> <COD> [COD…]");
+            Console.WriteLine("Folosire: ModelCheck --declaratie-pe-baza <numeBaza> <COD> [COD…] "
+                + "[--raport <director>]");
             Environment.ExitCode = 2;
             return;
         }
-        var caleGate = Path.GetFullPath(Path.Combine(MetadataDump.DirectorProiect(),
-            "..", "..", "..", "run-nucleu", "tr-d7a", "pas3",
+        var indexRaport = Array.FindIndex(args, a => a.Equals("--raport", StringComparison.OrdinalIgnoreCase));
+        var directorRaport = indexRaport >= 0 && args.Length > indexRaport + 1
+            ? args[indexRaport + 1]
+            : ".";
+        var caleGate = Path.GetFullPath(Path.Combine(directorRaport,
             $"declaratie-{argumente[0]}-{DateTime.Now:yyyyMMdd-HHmmss}.txt"));
         Environment.ExitCode = await GatePeBaza.Ruleaza(argumente[0], argumente.Skip(1).ToList(), caleGate);
         return;
@@ -116,7 +124,7 @@ using N = Atlas.Conta.Nucleu;
         }
         var bazaRec = args[indexRec + 1];
         using var ctxRec = new BackOfficeEFCoreDbContext(new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
-            .UseNpgsql("Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=" + bazaRec)
+            .UseNpgsql(Conexiunea(bazaRec))
             .UseChangeTrackingProxies().Options);
         if (!await ctxRec.Database.CanConnectAsync()) {
             Console.WriteLine($"Baza „{bazaRec}” nu există sau nu răspunde.");
@@ -146,8 +154,8 @@ using N = Atlas.Conta.Nucleu;
 var profil = args.Any(a => a.Contains("privat", StringComparison.OrdinalIgnoreCase))
     ? ProfilContabil.Privat : ProfilContabil.Bugetar;
 var sufixBaza = Environment.GetEnvironmentVariable("MODELCHECK_BAZA_SUFIX") ?? "";
-var connectionString = "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database="
-    + (profil == ProfilContabil.Privat ? "Atlas.Conta.ModelCheck.Privat" : "Atlas.Conta.BackOffice") + sufixBaza;
+var connectionString = Conexiunea(
+    (profil == ProfilContabil.Privat ? "Atlas.Conta.ModelCheck.Privat" : "Atlas.Conta.BackOffice") + sufixBaza);
 
 var esecuri = 0;
 void Check(string nume, bool ok) {
@@ -25674,6 +25682,14 @@ void VerificaCorectie(bool privat) {
                 storno.Count == 1 && storno[0].Data == Zi(2, 10)
                 && storno[0].PerioadaAn == An && storno[0].PerioadaLuna == 1
                 && storno[0].Baza == -100m);
+            // MAJOR-C: cubul urmează registrele — postările `Storno` ale documentului se
+            // re-ștampilează la perioada ORIGINALULUI, nu rămân în luna stornării.
+            var stornoCub = ProbeCub.Postari(os, idFct1, N.FelTranzactie.Storno)
+                .Where(p => p.PerioadaDeclarare != null).ToList();
+            Check($"STR-CORECTIE ({eticheta}): la EROARE MATERIALĂ postările `Storno` din CUB poartă "
+                + $"`PerioadaDeclarare` = {An}01 (a originalului), ca rândurile `RegistruTva` — altfel "
+                + "orice jurnal citit din cub ar pune stornoul în luna corecției",
+                stornoCub.Count > 0 && stornoCub.All(p => p.PerioadaDeclarare == (An * 100) + 1));
         }
 
         using (var os = provider.CreateObjectSpace()) {
@@ -25724,6 +25740,12 @@ void VerificaCorectie(bool privat) {
                 storno.Count == 1 && storno[0].PerioadaAn == An && storno[0].PerioadaLuna == 2
                 && randuri.Count == 1 && randuri[0].Data == Zi(1, 16)
                 && randuri[0].PerioadaAn == An && randuri[0].PerioadaLuna == 2);
+            var stornoCubFaptNou = ProbeCub.Postari(os, idFct2, N.FelTranzactie.Storno)
+                .Where(p => p.PerioadaDeclarare != null).ToList();
+            Check($"STR-CORECTIE ({eticheta}): la FAPT NOU postările `Storno` din CUB rămân în perioada "
+                + $"STORNĂRII ({An}02) — re-ștampilarea e a motivului, nu a stornoului",
+                stornoCubFaptNou.Count > 0
+                && stornoCubFaptNou.All(p => p.PerioadaDeclarare == (An * 100) + 2));
         }
 
         using (var os = provider.CreateObjectSpace()) {
@@ -31845,8 +31867,11 @@ void VerificaNucleuTrezorerie(bool privat) {
             .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
         pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
             .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        var idsLotTrz = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucTrz)).Select(l => l.ID).ToList();
         pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
-            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+            .Where(r => idsLotTrz.Contains(r.LotId)
+                || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
         pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
             .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
         pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
@@ -31854,6 +31879,11 @@ void VerificaNucleuTrezorerie(bool privat) {
         // Copiii (plata autogenerată, latura pereche) înaintea părinților.
         foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
             pj.Adauga(doc);
+        os.CommitChanges();
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucTrz)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(x => x.Cod.StartsWith(MarcajNucTrz)).ToList());
         pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
             .Where(r => r.Cod.StartsWith(MarcajNucTrz)).ToList());
         pj.Executa();
@@ -31868,8 +31898,11 @@ void VerificaNucleuTrezorerie(bool privat) {
     var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
     var tipVir = os.FirstOrDefault<TipMaterial>(t => t.Cod == "VIR");
     var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "628" : "628.00.00"));
+    var tipStocTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "302" : "302.00.00"));
+    var tipImobilizareTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "2131" : "213.01.00"));
     var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
     var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "401" : "401.01.00"));
+    var cont404 = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "404" : "404.01.00"));
     var cont4111 = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "4111" : "411.01.01"));
     Check($"NUC-TRZ-{eticheta} scenă: profilul are conturi cu `RolTert` (401 furnizor, 4111 client) — "
         + "fără ele partida nici nu se deschide (B-D8 pct. 10)",
@@ -31881,6 +31914,11 @@ void VerificaNucleuTrezorerie(bool privat) {
     var client = os.CreateObject<Partener>();
     client.Cod = MarcajNucTrz + "-CL";
     client.Denumire = "Client probă felia 30";
+    var produsTrz = os.CreateObject<Produs>();
+    produsTrz.Cod = MarcajNucTrz + "-P";
+    produsTrz.Denumire = "Produs probă felia 31 (TRZ)";
+    produsTrz.UM = "BUC";
+    produsTrz.TipMaterial = tipStocTrz;
     var casaVir = os.CreateObject<ContPropriu>();
     casaVir.Cod = MarcajNucTrz + "-CASA";
     casaVir.Denumire = "Casa probă felia 30";
@@ -32085,7 +32123,9 @@ void VerificaNucleuTrezorerie(bool privat) {
         + "ține 242 pe credit, plata 100 pe debit",
         ProbeCub.SoldPartida(os, partidaFctT) == -242m && fctT.Total == 242m);
 
-    var impT = ImperechereService.Imperecheaza(os, pltT, fctT, 100m, data: new DateOnly(2026, 3, 25));
+    // Data împerecherii e în ALTĂ LUNĂ decât a documentelor: transferul se datează
+    // după FAPTUL de stingere, nu după `max(DataInregistrare)` (MAJOR-B).
+    var impT = ImperechereService.Imperecheaza(os, pltT, fctT, 100m, data: new DateOnly(2026, 4, 10));
     var transferT = ProbeCub.Transferuri(os, pltT.ID);
     var postariT = transferT.Count == 1
         ? ProbeCub.Postari(os, pltT.ID).Where(p => p.TranzactieId == transferT[0].ID).ToList()
@@ -32094,8 +32134,8 @@ void VerificaNucleuTrezorerie(bool privat) {
         + "`Tranzactie(Transfer)` pe STINGĂTOR, cu două postări pe 401 (−100 de pe partida proprie, "
         + "+100 pe a facturii), conservată pe (cont, latură)",
         transferT.Count == 1
-        && transferT[0].Data == (pltT.DataInregistrare > fctT.DataInregistrare
-            ? pltT.DataInregistrare : fctT.DataInregistrare)
+        && transferT[0].Data == impT.Data
+        && postariT.All(p => p.Data == impT.Data)
         && postariT.Count == 2
         && postariT.All(p => p.Cont == cont401.ID && p.Latura == N.Latura.Debit && p.Partener == furnizor.ID)
         && postariT.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) == 0m
@@ -32109,39 +32149,140 @@ void VerificaNucleuTrezorerie(bool privat) {
     ProbeCub.ProbaTransferPliat(os, Check, $"NUC-PLT-{eticheta}", pltT);
 
     var refuzPlafon = Refuz(() => ImperechereService.Imperecheaza(
-        os, pltT, fctT, 1m, data: new DateOnly(2026, 3, 25)));
+        os, pltT, fctT, 1m, data: new DateOnly(2026, 4, 10)));
     Check($"STR-TRANSFER-2 ({eticheta}): a doua stingere de pe aceeași plată e refuzată — plafonul "
         + $"documentului o oprește înaintea partidei ({refuzPlafon?.Split('\n')[0]})",
         refuzPlafon != null && ProbeCub.Transferuri(os, pltT.ID).Count == 1);
 
-    ImperechereService.Desfa(os, impT.ID, new DateOnly(2026, 3, 26));
+    var inversT = ImperechereService.Desfa(os, impT.ID, new DateOnly(2026, 4, 11));
     var dupaDesfacere = ProbeCub.Transferuri(os, pltT.ID);
-    Check($"STR-TRANSFER-4 ({eticheta}): `Desfa` scrie transferul INVERS (a treia tranzacție), iar "
-        + "Σ per partidă revine: factura la −242, partida proprie la 100",
+    Check($"STR-TRANSFER-4 ({eticheta}): `Desfa` scrie transferul INVERS (a treia tranzacție), datat la "
+        + "ziua rândului INVERS de împerechere (MAJOR-B), iar Σ per partidă revine: factura la −242, "
+        + "partida proprie la 100",
         dupaDesfacere.Count == 2
+        && dupaDesfacere.Single(t => t.ID != transferT[0].ID).Data == inversT.Data
+        && inversT.Data == new DateOnly(2026, 4, 11)
         && ProbeCub.SoldPartida(os, partidaFctT) == -242m
         && ProbeCub.SoldPartida(os, partidaProprieT) == 100m);
     ProbeCub.ProbaTransferPliat(os, Check, $"NUC-PLT-DESFACUT-{eticheta}", pltT);
 
-    var impT2 = ImperechereService.Imperecheaza(os, pltT, fctT, 100m, data: new DateOnly(2026, 3, 27));
+    var impT2 = ImperechereService.Imperecheaza(os, pltT, fctT, 100m, data: new DateOnly(2026, 4, 12));
     Check($"STR-TRANSFER-5 ({eticheta}): re-împerecherea scrie al patrulea transfer, partida facturii "
         + "e iar stinsă cu 100",
         ProbeCub.Transferuri(os, pltT.ID).Count == 3
         && ProbeCub.SoldPartida(os, partidaFctT) == -142m);
-    var refuzStorno = Refuz(() => MotorOperare.Storneaza(os, fctT, new DateOnly(2026, 3, 28)));
+    var refuzStorno = Refuz(() => MotorOperare.Storneaza(os, fctT, new DateOnly(2026, 4, 13)));
     Check($"STR-TRANSFER-5 ({eticheta}): stornarea stinsului cu împerechere VIE într-o perioadă DESCHISă "
         + "e refuzată de gardianul F27-D8 — cubul rămâne neatins; inversul la storno "
         + "(`InverseazaLaStorno` → `CreeazaInvers`) e calea din perioada îNCHISĂ, aceeași cu `Desfa`",
         refuzStorno != null
         && ProbeCub.Transferuri(os, pltT.ID).Count == 3
         && ProbeCub.Tranzactii(os, fctT.ID).All(t => t.Fel == N.FelTranzactie.Operare));
-    ImperechereService.Desfa(os, impT2.ID, new DateOnly(2026, 3, 29));
-    MotorOperare.Storneaza(os, fctT, new DateOnly(2026, 3, 30));
+    ImperechereService.Desfa(os, impT2.ID, new DateOnly(2026, 4, 14));
+    MotorOperare.Storneaza(os, fctT, new DateOnly(2026, 4, 15));
     Check($"STR-TRANSFER-5 ({eticheta}): după desfacere, stornarea facturii trece — factura are `Storno` "
         + "în cub, iar cele patru transferuri ale plății se anulează două câte două (Σ partidă = 0)",
         ProbeCub.Tranzactii(os, fctT.ID).Count(t => t.Fel == N.FelTranzactie.Storno) == 1
         && ProbeCub.SoldPartida(os, partidaFctT) == 0m
         && ProbeCub.SoldPartida(os, partidaProprieT) == 100m);
+
+    // --- STR-TRANSFER-2 re-tăiat (MAJOR-A): FCT cu linie de STOC ---
+    // Recepția stă pe NIR-ul CONEX în registre și pe partida facturii în cub (TR-D3):
+    // plafonul stingerii e brutul INTEGRAL, nu doar taxa + serviciile.
+    var fctS = os.CreateObject<FacturaIntrare>();
+    fctS.Numar = MarcajNucTrz + "-F3";
+    fctS.Data = new DateOnly(2026, 3, 6);
+    fctS.Predator = furnizor;
+    fctS.Primitor = mag1;
+    var linieStocS = os.CreateObject<FacturaIntrareDetaliu>();
+    linieStocS.Document = fctS;
+    linieStocS.TipMaterial = tipStocTrz;
+    linieStocS.Cantitate = 5m;
+    linieStocS.PretUnitar = 10m;
+    linieStocS.TipTva = n21;
+    var linieServiciuS = os.CreateObject<FacturaIntrareDetaliu>();
+    linieServiciuS.Document = fctS;
+    linieServiciuS.TipMaterial = tipServicii;
+    linieServiciuS.Cantitate = 1m;
+    linieServiciuS.PretUnitar = 200m;
+    linieServiciuS.TipTva = n21;
+    linieStocS.CreeazaLot(os, produsTrz, mag1);
+    os.CommitChanges();
+    var nirS = MotorOperare.Opereaza(os, fctS);
+    MotorOperare.Opereaza(os, nirS);
+    var partidaFctS = PartidaDin(fctS, cont401, furnizor);
+    var pe401AlFacturii = os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => r.DocumentId == fctS.ID && r.ContCreditId == cont401.ID).Sum(r => r.Valoare);
+    var pe401AlConexului = os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => r.DocumentId == nirS.ID && r.ContCreditId == cont401.ID).Sum(r => r.Valoare);
+    Check($"STR-TRANSFER-2 ({eticheta}) scenă: factura de 302,5 (50 stoc + 200 servicii + 52,5 TVA) — în "
+        + "REGISTRE 401 se împarte între factură (252,5) și NIR-ul conex (50), în CUB partida ei ține "
+        + "brutul INTEGRAL (recepția e a facturii, TR-D3)",
+        nirS is NIR { Stare: StareDocument.Operat } && fctS.Total == 302.5m
+        && pe401AlFacturii == 252.5m && pe401AlConexului == 50m
+        && ProbeCub.SoldPartida(os, partidaFctS) == -302.5m);
+
+    var pltS = Trezorerie<Plata>(casa, furnizor, tipTrz, 302.5m, new DateOnly(2026, 3, 16));
+    MotorOperare.Opereaza(os, pltS);
+    var partidaProprieS = PartidaDin(pltS, cont401, furnizor);
+    var impS = ImperechereService.Imperecheaza(os, pltS, fctS, 302.5m, data: new DateOnly(2026, 4, 16));
+    var transferS = ProbeCub.Transferuri(os, pltS.ID);
+    Check($"STR-TRANSFER-2 ({eticheta}): plata pe brutul INTEGRAL mută 302,5 dintr-o singură bucată — "
+        + "partida facturii e stinsă la 0, iar partida proprie a plății rămâne 0 (MAJOR-A: plafonul e "
+        + "soldul cu conexul absorbit, nu doar rândurile proprii ale facturii)",
+        transferS.Count == 1 && transferS[0].Data == impS.Data
+        && ProbeCub.Postari(os, pltS.ID).Count(p => p.TranzactieId == transferS[0].ID
+            && p.Unitate == partidaFctS && p.Valoare == 302.5m) == 1
+        && ProbeCub.SoldPartida(os, partidaFctS) == 0m
+        && ProbeCub.SoldPartida(os, partidaProprieS) == 0m);
+    ProbeCub.ProbaTransferPliat(os, Check, $"NUC-PLT-STOC-{eticheta}", pltS);
+
+    // --- STR-TRANSFER-7 (MEDIU-3): plafonul e RESTUL partidei, nu soldul ei întreg ---
+    // Factura de imobilizare ține netul pe 404 și taxa pe 401, deci `TotalStingere`
+    // (605) e mai mare decât ce ține partida de referință (105): a doua stingere
+    // trece de plafonul DOCUMENTULUI, dar nu și de restul partidei.
+    var fct7 = os.CreateObject<FacturaIntrare>();
+    fct7.Numar = MarcajNucTrz + "-F7";
+    fct7.Data = new DateOnly(2026, 3, 7);
+    fct7.Predator = furnizor;
+    fct7.Primitor = mag1;
+    var linie7 = os.CreateObject<FacturaIntrareDetaliu>();
+    linie7.Document = fct7;
+    linie7.TipMaterial = tipImobilizareTrz;
+    linie7.Cantitate = 1m;
+    linie7.PretUnitar = 500m;
+    linie7.TipTva = n21;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fct7);
+    var partidaFct7 = PartidaDin(fct7, cont401, furnizor);
+    Check($"STR-TRANSFER-7 ({eticheta}) scenă: factura de imobilizare ține 500 pe 404 și doar taxa (105) "
+        + "pe 401, iar restul stingibil al DOCUMENTULUI e 605",
+        ProbeCub.SoldPartida(os, partidaFct7) == -105m
+        && ImperechereService.Ramas(os, fct7.ID) == 605m
+        && cont404 != null && ProbeCub.SoldPartida(
+            os, PartidaDin(fct7, cont404, furnizor)) == -500m);
+
+    var plt7a = Trezorerie<Plata>(casa, furnizor, tipTrz, 60m, new DateOnly(2026, 3, 18));
+    MotorOperare.Opereaza(os, plt7a);
+    ImperechereService.Imperecheaza(os, plt7a, fct7, 60m, data: new DateOnly(2026, 4, 18));
+    Check($"STR-TRANSFER-7 ({eticheta}): prima stingere (60) intră întreagă — partida de 105 mai ține 45",
+        ProbeCub.Transferuri(os, plt7a.ID).Count == 1
+        && ProbeCub.SoldPartida(os, partidaFct7) == -45m);
+
+    var plt7b = Trezorerie<Plata>(casa, furnizor, tipTrz, 200m, new DateOnly(2026, 3, 19));
+    MotorOperare.Opereaza(os, plt7b);
+    var partidaProprie7b = PartidaDin(plt7b, cont401, furnizor);
+    ImperechereService.Imperecheaza(os, plt7b, fct7, 200m, data: new DateOnly(2026, 4, 19));
+    var transfer7b = ProbeCub.Transferuri(os, plt7b.ID);
+    Check($"STR-TRANSFER-7 ({eticheta}): a doua stingere (200, sub restul documentului) se plafonează la "
+        + "RESTUL partidei (45), nu la soldul ei întreg (105) — partida facturii ajunge la 0, nu "
+        + "SUPRA-stinsă, iar diferența rămâne pe partida proprie a plății (MEDIU-3)",
+        transfer7b.Count == 1
+        && ProbeCub.Postari(os, plt7b.ID).Count(p => p.TranzactieId == transfer7b[0].ID
+            && p.Unitate == partidaFct7 && p.Valoare == 45m) == 1
+        && ProbeCub.SoldPartida(os, partidaFct7) == 0m
+        && ProbeCub.SoldPartida(os, partidaProprie7b) == 155m);
+    ProbeCub.ProbaTransferPliat(os, Check, $"NUC-PLT-REST-{eticheta}", plt7b);
 
     // B-r2: latura pe care tipul cere contul propriu
     var pltInvers = os.CreateObject<Plata>();

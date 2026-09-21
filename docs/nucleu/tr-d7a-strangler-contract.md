@@ -236,6 +236,40 @@ unitate, spargerea era artefactul nominalizării la operare. (4) `--reconciliere
 (e) numără tranzacțiile `Operare` după TIPUL documentului, nu după stare
 (documentul stornat își păstrează tranzacția `Operare`).
 
+**Amendamente din review-ul advers (pasul 7, acceptate de main):**
+(5) MAJOR-A + MEDIU-3 — plafonul unei împerecheri e RESTUL partidei
+stinsului pe contul de referință: `|Net(Operare a stinsului CU conexul
+autogenerat absorbit — TR-D3 — ⊕ transferurile deja primite de stins)|`, în
+cub, în oracol, în `Fapte.Sursa` (nominalizarea automată la operare) și în
+gate; oracolul plafona pe rândurile proprii ale FCT-ului (fără NIR-ul conex:
+14.498 împerecheri trunchiate și 1.168 „sărite" pe Flax erau trunchierea
+REFERINȚEI, nu fapt de date) și ignora ce primise deja partida (taxarea
+inversă: `TotalStingere` > net 401 ⇒ supra-stingere). (6) MAJOR-B — `Data`
+tranzacției `Transfer` = `Imperechere.Data` a rândului (original sau invers):
+fapt datat cu gardieni (≥ ambele `DataInregistrare`, ≥ împerecherea la
+desfacere, perioada deschisă), exact reperul pe care registrele taie
+partidele; `max(DataInregistrare)` rescria perioade închise la desfacere și
+storno. `Imperecheri.Data` = ziua importului pe Flax (TR-r6) rămâne al
+conectorului și se RAPORTEAZĂ (V). (7) MAJOR-C — corecția cu
+`EroareMateriala` re-ștampilează `PerioadaDeclarare` și pe postările
+tranzacției `Storno` (ca pe rândurile `RegistruTva` de storno); litera (g) a
+gate-ului: TVA pe `Storno` = rândurile cu `Storno = true`. (8) MEDIU-1 —
+conexul clonat ia liniile sursei în ordinea `Pozitie`. (9) MEDIU-2 — grupul
+FCT ∪ NIR conex intră în (a)/(b) doar cu toate conexele operate; grupurile
+incomplete se raportează separat. (10) MEDIU-4, regulă DECLARATĂ —
+`PosteazaInCub` e aliniată de seed la fiecare updater: migrarea unui tip e a
+PROFILULUI (avansează prin release), nu a owner-ului; o bază în care flag-ul
+a fost oprit manual are documente fără `Operare` în cub până la TR-D9, iar
+(e) le raportează. (11) MEDIU-6 → S-r4: snapshot-ul EF poartă
+`FK_Postare_Tranzactie_TranzactieId` pe părinte, baza îl are pe partiții;
+orice migrație viitoare pe `Postare`/`Tranzactie` se scrie în SQL.
+(12) Rămân declarate, fără cod: dry-run-ul nu fixează prețul/data lotului
+născut (contractul dry-run diferă pe `Unitate.Deschisa`, fără refuz fals);
+`Pozitie` la cereri concurente poate da dubluri (ordinea rămâne
+deterministă prin `ThenBy(ID)`); un lot născut de o linie „în roșu"
+(valoare negativă, cantitate pozitivă) se evaluează negativ tăcut, ca în
+motorul vechi (invariant pierdut odată cu S-D14, consemnat).
+
 ### S-D14 — Linia negativă culesă = postare cu valoare negativă în `Operare` (amendament N-D al semnului)
 
 312 FCT pe Flax au linii negative (retur/discount pe aceeași factură), pe

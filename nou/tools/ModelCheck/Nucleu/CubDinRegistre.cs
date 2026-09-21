@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using N = Atlas.Conta.Nucleu;
@@ -31,6 +31,22 @@ static class CubDinRegistre {
                 linie ?? Guid.Empty,
                 id);
         })];
+
+    /// <summary>
+    /// Ceilalți stingători ai documentelor stinse de <paramref name="document"/>: plafonul
+    /// unei împerecheri e RESTUL partidei stinsului, deci oracolul trebuie să vadă TOATE
+    /// împerecherile ei, nu doar pe ale unui stingător (MEDIU-3).
+    /// </summary>
+    public static List<Guid> StingatoriiVecini(IObjectSpace os, Guid document) {
+        ArgumentNullException.ThrowIfNull(os);
+        return [.. os.GetObjectsQuery<Imperechere>()
+            .Where(v => v.DocumentStingatorId != document
+                && os.GetObjectsQuery<Imperechere>()
+                    .Any(i => i.DocumentStingatorId == document && i.DocumentId == v.DocumentId))
+            .Select(v => v.DocumentStingatorId)
+            .Distinct()
+            .ToList()];
+    }
 
     public static IReadOnlyList<N.Tranzactie> Transforma(IObjectSpace os, IReadOnlyCollection<Guid> documente) {
         ArgumentNullException.ThrowIfNull(os);
@@ -115,14 +131,67 @@ static class CubDinRegistre {
 
         if (imperecheri.Count > 0) {
             var tertDoc = TertPeDocument(contabile, dateDocument, rolTert, felRepartitor);
-            var soldPeCont = SoldPeCont(contabile);
+            // MAJOR-A: partida stinsului ține și recepția, care stă pe NIR-ul lui conex
+            // (TR-D3) — soldul ei se citește pe stins ∪ conexele lui autogenerate.
+            var soldPeCont = SoldPeCont(contabile, ConexeleContabile(os, idsTot));
+            // MEDIU-3: plafonul e RESTUL partidei, deci soldul scade cu ce au mutat
+            // împerecherile ANTERIOARE (ordinea `(Data, ID)`), iar rândul invers
+            // desface EXACT ce a mutat ACEST stingător.
+            var mutatPeStins = new Dictionary<(Guid Stins, Guid Cont), decimal>();
+            var mutatPePereche = new Dictionary<(Guid Stingator, Guid Stins, Guid Cont), decimal>();
             foreach (var imp in imperecheri)
                 if (DeImperechere(imp.DocumentStingatorId, imp.DocumentId, imp.Suma, imp.Data,
                         imp.Autogenerat ? null : imp.ID,
-                        tertDoc, soldPeCont, dateDocument) is { } tranzactie)
+                        tertDoc, soldPeCont, mutatPeStins, mutatPePereche, dateDocument) is { } tranzactie)
                     tranzactii.Add(tranzactie);
         }
         return tranzactii;
+    }
+
+    // Rândurile contabile ale conexelor autogenerate ale setului, cheiate pe SURSĂ
+    // (TR-D3): aceeași legătură pe care o citește `Normalizari.Context.SursaConexului`
+    // — documentul autogenerat al tipului-țintă declarat de `PoliticiConex`, nu
+    // SECUNDARUL (plata automată), care are declarația lui.
+    static List<(Guid Sursa, Guid ContDebit, Guid ContCredit, decimal Valoare)> ConexeleContabile(
+            IObjectSpace os, IReadOnlyList<Guid> documente) {
+        var copii = os.GetObjectsQuery<Document>()
+            .Where(c => c.Autogenerat && c.DocumentSursaId != null
+                && documente.Contains(c.DocumentSursaId.Value))
+            .Select(c => new { c.ID, c.ClrType, Sursa = c.DocumentSursaId!.Value })
+            .ToList();
+        if (copii.Count == 0)
+            return [];
+        var tipuri = os.GetObjectsQuery<TipDocument>()
+            .Select(t => new { t.ID, t.ClrType })
+            .ToList();
+        var clrPerTip = tipuri.Where(t => t.ClrType != null).ToDictionary(t => t.ID, t => t.ClrType!);
+        var tintaPerClr = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var politica in os.GetObjectsQuery<PoliticaConex>()
+                .Select(p => new { p.TipDocumentSursaId, p.TipDocumentTintaId })
+                .ToList())
+            if (clrPerTip.TryGetValue(politica.TipDocumentSursaId, out var sursa)
+                    && clrPerTip.TryGetValue(politica.TipDocumentTintaId, out var tinta))
+                tintaPerClr[sursa] = tinta;
+        if (tintaPerClr.Count == 0)
+            return [];
+        var clrSursei = os.GetObjectsQuery<Document>()
+            .Where(d => documente.Contains(d.ID))
+            .Select(d => new { d.ID, d.ClrType })
+            .ToList()
+            .ToDictionary(d => d.ID, d => d.ClrType);
+        var conexe = new Dictionary<Guid, Guid>();
+        foreach (var copil in copii)
+            if (clrSursei.GetValueOrDefault(copil.Sursa) is { } alSursei
+                    && tintaPerClr.GetValueOrDefault(alSursei) == copil.ClrType)
+                conexe[copil.ID] = copil.Sursa;
+        if (conexe.Count == 0)
+            return [];
+        var ids = conexe.Keys.ToList();
+        return [.. os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value) && !r.Storno)
+            .Select(r => new { r.DocumentId, r.ContDebitId, r.ContCreditId, r.Valoare })
+            .ToList()
+            .Select(r => (conexe[r.DocumentId!.Value], r.ContDebitId, r.ContCreditId, r.Valoare))];
     }
 
     static N.Postare Contabila(
@@ -222,6 +291,8 @@ static class CubDinRegistre {
             Guid? ulterioara,
             IReadOnlyDictionary<Guid, TertDoc> tertDoc,
             IReadOnlyDictionary<(Guid Document, Guid Cont), decimal> soldPeCont,
+            Dictionary<(Guid Stins, Guid Cont), decimal> mutatPeStins,
+            Dictionary<(Guid Stingator, Guid Stins, Guid Cont), decimal> mutatPePereche,
             IReadOnlyDictionary<Guid, DateOnly> dateDocument) {
         // B-D8 pct. 10: fără cont cu `RolTert` (profilul bugetar) stingerea n-are partidă
         // pe care s-o mute, deci împerecherea n-are corespondent în cub.
@@ -234,19 +305,32 @@ static class CubDinRegistre {
         if (partener is not Guid tert)
             throw new InvalidOperationException(
                 $"Împerecherea {stingator} → {stins} n-are partener pe niciuna dintre partide. B-D10, oprire.");
-        // MAJOR-1: împerecherea e pe DOCUMENT, partida e pe CONT — se mută cel mult
-        // cât ține partida stinsului pe contul de referință; restul rămâne pe a
+        // MAJOR-A/MEDIU-3: împerecherea e pe DOCUMENT, partida e pe CONT — se mută cel
+        // mult RESTUL partidei stinsului pe contul de referință (soldul lui cu conexul
+        // absorbit, minus ce au mutat împerecherile anterioare); restul rămâne pe a
         // stingătorului, ca la declarant.
-        var alStinsului = Math.Abs(soldPeCont.GetValueOrDefault((stins, referinta.Cont)));
         // F27-D8: `Imperecheri` e ALGEBRIC — rândul INVERS al unei desfaceri poartă
         // sumă negativă și mută înapoi, de pe partida stinsului pe a stingătorului.
         var semn = suma < 0m ? -1m : 1m;
-        var mutata = Math.Min(Math.Abs(suma), alStinsului);
+        var cheieStins = (stins, referinta.Cont);
+        var cheiePereche = (stingator, stins, referinta.Cont);
+        // Latura de referință dă direcția în care transferul duce soldul spre zero.
+        var directie = referinta.Latura == N.Latura.Debit ? 1m : -1m;
+        var plafon = semn < 0m
+            ? Math.Abs(mutatPePereche.GetValueOrDefault(cheiePereche))
+            : Math.Abs(soldPeCont.GetValueOrDefault(cheieStins)
+                + (directie * mutatPeStins.GetValueOrDefault(cheieStins)));
+        var mutata = Math.Min(Math.Abs(suma), plafon);
         if (mutata <= 0m) {
             Console.WriteLine($"     CubDinRegistre: împerecherea {stingator} → {stins} nu mută nimic — "
-                + $"stinsul n-are sold pe contul de referință {referinta.Cont} (MAJOR-1).");
+                + (semn < 0m
+                    ? $"partida stinsului n-a primit nimic de la acest stingător pe {referinta.Cont}"
+                    : $"stinsul n-are rest pe contul de referință {referinta.Cont}")
+                + " (MAJOR-A).");
             return null;
         }
+        mutatPeStins[cheieStins] = mutatPeStins.GetValueOrDefault(cheieStins) + (semn * mutata);
+        mutatPePereche[cheiePereche] = mutatPePereche.GetValueOrDefault(cheiePereche) + (semn * mutata);
         N.Postare Pe(Guid document, decimal valoare) => new(
             new N.Coordonate {
                 Cont = referinta.Cont,
@@ -268,16 +352,20 @@ static class CubDinRegistre {
     }
 
     // Soldul semnat (D − C) al fiecărui document pe fiecare cont atins: plafonul
-    // nominalizării (MAJOR-1).
+    // nominalizării (MAJOR-A). Rândurile conexului autogenerat intră pe SURSĂ (TR-D3).
     static Dictionary<(Guid Document, Guid Cont), decimal> SoldPeCont(
-            IReadOnlyList<RegistruContabil> contabile) {
+            IReadOnlyList<RegistruContabil> contabile,
+            IReadOnlyList<(Guid Sursa, Guid ContDebit, Guid ContCredit, decimal Valoare)> aleConexelor) {
         var sume = new Dictionary<(Guid Document, Guid Cont), decimal>();
-        foreach (var r in contabile) {
-            if (r.DocumentId is not Guid document)
-                continue;
-            sume[(document, r.ContDebitId)] = sume.GetValueOrDefault((document, r.ContDebitId)) + r.Valoare;
-            sume[(document, r.ContCreditId)] = sume.GetValueOrDefault((document, r.ContCreditId)) - r.Valoare;
+        void Adauga(Guid document, Guid debit, Guid credit, decimal valoare) {
+            sume[(document, debit)] = sume.GetValueOrDefault((document, debit)) + valoare;
+            sume[(document, credit)] = sume.GetValueOrDefault((document, credit)) - valoare;
         }
+        foreach (var r in contabile)
+            if (r.DocumentId is Guid document)
+                Adauga(document, r.ContDebitId, r.ContCreditId, r.Valoare);
+        foreach (var (sursa, debit, credit, valoare) in aleConexelor)
+            Adauga(sursa, debit, credit, valoare);
         return sume;
     }
 

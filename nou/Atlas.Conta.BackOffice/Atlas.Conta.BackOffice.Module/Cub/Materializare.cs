@@ -68,7 +68,8 @@ public static class Materializare {
     /// S-D13: împerecherea de după operare devine o tranzacție <c>Transfer</c> pe
     /// stingător. Fără commit: e în tranzacția apelantului.
     /// </summary>
-    public static void Imperecheaza(IObjectSpace os, Document stingator, Document stins, decimal suma) {
+    public static void Imperecheaza(
+            IObjectSpace os, Document stingator, Document stins, decimal suma, DateOnly data) {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(stingator);
         ArgumentNullException.ThrowIfNull(stins);
@@ -81,6 +82,15 @@ public static class Materializare {
         var aleStinsului = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == stins.ID && p.Tranzactie.Fel == N.FelTranzactie.Operare)
             .ToList();
+        // Plafonul e RESTUL partidei stinsului: `Operare` (care poartă deja recepția,
+        // TR-D3) plus ce au așezat pe ea transferurile ORICĂRUI stingător.
+        var partideleStinsului = aleStinsului.Select(p => p.Unitate).OfType<Guid>().Distinct().ToList();
+        var primiteDeStins = partideleStinsului.Count == 0
+            ? []
+            : os.GetObjectsQuery<Postare>()
+                .Where(p => p.Unitate != null && partideleStinsului.Contains(p.Unitate.Value)
+                    && p.Tranzactie.Fel == N.FelTranzactie.Transfer)
+                .ToList();
         var rezultat = Transferuri.Muta(new Transferuri.Cerere(
             stingator.ID,
             stingator.DataInregistrare,
@@ -89,7 +99,9 @@ public static class Materializare {
             stins.ID,
             stins.DataInregistrare,
             [.. aleStinsului.Select(Randuri.Citeste)],
-            suma));
+            [.. primiteDeStins.Select(Randuri.Citeste)],
+            suma,
+            data));
         if (rezultat.Refuz is { } refuz)
             throw new OperareException(string.Join("\n", Mesaje([refuz])));
         if (rezultat.Mutare is not { } mutare)

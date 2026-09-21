@@ -167,8 +167,14 @@ internal static class Fapte {
                 && i.DocumentStingatorId != doc.ID)
             .Select(i => (decimal?)i.Suma)
             .Sum() ?? 0m;
+        // Partida sursei ține și recepția, care stă pe NIR-ul ei conex (TR-D3): soldul
+        // per cont se citește pe sursă ∪ conexele ei autogenerate, fără documentul
+        // curent (secundarul e tot autogenerat pe aceeași sursă).
         var note = os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => r.DocumentId == sursaId && !r.Storno)
+            .Where(r => !r.Storno && r.DocumentId != null
+                && (r.DocumentId == sursaId
+                    || os.GetObjectsQuery<Document>().Any(d => d.ID == r.DocumentId.Value
+                        && d.Autogenerat && d.DocumentSursaId == sursaId && d.ID != doc.ID)))
             .Select(r => new { r.ContDebitId, r.ContCreditId, r.Valoare })
             .ToList();
         var sume = new Dictionary<Guid, decimal>();

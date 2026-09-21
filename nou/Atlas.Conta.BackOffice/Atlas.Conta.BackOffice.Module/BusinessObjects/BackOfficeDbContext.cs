@@ -1,4 +1,4 @@
-﻿using DevExpress.ExpressApp.Design;
+using DevExpress.ExpressApp.Design;
 using DevExpress.ExpressApp.EFCore.DesignTime;
 using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.BaseImpl.EF.PermissionPolicy;
@@ -810,17 +810,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             }
         }
 
-        // CUBUL DE POSTĂRI (S-D1, S-D2). Cele două tipuri NU derivă din
-        // `BaseObject`: `UseDeferredDeletion`/`UseOptimisticLock` se aplică pe
-        // `IDeferredDeletion`/`IOptimisticLock`, pe care nu le implementează, deci
-        // nu primesc `GCRecord`/`OptimisticLockField` și n-au nevoie de excludere.
-        // Tabelele rămân la SINGULAR (numele din S-D2, pe care le folosesc SQL-ul
-        // partiționării și probele `STR-SCHEMA-*`).
-        //
-        // Ce NU se declară aici, deliberat: indexii și restul FK-urilor lui
-        // `Postare` (Cont, Partener, Produs, Unitate, DocumentId) — tabela e
-        // PARTIȚIONATĂ, iar constrângerile ei stau pe partiții, în SQL explicit
-        // (S-D2); snapshot-ul rămâne divergent DECLARAT (S-r4).
+        // Indexii și restul FK-urilor lui `Postare` stau pe PARTIȚII, în SQL. // S-D2, S-r4
         private static void AplicaCub(ModelBuilder modelBuilder) {
             modelBuilder.Entity<Cub.Tranzactie>(b => {
                 b.ToTable("Tranzactie");
@@ -844,10 +834,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             });
         }
 
-        // S-D6 — `Pozitie` = ordinea de CULEGERE a liniilor, atribuită O SINGURĂ
-        // dată, la salvarea liniei noi: un singur loc pentru UI, WebApi, Import1C
-        // și conexul clonat. O interogare per salvare (grupată pe document), nu
-        // una per linie (invariantul VI).
+        // O interogare per salvare, grupată pe document — nu una per linie. // S-D6
         private void AtribuiePozitii() {
             var noi = ChangeTracker.Entries<DocumentDetaliu>()
                 .Where(e => e.State == EntityState.Added && e.Entity.Pozitie == 0)

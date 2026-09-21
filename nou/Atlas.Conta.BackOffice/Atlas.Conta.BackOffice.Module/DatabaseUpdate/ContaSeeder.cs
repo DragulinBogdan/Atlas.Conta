@@ -274,11 +274,7 @@ public static class ContaSeeder {
 
     // Decizia 20: nomenclatorul de tipuri oglindește clasele 1:1 — doar ancoră FK + UI.
     static void SeedTipuriDocument(IObjectSpace os) {
-        // S-D3 — `PosteazaInCub` e dată de seed: felia 31 migrează BCS, FCT (pasul 4)
-        // și PLT/INC (pasul 5), restul tipurilor rămân pe registre;
-        // `LaturaContPropriu` (B-r2) e
-        // latura pe care stă contul propriu al trezoreriei: plata îl are PREDATOR,
-        // încasarea PRIMITOR.
+        // S-D3, B-r2: `PosteazaInCub` și `LaturaContPropriu` sunt date de seed.
         (string Cod, string Denumire, string ClrType, LaturaDocument? ContPropriu)[] tipuri = [
             ("FCT", "Factură intrare", nameof(FacturaIntrare), null),
             ("FCL", "Factură ieșire", nameof(FacturaIesire), null),

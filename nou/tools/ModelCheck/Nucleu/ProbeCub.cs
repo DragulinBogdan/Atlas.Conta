@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
@@ -102,9 +102,15 @@ static class ProbeCub {
         Normalizari.Reseteaza();
         var pliate = Normalizari.TrD2NominalizeazaPrinImperechere(persistate);
         var aleDeclaratiei = Normalizari.Avertismente.Count;
+        // MEDIU-3: plafonul unei împerecheri e RESTUL partidei stinsului, deci oracolul
+        // are nevoie de TOATE împerecherile ei — inclusiv ale celorlalți stingători.
+        var set = new List<Guid> { doc.ID };
+        set.AddRange(CubDinRegistre.StingatoriiVecini(os, doc.ID));
         Normalizari.Reseteaza();
-        var oracol = Normalizari.Toate(
-            CubDinRegistre.Transforma(os, [doc.ID]), Normalizari.Citeste(os, [doc.ID]));
+        var oracol = Normalizari
+            .Toate(CubDinRegistre.Transforma(os, set), Normalizari.Citeste(os, set))
+            .Where(t => t.Document == doc.ID)
+            .ToList();
         var raport = Comparabil.Compara(
             Comparabil.Proiecteaza(oracol), Comparabil.Proiecteaza(pliate), ProbeNucleu.Nume(os, oracol));
         if (!raport.Egal)

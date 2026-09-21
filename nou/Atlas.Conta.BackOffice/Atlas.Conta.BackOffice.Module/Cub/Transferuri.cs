@@ -15,6 +15,15 @@ public static class Transferuri {
     /// postările de <c>Transfer</c> deja scrise ale stingătorului: plafonul partidei
     /// proprii e ce a mai rămas pe ea, nu ce a adus operarea.
     /// </param>
+    /// <param name="OperareStins">
+    /// tranzacția <c>Operare</c> a stinsului CU conexul autogenerat absorbit (TR-D3):
+    /// recepția stă pe NIR-ul conex, dar partida e a facturii.
+    /// </param>
+    /// <param name="TransferuriStins">
+    /// postările de <c>Transfer</c> așezate deja pe PARTIDELE stinsului, de oricare
+    /// stingător: plafonul e RESTUL partidei, nu ce a adus operarea.
+    /// </param>
+    /// <param name="Data">ziua faptului de stingere (<c>Imperechere.Data</c>).</param>
     public sealed record Cerere(
         Guid StingatorId,
         DateOnly DataStingator,
@@ -23,7 +32,9 @@ public static class Transferuri {
         Guid StinsId,
         DateOnly DataStins,
         IReadOnlyList<N.Postare> OperareStins,
-        decimal Suma);
+        IReadOnlyList<N.Postare> TransferuriStins,
+        decimal Suma,
+        DateOnly Data);
 
     /// <param name="Sarit">motivul pentru care împerecherea n-are corespondent în cub.</param>
     public sealed record Rezultat(N.Mutare? Mutare, DateOnly Data, N.Refuz? Refuz, string? Sarit);
@@ -43,19 +54,27 @@ public static class Transferuri {
         if ((Cea(cerere.OperareStins)?.Partener ?? referinta.Partener) is not Guid tert)
             return Sare("nicio partidă a celor două documente nu poartă partener");
 
-        // Împerecherea e pe DOCUMENT, partida e pe CONT: se mută cel mult cât ține
-        // partida stinsului pe contul de referință, restul rămâne pe a stingătorului.
-        var mutata = Math.Min(Math.Abs(cerere.Suma), Math.Abs(Net(cerere.OperareStins, referinta.Cont)));
+        // Împerecherea e pe DOCUMENT, partida e pe CONT: se mută cel mult RESTUL
+        // partidei stinsului pe contul de referință — operarea (cu conexul absorbit)
+        // plus ce a primit deja partida —, restul rămâne pe a stingătorului.
+        // Rândul invers (desfacerea, inversul la storno) desface EXACT transferurile
+        // ACESTUI stingător către partida stinsului, nu restul de azi al ei.
+        var invers = cerere.Suma < 0m;
+        var plafon = invers
+            ? Math.Abs(Net(
+                cerere.TransferuriStins.Where(p => p.Cauza.Document == cerere.StingatorId),
+                referinta.Cont))
+            : Math.Abs(Net(cerere.OperareStins.Concat(cerere.TransferuriStins), referinta.Cont));
+        var mutata = Math.Min(Math.Abs(cerere.Suma), plafon);
         if (mutata <= 0m)
-            return Sare($"documentul stins n-are sold pe contul de referință {referinta.Cont}");
+            return Sare(invers
+                ? $"partida stinsului n-a primit nimic de la acest stingător pe contul {referinta.Cont}"
+                : $"documentul stins n-are rest pe contul de referință {referinta.Cont}");
 
         var proprie = N.Unitate.DeschidePartida(
             referinta.Cont, tert, cerere.StingatorId, cerere.DataStingator);
         var stinsa = N.Unitate.DeschidePartida(
             referinta.Cont, tert, cerere.StinsId, cerere.DataStins);
-        // Rândul invers (desfacerea, inversul la storno) desface EXACT transferul
-        // dinainte: plafonul lui e suma originalului, nu soldul de azi al partidei.
-        var invers = cerere.Suma < 0m;
         if (!invers) {
             var disponibil = PePartida(
                 cerere.OperareStingator.Concat(cerere.TransferuriStingator), proprie.Id, referinta.Latura);
@@ -74,7 +93,7 @@ public static class Transferuri {
                 0m,
                 mutata,
                 new N.Cauza(cerere.StingatorId, null)),
-            cerere.DataStingator > cerere.DataStins ? cerere.DataStingator : cerere.DataStins,
+            cerere.Data,
             null,
             null);
     }

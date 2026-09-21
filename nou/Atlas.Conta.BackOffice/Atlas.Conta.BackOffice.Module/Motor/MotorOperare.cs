@@ -536,7 +536,7 @@ public static class MotorOperare {
     // nu produce NIR).
     static Document GenereazaConex(IObjectSpace os, Document sursa, PoliticaConexFapt politica,
         Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip) {
-        var linii = sursa.Detalii
+        var linii = Liniile(sursa)                                                   // S-D6
             .Where(d => Potrivire.Conex(politica, Fapte.Linie(d, claseTip)))
             .ToList();
         if (linii.Count == 0)

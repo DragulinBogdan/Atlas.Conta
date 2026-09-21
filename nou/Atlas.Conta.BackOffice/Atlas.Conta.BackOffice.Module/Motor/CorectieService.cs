@@ -3,6 +3,7 @@ using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
+using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
@@ -97,12 +98,17 @@ public static class CorectieService {
         var alOriginalului = motiv == MotivCorectie.EroareMateriala
             ? RegistruTvaService.PerioadaOriginalului(os, documentId)
             : null;
-        if (alOriginalului is { } perioada)
+        if (alOriginalului is { } perioada) {
             foreach (var rand in os.GetObjectsQuery<RegistruTva>()
                     .Where(r => r.DocumentId == documentId && r.Storno).ToList()) {
                 rand.PerioadaAn = perioada.An;
                 rand.PerioadaLuna = perioada.Luna;
             }
+            foreach (var postare in os.GetObjectsQuery<Cub.Postare>()                  // S-D5
+                    .Where(p => p.DocumentId == documentId && p.PerioadaDeclarare != null
+                        && p.Tranzactie.Fel == N.FelTranzactie.Storno).ToList())
+                postare.PerioadaDeclarare = (perioada.An * 100) + perioada.Luna;
+        }
 
         var erori = new List<string>();
         GardianEditare.VerificaLegaturaCorectiei(os, corectie, erori);

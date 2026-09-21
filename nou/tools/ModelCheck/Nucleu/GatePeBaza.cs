@@ -35,6 +35,7 @@ static class GatePeBaza {
         public readonly List<string> TextExceptii = [];
         public readonly List<string> Conservare = [];
         public int Transferuri;
+        public int TransferuriPlafonate;
         public int TransferuriDiferiteDeOracol;
         public readonly Dictionary<string, int> TransferuriSarite = [];
         public readonly Dictionary<string, int> TransferuriRefuzate = [];
@@ -86,6 +87,7 @@ static class GatePeBaza {
 
         Dictionary<string, string> clrPerCod;
         Dictionary<string, string> tintaConex;
+        Dictionary<string, string> tintaPerClr;
         Dictionary<string, N.DirectieTva> directiePerCod;
         Dictionary<Guid, (N.RegimTva Regim, decimal Cota)> tipuriTva;
         using (var os = provider.CreateObjectSpace()) {
@@ -99,6 +101,11 @@ static class GatePeBaza {
                     Tinta: tipuri.FirstOrDefault(t => t.ID == p.TipDocumentTintaId)?.ClrType))
                 .Where(p => p.Sursa != null && p.Tinta != null)
                 .ToDictionary(p => p.Sursa!, p => p.Tinta!);
+            // Aceeași legătură, cheiată pe CLASA sursei: documentele STINSE pot fi de
+            // orice tip, iar oracolul lor absoarbe conexul (TR-D3, MAJOR-A).
+            tintaPerClr = tintaConex
+                .Where(x => clrPerCod.ContainsKey(x.Key))
+                .ToDictionary(x => clrPerCod[x.Key], x => x.Value, StringComparer.Ordinal);
             directiePerCod = os.GetObjectsQuery<PoliticaTva>()
                 .Select(p => new { p.TipDocumentId, p.Directie })
                 .ToList()
@@ -144,7 +151,7 @@ static class GatePeBaza {
                     .ToList();
                 var conexe = Conexele(os, cod, tintaConex, alLotului);
                 foreach (var doc in documente)
-                    Masoara(os, doc, conexe,
+                    Masoara(os, doc, conexe, tintaPerClr,
                         directiePerCod.TryGetValue(cod, out var directie) ? directie : null, tipuriTva,
                         contor, abateri, regulaLipsa);
                 if (os.IsModified) {
@@ -203,6 +210,7 @@ static class GatePeBaza {
             IObjectSpace os,
             Document doc,
             IReadOnlyDictionary<Guid, Guid> conexe,
+            IReadOnlyDictionary<string, string> tintaPerClr,
             N.DirectieTva? directie,
             IReadOnlyDictionary<Guid, (N.RegimTva Regim, decimal Cota)> tipuriTva,
             Contor contor,
@@ -239,10 +247,19 @@ static class GatePeBaza {
                     aleLui.Add(conex);
                     conexeAleLui[conex] = sursa;
                 }
+            // MEDIU-3: plafonul e RESTUL partidei stinsului, deci ambele laturi ale
+            // gate-ului văd TOATE împerecherile ei, nu doar pe ale documentului curent.
+            var vecini = CubDinRegistre.StingatoriiVecini(os, doc.ID);
+            var setOracol = aleLui.Concat(vecini).Distinct().ToList();
+
+            // Oracolul se transformă O SINGURĂ dată, pe setul întreg: transferurile
+            // vecinilor trebuie calculate în ACEEAȘI secvență de împerecheri ca ale
+            // documentului curent, altfel plafoanele se despart (MEDIU-3).
+            var brut = CubDinRegistre.Transforma(os, setOracol);
 
             // S-D13: declarația unui STINGATOR e `Operare` ⊕ transferurile
             // împerecherilor lui, pliate de aceeași normalizare ca oracolul (TR-D2a).
-            var transferuri = Transferurile(os, doc, contract.Tranzactie!, contor);
+            var transferuri = Transferurile(os, doc, contract.Tranzactie!, tintaPerClr, brut, contor);
             Normalizari.Reseteaza();
             var declaratie = transferuri.Count == 0
                 ? (IReadOnlyList<N.Tranzactie>)[contract.Tranzactie!]
@@ -253,18 +270,19 @@ static class GatePeBaza {
                     contor.Avertismente.GetValueOrDefault("declarație: " + Sablon(avertisment)) + 1;
 
             Normalizari.Reseteaza();
-            var brut = CubDinRegistre.Transforma(os, aleLui);
-            var oracol = Normalizari.Toate(brut, Normalizari.Citeste(os, aleLui, conexeAleLui));
+            var oracol = Normalizari
+                .Toate(brut, Normalizari.Citeste(os, setOracol, conexeAleLui))
+                .Where(t => t.Document is not Guid alTranzactiei || aleLui.Contains(alTranzactiei))
+                .ToList();
             foreach (var avertisment in Normalizari.Avertismente.Distinct())
                 contor.Avertismente[Sablon(avertisment)] =
                     contor.Avertismente.GetValueOrDefault(Sablon(avertisment)) + 1;
-            // Pe COORDONATE (`Comparabil`), nu pe `N.Postare`: `Data` transferului e
-            // `max(DataInregistrare)` la declarant și `Imperecheri.Data` în oracol (S-D13,
-            // TR-r6), deci o egalitate structurală ar fi fals roșie pe fiecare document.
+            // Pe COORDONATE (`Comparabil`), nu pe `N.Postare` — și FĂRĂ `Linie`: transferul
+            // n-are linie la declarant și poartă id-ul împerecherii în oracol (MEDIU-5).
             if (transferuri.Count > 0 && !MultisetEgal(
-                    transferuri.SelectMany(t => t.Postari).Select(Comparabil.Proiecteaza),
-                    brut.Where(t => t.Fel == N.FelTranzactie.Transfer)
-                        .SelectMany(t => t.Postari).Select(Comparabil.Proiecteaza)))
+                    transferuri.SelectMany(t => t.Postari).Select(FaraLinie),
+                    brut.Where(t => t.Fel == N.FelTranzactie.Transfer && t.Document == doc.ID)
+                        .SelectMany(t => t.Postari).Select(FaraLinie)))
                 contor.TransferuriDiferiteDeOracol++;
 
             var conservare = N.Conservare.Verifica(contract.Tranzactie!);
@@ -305,9 +323,12 @@ static class GatePeBaza {
 
     // S-D13: transferurile împerecherilor în care documentul e STINGĂTOR, calculate
     // cu aceeași funcție pură pe care o folosește materializarea. `Operare` a
-    // stinsului vine din ORACOLUL lui — gate-ul n-are cub persistat (declarat).
+    // stinsului vine din ORACOLUL lui, cu conexul autogenerat ABSORBIT (TR-D3,
+    // MAJOR-A) — gate-ul n-are cub persistat (declarat).
     static List<N.Tranzactie> Transferurile(
-            IObjectSpace os, Document doc, N.Tranzactie operare, Contor contor) {
+            IObjectSpace os, Document doc, N.Tranzactie operare,
+            IReadOnlyDictionary<string, string> tintaPerClr, IReadOnlyList<N.Tranzactie> brut,
+            Contor contor) {
         var imperecheri = os.GetObjectsQuery<Imperechere>()
             .Where(i => i.DocumentStingatorId == doc.ID)
             .Select(i => new { i.ID, i.DocumentId, i.Suma, i.Data })
@@ -317,27 +338,67 @@ static class GatePeBaza {
         if (imperecheri.Count == 0)
             return [];
         var stinseIds = imperecheri.Select(i => i.DocumentId).Distinct().ToList();
-        var dateStins = os.GetObjectsQuery<Document>()
+        var stinse = os.GetObjectsQuery<Document>()
             .Where(d => stinseIds.Contains(d.ID))
-            .Select(d => new { d.ID, d.DataInregistrare })
+            .Select(d => new { d.ID, d.DataInregistrare, d.ClrType })
+            .ToList();
+        var dateStins = stinse.ToDictionary(d => d.ID, d => d.DataInregistrare);
+        var conexeStinse = os.GetObjectsQuery<Document>()
+            .Where(c => c.Autogenerat && c.DocumentSursaId != null
+                && stinseIds.Contains(c.DocumentSursaId.Value))
+            .Select(c => new { c.ID, c.ClrType, Sursa = c.DocumentSursaId!.Value })
             .ToList()
-            .ToDictionary(d => d.ID, d => d.DataInregistrare);
-        var aleStinsului = CubDinRegistre.Transforma(os, stinseIds)
+            .Where(c => stinse.FirstOrDefault(d => d.ID == c.Sursa) is { ClrType: { } alSursei }
+                && tintaPerClr.GetValueOrDefault(alSursei) == c.ClrType)
+            .ToDictionary(c => c.ID, c => c.Sursa);
+        var aleSetului = stinseIds.Concat(conexeStinse.Keys).Distinct().ToList();
+        // Absorbția TR-D3 se face AICI, pe postări, nu prin `Normalizari.Toate`: o factură
+        // fără rânduri contabile proprii (S-D16) n-are tranzacție-sursă în care conexul
+        // să intre, iar partida ei ar rămâne fără plafon deși cubul o are (MAJOR-A).
+        var brutStinse = CubDinRegistre.Transforma(os, aleSetului)
             .Where(t => t.Fel == N.FelTranzactie.Operare && t.Document != null)
-            .ToDictionary(t => t.Document!.Value, t => t.Postari);
+            .ToList();
+        var aleStinsului = stinseIds.ToDictionary(
+            id => id,
+            id => (IReadOnlyList<N.Postare>)[.. brutStinse
+                .Where(t => t.Document == id
+                    || conexeStinse.GetValueOrDefault(t.Document!.Value) == id)
+                .SelectMany(t => t.Postari)]);
+
+        // Transferurile CELORLALȚI stingători ai acelorași stinse, din ACELAȘI oracol:
+        // partida stinsului le-a primit deja, deci intră în plafon (MEDIU-3).
+        var aleVecinilor = brut
+            .Where(t => t.Fel == N.FelTranzactie.Transfer && t.Document != doc.ID)
+            .SelectMany(t => t.Postari.Select(p => (Cheie: (t.Data, p.Cauza.Linie ?? Guid.Empty), Postare: p)))
+            .OrderBy(x => x.Cheie)
+            .ToList();
 
         var transferuri = new List<N.Tranzactie>();
         var postari = new List<N.Postare>();
+        // Partida stinsului se recunoaște după IDENTITATEA ei (hash-ul documentului), nu
+        // după unitățile din `Operare`: o factură fără rânduri proprii (S-D16) își ține
+        // postările pe conexul ei, deci ar rata exact transferurile primite (MAJOR-A).
+        static bool EPartidaLui(N.Postare postare, Guid stins, DateOnly data) =>
+            postare.Coordonate.Unitate is { Fel: N.FelUnitate.Partida, Partener: Guid tert } unitate
+            && N.Unitate.DeschidePartida(unitate.Cont, tert, stins, data).Id == unitate.Id;
+
         foreach (var imp in imperecheri) {
+            var alStinsului = aleStinsului.GetValueOrDefault(imp.DocumentId, []);
+            var dataStinsului = dateStins.GetValueOrDefault(imp.DocumentId, doc.DataInregistrare);
             var rezultat = C.Transferuri.Muta(new C.Transferuri.Cerere(
                 doc.ID,
                 doc.DataInregistrare,
                 operare.Postari,
                 postari,
                 imp.DocumentId,
-                dateStins.GetValueOrDefault(imp.DocumentId, doc.DataInregistrare),
-                aleStinsului.GetValueOrDefault(imp.DocumentId, []),
-                imp.Suma));
+                dataStinsului,
+                alStinsului,
+                [.. postari.Concat(aleVecinilor
+                        .Where(x => x.Cheie.CompareTo((imp.Data, imp.ID)) < 0)
+                        .Select(x => x.Postare))
+                    .Where(p => EPartidaLui(p, imp.DocumentId, dataStinsului))],
+                imp.Suma,
+                imp.Data));
             if (rezultat.Sarit is { } motiv) {
                 contor.TransferuriSarite[Sablon(motiv)] =
                     contor.TransferuriSarite.GetValueOrDefault(Sablon(motiv)) + 1;
@@ -360,11 +421,18 @@ static class GatePeBaza {
                 continue;
             }
             contor.Transferuri++;
+            if (rezultat.Mutare!.Valoare < Math.Abs(imp.Suma))
+                contor.TransferuriPlafonate++;
             transferuri.Add(contract.Tranzactie!);
             postari.AddRange(contract.Tranzactie!.Postari);
         }
         return transferuri;
     }
+
+    // MEDIU-5: transferul n-are `Linie` la declarant și poartă id-ul împerecherii în
+    // oracol — coordonata nu e comparabilă, restul e.
+    static PostareComparabila FaraLinie(N.Postare postare) =>
+        Comparabil.Proiecteaza(postare) with { Linie = null };
 
     static bool MultisetEgal<T>(IEnumerable<T> unele, IEnumerable<T> altele) where T : notnull {
         var stanga = new Dictionary<T, int>();
@@ -462,7 +530,8 @@ static class GatePeBaza {
         }
         if (contor.Transferuri > 0 || contor.TransferuriSarite.Count > 0
                 || contor.TransferuriRefuzate.Count > 0) {
-            scrie($"   S-D13 transferuri: {contor.Transferuri} scrise, "
+            scrie($"   S-D13 transferuri: {contor.Transferuri} scrise "
+                + $"(din care {contor.TransferuriPlafonate} plafonate la restul partidei), "
                 + $"{contor.TransferuriSarite.Values.Sum()} sărite, "
                 + $"{contor.TransferuriRefuzate.Values.Sum()} refuzate; "
                 + "documente ale căror transferuri, pe coordonate, diferă de ale oracolului: "

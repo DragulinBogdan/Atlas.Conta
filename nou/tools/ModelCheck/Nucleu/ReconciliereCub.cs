@@ -45,6 +45,37 @@ static class ReconciliereCub {
         grup as (select id, grup from cap union select id, grup from conex)
         """;
 
+    // MEDIU-2: cât timp NIR-ul conex e Draft, cubul are deja recepția (FCT o postează)
+    // iar registrele nu — starea NORMALĂ din UI între „Operează factura" și „Operează
+    // NIR-ul". Grupul incomplet nu e Δ: iese din (a)/(b) și se RAPORTEAZĂ.
+    const string GrupulComplet = """
+        with migrat as (
+            select t."ID" as tip, t."Cod" as cod, t."ClrType" as clr
+            from "TipuriDocument" t
+            where t."GCRecord" = 0 and t."PosteazaInCub"),
+        capTot as (
+            select d."ID" as id, m.cod as grup, m.tip as tip
+            from "Documente" d join migrat m on m.clr = d."ClrType"
+            where d."GCRecord" = 0 and d."Stare" = 1 {0}),
+        conexTot as (
+            select c."ID" as id, capTot.grup, capTot.id as cap, c."Stare" as stare
+            from "Documente" c
+            join capTot on capTot.id = c."DocumentSursaId"
+            join "PoliticiConex" p on p."TipDocumentSursaId" = capTot.tip and p."GCRecord" = 0
+            join "TipuriDocument" tt on tt."ID" = p."TipDocumentTintaId"
+            where c."GCRecord" = 0 and c."Autogenerat" and c."ClrType" = tt."ClrType" {1}),
+        incomplet as (select distinct cap from conexTot where stare <> 1),
+        cap as (select id, grup from capTot where id not in (select cap from incomplet)),
+        conex as (select id, grup from conexTot where cap not in (select cap from incomplet)),
+        grup as (select id, grup from cap union select id, grup from conex)
+        """;
+
+    // Capetele de grup cu cel puțin un conex autogenerat NEOPERAT: raportate, nu Δ.
+    static List<(string Grup, Guid Cap)> Incomplete(DbContext ctx, Guid[]? set) => Citeste(ctx, $$"""
+        {{GrupulComplet}}
+        select grup, cap from conexTot where stare <> 1 group by 1, 2 order by 1, 2
+        """, set, cititor => (cititor.GetString(0), cititor.GetGuid(1)));
+
     public static IReadOnlyList<string> TipuriMigrate(DbContext ctx) {
         ArgumentNullException.ThrowIfNull(ctx);
         return Citeste(ctx,
@@ -70,9 +101,14 @@ static class ReconciliereCub {
         randuri.AddRange(Contabile(ctx, set));
         randuri.AddRange(Stocuri(ctx, set));
         randuri.AddRange(Fiscale(ctx, set));
+        randuri.AddRange(Storno(ctx, set));
         randuri.AddRange(Balanta(ctx, set));
         randuri.AddRange(Numarul(ctx, set));
         randuri.AddRange(Partide(ctx, set, note));
+        foreach (var grup in Incomplete(ctx, set).GroupBy(x => x.Grup))
+            note?.Add($"(a)/(b): {grup.Select(x => x.Cap).Distinct().Count()} grupuri {grup.Key} cu conex "
+                + "neoperat — NEINCLUSE (cubul are recepția, registrele nu; exemple: "
+                + string.Join(", ", grup.Select(x => x.Cap.ToString()[..8]).Distinct().Take(5)) + ")");
         return randuri;
     }
 
@@ -202,7 +238,7 @@ static class ReconciliereCub {
     // recepții stă pe partiția Stoc (`Spatiu = Stoc ⇔ Lot`, N-D2), deci suma e
     // peste AMBELE partiții — altfel jumătate din fiecare notă ar lipsi.
     static List<Rand> Contabile(DbContext ctx, Guid[]? set) => Citeste(ctx, $$"""
-        {{Grupul}},
+        {{GrupulComplet}},
         cub as (
             select g.grup, p."Cont" as cont, p."Latura" as latura,
                    date_trunc('month', p."Data")::date as luna, sum(p."Valoare") as v
@@ -243,7 +279,7 @@ static class ReconciliereCub {
     // virtual N-D4 poartă −q pe partiția Contabil și NU intră: în registre nu are
     // rând de stoc.
     static List<Rand> Stocuri(DbContext ctx, Guid[]? set) => Citeste(ctx, $$"""
-        {{Grupul}},
+        {{GrupulComplet}},
         cub as (
             select g.grup, p."Unitate" as lot, date_trunc('month', p."Data")::date as luna,
                    case when p."Cantitate" >= 0 then '+' else '-' end as semn,
@@ -314,6 +350,50 @@ static class ReconciliereCub {
         order by 1, 5, 2, 4
         """, set, cititor => new Rand(
             "(c) fiscal",
+            $"{cititor.GetString(0)} {cititor.GetString(1)}/{cititor.GetString(2)}/{cititor.GetString(3)} "
+            + $"per={cititor.GetInt32(4)}",
+            cititor.GetDecimal(5),
+            cititor.GetDecimal(6)));
+
+    // (g) MAJOR-C — reperul fiscal al STORNOULUI: Σ per (grup, TipTva, Sens, Rol,
+    // PerioadaDeclarare) pe postările `Fel = Storno` = rândurile `RegistruTva` cu
+    // `Storno`. Corecția cu `EroareMateriala` re-ștampilează AMBELE la perioada
+    // originalului, deci litera prinde divergența.
+    static List<Rand> Storno(DbContext ctx, Guid[]? set) => Citeste(ctx, $$"""
+        {{Grupul}},
+        cub as (
+            select g.grup, p."TipTvaId" as tip, p."SensTva" as sens, p."RolTva" as rol,
+                   p."PerioadaDeclarare" as per, sum(p."Valoare") as v
+            from "Postare" p
+            join "Tranzactie" t on t."ID" = p."TranzactieId"
+            join grup g on g.id = p."DocumentId"
+            where t."Fel" = 2 and p."TipTvaId" is not null
+            group by 1, 2, 3, 4, 5),
+        reg as (
+            select grup, tip, sens, rol, per, sum(v) as v from (
+                select g.grup, r."TipTvaId" as tip, r."Sens" as sens, 1 as rol,
+                       r."PerioadaAn" * 100 + r."PerioadaLuna" as per, r."Baza" as v
+                from "RegistruTva" r join grup g on g.id = r."DocumentId"
+                where r."GCRecord" = 0 and r."Storno"
+                union all
+                select g.grup, r."TipTvaId", r."Sens", 2,
+                       r."PerioadaAn" * 100 + r."PerioadaLuna", r."Tva"
+                from "RegistruTva" r join grup g on g.id = r."DocumentId"
+                where r."GCRecord" = 0 and r."Storno") x
+            group by 1, 2, 3, 4, 5)
+        select coalesce(c.grup, r.grup),
+               coalesce((select k."Cod" from "TipuriTva" k where k."ID" = coalesce(c.tip, r.tip)),
+                        coalesce(c.tip, r.tip)::text),
+               case coalesce(c.sens, r.sens) when 1 then 'achizitie' else 'livrare' end,
+               case coalesce(c.rol, r.rol) when 1 then 'baza' else 'taxa' end,
+               coalesce(c.per, r.per),
+               coalesce(c.v, 0), coalesce(r.v, 0)
+        from cub c full outer join reg r
+          on r.grup = c.grup and r.tip = c.tip and r.sens = c.sens and r.rol = c.rol and r.per = c.per
+        where coalesce(c.v, 0) <> coalesce(r.v, 0)
+        order by 1, 5, 2, 4
+        """, set, cititor => new Rand(
+            "(g) fiscal storno",
             $"{cititor.GetString(0)} {cititor.GetString(1)}/{cititor.GetString(2)}/{cititor.GetString(3)} "
             + $"per={cititor.GetInt32(4)}",
             cititor.GetDecimal(5),
@@ -404,7 +484,8 @@ static class ReconciliereCub {
         ArgumentNullException.ThrowIfNull(randuri);
         var text = new StringBuilder();
         foreach (var litera in new[] {
-                "(a) contabil", "(b) stoc", "(c) fiscal", "(d) balanță", "(e) număr", "(f) partide" }) {
+                "(a) contabil", "(b) stoc", "(c) fiscal", "(d) balanță", "(e) număr", "(f) partide",
+                "(g) fiscal storno" }) {
             var aleLui = randuri.Where(r => r.Litera == litera).ToList();
             text.AppendLine($"{(aleLui.Count == 0 ? "OK  " : "FAIL")} {litera}: "
                 + $"{aleLui.Count} rânduri cu Δ ≠ 0 (toleranță 0)");
