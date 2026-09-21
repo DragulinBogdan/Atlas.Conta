@@ -146,13 +146,26 @@ public static class Gen {
         return new Tranzactie(FelTranzactie.Deschidere, data, null, postari);
     }
 
-    public static Declaratie Declaratie(Random aleator, bool? cuCantitate = null, Guid? peDocument = null) {
+    public static Declaratie Declaratie(
+            Random aleator, bool? cuCantitate = null, Guid? peDocument = null, bool cuMutari = false) {
         var document = peDocument ?? Unul(aleator, Documente);
         var miscari = new List<Miscare>();
         var cate = 1 + aleator.Next(4);
         for (var i = 0; i < cate; i++)
             miscari.Add(Miscare(aleator, document, cuCantitate ?? aleator.Next(2) == 0));
-        return new Nucleu.Declaratie(document, Data(aleator), miscari, Decizii(aleator), Ipoteze(aleator));
+        return new Nucleu.Declaratie(
+            document,
+            Data(aleator),
+            miscari,
+            cuMutari ? Mutari(aleator, document) : [],
+            Decizii(aleator),
+            Ipoteze(aleator));
+    }
+
+    public static Declaratie DoarMutari(Random aleator, Guid? peDocument = null) {
+        var document = peDocument ?? Unul(aleator, Documente);
+        return new Nucleu.Declaratie(
+            document, Data(aleator), [], Mutari(aleator, document), Decizii(aleator), Ipoteze(aleator));
     }
 
     public static IReadOnlyList<Decizie> Decizii(Random aleator) {

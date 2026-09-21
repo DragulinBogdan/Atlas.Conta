@@ -21,8 +21,8 @@ public class DeterminismTeste {
             var intai = Motor.Opereaza(declaratie, new Rotunjire(MidpointRounding.AwayFromZero));
             var apoi = Motor.Opereaza(declaratie, new Rotunjire(MidpointRounding.ToEven));
             Assert.NotSame(intai, apoi);
-            Assert.NotSame(intai.Tranzactie, apoi.Tranzactie);
-            Assert.Equal(intai.Tranzactie, apoi.Tranzactie);
+            Assert.NotSame(intai.Tranzactii, apoi.Tranzactii);
+            Assert.Equal(intai.Tranzactii, apoi.Tranzactii);
             Assert.Equal(intai, apoi);
             Assert.Equal(intai.GetHashCode(), apoi.GetHashCode());
         });
@@ -36,7 +36,7 @@ public class DeterminismTeste {
             };
             var unul = Motor.Opereaza(declaratie, new Rotunjire(MidpointRounding.AwayFromZero));
             var altul = Motor.Opereaza(alta, new Rotunjire(MidpointRounding.AwayFromZero));
-            Assert.Equal(unul.Tranzactie, altul.Tranzactie);
+            Assert.Equal(unul.Tranzactii, altul.Tranzactii);
             Assert.NotEqual(declaratie.Ipoteze, alta.Ipoteze);
             Assert.NotEqual(unul, altul);
         });

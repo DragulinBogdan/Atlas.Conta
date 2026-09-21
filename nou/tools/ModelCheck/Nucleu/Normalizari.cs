@@ -242,6 +242,9 @@ static class Normalizari {
     }
 
     static N.Tranzactie Unifica(N.Tranzactie tranzactie) {
+        // T-D2: transferul de stoc n-are picior contabil — unificarea e a lui `Operare`.
+        if (tranzactie.Fel != N.FelTranzactie.Operare)
+            return tranzactie;
         var postari = tranzactie.Postari;
         var unificata = new N.Postare?[postari.Count];
         var absorbita = new bool[postari.Count];
@@ -309,7 +312,7 @@ static class Normalizari {
     public static IReadOnlyList<N.Tranzactie> TrD2NominalizeazaPrinImperechere(
             IReadOnlyList<N.Tranzactie> tranzactii) {
         ArgumentNullException.ThrowIfNull(tranzactii);
-        if (!tranzactii.Any(t => t.Fel == N.FelTranzactie.Transfer))
+        if (!tranzactii.Any(EDeImperechere))
             return [.. tranzactii];
 
         var postari = new List<N.Postare>?[tranzactii.Count];
@@ -320,7 +323,7 @@ static class Normalizari {
 
         for (var i = 0; i < tranzactii.Count; i++) {
             var transfer = tranzactii[i];
-            if (transfer.Fel != N.FelTranzactie.Transfer)
+            if (!EDeImperechere(transfer))
                 continue;
             var iesire = transfer.Postari.FirstOrDefault(p => p.Valoare < 0m);
             var intrare = transfer.Postari.FirstOrDefault(p => p.Valoare > 0m);
@@ -347,6 +350,14 @@ static class Normalizari {
             rezultat.Add(postari[i] is { } ale ? tranzactii[i] with { Postari = ale } : tranzactii[i]);
         }
         return rezultat;
+    }
+
+    // T-D2: transferul cu unități de fel `Lot` e MUTAREA de stoc a documentului, nu o
+    // stingere de partidă — nu se pliază în `Operare`.
+    public static bool EDeImperechere(N.Tranzactie tranzactie) {
+        ArgumentNullException.ThrowIfNull(tranzactie);
+        return tranzactie.Fel == N.FelTranzactie.Transfer
+            && !tranzactie.Postari.Any(p => p.Coordonate.Unitate?.Fel == N.FelUnitate.Lot);
     }
 
     static bool Nominalizeaza(

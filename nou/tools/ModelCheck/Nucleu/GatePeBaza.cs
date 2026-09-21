@@ -259,11 +259,16 @@ static class GatePeBaza {
 
             // S-D13: declarația unui STINGATOR e `Operare` ⊕ transferurile
             // împerecherilor lui, pliate de aceeași normalizare ca oracolul (TR-D2a).
-            var transferuri = Transferurile(os, doc, contract.Tranzactie!, tintaPerClr, brut, contor);
+            // T-D2: partida de referință a stingerii e în `Operare`; un document doar cu
+            // `Transfer` de stoc (BTR) n-are partide, deci nici împerecheri de pliat.
+            var operarea = contract.Tranzactii.FirstOrDefault(t => t.Fel == N.FelTranzactie.Operare);
+            var transferuri = operarea is null
+                ? []
+                : Transferurile(os, doc, operarea, tintaPerClr, brut, contor);
             Normalizari.Reseteaza();
             var declaratie = transferuri.Count == 0
-                ? (IReadOnlyList<N.Tranzactie>)[contract.Tranzactie!]
-                : Normalizari.TrD2NominalizeazaPrinImperechere([contract.Tranzactie!, .. transferuri]);
+                ? contract.Tranzactii
+                : Normalizari.TrD2NominalizeazaPrinImperechere([.. contract.Tranzactii, .. transferuri]);
             var aleDeclaratiei = Normalizari.Avertismente.Distinct().ToList();
             foreach (var avertisment in aleDeclaratiei)
                 contor.Avertismente["declarație: " + Sablon(avertisment)] =
@@ -281,15 +286,15 @@ static class GatePeBaza {
             // n-are linie la declarant și poartă id-ul împerecherii în oracol (MEDIU-5).
             if (transferuri.Count > 0 && !MultisetEgal(
                     transferuri.SelectMany(t => t.Postari).Select(FaraLinie),
-                    brut.Where(t => t.Fel == N.FelTranzactie.Transfer && t.Document == doc.ID)
+                    brut.Where(t => t.Document == doc.ID && Normalizari.EDeImperechere(t))
                         .SelectMany(t => t.Postari).Select(FaraLinie)))
                 contor.TransferuriDiferiteDeOracol++;
 
-            var conservare = N.Conservare.Verifica(contract.Tranzactie!);
+            var conservare = contract.Tranzactii.SelectMany(N.Conservare.Verifica).ToList();
             if (conservare.Count > 0 && contor.Conservare.Count < 5)
                 contor.Conservare.Add($"{eticheta}: {string.Join("; ", conservare.Select(r => r.Cod))}");
 
-            var nume = ProbeNucleu.Nume(os, oracol, contract.Tranzactie!);
+            var nume = ProbeNucleu.Nume(os, oracol, [.. contract.Tranzactii]);
             var raport = Comparabil.Compara(
                 Comparabil.Proiecteaza(oracol), Comparabil.Proiecteaza(declaratie), nume);
             if (raport.Egal && Normalizari.Avertismente.Count == 0 && aleDeclaratiei.Count == 0) {
@@ -423,8 +428,8 @@ static class GatePeBaza {
             contor.Transferuri++;
             if (rezultat.Mutare!.Valoare < Math.Abs(imp.Suma))
                 contor.TransferuriPlafonate++;
-            transferuri.Add(contract.Tranzactie!);
-            postari.AddRange(contract.Tranzactie!.Postari);
+            transferuri.AddRange(contract.Tranzactii);
+            postari.AddRange(contract.Tranzactii.SelectMany(t => t.Postari));
         }
         return transferuri;
     }

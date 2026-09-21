@@ -321,7 +321,7 @@ public static class ContaSeeder {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
-                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC";
+                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR";
                 tip.LaturaContPropriu = t.ContPropriu;
             });
     }

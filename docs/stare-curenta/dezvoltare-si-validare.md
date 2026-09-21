@@ -198,11 +198,15 @@ ambele ieșind înainte de bootstrap: (S-D9)
   transferurile scrise, cele plafonate la restul partidei și cele sărite.
 - `ModelCheck --reconciliere-cub <baza>` — SQL pe set, toleranță 0, pe
   tipurile cu `PosteazaInCub`: (a) Σ valoare per grup × cont × latură × lună,
-  (b) Σ cantitate per lot × lună pe spațiul Stoc, (c) TVA per tip × sens × rol
-  × perioadă, (d) Σ D = Σ C per carte în fiecare tranzacție, (e) exact o
-  tranzacție `Operare` per document operat al unui tip migrat și niciuna pe
-  celelalte, (f) Σ per partidă la ultima perioadă închisă, (g) TVA pe postările
-  de storno. Grupul unui FCT e documentul ∪ NIR-ul lui conex; grupurile cu
+  (b) Σ cantitate per lot × lună pe spațiul Stoc, din `Operare` ⊕ transferul
+  de stoc (T-D2), (c) TVA per tip × sens × rol × perioadă, (d) Σ D = Σ C per
+  carte în fiecare tranzacție, (e) per document operat al unui tip migrat cel
+  mult o `Operare`, cel mult un `Transfer` de stoc (postări în spațiul Stoc) și
+  cel puțin una din ele, și niciuna dintre cele două pe celelalte (T-D2, T-r1),
+  (f) Σ per partidă la ultima perioadă închisă, (g) TVA pe postările de storno.
+  Gate-ul `--declaratie-pe-baza` pe BTR se citește „100 % egal în afara celor
+  535 declarate în T-D2.2" (oracolul pliază rândurile de stoc ± ale aceluiași
+  lot, fără picior contabil, într-un `Transfer`). Grupul unui FCT e documentul ∪ NIR-ul lui conex; grupurile cu
   conex neoperat se RAPORTEAZĂ separat, nu se numără ca Δ. Litera (f) e vacuă
   cât timp un tip nemigrat mai postează pe conturi cu `RolTert`, iar nota se
   tipărește.

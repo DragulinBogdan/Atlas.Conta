@@ -830,8 +830,9 @@ cheia compusă și FK-urile per partiție. (S-r4)
 
 `TipDocument.PosteazaInCub` spune dacă tipul materializează în cub. Valoarea e
 aliniată de seed ca orice rând `DinSeed`: migrarea unui tip e a PROFILULUI, nu
-a bazei (S-r6). Migrate sunt BCS, FCT, PLT și INC, pe ambele profiluri; restul
-tipurilor postează doar în registre. Un tip marcat a cărui clasă nu declară
+a bazei (S-r6). Migrate sunt BCS, FCT, PLT, INC (felia 31) și BTR (felia 32,
+pasul 1, 2026-09-21), pe ambele profiluri; restul tipurilor postează doar în
+registre. Un tip marcat a cărui clasă nu declară
 (`Document.Declarant()` întoarce `null`) e eroare de configurare: operarea
 refuză, nu tace. (S-D3)
 
@@ -841,20 +842,56 @@ refuză, nu tace. (S-D3)
 (UI, WebApi, Import1C):
 
 - **Operarea** — după registre și după împerecherea automată, înainte de
-  commit: contractul declarantului devine o tranzacție `Operare` datată cu
-  `DataInregistrare` și o postare per postare a contractului. Refuzul
+  commit: contractul declarantului devine cel mult o tranzacție `Operare` și
+  cel mult una `Transfer` (cel puțin una din ele; felul mixt de mai jos, T-D2),
+  datate cu `DataInregistrare`, o postare per postare a contractului. Refuzul
   declarației E refuzul operației: o singură eroare cu toate refuzurile, iar
   tranzacția de comandă se anulează integral — nimic în cub, nimic în registre.
   Dry-run-ul arată aceleași refuzuri, în forma `EroriDto` de azi. (S-D4)
-- **Stornoul** — a doua tranzacție, de fel `Storno`: inversul exact al
-  postărilor `Operare` ale documentului și al celor `Atribuit` spre ele, datat
+- **Stornoul** — o singură tranzacție de fel `Storno`: inversul exact al
+  postărilor `Operare` ale documentului, al transferului lui de STOC (unități
+  de fel `Lot`; transferurile pe partidă sunt ale împerecherii și le inversează
+  rândul ei invers, S-D13) și al celor `Atribuit` spre ele, datat
   la data stornării, cu `PerioadaDeclarare` re-ștampilată la perioada
   stornării. Corecția cu motivul `EroareMateriala` o re-ștampilează la perioada
   originalului și pe postările `Storno`, ca pe rândurile de TVA. Un document
   operat înainte ca tipul lui să fie migrat n-are tranzacție `Operare`, deci
   stornoul lui nu atinge cubul. (S-D5)
-- **Anularea operării** șterge fizic tranzacția `Operare` și postările ei,
-  simetric cu ștergerea registrelor. (S-D5)
+- **Anularea operării** șterge fizic tranzacțiile `Operare` și `Transfer` ale
+  documentului și postările lor, simetric cu ștergerea registrelor; e gardată
+  de „fără împerecheri", deci orice `Transfer` al documentului e al lui. (S-D5, T-D2)
+
+### Felul mixt: `Transfer` pe linia care nu schimbă contul (T-D2, felia 32)
+
+Declarația are două liste: `Miscari` (debit ≠ credit, devin `Operare`) și
+`Mutari` (același cont, aceeași latură, −/+ între două capete, devin
+`Transfer`). O linie de stoc al cărei cont nu se schimbă între laturi e o
+mutare; una care schimbă contul e o mișcare. Un document are astfel cel mult o
+`Operare` și cel mult un `Transfer`, cel puțin una — amendament de literă al
+lui 090 (a), T-r1. Fiecare capăt al unui `Transfer` de stoc poartă `Gestiune`
+și `Unitate` (lotul): rapoartele pe cont îl exclud (Σ per (cont, latură) = 0),
+cele pe gestiune și pe lot îl includ.
+
+- **BTR** (`DeclarantNotaTransfer`): cheia de stoc e `(Lot, Repartitor,
+  TipStoc)`, deci lotul își schimbă gestiunea și contul lui rămâne — pe modelul
+  de azi BTR produce NUMAI `Transfer` (T-D2.1: pe Flax 85.027 linii, toate cu
+  același lot pe ambele capete, zero rânduri contabile). Contul e al lotului
+  (`TipMaterial.ContImplicitId`), fără regulă de contare; refuzuri:
+  `GESTIUNI_IDENTICE`, `CONT_STOC_LIPSA`, plus cele de gestiune, lot și
+  cantitate. Valoarea = `Evaluare.Iesire` pe raportul curent al lotului în
+  gestiunea predatoare, în secvența liniilor.
+- **Diferența declarată T-D2.2**: motorul vechi scrie `round(cantitate ×
+  Lot.PretUnitar)` cu prețul înghețat la nașterea lotului; cubul evaluează pe
+  raportul curent (090 (j), N-r3). Pe Flax: 535 din 45.552 BTR (1,17 %), 560
+  linii din 85.027, toate ieșiri PARȚIALE (cele 70.841 de goliri sunt egale),
+  Σ semnată +0,92 lei și Σ absolută 28,60 lei pe 121.094.304,67 lei mutați;
+  553 de linii sunt reziduul propriei goliri a motorului vechi mutat pe
+  destinație, 7 sunt loturi intrate la altă valoare decât prețul lor (extrem
+  `BTR-9039`: preț 0 contra 11 lei/buc). E repartizare între gestiuni, nu
+  conservare: literele (a)–(g) ale reconcilierii n-o văd; apare doar la citirile
+  pe cub per gestiune × lot (TR-D8). Nu se normalizează.
+- Ramura `Operare` a formei mixte e probată prin proprietăți în nucleu; pe
+  scenă o probează ASM (pasul 5).
 
 `DocumentDetaliu.Pozitie` e ordinea de culegere a liniei. Se atribuie o
 singură dată, la salvarea unei linii noi, în `SaveChanges`-ul contextului — un

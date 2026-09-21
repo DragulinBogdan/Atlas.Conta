@@ -12,7 +12,9 @@ public static class CoduriRefuz {
     public const string LaturaContPropriuNepotrivita = "LATURA_CONT_PROPRIU_NEPOTRIVITA";
     public const string LaturiIdentice = "LATURI_IDENTICE";
     public const string LiniiLipsa = "LINII_LIPSA";
+    public const string GestiuniIdentice = "GESTIUNI_IDENTICE";
     public const string LotLipsa = "LOT_LIPSA";
+    public const string ContStocLipsa = "CONT_STOC_LIPSA";
     public const string CantitateNepozitiva = "CANTITATE_NEPOZITIVA";
     public const string ValoareNepozitiva = "VALOARE_NEPOZITIVA";
     public const string ViramentMixt = "VIRAMENT_MIXT";

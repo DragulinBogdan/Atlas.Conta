@@ -102,6 +102,55 @@ nou — pasul 1 CONSTATĂ pe `RegistruStoc` (cheia de stoc a destinației) și
 declarantul urmează registrul; forma se pin-uiește ca amendament (T-D2.1)
 înainte de gate.
 
+**T-D2.1 (pin-uit 2026-09-21, măsurat pe clona `Atlas.Conta.Import1C.Flax.TrD7b`
+înaintea pasului 1)**: cheia de stoc e `(Lot, Repartitor, TipStoc)`
+(`StocService.cs:7`), deci lotul își schimbă gestiunea, nu se naște lot nou;
+pe cele 45.552 BTR operate: 85.027 linii, 170.054 rânduri `RegistruStoc`,
+EXACT 2 per linie, 0 linii cu loturi diferite între laturi, 0 cu `TipStoc`
+diferit, 0 rânduri contabile, 0 loturi fără cont implicit pe `TipMaterial`,
+0 linii cu predator = primitor. Contul postării de stoc e al lotului pe
+ambele capete (regula oracolului, `CubDinRegistre.DeStoc`), deci **pe modelul
+de azi BTR produce NUMAI `Transfer`**: unitatea țintă e ACELAȘI lot cu altă
+`Gestiune`, la valoarea ieșirii din sursă. Reclasificarea de cont din 1C nu
+trece prin BTR, ci prin ASM `#reclas` + BTR pe lotul nou
+(`Import1C/HandlereStoc.cs:147-174`). Ramura `Operare` a formei mixte rămâne
+generică (nucleu + `Materializare`), probată prin proprietăți în nucleu la
+pasul 1 și pe scenă de ASM la pasul 5; probele `STR-BTR-CONT-DIFERIT` și
+`STR-BTR-MIXT` sunt proprietățile nucleului, nu scene BTR. Forma în nucleu:
+`N.Declaratie` cu a patra listă `Mutari`, `N.Contract.Tranzactii` (1–2, ordinea
+`Operare`, `Transfer`), fără `Fel` pe `Miscare`; stornoul = O SINGURĂ
+tranzacție `Storno` peste postările ambelor (N-r8), anularea le șterge pe
+ambele; stornoul selectează transferul de STOC al documentului (unități de fel
+`Lot`) — transferurile pe partidă rămân ale împerecherii (S-D13).
+
+**T-D2.2 (declarată 2026-09-21, gate-ul BTR pe clona TrD7b: 45.552 documente,
+45.017 egale, 0 refuzate, 0 excepții, 535 diferite, un singur fel)**: valoarea
+liniei care NU golește cheia de stoc diferă între motorul vechi
+(`round(cantitate × Lot.PretUnitar)`, `NotaTransfer.PregatesteOperare`, preț
+înghețat la nașterea lotului) și declarant (`Evaluare.Iesire` pe raportul
+curent al cheii `(Lot, Predator, TipStoc)`, 090 (j)) — aceeași abatere ca N-r3,
+măsurată pe BTR: 560 de linii din 85.027, toate ieșiri parțiale (cele 70.841
+de linii care golesc cheia sunt egale prin construcție), Δ fără semn constant
+(+0,01 pe 295, −0,01 pe 234, |Δ| > 0,02 pe 9), Σ semnată +0,92 lei și Σ
+absolută 28,60 lei pe 121.094.304,67 lei mutați; 553 de linii sunt reziduul
+propriei goliri a motorului vechi (D18-D2) mutat pe destinație, 7 sunt loturi
+intrate în gestiune la altă valoare decât prețul lor înghețat (extrem
+`BTR-9039`: `PretUnitar = 0` contra 11,00 lei/buc). Abaterea e de REPARTIZARE
+între gestiuni, nu de conservare: ambele capete poartă aceeași valoare, Σ per
+(cont, latură) = 0, literele (a)–(g) rămân 0 Δ; devine vizibilă abia la
+citirile pe cub per gestiune × lot (TR-D8). Se DECLARĂ, nu se normalizează
+(B-D8 rămâne închisă); gate-ul BTR se citește „100 % egal în afara celor 535".
+Descompunerea integrală: `run-nucleu/tr-d7b/pas1/raport.md` §B–§F.
+
+Constatări ale pasului 1 care precizează pin-urile: plierea în oracol cere ca
+NICIO linie a grupului (document, lot) să n-aibă rând contabil — altfel BCS (două
+rânduri de stoc pe același lot, cu picior `6xx`) s-ar plia greșit
+(`CubDinRegistre.EMutare`); litera (b) a reconcilierii citește `Operare` ⊕
+transferul de stoc; normalizările TR-D4 și TR-D2a primesc gard pe fel
+(`Normalizari.EDeImperechere`: transferul cu unități `Lot` nu e împerechere);
+scena SAF-T cu lot fără cont de stoc rulează pe tip nemigrat (refuzul
+`CONT_STOC_LIPSA` e corect și simetric cu oracolul; pe Flax 0 loturi fără cont).
+
 Aceeași regulă pentru ASM: consumul (−q pe lotul consumat) și produsul (+q pe
 lotul născut de linia `Produs`, la `PretEvaluare`) sunt `Transfer` dacă
 ambele loturi sunt pe același cont, altfel `Operare`. Invariantul ASM
@@ -378,7 +427,7 @@ substituenți.
 ## Pașii (un agent per pas; main verifică independent și comite per pas)
 
 0. **Contractul** (main): fișierul de față; `.gitignore` cu `/agenti-msg/`; commit.
-1. **BTR pe cub + felul mixt** (T-D2): forma mișcării cu fel în nucleu (proprietate: o declarație cu mișcări `Transfer` produce Σ per (Cont, Latura) = 0 pe ele; una cu ambele feluri produce două tranzacții balansate), `Materializare` împarte pe set, `Storneaza`/`Anuleaza` acoperă ambele, `DeclarantNotaTransfer`, override, seed `BTR`, T-D2.1 constatat pe `RegistruStoc` și pin-uit în contract, litera (e) amendată, oracolul: rândurile BTR pe același cont pliate ca `Transfer`; probe `STR-BTR-ACELASI-CONT`, `STR-BTR-CONT-DIFERIT`, `STR-BTR-MIXT`, `STR-BTR-STORNO`; ModelCheck verde pe ambele profiluri; `--declaratie-pe-baza <clonă> BTR` = 100 % egal sau fiecare diferență declarată aici. Oprire: (c), (d), (e), (g), (i).
+1. **BTR pe cub + felul mixt** (T-D2): forma mișcării cu fel în nucleu (proprietate: o declarație cu mișcări `Transfer` produce Σ per (Cont, Latura) = 0 pe ele; una cu ambele feluri produce două tranzacții balansate), `Materializare` împarte pe set, `Storneaza`/`Anuleaza` acoperă ambele, `DeclarantNotaTransfer`, override, seed `BTR`, T-D2.1 constatat pe `RegistruStoc` și pin-uit în contract, litera (e) amendată, oracolul: rândurile BTR pe același cont pliate ca `Transfer`; probe `STR-BTR-ACELASI-CONT`, `STR-BTR-CONT-DIFERIT`, `STR-BTR-MIXT`, `STR-BTR-STORNO`; ModelCheck verde pe ambele profiluri; `--declaratie-pe-baza <clonă> BTR` = 100 % egal sau fiecare diferență declarată aici. Oprire: (c), (d), (e), (g), (i). **ÎNCHIS 2026-09-21** (agent F32-P1 + verificarea main-ului): nucleu 165 teste, 0 avertismente; ModelCheck 1698 OK privat / 1434 OK bugetar, 0 FAIL; gate BTR 45.017/45.552 egale + 535 declarate (T-D2.2); `--reconciliere-cub` 0 Δ pe ambele baze; diff gol pe Blazor.Server/WebApi/Client; `STR-BTR-CONT-DIFERIT`/`STR-BTR-MIXT` = proprietățile nucleului (T-D2.1).
 2. **FCL ∪ DSC pe cub** (T-D4): `DeclarantFacturaIesire`, `DeclarantDescarcareGestiune`, gestiunea virtuală `Client` folosită, două partide pe FCL cu avans, transferul FCL ↔ INC activ, grupurile în (a)/(b)/(c) + `Incomplete`, probe `STR-FCL-*`, `STR-DSC-*`, `STR-FCL-AVANS-DOUA-PARTIDE`, `STR-FCL-INC-TRANSFER`; toate probele `FCL*`/`DSC*` existente materializează; bugetar fără DSC; gate pe clonă FCL și DSC (cu cifrele transferurilor). Oprire: (c), (d), (g).
 3. **NTC + ITV pe cub** (T-D3): `DeclarantNotaContabila`, override pe `NotaContabila` (ITV îl moștenește), nominalizarea FIFO pe `(Cont, Partener)` cu `N.Fifo.Nominalizeaza` (B) și fallback-ul fără unitate (A), conectorul pune partenerul din subconto pe repartitorul liniei (`NoteComune` + `Punte`), gardul `Conservare.cs:133` verificat/relaxat cu proprietate, contoarele în gate (picioare cu partener nominalizate / fără partener per cont; 3xx fără lot per corespondență), `Imperecheaza` sărit fără partidă proprie, litera (f) cu excluderea (A), probe `STR-NTC-EXPLICIT`, `STR-NTC-PARTENER-FIFO`, `STR-NTC-AVANS-DOUA-UNITATI`, `STR-NTC-TERT-FARA-UNITATE`, `STR-NTC-STOC-FARA-LOT`, `STR-NTC-COMPENSARE`, `STR-ITV`; familia `F21-D*` materializează; gate pe clonă NTC și ITV cu cele cinci corespondențe la cifrele din B2.7 și cu măsura (B)/(A) pe cele 7.824; Import1C pe o lună (ianuarie) pe clonă ca să se vadă efectul partenerului pe `Imperecheri`. Oprire: (c), (d), (g) — un refuz pe o notă pe care motorul vechi o operează e oprire, nu normalizare.
 4. **RDC + RLF + DVI pe cub** (T-D6, T-D8): trei declaranți, seed, probe `STR-RDC-VENIT-COST`, `STR-RDC-PARTIDA-NEGATIVA`, `STR-RLF-FISCAL-REZIDUU`, `STR-DVI`; `DVI-V*` și contractele API `ReturClientApply`/`ReturFurnizorApply` materializează; gate pe clonă RDC și RLF (DVI n-are documente — se spune). Oprire: (c), (d), (g).

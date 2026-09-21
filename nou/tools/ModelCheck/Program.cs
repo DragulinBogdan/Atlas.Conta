@@ -1077,7 +1077,7 @@ if (profil == ProfilContabil.Privat) {
         //     ACELAȘI cont de cost, fiindcă jurnalul are două cifre acolo unde registrul
         //     contabil are una (amendament la B-D8 pct. 5) ---
         var contractNed = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctNed);
-        var costNed = contractNed.Tranzactie?.Postari
+        var costNed = contractNed.Tranzactii.SelectMany(t => t.Postari)
             .Where(p => p.Coordonate.Cont == tip628.ContImplicitId)
             .Select(p => (Rol: p.Coordonate.CodTva?.Rol, p.Valoare))
             .OrderBy(p => p.Rol)
@@ -1119,7 +1119,7 @@ if (profil == ProfilContabil.Privat) {
         Check("NUC-FCT-TOLERANTA-NULL: fără toleranță pe politică, taxa culeasă (20,90) rămâne autoritară "
             + "și documentul trece, ca în motorul vechi (S-D15)",
             contractFaraGard.EsteAcceptat
-            && contractFaraGard.Tranzactie.Postari.Any(p => p.Coordonate.Cont == cont4426.ID && p.Valoare == 20.9m));
+            && contractFaraGard.Tranzactii.SelectMany(t => t.Postari).Any(p => p.Coordonate.Cont == cont4426.ID && p.Valoare == 20.9m));
         using (ProbeCub.CuToleranta(os, fctManual, 0.01m)) {
             var contractOverride =
                 Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctManual);
@@ -4337,6 +4337,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaPozitieLinii(privat: true);
     // Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
     VerificaNucleuBcs(privat: true);
+    // Felia 32, pasul 1 — BTR pe cub: felul mixt `Operare`/`Transfer` (STR-BTR-*).
+    VerificaNucleuBtr(privat: true);
     // Felia 30, pasul 4 — declarantul de trezorerie pe scenă privată (partide pe 401/4111).
     VerificaNucleuTrezorerie(privat: true);
     // Felia 30, pasul 5 — declarantul FCT: patru regimuri, imobilizarea, N-r4 măsurat.
@@ -9700,6 +9702,8 @@ VerificaSchemaCub(privat: false);
 VerificaPozitieLinii(privat: false);
 // Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
 VerificaNucleuBcs(privat: false);
+// Felia 32, pasul 1 — BTR pe cub: felul mixt `Operare`/`Transfer` (STR-BTR-*).
+VerificaNucleuBtr(privat: false);
 
 Rezumat();
 
@@ -14570,7 +14574,10 @@ void VerificaSaftStocuri(bool privat) {
     linBtrFc.Document = btrFaraCont; linBtrFc.TipMaterial = tipFaraCont;
     linBtrFc.Lot = lotF1; linBtrFc.Cantitate = 3m;
     os.CommitChanges();
-    MotorOperare.Opereaza(os, btrFaraCont);
+    // Lotul n-are cont de stoc, deci nici oracolul (B-D10) nici declarantul n-au pe ce posta:
+    // subiectul scenei e proiecția SAF-T, nu cubul, deci tipul se comută LOCAL pe nemigrat. // T-D2
+    using (ProbeCub.Nemigrat(os, btrFaraCont))
+        MotorOperare.Opereaza(os, btrFaraCont);
     os.CommitChanges();
 
     // Cele DOUĂ stornouri: unul peste lună (documentul e din februarie, rândurile
@@ -31945,8 +31952,9 @@ void VerificaNucleuTrezorerie(bool privat) {
     }
     Guid PartidaDin(Document doc, Cont cont, Repartitor partener) =>
         N.Unitate.DeschidePartida(cont.ID, partener.ID, doc.ID, doc.DataInregistrare).Id;
-    List<Guid?> UnitatiPe(N.Tranzactie tranzactie, Cont cont) =>
-        [.. tranzactie.Postari.Where(p => p.Coordonate.Cont == cont.ID).Select(p => p.Coordonate.Unitate?.Id)];
+    List<Guid?> UnitatiPe(N.Contract contract, Cont cont) =>
+        [.. contract.Tranzactii.SelectMany(t => t.Postari)
+            .Where(p => p.Coordonate.Cont == cont.ID).Select(p => p.Coordonate.Unitate?.Id)];
 
     // --- (1) plata manuală către furnizor: partida PROPRIE pe 401 ---
     var plt = Trezorerie<Plata>(casa, furnizor, tipTrz, 60m, new DateOnly(2026, 3, 5));
@@ -31962,9 +31970,9 @@ void VerificaNucleuTrezorerie(bool privat) {
     Check($"NUC-PLT-{eticheta}: fără document-sursă, postarea de terț numește partida PROPRIE a plății "
         + "pe 401, iar piciorul de bani (5311) rămâne fără unitate",
         contractPlt.EsteAcceptat
-        && UnitatiPe(contractPlt.Tranzactie, cont401) is [var unitatePlt] && unitatePlt == PartidaDin(plt, cont401, furnizor)
+        && UnitatiPe(contractPlt, cont401) is [var unitatePlt] && unitatePlt == PartidaDin(plt, cont401, furnizor)
         && contractPlt.Decizii.OfType<N.PartidaDeschisa>().Count() == 1
-        && contractPlt.Tranzactie.Postari.Count(p => p.Coordonate.Unitate == null) == 1);
+        && contractPlt.Tranzactii.SelectMany(t => t.Postari).Count(p => p.Coordonate.Unitate == null) == 1);
 
     // --- (2) încasare de la client: partida proprie pe 4111 ---
     var inc = Trezorerie<Incasare>(client, casa, tipTrz, 80m, new DateOnly(2026, 3, 5));
@@ -31976,8 +31984,8 @@ void VerificaNucleuTrezorerie(bool privat) {
     Check($"NUC-INC-{eticheta}: oglinda — partida proprie stă pe piciorul de CREDIT (4111), fără ca "
         + "declarantul să știe că e încasare (latura o dă `RolTert`-ul contului rezolvat)",
         contractInc.EsteAcceptat
-        && UnitatiPe(contractInc.Tranzactie, cont4111) is [var unitateInc] && unitateInc == PartidaDin(inc, cont4111, client)
-        && contractInc.Tranzactie.Postari.Single(p => p.Coordonate.Unitate != null).Coordonate.Latura == N.Latura.Credit);
+        && UnitatiPe(contractInc, cont4111) is [var unitateInc] && unitateInc == PartidaDin(inc, cont4111, client)
+        && contractInc.Tranzactii.SelectMany(t => t.Postari).Single(p => p.Coordonate.Unitate != null).Coordonate.Latura == N.Latura.Credit);
 
     // --- (3) SPLIT: plata autogenerată e mai mare decât restul facturii ---
     var fct = os.CreateObject<FacturaIntrare>();
@@ -32030,8 +32038,8 @@ void VerificaNucleuTrezorerie(bool privat) {
         + "TR-D2a) + 60 pe partida PROPRIE a plății, în ordinea liniilor; ipoteza consemnează soldul REAL "
         + "al partidei (121 credit pe 401), iar plafonul nominalizării e restul documentului (61) — MAJOR-1",
         contractSplit.EsteAcceptat
-        && contractSplit.Tranzactie.Postari.Any(p => p.Coordonate.Unitate?.Id == partidaFct && p.Valoare == 61m)
-        && contractSplit.Tranzactie.Postari.Any(p => p.Coordonate.Unitate?.Id == partidaProprie && p.Valoare == 60m)
+        && contractSplit.Tranzactii.SelectMany(t => t.Postari).Any(p => p.Coordonate.Unitate?.Id == partidaFct && p.Valoare == 61m)
+        && contractSplit.Tranzactii.SelectMany(t => t.Postari).Any(p => p.Coordonate.Unitate?.Id == partidaProprie && p.Valoare == 60m)
         && contractSplit.Decizii.OfType<N.AlocareFifo>().Single().Masura == 61m
         && contractSplit.Ipoteze.OfType<N.SoldUnitateCitit>().Single() is { } citit
         && citit.Sold.Credit == 121m && citit.Unitate.Id == partidaFct);
@@ -32050,8 +32058,8 @@ void VerificaNucleuTrezorerie(bool privat) {
         bucatiOracol is [60m, 61m] && Normalizari.Avertismente.Count == 0);
     Check($"NUC-PLT-SPLIT-5 ({eticheta}): declarația se conservă oricum — suma celor două bucăți e "
         + "valoarea liniei, iar `Conservare.Verifica` e gol",
-        N.Conservare.Verifica(contractSplit.Tranzactie).Count == 0
-        && contractSplit.Tranzactie.Postari.Where(p => p.Coordonate.Cont == cont401.ID).Sum(p => p.Valoare) == 121m);
+        contractSplit.Tranzactii.SelectMany(N.Conservare.Verifica).Count() == 0
+        && contractSplit.Tranzactii.SelectMany(t => t.Postari).Where(p => p.Coordonate.Cont == cont401.ID).Sum(p => p.Valoare) == 121m);
 
     // --- (4) viramentul intern pe profilul cu partide ---
     var virPlt = Trezorerie<Plata>(casaVir, bancaVir, tipVir, 500m, new DateOnly(2026, 3, 11));
@@ -32067,7 +32075,7 @@ void VerificaNucleuTrezorerie(bool privat) {
         + "gestiune și NICIUNUL o partidă (581/5311 n-au `RolTert`) — `GetContPropriuId` reprodus din "
         + "sursa declarată a regulii, fără `is` pe tipul documentului",
         contractVir.EsteAcceptat
-        && contractVir.Tranzactie.Postari.All(p => p.Coordonate.Gestiune == casaVir.ID
+        && contractVir.Tranzactii.SelectMany(t => t.Postari).All(p => p.Coordonate.Gestiune == casaVir.ID
             && p.Coordonate.Unitate == null && p.Coordonate.Partener == null));
 
     // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe PLT/INC ---
@@ -32451,8 +32459,8 @@ void VerificaNucleuBcs(bool privat) {
         CubDinRegistre.Transforma(os, [bcsR3.ID]), Normalizari.Citeste(os, [bcsR3.ID]));
     var raportR3 = Comparabil.Compara(
         Comparabil.Proiecteaza(oracolR3),
-        Comparabil.Proiecteaza(contractR3.Tranzactie),
-        ProbeNucleu.Nume(os, oracolR3, contractR3.Tranzactie));
+        Comparabil.Proiecteaza(contractR3.Tranzactii),
+        ProbeNucleu.Nume(os, oracolR3, [.. contractR3.Tranzactii]));
     Console.WriteLine(raportR3.ToString());
     var doarValoarea = raportR3.InPlus.Count == 2 && raportR3.Lipsa.Count == 2
         && raportR3.InPlus.All(p => raportR3.Lipsa.Any(l => (l with { ValoareSemnata = p.ValoareSemnata }) == p));
@@ -32462,7 +32470,7 @@ void VerificaNucleuBcs(bool privat) {
         doarValoarea && Normalizari.Avertismente.Count == 0);
     Check($"NUC-BCS-N-R3-5 ({eticheta}): tranzacția declarantului se conservă pe cifra nouă "
         + "(valoarea nu se pierde între capete)",
-        N.Conservare.Verifica(contractR3.Tranzactie).Count == 0);
+        contractR3.Tranzactii.SelectMany(N.Conservare.Verifica).Count() == 0);
 
     // --- NUC-BCS-REFUZURI (MINOR-1): refuzul e al LINIEI, nu al documentului ---
     // Două linii pe două loturi fără stoc: `Evaluare.Iesire` aruncă pe fiecare, iar
@@ -32519,6 +32527,175 @@ void VerificaNucleuBcs(bool privat) {
     Check($"NUC-BCS-{eticheta} — curățenie finală (fără reziduuri de scenă)",
         !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajNucBcs))
         && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajNucBcs)));
+}
+
+// ====== Felia 32, pasul 1: BTR pe cub — felul mixt `Operare`/`Transfer` (T-D2) ======
+// Pe modelul de azi BTR produce NUMAI `Transfer`: cheia de stoc e (Lot, Repartitor,
+// TipStoc), deci lotul își schimbă gestiunea și contul rămâne al lui pe ambele capete
+// (T-D2.1). Ramura `Operare` a formei mixte e probată de proprietățile nucleului
+// (`MotorTeste.DeclaratiaCuAmbeleListeDaOperareaApoiTransferul`) și, pe scenă, de ASM.
+void VerificaNucleuBtr(bool privat) {
+    const string MarcajNucBtr = "E2E-NUC-BTR";
+    var eticheta = privat ? "PRIVAT" : "BUGETAR";
+
+    void CurataNucBtr(IObjectSpace os) {
+        var pj = new Purja(os);
+        var idsLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucBtr)).Select(l => l.ID).ToList();
+        var idsDoc = os.GetObjectsQuery<NotaTransfer>().IgnoreQueryFilters()
+            .Where(d => d.NumarPV == MarcajNucBtr).Select(d => d.ID).ToList();
+        ProbeCub.Purjeaza(pj, os, idsDoc);                                             // S-D8
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => idsLot.Contains(r.LotId)
+                || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => idsDoc.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => idsDoc.Contains(d.ID)).ToList());
+        os.CommitChanges();
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucBtr)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => p.Cod.StartsWith(MarcajNucBtr)).ToList());
+        pj.Executa();
+    }
+
+    using var os = provider.CreateObjectSpace();
+    CurataNucBtr(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var mag2 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG2");
+    var tipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "302" : "302.01.00"));
+
+    Lot Lotul(string sufix, decimal pretUnitar) {
+        var produs = os.CreateObject<Produs>();
+        produs.Cod = MarcajNucBtr + sufix;
+        produs.Denumire = "Produs probă felia 32" + sufix;
+        produs.UM = "BUC";
+        produs.TipMaterial = tipMaterial;
+        var lotNou = os.CreateObject<Lot>();
+        lotNou.Produs = produs;
+        lotNou.PretUnitar = pretUnitar;
+        lotNou.Gestiune = mag1;
+        lotNou.Data = new DateOnly(2026, 1, 10);
+        return lotNou;
+    }
+    void Intrare(Lot lot, DateOnly data, decimal cantitate, decimal valoare) {
+        var rand = os.CreateObject<RegistruStoc>();
+        rand.Data = data;
+        rand.TipStoc = TipStoc.Magazie;
+        rand.Lot = lot;
+        rand.Repartitor = mag1;
+        rand.Cantitate = cantitate;
+        rand.Valoare = valoare;
+    }
+    NotaTransfer Btr(Lot lot, decimal cantitate, DateOnly data, Repartitor dinspre, Repartitor spre) {
+        var doc = os.CreateObject<NotaTransfer>();
+        doc.Data = data;
+        doc.NumarPV = MarcajNucBtr;
+        doc.Predator = dinspre;
+        doc.Primitor = spre;
+        var d = os.CreateObject<DocumentDetaliu>();
+        d.Document = doc;
+        d.TipMaterial = tipMaterial;
+        d.Lot = lot;
+        d.Cantitate = cantitate;
+        return doc;
+    }
+
+    var lotA = Lotul("-A", 10m);
+    Intrare(lotA, lotA.Data, 10m, 100m);
+    // (B) lotul cu raport diferit de prețul înghețat: golirea mută TOT restul valoric (D18-D2).
+    var lotB = Lotul("-B", 10m);
+    Intrare(lotB, lotB.Data, 10m, 100m);
+    Intrare(lotB, new DateOnly(2026, 1, 20), 10m, 200m);
+    var lotC = Lotul("-C", 10m);
+    Intrare(lotC, lotC.Data, 5m, 50m);
+    os.CommitChanges();
+
+    var btr = Btr(lotA, 4m, new DateOnly(2026, 3, 5), mag1, mag2);
+    var btrGolire = Btr(lotB, 20m, new DateOnly(2026, 3, 6), mag1, mag2);
+    var btrAnulat = Btr(lotC, 2m, new DateOnly(2026, 3, 7), mag1, mag2);
+    os.CommitChanges();
+    var dataStornoBtr = new DateOnly(2026, 7, 22);
+
+    using (ProbeCub.Migrat(os, btr)) {
+        // --- STR-BTR-ACELASI-CONT: o singură tranzacție, de fel `Transfer` ---
+        MotorOperare.Opereaza(os, btr);
+        var tranzactii = ProbeCub.Tranzactii(os, btr.ID);
+        var postari = ProbeCub.Postari(os, btr.ID);
+        var contStoc = tipMaterial.ContImplicitId;
+        Check($"STR-BTR-ACELASI-CONT ({eticheta}): BTR MAG1 -> MAG2 pe un lot cu sold scrie EXACT o "
+            + "tranzacție a documentului, de fel `Transfer`, cu 2 postări per linie, ambele pe `Debit`",
+            tranzactii.Count == 1 && tranzactii[0].Fel == N.FelTranzactie.Transfer
+            && postari.Count == 2 * btr.Detalii.Count
+            && postari.All(p => p.Latura == N.Latura.Debit && p.Cont == contStoc));
+        Check($"STR-BTR-ACELASI-CONT ({eticheta}): suma valorilor per (cont, latură) = 0 — transferul iese "
+            + "din rapoartele pe cont (090f); cantitatea e -4 pe MAG1 și +4 pe MAG2",
+            postari.GroupBy(p => (p.Cont, p.Latura)).All(g => g.Sum(p => p.Valoare) == 0m)
+            && postari.Single(p => p.Gestiune == mag1.ID) is { Cantitate: -4m, Valoare: -40m }
+            && postari.Single(p => p.Gestiune == mag2.ID) is { Cantitate: 4m, Valoare: 40m });
+        Check($"STR-BTR-ACELASI-CONT ({eticheta}): semnalul de gestiune NU se pierde — fiecare capăt "
+            + "poartă `Gestiune` și `Unitate` (lotul), pe ACELAȘI lot (T-D2.1)",
+            postari.All(p => p.Gestiune != null && p.Unitate == lotA.ID && p.Produs == lotA.ProdusId)
+            && postari.Select(p => p.Gestiune).Distinct().Count() == 2);
+        Check($"STR-BTR-ACELASI-CONT ({eticheta}): `Sold` din cub pe lot rămâne NESCHIMBAT — transferul "
+            + "mută unitatea între gestiuni, nu-i schimbă soldul",
+            ProbeCub.SoldUnitate(os, btr.ID, lotA.ID) == N.Sold.Zero);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-BTR-{eticheta}", btr);
+        ProbaReconciliere($"NUC-BTR-{eticheta}", btr.ID);
+
+        // --- STR-BTR-GOLIRE: valoarea mutată e restul valoric, nu cantitate x preț ---
+        MotorOperare.Opereaza(os, btrGolire);
+        var randuriGolire = os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.DocumentId == btrGolire.ID).ToList();
+        var postariGolire = ProbeCub.Postari(os, btrGolire.ID);
+        Check($"STR-BTR-GOLIRE ({eticheta}): linia care golește lotul mută tot restul valoric (300, pe când "
+            + $"cantitatea x prețul înghețat {lotB.PretUnitar} ar fi dat 200), identic cu `RegistruStoc`",
+            postariGolire.Count == 2
+            && postariGolire.Single(p => p.Gestiune == mag2.ID).Valoare == 300m
+            && randuriGolire.Count == 2
+            && randuriGolire.Single(r => r.RepartitorId == mag2.ID).Valoare == 300m);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-BTR-GOLIRE-{eticheta}", btrGolire);
+
+        // --- STR-BTR-STORNO: o tranzacție `Storno` peste postările transferului ---
+        MotorOperare.Storneaza(os, btr, dataStornoBtr);
+        ProbeCub.ProbaStorno(os, Check, $"NUC-BTR-{eticheta}", btr, dataStornoBtr);
+
+        // --- STR-BTR-ANULARE: anularea șterge FIZIC transferul ---
+        MotorOperare.Opereaza(os, btrAnulat);
+        Check($"STR-BTR-ANULARE ({eticheta}) premisă: documentul are tranzacție și postări în cub",
+            ProbeCub.Tranzactii(os, btrAnulat.ID).Count == 1
+            && ProbeCub.Postari(os, btrAnulat.ID).Count == 2);
+        MotorOperare.AnuleazaOperarea(os, btrAnulat);
+        ProbeCub.FaraRanduri(os, Check,
+            $"STR-BTR-ANULARE ({eticheta}): anularea operării șterge FIZIC tranzacția `Transfer` și "
+            + "postările ei, simetric cu registrele",
+            btrAnulat.ID);
+
+        // --- STR-BTR-REFUZ: refuzul declarației, fără nimic scris ---
+        var tipBtr = os.FirstOrDefault<TipDocument>(t => t.ClrType == nameof(NotaTransfer));
+        var btrIdentice = Btr(lotA, 1m, new DateOnly(2026, 3, 8), mag1, mag1);
+        var btrFaraLot = Btr(lotA, 1m, new DateOnly(2026, 3, 8), mag1, mag2);
+        os.CommitChanges();
+        btrFaraLot.Detalii.Single().Lot = null;
+        os.CommitChanges();
+        var refuzIdentice = Atlas.Conta.BackOffice.Module.Cub.Materializare.Refuzuri(os, btrIdentice, tipBtr);
+        var refuzFaraLot = Atlas.Conta.BackOffice.Module.Cub.Materializare.Refuzuri(os, btrFaraLot, tipBtr);
+        Check($"STR-BTR-REFUZ ({eticheta}): predator = primitor da `GESTIUNI_IDENTICE`, linia fără lot da "
+            + "`LOT_LIPSA`, iar dry-run-ul nu scrie nimic în cub",
+            refuzIdentice.Any(m => m.StartsWith(Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.GestiuniIdentice, StringComparison.Ordinal))
+            && refuzFaraLot.Any(m => m.StartsWith(Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.LotLipsa, StringComparison.Ordinal))
+            && ProbeCub.Tranzactii(os, btrIdentice.ID).Count == 0
+            && ProbeCub.Tranzactii(os, btrFaraLot.ID).Count == 0);
+    }
+
+    CurataNucBtr(os);
+    Check($"NUC-BTR-{eticheta} — curățenie finală (fără reziduuri de scenă)",
+        !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajNucBtr))
+        && !os.GetObjectsQuery<NotaTransfer>().Any(d => d.NumarPV == MarcajNucBtr));
 }
 
 // ====== Felia 30, pasul 5: declarantul FCT pe scenă privată ======
@@ -32654,8 +32831,8 @@ void VerificaNucleuFct(bool privat) {
         + "capătul virtual al recepției e singura postare cu gestiune structurală",
         contractP4.EsteAcceptat
         && contractP4.Decizii.OfType<N.PartidaDeschisa>().Single().Unitate.Id == partidaP4
-        && contractP4.Tranzactie.Postari.Count(p => p.Coordonate.Unitate?.Id == partidaP4) == 7
-        && contractP4.Tranzactie.Postari.Count(p => N.GestiuniVirtuale.Este(p.Coordonate.Gestiune)) == 1);
+        && contractP4.Tranzactii.SelectMany(t => t.Postari).Count(p => p.Coordonate.Unitate?.Id == partidaP4) == 7
+        && contractP4.Tranzactii.SelectMany(t => t.Postari).Count(p => N.GestiuniVirtuale.Este(p.Coordonate.Gestiune)) == 1);
 
     // --- (2) Imobilizarea: net pe 404, taxă pe 401 — două partide pe același document ---
     var fctImo = Factura("-F2", new DateOnly(2026, 3, 4));
@@ -32708,9 +32885,9 @@ void VerificaNucleuFct(bool privat) {
         + "(cât ține ea pe 401) și lasă 500 pe partida proprie a plății; ipoteza consemnează soldul "
         + "REAL al partidei (105 credit), nu restul documentului (605) — MAJOR-1",
         contractPlataImo.EsteAcceptat
-        && contractPlataImo.Tranzactie.Postari
+        && contractPlataImo.Tranzactii.SelectMany(t => t.Postari)
             .Any(x => x.Coordonate.Unitate?.Id == partidaFctImo && x.Valoare == 105m)
-        && contractPlataImo.Tranzactie.Postari
+        && contractPlataImo.Tranzactii.SelectMany(t => t.Postari)
             .Any(x => x.Coordonate.Unitate?.Id == partidaProprieImo && x.Valoare == 500m)
         && contractPlataImo.Decizii.OfType<N.AlocareFifo>().Single().Masura == 105m
         && contractPlataImo.Ipoteze.OfType<N.SoldUnitateCitit>().Single() is { } cititImo
@@ -32734,11 +32911,9 @@ void VerificaNucleuFct(bool privat) {
         alDoilea.Detalii.Single(d => d.ID == lasata.ID).ValoareTva = 0m;
         var contractCulese = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(
             osCulese, alDoilea);
-        var taxePeLinie = contractCulese.Tranzactie is { } trCulese
-            ? trCulese.Postari
-                .Where(x => x.Coordonate.Cont == cont4426.ID)
-                .ToDictionary(x => x.Cauza.Linie, x => x.Valoare)
-            : [];
+        var taxePeLinie = contractCulese.Tranzactii.SelectMany(t => t.Postari)
+            .Where(x => x.Coordonate.Cont == cont4426.ID)
+            .ToDictionary(x => x.Cauza.Linie, x => x.Valoare);
         foreach (var refuz in contractCulese.Refuzuri)
             Console.WriteLine($"       refuz {refuz.Cod}: {refuz.Mesaj}");
         Check($"NUC-FCT-CULESE-2 ({eticheta}): taxa CULEASĂ e a liniei ei (21 pe prima), iar linia lăsată "
@@ -32766,9 +32941,8 @@ void VerificaNucleuFct(bool privat) {
         && os.GetObjectsQuery<RegistruTva>().Count(r => r.DocumentId == fctR4.ID && r.Tva == 0m) == 3);
 
     var contractR4 = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctR4);
-    var taxaNoua = contractR4.Tranzactie is { } trR4
-        ? trR4.Postari.Where(p => p.Coordonate.Cont == cont4426.ID).Sum(p => p.Valoare)
-        : 0m;
+    var taxaNoua = contractR4.Tranzactii.SelectMany(t => t.Postari)
+        .Where(p => p.Coordonate.Cont == cont4426.ID).Sum(p => p.Valoare);
     Console.WriteLine($"     MĂSURAT (N-r4/{eticheta}): trei linii de 0,01 net la 21% FĂRĂ taxă culeasă → "
         + $"motorul vechi X = {taxaVeche} (0,0021 rotunjit per linie, de trei ori), nucleul "
         + $"Y = {taxaNoua} (0,0063 rotunjit o dată pe document × cotă, repartizat Hamilton), "
@@ -32776,15 +32950,15 @@ void VerificaNucleuFct(bool privat) {
     Check($"NUC-FCT-N-R4-2 ({eticheta}): nucleul decide taxa pe document × cotă — Y = {taxaNoua}, "
         + $"Δ = {taxaNoua - taxaVeche}, pusă integral pe o singură linie (Hamilton)",
         contractR4.EsteAcceptat && taxaNoua == 0.01m && taxaNoua - taxaVeche == 0.01m
-        && contractR4.Tranzactie.Postari.Count(p => p.Coordonate.Cont == cont4426.ID) == 1);
+        && contractR4.Tranzactii.SelectMany(t => t.Postari).Count(p => p.Coordonate.Cont == cont4426.ID) == 1);
 
     Normalizari.Reseteaza();
     var oracolR4 = Normalizari.Toate(
         CubDinRegistre.Transforma(os, [fctR4.ID]), Normalizari.Citeste(os, [fctR4.ID]));
     var raportR4 = Comparabil.Compara(
         Comparabil.Proiecteaza(oracolR4),
-        Comparabil.Proiecteaza(contractR4.Tranzactie),
-        ProbeNucleu.Nume(os, oracolR4, contractR4.Tranzactie));
+        Comparabil.Proiecteaza(contractR4.Tranzactii),
+        ProbeNucleu.Nume(os, oracolR4, [.. contractR4.Tranzactii]));
     Console.WriteLine(raportR4.ToString());
     Check($"NUC-FCT-N-R4-3 ({eticheta}): comparația cu oracolul pică EXACT pe taxă — două postări în plus "
         + "(D 4426 / C 401 de 0,01), niciuna lipsă; N-r4 e diferență CONSEMNATĂ, nu normalizare (B-D8 pct. 7)",

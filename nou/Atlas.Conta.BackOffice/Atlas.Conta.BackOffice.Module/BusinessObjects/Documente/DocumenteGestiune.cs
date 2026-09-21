@@ -229,6 +229,8 @@ public class BonConsum : Document {
 // BTR (04): −predator/+primitor pe același tip de stoc; lotul își schimbă
 // gestiunea, prețul rămâne al lotului. Primul vertical slice al motorului.
 public class NotaTransfer : Document, IDocumentCuPV {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantNotaTransfer.Instanta;
+
     [XafDisplayName("Număr PV")]
     public virtual string NumarPV { get; set; }
     [XafDisplayName("Dată PV")]

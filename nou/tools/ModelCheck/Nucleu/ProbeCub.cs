@@ -71,10 +71,33 @@ static class ProbeCub {
             .Select(t => t.ID).ToList());
     }
 
+    /// <summary>
+    /// T-D2: tranzacțiile PROPRII ale documentului — `Operare` ⊕ transferul lui de
+    /// STOC; transferurile pe PARTIDĂ sunt ale împerecherii (S-D13).
+    /// </summary>
+    public static List<C.Tranzactie> Proprii(IObjectSpace os, Guid document) {
+        var cuStoc = Postari(os, document)
+            .Where(r => r.Spatiu == N.Spatiu.Stoc)
+            .Select(r => r.TranzactieId)
+            .ToHashSet();
+        return [.. Tranzactii(os, document)
+            .Where(t => t.Fel == N.FelTranzactie.Operare
+                || (t.Fel == N.FelTranzactie.Transfer && cuStoc.Contains(t.ID)))];
+    }
+
     public static List<C.Tranzactie> Transferuri(IObjectSpace os, Guid document) =>
         os.GetObjectsQuery<C.Tranzactie>()
             .Where(t => t.DocumentId == document && t.Fel == N.FelTranzactie.Transfer)
             .ToList();
+
+    /// <summary>Σ al unei unități peste tot ce a scris documentul în cub (090g).</summary>
+    public static N.Sold SoldUnitate(IObjectSpace os, Guid document, Guid unitate) {
+        ArgumentNullException.ThrowIfNull(os);
+        return Postari(os, document)
+            .Where(p => p.Unitate == unitate)
+            .Select(C.Randuri.Citeste)
+            .Aggregate(N.Sold.Zero, (acumulat, postare) => acumulat + N.Sold.Din(postare));
+    }
 
     /// <summary>Σ semnat (D − C) al unei partide, peste TOATE tranzacțiile cubului.</summary>
     public static decimal SoldPartida(IObjectSpace os, Guid unitate) =>
@@ -136,12 +159,16 @@ static class ProbeCub {
         ArgumentNullException.ThrowIfNull(check);
         ArgumentNullException.ThrowIfNull(doc);
 
-        var tranzactii = Tranzactii(os, doc.ID);
-        var operari = tranzactii.Where(t => t.Fel == N.FelTranzactie.Operare).ToList();
-        check($"STR-OPERARE {prefix}: EXACT o tranzacție `Operare` a documentului, cu data înregistrării",
-            operari.Count == 1 && operari[0].Data == doc.DataInregistrare && operari[0].ScrisLa != default);
+        var ale = Proprii(os, doc.ID);
+        var operari = ale.Count(t => t.Fel == N.FelTranzactie.Operare);
+        var mutari = ale.Count(t => t.Fel == N.FelTranzactie.Transfer);
+        check($"STR-OPERARE {prefix}: cel mult o `Operare`, cel mult un `Transfer` de stoc, cel puțin "
+            + "una din ele, cu data înregistrării (T-D2)",
+            operari <= 1 && mutari <= 1 && ale.Count >= 1
+            && ale.All(t => t.Data == doc.DataInregistrare && t.ScrisLa != default));
 
-        var randuri = Postari(os, doc.ID, N.FelTranzactie.Operare);
+        var aleLor = ale.Select(t => t.ID).ToHashSet();
+        var randuri = Postari(os, doc.ID).Where(r => aleLor.Contains(r.TranzactieId)).ToList();
         var citite = randuri.Select(C.Randuri.Citeste).ToList();
         check($"STR-OPERARE {prefix}: fiecare postare persistată e pe partiția spațiului ei "
             + "(`Spatiu` = `postare.Spatiu()`)",
@@ -178,7 +205,7 @@ static class ProbeCub {
             raport.Egal && Normalizari.Avertismente.Count == 0);
 
         var contract = Contractare.Contracteaza(os, doc);
-        var asteptate = contract.Tranzactie?.Postari ?? [];
+        var asteptate = contract.Tranzactii.SelectMany(t => t.Postari).ToList();
         if (!MultisetEgal(citite, asteptate))
             Scrie(os, citite, asteptate);
         check($"STR-ROUNDTRIP {prefix}: `Randuri.Citeste` pe rândurile scrise = postările contractului, "
@@ -195,17 +222,23 @@ static class ProbeCub {
 
         var tranzactii = Tranzactii(os, doc.ID);
         var stornari = tranzactii.Where(t => t.Fel == N.FelTranzactie.Storno).ToList();
-        check($"STR-STORNO {prefix}: a DOUA tranzacție, de fel `Storno`, la data stornării "
-            + "(cubul e append-only)",
-            tranzactii.Count == 2 && stornari.Count == 1 && stornari[0].Data == dataStorno);
+        var propriile = Proprii(os, doc.ID);
+        check($"STR-STORNO {prefix}: O SINGURĂ tranzacție `Storno` peste tranzacțiile proprii "
+            + $"({propriile.Count}), la data stornării (cubul e append-only, T-D2/N-r8)",
+            tranzactii.Count == propriile.Count + 1 && stornari.Count == 1
+            && stornari[0].Data == dataStorno);
 
-        var operare = Postari(os, doc.ID, N.FelTranzactie.Operare).Select(C.Randuri.Citeste).ToList();
+        var aleLor = propriile.Select(t => t.ID).ToHashSet();
+        var operare = Postari(os, doc.ID)
+            .Where(r => aleLor.Contains(r.TranzactieId))
+            .Select(C.Randuri.Citeste)
+            .ToList();
         var storno = Postari(os, doc.ID, N.FelTranzactie.Storno).Select(C.Randuri.Citeste).ToList();
         var perioada = (dataStorno.Year * 100) + dataStorno.Month;
         var asteptate = N.Storno.Inverseaza(operare, doc.ID, dataStorno, perioada).Postari;
         if (!MultisetEgal(storno, asteptate))
             Scrie(os, storno, asteptate);
-        check($"STR-STORNO {prefix}: postările stornării = `Storno.Inverseaza` pe rândurile `Operare` citite",
+        check($"STR-STORNO {prefix}: postările stornării = `Storno.Inverseaza` pe rândurile proprii citite",
             MultisetEgal(storno, asteptate));
 
         var fiscale = storno.Where(p => p.Coordonate.PerioadaDeclarare != null).ToList();

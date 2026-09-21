@@ -275,7 +275,8 @@ static class ReconciliereCub {
             cititor.GetDecimal(4),
             cititor.GetDecimal(5)));
 
-    // (b) Σ Cantitate per (grup, unitate = lot, lună) pe partiția Stoc. Capătul
+    // (b) Σ Cantitate per (grup, unitate = lot, lună) pe partiția Stoc, `Operare` ⊕ transferul
+    // de stoc (T-D2): stocul se mișcă și când contul nu se schimbă. Capătul
     // virtual N-D4 poartă −q pe partiția Contabil și NU intră: în registre nu are
     // rând de stoc.
     static List<Rand> Stocuri(DbContext ctx, Guid[]? set) => Citeste(ctx, $$"""
@@ -287,7 +288,7 @@ static class ReconciliereCub {
             from "Postare" p
             join "Tranzactie" t on t."ID" = p."TranzactieId"
             join grup g on g.id = p."DocumentId"
-            where t."Fel" = 1 and p."Spatiu" = 2
+            where t."Fel" in (1, 3) and p."Spatiu" = 2
             group by 1, 2, 3, 4),
         reg as (
             select g.grup, r."LotId" as lot, date_trunc('month', r."Data")::date as luna,
@@ -417,26 +418,44 @@ static class ReconciliereCub {
             cititor.GetDecimal(3),
             0m));
 
-    // (e) un document operat al unui tip migrat ⇔ EXACT o tranzacție `Operare`; și nicio
-    // tranzacție `Operare` pe un document care nu e al unui tip migrat — STAREA nu contează
-    // acolo: un document STORNAT își păstrează `Operare`, cubul e append-only (S-D5).
+    // (e) T-D2: un document operat al unui tip migrat are CEL MULT o `Operare`, CEL MULT
+    // un `Transfer` de stoc (tranzacție `Transfer` cu postări în spațiul Stoc) și cel
+    // puțin una din ele; și niciuna dintre cele două pe un document care nu e al unui tip
+    // migrat — STAREA nu contează acolo: un document STORNAT își păstrează `Operare`,
+    // cubul e append-only (S-D5).
     static List<Rand> Numarul(DbContext ctx, Guid[]? set) => Citeste(ctx, $$"""
         {{Grupul}},
+        transferDeStoc as (
+            select t."ID" as id, t."DocumentId" as doc
+            from "Tranzactie" t
+            where t."Fel" = 3
+              and exists (select 1 from "Postare" p
+                          where p."TranzactieId" = t."ID" and p."Spatiu" = 2)),
         peDocument as (
-            select cap.id, (select count(*) from "Tranzactie" t
-                            where t."DocumentId" = cap.id and t."Fel" = 1) as cate
+            select cap.id,
+                   (select count(*) from "Tranzactie" t
+                    where t."DocumentId" = cap.id and t."Fel" = 1) as operari,
+                   (select count(*) from transferDeStoc s where s.doc = cap.id) as transferuri
             from cap),
         aleTipului as (
             select d."ID" as id from "Documente" d join migrat m on m.clr = d."ClrType"
             where d."GCRecord" = 0 and d."Stare" in (1, 2)),
         straine as (
             select t."ID" as id from "Tranzactie" t
-            where t."Fel" = 1 and (t."DocumentId" is null
-                                   or t."DocumentId" not in (select id from aleTipului)) {2})
-        select 'document ' || id::text || ': tranzacții `Operare`', cate::numeric, 1::numeric
-        from peDocument where cate <> 1
+            where (t."Fel" = 1 or t."ID" in (select id from transferDeStoc))
+              and (t."DocumentId" is null
+                   or t."DocumentId" not in (select id from aleTipului)) {2})
+        select 'document ' || id::text || ': tranzacții `Operare`', operari::numeric, 1::numeric
+        from peDocument where operari > 1
         union all
-        select 'tranzacții `Operare` pe documente în afara tipurilor migrate', count(*)::numeric, 0::numeric
+        select 'document ' || id::text || ': tranzacții `Transfer` de stoc', transferuri::numeric, 1::numeric
+        from peDocument where transferuri > 1
+        union all
+        select 'document ' || id::text || ': `Operare` sau `Transfer` de stoc', 0::numeric, 1::numeric
+        from peDocument where operari + transferuri = 0
+        union all
+        select 'tranzacții `Operare` sau `Transfer` de stoc pe documente în afara tipurilor migrate',
+               count(*)::numeric, 0::numeric
         from straine having count(*) > 0
         """, set, cititor => new Rand(
             "(e) număr", cititor.GetString(0), cititor.GetDecimal(1), cititor.GetDecimal(2)));
