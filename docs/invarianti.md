@@ -89,6 +89,10 @@ stare a documentului: e `Σ[Unitate]` pe partidă, sumă pe cub. Demarcația
 rămâne pentru ATRIBUTELE documentului (număr, dată fizică, instrument),
 citite prin `Cauza`; tranzacțiile de fel `Transfer` (Σ per cont și latură
 = 0) sunt excluse din rapoartele pe cont și incluse în cele pe unitate.
+Pe tipurile deja migrate (**TR-D7a**, 2026-09-21) cubul se scrie lângă
+registre, în aceeași tranzacție de comandă: anularea operării șterge
+tranzacția `Operare` și postările ei, simetric cu ștergerea registrelor,
+iar stornoul rămâne a doua tranzacție (S-D5).
 
 ## IV. Structura e cod; politica e date; politica nu inventează comportament
 
@@ -122,6 +126,11 @@ import ca să „iasă potrivirea" e interzis. Harness-ul validează modelul
 nostru: când nu iese la cent, ori modelul are o gaură (o repari), ori sursa
 are un fapt propriu (îl înregistrezi ca divergență măsurată, la locul faptei)
 — a treia opțiune nu există.
+
+*Literă* (**TR-D7a**, 2026-09-21): tranzacția de fel `Transfer` a unei
+împerecheri poartă `Imperechere.Data` ca atare; data de import a
+împerecherilor din 1C rămâne artefact al conectorului, raportat, nu
+corectat tăcut în cub (TR-r6, S-D13).
 
 ## VI. Evaluarea stocului e motorul: lotul are identitate, prețul lui e fapt, o singură metodă activă per bază
 

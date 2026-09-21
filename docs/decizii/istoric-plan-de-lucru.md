@@ -719,3 +719,41 @@ detaliat în jurnal):
   156/156; diff pe WebApi/Blazor.Server/Client gol; `MotorOperare` și
   hook-urile neatinse. B-r1…B-r11 în restanțe. Următorul pas: TR-D7 (strangler per tip: `PosteazaInCub`,
   entitatea `Postare`, materializarea).
+- **Felia 31 — TR-D7a, cubul persistat și strangler-ul primelor patru tipuri**
+  (2026-09-20/21, branch `tr-d7-strangler` tăiat din `main` după felia 30;
+  contractul `docs/nucleu/tr-d7a-strangler-contract.md` cu S-D1…S-D16).
+  Șapte pași cu un agent per pas și verificare independentă a main-ului:
+  **1** entitățile `Postare`/`Tranzactie` (POCO fără `BaseObject`: convențiile
+  XAF se aplică pe interfețe, deci nu cer excludere), migrația cu
+  partiționarea LIST pe `Spatiu` și FK-urile per partiție scrise în SQL, cele
+  patru coloane de politică, probele `STR-SCHEMA-*`/`STR-POZITIE`;
+  **2** materializarea în tranzacția de comandă (refuzul declarației = refuzul
+  operației), cititorul rândurilor, stornoul ca a doua tranzacție cu perioada
+  fiscală re-ștampilată, anularea ca ștergere, `Pozitie` citită de ambele
+  motoare; **3** cele două unelte de gate și măsurătoarea read-only pe o clonă
+  a bazei Flax (53.449 de documente, 23:32 min): 25.488 neegale, cu PATRU
+  cauze, toate ale formei — pe Flax niciun document de trezorerie n-are sursă,
+  stingerea trăiește doar în `Imperecheri`, create DUPĂ operare; B-r1 măsurată
+  (275 refuzuri la 0,01/linie, maxim 55,87), B-r10 infirmată pe date, B-r7
+  confirmată pe FCT, B-r5 căutată în motor și negăsită; **4** BCS și FCT pe
+  cub (valoarea negativă admisă în `Operare` ca linie „în roșu”, toleranța
+  taxei opțională, partidă pe fiecare cont cu `RolTert`, FCT-urile fără rânduri
+  proprii ca excepție declarată a oracolului); **5** PLT/INC cu împerecherea
+  ulterioară ca tranzacție `Transfer` pe partide, cu două amendamente ale
+  ORACOLULUI (rândul invers citit algebric, spargerea piciorului de bani doar
+  pe împerecherile de la operare); **6** proba supremă pe Import1C integral;
+  **7** review advers (agent separat, read-only): 3 MAJOR — plafonul unei
+  împerecheri e RESTUL partidei stinsului cu conexul autogenerat absorbit și
+  transferurile deja primite (cele 14.498 „trunchiate” și 1.168 „sărite” erau
+  trunchierea REFERINȚEI, nu fapt de date: după fix 709 plafonate legitim și 1
+  sărită), `Transfer.Data` = `Imperechere.Data` (`max(DataInregistrare)`
+  rescria perioade închise la desfacere și storno), corecția cu
+  `EroareMateriala` re-ștampilează perioada și pe postările de storno — plus 6
+  MEDII și minorele, toate aplicate sau declarate ca regulă. Închidere:
+  ModelCheck privat 1674/0, bugetar 1410/0, nucleu 159/159,
+  `--reconciliere-cub` 0 Δ pe (a)…(g) pe ambele profiluri; gate-ul pe clona
+  Flax BCS 544 egale + 3 explicate, FCT 19.022 egale + 13 excepție declarată,
+  PLT 2.486/2.486 și INC 31.381/31.381; drift zero; diff gol pe
+  Blazor.Server/WebApi/Client. Import1C integral: Import1C integral pe Flax (`--recreeaza --cititori --inchide-lunile`, 2026-09-21): exit 0, 1 h 57 min (3 h 21 min la felia 28), raportul `nou/tools/Import1C/reconciliere-20260921-035646.txt` IDENTIC pe conținut sortat cu baseline-ul feliei 28, ZERO refuzuri ale declarației, 12/12 luni închise cu 0 constatări, `--reconciliere-cub` 0 rânduri Δ pe (a)–(g) — (f) vacuă: cele 9 conturi cu rol de terț sunt atinse și de tipuri nemigrate —, integritatea TPH 0 încălcări în 107 interogări, cubul cu 70.373 tranzacții / 252.092 postări / 16.924 transferuri (PLT → FCT; INC → FCL fără transfer, FCL fiind nemigrat), `refuzuri.ps1` 294/294 PASS pe `Atlas.Conta.BackOffice.Privat` refăcută din import cu perioadele redeschise. B-r1, B-r2, B-r7,
+  B-r9, B-r10 și B-r11 închise; S-r1…S-r10 în restanțe. Următorul pas: TR-D7b
+  (tipurile rămase pe cub, în ordinea volumului pe Flax).

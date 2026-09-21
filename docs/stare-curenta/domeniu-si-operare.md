@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-18.** [Index](README.md)
+**Actualizat: 2026-09-21.** [Index](README.md)
 
 ## Modelul comun
 
@@ -783,6 +783,137 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   scenelor ModelCheck, pe ambele profiluri; singurele diferențe sunt cele
   două cifre consemnate (N-r3, N-r4) și refuzul de toleranță.
 
+## Cubul persistat și regimul dual (TR-D7a, felia 31)
+
+Motorul scrie `Tranzactie`/`Postare` în ACEEAȘI tranzacție de comandă în care
+scrie registrele, pentru tipurile marcate cu `PosteazaInCub`. Citirile rămân
+pe registre (TR-D8). Contractul feliei: `docs/nucleu/tr-d7a-strangler-contract.md`
+(S-D1…S-D16).
+
+### Entitățile și forma lor fizică
+
+`Module/Cub/` ține cele două entități, POCO EF fără `BaseObject`: cubul e
+append-only, deci fără `GCRecord`, fără `OptimisticLockField` și fără filtru
+global de interogare. Proprietățile sunt `virtual` și colecția e
+`ObservableCollection`, cât timp hosturile folosesc proxy-uri de change
+tracking. Niciuna nu apare în UI și niciuna nu intră în metadata clientului. (S-D1)
+
+| Entitate | Coloane |
+|---|---|
+| `Tranzactie` | `ID`, `DocumentId`, `Fel` (`Operare`, `Storno`, `Transfer`, `Deschidere`), `Data`, `ScrisLa` (UTC) |
+| `Postare` | `Spatiu`, `TranzactieId`, `DocumentId`, `LinieId`, `Data`, `Cont`, `Latura`, `Partener`, `Gestiune`, `Produs`, `Unitate`, `UnitateDeschisa`, codul de TVA în trei coloane (`TipTvaId`, `SensTva`, `RolTva`), `PerioadaDeclarare`, `Valuta`, `Carte`, cele șase dimensiuni, `Atribuit`, `Cantitate`, `ValoareValuta`, `Valoare` |
+
+Enumurile nucleului se mapează pe `smallint` cu valorile lor numerice; scara
+măsurilor rămâne a gardianului `Scara` (bani 18,2, cantități 18,3).
+
+Tabela `Postare` e partiționată LIST pe `Spatiu`, cu exact două partiții —
+`Postare_Contabil` (1) și `Postare_Stoc` (2) — și cheie primară `(Spatiu, ID)`.
+Cheia compusă și partiționarea trăiesc DOAR în bază: modelul EF declară cheia
+`ID`, fiindcă XAF EF Core nu suportă chei compuse. FK-urile stau pe partiții,
+nu pe părinte: `Tranzactie`, `Documente`, `Conturi`, `Repartitori` (partener)
+și `Produse` pe amândouă, `Loturi` (unitate) doar pe Stoc. Nu există FK pe
+`Gestiune`, fiindcă gestiunile virtuale sunt id-uri fără rând (S-r3), și nici
+pe `Unitate` pe partiția Contabil, fiindcă id-ul partidei e hash determinist,
+nu id de rând. (S-D2)
+
+`UnitateDeschisa` e data deschiderii unității, decisă de declarant la postare:
+cu ea, cititorul rândurilor reconstruiește unitatea fără niciun lookup.
+Reconstrucția merge pe FEL — `Partida` ia partenerul rândului și n-are produs,
+`Lot` ia produsul și n-are partener — iar scrierea refuză un rând din care
+unitatea nu s-ar reconstrui exact. (`Module/Cub/Randuri.cs`)
+
+Orice migrație care atinge `Postare` sau `Tranzactie` se scrie în SQL, nu se
+lasă generată: snapshot-ul EF poartă cheia simplă și FK-ul pe părinte, baza are
+cheia compusă și FK-urile per partiție. (S-r4)
+
+### Regimul dual ca dată
+
+`TipDocument.PosteazaInCub` spune dacă tipul materializează în cub. Valoarea e
+aliniată de seed ca orice rând `DinSeed`: migrarea unui tip e a PROFILULUI, nu
+a bazei (S-r6). Migrate sunt BCS, FCT, PLT și INC, pe ambele profiluri; restul
+tipurilor postează doar în registre. Un tip marcat a cărui clasă nu declară
+(`Document.Declarant()` întoarce `null`) e eroare de configurare: operarea
+refuză, nu tace. (S-D3)
+
+### Materializarea, stornoul, anularea
+
+`Module/Cub/Materializare.cs` rulează din `MotorOperare`, deci pe toate ușile
+(UI, WebApi, Import1C):
+
+- **Operarea** — după registre și după împerecherea automată, înainte de
+  commit: contractul declarantului devine o tranzacție `Operare` datată cu
+  `DataInregistrare` și o postare per postare a contractului. Refuzul
+  declarației E refuzul operației: o singură eroare cu toate refuzurile, iar
+  tranzacția de comandă se anulează integral — nimic în cub, nimic în registre.
+  Dry-run-ul arată aceleași refuzuri, în forma `EroriDto` de azi. (S-D4)
+- **Stornoul** — a doua tranzacție, de fel `Storno`: inversul exact al
+  postărilor `Operare` ale documentului și al celor `Atribuit` spre ele, datat
+  la data stornării, cu `PerioadaDeclarare` re-ștampilată la perioada
+  stornării. Corecția cu motivul `EroareMateriala` o re-ștampilează la perioada
+  originalului și pe postările `Storno`, ca pe rândurile de TVA. Un document
+  operat înainte ca tipul lui să fie migrat n-are tranzacție `Operare`, deci
+  stornoul lui nu atinge cubul. (S-D5)
+- **Anularea operării** șterge fizic tranzacția `Operare` și postările ei,
+  simetric cu ștergerea registrelor. (S-D5)
+
+`DocumentDetaliu.Pozitie` e ordinea de culegere a liniei. Se atribuie o
+singură dată, la salvarea unei linii noi, în `SaveChanges`-ul contextului — un
+singur loc pentru UI, WebApi, Import1C și conexul clonat — ca max-ul liniilor
+documentului plus unu. Ambele motoare citesc liniile `OrderBy(Pozitie)`, apoi
+`ThenBy(ID)`: cele cinci enumerări ale motorului vechi (TVA culeasă, notele,
+TVA-ul, loturile născute, potrivirea regulilor de stoc) trec printr-un singur
+helper, iar conexul clonat primește liniile sursei în aceeași ordine. (S-D6)
+
+### Împerecherea ulterioară operării = tranzacție `Transfer`
+
+O împerechere creată DUPĂ operare, desfacerea ei și rândul invers scris la
+storno produc pe stingător o tranzacție de fel `Transfer`: suma se mută de pe
+partida proprie a stingătorului pe partida stinsului, ieșire și intrare pe
+ACELAȘI cont și aceeași latură, deci Σ = 0 per cont × latură. Împerecherea
+automată la operare nu produce transfer — ea E nominalizarea din `Operare`. (S-D13)
+
+- **Contul comun** e contul partidei de referință a stingătorului: postarea lui
+  cu unitate de fel `Partida` și valoare absolută maximă. **Partenerul** e al
+  partidei stinsului.
+- **Plafonul** e restul partidei stinsului pe acel cont: valoarea absolută a
+  netului tranzacției `Operare` a stinsului, cu conexul lui autogenerat
+  absorbit (TR-D3) și cu transferurile deja primite de partidele lui. Plafon
+  zero ⇒ nu se mută nimic. Sold al partidei proprii sub plafon ⇒ refuz
+  `PARTIDA_PROPRIE_INSUFICIENTA`. Rândul invers desface exact cât a mutat
+  perechea lui, nu restul de azi al partidei.
+- **Data** tranzacției e `Imperechere.Data` a rândului, original sau invers —
+  reperul pe care registrele taie partidele, deja garantat de gardieni ca fiind
+  în perioadă deschisă și nu înaintea datelor de înregistrare.
+- Se scrie doar când ambele documente au tranzacție `Operare` în cub. Pe un
+  profil fără conturi cu `RolTert` nu există partide, deci nu există ce muta.
+
+### Gardurile declaranților, ca dată sau ca regulă
+
+- Valoarea negativă e admisă în `Operare`: e reprezentarea „în roșu” a liniei
+  culese, retur sau discount pe același document. `SEMN_NEGATIV` rămâne doar pe
+  `Deschidere`. Un lot născut de o linie „în roșu” se evaluează negativ, ca în
+  motorul vechi (S-r7). (S-D14)
+- `PoliticaTva.TolerantaTaxa` e opțională: `null` înseamnă că taxa culeasă
+  rămâne autoritară, fără validare — valoarea de seed a profilului privat. O
+  valoare dată refuză `TVA_IN_AFARA_TOLERANTEI` peste `toleranță × liniile
+  cotei`. (S-D15)
+- O linie cu două conturi cu `RolTert` numește partidă pe AMBELE capete,
+  fiecare pe contul lui. (S-D16)
+- `TipDocument.LaturaContPropriu` (`Predator` / `Primitor`) spune care
+  repartitor al documentului poartă contul propriu: plata predator, încasarea
+  primitor. Declarantul de trezorerie refuză `LATURA_CONT_PROPRIU_NEPOTRIVITA`
+  când contul propriu nu e pe latura declarată; `CONT_PROPRIU_LIPSA` rămâne
+  pentru lipsă. (S-D7)
+- Linia fără regulă de contare e refuzată (`REGULA_CONTARE_LIPSA`) acolo unde
+  motorul vechi o sare tăcut: valoarea ei ar dispărea din contare.
+
+### Ce rămâne al feliilor următoare
+
+Citirile — sold, proiecții, fișe, SAF-T, D394, D406 — rămân pe registre până la
+TR-D8. Tipurile nemigrate postează doar în registre; deschiderea ca tranzacție
+de fel `Deschidere` (TR-r10), notele pe conturi de stoc fără lot (TR-r2) și Δ
+de sold 3xx (TR-r12) intră cu tipurile lor, în TR-D7b și următoarele.
+
 ## Locurile regulilor în cod
 
 - [Document și contracte](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Document.cs)
@@ -791,7 +922,8 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
 - [Nucleul pur: motorul pe declarație](../../nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu/Motor/Motor.cs)
 - [Declarația fluxului: operandul, driverul, declaranții BCS/PLT/FCT](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Declaratii/)
 - [Adaptorul operandului închis (`Fapte.Operand`)](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/Fapte.cs)
-- [Oracolul pilotului: maparea fizicii și normalizările declarate](../../nou/tools/ModelCheck/Nucleu/)
+- [Oracolul pilotului și gate-ul de reconciliere al cubului](../../nou/tools/ModelCheck/Nucleu/)
+- [Cubul persistat: entitățile, materializarea, cititorul rândurilor, transferurile](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Cub/)
 - [Serviciul de împerechere](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/ImperechereService.cs)
 - [Documentele de trezorerie](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Trezorerie.cs)
 - [Documentele imobilizărilor](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Imobilizari.cs)

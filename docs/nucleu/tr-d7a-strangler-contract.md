@@ -1,7 +1,7 @@
 # TR-D7a — Strangler-ul per tip, felia 31: cubul persistat și cele trei tipuri ale pilotului
 
 - **Data**: 2026-09-20
-- **Stare**: ÎN LUCRU (branch `tr-d7-strangler`, tăiat din `main` = 1016890, felia 30 închisă)
+- **Stare**: ÎNCHISĂ 2026-09-21 (branch `tr-d7-strangler`, tăiat din `main` = 1016890; pașii 0–8, un commit per pas; regula de oprire îndeplinită integral — cifrele în „Închidere" la final)
 - **Docs**: decizia 090 §Regula durabilă (l), (m); `docs/nucleu/nucleu-transfer.md` (TR-D1…D4, TR-D7, §4.1); `docs/nucleu/tr-d6b-declaratia-fluxului-contract.md` (B-D8 lista închisă, B-D9 amânările cu numele TR-D7); `run-nucleu/fizica/pas1/01-schema.sql` + `pas2/fk-f2.sql` + `pas2/indexi-f2.md` (forma fizică măsurată); `docs/decizii/restante.md` (B-r1…B-r11, TR-r2, TR-r10, TR-r12, N-r7, N-r8); probele feliei în `run-nucleu/tr-d7a/`.
 - **Felii TR-D7**: TR-D7 e 6–8 sesiuni (§4.1). Felia 31 = TR-D7a = fundația persistată (entitățile, migrația, materializarea, stornoul, anularea, gate-ul) + BCS, PLT/INC, FCT migrate pe cub, cu restanțele lor. Tipurile următoare (după volumul pe Flax, cele cu conex la urmă) sunt TR-D7b…, fiecare cu contract propriu care refolosește fundația de aici.
 
@@ -336,3 +336,43 @@ se normalizează).
 | S-r2 | deciziile și ipotezele contractului (`AlocareFifo`, `ValoareIesire`, `SoldUnitateCitit`…) nu se persistă; un cititor (audit, „de ce a costat atât") le cere la TR-D8 | deschisă |
 | S-r3 | gestiunile virtuale n-au FK (id-uri fără rând); B-r8 le face rânduri `DinSeed` și atunci FK-ul pe `Gestiune` intră pe ambele partiții | deschisă |
 | S-r4 | snapshot-ul EF declară cheia `ID` pe `Postare`, baza are `(Spatiu, ID)`: divergență declarată cât timp XAF EF Core nu suportă chei compuse; probată de `STR-SCHEMA` | deschisă |
+
+## Închidere (2026-09-21)
+
+Pașii 0–8, comiși pe rând după verificarea independentă a main-ului
+(contract 404d7f9, schema a72849f, materializarea 07bca95, gate-ul 7a4f929,
+BCS+FCT 21f1a4c, PLT/INC ce4fabb, review + fix-uri 93a3972, docs în
+commit-ul de închidere). Regula de oprire:
+
+- Entitățile, migrațiile (`CubDePostari`, `TolerantaTaxaOptionala`) și
+  coloanele de politică există, `STR-SCHEMA-1…5` verzi pe ambele profiluri,
+  `has-pending-model-changes` curat.
+- Materializarea rulează pe BCS, FCT, PLT, INC cu seed `true` pe ambele
+  profiluri; ModelCheck privat 1674/0, bugetar 1410/0 (rulări independente
+  ale main-ului la fiecare pas); nucleu 159/159, 0 avertismente, testul de
+  arhitectură neatins; `--reconciliere-cub` 0 Δ pe (a)–(g) pe bazele
+  ModelCheck.
+- `--declaratie-pe-baza` pe clona Flax: BCS 544 egale + 3 explicate (citirea
+  pe referință a bonurilor din 31.12), FCT 19.022 egale + 13 excepție
+  declarată, PLT 2.486/2.486, INC 31.381/31.381; 0 refuzate, 0 diferite;
+  709 împerecheri PLT plafonate la rest și 1 sărită (S-r5).
+- Proba supremă: Import1C integral pe Flax (2026-09-21, 1 h 57 min față de
+  3 h 21 min la felia 28), exit 0, raportul
+  `reconciliere-20260921-035646.txt` IDENTIC pe conținut sortat cu
+  baseline-ul feliei 28, ZERO refuzuri ale declarației, 12/12 luni închise
+  cu 0 constatări, `--reconciliere-cub` 0 Δ pe (a)–(g) ((f) vacuă: toate
+  cele 9 conturi cu rol de terț sunt atinse și de tipuri nemigrate),
+  integritatea TPH 0 încălcări în 107 interogări; cubul: 70.373 tranzacții,
+  252.092 postări, 16.924 transferuri (PLT → FCT; INC → FCL fără transfer,
+  FCL nemigrat — S-D13); `refuzuri.ps1` 294/294 PASS pe
+  `Atlas.Conta.BackOffice.Privat` refăcută din import (rețetele:
+  `run-nucleu/tr-d7a/import/run.ps1`, `privat.ps1`, `diff-sortat.py`).
+  `SolduriService.Reconstruieste` NU s-a re-rulat pe Flax: serviciul e
+  neatins de felie și rămâne probat de `PAR-V*`/`SOL-*` pe scene.
+- Diff-ul pe Blazor.Server/WebApi/Client: doar `Client/src/generated/metadata.json`
+  (cele patru proprietăți noi); `MotorOperare.cs` atins doar cum spune S-D10
+  (+ `GenereazaConex` pe `Liniile(sursa)`, MEDIU-1).
+- Review advers aplicat (3 MAJOR, 6 MEDIU fixate sau declarate — amendamentele
+  (5)–(12) sub S-D13); docs în același commit cu închiderea; decizie proprie
+  NU e necesară: felia execută 090l, amendamentele de literă sunt în contract
+  și în `restante.md` (S-r1…S-r11).

@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-18.** [Index](README.md)
+**Actualizat: 2026-09-21.** [Index](README.md)
 
 ## Organizarea sursei
 
@@ -135,6 +135,9 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | Tip derivat nou, proprietate nouă pe frunză, FK spre o frunză | ModelCheck pe ambele profiluri (`F28-*`); după un import, `--dump-integritate-tph` rulat pe baza de import (89e, 89h) |
 | Nucleul pur (`Atlas.Conta.Nucleu`) | `dotnet test` pe soluția nucleului: testul de arhitectură și invarianții 1–6 ca proprietăți (≥ 500 de cazuri fiecare); ModelCheck doar dacă e atins `Module` (90l) |
 | Declarant, operand, `Fapte.Operand`, oracolul pilotului | ModelCheck pe AMBELE profiluri: probele `NUC-*` (egalitate exactă cu registrele normalizate, conservare, determinism, `≤ 16` interogări per operand) plus `Metadata clientului e la zi` (o proprietate nouă pe `Document` intră în metadata clientului — de aceea `Declarant()` e metodă) (TR-D6b) |
+| Entitățile sau migrațiile cubului (`Postare`, `Tranzactie`) | ModelCheck pe ambele profiluri: probele `STR-SCHEMA-*` (partiționarea LIST, cheia `(Spatiu, ID)`, setul ÎNCHIS de FK-uri per partiție, indexii, absența timbrelor XAF); migrația se scrie în SQL, nu se lasă generată (S-D2, S-r4) |
+| Materializare, declarant al unui tip migrat, împerecherea ca `Transfer` | ModelCheck pe ambele profiluri: probele `STR-*` pe scenele BCS, Trezorerie și FCT — operare, roundtrip, storno, anulare, refuz, configurație, poziție, transfer, latură, corecție, reconciliere — cu comutarea locală a regimului (`ProbeCub.Migrat`/`Nemigrat`/`CuToleranta`, cu restaurare) și purja rândurilor de cub ale documentelor scenei (S-D8) |
+| Tip trecut pe `PosteazaInCub` | `--declaratie-pe-baza` pe o clonă a bazei de import: 100 % egal pe tipul migrat sau fiecare diferență declarată; după importul integral, `--reconciliere-cub` cu 0 rânduri Δ (S-D9) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
 ModelCheck verifică modelul și execută scenarii de integrare, inclusiv probe
@@ -182,6 +185,50 @@ dată, construită ÎNAINTE (`--no-build` pe un binar vechi probează codul
 vechi); redirectarea `*>` din PowerShell scrie log-ul UTF-16 — rețeta
 `run-nucleu/tr-d6b/pas4-final/run.sh` (bash) scrie UTF-8 și numără
 `OK`/`FAIL`. (TR-D6b)
+
+Gate-ul de reconciliere al cubului are două unelte, ambele în ModelCheck și
+ambele ieșind înainte de bootstrap: (S-D9)
+
+- `ModelCheck --declaratie-pe-baza <baza> <COD…> [--raport <director>]` —
+  READ-ONLY, în loturi de 200 de documente cu ObjectSpace nou per lot:
+  contractul declarantului contra oracolul registrelor normalizate, pe fiecare
+  document operat al tipurilor cerute. Raportul dă, per tip: egale, refuzate pe
+  cod cu id-uri exemplu, diferite pe fel de reziduu, excepțiile DECLARATE ale
+  oracolului, histograma abaterii taxei culese și, pe tipurile de trezorerie,
+  transferurile scrise, cele plafonate la restul partidei și cele sărite.
+- `ModelCheck --reconciliere-cub <baza>` — SQL pe set, toleranță 0, pe
+  tipurile cu `PosteazaInCub`: (a) Σ valoare per grup × cont × latură × lună,
+  (b) Σ cantitate per lot × lună pe spațiul Stoc, (c) TVA per tip × sens × rol
+  × perioadă, (d) Σ D = Σ C per carte în fiecare tranzacție, (e) exact o
+  tranzacție `Operare` per document operat al unui tip migrat și niciuna pe
+  celelalte, (f) Σ per partidă la ultima perioadă închisă, (g) TVA pe postările
+  de storno. Grupul unui FCT e documentul ∪ NIR-ul lui conex; grupurile cu
+  conex neoperat se RAPORTEAZĂ separat, nu se numără ca Δ. Litera (f) e vacuă
+  cât timp un tip nemigrat mai postează pe conturi cu `RolTert`, iar nota se
+  tipărește.
+
+Rețeta probei supreme e `run-nucleu/tr-d7a/import/run.ps1`: Import1C integral
+(`--recreeaza --cititori --inchide-lunile`), apoi `--reclasifica`,
+`--reconciliere-cub`, `--dump-integritate-tph` și `diff-sortat.py`, care compară
+raportul de reconciliere cu baseline-ul pe conținut sortat.
+
+Capcane măsurate ale acestor probe: o SINGURĂ rulare ModelCheck o dată — două
+concurente crapă în purje și lasă reziduu (`TipuriMaterial` cu codul
+`E2E-SAFT-S-TIP` plus `RegulaContare` `DinSeed` pe care seeder-ul i-o
+re-atașează la fiecare rulare), care blochează definitiv rulările următoare pe
+acea bază până e șters manual (S-r10). Interogările pe catalogul Postgres cer
+cast explicit: `partattrs` e `int2vector` indexat de la 0, `conkey` e `int2[]`
+de la 1, iar `partstrat` e `"char"` și cere `::text` înainte de concatenare,
+altfel interogarea pică și oprește rularea. O clonă a bazei de import poartă
+valoarea DEFAULT a unei coloane noi, nu valoarea de seed (`TolerantaTaxa` 0
+contra `null`): se aliniază înainte de gate, altfel refuzurile sunt ale bazei,
+nu ale codului. Gate-ul re-contractează documente pe o bază cu perioadele deja
+închise, deci un document datat exact la sfârșitul perioadei de referință care
+își golește singur cheia de stoc citește zero și e refuzat `STOC_INSUFICIENT` —
+artefact al gate-ului, nu al declarantului, absent la import (unde luna se
+operează înainte de a fi închisă). Oracolul citește registrele ORDONAT pe
+(document, poziția liniei, linie, id), altfel ordinea heap-ului schimbă
+nominalizarea între rulări și aceeași probă alternează OK/FAIL.
 
 Căutarea după cheie a unui tip ne-rădăcină trece prin `RandDupaCheie`
 (rădăcina ierarhiei, apoi tipul verificat), niciodată prin
@@ -275,6 +322,13 @@ conținut sortat cu baseline-ul; 12/12 luni închise fără constatări;
 `Reconstruieste` a dat 0 diferențe; integritatea TPH a dat 0 încălcări în 103
 interogări. 15 dintre ele sunt vacue pe import (tipuri și legături pe care
 importul nu le produce), iar pe acelea le acoperă ModelCheck. (89g, 89h)
+
+Pe cubul persistat proba supremă are aceeași formă: importul integral cu
+tipurile migrate marcate `PosteazaInCub` trebuie să dea exit 0, ZERO refuzuri
+ale declarației, raport identic pe conținut sortat cu baseline-ul, 12/12 luni
+închise, `Reconstruieste` 0 diferențe, `--dump-integritate-tph` 0 încălcări și
+`--reconciliere-cub` 0 rânduri Δ pe toate literele; `refuzuri.ps1` se reface pe
+clona privată a noului import. Măsurat la 2026-09-21: Import1C integral pe Flax (`--recreeaza --cititori --inchide-lunile`, 2026-09-21): exit 0, 1 h 57 min (3 h 21 min la felia 28), raportul `nou/tools/Import1C/reconciliere-20260921-035646.txt` IDENTIC pe conținut sortat cu baseline-ul feliei 28, ZERO refuzuri ale declarației, 12/12 luni închise cu 0 constatări, `--reconciliere-cub` 0 rânduri Δ pe (a)–(g) — (f) vacuă: cele 9 conturi cu rol de terț sunt atinse și de tipuri nemigrate —, integritatea TPH 0 încălcări în 107 interogări, cubul cu 70.373 tranzacții / 252.092 postări / 16.924 transferuri (PLT → FCT; INC → FCL fără transfer, FCL fiind nemigrat), `refuzuri.ps1` 294/294 PASS pe `Atlas.Conta.BackOffice.Privat` refăcută din import cu perioadele redeschise. (S-D10)
 
 ## Reconciliere și migrare legacy
 
